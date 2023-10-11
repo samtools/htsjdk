@@ -28,7 +28,7 @@ import htsjdk.samtools.util.CloseableIterator;
 /**
  * A general interface that adds functionality to a CloseableIterator of
  * SAMRecords.  Currently, this interface is implemented by iterators that
- * want to validate as they are iterating that that the records in the
+ * want to validate as they are iterating that the records in the
  * underlying SAM/BAM file are in a particular order.
  */
 public interface SAMRecordIterator extends CloseableIterator<SAMRecord> {

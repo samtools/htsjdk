@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -209,20 +210,23 @@ public class SamFileValidator {
     }
 
     public void validateBamFileTermination(final File inputFile) {
+        validateBamFileTermination(IOUtil.toPath(inputFile));
+    }
+
+    public void validateBamFileTermination(final Path inputFile) {
         try {
-            if (!IOUtil.isBlockCompressed(inputFile.toPath())) {
+            if (!IOUtil.isBlockCompressed(inputFile)) {
                 return;
             }
             final BlockCompressedInputStream.FileTermination terminationState =
                     BlockCompressedInputStream.checkTermination(inputFile);
             if (terminationState.equals(BlockCompressedInputStream.FileTermination.DEFECTIVE)) {
                 addError(new SAMValidationError(Type.TRUNCATED_FILE, "BAM file has defective last gzip block",
-                        inputFile.getPath()));
+                        inputFile.toUri().toString()));
             } else if (terminationState.equals(BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK)) {
                 addError(new SAMValidationError(Type.BAM_FILE_MISSING_TERMINATOR_BLOCK,
                         "Older BAM file -- does not have terminator block",
-                        inputFile.getPath()));
-
+                        inputFile.toUri().toString()));
             }
         } catch (IOException e) {
             throw new SAMException("IOException", e);

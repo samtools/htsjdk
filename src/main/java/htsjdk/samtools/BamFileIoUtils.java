@@ -1,5 +1,7 @@
 package htsjdk.samtools;
 
+import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
@@ -10,13 +12,15 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class BamFileIoUtils {
@@ -32,8 +36,16 @@ public class BamFileIoUtils {
         return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
     }
 
-    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile) {
+    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile) {
         reheaderBamFile(samFileHeader, inputFile, outputFile, true, true);
+    }
+
+
+    /**
+     * Support File input types for backward compatibility. Use the same method with Path inputs below.
+     */
+    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
+        reheaderBamFile(samFileHeader, IOUtil.toPath(inputFile), IOUtil.toPath(outputFile), createMd5, createIndex);
     }
 
     /**
@@ -45,12 +57,14 @@ public class BamFileIoUtils {
      * @param createMd5     Whether or not to create an MD5 file for the new BAM
      * @param createIndex   Whether or not to create an index file for the new BAM
      */
-    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
+    public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile, final boolean createMd5, final boolean createIndex) {
+        ValidationUtils.nonNull(inputFile);
+        ValidationUtils.nonNull(outputFile);
         IOUtil.assertFileIsReadable(inputFile);
-        IOUtil.assertFileIsWritable(outputFile);
+        IOUtil.assertFileIsWritable(inputFile);
 
         try {
-            BlockCompressedInputStream.assertNonDefectiveFile(inputFile);
+            BlockCompressedInputStream.assertNonDefectivePath(inputFile);
             assertSortOrdersAreEqual(samFileHeader, inputFile);
 
             final OutputStream outputStream = buildOutputStream(outputFile, createMd5, createIndex);
@@ -65,49 +79,54 @@ public class BamFileIoUtils {
         }
     }
 
+    public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
+        blockCopyBamFile(IOUtil.toPath(inputFile), outputStream, skipHeader, skipTerminator);
+    }
+
     /**
-     * Copy data from a BAM file to an OutputStream by directly copying the gzip blocks
+     * Copy data from a BAM file to an OutputStream by directly copying the gzip blocks.
      *
-     * @param inputFile      The file to be copied
+     * @param inputFile      The BAM file to be copied
      * @param outputStream   The stream to write the copied data to
      * @param skipHeader     If true, the header of the input file will not be copied to the output stream
      * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
      */
-    public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(inputFile);
-
+    public static void blockCopyBamFile(final Path inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
+        try (final SeekablePathStream in = new SeekablePathStream(inputFile)){
             // a) It's good to check that the end of the file is valid and b) we need to know if there's a terminator block and not copy it if skipTerminator is true
             final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
             if (term == BlockCompressedInputStream.FileTermination.DEFECTIVE)
-                throw new SAMException(inputFile.getAbsolutePath() + " does not have a valid GZIP block at the end of the file.");
+                throw new SAMException(inputFile.toUri() + " does not have a valid GZIP block at the end of the file.");
 
             if (skipHeader) {
                 final long vOffsetOfFirstRecord = SAMUtils.findVirtualOffsetOfFirstRecordInBam(inputFile);
-                final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(inputFile);
-                blockIn.seek(vOffsetOfFirstRecord);
-                final long remainingInBlock = blockIn.available();
 
-                // If we found the end of the header then write the remainder of this block out as a
-                // new gzip block and then break out of the while loop
-                if (remainingInBlock >= 0) {
-                    final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path)null);
-                    IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
-                    blockOut.flush();
-                    // Don't close blockOut because closing underlying stream would break everything
-                }
+                // tsato: curious --- why do we need BlockCompressedInputStream at all here?
+                try (final BlockCompressedInputStream blockIn = new BlockCompressedInputStream(inputFile)) {
+                    blockIn.seek(vOffsetOfFirstRecord);
+                    final long remainingInBlock = blockIn.available();
 
-                long pos = BlockCompressedFilePointerUtil.getBlockAddress(blockIn.getFilePointer());
-                blockIn.close();
-                while (pos > 0) {
-                    pos -= in.skip(pos);
+                    // If we found the end of the header then write the remainder of this block out as a
+                    // new gzip block and then break out of the while loop (tsato: update this comment)
+                    if (remainingInBlock >= 0) {
+                        final BlockCompressedOutputStream blockOut = new BlockCompressedOutputStream(outputStream, (Path) null);
+                        IOUtil.transferByStream(blockIn, blockOut, remainingInBlock);
+                        blockOut.flush();
+                        // Don't close blockOut because closing underlying stream would break everything
+                    }
+
+                    final long pos = BlockCompressedFilePointerUtil.getBlockAddress(blockIn.getFilePointer());
+                    blockIn.close(); // tsato: why doesn't IntelliJ say this is unnecessary?
+
+                    in.seek(pos);
+                } catch (IOException e){
+                    throw new HtsjdkException("Encountered an error.", e);
                 }
             }
 
             // Copy remainder of input stream into output stream
-            final long currentPos = in.getChannel().position();
-            final long length = inputFile.length();
+            final long currentPos = in.position();
+            final long length = Files.size(inputFile);
             final long skipLast = ((term == BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) && skipTerminator) ?
                     BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length : 0;
             final long bytesToWrite = length - skipLast - currentPos;
@@ -115,8 +134,6 @@ public class BamFileIoUtils {
             IOUtil.transferByStream(in, outputStream, bytesToWrite);
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
-        } finally {
-            CloserUtil.close(in);
         }
     }
 
@@ -140,7 +157,7 @@ public class BamFileIoUtils {
 
             for (final File f : bams) {
                 LOG.info(String.format("Block copying %s ...", f.getAbsolutePath()));
-                blockCopyBamFile(f, out, !isFirstFile, true);
+                blockCopyBamFile(IOUtil.toPath(f), out, !isFirstFile, true);
                 isFirstFile = false;
             }
 
@@ -162,17 +179,27 @@ public class BamFileIoUtils {
     }
 
     private static OutputStream buildOutputStream(final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
-        OutputStream outputStream = new FileOutputStream(outputFile);
+        return buildOutputStream(IOUtil.toPath(outputFile), createMd5, createIndex);
+    }
+
+    private static OutputStream buildOutputStream(final Path outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
+        OutputStream outputStream = Files.newOutputStream(outputFile);
         if (createMd5) {
-            outputStream = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
+            outputStream = new Md5CalculatingOutputStream(outputStream, IOUtil.addExtension(outputFile, FileExtensions.MD5));
         }
         if (createIndex) {
-            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + FileExtensions.BAI_INDEX));
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, outputFile.resolveSibling(outputFile.getFileName() + FileExtensions.BAI_INDEX));
         }
         return outputStream;
     }
 
+
+    @Deprecated
     private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final File inputFile) throws IOException {
+        assertSortOrdersAreEqual(newHeader, IOUtil.toPath(inputFile));
+    }
+
+    private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final Path inputFile) throws IOException {
         final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
         final SAMFileHeader origHeader = reader.getFileHeader();
         final SAMFileHeader.SortOrder newSortOrder = newHeader.getSortOrder();

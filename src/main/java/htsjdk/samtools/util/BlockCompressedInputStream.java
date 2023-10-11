@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
@@ -123,6 +124,15 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         this(file, BlockGunzipper.getDefaultInflaterFactory());
     }
 
+
+    /**
+     * Equivalent constructor for Path as the one that takes a File. Supports seeking.
+     */
+    public BlockCompressedInputStream(final Path file) throws IOException {
+        this(new SeekablePathStream(file));
+    }
+
+
     /**
      * Use this ctor if you wish to call seek()
      * @param file source of bytes
@@ -134,6 +144,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         mStream = null;
         blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
+
 
     /**
      * @param url source of bytes
@@ -704,9 +715,14 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
     }
 
+    @Deprecated
     public static void assertNonDefectiveFile(final File file) throws IOException {
+        assertNonDefectivePath(IOUtil.toPath(file));
+    }
+
+    public static void assertNonDefectivePath(final Path file) throws IOException {
         if (checkTermination(file) == FileTermination.DEFECTIVE) {
-            throw new SAMException(file.getAbsolutePath() + " does not have a valid GZIP block at the end of the file.");
+            throw new SAMException(file.toUri() + " does not have a valid GZIP block at the end of the file.");
         }
     }
 

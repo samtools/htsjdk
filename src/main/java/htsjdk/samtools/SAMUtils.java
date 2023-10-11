@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CigarUtil;
@@ -36,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -675,6 +677,15 @@ public final class SAMUtils {
 
         return m1 + m2;
 
+    }
+
+
+    public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
+        try (SeekableStream ss = new SeekablePathStream(bamFile)){
+            return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
+        } catch (final IOException ioe) {
+            throw new RuntimeEOFException(ioe);
+        }
     }
 
     /**
