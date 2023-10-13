@@ -45,6 +45,7 @@ dependencies {
     testImplementation 'com.google.jimfs:jimfs:1.1'
     testImplementation "com.google.guava:guava:31.1-jre"
     testImplementation "org.apache.commons:commons-lang3:3.7"
+    testImplementation "org.broadinstitute:http-nio:0.1.0-rc1"
 }
 
 java {

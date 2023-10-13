@@ -1182,7 +1182,7 @@ public class IOUtil {
 
         while (!stack.empty()) {
             final Path p = stack.pop();
-            final String name = p.toString();
+            final String name = p.getFileName().toString();
             boolean matched = false;
 
             for (final String ext : extensions) {
