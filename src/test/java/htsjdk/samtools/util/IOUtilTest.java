@@ -469,8 +469,10 @@ public class IOUtilTest extends HtsjdkTest {
                 {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 4},
                 {fofnPath1.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 2},
                 {fofnPath2.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4},
-                //test http links witht query parameters are handled correctly
-                {withHttpPath.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
+                //test http links with query parameters are handled correctly
+                //test disabled until NIO http provider is integrated
+                //see https://github.com/samtools/htsjdk/issues/1689
+                //{withHttpPath.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
         };
     }
 
