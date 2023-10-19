@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * with the htslib implementations. The test files for Interop tests is kept in a separate repository,
  * currently at https://github.com/samtools/htscodecs so it can be shared across htslib/samtools/htsjdk.
  *
- * For native development env, the Interop test files are downloaded locally and made available at "../htscodecs/tests"
+ * For local development env, the Interop test files must be downloaded locally and made available at "../htscodecs/tests"
  * For CI env, the Interop test files are made available from the existing samtools installation
  * at "/samtools-1.14/htslib-1.14/htscodecs/tests"
  */
@@ -42,105 +42,57 @@ public class RANSInteropTest extends HtsjdkTest {
     public static final String COMPRESSED_RANSNX16_DIR = "r4x16";
 
     // RANS4x8 codecs and testdata
-    public Object[][] getRANS4x8TestData() throws IOException {
+    public Object[][] get4x8TestCases() throws IOException {
 
         // params:
-        // uncompressed testfile path, RANS encoder, RANS decoder,
-        // RANS params, compressed testfile directory name
-        final List<RANSParams.ORDER> rans4x8ParamsOrderList = Arrays.asList(
-                RANSParams.ORDER.ZERO,
-                RANSParams.ORDER.ONE);
+        // compressed testfile path, uncompressed testfile path,
+        // RANS encoder, RANS decoder, RANS params
         final List<Object[]> testCases = new ArrayList<>();
-        getInteropRANSTestFiles()
-                .forEach(path ->
-                        rans4x8ParamsOrderList.stream().map(rans4x8ParamsOrder -> new Object[]{
-                                path,
-                                new RANS4x8Encode(),
-                                new RANS4x8Decode(),
-                                new RANS4x8Params(rans4x8ParamsOrder),
-                                COMPRESSED_RANS4X8_DIR
-                        }).forEach(testCases::add));
+        for (Path path : getInteropRansCompressedFilePaths(COMPRESSED_RANS4X8_DIR)) {
+            Object[] objects = new Object[]{
+                    path,
+                    getRansUnCompressedFilePath(path),
+                    new RANS4x8Encode(),
+                    new RANS4x8Decode(),
+                    getRans4x8Params(path)
+            };
+            testCases.add(objects);
+        }
         return testCases.toArray(new Object[][]{});
     }
 
     // RANSNx16 codecs and testdata
-    public Object[][] getRANSNx16TestData() throws IOException {
+    public Object[][] getNx16TestCases() throws IOException {
 
         // params:
-        // uncompressed testfile path, RANS encoder, RANS decoder,
-        // RANS params, compressed testfile directory name
-        final List<Integer> ransNx16ParamsFormatFlagList = Arrays.asList(
-                0x00,
-                RANSNx16Params.ORDER_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
-                RANSNx16Params.N32_FLAG_MASK,
-                RANSNx16Params.N32_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
-                RANSNx16Params.PACK_FLAG_MASK,
-                RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
+        // compressed testfile path, uncompressed testfile path,
+        // RANS encoder, RANS decoder, RANS params
         final List<Object[]> testCases = new ArrayList<>();
-        getInteropRANSTestFiles()
-                .forEach(path ->
-                        ransNx16ParamsFormatFlagList.stream().map(ransNx16ParamsFormatFlag -> new Object[]{
-                                path,
-                                new RANSNx16Encode(),
-                                new RANSNx16Decode(),
-                                new RANSNx16Params(ransNx16ParamsFormatFlag),
-                                COMPRESSED_RANSNX16_DIR
-                        }).forEach(testCases::add));
+        for (Path path : getInteropRansCompressedFilePaths(COMPRESSED_RANSNX16_DIR)) {
+            Object[] objects = new Object[]{
+                    path,
+                    getRansUnCompressedFilePath(path),
+                    new RANSNx16Encode(),
+                    new RANSNx16Decode(),
+                    getRansNx16Params(path)
+            };
+            testCases.add(objects);
+        }
         return testCases.toArray(new Object[][]{});
     }
 
-    public Object[][] getRansNx16DecodeOnlyTestData() throws IOException {
+    @DataProvider(name = "roundTripTestCases")
+    public Object[][] getRoundTripTestCases() throws IOException {
 
         // params:
-        // uncompressed testfile path, RANS encoder, RANS decoder,
-        // RANS params, compressed testfile directory name
-
-        // Stripe is implemented in the Decoder. It is not implemented in the Encoder.
-        final List<Integer> ransNx16ParamsFormatFlagList = Arrays.asList(
-                RANSNx16Params.STRIPE_FLAG_MASK,
-                RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
-        final List<Object[]> testCases = new ArrayList<>();
-        getInteropRANSTestFiles()
-                .forEach(path ->
-                        ransNx16ParamsFormatFlagList.stream().map(ransNx16ParamsFormatFlag -> new Object[]{
-                                path,
-                                new RANSNx16Encode(),
-                                new RANSNx16Decode(),
-                                new RANSNx16Params(ransNx16ParamsFormatFlag),
-                                COMPRESSED_RANSNX16_DIR
-                        }).forEach(testCases::add));
-        return testCases.toArray(new Object[][]{});
-    }
-
-    @DataProvider(name = "allRansCodecsAndDataForRoundtrip")
-    public Object[][] getAllRansCodecsForRoundTrip() throws IOException {
-
-        // params:
-        // uncompressed testfile path, RANS encoder, RANS decoder,
-        // RANS params, compressed testfile directory name
-
-        // Since, Stripe is not implemented in the Encoder,
-        // we don't test round tripping for the cases where Stripe Flag = 1
-        return Stream.concat(Arrays.stream(getRANS4x8TestData()), Arrays.stream(getRANSNx16TestData()))
-                .toArray(Object[][]::new);
-    }
-
-    @DataProvider(name = "allRansCodecsAndData")
-    public Object[][] getAllRansCodecs() throws IOException {
-
-        // params:
-        // uncompressed testfile path, RANS encoder, RANS decoder,
-        // RANS params, compressed testfile directory name
-        return Stream.concat(Arrays.stream(getAllRansCodecsForRoundTrip()), Arrays.stream(getRansNx16DecodeOnlyTestData()))
+        // compressed testfile path, uncompressed testfile path,
+        // RANS encoder, RANS decoder, RANS params
+        return Stream.concat(Arrays.stream(get4x8TestCases()), Arrays.stream(getNx16TestCases()))
                 .toArray(Object[][]::new);
     }
 
     @Test(description = "Test if CRAM Interop Test Data is available")
-    public void testGetHTSCodecsCorpus() {
+    public void testHtsCodecsCorpusIsAvailable() {
         if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
             throw new SkipException(String.format("RANS Interop Test Data is not available at %s",
                     CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
@@ -148,49 +100,55 @@ public class RANSInteropTest extends HtsjdkTest {
     }
 
     @Test (
-            dependsOnMethods = "testGetHTSCodecsCorpus",
-            dataProvider = "allRansCodecsAndDataForRoundtrip",
+            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
+            dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
-            final Path uncompressedInteropPath,
+            final Path unusedcompressedFilePath,
+            final Path uncompressedFilePath,
             final RANSEncode<RANSParams> ransEncode,
             final RANSDecode ransDecode,
-            final RANSParams params,
-            final String unusedCompressedDirname) throws IOException {
-        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath)) {
+            final RANSParams params) throws IOException {
+        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedFilePath)) {
 
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
             final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-            final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
-            uncompressedInteropBytes.rewind();
-            Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
+
+            // Stripe Flag is not implemented in RANSNx16 Encoder.
+            // The encoder throws CRAMException if Stripe Flag is used.
+            if (params instanceof RANSNx16Params){
+                RANSNx16Params ransNx16Params = (RANSNx16Params) params;
+                if (ransNx16Params.isStripe()) {
+                    Assert.assertThrows(CRAMException.class, () -> ransEncode.compress(uncompressedInteropBytes, params));
+                }
+            } else {
+                final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
+                uncompressedInteropBytes.rewind();
+                Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
+            }
         }
     }
 
     @Test (
-            dependsOnMethods = "testGetHTSCodecsCorpus",
-            dataProvider = "allRansCodecsAndData",
-            description = "Compress the original file using htsjdk RANS and compare it with the existing compressed file. " +
-                    "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
-    public void testRANSPreCompressed(
+            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
+            dataProvider = "roundTripTestCases",
+            description = "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
+    public void testDecodeOnly(
+            final Path compressedFilePath,
             final Path uncompressedInteropPath,
-            final RANSEncode<RANSParams> unused,
+            final RANSEncode<RANSParams> unusedRansEncode,
             final RANSDecode ransDecode,
-            final RANSParams params,
-            final String compressedInteropDirName) throws IOException {
-
-        final Path preCompressedInteropPath = getCompressedRANSPath(compressedInteropDirName,uncompressedInteropPath, params);
-
+            final RANSParams unusedRansParams) throws IOException {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
-             final InputStream preCompressedInteropStream = Files.newInputStream(preCompressedInteropPath)
+             final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
         ) {
+
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
             final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-
             final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
@@ -202,19 +160,6 @@ public class RANSInteropTest extends HtsjdkTest {
             throw new SkipException("Skipping testRANSPrecompressed as either input file " +
                     "or precompressed file is missing.", ex);
         }
-    }
-
-    // return a list of all RANS test data files in the htscodecs/tests directory
-    private List<Path> getInteropRANSTestFiles() throws IOException {
-        final List<Path> paths = new ArrayList<>();
-        Files.newDirectoryStream(
-                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
-                        path -> path.getFileName().startsWith("q4") ||
-                                path.getFileName().startsWith("q8") ||
-                                path.getFileName().startsWith("qvar") ||
-                                path.getFileName().startsWith("q40+dir"))
-                .forEach(path -> paths.add(path));
-        return paths;
     }
 
     // the input files have embedded newlines that the test remove before round-tripping...
@@ -239,13 +184,60 @@ public class RANSInteropTest extends HtsjdkTest {
         }
     }
 
-    // Given a test file name, map it to the corresponding rans compressed path
-    private final Path getCompressedRANSPath(final String ransType,final Path uncompressedInteropPath, RANSParams params) {
+    // return a list of all encoded test data files in the htscodecs/tests/dat/<compressedDir> directory
+    private List<Path> getInteropRansCompressedFilePaths(final String compressedDir) throws IOException {
+        final List<Path> paths = new ArrayList<>();
+        Files.newDirectoryStream(
+                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat/"+compressedDir),
+                        path -> Files.isRegularFile(path))
+                .forEach(path -> paths.add(path));
+        return paths;
+    }
 
-        // Example compressedFileName: r4x16/q4.193
-        // the substring after "." in the compressedFileName is the formatFlags (aka. the first byte of the compressed stream)
-        final String compressedFileName = String.format("%s/%s.%s", ransType, uncompressedInteropPath.getFileName(), params.getFormatFlags());
-        return uncompressedInteropPath.getParent().resolve(compressedFileName);
+    // Given a compressed test file path, return the corresponding uncompressed file path
+    public static final Path getRansUnCompressedFilePath(final Path compressedInteropPath) {
+        String uncompressedFileName = getUncompressedFileName(compressedInteropPath.getFileName().toString());
+        // Example compressedInteropPath: ../dat/r4x8/q4.1 => unCompressedFilePath: ../dat/q4
+        return compressedInteropPath.getParent().getParent().resolve(uncompressedFileName);
+    }
+
+    public static final String getUncompressedFileName(final String compressedFileName) {
+        // Returns original filename from compressed file name
+        int lastDotIndex = compressedFileName.lastIndexOf(".");
+        if (lastDotIndex >= 0) {
+            String fileName = compressedFileName.substring(0, lastDotIndex);
+            return fileName;
+        } else {
+            throw new CRAMException("The format of the compressed File Name is not as expected. " +
+                    "The name of the compressed file should contain a period followed by a number that" +
+                    "indicates the order of compression. Actual compressed file name = "+ compressedFileName);
+        }
+    }
+
+    public static final RANSParams getRans4x8Params(final Path compressedInteropPath){
+        // Returns RANSParams from compressed file path
+        final String compressedFileName = compressedInteropPath.getFileName().toString();
+        final int lastDotIndex = compressedFileName.lastIndexOf(".");
+        if (lastDotIndex >= 0 && lastDotIndex < compressedFileName.length() - 1) {
+            return new RANS4x8Params(RANSParams.ORDER.fromInt(Integer.parseInt(compressedFileName.substring(lastDotIndex + 1))));
+        } else {
+            throw new CRAMException("The format of the compressed File Name is not as expected. " +
+                    "The name of the compressed file should contain a period followed by a number that" +
+                    "indicates the order of compression. Actual compressed file name = "+ compressedFileName);
+        }
+    }
+
+    public static final RANSParams getRansNx16Params(final Path compressedInteropPath){
+        // Returns RANSParams from compressed file path
+        final String compressedFileName = compressedInteropPath.getFileName().toString();
+        final int lastDotIndex = compressedFileName.lastIndexOf(".");
+        if (lastDotIndex >= 0 && lastDotIndex < compressedFileName.length() - 1) {
+            return new RANSNx16Params(Integer.parseInt(compressedFileName.substring(lastDotIndex + 1)));
+        } else {
+            throw new CRAMException("The format of the compressed File Name is not as expected. " +
+                    "The name of the compressed file should contain a period followed by a number that" +
+                    "indicates the order of compression. Actual compressed file name = "+ compressedFileName);
+        }
     }
 
 }

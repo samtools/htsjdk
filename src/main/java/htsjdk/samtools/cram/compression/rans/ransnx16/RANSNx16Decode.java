@@ -5,7 +5,6 @@ import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
-import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
@@ -17,16 +16,16 @@ public class RANSNx16Decode extends RANSDecode {
     private static final int FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK = 0x01;
 
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
-        return uncompress(inBuffer, 0);
-    }
-
-    public ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
-        if (inBuffer.remaining() == 0) {
-            return EMPTY_BUFFER;
-        }
 
         // For RANS decoding, the bytes are read in little endian from the input stream
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        return uncompress(inBuffer, 0);
+    }
+
+    private ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
+        if (inBuffer.remaining() == 0) {
+            return EMPTY_BUFFER;
+        }
 
         // the first byte of compressed stream gives the formatFlags
         final int formatFlags = inBuffer.get() & 0xFF;
@@ -70,7 +69,7 @@ public class RANSNx16Decode extends RANSDecode {
             uncompressedRLEOutputLength = outSize;
             outSize = Utils.readUint7(inBuffer);
             // TODO: maybe move decodeRLEMeta in-line
-            uncompressedRLEMetaData = decodeRLEMeta(inBuffer, ransNx16Params, uncompressedRLEMetaDataLength, rleSymbols);
+            uncompressedRLEMetaData = decodeRLEMeta(inBuffer, uncompressedRLEMetaDataLength, rleSymbols);
         }
 
         ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
@@ -86,7 +85,7 @@ public class RANSNx16Decode extends RANSDecode {
                         uncompressOrder0WayN(inBuffer, outBuffer, outSize, ransNx16Params);
                         break;
                     case ONE:
-                        uncompressOrder1WayN(inBuffer, outBuffer, outSize, ransNx16Params);
+                        uncompressOrder1WayN(inBuffer, outBuffer, ransNx16Params);
                         break;
                     default:
                         throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
@@ -167,7 +166,6 @@ public class RANSNx16Decode extends RANSDecode {
     private ByteBuffer uncompressOrder1WayN(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
-            final int outSize,
             final RANSNx16Params ransNx16Params) {
         initializeRANSDecoder();
 
@@ -286,7 +284,7 @@ public class RANSNx16Decode extends RANSDecode {
 
     private void readFrequencyTableOrder1(
             final ByteBuffer cp,
-            int shift) {
+            final int shift) {
         final int[][] frequencies = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
         final ArithmeticDecoder[] D = getD();
         final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();
@@ -349,7 +347,10 @@ public class RANSNx16Decode extends RANSDecode {
         return alphabet;
     }
 
-    private ByteBuffer decodeRLEMeta(final ByteBuffer inBuffer , final RANSParams ransParams, final int uncompressedRLEMetaDataLength, final int[] rleSymbols) {
+    private ByteBuffer decodeRLEMeta(
+            final ByteBuffer inBuffer,
+            final int uncompressedRLEMetaDataLength,
+            final int[] rleSymbols) {
         ByteBuffer uncompressedRLEMetaData;
         final int compressedRLEMetaDataLength;
         if ((uncompressedRLEMetaDataLength & 0x01)!=0) {
@@ -370,7 +371,7 @@ public class RANSNx16Decode extends RANSDecode {
 
         int numRLESymbols = uncompressedRLEMetaData.get() & 0xFF;
         if (numRLESymbols == 0) {
-            numRLESymbols = 256;
+            numRLESymbols = Constants.NUMBER_OF_SYMBOLS;
         }
         for (int i = 0; i< numRLESymbols; i++) {
             rleSymbols[uncompressedRLEMetaData.get() & 0xFF] = 1;
@@ -378,7 +379,11 @@ public class RANSNx16Decode extends RANSDecode {
         return uncompressedRLEMetaData;
     }
 
-    private ByteBuffer decodeRLE(ByteBuffer inBuffer , final int[] rleSymbols, final ByteBuffer uncompressedRLEMetaData, int uncompressedRLEOutputLength) {
+    private ByteBuffer decodeRLE(
+            ByteBuffer inBuffer,
+            final int[] rleSymbols,
+            final ByteBuffer uncompressedRLEMetaData,
+            final int uncompressedRLEOutputLength) {
         ByteBuffer rleOutBuffer = ByteBuffer.allocate(uncompressedRLEOutputLength);
         int j = 0;
         for(int i = 0; j< uncompressedRLEOutputLength; i++){
@@ -396,7 +401,11 @@ public class RANSNx16Decode extends RANSDecode {
         return inBuffer;
     }
 
-    private ByteBuffer decodePack(ByteBuffer inBuffer, final int[] packMappingTable, int numSymbols, int uncompressedPackOutputLength) {
+    private ByteBuffer decodePack(
+            ByteBuffer inBuffer,
+            final int[] packMappingTable,
+            final int numSymbols,
+            final int uncompressedPackOutputLength) {
         ByteBuffer outBufferPack = ByteBuffer.allocate(uncompressedPackOutputLength);
         int j = 0;
 
@@ -445,38 +454,35 @@ public class RANSNx16Decode extends RANSDecode {
         return inBuffer;
     }
 
-    private ByteBuffer decodeStripe(ByteBuffer inBuffer, final int outSize){
-
+    private ByteBuffer decodeStripe(final ByteBuffer inBuffer, final int outSize){
         final int numInterleaveStreams = inBuffer.get() & 0xFF;
 
         // retrieve lengths of compressed interleaved streams
-        int[] clen = new int[numInterleaveStreams];
+        final int[] compressedLengths = new int[numInterleaveStreams];
         for ( int j=0; j<numInterleaveStreams; j++ ){
-            clen[j] = Utils.readUint7(inBuffer);
+            compressedLengths[j] = Utils.readUint7(inBuffer);
         }
 
         // Decode the compressed interleaved stream
-        int[] ulen = new int[numInterleaveStreams];
-        ByteBuffer[] T = new ByteBuffer[numInterleaveStreams];
-
+        final int[] uncompressedLengths = new int[numInterleaveStreams];
+        final ByteBuffer[] TransposedData = new ByteBuffer[numInterleaveStreams];
         for ( int j=0; j<numInterleaveStreams; j++){
-            ulen[j] = (int) Math.floor(((double) outSize)/numInterleaveStreams);
+            uncompressedLengths[j] = (int) Math.floor(((double) outSize)/numInterleaveStreams);
             if ((outSize % numInterleaveStreams) > j){
-                ulen[j]++;
+                uncompressedLengths[j]++;
             }
 
-            T[j] = uncompress(inBuffer, ulen[j]);
+            TransposedData[j] = uncompress(inBuffer, uncompressedLengths[j]);
         }
 
         // Transpose
-        ByteBuffer out = ByteBuffer.allocate(outSize);
+        final ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
         for (int j = 0; j <numInterleaveStreams; j++) {
-            for (int i = 0; i < ulen[j]; i++) {
-                out.put((i*numInterleaveStreams)+j, T[j].get(i));
+            for (int i = 0; i < uncompressedLengths[j]; i++) {
+                outBuffer.put((i*numInterleaveStreams)+j, TransposedData[j].get(i));
             }
         }
-
-        return out;
+        return outBuffer;
     }
 
 }
