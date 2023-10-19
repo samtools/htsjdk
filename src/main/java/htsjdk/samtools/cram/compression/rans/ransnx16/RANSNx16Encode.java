@@ -30,8 +30,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         //  NoSize
         if (!ransNx16Params.isNosz()) {
             // original size is not recorded
-            int insize = inBuffer.remaining();
-            Utils.writeUint7(insize,outBuffer);
+            Utils.writeUint7(inBuffer.remaining(),outBuffer);
         }
 
         ByteBuffer inputBuffer = inBuffer;
@@ -68,7 +67,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // RLE
         if (ransNx16Params.isRLE()){
-            inputBuffer = encodeRLE(inputBuffer, ransNx16Params, outBuffer);
+            inputBuffer = encodeRLE(inputBuffer, outBuffer);
         }
 
 
@@ -480,13 +479,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     }
 
     private void buildSymsOrder0(final int[] F) {
+
+        // updates all the encodingSymbols
         final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
-        // updates the RANSEncodingSymbol array for all the symbols
 
-        // TODO: commented out to suppress spotBugs warning
-        //final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
-
-        // T = running sum of frequencies including the current symbol
         // F[j] = frequency of symbol "j"
         // cumulativeFreq = cumulative frequency of all the symbols preceding "j" (excluding the frequency of symbol "j")
         int cumulativeFreq = 0;
@@ -515,24 +511,24 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
     }
 
-    private ByteBuffer encodeRLE(final ByteBuffer inBuffer ,final RANSParams ransParams, final ByteBuffer outBuffer){
+    private ByteBuffer encodeRLE(final ByteBuffer inBuffer, final ByteBuffer outBuffer){
 
         // Find the symbols that benefit from RLE, i.e, the symbols that occur more than 2 times in succession.
         // spec: For symbols that occur many times in succession, we can replace them with a single symbol and a count.
-        final int[] rleSymbols = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int[] runCounts = new int[Constants.NUMBER_OF_SYMBOLS];
         int inputSize = inBuffer.remaining();
 
         int lastSymbol = -1;
         for (int i = 0; i < inputSize; i++) {
             int currentSymbol = inBuffer.get(i)&0xFF;
-            rleSymbols[currentSymbol] += (currentSymbol==lastSymbol ? 1:-1);
+            runCounts[currentSymbol] += (currentSymbol==lastSymbol ? 1:-1);
             lastSymbol = currentSymbol;
         }
 
         // numRLESymbols is the number of symbols that are run length encoded
         int numRLESymbols = 0;
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            if (rleSymbols[i]>0) {
+            if (runCounts[i]>0) {
                 numRLESymbols++;
             }
         }
@@ -540,7 +536,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         if (numRLESymbols==0) {
             // Format cannot cope with zero RLE symbols, so pick one!
             numRLESymbols = 1;
-            rleSymbols[0] = 1;
+            runCounts[0] = 1;
         }
 
         // create rleMetaData buffer to store rle metadata.
@@ -548,11 +544,11 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // TODO: How did we come up with this calculation for Buffer size? numRLESymbols+1+inputSize
         ByteBuffer rleMetaData = ByteBuffer.allocate(numRLESymbols+1+inputSize); // rleMetaData
 
-        // write number of symbols that are run length encoded to the outBuffer
+        // write number of symbols that are run length encoded
         rleMetaData.put((byte) numRLESymbols);
 
-        for (int i=0; i<256; i++){
-            if (rleSymbols[i] >0){
+        for (int i=0; i<Constants.NUMBER_OF_SYMBOLS; i++){
+            if (runCounts[i] >0){
                 // write the symbols that are run length encoded
                 rleMetaData.put((byte) i);
             }
@@ -566,7 +562,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         for (int i = 0; i < inputSize; i++) {
             encodedData.put(encodedDataIdx++,inBuffer.get(i));
-            if (rleSymbols[inBuffer.get(i)&0xFF]>0) {
+            if (runCounts[inBuffer.get(i)&0xFF]>0) {
                 lastSymbol = inBuffer.get(i) & 0xFF;
                 int run = 0;
 
@@ -585,7 +581,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         encodedData.limit(encodedDataIdx);
         // limit and rewind
-        // TODO: check if position of rleMetadata is at the end of the buffer as expected
         rleMetaData.limit(rleMetaData.position());
         rleMetaData.rewind();
 
