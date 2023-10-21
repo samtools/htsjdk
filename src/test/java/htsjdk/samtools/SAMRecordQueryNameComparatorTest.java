@@ -49,76 +49,32 @@ public class SAMRecordQueryNameComparatorTest extends HtsjdkTest {
         Assert.assertTrue(COMPARATOR.compare(b, a) > 0);
     }
 
-    private static SAMRecord copyAndSet(final SAMRecord record, final Consumer<SAMRecord> setParams) {
-        final SAMRecord copy = record.deepCopy();
-        setParams.accept(copy);
-        return copy;
-    }
-
-
-    // this test cases are separated for the different names comparison for re-use with SAMRecordQueryHashComparator
-    @DataProvider
-    public static Object[][] equalNameComparisonData() {
-        // base record with the information used in the comparator:
-        // - read name A
-        // - positive strand -> default
-        // - unpaired (without first/second of pair flags) -> explicitly set
-        // - primary alignment (and not supplementary) -> explicitly set
-        // - no hit index (HI tag) -> default
-        final SAMRecord record = new SAMRecord(null);
-        record.setReadName("A");
-        record.setReadPairedFlag(false);
-        record.setFirstOfPairFlag(false);
-        record.setSecondOfPairFlag(false);
-        // primary/secondary/supplementary alignments
-        record.setSecondaryAlignment(false);
-        record.setSupplementaryAlignmentFlag(false);
-
-        // record1, record2, comparison value
-        return new Object[][] {
-                // same record is equals after comparing all the fields
-                {record, record, 0},
-
-                // upaired vs. paired
-                {record, copyAndSet(record, (r) -> r.setReadPairedFlag(true)), 1},
-                {copyAndSet(record, (r) -> r.setReadPairedFlag(true)), record, -1},
-                // first/second of pair in natural order
-                {copyAndSet(record, r -> {r.setReadPairedFlag(true); r.setFirstOfPairFlag(true);}),
-                        copyAndSet(record, r -> {r.setReadPairedFlag(true); r.setSecondOfPairFlag(true);}),
-                        -1},
-                {copyAndSet(record, r -> {r.setReadPairedFlag(true); r.setSecondOfPairFlag(true);}),
-                    copyAndSet(record, r -> {r.setReadPairedFlag(true); r.setFirstOfPairFlag(true);}),
-                        1},
-
-                // negative strand is the last
-                {record, copyAndSet(record, r -> r.setReadNegativeStrandFlag(true)), -1},
-
-                // primary alignment is first compared to not primary
-                {record, copyAndSet(record, r -> r.setSecondaryAlignment(true)), -1},
-                {copyAndSet(record, r -> r.setSecondaryAlignment(true)), record, 1},
-                // secondary alignment is last compared to primary
-                {record, copyAndSet(record, r -> r.setSupplementaryAlignmentFlag(true)), -1},
-                {copyAndSet(record, r -> r.setSupplementaryAlignmentFlag(true)), record, 1},
-
-                // the one with HI tag is first if the other is null
-                {record, copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)), -1},
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)), record, 1},
-                // if both have HI tag, order by it
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)),
-                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)), 0},
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 1)),
-                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 2)), -1},
-                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 16)),
-                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI, 5)), 1}
+    @DataProvider(name = "readNameOrderTestCases")
+    public Object[][] readNameOrderTestCases() {
+        // See: https://sourceforge.net/p/samtools/mailman/message/26674128/
+        final String[] names1 = {"#01", "#2", ".1", ".09", "a001", "a01", "a01z", "a1", "a1a"};
+        // See: https://github.com/samtools/samtools/blob/bdc5bb81c11f2ab25ea97351213cb87b33857c4d/test/sort/name.sort.expected.sam#L14-L28
+        final String[] names2 = {"r000", "r001", "r002", "r003", "r004", "u1", "x1", "x2", "x3", "x4", "x5", "x6"};
+        return new Object[][]{
+            names1, names2
         };
     }
 
-
-
-    @Test(dataProvider = "equalNameComparisonData")
-    public void testCompareEqualNames(final SAMRecord record1, final SAMRecord record2, final int sign) throws Exception {
-        final int comparisonResult = COMPARATOR.compare(record1, record2);
-        Assert.assertEquals(Integer.signum(comparisonResult),sign);
+    @Test(dataProvider = "readNameOrderTestCases")
+    public void testReadNameOrder(final String[] names) {
+        final SAMRecord a    = new SAMRecord(null);
+        final SAMRecord b    = new SAMRecord(null);
+        int i, j;
+        for (i = 0; i < names.length; i++) {
+            for (j = 0; j < names.length; j++) {
+                a.setReadName(names[i]);
+                b.setReadName(names[j]);
+                final int actual   = Integer.compare(COMPARATOR.compare(a, b), 0);
+                final int expected = Integer.compare(i, j);
+                Assert.assertEquals(actual, expected, names[i] + " < " + names[j]);
+            }
+        }
     }
+
 
 }
