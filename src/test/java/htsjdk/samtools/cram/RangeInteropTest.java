@@ -10,6 +10,7 @@ import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -17,64 +18,33 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class RangeInteropTest extends HtsjdkTest  {
     public static final String COMPRESSED_RANGE_DIR = "arith";
 
-    @DataProvider(name = "allRangeCodecsAndDataForRoundtrip")
-    public Object[][] getAllRangeCodecsAndDataForRoundtrip() throws IOException {
-        final List<Integer> rangeParamsFormatFlagList = Arrays.asList(
-                0x00,
-                RangeParams.ORDER_FLAG_MASK,
-                RangeParams.RLE_FLAG_MASK,
-                RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK
-                // TODO: No interop test files avaiable for EXT
-        );
-        final List<Object[]> testCases = new ArrayList<>();
-        getInteropRangeTestFiles()
-                .forEach(path ->
-                        rangeParamsFormatFlagList.stream().map(rangeParamsFormatFlag -> new Object[]{
-                                path,
-                                new RangeEncode(),
-                                new RangeDecode(),
-                                new RangeParams(rangeParamsFormatFlag),
-                                COMPRESSED_RANGE_DIR
-                        }).forEach(testCases::add));
-        return testCases.toArray(new Object[][]{});
-    }
-
-    public Object[][] getRangeDecodeOnlyTestData() throws IOException {
-        final List<Integer> rangeParamsFormatFlagList = Arrays.asList(
-                RangeParams.STRIPE_FLAG_MASK, // TODO: doesn't work because pack is not implemented yet!!!
-                RangeParams.ORDER_FLAG_MASK|RangeParams.STRIPE_FLAG_MASK);
-        final List<Object[]> testCases = new ArrayList<>();
-        getInteropRangeTestFiles()
-                .forEach(path ->
-                        rangeParamsFormatFlagList.stream().map(rangeParamsFormatFlag -> new Object[]{
-                                path,
-                                new RangeEncode(),
-                                new RangeDecode(),
-                                new RangeParams(rangeParamsFormatFlag),
-                                COMPRESSED_RANGE_DIR
-                        }).forEach(testCases::add));
-        return testCases.toArray(new Object[][]{});
-    }
-
-    @DataProvider(name = "allRangeCodecsAndData")
-    public Object[][] getAllRangeCodecs() throws IOException {
+    @DataProvider(name = "roundTripTestCases")
+    public Object[][] getRoundTripTestCases() throws IOException {
 
         // params:
-        // uncompressed testfile path, Range encoder, Range decoder,
-        // Range params, compressed testfile directory name
-        return Stream.concat(Arrays.stream(getAllRangeCodecsAndDataForRoundtrip()), Arrays.stream(getRangeDecodeOnlyTestData()))
-                .toArray(Object[][]::new);
+        // compressed testfile path, uncompressed testfile path,
+        // Range encoder, Range decoder, Range params
+        final List<Object[]> testCases = new ArrayList<>();
+        for (Path path : getInteropRangeCompressedFilePaths(COMPRESSED_RANGE_DIR)) {
+            Object[] objects = new Object[]{
+                    path,
+                    getRangeUnCompressedFilePath(path),
+                    new RangeEncode(),
+                    new RangeDecode(),
+                    getRangeParams(path)
+            };
+            testCases.add(objects);
+        }
+        return testCases.toArray(new Object[][]{});
     }
 
     @Test(description = "Test if CRAM Interop Test Data is available")
-    public void testGetHTSCodecsCorpus() {
+    public void testHtsCodecsCorpusIsAvailable() {
         if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
             throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
                     CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
@@ -82,52 +52,50 @@ public class RangeInteropTest extends HtsjdkTest  {
     }
 
     @Test (
-            dependsOnMethods = "testGetHTSCodecsCorpus",
-            dataProvider = "allRangeCodecsAndDataForRoundtrip",
+            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
+            dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk Range Codec. Compare the output with the original file" )
     public void testRangeRoundTrip(
-            final Path uncompressedInteropPath,
+            final Path unusedCompressedFilePath,
+            final Path uncompressedFilePath,
             final RangeEncode rangeEncode,
             final RangeDecode rangeDecode,
-            final RangeParams params,
-            final String unusedCompressedDirname) throws IOException {
-        final Path preCompressedInteropPath = CRAMInteropTestUtils.getCompressedCodecPath(COMPRESSED_RANGE_DIR,uncompressedInteropPath, params.getFormatFlags());
-        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
-             final InputStream preCompressedInteropStream = Files.newInputStream(preCompressedInteropPath)) {
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-            final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
-            final ByteBuffer compressedHtsjdkBytes = rangeEncode.compress(uncompressedInteropBytes, params);
-            Assert.assertEquals(compressedHtsjdkBytes, preCompressedInteropBytes);
-            Assert.assertEquals(rangeDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
-        } catch (final NoSuchFileException ex){
-        throw new SkipException("Skipping testRangeRoundTrip as either input file " +
-                "or precompressed file is missing.", ex);
-    }
+            final RangeParams params) throws IOException {
+        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedFilePath)) {
 
+            // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
+            // by filtering out the embedded newlines, and then round trip through Range codec and compare the
+            // results
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+
+            if (params.isStripe()) {
+                Assert.assertThrows(CRAMException.class, () -> rangeEncode.compress(uncompressedInteropBytes, params));
+            } else {
+                final ByteBuffer compressedHtsjdkBytes = rangeEncode.compress(uncompressedInteropBytes, params);
+                uncompressedInteropBytes.rewind();
+                Assert.assertEquals(rangeDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
+            }
+        }
     }
 
     @Test (
-            dependsOnMethods = "testGetHTSCodecsCorpus",
-            dataProvider = "allRangeCodecsAndData",
-            description = "Compress the original file using htsjdk Range Codec and compare it with the existing compressed file. " +
-                    "Uncompress the existing compressed file using htsjdk Range Codec and compare it with the original file.")
-    public void testRangePreCompressed(
+            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
+            dataProvider = "roundTripTestCases",
+            description = "Uncompress the existing compressed file using htsjdk Range codec and compare it with the original file.")
+    public void testDecodeOnly(
+            final Path compressedFilePath,
             final Path uncompressedInteropPath,
-            final RangeEncode<RangeParams> unused,
+            final RangeEncode<RangeParams> unusedRangeEncode,
             final RangeDecode rangeDecode,
-            final RangeParams params,
-            final String compressedInteropDirName) throws IOException {
-
-        final Path preCompressedInteropPath = CRAMInteropTestUtils.getCompressedCodecPath(compressedInteropDirName,uncompressedInteropPath, params.getFormatFlags());
-
+            final RangeParams unusedRangeParams) throws IOException {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
-             final InputStream preCompressedInteropStream = Files.newInputStream(preCompressedInteropPath)
+             final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
         ) {
-            // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
-            // by filtering out the embedded newlines, and then round trip through Range Codec and compare the
-            // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
+            // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
+            // by filtering out the embedded newlines, and then round trip through Range codec and compare the
+            // results
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
             final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
@@ -136,22 +104,73 @@ public class RangeInteropTest extends HtsjdkTest  {
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);
         } catch (final NoSuchFileException ex){
-            throw new SkipException("Skipping testRangePrecompressed as either input file " +
+            throw new SkipException("Skipping testDecodeOnly as either input file " +
                     "or precompressed file is missing.", ex);
         }
     }
 
-    // return a list of all Range test data files in the htscodecs/tests/dat directory
-    private List<Path> getInteropRangeTestFiles() throws IOException {
+    // the input files have embedded newlines that the test remove before round-tripping...
+    private final byte[] filterEmbeddedNewlines(final byte[] rawBytes) throws IOException {
+        // 1. filters new lines if any.
+        // 2. "q40+dir" file has an extra column delimited by tab. This column provides READ1 vs READ2 flag.
+        //     This file is also new-line separated. The extra column, '\t' and '\n' are filtered.
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            int skip = 0;
+            for (final byte b : rawBytes) {
+                if (b == '\t'){
+                    skip = 1;
+                }
+                if (b == '\n') {
+                    skip = 0;
+                }
+                if (skip == 0 && b !='\n') {
+                    baos.write(b);
+                }
+            }
+            return baos.toByteArray();
+        }
+    }
+
+    // return a list of all encoded test data files in the htscodecs/tests/dat/<compressedDir> directory
+    private List<Path> getInteropRangeCompressedFilePaths(final String compressedDir) throws IOException {
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
-                        path -> path.getFileName().startsWith("q4") ||
-                                path.getFileName().startsWith("q8") ||
-                                path.getFileName().startsWith("qvar") ||
-                                path.getFileName().startsWith("q40+dir"))
+                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat/"+compressedDir),
+                        path -> Files.isRegularFile(path))
                 .forEach(path -> paths.add(path));
         return paths;
+    }
+
+    // Given a compressed test file path, return the corresponding uncompressed file path
+    public static final Path getRangeUnCompressedFilePath(final Path compressedInteropPath) {
+        String uncompressedFileName = getUncompressedFileName(compressedInteropPath.getFileName().toString());
+        // Example compressedInteropPath: ../dat/r4x8/q4.1 => unCompressedFilePath: ../dat/q4
+        return compressedInteropPath.getParent().getParent().resolve(uncompressedFileName);
+    }
+
+    public static final String getUncompressedFileName(final String compressedFileName) {
+        // Returns original filename from compressed file name
+        int lastDotIndex = compressedFileName.lastIndexOf(".");
+        if (lastDotIndex >= 0) {
+            return compressedFileName.substring(0, lastDotIndex);
+        } else {
+            throw new CRAMException("The format of the compressed File Name is not as expected. " +
+                    "The name of the compressed file should contain a period followed by a number that" +
+                    "indicates the order of compression. Actual compressed file name = "+ compressedFileName);
+        }
+    }
+
+    public static final RangeParams getRangeParams(final Path compressedInteropPath){
+        // Returns RangeParams from compressed file path
+        final String compressedFileName = compressedInteropPath.getFileName().toString();
+        final int lastDotIndex = compressedFileName.lastIndexOf(".");
+        if (lastDotIndex >= 0 && lastDotIndex < compressedFileName.length() - 1) {
+            return new RangeParams(Integer.parseInt(compressedFileName.substring(lastDotIndex + 1)));
+        } else {
+            throw new CRAMException("The format of the compressed File Name is not as expected. " +
+                    "The name of the compressed file should contain a period followed by a number that" +
+                    "indicates the order of compression. Actual compressed file name = "+ compressedFileName);
+        }
     }
 
 }

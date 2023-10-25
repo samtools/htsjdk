@@ -11,7 +11,7 @@ public class RangeCoder {
     private boolean carry;
     private int cache;
 
-    public RangeCoder() {
+    protected RangeCoder() {
         // Spec: RangeEncodeStart
         this.low = 0;
         this.range = 0xFFFFFFFFL; // 4 bytes of all 1's
@@ -21,7 +21,7 @@ public class RangeCoder {
         this.cache = 0;
     }
 
-    public void rangeDecodeStart(ByteBuffer inBuffer){
+    protected void rangeDecodeStart(ByteBuffer inBuffer){
         for (int i = 0; i < 5; i++){
 
             // Get next 5 bytes. Ensure it is +ve
@@ -29,7 +29,7 @@ public class RangeCoder {
         }
     }
 
-    public void rangeDecode(ByteBuffer inBuffer, int sym_low, int sym_freq, int tot_freq){
+    protected void rangeDecode(ByteBuffer inBuffer, int sym_low, int sym_freq, int tot_freq){
         code -= sym_low * range;
         range *= sym_freq;
 
@@ -39,12 +39,38 @@ public class RangeCoder {
         }
     }
 
-    public int rangeGetFrequency(final int tot_freq){
+    protected int rangeGetFrequency(final int tot_freq){
         range =  (long) Math.floor(range / tot_freq);
         return (int) Math.floor(code / range);
     }
 
-    public void rangeShiftLow(ByteBuffer outBuffer) {
+    protected void rangeEncode(final ByteBuffer outBuffer, final int sym_low, final int sym_freq, final int tot_freq){
+        long old_low = low;
+        range = (long) Math.floor(range/tot_freq);
+        low += sym_low * range;
+        low &= 0xFFFFFFFFL; // keep bottom 4 bytes, shift the top byte out of low
+        range *= sym_freq;
+
+        if (low < old_low) {
+            carry = true;
+        }
+
+        // Renormalise if range gets too small
+        while (range < (1<<24)) {
+            range <<= 8;
+            rangeShiftLow(outBuffer);
+        }
+
+    }
+
+    protected void rangeEncodeEnd(final ByteBuffer outBuffer){
+        //TODO: Where is the magic number 5 coming from?
+        for(int i = 0; i < 5; i++){
+            rangeShiftLow(outBuffer);
+        }
+    }
+
+    private void rangeShiftLow(ByteBuffer outBuffer) {
         // rangeShiftLow tracks the total number of extra bytes to emit and
         // carry indicates whether they are a string of 0xFF or 0x00 values
 
@@ -72,32 +98,6 @@ public class RangeCoder {
             FFnum++;
         }
         low = low<<8 & (0xFFFFFFFFL); // force low to be +ve
-    }
-
-    public void rangeEncode(final ByteBuffer outBuffer, final int sym_low, final int sym_freq, final int tot_freq){
-        long old_low = low;
-        range = (long) Math.floor(range/tot_freq);
-        low += sym_low * range;
-        low &= 0xFFFFFFFFL; // keep bottom 4 bytes, shift the top byte out of low
-        range *= sym_freq;
-
-        if (low < old_low) {
-            carry = true;
-        }
-
-        // Renormalise if range gets too small
-        while (range < (1<<24)) {
-            range <<= 8;
-            rangeShiftLow(outBuffer);
-        }
-
-    }
-
-    public void rangeEncodeEnd(final ByteBuffer outBuffer){
-        //TODO: Where is the magic number 5 coming from?
-        for(int i = 0; i < 5; i++){
-            rangeShiftLow(outBuffer);
-        }
     }
 
 }

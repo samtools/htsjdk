@@ -5,6 +5,7 @@ import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
 import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,16 +14,14 @@ public class RangeDecode {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
+        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         return uncompress(inBuffer, 0);
     }
 
-    public ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
+    private ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
-
-        // TODO: little endian?
-//        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
         // the first byte of compressed stream gives the formatFlags
         final int formatFlags = inBuffer.get() & 0xFF;
