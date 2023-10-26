@@ -33,17 +33,8 @@ public class CRAMInteropTestUtils {
         return Paths.get(INTEROP_TEST_FILES_PATH);
     }
 
-    // Given a test file name and the codec, map it to the corresponding compressed file path
-    public static final Path getCompressedCodecPath(final String codecType, final Path uncompressedInteropPath, int formatFlags) {
-
-        // Example uncompressedInteropPath: q4, codecType: r4x16, formatFlags: 193  => compressedFileName: r4x16/q4.193
-        // the substring after "." in the compressedFileName is the formatFlags or the first byte of the compressed stream
-        final String compressedFileName = String.format("%s/%s.%s", codecType, uncompressedInteropPath.getFileName(), formatFlags);
-        return uncompressedInteropPath.getParent().resolve(compressedFileName);
-    }
-
     // the input files have embedded newlines that the test remove before round-tripping...
-    public static final byte[] filterEmbeddedNewlines(final byte[] rawBytes) throws IOException {
+    protected static final byte[] filterEmbeddedNewlines(final byte[] rawBytes) throws IOException {
         // 1. filters new lines if any.
         // 2. "q40+dir" file has an extra column delimited by tab. This column provides READ1 vs READ2 flag.
         //     This file is also new-line separated. The extra column, '\t' and '\n' are filtered.
