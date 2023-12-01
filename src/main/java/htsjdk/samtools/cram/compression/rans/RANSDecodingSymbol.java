@@ -56,35 +56,30 @@ final public class RANSDecodingSymbol {
         final int mask = (1 << scaleBits) - 1;
 
         // s, x = D(x)
-        long r = rIn;
-        r = freq * (r >> scaleBits) + (r & mask) - start;
+        long ret = freq * (rIn >> scaleBits) + (rIn & mask) - start;
 
         // re-normalize
-        if (r < Constants.RANS_4x8_LOWER_BOUND) {
+        if (ret < Constants.RANS_4x8_LOWER_BOUND) {
             do {
                 final int b = 0xFF & byteBuffer.get();
-                r = (r << 8) | b;
-            } while (r < Constants.RANS_4x8_LOWER_BOUND);
+                ret = (ret << 8) | b;
+            } while (ret < Constants.RANS_4x8_LOWER_BOUND);
         }
-
-        return r;
+        return ret;
     }
 
     public long advanceSymbolNx16(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
         final int mask = (1 << scaleBits) - 1;
 
         // s, x = D(x)
-        long r = rIn;
-        r = freq * (r >> scaleBits) + (r & mask) - start;
+        long ret = freq * (rIn >> scaleBits) + (rIn & mask) - start;
 
         // re-normalize
-        if (r < (Constants.RANS_Nx16_LOWER_BOUND)){
-            int i = 0xFF & byteBuffer.get();
-            i |= (0xFF & byteBuffer.get())<<8;
-            r = (r << 16) + i;
+        if (ret < (Constants.RANS_Nx16_LOWER_BOUND)){
+            final int i = (0xFF & byteBuffer.get()) | ((0xFF & byteBuffer.get()) << 8);
+            ret = (ret << 16) + i;
         }
-
-        return r;
+        return ret;
     }
 
 }

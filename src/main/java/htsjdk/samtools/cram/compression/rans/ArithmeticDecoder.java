@@ -29,7 +29,7 @@ final public class ArithmeticDecoder {
     public final int[] cumulativeFreq = new int[Constants.NUMBER_OF_SYMBOLS];
 
     // reverse lookup table
-    public byte[] reverseLookup = new byte[Constants.TOTAL_FREQ];
+    public final byte[] reverseLookup = new byte[Constants.TOTAL_FREQ];
 
     public ArithmeticDecoder() {
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {

@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.compression.rans.rans4x8;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
@@ -30,7 +31,7 @@ public class RANS4x8Decode extends RANSDecode {
         // compressed bytes length
         final int inSize = inBuffer.getInt();
         if (inSize != inBuffer.remaining() - RAW_BYTE_LENGTH) {
-            throw new RuntimeException("Incorrect input length.");
+            throw new CRAMException("Invalid input length detected in a CRAM rans 4x8 input stream.");
         }
 
         // uncompressed bytes length
@@ -39,31 +40,30 @@ public class RANS4x8Decode extends RANSDecode {
         initializeRANSDecoder();
         switch (order) {
             case ZERO:
-                return uncompressOrder0Way4(inBuffer, outBuffer);
+                uncompressOrder0Way4(inBuffer, outBuffer);
+                return outBuffer;
 
             case ONE:
-                return uncompressOrder1Way4(inBuffer, outBuffer);
+                uncompressOrder1Way4(inBuffer, outBuffer);
+                return outBuffer;
 
             default:
-                throw new RuntimeException("Unknown rANS order: " + order);
+                throw new CRAMException("Unknown rANS order: " + order);
         }
     }
 
-    private ByteBuffer uncompressOrder0Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
+    private void uncompressOrder0Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         // read the frequency table. using the frequency table, set the values of RANSDecodingSymbols
         readStatsOrder0(inBuffer);
-
-        final ArithmeticDecoder D = getD()[0];
-        final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
-
         long rans0, rans1, rans2, rans3;
         rans0 = inBuffer.getInt();
         rans1 = inBuffer.getInt();
         rans2 = inBuffer.getInt();
         rans3 = inBuffer.getInt();
-
         final int out_sz = outBuffer.remaining();
         final int out_end = (out_sz & ~3);
+        final ArithmeticDecoder D = getD()[0];
+        final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
         for (int i = 0; i < out_end; i += 4) {
             final byte c0 = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
             final byte c1 = D.reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
@@ -124,15 +124,12 @@ public class RANS4x8Decode extends RANSDecode {
         }
 
         outBuffer.rewind();
-        return outBuffer;
     }
 
-    private ByteBuffer uncompressOrder1Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
+    private void uncompressOrder1Way4(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         // read the frequency table. using the frequency table, set the values of RANSDecodingSymbols
         readStatsOrder1(inBuffer);
 
-        final ArithmeticDecoder[] D = getD();
-        final RANSDecodingSymbol[][] syms = getDecodingSymbols();
         final int out_sz = outBuffer.remaining();
         long rans0, rans1, rans2, rans7;
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -150,6 +147,8 @@ public class RANS4x8Decode extends RANSDecode {
         byte l1 = 0;
         byte l2 = 0;
         byte l7 = 0;
+        final ArithmeticDecoder[] D = getD();
+        final RANSDecodingSymbol[][] syms = getDecodingSymbols();
         for (; i0 < isz4; i0++, i1++, i2++, i7++) {
             final byte c0 = D[0xFF & l0].reverseLookup[Utils.RANSGetCumulativeFrequency(rans0, Constants.TOTAL_FREQ_SHIFT)];
             final byte c1 = D[0xFF & l1].reverseLookup[Utils.RANSGetCumulativeFrequency(rans1, Constants.TOTAL_FREQ_SHIFT)];
@@ -184,7 +183,6 @@ public class RANS4x8Decode extends RANSDecode {
             rans7 = syms[0xFF & l7][0xFF & c7].advanceSymbol4x8(rans7, inBuffer, Constants.TOTAL_FREQ_SHIFT);
             l7 = c7;
         }
-        return outBuffer;
     }
 
     private void readStatsOrder0(final ByteBuffer cp) {
