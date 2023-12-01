@@ -12,7 +12,6 @@ import java.nio.ByteOrder;
 
 public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    // This is a naive implementation of RANS Nx16 Encoding
     // Stripe flag is not implemented in the write implementation
     /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -90,27 +89,28 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 return outBuffer;
 
             }
-            return compressOrder0WayN(inputBuffer, new RANSNx16Params(outBuffer.get(0)), outBuffer);
+            compressOrder0WayN(inputBuffer, new RANSNx16Params(outBuffer.get(0)), outBuffer);
+            return outBuffer;
         }
 
         switch (ransNx16Params.getOrder()) {
             case ZERO:
-                return compressOrder0WayN(inputBuffer, ransNx16Params, outBuffer);
+                compressOrder0WayN(inputBuffer, ransNx16Params, outBuffer);
+                return outBuffer;
             case ONE:
-                return compressOrder1WayN(inputBuffer, ransNx16Params, outBuffer);
+                compressOrder1WayN(inputBuffer, ransNx16Params, outBuffer);
+                return outBuffer;
             default:
-                throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
+                throw new CRAMException("Unknown rANS order: " + ransNx16Params.getOrder());
         }
     }
 
-    private ByteBuffer compressOrder0WayN (
+    private void compressOrder0WayN (
             final ByteBuffer inBuffer,
             final RANSNx16Params ransNx16Params,
             final ByteBuffer outBuffer) {
         initializeRANSEncoder();
         final int inSize = inBuffer.remaining();
-        final int[] F = buildFrequenciesOrder0(inBuffer);
-        final ByteBuffer cp = outBuffer.slice();
         int bitSize = (int) Math.ceil(Math.log(inSize) / Math.log(2));
 
         // TODO: Can bitSize be 0 and should we handle it?
@@ -118,6 +118,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             bitSize = Constants.TOTAL_FREQ_SHIFT;
         }
         final int prefix_size = outBuffer.position();
+        final int[] F = buildFrequenciesOrder0(inBuffer);
+        final ByteBuffer cp = outBuffer.slice();
 
         // Normalize Frequencies such that sum of Frequencies = 1 << bitsize
         Utils.normaliseFrequenciesOrder0(F, bitSize);
@@ -135,29 +137,24 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // update the RANS Encoding Symbols
         buildSymsOrder0(F);
         inBuffer.rewind();
-
-        //TODO: tmp staging glue
-        final RANSEncodingSymbol[] ransEncodingSymbols = getEncodingSymbols()[0];
         final int Nway = ransNx16Params.getNumInterleavedRANSStates();
-
-        final int compressedDataSize;
-        final int inputSize = inBuffer.remaining();
-        final ByteBuffer ptr = cp.slice();
         final long[] rans = new long[Nway];
-        final byte[] symbol = new byte[Nway];
-        for (int r=0; r<Nway; r++){
 
-            // initialize rans states
+        // initialize rans states
+        for (int r=0; r<Nway; r++){
             rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
         }
 
         // number of remaining elements = inputSize % Nway = inputSize - (interleaveSize * Nway)
         // For Nway = 4, division by 4 is the same as right shift by 2 bits
         // For Nway = 32, division by 32 is the same as right shift by 5 bits
+        final int inputSize = inBuffer.remaining();
         final int interleaveSize = (Nway == 4) ? (inputSize >> 2) : (inputSize >> 5);
         int remainingSize = inputSize - (interleaveSize * Nway);
         int reverseIndex = 1;
 
+        final ByteBuffer ptr = cp.slice();
+        final RANSEncodingSymbol[] ransEncodingSymbols = getEncodingSymbols()[0];
         // encoded in LIFO order
         while (remainingSize>0){
 
@@ -167,6 +164,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             remainingSize --;
             reverseIndex ++;
         }
+        final byte[] symbol = new byte[Nway];
         for (int i = (interleaveSize * Nway); i > 0; i -= Nway) {
             for (int r = Nway - 1; r >= 0; r--){
 
@@ -180,7 +178,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
         ptr.position();
         ptr.flip();
-        compressedDataSize = ptr.limit();
+        final int compressedDataSize = ptr.limit();
 
         // since the data is encoded in reverse order,
         // reverse the compressed bytes, so that it is in correct order when uncompressed.
@@ -188,15 +186,13 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         inBuffer.position(inBuffer.limit());
         outBuffer.rewind(); // set position to 0
         outBuffer.limit(prefix_size + frequencyTableSize + compressedDataSize);
-        return outBuffer;
     }
 
-    private ByteBuffer compressOrder1WayN (
+    private void compressOrder1WayN (
             final ByteBuffer inBuffer,
             final RANSNx16Params ransNx16Params,
             final ByteBuffer outBuffer) {
         initializeRANSEncoder();
-        final ByteBuffer cp = outBuffer.slice();
         final int[][] frequencies = buildFrequenciesOrder1(inBuffer, ransNx16Params.getNumInterleavedRANSStates());
 
         // normalise frequencies with a variable shift calculated
@@ -206,7 +202,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // TODO: How is the buffer size calculated? js: 257*257*3+9
         ByteBuffer frequencyTable = allocateOutputBuffer(1);
-        ByteBuffer compressedFrequencyTable = allocateOutputBuffer(1);
+        final ByteBuffer compressedFrequencyTable = allocateOutputBuffer(1);
 
         // uncompressed frequency table
         final int uncompressedFrequencyTableSize = writeFrequenciesOrder1(frequencyTable,frequencies);
@@ -214,9 +210,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         frequencyTable.rewind();
 
         // compressed frequency table using RANS Nx16 Order 0
-        compressedFrequencyTable = compressOrder0WayN(frequencyTable, new RANSNx16Params(0x00), compressedFrequencyTable);
+        compressOrder0WayN(frequencyTable, new RANSNx16Params(0x00), compressedFrequencyTable);
         frequencyTable.rewind();
-        int compressedFrequencyTableSize = compressedFrequencyTable.limit();
+        final int compressedFrequencyTableSize = compressedFrequencyTable.limit();
+        final ByteBuffer cp = outBuffer.slice();
 
         // spec: The order-1 frequency table itself may still be quite large,
         // so is optionally compressed using the order-0 rANSNx16 codec with a fixed 4-way interleaving.
@@ -242,7 +239,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 i++;
             }
         }
-        int frequencyTableSize = cp.position();
+        final int frequencyTableSize = cp.position();
 
         // normalise frequencies with a constant shift
         Utils.normaliseFrequenciesOrder1Shift(frequencies, Constants.TOTAL_FREQ_SHIFT);
@@ -251,30 +248,21 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         buildSymsOrder1(frequencies); // TODO: move into utils
 
         // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
-
-        //TODO: tmp staging
-        final RANSEncodingSymbol[][] ransEncodingSymbols = getEncodingSymbols();
         final int Nway = ransNx16Params.getNumInterleavedRANSStates();
-        final int inputSize = inBuffer.remaining();
         final long[] rans = new long[Nway];
-        for (int r=0; r<Nway; r++){
 
-            // initialize rans states
+        // initialize rans states
+        for (int r=0; r<Nway; r++){
             rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
         }
-
-        /*
-         * Slicing is needed for buffer reversing later.
-         */
-        final ByteBuffer ptr = cp.slice();
 
         // size of each interleaved array = total size / Nway;
         // For Nway = 4, division by 4 is the same as right shift by 2 bits
         // For Nway = 32, division by 32 is the same as right shift by 5 bits
+        final int inputSize = inBuffer.remaining();
         final int interleaveSize = (Nway == 4) ? inputSize >> 2: inputSize >> 5;
         final int[] interleaveStreamIndex = new int[Nway];
         final byte[] symbol = new byte[Nway];
-        final byte[] context = new byte[Nway];
         for (int r=0; r<Nway; r++){
 
             // initialize interleaveStreamIndex
@@ -290,6 +278,11 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 symbol[r] = inBuffer.get(inputSize - 1);
             }
         }
+
+        // Slicing is needed for buffer reversing later.
+        final ByteBuffer ptr = cp.slice();
+        final RANSEncodingSymbol[][] ransEncodingSymbols = getEncodingSymbols();
+        final byte[] context = new byte[Nway];
 
         // deal with the reminder
         for (
@@ -325,16 +318,15 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         ptr.flip();
         final int compressedBlobSize = ptr.limit();
         Utils.reverse(ptr);
+
         /*
          * Depletion of the in buffer cannot be confirmed because of the get(int
          * position) method use during encoding, hence enforcing:
          */
         inBuffer.position(inBuffer.limit());
-
         outBuffer.rewind();
         outBuffer.limit(prefix_size + frequencyTableSize + compressedBlobSize);
         outBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        return outBuffer;
     }
 
     private static int[] buildFrequenciesOrder0(final ByteBuffer inBuffer) {
@@ -356,12 +348,11 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // ‘\0’ is the initial context
         byte contextSymbol = 0;
-        byte srcSymbol;
         for (int i = 0; i < inputSize; i++) {
 
             // update the context array
             frequency[Constants.NUMBER_OF_SYMBOLS][0xFF & contextSymbol]++;
-            srcSymbol = inBuffer.get(i);
+            final byte srcSymbol = inBuffer.get(i);
             frequency[0xFF & contextSymbol][0xFF & srcSymbol ]++;
             contextSymbol = srcSymbol;
         }
@@ -372,7 +363,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         for (int n = 1; n < Nway; n++){
             // For Nway = 4, division by 4 is the same as right shift by 2 bits
             // For Nway = 32, division by 32 is the same as right shift by 5 bits
-            int symbol = Nway == 4 ? (0xFF & inBuffer.get((n*(inputSize >> 2)))) : (0xFF & inBuffer.get((n*(inputSize >> 5))));
+            final int symbol = Nway == 4 ? (0xFF & inBuffer.get((n*(inputSize >> 2)))) : (0xFF & inBuffer.get((n*(inputSize >> 5))));
             frequency[0][symbol]++;
         }
         frequency[Constants.NUMBER_OF_SYMBOLS][0] += Nway-1;
@@ -520,7 +511,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         int lastSymbol = -1;
         for (int i = 0; i < inputSize; i++) {
-            int currentSymbol = inBuffer.get(i)&0xFF;
+            final int currentSymbol = inBuffer.get(i)&0xFF;
             runCounts[currentSymbol] += (currentSymbol==lastSymbol ? 1:-1);
             lastSymbol = currentSymbol;
         }
@@ -542,7 +533,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // create rleMetaData buffer to store rle metadata.
         // This buffer will be compressed using compressOrder0WayN towards the end of this method
         // TODO: How did we come up with this calculation for Buffer size? numRLESymbols+1+inputSize
-        ByteBuffer rleMetaData = ByteBuffer.allocate(numRLESymbols+1+inputSize); // rleMetaData
+        final ByteBuffer rleMetaData = ByteBuffer.allocate(numRLESymbols+1+inputSize); // rleMetaData
 
         // write number of symbols that are run length encoded
         rleMetaData.put((byte) numRLESymbols);
@@ -556,12 +547,12 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
 
         // Apply RLE
-        // encodedData -> input src data without repetition
-        ByteBuffer encodedData = ByteBuffer.allocate(inputSize); // rleInBuffer
-        int encodedDataIdx = 0; // rleInBufferIndex
+        // encodedBuffer -> input src data without repetition
+        final ByteBuffer encodedBuffer = ByteBuffer.allocate(inputSize); // rleInBuffer
+        int encodedBufferIdx = 0; // rleInBufferIndex
 
         for (int i = 0; i < inputSize; i++) {
-            encodedData.put(encodedDataIdx++,inBuffer.get(i));
+            encodedBuffer.put(encodedBufferIdx++,inBuffer.get(i));
             if (runCounts[inBuffer.get(i)&0xFF]>0) {
                 lastSymbol = inBuffer.get(i) & 0xFF;
                 int run = 0;
@@ -574,18 +565,18 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 // write the run value to metadata
                 Utils.writeUint7(run, rleMetaData);
 
-                // go to the next element that is not equal to it's previous element
+                // go to the next element that is not equal to its previous element
                 i += run;
             }
         }
 
-        encodedData.limit(encodedDataIdx);
+        encodedBuffer.limit(encodedBufferIdx);
         // limit and rewind
         rleMetaData.limit(rleMetaData.position());
         rleMetaData.rewind();
 
         // compress the rleMetaData Buffer
-        ByteBuffer compressedRleMetaData = allocateOutputBuffer(rleMetaData.remaining());
+        final ByteBuffer compressedRleMetaData = allocateOutputBuffer(rleMetaData.remaining());
 
         // TODO: Nway? Check other places as well -> How to setInterleaveSize? - can i do it by changing formatflags?
         // // Compress lengths with O0 and literals with O0/O1 ("order" param)
@@ -595,7 +586,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // write to compressedRleMetaData to outBuffer
         Utils.writeUint7(rleMetaData.limit()*2, outBuffer);
-        Utils.writeUint7(encodedDataIdx, outBuffer);
+        Utils.writeUint7(encodedBufferIdx, outBuffer);
         Utils.writeUint7(compressedRleMetaData.limit(),outBuffer);
 
         outBuffer.put(compressedRleMetaData);
@@ -605,7 +596,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
          * position) method use during encoding, hence enforcing:
          */
         inBuffer.position(inBuffer.limit());
-        return encodedData;
+        return encodedBuffer;
     }
 
     private ByteBuffer encodePack(
@@ -615,44 +606,44 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             final int[] packMappingTable,
             final int numSymbols){
         final int inSize = inBuffer.remaining();
-        ByteBuffer data;
+        final ByteBuffer encodedBuffer;
         if (numSymbols <= 1) {
-            data = ByteBuffer.allocate(0);
+            encodedBuffer = ByteBuffer.allocate(0);
         } else if (numSymbols <= 2) {
 
             // 1 bit per value
-            int dataSize = (int) Math.ceil((double) inSize/8);
-            data = ByteBuffer.allocate(dataSize);
+            final int encodedBufferSize = (int) Math.ceil((double) inSize/8);
+            encodedBuffer = ByteBuffer.allocate(encodedBufferSize);
             int j = -1;
             for (int i = 0; i < inSize; i ++) {
                 if (i % 8 == 0) {
-                    data.put(++j, (byte) 0);
+                    encodedBuffer.put(++j, (byte) 0);
                 }
-                data.put(j, (byte) (data.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << (i % 8))));
+                encodedBuffer.put(j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << (i % 8))));
             }
         } else if (numSymbols <= 4) {
 
             // 2 bits per value
-            int dataSize = (int) Math.ceil((double) inSize/4);
-            data = ByteBuffer.allocate(dataSize);
+            final int encodedBufferSize = (int) Math.ceil((double) inSize/4);
+            encodedBuffer = ByteBuffer.allocate(encodedBufferSize);
             int j = -1;
             for (int i = 0; i < inSize; i ++) {
                 if (i % 4 == 0) {
-                    data.put(++j, (byte) 0);
+                    encodedBuffer.put(++j, (byte) 0);
                 }
-                data.put(j, (byte) (data.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
+                encodedBuffer.put(j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
             }
         } else {
 
             // 4 bits per value
-            int dataSize = (int) Math.ceil((double)inSize/2);
-            data = ByteBuffer.allocate(dataSize);
+            final int encodedBufferSize = (int) Math.ceil((double)inSize/2);
+            encodedBuffer = ByteBuffer.allocate(encodedBufferSize);
             int j = -1;
             for (int i = 0; i < inSize; i ++) {
                 if (i % 2 == 0) {
-                    data.put(++j, (byte) 0);
+                    encodedBuffer.put(++j, (byte) 0);
                 }
-                data.put(j, (byte) (data.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
+                encodedBuffer.put(j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
             }
         }
 
@@ -667,8 +658,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
 
         // write the length of data
-        Utils.writeUint7(data.limit(), outBuffer);
-        return data; // Here position = 0 since we have always accessed the data buffer using index
+        Utils.writeUint7(encodedBuffer.limit(), outBuffer);
+        return encodedBuffer; // Here position = 0 since we have always accessed the data buffer using index
     }
 
 }

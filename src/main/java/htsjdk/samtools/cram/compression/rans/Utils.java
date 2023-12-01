@@ -10,9 +10,8 @@ final public class Utils {
         }
         int i = offset;
         int j = offset + size - 1;
-        byte tmp;
         while (j > i) {
-            tmp = array[j];
+            byte tmp = array[j];
             array[j] = array[i];
             array[i] = tmp;
             j--;
@@ -21,14 +20,12 @@ final public class Utils {
     }
 
     public static void reverse(final ByteBuffer byteBuffer) {
-        byte tmp;
         if (byteBuffer.hasArray()) {
             reverse(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.limit());
         } else {
             for (int i = 0; i < byteBuffer.limit(); i++) {
-                tmp = byteBuffer.get(i);
                 byteBuffer.put(i, byteBuffer.get(byteBuffer.limit() - i - 1));
-                byteBuffer.put(byteBuffer.limit() - i - 1, tmp);
+                byteBuffer.put(byteBuffer.limit() - i - 1, byteBuffer.get(i));
             }
         }
     }
@@ -38,31 +35,24 @@ final public class Utils {
         return (int) (r & ((1 << scaleBits) - 1)); // since cumulative frequency will be a maximum of 4096
     }
 
-    // Re-normalize.
-    public static long RANSDecodeRenormalize4x8(long r, final ByteBuffer byteBuffer) {
-
-        //rans4x8
-        // TODO: replace if - do - while with while
-        if (r < Constants.RANS_4x8_LOWER_BOUND) {
-            do {
-                r = (r << 8) | (0xFF & byteBuffer.get());
-            } while (r < Constants.RANS_4x8_LOWER_BOUND);
+    public static long RANSDecodeRenormalize4x8(final long r, final ByteBuffer byteBuffer) {
+        long ret = r;
+        while (ret < Constants.RANS_4x8_LOWER_BOUND) {
+            ret = (ret << 8) | (0xFF & byteBuffer.get());
         }
-        return r;
+        return ret;
     }
 
-    public static long RANSDecodeRenormalizeNx16(long r, final ByteBuffer byteBuffer) {
-        // ransNx16
-        if (r < (Constants.RANS_Nx16_LOWER_BOUND)) {
-            int i = (0xFF & byteBuffer.get());
-            i |= (0xFF & byteBuffer.get()) << 8;
-
-            r = (r << 16) | i;
+    public static long RANSDecodeRenormalizeNx16(final long r, final ByteBuffer byteBuffer) {
+        long ret = r;
+        if (ret < (Constants.RANS_Nx16_LOWER_BOUND)) {
+            final int i = (0xFF & byteBuffer.get()) | ((0xFF & byteBuffer.get()) << 8);
+            ret = (ret << 16) | i;
         }
-        return r;
+        return ret;
     }
 
-    public static void writeUint7(int i, ByteBuffer cp) {
+    public static void writeUint7(final int i, final ByteBuffer cp) {
         int s = 0;
         int X = i;
         do {
@@ -72,12 +62,12 @@ final public class Utils {
         do {
             s -= 7;
             //writeByte
-            int s_ = (s > 0) ? 1 : 0;
+            final int s_ = (s > 0) ? 1 : 0;
             cp.put((byte) (((i >> s) & 0x7f) + (s_ << 7)));
         } while (s > 0);
     }
 
-    public static int readUint7(ByteBuffer cp) {
+    public static int readUint7(final ByteBuffer cp) {
         int i = 0;
         int c;
         do {
@@ -101,10 +91,6 @@ final public class Utils {
         // Scale total of frequencies to max
         final int renormFreq = 1 << bits;
 
-        // To avoid division by 0 error, if T=0, set tr = 0.
-        // when T=0 i.e, when all symbol frequencies are 0, tr is not used anyway.
-        final long tr = (T>0)?(((long) (renormFreq) << 31) / T + (1 << 30) / T):0;
-
         // keep track of the symbol that has the maximum frequency
         // in the input Frequency array.
         // This symbol's frequency might be altered at the end to make sure
@@ -117,6 +103,10 @@ final public class Utils {
                 M = symbol;
             }
         }
+
+        // To avoid division by 0 error, if T=0, set tr = 0.
+        // when T=0 i.e, when all symbol frequencies are 0, tr is not used anyway.
+        final long tr = (T>0)?(((long) (renormFreq) << 31) / T + (1 << 30) / T):0;
         int fsum = 0;
         for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
             if (F[symbol] == 0) {
@@ -150,10 +140,9 @@ final public class Utils {
             if (F[Constants.NUMBER_OF_SYMBOLS][j]==0){
                 continue;
             }
-            int bitSize = shift;
 
             // log2 N = Math.log(N)/Math.log(2)
-            bitSize = (int) Math.ceil(Math.log(F[Constants.NUMBER_OF_SYMBOLS][j]) / Math.log(2));
+            int bitSize = (int) Math.ceil(Math.log(F[Constants.NUMBER_OF_SYMBOLS][j]) / Math.log(2));
             if (bitSize > shift)
                 bitSize = shift;
 

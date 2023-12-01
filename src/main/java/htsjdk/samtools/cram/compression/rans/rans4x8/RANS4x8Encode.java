@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.compression.rans.rans4x8;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
@@ -22,7 +23,6 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
 
     public ByteBuffer compress(final ByteBuffer inBuffer, final RANS4x8Params params) {
-        final RANSParams.ORDER order= params.getOrder();
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -31,6 +31,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
             return compressOrder0Way4(inBuffer);
         }
+        final RANSParams.ORDER order= params.getOrder();
         switch (order) {
             case ZERO:
                 return compressOrder0Way4(inBuffer);
@@ -39,7 +40,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
                 return compressOrder1Way4(inBuffer);
 
             default:
-                throw new RuntimeException("Unknown rANS order: " + params.getOrder());
+                throw new CRAMException("Unknown rANS order: " + params.getOrder());
         }
     }
 
@@ -65,7 +66,6 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         inBuffer.rewind();
 
         final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
-        final int cdata_size;
         final int in_size = inBuffer.remaining();
         long rans0, rans1, rans2, rans3;
         final ByteBuffer ptr = cp.slice();
@@ -102,7 +102,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         ptr.putInt((int) rans1);
         ptr.putInt((int) rans0);
         ptr.flip();
-        cdata_size = ptr.limit();
+        final int cdata_size = ptr.limit();
         // reverse the compressed bytes, so that they become in REVERSE order:
         Utils.reverse(ptr);
         inBuffer.position(inBuffer.limit());
@@ -127,22 +127,13 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
         final ByteBuffer cp = outBuffer.slice();
         final int frequencyTableSize = writeFrequenciesOrder1(cp, F);
-
         inBuffer.rewind();
-
-        final RANSEncodingSymbol[][] syms = getEncodingSymbols();
         final int in_size = inBuffer.remaining();
-        final int compressedBlobSize;
         long rans0, rans1, rans2, rans3;
         rans0 = Constants.RANS_4x8_LOWER_BOUND;
         rans1 = Constants.RANS_4x8_LOWER_BOUND;
         rans2 = Constants.RANS_4x8_LOWER_BOUND;
         rans3 = Constants.RANS_4x8_LOWER_BOUND;
-
-        /*
-         * Slicing is needed for buffer reversing later.
-         */
-        final ByteBuffer ptr = cp.slice();
 
         final int isz4 = in_size >> 2;
         int i0 = isz4 - 2;
@@ -165,6 +156,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
         // Deal with the remainder
         byte l3 = inBuffer.get(in_size - 1);
+
+        // Slicing is needed for buffer reversing later
+        final ByteBuffer ptr = cp.slice();
+        final RANSEncodingSymbol[][] syms = getEncodingSymbols();
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
             final byte c3 = inBuffer.get(i3);
             rans3 = syms[0xFF & c3][0xFF & l3].putSymbol4x8(rans3, ptr);
@@ -199,7 +194,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         ptr.putInt((int) rans1);
         ptr.putInt((int) rans0);
         ptr.flip();
-        compressedBlobSize = ptr.limit();
+        final int compressedBlobSize = ptr.limit();
         Utils.reverse(ptr);
         /*
          * Depletion of the in buffer cannot be confirmed because of the get(int
@@ -244,7 +239,6 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         for (int i = 0; i < T; i++) {
             F[0xFF & inBuffer.get()]++;
         }
-        final long tr = ((long) Constants.TOTAL_FREQ << 31) / T + (1 << 30) / T;
 
         // Normalise so T == TOTFREQ
         // m is the maximum frequency value
@@ -258,6 +252,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             }
         }
 
+        final long tr = ((long) Constants.TOTAL_FREQ << 31) / T + (1 << 30) / T;
         int fsum = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if (F[j] == 0) {
@@ -283,7 +278,6 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         } else {
             F[M] -= fsum - Constants.TOTAL_FREQ;
         }
-        assert (F[M] > 0);
         return F;
     }
 
@@ -292,11 +286,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
         final int[][] F = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
         final int[] T = new int[Constants.NUMBER_OF_SYMBOLS];
-        int c;
-
         int last_i = 0;
         for (int i = 0; i < in_size; i++) {
-            F[last_i][c = (0xFF & in.get())]++;
+            int c = 0xFF & in.get();
+            F[last_i][c]++;
             T[last_i]++;
             last_i = c;
         }
@@ -342,9 +335,6 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     private void buildSymsOrder0(final int[] F) {
         final RANSEncodingSymbol[] encodingSymbols = getEncodingSymbols()[0];
-
-        // TODO: commented out to suppress spotBugs warning
-        //final int[] C = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // T = running sum of frequencies including the current symbol
         // F[j] = frequency of symbol "j"

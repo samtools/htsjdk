@@ -20,7 +20,7 @@ public class RANSNx16Params implements RANSParams {
 
     private static final int FORMAT_FLAG_MASK = 0xFF;
 
-    public RANSNx16Params(int formatFlags) {
+    public RANSNx16Params(final int formatFlags) {
         this.formatFlags = formatFlags;
     }
 

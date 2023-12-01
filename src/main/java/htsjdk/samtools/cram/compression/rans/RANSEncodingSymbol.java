@@ -67,18 +67,17 @@ public final class RANSEncodingSymbol {
         rcpShift += 32; // Avoid the extra >>32 in RansEncPutSymbol
     }
 
-    public long putSymbol4x8(long r, final ByteBuffer byteBuffer) {
+    public long putSymbol4x8(final long r, final ByteBuffer byteBuffer) {
         ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
 
         // re-normalize
-        long x = r;
-        // TODO: x should also be long if there is a case where x could be greater than xMax
-        if (x >= xMax) {
-            byteBuffer.put((byte) (x & 0xFF));
-            x >>= 8;
-            if (x >= xMax) {
-                byteBuffer.put((byte) (x & 0xFF));
-                x >>= 8;
+        long retSymbol = r;
+        if (retSymbol >= xMax) {
+            byteBuffer.put((byte) (retSymbol & 0xFF));
+            retSymbol >>= 8;
+            if (retSymbol >= xMax) {
+                byteBuffer.put((byte) (retSymbol & 0xFF));
+                retSymbol >>= 8;
             }
         }
 
@@ -89,24 +88,23 @@ public final class RANSEncodingSymbol {
         // int q = (int) (((uint64_t)x * sym.rcp_freq) >> 32) >> sym.rcp_shift;
 
         // The extra >>32 has already been added to RansEncSymbolInit
-        final long q = ((x * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
-        r = x + bias + q * cmplFreq;
-        return r;
+        final long q = ((retSymbol * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
+        return retSymbol + bias + q * cmplFreq;
     }
 
-    public long putSymbolNx16(long r, final ByteBuffer byteBuffer) {
+    public long putSymbolNx16(final long r, final ByteBuffer byteBuffer) {
         ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
 
         // re-normalize
-        long x = r;
-        if (x >= xMax) {
-            byteBuffer.put((byte) ((x>>8) & 0xFF)); // extra line - 1 more byte
-            byteBuffer.put((byte) (x & 0xFF));
-            x >>=16;
-            if (x >= xMax) {
-                byteBuffer.put((byte) ((x>>8) & 0xFF)); // extra line - 1 more byte
-                byteBuffer.put((byte) (x & 0xFF));
-                x >>=16;
+        long retSymbol = r;
+        if (retSymbol >= xMax) {
+            byteBuffer.put((byte) ((retSymbol>>8) & 0xFF)); // extra line - 1 more byte
+            byteBuffer.put((byte) (retSymbol & 0xFF));
+            retSymbol >>=16;
+            if (retSymbol >= xMax) {
+                byteBuffer.put((byte) ((retSymbol>>8) & 0xFF)); // extra line - 1 more byte
+                byteBuffer.put((byte) (retSymbol & 0xFF));
+                retSymbol >>=16;
             }
         }
 
@@ -117,8 +115,7 @@ public final class RANSEncodingSymbol {
         // int q = (int) (((uint64_t)x * sym.rcp_freq) >> 32) >> sym.rcp_shift;
 
         // The extra >>32 has already been added to RansEncSymbolInit
-        final long q = ((x * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
-        r = (x + bias + q * cmplFreq);
-        return r;
+        final long q = ((retSymbol * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
+        return retSymbol + bias + q * cmplFreq;
     }
 }

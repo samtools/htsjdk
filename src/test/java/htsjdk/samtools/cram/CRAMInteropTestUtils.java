@@ -67,17 +67,16 @@ public class CRAMInteropTestUtils {
 
     // Given a compressed test file path, return the corresponding uncompressed file path
     protected static final Path getUnCompressedFilePath(final Path compressedInteropPath) {
-        String uncompressedFileName = getUncompressedFileName(compressedInteropPath.getFileName().toString());
+        final String uncompressedFileName = getUncompressedFileName(compressedInteropPath.getFileName().toString());
         // Example compressedInteropPath: ../dat/r4x8/q4.1 => unCompressedFilePath: ../dat/q4
         return compressedInteropPath.getParent().getParent().resolve(uncompressedFileName);
     }
 
     private static final String getUncompressedFileName(final String compressedFileName) {
         // Returns original filename from compressed file name
-        int lastDotIndex = compressedFileName.lastIndexOf(".");
+        final int lastDotIndex = compressedFileName.lastIndexOf(".");
         if (lastDotIndex >= 0) {
-            String fileName = compressedFileName.substring(0, lastDotIndex);
-            return fileName;
+            return compressedFileName.substring(0, lastDotIndex);
         } else {
             throw new CRAMException("The format of the compressed File Name is not as expected. " +
                     "The name of the compressed file should contain a period followed by a number that" +

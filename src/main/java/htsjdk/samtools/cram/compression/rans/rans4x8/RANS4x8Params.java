@@ -7,7 +7,7 @@ public class RANS4x8Params implements RANSParams {
 
     private final ORDER order;
 
-    public RANS4x8Params(ORDER order) {
+    public RANS4x8Params(final ORDER order)  {
         this.order = order;
     }
 

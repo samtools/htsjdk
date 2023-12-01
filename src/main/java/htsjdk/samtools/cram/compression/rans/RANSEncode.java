@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.compression.rans;
 
+import htsjdk.samtools.cram.CRAMException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -40,7 +41,7 @@ public abstract class RANSEncode<T extends RANSParams> {
         final int compressedSize = (int) (1.05 * inSize + 257 * 257 * 3 + 9);
         final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize);
         if (outputBuffer.remaining() < compressedSize) {
-            throw new RuntimeException("Failed to allocate sufficient buffer size for RANS coder.");
+            throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");
         }
         outputBuffer.order(ByteOrder.LITTLE_ENDIAN);
         return outputBuffer;

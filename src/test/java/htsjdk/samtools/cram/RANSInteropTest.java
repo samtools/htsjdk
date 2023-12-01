@@ -27,11 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.filterEmbeddedNewlines;
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.getInteropCompressedFilePaths;
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.getParamsFormatFlags;
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.getUnCompressedFilePath;
-
 /**
  * RANSInteropTest tests if the htsjdk RANS4x8 and RANSNx16 implementations are interoperable
  * with the htslib implementations. The test files for Interop tests is kept in a separate repository,
@@ -52,13 +47,13 @@ public class RANSInteropTest extends HtsjdkTest {
         // compressed testfile path, uncompressed testfile path,
         // RANS encoder, RANS decoder, RANS params
         final List<Object[]> testCases = new ArrayList<>();
-        for (Path path : getInteropCompressedFilePaths(COMPRESSED_RANS4X8_DIR)) {
+        for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANS4X8_DIR)) {
             Object[] objects = new Object[]{
                     path,
-                    getUnCompressedFilePath(path),
+                    CRAMInteropTestUtils.getUnCompressedFilePath(path),
                     new RANS4x8Encode(),
                     new RANS4x8Decode(),
-                    new RANS4x8Params(RANSParams.ORDER.fromInt(getParamsFormatFlags(path)))
+                    new RANS4x8Params(RANSParams.ORDER.fromInt(CRAMInteropTestUtils.getParamsFormatFlags(path)))
             };
             testCases.add(objects);
         }
@@ -72,13 +67,13 @@ public class RANSInteropTest extends HtsjdkTest {
         // compressed testfile path, uncompressed testfile path,
         // RANS encoder, RANS decoder, RANS params
         final List<Object[]> testCases = new ArrayList<>();
-        for (Path path : getInteropCompressedFilePaths(COMPRESSED_RANSNX16_DIR)) {
+        for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANSNX16_DIR)) {
             Object[] objects = new Object[]{
                     path,
-                    getUnCompressedFilePath(path),
+                    CRAMInteropTestUtils.getUnCompressedFilePath(path),
                     new RANSNx16Encode(),
                     new RANSNx16Decode(),
-                    new RANSNx16Params(getParamsFormatFlags(path))
+                    new RANSNx16Params(CRAMInteropTestUtils.getParamsFormatFlags(path))
             };
             testCases.add(objects);
         }
@@ -118,7 +113,7 @@ public class RANSInteropTest extends HtsjdkTest {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
             // Stripe Flag is not implemented in RANSNx16 Encoder.
             // The encoder throws CRAMException if Stripe Flag is used.
@@ -149,7 +144,7 @@ public class RANSInteropTest extends HtsjdkTest {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
             final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo

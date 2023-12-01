@@ -22,7 +22,7 @@ public class RANSNx16Decode extends RANSDecode {
         return uncompress(inBuffer, 0);
     }
 
-    private ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
+    private ByteBuffer uncompress(final ByteBuffer inBuffer, final int outSize) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -32,11 +32,11 @@ public class RANSNx16Decode extends RANSDecode {
         final RANSNx16Params ransNx16Params = new RANSNx16Params(formatFlags);
 
         // if nosz flag is set, then uncompressed size is not recorded.
-        outSize = ransNx16Params.isNosz() ? outSize : Utils.readUint7(inBuffer);
+        int uncompressedSize = ransNx16Params.isNosz() ? outSize : Utils.readUint7(inBuffer);
 
         // if stripe, then decodeStripe
         if (ransNx16Params.isStripe()) {
-            return decodeStripe(inBuffer, outSize);
+            return decodeStripe(inBuffer, uncompressedSize);
         }
 
         // if pack, get pack metadata, which will be used later to decode packed data
@@ -44,7 +44,7 @@ public class RANSNx16Decode extends RANSDecode {
         int numSymbols = 0;
         int[] packMappingTable = new int[0];
         if (ransNx16Params.isPack()) {
-            packDataLength = outSize;
+            packDataLength = uncompressedSize;
             numSymbols = inBuffer.get() & 0xFF;
 
             // if (numSymbols > 16 or numSymbols==0), raise exception
@@ -53,9 +53,10 @@ public class RANSNx16Decode extends RANSDecode {
                 for (int i = 0; i < numSymbols; i++) {
                     packMappingTable[i] = inBuffer.get() & 0xFF;
                 }
-                outSize = Utils.readUint7(inBuffer);
+                uncompressedSize = Utils.readUint7(inBuffer);
             } else {
-                throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: " + numSymbols);
+                throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. " +
+                        "Number of distinct symbols: " + numSymbols);
             }
         }
 
@@ -66,29 +67,29 @@ public class RANSNx16Decode extends RANSDecode {
         ByteBuffer uncompressedRLEMetaData = null;
         if (ransNx16Params.isRLE()) {
             uncompressedRLEMetaDataLength = Utils.readUint7(inBuffer);
-            uncompressedRLEOutputLength = outSize;
-            outSize = Utils.readUint7(inBuffer);
+            uncompressedRLEOutputLength = uncompressedSize;
+            uncompressedSize = Utils.readUint7(inBuffer);
             // TODO: maybe move decodeRLEMeta in-line
             uncompressedRLEMetaData = decodeRLEMeta(inBuffer, uncompressedRLEMetaDataLength, rleSymbols);
         }
 
-        ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
+        ByteBuffer outBuffer = ByteBuffer.allocate(uncompressedSize);;
         // If CAT is set then, the input is uncompressed
         if (ransNx16Params.isCAT()) {
-            byte[] data = new byte[outSize];
-            inBuffer.get(data, 0, outSize);
+            byte[] data = new byte[uncompressedSize];
+            inBuffer.get(data, 0, uncompressedSize);
             outBuffer = ByteBuffer.wrap(data);
         } else {
-            if (outSize != 0) {
+            if (uncompressedSize != 0) {
                 switch (ransNx16Params.getOrder()) {
                     case ZERO:
-                        uncompressOrder0WayN(inBuffer, outBuffer, outSize, ransNx16Params);
+                        uncompressOrder0WayN(inBuffer, outBuffer, uncompressedSize, ransNx16Params);
                         break;
                     case ONE:
                         uncompressOrder1WayN(inBuffer, outBuffer, ransNx16Params);
                         break;
                     default:
-                        throw new RuntimeException("Unknown rANS order: " + ransNx16Params.getOrder());
+                        throw new CRAMException("Unknown rANS order: " + ransNx16Params.getOrder());
                 }
             }
         }
@@ -105,7 +106,7 @@ public class RANSNx16Decode extends RANSDecode {
         return outBuffer;
     }
 
-    private ByteBuffer uncompressOrder0WayN(
+    private void uncompressOrder0WayN(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int outSize,
@@ -116,9 +117,6 @@ public class RANSNx16Decode extends RANSDecode {
         readFrequencyTableOrder0(inBuffer);
 
         // uncompress using Nway rans states
-        //TODO: remove this temporary variable aliasing/staging
-        final ArithmeticDecoder D = getD()[0];
-        final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
         final int Nway = ransNx16Params.getNumInterleavedRANSStates();
 
         // Nway parallel rans states. Nway = 4 or 32
@@ -138,6 +136,8 @@ public class RANSNx16Decode extends RANSDecode {
         // Number of elements that don't fall into the Nway streams
         int remSize = outSize - (interleaveSize * Nway);
         final int out_end = outSize - remSize;
+        final ArithmeticDecoder D = getD()[0];
+        final RANSDecodingSymbol[] syms = getDecodingSymbols()[0];
         for (int i = 0; i < out_end; i += Nway) {
             for (int r=0; r<Nway; r++){
 
@@ -160,20 +160,18 @@ public class RANSNx16Decode extends RANSDecode {
             reverseIndex ++;
         }
         outBuffer.rewind();
-        return outBuffer;
     }
 
-    private ByteBuffer uncompressOrder1WayN(
+    private void uncompressOrder1WayN(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final RANSNx16Params ransNx16Params) {
         initializeRANSDecoder();
 
-        // read the first byte and calculate the bit shift
+        // read the first byte
         final int frequencyTableFirstByte = (inBuffer.get() & 0xFF);
-        final int shift = frequencyTableFirstByte >> 4;
         final boolean optionalCompressFlag = ((frequencyTableFirstByte & FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK)!=0);
-        ByteBuffer freqTableSource;
+        final ByteBuffer freqTableSource;
         if (optionalCompressFlag) {
 
             // spec: The order-1 frequency table itself may still be quite large,
@@ -189,16 +187,15 @@ public class RANSNx16Decode extends RANSDecode {
 
             // decode the compressedFreqTable to get the uncompressedFreqTable using RANS Nx16, N=4 Order 0 uncompress
             freqTableSource = ByteBuffer.allocate(uncompressedLength);
-            ByteBuffer compressedFrequencyTableBuffer = ByteBuffer.wrap(compressedFreqTable);
+            final ByteBuffer compressedFrequencyTableBuffer = ByteBuffer.wrap(compressedFreqTable);
             compressedFrequencyTableBuffer.order(ByteOrder.LITTLE_ENDIAN);
             uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,new RANSNx16Params(0x00)); // format flags = 0
         }
         else {
             freqTableSource = inBuffer;
         }
+        final int shift = frequencyTableFirstByte >> 4;
         readFrequencyTableOrder1(freqTableSource, shift);
-        final ArithmeticDecoder[] D = getD();
-        final RANSDecodingSymbol[][] syms = getDecodingSymbols();
         final int outputSize = outBuffer.remaining();
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -207,7 +204,6 @@ public class RANSNx16Decode extends RANSDecode {
         final long[] rans = new long[Nway];
         final int[] interleaveStreamIndex = new int[Nway];
         final int[] context = new int[Nway];
-        final int[] symbol = new int[Nway];
 
         // size of interleaved stream = outputSize / Nway
         // For Nway = 4, division by 4 is the same as right shift by 2 bits
@@ -222,6 +218,9 @@ public class RANSNx16Decode extends RANSDecode {
             context[r] = 0;
         }
 
+        final ArithmeticDecoder[] D = getD();
+        final RANSDecodingSymbol[][] syms = getDecodingSymbols();
+        final int[] symbol = new int[Nway];
         while (interleaveStreamIndex[0] < interleaveSize) {
             for (int r = 0; r < Nway; r++){
                 symbol[r] = 0xFF & D[context[r]].reverseLookup[Utils.RANSGetCumulativeFrequency(rans[r], shift)];
@@ -242,7 +241,6 @@ public class RANSNx16Decode extends RANSDecode {
             rans[Nway - 1] = syms[context[Nway - 1]][symbol[Nway - 1]].advanceSymbolNx16(rans[Nway - 1], inBuffer, shift);
             context[Nway - 1] = symbol[Nway - 1];
         }
-        return outBuffer;
     }
 
     private void readFrequencyTableOrder0(
@@ -251,10 +249,7 @@ public class RANSNx16Decode extends RANSDecode {
         // Use the Frequency table to set the values of Frequencies, Cumulative Frequency
         // and Reverse Lookup table
 
-        final ArithmeticDecoder decoder = getD()[0];
-        final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
         final int[] alphabet = readAlphabet(cp);
-        int cumulativeFrequency = 0;
         final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
 
         // read frequencies, normalise frequencies then calculate C and R
@@ -266,7 +261,10 @@ public class RANSNx16Decode extends RANSDecode {
                 }
             }
         }
-        Utils.normaliseFrequenciesOrder0Shift(frequencies,12);
+        Utils.normaliseFrequenciesOrder0Shift(frequencies, Constants.TOTAL_FREQ_SHIFT);
+        final ArithmeticDecoder decoder = getD()[0];
+        final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
+        int cumulativeFrequency = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if(alphabet[j]>0){
 
@@ -339,8 +337,9 @@ public class RANSNx16Decode extends RANSDecode {
                 symbol++;
             } else {
                 symbol = cp.get() & 0xFF;
-                if (symbol == lastSymbol+1)
+                if (symbol == lastSymbol+1) {
                     rle = cp.get() & 0xFF;
+                }
             }
             lastSymbol = symbol;
         } while (symbol != 0);
@@ -351,17 +350,16 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer inBuffer,
             final int uncompressedRLEMetaDataLength,
             final int[] rleSymbols) {
-        ByteBuffer uncompressedRLEMetaData;
-        final int compressedRLEMetaDataLength;
+        final ByteBuffer uncompressedRLEMetaData;
         if ((uncompressedRLEMetaDataLength & 0x01)!=0) {
-            byte[] uncompressedRLEMetaDataArray = new byte[(uncompressedRLEMetaDataLength-1)/2];
+            final byte[] uncompressedRLEMetaDataArray = new byte[(uncompressedRLEMetaDataLength-1)/2];
             inBuffer.get(uncompressedRLEMetaDataArray, 0, (uncompressedRLEMetaDataLength-1)/2);
             uncompressedRLEMetaData = ByteBuffer.wrap(uncompressedRLEMetaDataArray);
         } else {
-            compressedRLEMetaDataLength = Utils.readUint7(inBuffer);
-            byte[] compressedRLEMetaDataArray = new byte[compressedRLEMetaDataLength];
+            final int compressedRLEMetaDataLength = Utils.readUint7(inBuffer);
+            final byte[] compressedRLEMetaDataArray = new byte[compressedRLEMetaDataLength];
             inBuffer.get(compressedRLEMetaDataArray,0,compressedRLEMetaDataLength);
-            ByteBuffer compressedRLEMetaData = ByteBuffer.wrap(compressedRLEMetaDataArray);
+            final ByteBuffer compressedRLEMetaData = ByteBuffer.wrap(compressedRLEMetaDataArray);
             compressedRLEMetaData.order(ByteOrder.LITTLE_ENDIAN);
             uncompressedRLEMetaData = ByteBuffer.allocate(uncompressedRLEMetaDataLength / 2);
             
@@ -380,16 +378,16 @@ public class RANSNx16Decode extends RANSDecode {
     }
 
     private ByteBuffer decodeRLE(
-            ByteBuffer inBuffer,
+            final ByteBuffer inBuffer,
             final int[] rleSymbols,
             final ByteBuffer uncompressedRLEMetaData,
             final int uncompressedRLEOutputLength) {
-        ByteBuffer rleOutBuffer = ByteBuffer.allocate(uncompressedRLEOutputLength);
+        final ByteBuffer rleOutBuffer = ByteBuffer.allocate(uncompressedRLEOutputLength);
         int j = 0;
         for(int i = 0; j< uncompressedRLEOutputLength; i++){
-            byte sym = inBuffer.get(i);
+            final byte sym = inBuffer.get(i);
             if (rleSymbols[sym & 0xFF]!=0){
-                int run = Utils.readUint7(uncompressedRLEMetaData);
+                final int run = Utils.readUint7(uncompressedRLEMetaData);
                 for (int r=0; r<= run; r++){
                     rleOutBuffer.put(j++, sym);
                 }
@@ -397,18 +395,16 @@ public class RANSNx16Decode extends RANSDecode {
                 rleOutBuffer.put(j++, sym);
             }
         }
-        inBuffer = rleOutBuffer;
-        return inBuffer;
+        return rleOutBuffer;
     }
 
     private ByteBuffer decodePack(
-            ByteBuffer inBuffer,
+            final ByteBuffer inBuffer,
             final int[] packMappingTable,
             final int numSymbols,
             final int uncompressedPackOutputLength) {
-        ByteBuffer outBufferPack = ByteBuffer.allocate(uncompressedPackOutputLength);
+        final ByteBuffer outBufferPack = ByteBuffer.allocate(uncompressedPackOutputLength);
         int j = 0;
-
         if (numSymbols <= 1) {
             for (int i=0; i < uncompressedPackOutputLength; i++){
                 outBufferPack.put(i, (byte) packMappingTable[0]);
@@ -450,8 +446,7 @@ public class RANSNx16Decode extends RANSDecode {
                 v >>=4;
             }
         }
-        inBuffer = outBufferPack;
-        return inBuffer;
+        return outBufferPack;
     }
 
     private ByteBuffer decodeStripe(final ByteBuffer inBuffer, final int outSize){
