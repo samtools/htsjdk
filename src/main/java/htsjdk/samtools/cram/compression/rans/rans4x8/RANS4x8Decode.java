@@ -22,11 +22,11 @@ public class RANS4x8Decode extends RANSDecode {
             return EMPTY_BUFFER;
         }
 
-        // first byte of compressed stream gives order
-        final RANSParams.ORDER order = RANSParams.ORDER.fromInt(inBuffer.get());
-
         // For RANS decoding, the bytes are read in little endian from the input stream
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        // first byte of compressed stream gives order
+        final RANSParams.ORDER order = RANSParams.ORDER.fromInt(inBuffer.get());
 
         // compressed bytes length
         final int inSize = inBuffer.getInt();
@@ -132,7 +132,6 @@ public class RANS4x8Decode extends RANSDecode {
 
         final int out_sz = outBuffer.remaining();
         long rans0, rans1, rans2, rans7;
-        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         rans0 = inBuffer.getInt();
         rans1 = inBuffer.getInt();
         rans2 = inBuffer.getInt();

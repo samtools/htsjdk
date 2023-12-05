@@ -197,7 +197,6 @@ public class RANSNx16Decode extends RANSDecode {
         final int shift = frequencyTableFirstByte >> 4;
         readFrequencyTableOrder1(freqTableSource, shift);
         final int outputSize = outBuffer.remaining();
-        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
         // Nway parallel rans states. Nway = 4 or 32
         final int Nway = ransNx16Params.getNumInterleavedRANSStates();
@@ -460,21 +459,21 @@ public class RANSNx16Decode extends RANSDecode {
 
         // Decode the compressed interleaved stream
         final int[] uncompressedLengths = new int[numInterleaveStreams];
-        final ByteBuffer[] TransposedData = new ByteBuffer[numInterleaveStreams];
+        final ByteBuffer[] transposedData = new ByteBuffer[numInterleaveStreams];
         for ( int j=0; j<numInterleaveStreams; j++){
             uncompressedLengths[j] = (int) Math.floor(((double) outSize)/numInterleaveStreams);
             if ((outSize % numInterleaveStreams) > j){
                 uncompressedLengths[j]++;
             }
 
-            TransposedData[j] = uncompress(inBuffer, uncompressedLengths[j]);
+            transposedData[j] = uncompress(inBuffer, uncompressedLengths[j]);
         }
 
         // Transpose
         final ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
         for (int j = 0; j <numInterleaveStreams; j++) {
             for (int i = 0; i < uncompressedLengths[j]; i++) {
-                outBuffer.put((i*numInterleaveStreams)+j, TransposedData[j].get(i));
+                outBuffer.put((i*numInterleaveStreams)+j, transposedData[j].get(i));
             }
         }
         return outBuffer;

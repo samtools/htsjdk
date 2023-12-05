@@ -47,6 +47,26 @@ public abstract class RANSEncode<T extends RANSParams> {
         return outputBuffer;
     }
 
-    //TODO: add buildSymbols0 and buildSymbols1
+    protected void buildSymsOrder0(final int[] frequencies) {
+        updateEncodingSymbols(frequencies, getEncodingSymbols()[0]);
+    }
+
+    protected void buildSymsOrder1(final int[][] frequencies) {
+        final RANSEncodingSymbol[][] encodingSymbols = getEncodingSymbols();
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            updateEncodingSymbols(frequencies[i], encodingSymbols[i]);
+        }
+    }
+
+    private void updateEncodingSymbols(int[] frequencies, RANSEncodingSymbol[] encodingSymbols) {
+        int cumulativeFreq = 0;
+        for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
+            if (frequencies[symbol] != 0) {
+                //For each symbol, set start = cumulative frequency and freq = frequencies[symbol]
+                encodingSymbols[symbol].set(cumulativeFreq, frequencies[symbol], Constants.TOTAL_FREQ_SHIFT);
+                cumulativeFreq += frequencies[symbol];
+            }
+        }
+    }
 
 }
