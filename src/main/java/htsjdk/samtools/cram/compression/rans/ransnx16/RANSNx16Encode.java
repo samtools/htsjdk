@@ -134,16 +134,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             Utils.normaliseFrequenciesOrder0Shift(F, Constants.TOTAL_FREQ_SHIFT);
         }
 
-        // update the RANS Encoding Symbols
+        // using the normalised frequencies, set the RANSEncodingSymbols
         buildSymsOrder0(F);
         inBuffer.rewind();
         final int Nway = ransNx16Params.getNumInterleavedRANSStates();
-        final long[] rans = new long[Nway];
-
-        // initialize rans states
-        for (int r=0; r<Nway; r++){
-            rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
-        }
 
         // number of remaining elements = inputSize % Nway = inputSize - (interleaveSize * Nway)
         // For Nway = 4, division by 4 is the same as right shift by 2 bits
@@ -152,14 +146,19 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         final int interleaveSize = (Nway == 4) ? (inputSize >> 2) : (inputSize >> 5);
         int remainingSize = inputSize - (interleaveSize * Nway);
         int reverseIndex = 1;
+        final long[] rans = new long[Nway];
 
+        // initialize rans states
+        for (int r=0; r<Nway; r++){
+            rans[r] = Constants.RANS_Nx16_LOWER_BOUND;
+        }
         final ByteBuffer ptr = cp.slice();
         final RANSEncodingSymbol[] ransEncodingSymbols = getEncodingSymbols()[0];
         // encoded in LIFO order
         while (remainingSize>0){
 
             // encode remaining elements first
-            int remainingSymbol =0xFF & inBuffer.get(inputSize - reverseIndex);
+            int remainingSymbol = 0xFF & inBuffer.get(inputSize - reverseIndex);
             rans[remainingSize - 1] = ransEncodingSymbols[remainingSymbol].putSymbolNx16(rans[remainingSize - 1], ptr);
             remainingSize --;
             reverseIndex ++;
@@ -244,8 +243,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // normalise frequencies with a constant shift
         Utils.normaliseFrequenciesOrder1Shift(frequencies, Constants.TOTAL_FREQ_SHIFT);
 
-        // set encoding symbol
-        buildSymsOrder1(frequencies); // TODO: move into utils
+        // using the normalised frequencies, set the RANSEncodingSymbols
+        buildSymsOrder1(frequencies);
 
         // uncompress for Nway = 4. then extend Nway to be variable - 4 or 32
         final int Nway = ransNx16Params.getNumInterleavedRANSStates();
@@ -467,39 +466,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // write 0 indicating the end of alphabet
         cp.put((byte) 0);
-    }
-
-    private void buildSymsOrder0(final int[] F) {
-
-        // updates all the encodingSymbols
-        final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
-
-        // F[j] = frequency of symbol "j"
-        // cumulativeFreq = cumulative frequency of all the symbols preceding "j" (excluding the frequency of symbol "j")
-        int cumulativeFreq = 0;
-        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-            if (F[j] != 0) {
-
-                //For each symbol, set start = cumulative frequency and freq = frequency
-                syms[j].set(cumulativeFreq, F[j], Constants.TOTAL_FREQ_SHIFT);
-                cumulativeFreq += F[j];
-            }
-        }
-    }
-
-    private void buildSymsOrder1(final int[][] F) {
-        // TODO: Call buildSymsOrder0 from buildSymsOrder1
-        final RANSEncodingSymbol[][] encodingSymbols = getEncodingSymbols();
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            final int[] F_i_ = F[i];
-            int cumulativeFreq = 0;
-            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                if (F_i_[j] != 0) {
-                    encodingSymbols[i][j].set(cumulativeFreq, F_i_[j], Constants.TOTAL_FREQ_SHIFT);
-                    cumulativeFreq += F_i_[j];
-                }
-            }
-        }
     }
 
     private ByteBuffer encodeRLE(final ByteBuffer inBuffer, final ByteBuffer outBuffer){

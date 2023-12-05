@@ -186,7 +186,7 @@ public class RansTest extends HtsjdkTest {
         final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode, ransDecode,params);
         Assert.assertTrue(compressed.limit() > 10);
         Assert.assertEquals(compressed.get(), (byte) params.getOrder().ordinal());
-        Assert.assertEquals(compressed.getInt(), compressed.limit() - 1 - 4 - 4);
+        Assert.assertEquals(compressed.getInt(), compressed.limit() - Constants.RANS_4x8_PREFIX_BYTE_LENGTH);
         Assert.assertEquals(compressed.getInt(), rawSize);
     }
 
@@ -234,7 +234,7 @@ public class RansTest extends HtsjdkTest {
         // first byte of compressed data gives the order
         Assert.assertEquals(compressed.get(), (byte) params.getOrder().ordinal());
         // the next 4 bytes gives the compressed size
-        Assert.assertEquals(compressed.getInt(), compressed.limit() - 9);
+        Assert.assertEquals(compressed.getInt(), compressed.limit() - Constants.RANS_4x8_PREFIX_BYTE_LENGTH);
         // the next 4 bytes gives the uncompressed size
         Assert.assertEquals(compressed.getInt(), rawData.limit());
     }
