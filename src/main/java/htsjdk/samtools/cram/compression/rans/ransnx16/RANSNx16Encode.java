@@ -16,7 +16,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     /////////////////////////////////////////////////////////////////////////////////////////////////
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-    private static final int MINIMUM__ORDER_1_SIZE = 4;
 
     public ByteBuffer compress(final ByteBuffer inBuffer, final RANSNx16Params ransNx16Params) {
         if (inBuffer.remaining() == 0) {
@@ -78,8 +77,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             return outBuffer;
         }
 
-        // if after encoding pack and rle, the inputBuffer size < 4, then use order 0
-        if (inputBuffer.remaining() < MINIMUM__ORDER_1_SIZE && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
+        // if after encoding pack and rle, the inputBuffer size < Nway, then use order 0
+        if (inputBuffer.remaining() < ransNx16Params.getNumInterleavedRANSStates() && ransNx16Params.getOrder() == RANSParams.ORDER.ONE) {
 
             // set order flag to "0" in the first byte of the outBuffer
             outBuffer.put(0,(byte)(outBuffer.get(0) & ~RANSNx16Params.ORDER_FLAG_MASK));
@@ -191,7 +190,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             final ByteBuffer inBuffer,
             final RANSNx16Params ransNx16Params,
             final ByteBuffer outBuffer) {
-        initializeRANSEncoder();
         final int[][] frequencies = buildFrequenciesOrder1(inBuffer, ransNx16Params.getNumInterleavedRANSStates());
 
         // normalise frequencies with a variable shift calculated
@@ -208,9 +206,15 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         frequencyTable.limit(uncompressedFrequencyTableSize);
         frequencyTable.rewind();
 
-        // compressed frequency table using RANS Nx16 Order 0
-        compressOrder0WayN(frequencyTable, new RANSNx16Params(0x00), compressedFrequencyTable);
+        // Compress using RANSNx16 Order 0, Nway = 4.
+        // formatFlags = (~RANSNx16Params.ORDER_FLAG_MASK & ~RANSNx16Params.N32_FLAG_MASK) = ~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK)
+        compressOrder0WayN(frequencyTable, new RANSNx16Params(~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK)), compressedFrequencyTable);
         frequencyTable.rewind();
+
+        // Moving initializeRANSEncoder() from the beginning of this method to this point in the code
+        // due to the nested call to compressOrder0WayN, which also invokes the initializeRANSEncoder() method.
+        // TODO: we should work on a more permanent solution for this issue!
+        initializeRANSEncoder();
         final int compressedFrequencyTableSize = compressedFrequencyTable.limit();
         final ByteBuffer cp = outBuffer.slice();
 

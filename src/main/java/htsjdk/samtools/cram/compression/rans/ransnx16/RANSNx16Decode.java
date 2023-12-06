@@ -166,7 +166,6 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final RANSNx16Params ransNx16Params) {
-        initializeRANSDecoder();
 
         // read the first byte
         final int frequencyTableFirstByte = (inBuffer.get() & 0xFF);
@@ -189,11 +188,19 @@ public class RANSNx16Decode extends RANSDecode {
             freqTableSource = ByteBuffer.allocate(uncompressedLength);
             final ByteBuffer compressedFrequencyTableBuffer = ByteBuffer.wrap(compressedFreqTable);
             compressedFrequencyTableBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,new RANSNx16Params(0x00)); // format flags = 0
+
+            // Uncompress using RANSNx16 Order 0, Nway = 4.
+            // formatFlags = (~RANSNx16Params.ORDER_FLAG_MASK & ~RANSNx16Params.N32_FLAG_MASK) = ~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK)
+            uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,new RANSNx16Params(~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK))); // format flags = 0
         }
         else {
             freqTableSource = inBuffer;
         }
+
+        // Moving initializeRANSDecoder() from the beginning of this method to this point in the code
+        // due to the nested call to uncompressOrder0WayN, which also invokes the initializeRANSDecoder() method.
+        // TODO: we should work on a more permanent solution for this issue!
+        initializeRANSDecoder();
         final int shift = frequencyTableFirstByte >> 4;
         readFrequencyTableOrder1(freqTableSource, shift);
         final int outputSize = outBuffer.remaining();

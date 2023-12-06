@@ -14,7 +14,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     // streams smaller than this value don't have sufficient symbol context for ORDER-1 encoding,
     // so always use ORDER-0
-    private static final int MINIMUM__ORDER_1_SIZE = 4;
+    private static final int MINIMUM_ORDER_1_SIZE = 4;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     public ByteBuffer compress(final ByteBuffer inBuffer, final RANS4x8Params params) {
@@ -22,7 +22,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             return EMPTY_BUFFER;
         }
         initializeRANSEncoder();
-        if (inBuffer.remaining() < MINIMUM__ORDER_1_SIZE) {
+        if (inBuffer.remaining() < MINIMUM_ORDER_1_SIZE) {
             // ORDER-1 encoding of less than 4 bytes is not permitted, so just use ORDER-0
             return compressOrder0Way4(inBuffer);
         }
