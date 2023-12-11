@@ -18,6 +18,7 @@
 
 package htsjdk.tribble;
 
+import htsjdk.io.IOPath;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.index.tabix.TabixFormat;
 

@@ -17,13 +17,28 @@ import java.nio.file.Paths;
 public class SeekableStreamFactoryTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
-    @Test
-    public void testIsFilePath() {
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("x"), true);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath(""), true);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("http://broadinstitute.org"), false);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("https://broadinstitute.org"), false);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("ftp://broadinstitute.org"), false);
+    @DataProvider
+    public Object[][] getSpecialCasePaths(){
+        return new Object[][]{
+                {"x", true},
+                {"", true},
+                {"http://broadinstitute.org", false},
+                {"https://broadinstitute.org", false},
+                {"ftp://broadinstitute.org", false}
+        };
+    }
+
+    @Test(dataProvider = "getSpecialCasePaths")
+    public void testIsFilePath(String path, boolean expected) {
+        Assert.assertEquals(SeekableStreamFactory.isFilePath(path), expected);
+    }
+
+
+    // this test isn't particularly useful since we're not testing the meaninful case of having the http-nio provider
+    // installed
+    @Test(dataProvider = "getSpecialCasePaths")
+    public void testIsSpecialCase(String path, boolean expected) {
+        Assert.assertEquals(SeekableStreamFactory.isSpecialCase(path), ! expected);
     }
 
     @DataProvider(name="getStreamForData")
