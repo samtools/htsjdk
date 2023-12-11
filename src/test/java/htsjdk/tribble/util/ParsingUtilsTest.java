@@ -9,6 +9,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,93 +127,96 @@ public class ParsingUtilsTest extends HtsjdkTest {
     public void testFileDoesExist() throws IOException{
         File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         tempFile.deleteOnExit();
-        tstExists(tempFile.getAbsolutePath(), true);
-        tstExists(tempFile.toURI().toString(), true);
+        testExists(tempFile.getAbsolutePath(), true);
+        testExists(tempFile.toURI().toString(), true);;
     }
 
     @Test
     public void testFileDoesNotExist() throws IOException{
         File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         tempFile.delete();
-        tstExists(tempFile.getAbsolutePath(), false);
-        tstExists(tempFile.toURI().toString(), false);
+        testExists(tempFile.getAbsolutePath(), false);
+        testExists(tempFile.toURI().toString(), false);
     }
 
     @Test
     public void testInMemoryNioFileDoesExist() throws IOException{
-        FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-        Path file = fs.getPath("/file");
-        Files.createFile(file);
-        tstExists(file.toUri().toString(), true);
+        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            Path file = fs.getPath("/file");
+            Files.createFile(file);
+            testExists(file.toUri().toString(), true);
+        }
     }
 
     @Test
     public void testInMemoryNioFileDoesNotExist() throws IOException{
-        FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-        Path file = fs.getPath("/file");
-        tstExists(file.toUri().toString(), false);
+        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            Path file = fs.getPath("/file");
+            testExists(file.toUri().toString(), false);
+        }
     }
 
     @Test(groups = "ftp")
     public void testFTPDoesExist() throws IOException{
-        tstExists(AVAILABLE_FTP_URL, true);
+        testExists(AVAILABLE_FTP_URL, true);
     }
 
     @Test(groups = "ftp")
     public void testFTPNotExist() throws IOException{
-        tstExists(UNAVAILABLE_FTP_URL, false);
+        testExists(UNAVAILABLE_FTP_URL, false);
     }
 
     @Test
     public void testHTTPDoesExist() throws IOException{
-        tstExists(AVAILABLE_HTTP_URL, true);
+        testExists(AVAILABLE_HTTP_URL, true);
     }
 
     @Test
     public void testHTTPNotExist() throws IOException{
-        tstExists(UNAVAILABLE_HTTP_URL, false);
+        testExists(UNAVAILABLE_HTTP_URL, false);
     }
 
-    private void tstExists(String path, boolean expectExists) throws IOException{
-        boolean exists = ParsingUtils.resourceExists(path);
-        Assert.assertEquals(exists, expectExists);
+
+    private static void testExists(String path, boolean expectExists) throws IOException{
+        Assert.assertEquals(ParsingUtils.resourceExists(path), expectExists);
     }
 
     @Test
     public void testFileOpenInputStream() throws IOException{
         File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         tempFile.deleteOnExit();
-        OutputStream os = IOUtil.openFileForWriting(tempFile);
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
-        writer.write("hello");
-        writer.close();
-        tstStream(tempFile.getAbsolutePath());
-        tstStream(tempFile.toURI().toString());
+        try(Writer writer = new BufferedWriter(new OutputStreamWriter(IOUtil.openFileForWriting(tempFile)))) {
+            writer.write("hello");
+        }
+        testStream(tempFile.getAbsolutePath());
+        testStream(tempFile.toURI().toString());
     }
 
     @Test
     public void testInMemoryNioFileOpenInputStream() throws IOException{
-        FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
-        Path file = fs.getPath("/file");
-        Files.write(file, "hello".getBytes("UTF-8"));
-        tstStream(file.toUri().toString());
+        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            Path file = fs.getPath("/file");
+            Files.write(file, "hello".getBytes(StandardCharsets.UTF_8));
+            testStream(file.toUri().toString());
+        }
     }
 
     @Test(groups = "ftp")
     public void testFTPOpenInputStream() throws IOException{
-        tstStream(AVAILABLE_FTP_URL);
+        testStream(AVAILABLE_FTP_URL);
     }
 
     @Test
     public void testHTTPOpenInputStream() throws IOException{
-        tstStream(AVAILABLE_HTTP_URL);
+        testStream(AVAILABLE_HTTP_URL);
     }
 
-    private void tstStream(String path) throws IOException{
-        InputStream is = ParsingUtils.openInputStream(path);
-        Assert.assertNotNull(is, "InputStream is null for " + path);
-        int b = is.read();
-        Assert.assertNotSame(b, -1);
+    private static void testStream(String path) throws IOException{
+        try(InputStream is = ParsingUtils.openInputStream(path)) {
+            Assert.assertNotNull(is, "InputStream is null for " + path);
+            int b = is.read();
+            Assert.assertNotSame(b, -1);
+        }
     }
 
 

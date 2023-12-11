@@ -25,15 +25,13 @@ package htsjdk.samtools.seekablestream;
 
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -45,6 +43,14 @@ import java.util.function.Function;
 public class SeekableStreamFactory{
 
     private static final ISeekableStreamFactory DEFAULT_FACTORY;
+    private static final String HTTP = "http";
+    private static final String HTTPS = "https";
+    private static final String FTP = "ftp";
+    /**
+     * the set of url schemes that have special support in htsjdk that isn't through a FileSystemProvider
+     */
+    private static final Set<String> URL_SCHEMES_WITH_LEGACY_SUPPORT = Set.of(HTTP, FTP, HTTPS);
+    public static final String FILE_SCHEME = "file";
     private static ISeekableStreamFactory currentFactory;
 
     static{
@@ -67,11 +73,11 @@ public class SeekableStreamFactory{
      * @param path the path to test
      * @return true if the path is to a file on disk
      * @deprecated this method is simplistic and no longer particularly useful since IOPath allows similar access to
-     * various non-file data sources, internal use has been replaced with {@link #isSpecialCase(String)}
+     * various non-file data sources, internal use has been replaced with {@link #isBeingHandledByLegacyUrlSupport(String)}
      */
     @Deprecated
     public static boolean isFilePath(final String path) {
-        return !isSpecialCaseUrlType(path);
+        return !canBeHandledByLegacyUrlSupport(path);
     }
 
     /**
@@ -80,14 +86,14 @@ public class SeekableStreamFactory{
      * @param path a path to check
      * @return if the path is not being handled by a FileSystemProvider and it can be read by legacy streams
      */
-    public static boolean isSpecialCase(final String path){
-        return !new HtsPath(path).isPath()  //if we have a provider for it that's what we'll use
-                && isSpecialCaseUrlType(path); // otherwise we fall back to the special handlers
+    public static boolean isBeingHandledByLegacyUrlSupport(final String path){
+        return !new HtsPath(path).hasFileSystemProvider()  //if we have a provider for it that's what we'll use
+                && canBeHandledByLegacyUrlSupport(path); // otherwise we fall back to the special handlers
     }
 
     //is this onee of the url types that has legacy htsjdk support built in?
-    private static boolean isSpecialCaseUrlType(final String path) {
-        return path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:");
+    public static boolean canBeHandledByLegacyUrlSupport(final String path) {
+        return URL_SCHEMES_WITH_LEGACY_SUPPORT.stream().anyMatch(path::startsWith);
     }
 
     private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {
@@ -127,14 +133,14 @@ public class SeekableStreamFactory{
          * @throws IOException
          */
         public static SeekableStream getStreamFor(final IOPath path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
-            if(path.isPath()) {
-                return path.getScheme().equals("file")
-                        ? new SeekablePathStream(path.toPath()) //don't apply the wrapper to local files
+            if(path.hasFileSystemProvider()) {
+                return path.getScheme().equals(FILE_SCHEME)
+                        ? new SeekableFileStream(path.toPath().toFile()) //don't apply the wrapper to local files
                         : new SeekablePathStream(path.toPath(), wrapper);
             } else {
                return switch(path.getScheme()){
-                   case "http", "https" -> new SeekableHTTPStream(new URL(path.getURIString()));
-                   case "ftp" -> new SeekableFTPStream((new URL(path.getURIString())));
+                   case HTTP, HTTPS -> new SeekableHTTPStream(new URL(path.getURIString()));
+                   case FTP -> new SeekableFTPStream((new URL(path.getURIString())));
                    default -> throw new TribbleException("Unknown path type. No FileSystemProvider available for " + path.getRawInputString());
                };
             }

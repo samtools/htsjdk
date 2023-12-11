@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.io.HtsPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -99,7 +98,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
         }
 
-        this.pathIsOldStyleHttpOrFtp = SeekableStreamFactory.isSpecialCase(path);
+        this.pathIsOldStyleHttpOrFtp = SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(path);
 
         readHeader();
     }
