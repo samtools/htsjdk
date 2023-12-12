@@ -91,9 +91,9 @@ public class SeekableStreamFactory{
                 && canBeHandledByLegacyUrlSupport(path); // otherwise we fall back to the special handlers
     }
 
-    //is this onee of the url types that has legacy htsjdk support built in?
+    //is this one of the url types that has legacy htsjdk support built in?
     public static boolean canBeHandledByLegacyUrlSupport(final String path) {
-        return URL_SCHEMES_WITH_LEGACY_SUPPORT.stream().anyMatch(path::startsWith);
+        return URL_SCHEMES_WITH_LEGACY_SUPPORT.stream().anyMatch(scheme-> path.startsWith(scheme +"://"));
     }
 
     private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {

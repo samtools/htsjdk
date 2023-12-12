@@ -49,8 +49,8 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "getSpecialCasePaths")
-    public void testCanBeHandledByLegacyUrlSuppoort(String path, boolean notExpected){
-        Assert.assertEquals(SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(path), !notExpected);
+    public void testCanBeHandledByLegacyUrlSupport(String path, boolean notExpected){
+        Assert.assertEquals(SeekableStreamFactory.canBeHandledByLegacyUrlSupport(path), !notExpected);
     }
 
     @DataProvider(name="getStreamForData")
