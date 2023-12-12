@@ -139,8 +139,8 @@ public class SeekableStreamFactory{
                         : new SeekablePathStream(path.toPath(), wrapper);
             } else {
                return switch(path.getScheme()){
-                   case HTTP, HTTPS -> new SeekableHTTPStream(new URL(path.getURIString()));
-                   case FTP -> new SeekableFTPStream((new URL(path.getURIString())));
+                   case HTTP, HTTPS -> new SeekableHTTPStream(new URL(path.getRawInputString()));
+                   case FTP -> new SeekableFTPStream((new URL(path.getRawInputString())));
                    default -> throw new TribbleException("Unknown path type. No FileSystemProvider available for " + path.getRawInputString());
                };
             }

@@ -34,7 +34,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.util.*;
@@ -405,12 +407,10 @@ public class ParsingUtils {
 
     }
 
-    public static boolean
-    resourceExists(String resource) throws IOException{
-
-        boolean remoteFile = resource.startsWith("http://") || resource.startsWith("https://") || resource.startsWith("ftp://");
+    public static boolean resourceExists(String resource) throws IOException{
+        boolean remoteFile = SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(resource);
         if (remoteFile) {
-            URL url = null;
+            URL url;
             try {
                 url = new URL(resource);
             } catch (MalformedURLException e) {

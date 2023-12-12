@@ -72,7 +72,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     @Test(groups = "ftp")
     public void testLoadBEDFTP() throws Exception {
-        final String path = "ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands with spaces.hg18.bed";
+        final String path = "ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands%20with%20spaces.hg18.bed";
         final BEDCodec codec = new BEDCodec();
         final AbstractFeatureReader<BEDFeature, LineIterator> bfs = AbstractFeatureReader.getFeatureReader(path, codec, false);
         for (final Feature feat : bfs.iterator()) {

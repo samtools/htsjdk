@@ -252,7 +252,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path, wrapper);
-            if (IOUtil.hasBlockCompressedExtension(new URI(URLEncoder.encode(path, StandardCharsets.UTF_8)))) {
+            if (IOUtil.hasBlockCompressedExtension(new URI(path))) {
                 // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));

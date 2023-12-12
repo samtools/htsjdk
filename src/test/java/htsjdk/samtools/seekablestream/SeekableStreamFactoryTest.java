@@ -29,7 +29,8 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
                 {"", true},
                 {"http://broadinstitute.org", false},
                 {"https://broadinstitute.org", false},
-                {"ftp://broadinstitute.org", false}
+                {"ftp://broadinstitute.org", false},
+                {"ftp://broadinstitute.org/file%20with%20spaces", false}
         };
     }
 
