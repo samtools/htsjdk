@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.io.HtsPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -40,6 +41,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -60,9 +62,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     private Index index;
 
     /**
-     * is the path pointing to our source data a regular file?
+     * is the path backed by old style built in http(s) / ftp support instead of a FileSystemProvider
      */
-    private final boolean pathIsRegularFile;
+    private final boolean pathIsOldStyleHttpOrFtp;
 
     /**
      * a potentially reusable seekable stream for queries over regular files
@@ -97,8 +99,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
         }
 
-        // does path point to a regular file?
-        this.pathIsRegularFile = SeekableStreamFactory.isFilePath(path);
+        this.pathIsOldStyleHttpOrFtp = SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(path);
 
         readHeader();
     }
@@ -203,7 +204,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @return true if
      */
     private boolean reuseStreamInQuery() {
-        return pathIsRegularFile;
+        return !pathIsOldStyleHttpOrFtp;
     }
 
     @Override
@@ -252,7 +253,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path, wrapper);
-            if (IOUtil.hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8")))) {
+            if (IOUtil.hasBlockCompressedExtension(new HtsPath(path).getURI())) {
                 // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));

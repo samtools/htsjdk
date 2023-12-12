@@ -23,17 +23,20 @@
  */
 package htsjdk.tribble.util;
 
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
+
 import java.awt.Color;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.util.*;
@@ -49,7 +52,7 @@ public class ParsingUtils {
     private static URLHelperFactory urlHelperFactory = RemoteURLHelper::new;
 
     // HTML 4.1 color table,  + orange and magenta
-    private static Map<String, String> colorSymbols = new HashMap();
+    private static final Map<String, String> colorSymbols = new HashMap<>();
 
     static {
         colorSymbols.put("white", "FFFFFF");
@@ -81,13 +84,13 @@ public class ParsingUtils {
         return openInputStream(path, null);
     }
 
-    static private final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http", "ftp", "https"));
-
     /**
      * open an input stream from the given path and wrap the raw byte stream with a wrapper if given
      *
-     * the wrapper will only be applied to paths that are not http, https, ftp, or file, i.e. any {@link java.nio.file.Path}
-     * using a custom filesystem plugin
+     * the wrapper will only be applied to paths that are
+     *   1. not local files
+     *   2. not being handled by the legacy http(s)/ftp providers
+     *  i.e. any {@link java.nio.file.Path} using a custom FileSystem plugin
      * @param uri a uri like string
      * @param wrapper to wrap the input stream in, may be used to implement caching or prefetching, etc
      * @return An inputStream appropriately created from uri and conditionally wrapped with wrapper (only in certain cases)
@@ -95,18 +98,21 @@ public class ParsingUtils {
      */
     public static InputStream openInputStream(final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
             throws IOException {
-
-        final InputStream inputStream;
-
-        if (URL_SCHEMES.stream().anyMatch(uri::startsWith)) {
-            inputStream = getURLHelper(new URL(uri)).openInputStream();
-        } else if (!IOUtil.hasScheme(uri)) {
-            File file = new File(uri);
-            inputStream = Files.newInputStream(file.toPath());
+        final IOPath path = new HtsPath(uri);
+        if(path.hasFileSystemProvider()){
+            if(path.isPath()) {
+                return path.getScheme().equals("file")
+                        ? Files.newInputStream(path.toPath())
+                        : new SeekablePathStream(path.toPath(), wrapper);
+            } else {
+                throw new IOException("FileSystemProvider for path " + path.getRawInputString() + " exits but failed to " +
+                        " create path. \n" + path.getToPathFailureReason());
+            }
+        } else if( SeekableStreamFactory.canBeHandledByLegacyUrlSupport(uri)){
+            return getURLHelper(new URL(uri)).openInputStream();
         } else {
-            inputStream = new SeekablePathStream(IOUtil.getPath(uri), wrapper);
+            throw new IOException("No FileSystemProvider available to handle path: " + path.getRawInputString());
         }
-        return inputStream;
     }
 
     public static <T> String join(String separator, Collection<T> objects) {
@@ -402,10 +408,9 @@ public class ParsingUtils {
     }
 
     public static boolean resourceExists(String resource) throws IOException{
-
-        boolean remoteFile = resource.startsWith("http://") || resource.startsWith("https://") || resource.startsWith("ftp://");
+        boolean remoteFile = SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(resource);
         if (remoteFile) {
-            URL url = null;
+            URL url;
             try {
                 url = new URL(resource);
             } catch (MalformedURLException e) {

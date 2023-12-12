@@ -253,6 +253,10 @@ public class HtsPath implements IOPath, Serializable {
                 tempURI = getCachedPath().toUri();
             }
         } catch (URISyntaxException uriException) {
+            //check that the uri wasn't a badly encoded absolute uri of some sort
+            //if you don't do this it will be treated as a badly formed file:// url
+            assertNoNonFileScheme(pathString, uriException);
+
             // the input string isn't a valid URI; assume its a local (non-URI) file reference, and
             // use the URI resulting from the corresponding Path
             try {
@@ -275,6 +279,26 @@ public class HtsPath implements IOPath, Serializable {
         }
 
         return tempURI;
+    }
+
+    /**
+     * check that there isn't a non file scheme at the start of the path
+     * @param pathString
+     * @param cause
+     */
+    private static void assertNoNonFileScheme(String pathString, URISyntaxException cause){
+        final String[] split = pathString.split(":");
+        if(split.length > 1){
+            if(split[0] == null || split[0].isEmpty()){
+                throw new IllegalArgumentException("Malformed url " + pathString + " includes an empty scheme." +
+                        "\nCheck that it is fully encoded.", cause);
+            }
+            if(!split[0].equals("file")){
+                throw new IllegalArgumentException("Malformed url " + pathString + " includes a scheme: " + split[0] + ":// but was an invalid URI." +
+                        "\nCheck that it is fully encoded.", cause);
+            }
+        }
+
     }
     
 }

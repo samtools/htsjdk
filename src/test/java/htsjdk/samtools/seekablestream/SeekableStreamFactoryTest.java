@@ -1,5 +1,7 @@
 package htsjdk.samtools.seekablestream;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
@@ -10,20 +12,45 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class SeekableStreamFactoryTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
-    @Test
-    public void testIsFilePath() {
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("x"), true);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath(""), true);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("http://broadinstitute.org"), false);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("https://broadinstitute.org"), false);
-        Assert.assertEquals(SeekableStreamFactory.isFilePath("ftp://broadinstitute.org"), false);
+    @DataProvider
+    public Object[][] getSpecialCasePaths(){
+        return new Object[][]{
+                {"x", true},
+                {"", true},
+                {"http://broadinstitute.org", false},
+                {"https://broadinstitute.org", false},
+                {"ftp://broadinstitute.org", false},
+                {"ftp://broadinstitute.org/file%20with%20spaces", false}
+        };
+    }
+
+    @Test(dataProvider = "getSpecialCasePaths")
+    @Deprecated
+    public void testIsFilePath(String path, boolean expected) {
+        Assert.assertEquals(SeekableStreamFactory.isFilePath(path), expected);
+    }
+
+
+    // this test isn't particularly useful since we're not testing the meaninful case of having the http-nio provider
+    // installed
+    @Test(dataProvider = "getSpecialCasePaths")
+    public void testIsBeingHandledByLegacyUrlSupport(String path, boolean notExpected) {
+        Assert.assertEquals(SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(path), !notExpected);
+    }
+
+    @Test(dataProvider = "getSpecialCasePaths")
+    public void testCanBeHandledByLegacyUrlSupport(String path, boolean notExpected){
+        Assert.assertEquals(SeekableStreamFactory.canBeHandledByLegacyUrlSupport(path), !notExpected);
     }
 
     @DataProvider(name="getStreamForData")
@@ -38,7 +65,7 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
                 { new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm(),
                         new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm() },
                 { new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm(),
-                       new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm() }
+                       new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm() },
         };
     }
 
@@ -46,6 +73,7 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
     public void testGetStreamFor(final String path, final String expectedPath) throws IOException {
         Assert.assertEquals(SeekableStreamFactory.getInstance().getStreamFor(path).getSource(), expectedPath);
     }
+
 
     @Test
     public void testPathWithEmbeddedSpace() throws IOException {
@@ -69,7 +97,17 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
             final int BYTES_TO_READ = 10;
             Assert.assertEquals(seekableStream.read(new byte[BYTES_TO_READ], 0,BYTES_TO_READ), BYTES_TO_READ);
         }
-
     }
 
+    @Test
+    public void testGetSeekableStreamWorksOnJimfs() throws IOException {
+        try(final FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path file = fs.getPath("/file");
+            Files.writeString(file,"hello");
+            try(final SeekableStream stream = SeekableStreamFactory.getInstance().getStreamFor(file.toUri().toString())){
+                final byte[] bytes = stream.readAllBytes();
+                Assert.assertEquals(new String(bytes, StandardCharsets.UTF_8), "hello");
+            }
+        }
+    }
 }

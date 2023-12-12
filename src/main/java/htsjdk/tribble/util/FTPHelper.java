@@ -6,6 +6,7 @@ import htsjdk.samtools.util.ftp.FTPUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -35,7 +36,12 @@ public class FTPHelper implements URLHelper {
 
     @Override
     public InputStream openInputStream() throws IOException {
-        String file = url.getPath();
+        String file = null;
+        try {
+            file = url.toURI().getPath();
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
         FTPClient ftp = FTPUtils.connect(url.getHost(), url.getUserInfo(), null);
         ftp.pasv();
         ftp.retr(file);

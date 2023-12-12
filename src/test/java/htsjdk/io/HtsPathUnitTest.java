@@ -92,6 +92,8 @@ public class HtsPathUnitTest extends HtsjdkTest {
                 {"gcs://abucket/bucket",            "gcs://abucket/bucket",             false, false},
                 {"gendb://somegdb",                 "gendb://somegdb",                  false, false},
                 {"chr1:1-100",                      "chr1:1-100",                       false, false},
+                {"ftp://broad.org/file",            "ftp://broad.org/file",             false, false},
+                {"ftp://broad.org/with%20space",    "ftp://broad.org/with%20space",     false, false},
 
                 //**********************************************************************************************
                 // Valid URIs which ARE valid NIO URIs (there *IS* an installed file system provider), but are
@@ -167,6 +169,7 @@ public class HtsPathUnitTest extends HtsjdkTest {
                 // the nul character is rejected on all of the supported platforms in both local
                 // filenames and URIs, so use it to test HtsPath constructor failure on all platforms
                 {"\0"},
+                {"ftp://broad.org/file with space"} // this has a non-file scheme but isn't encoded properly
         };
     }
 
