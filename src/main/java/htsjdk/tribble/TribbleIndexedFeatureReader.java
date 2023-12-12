@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.io.HtsPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -252,7 +253,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path, wrapper);
-            if (IOUtil.hasBlockCompressedExtension(new URI(path))) {
+            if (IOUtil.hasBlockCompressedExtension(new HtsPath(path).getURI())) {
                 // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
