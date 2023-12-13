@@ -15,6 +15,9 @@ public class RANSNx16Decode extends RANSDecode {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK = 0x01;
 
+    // This method assumes that inBuffer is already rewound.
+    // It uncompresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the uncompressed data.
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
 
         // For RANS decoding, the bytes are read in little endian from the input stream
@@ -61,16 +64,15 @@ public class RANSNx16Decode extends RANSDecode {
         }
 
         // if rle, get rle metadata, which will be used later to decode rle
-        final int uncompressedRLEMetaDataLength;
         int uncompressedRLEOutputLength = 0;
-        final int[] rleSymbols = new int[Constants.NUMBER_OF_SYMBOLS];
+        int[] rleSymbols = null;
         ByteBuffer uncompressedRLEMetaData = null;
         if (ransNx16Params.isRLE()) {
-            uncompressedRLEMetaDataLength = Utils.readUint7(inBuffer);
+            rleSymbols = new int[Constants.NUMBER_OF_SYMBOLS];
+            final int uncompressedRLEMetaDataLength = Utils.readUint7(inBuffer);
             uncompressedRLEOutputLength = uncompressedSize;
             uncompressedSize = Utils.readUint7(inBuffer);
-            // TODO: maybe move decodeRLEMeta in-line
-            uncompressedRLEMetaData = decodeRLEMeta(inBuffer, uncompressedRLEMetaDataLength, rleSymbols);
+            uncompressedRLEMetaData = decodeRLEMeta(inBuffer, uncompressedRLEMetaDataLength, rleSymbols, ransNx16Params);
         }
 
         ByteBuffer outBuffer = ByteBuffer.allocate(uncompressedSize);;
@@ -95,12 +97,12 @@ public class RANSNx16Decode extends RANSDecode {
         }
 
         // if rle, then decodeRLE
-        if (ransNx16Params.isRLE() && uncompressedRLEMetaData != null) {
+        if (ransNx16Params.isRLE()) {
             outBuffer = decodeRLE(outBuffer, rleSymbols, uncompressedRLEMetaData, uncompressedRLEOutputLength);
         }
 
         // if pack, then decodePack
-        if (ransNx16Params.isPack() && packMappingTable.length > 0) {
+        if (ransNx16Params.isPack()) {
             outBuffer = decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
         }
         return outBuffer;
@@ -189,7 +191,7 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer compressedFrequencyTableBuffer = ByteBuffer.wrap(compressedFreqTable);
             compressedFrequencyTableBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
-            // Uncompress using RANSNx16 Order 0, Nway = 4.
+            // uncompress using RANSNx16 Order 0, Nway = 4
             // formatFlags = (~RANSNx16Params.ORDER_FLAG_MASK & ~RANSNx16Params.N32_FLAG_MASK) = ~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK)
             uncompressOrder0WayN(compressedFrequencyTableBuffer, freqTableSource, uncompressedLength,new RANSNx16Params(~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK))); // format flags = 0
         }
@@ -355,7 +357,8 @@ public class RANSNx16Decode extends RANSDecode {
     private ByteBuffer decodeRLEMeta(
             final ByteBuffer inBuffer,
             final int uncompressedRLEMetaDataLength,
-            final int[] rleSymbols) {
+            final int[] rleSymbols,
+            final RANSNx16Params ransNx16Params) {
         final ByteBuffer uncompressedRLEMetaData;
         if ((uncompressedRLEMetaDataLength & 0x01)!=0) {
             final byte[] uncompressedRLEMetaDataArray = new byte[(uncompressedRLEMetaDataLength-1)/2];
@@ -368,9 +371,12 @@ public class RANSNx16Decode extends RANSDecode {
             final ByteBuffer compressedRLEMetaData = ByteBuffer.wrap(compressedRLEMetaDataArray);
             compressedRLEMetaData.order(ByteOrder.LITTLE_ENDIAN);
             uncompressedRLEMetaData = ByteBuffer.allocate(uncompressedRLEMetaDataLength / 2);
-            
-            // TODO: get Nway from ransParams and use N to uncompress
-            uncompressOrder0WayN(compressedRLEMetaData,uncompressedRLEMetaData, uncompressedRLEMetaDataLength / 2, new RANSNx16Params(0x00)); // N should come from the prev step
+            // uncompress using Order 0 and N = Nway
+            uncompressOrder0WayN(
+                    compressedRLEMetaData,
+                    uncompressedRLEMetaData,
+                    uncompressedRLEMetaDataLength / 2,
+                    new RANSNx16Params(0x00 | ransNx16Params.getFormatFlags() & RANSNx16Params.N32_FLAG_MASK));
         }
 
         int numRLESymbols = uncompressedRLEMetaData.get() & 0xFF;

@@ -17,6 +17,9 @@ public class RANS4x8Decode extends RANSDecode {
     private static final int RAW_BYTE_LENGTH = 4;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
+    // This method assumes that inBuffer is already rewound.
+    // It uncompresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the uncompressed data.
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;

@@ -190,7 +190,7 @@ public class RansTest extends HtsjdkTest {
         final int rawSize = 1001;
         final ByteBuffer rawData = ByteBuffer.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
         final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode, ransDecode,params);
-        Assert.assertTrue(compressed.limit() > 10);
+        Assert.assertTrue(compressed.limit() > Constants.RANS_4x8_PREFIX_BYTE_LENGTH); // minimum prefix len when input is not Empty
         Assert.assertEquals(compressed.get(), (byte) params.getOrder().ordinal());
         Assert.assertEquals(compressed.getInt(), compressed.limit() - Constants.RANS_4x8_PREFIX_BYTE_LENGTH);
         Assert.assertEquals(compressed.getInt(), rawSize);
@@ -204,21 +204,23 @@ public class RansTest extends HtsjdkTest {
         final int rawSize = 1001;
         final ByteBuffer rawData = ByteBuffer.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
         final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode,ransDecode,params);
-        Assert.assertTrue(compressed.limit() > 1); // minimum prefix len when input is not Empty
-        final int FormatFlags = compressed.get(); // first byte of compressed data is the formatFlags
         rawData.rewind();
-        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
+        Assert.assertTrue(compressed.limit() > 1); // minimum prefix len when input is not Empty
+        final int FormatFlags = compressed.get() & 0xFF; // first byte of compressed data is the formatFlags
+        final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
         final int inSize = rawData.remaining();
         for (int i = 0; i < inSize; i ++) {
-            F[rawData.get(i) & 0xFF]++;
+            frequencies[rawData.get(i) & 0xFF]++;
         }
         int numSym = 0;
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            if (F[i]>0) {
+            if (frequencies[i]>0) {
                 numSym++;
             }
         }
         if (params.isPack() & (numSym == 0 | numSym > 16)) {
+            // In the encoder, Packing is skipped if numSymbols = 0  or numSymbols > 16
+            // and the Pack flag is unset in the formatFlags
             Assert.assertEquals(FormatFlags, params.getFormatFlags() & ~RANSNx16Params.PACK_FLAG_MASK);
         } else {
             Assert.assertEquals(FormatFlags, params.getFormatFlags());
@@ -226,54 +228,6 @@ public class RansTest extends HtsjdkTest {
         // if nosz flag is not set, then the uncompressed size is recorded
         if (!params.isNosz()){
             Assert.assertEquals(Utils.readUint7(compressed), rawSize);
-        }
-    }
-
-    @Test(dataProvider = "rans4x8")
-    public void testRans4x8Header(
-            final RANS4x8Encode ransEncode,
-            final RANS4x8Decode unused,
-            final RANS4x8Params params) {
-        final int rawSize = 1000;
-        final ByteBuffer rawData = ByteBuffer.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
-        final ByteBuffer compressed = ransEncode.compress(rawData, params);
-        // first byte of compressed data gives the order
-        Assert.assertEquals(compressed.get(), (byte) params.getOrder().ordinal());
-        // the next 4 bytes gives the compressed size
-        Assert.assertEquals(compressed.getInt(), compressed.limit() - Constants.RANS_4x8_PREFIX_BYTE_LENGTH);
-        // the next 4 bytes gives the uncompressed size
-        Assert.assertEquals(compressed.getInt(), rawData.limit());
-    }
-
-    @Test(dataProvider = "ransNx16")
-    public void testRansNx16Header(
-            final RANSNx16Encode ransEncode,
-            final RANSNx16Decode unused,
-            final RANSNx16Params params) {
-        final int size = 1000;
-        final ByteBuffer rawData = ByteBuffer.wrap(randomBytesFromGeometricDistribution(size, 0.01));
-        final ByteBuffer compressed = ransEncode.compress(rawData, params);
-        rawData.rewind();
-        final int FormatFlags = compressed.get() & 0xFF; // first byte of compressed data is the formatFlags
-        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
-        final int inSize = rawData.remaining();
-        for (int i = 0; i < inSize; i ++) {
-            F[rawData.get(i) & 0xFF]++;
-        }
-        int numSym = 0;
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            if (F[i]>0) {
-                numSym++;
-            }
-        }
-        if (params.isPack() & (numSym == 0 | numSym > 16)) {
-            Assert.assertEquals(FormatFlags, (byte) (params.getFormatFlags() & ~RANSNx16Params.PACK_FLAG_MASK));
-        } else {
-            Assert.assertEquals(FormatFlags, (byte) params.getFormatFlags());
-        }
-        // if nosz flag is not set, then the uncompressed size is recorded
-        if (!params.isNosz()){
-            Assert.assertEquals(Utils.readUint7(compressed), size);
         }
     }
 
@@ -301,7 +255,17 @@ public class RansTest extends HtsjdkTest {
         ransEncode.compress(ByteBuffer.wrap(td.testArray), params);
     }
 
-    // TODO: Add Test to DecodePack with nsym > 16
+    @Test(
+            description = "RANSNx16 Decoding with Pack Flag if (numSymbols > 16 or numSymbols==0) " +
+                    "should throw CRAMException",
+            expectedExceptions = { CRAMException.class },
+            expectedExceptionsMessageRegExp = "Bit Packing is not permitted when number " +
+                    "of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: 0")
+    public void testRANSNx16RejectDecodePack(){
+        final ByteBuffer compressedData = ByteBuffer.wrap(new byte[]{(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00});
+        final RANSNx16Decode ransDecode = new RANSNx16Decode();
+        ransDecode.uncompress(compressedData);
+    }
 
     private static void ransRoundTrip(
             final RANSEncode ransEncode,
@@ -315,7 +279,7 @@ public class RansTest extends HtsjdkTest {
     }
 
     public ByteBuffer ransBufferMeetBoundaryExpectations(
-            final int size,
+            final int rawSize,
             final ByteBuffer raw,
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
@@ -325,10 +289,10 @@ public class RansTest extends HtsjdkTest {
         final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
         Assert.assertFalse(compressed.hasRemaining());
         compressed.rewind();
-        Assert.assertEquals(uncompressed.limit(), size);
+        Assert.assertEquals(uncompressed.limit(), rawSize);
         Assert.assertEquals(uncompressed.position(), 0);
         Assert.assertFalse(raw.hasRemaining());
-        Assert.assertEquals(raw.limit(), size);
+        Assert.assertEquals(raw.limit(), rawSize);
         Assert.assertEquals(compressed.position(), 0);
         return compressed;
     }

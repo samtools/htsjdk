@@ -17,6 +17,9 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
+    // This method assumes that inBuffer is already rewound.
+    // It compresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the compressed data.
     public ByteBuffer compress(final ByteBuffer inBuffer, final RANSNx16Params ransNx16Params) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
@@ -65,9 +68,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // RLE
         if (ransNx16Params.isRLE()){
-            inputBuffer = encodeRLE(inputBuffer, outBuffer);
+            inputBuffer = encodeRLE(inputBuffer, outBuffer, ransNx16Params);
         }
-
 
         if (ransNx16Params.isCAT()) {
             // Data is uncompressed
@@ -472,7 +474,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         cp.put((byte) 0);
     }
 
-    private ByteBuffer encodeRLE(final ByteBuffer inBuffer, final ByteBuffer outBuffer){
+    private ByteBuffer encodeRLE(final ByteBuffer inBuffer, final ByteBuffer outBuffer, final RANSNx16Params ransNx16Params){
 
         // Find the symbols that benefit from RLE, i.e, the symbols that occur more than 2 times in succession.
         // spec: For symbols that occur many times in succession, we can replace them with a single symbol and a count.
@@ -548,11 +550,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         // compress the rleMetaData Buffer
         final ByteBuffer compressedRleMetaData = allocateOutputBuffer(rleMetaData.remaining());
 
-        // TODO: Nway? Check other places as well -> How to setInterleaveSize? - can i do it by changing formatflags?
-        // // Compress lengths with O0 and literals with O0/O1 ("order" param)
-        // TODO: get Nway from ransParams and use N to uncompress
-
-        compressOrder0WayN(rleMetaData, new RANSNx16Params(0x00),compressedRleMetaData);
+        // compress using Order 0 and N = Nway
+        compressOrder0WayN(rleMetaData, new RANSNx16Params(0x00 | ransNx16Params.getFormatFlags() & RANSNx16Params.N32_FLAG_MASK),compressedRleMetaData);
 
         // write to compressedRleMetaData to outBuffer
         Utils.writeUint7(rleMetaData.limit()*2, outBuffer);

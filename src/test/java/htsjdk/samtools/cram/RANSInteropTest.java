@@ -40,8 +40,62 @@ public class RANSInteropTest extends HtsjdkTest {
     public static final String COMPRESSED_RANS4X8_DIR = "r4x8";
     public static final String COMPRESSED_RANSNX16_DIR = "r4x16";
 
-    // RANS4x8 codecs and testdata
-    public Object[][] get4x8TestCases() throws IOException {
+    // enumerates the different flag combinations
+    public Object[][] get4x8RoundTripTestCases() throws IOException {
+
+        // params:
+        // uncompressed testfile path,
+        // RANS encoder, RANS decoder, RANS params
+        final List<RANSParams.ORDER> rans4x8ParamsOrderList = Arrays.asList(
+                RANSParams.ORDER.ZERO,
+                RANSParams.ORDER.ONE);
+        final List<Object[]> testCases = new ArrayList<>();
+        getInteropRawTestFiles()
+                .forEach(path ->
+                        rans4x8ParamsOrderList.stream().map(rans4x8ParamsOrder -> new Object[]{
+                                path,
+                                new RANS4x8Encode(),
+                                new RANS4x8Decode(),
+                                new RANS4x8Params(rans4x8ParamsOrder)
+                        }).forEach(testCases::add));
+        return testCases.toArray(new Object[][]{});
+    }
+
+    // enumerates the different flag combinations
+    public Object[][] getNx16RoundTripTestCases() throws IOException {
+
+        // params:
+        // uncompressed testfile path,
+        // RANS encoder, RANS decoder, RANS params
+        final List<Integer> ransNx16ParamsFormatFlagList = Arrays.asList(
+                0x00,
+                RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.N32_FLAG_MASK,
+                RANSNx16Params.N32_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK,
+                RANSNx16Params.CAT_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.PACK_FLAG_MASK,
+                RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
+        final List<Object[]> testCases = new ArrayList<>();
+        getInteropRawTestFiles()
+                .forEach(path ->
+                        ransNx16ParamsFormatFlagList.stream().map(ransNx16ParamsFormatFlag -> new Object[]{
+                                path,
+                                new RANSNx16Encode(),
+                                new RANSNx16Decode(),
+                                new RANSNx16Params(ransNx16ParamsFormatFlag)
+                        }).forEach(testCases::add));
+        return testCases.toArray(new Object[][]{});
+    }
+
+    // uses the available compressed interop test files
+    public Object[][] get4x8DecodeOnlyTestCases() throws IOException {
 
         // params:
         // compressed testfile path, uncompressed testfile path,
@@ -60,8 +114,8 @@ public class RANSInteropTest extends HtsjdkTest {
         return testCases.toArray(new Object[][]{});
     }
 
-    // RANSNx16 codecs and testdata
-    public Object[][] getNx16TestCases() throws IOException {
+    // uses the available compressed interop test files
+    public Object[][] getNx16DecodeOnlyTestCases() throws IOException {
 
         // params:
         // compressed testfile path, uncompressed testfile path,
@@ -86,7 +140,17 @@ public class RANSInteropTest extends HtsjdkTest {
         // params:
         // compressed testfile path, uncompressed testfile path,
         // RANS encoder, RANS decoder, RANS params
-        return Stream.concat(Arrays.stream(get4x8TestCases()), Arrays.stream(getNx16TestCases()))
+        return Stream.concat(Arrays.stream(get4x8RoundTripTestCases()), Arrays.stream(getNx16RoundTripTestCases()))
+                .toArray(Object[][]::new);
+    }
+
+    @DataProvider(name = "decodeOnlyTestCases")
+    public Object[][] getDecodeOnlyTestCases() throws IOException {
+
+        // params:
+        // compressed testfile path, uncompressed testfile path,
+        // RANS encoder, RANS decoder, RANS params
+        return Stream.concat(Arrays.stream(get4x8DecodeOnlyTestCases()), Arrays.stream(getNx16DecodeOnlyTestCases()))
                 .toArray(Object[][]::new);
     }
 
@@ -103,7 +167,6 @@ public class RANSInteropTest extends HtsjdkTest {
             dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
-            final Path unusedcompressedFilePath,
             final Path uncompressedFilePath,
             final RANSEncode<RANSParams> ransEncode,
             final RANSDecode ransDecode,
@@ -129,7 +192,7 @@ public class RANSInteropTest extends HtsjdkTest {
 
     @Test (
             dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
-            dataProvider = "roundTripTestCases",
+            dataProvider = "decodeOnlyTestCases",
             description = "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
     public void testDecodeOnly(
             final Path compressedFilePath,
@@ -156,6 +219,16 @@ public class RANSInteropTest extends HtsjdkTest {
             throw new SkipException("Skipping testDecodeOnly as either input file " +
                     "or precompressed file is missing.", ex);
         }
+    }
+
+    // return a list of all raw test files in the htscodecs/tests/dat directory
+    private List<Path> getInteropRawTestFiles() throws IOException {
+        final List<Path> paths = new ArrayList<>();
+        Files.newDirectoryStream(
+                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
+                        path -> (Files.isRegularFile(path)) && !Files.isHidden(path))
+                .forEach(path -> paths.add(path));
+        return paths;
     }
 
 }

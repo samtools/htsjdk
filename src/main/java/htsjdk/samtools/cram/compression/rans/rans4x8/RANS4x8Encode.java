@@ -17,6 +17,9 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
     private static final int MINIMUM_ORDER_1_SIZE = 4;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
+    // This method assumes that inBuffer is already rewound.
+    // It compresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the compressed data.
     public ByteBuffer compress(final ByteBuffer inBuffer, final RANS4x8Params params) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
