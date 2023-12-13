@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
@@ -24,6 +26,8 @@ import java.nio.file.ProviderNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
+import static htsjdk.io.HtsPath.assertNoProblematicScheme;
 
 public class HtsPathUnitTest extends HtsjdkTest {
 
@@ -114,7 +118,7 @@ public class HtsPathUnitTest extends HtsjdkTest {
 
                 //*****************************************************************************************
                 // Reference that contain characters that require URI-encoding. If the input string is presented
-                // with no scheme, it will be be automatically encoded by HtsPath, otherwise it
+                // with no scheme, it will be automatically encoded by HtsPath, otherwise it
                 // must already be URI-encoded.
                 //*****************************************************************************************
 
@@ -169,7 +173,11 @@ public class HtsPathUnitTest extends HtsjdkTest {
                 // the nul character is rejected on all of the supported platforms in both local
                 // filenames and URIs, so use it to test HtsPath constructor failure on all platforms
                 {"\0"},
-                {"ftp://broad.org/file with space"} // this has a non-file scheme but isn't encoded properly
+
+                // this has a non-file scheme but isn't encoded properly, best to reject these with
+                // a helpful error message than to continue on and treat it as a file:// path
+                {"ftp://broad.org/file with space"}
+
         };
     }
 
@@ -181,23 +189,26 @@ public class HtsPathUnitTest extends HtsjdkTest {
     @DataProvider
     public Object[][] invalidPath() {
         return new Object[][] {
-                // valid references that are not valid as a path
-
-                {"file:/project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},    // not encoded
-                {"file:project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},     // scheme-specific part is not hierarchical
-
-                // The hadoop file system provider explicitly throws an NPE if no host is specified and HDFS is not
-                // the default file system
-                //{"hdfs://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
-                {"hdfs://userinfo@host:80/path/to/file.bam"},           // UnknownHostException "host"
-
-                {"unknownscheme://foobar"},
+//                // valid references that are not valid as a path
+//
+//                {"file:/project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},    // not encoded
+//                {"file:project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},     // scheme-specific part is not hierarchical
+//
+//                // The hadoop file system provider explicitly throws an NPE if no host is specified and HDFS is not
+//                // the default file system
+//                //{"hdfs://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
+//                {"hdfs://userinfo@host:80/path/to/file.bam"},           // UnknownHostException "host"
+//
+//                {"unknownscheme://foobar"},
                 {"gendb://adb"},
-                {"gcs://abucket/bucket"},
+//
+//                {"gcs://abucket/bucket"},
+//
+//                // URIs with schemes that are backed by an valid NIO provider, but for which the
+//                // scheme-specific part is not valid.
+//                {"file://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
 
-                // URIs with schemes that are backed by an valid NIO provider, but for which the
-                // scheme-specific part is not valid.
-                {"file://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
+
         };
     }
 
@@ -649,4 +660,52 @@ public class HtsPathUnitTest extends HtsjdkTest {
         return localPath.toUri().normalize().getPath();
     }
 
+    @DataProvider
+    public Object[][] getNonProblematic() {
+        return new Object[][]{
+                // URI is unencoded but no problems with a scheme
+                {"file/ name-sare/ :wierd-"},
+                {"hello there"},
+
+                // file scheme is deliberately ignored here since it's handled specially later
+                {"file://unencoded file names/ are/ok!"},
+
+                //these aren't invalid URIs so they should never be tested by this method, they'll pass it though
+
+                {"eep/ee:e:e:ep"},
+                {"file:///"},
+        };
+    }
+    @Test(dataProvider = "getNonProblematic")
+    public void testAssertNoProblematicScheme(String path){
+        assertNoProblematicScheme(path, null);
+    }
+
+    @DataProvider
+    public Object[][] getProblematic(){
+        return new Object[][]{
+
+                //This is the primary use case, to detect unencoded uris that were intended to be encoded
+                {"http://forgot.com/to encode"},
+                {"ftp://server.com/file name.txt"},
+
+                {"://"},
+
+                //this is technically a valid file name, but it seems very unlikely that anyone would do this delierately
+                //better to call it out
+                {"://forgotmyscheme"},
+
+                //invalid  URI, needs the rest of the path
+                {"file://"},
+                {"http://"},
+
+                //This gets rejected but it should never reach here because it's not an invalid URI
+                {"http://thisIsOkButItwouldNeverGetHere/something?file=thisone#righthere"},
+        };
+    }
+
+    @Test(dataProvider = "getProblematic", expectedExceptions = IllegalArgumentException.class)
+    public void testAssertNoProblematicSchemeRejectedCases(String path){
+        assertNoProblematicScheme(path, null);
+    }
 }

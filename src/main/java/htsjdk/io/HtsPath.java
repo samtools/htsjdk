@@ -27,7 +27,7 @@ import java.nio.file.spi.FileSystemProvider;
  * encoding/escaping.
  *
  * For example, a URI that contains a scheme and has an embedded "#" in the path will be treated as a URI
- * having a fragment delimiter. If the URI contains an scheme, the "#" will be escaped and the encoded "#"
+ * having a fragment delimiter. If the URI contains no scheme, the "#" will be escaped and the encoded "#"
  * will be interpreted as part of the URI path.
  *
  * There are 3 succeeding levels of input validation/conversion:
@@ -69,6 +69,7 @@ import java.nio.file.spi.FileSystemProvider;
  */
 public class HtsPath implements IOPath, Serializable {
     private static final long serialVersionUID = 1L;
+    private static final String HIERARCHICAL_SCHEME_SEPARATOR = "://";
 
     private final String    rawInputString;     // raw input string provided by th user; may or may not have a scheme
     private final URI       uri;                // working URI; always has a scheme ("file" if not otherwise specified)
@@ -255,7 +256,7 @@ public class HtsPath implements IOPath, Serializable {
         } catch (URISyntaxException uriException) {
             //check that the uri wasn't a badly encoded absolute uri of some sort
             //if you don't do this it will be treated as a badly formed file:// url
-            assertNoNonFileScheme(pathString, uriException);
+            assertNoProblematicScheme(pathString, uriException);
 
             // the input string isn't a valid URI; assume its a local (non-URI) file reference, and
             // use the URI resulting from the corresponding Path
@@ -282,19 +283,36 @@ public class HtsPath implements IOPath, Serializable {
     }
 
     /**
-     * check that there isn't a non file scheme at the start of the path
-     * @param pathString
-     * @param cause
+     * Check for problems associated with the presence of a heirachical scheme.
+     *
+     * It's better to reject cases like `://` or `ftp://I forgot to encode this` than to treat them as relative file paths
+     * It's almost certainly an error on the users part instead of an atttempt to intentionally reference a file named
+     * `file:///workingidr/ftp:/I forgot to encode this`
+     *
+     * Note this is only meant to be called in the case of a URLSyntaxException already having occured during initial
+     * parsing of the URI
+     *
+     * @param pathString the path being examined
+     * @param cause the original failure reason
      */
-    private static void assertNoNonFileScheme(String pathString, URISyntaxException cause){
-        final String[] split = pathString.split(":");
+     static void assertNoProblematicScheme(String pathString, URISyntaxException cause){
+        if(pathString.equals(HIERARCHICAL_SCHEME_SEPARATOR)){
+            throw new IllegalArgumentException(HIERARCHICAL_SCHEME_SEPARATOR + " is not a valid path.", cause);
+        }
+
+        if(pathString.endsWith(HIERARCHICAL_SCHEME_SEPARATOR)){
+            throw new IllegalArgumentException("A path consisting of only a scheme is not allowed: " + pathString, cause);
+        }
+
+        final String[] split = pathString.split(HIERARCHICAL_SCHEME_SEPARATOR);
+
         if(split.length > 1){
-            if(split[0] == null || split[0].isEmpty()){
-                throw new IllegalArgumentException("Malformed url " + pathString + " includes an empty scheme." +
-                        "\nCheck that it is fully encoded.", cause);
+            final String scheme = split[0];
+            if(scheme == null || scheme.isEmpty()){
+                throw new IllegalArgumentException("Malformed path " + pathString + " includes an empty scheme.", cause);
             }
-            if(!split[0].equals("file")){
-                throw new IllegalArgumentException("Malformed url " + pathString + " includes a scheme: " + split[0] + ":// but was an invalid URI." +
+            if(!scheme.equals("file")){
+                throw new IllegalArgumentException("Malformed path " + pathString + " includes a scheme: " + scheme + ":// but was an invalid URI." +
                         "\nCheck that it is fully encoded.", cause);
             }
         }
