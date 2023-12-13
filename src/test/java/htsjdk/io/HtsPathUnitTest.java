@@ -176,7 +176,11 @@ public class HtsPathUnitTest extends HtsjdkTest {
 
                 // this has a non-file scheme but isn't encoded properly, best to reject these with
                 // a helpful error message than to continue on and treat it as a file:// path
-                {"ftp://broad.org/file with space"}
+                {"ftp://broad.org/file with space"},
+
+                // if you have a scheme you need something with it
+                {"file://"},
+                {"http://"}
 
         };
     }
@@ -189,24 +193,24 @@ public class HtsPathUnitTest extends HtsjdkTest {
     @DataProvider
     public Object[][] invalidPath() {
         return new Object[][] {
-//                // valid references that are not valid as a path
-//
-//                {"file:/project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},    // not encoded
-//                {"file:project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},     // scheme-specific part is not hierarchical
-//
-//                // The hadoop file system provider explicitly throws an NPE if no host is specified and HDFS is not
-//                // the default file system
-//                //{"hdfs://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
-//                {"hdfs://userinfo@host:80/path/to/file.bam"},           // UnknownHostException "host"
-//
-//                {"unknownscheme://foobar"},
+                // valid references that are not valid as a path
+
+                {"file:/project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},    // not encoded
+                {"file:project/gvcf-pcr/23232_1#1/1.g.vcf.gz"},     // scheme-specific part is not hierarchical
+
+                // The hadoop file system provider explicitly throws an NPE if no host is specified and HDFS is not
+                // the default file system
+                //{"hdfs://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
+                {"hdfs://userinfo@host:80/path/to/file.bam"},           // UnknownHostException "host"
+
+                {"unknownscheme://foobar"},
                 {"gendb://adb"},
-//
-//                {"gcs://abucket/bucket"},
-//
-//                // URIs with schemes that are backed by an valid NIO provider, but for which the
-//                // scheme-specific part is not valid.
-//                {"file://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
+
+                {"gcs://abucket/bucket"},
+
+                // URIs with schemes that are backed by an valid NIO provider, but for which the
+                // scheme-specific part is not valid.
+                {"file://nonexistent_authority/path/to/file.bam"},  // unknown authority "nonexistent_authority"
 
 
         };
