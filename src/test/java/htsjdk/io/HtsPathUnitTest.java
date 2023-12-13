@@ -15,19 +15,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
-
-import static htsjdk.io.HtsPath.assertNoProblematicScheme;
 
 public class HtsPathUnitTest extends HtsjdkTest {
 
@@ -130,6 +124,8 @@ public class HtsPathUnitTest extends HtsjdkTest {
                 {"file:project/gvcf-pcr/23232_1#1/1.g.vcf.gz",  "file:project/gvcf-pcr/23232_1#1/1.g.vcf.gz", true, false},
                 {"file:/project/gvcf-pcr/23232_1#1/1.g.vcf.gz", "file:/project/gvcf-pcr/23232_1#1/1.g.vcf.gz", true, false},
                 {"file:///project/gvcf-pcr/23232_1%231/1.g.vcf.g", "file:///project/gvcf-pcr/23232_1%231/1.g.vcf.g", true, true},
+
+                {"http://host/path://", "http://host/path://", false, false}
         };
     }
 
@@ -671,29 +667,39 @@ public class HtsPathUnitTest extends HtsjdkTest {
                 {"file/ name-sare/ :wierd-"},
                 {"hello there"},
 
+                //schemes schemes everywheret
+                {"file://://"},
+                {"file://://://"},
+                {"file://something://"},
+                {"file://something://somoethingelse"},
+
                 // file scheme is deliberately ignored here since it's handled specially later
                 {"file://unencoded file names/ are/ok!"},
 
                 //these aren't invalid URIs so they should never be tested by this method, they'll pass it though
 
                 {"eep/ee:e:e:ep"},
-                {"file:///"},
+                {"file:///"}
         };
     }
     @Test(dataProvider = "getNonProblematic")
     public void testAssertNoProblematicScheme(String path){
-        assertNoProblematicScheme(path, null);
+        HtsPath.assertNoProblematicScheme(path, null);
     }
 
     @DataProvider
     public Object[][] getProblematic(){
         return new Object[][]{
 
-                //This is the primary use case, to detect unencoded uris that were intended to be encoded
+                // This is the primary use case, to detect unencoded uris that were intended to be encoded.
+                // Note that assertNoProblematicScheme doesn't check for issues constructing the URI itself
+                // it is only called after a URI parsing exception has already occured.
                 {"http://forgot.com/to encode"},
                 {"ftp://server.com/file name.txt"},
 
                 {"://"},
+                {"://://"},
+                {"://://://"},
 
                 //this is technically a valid file name, but it seems very unlikely that anyone would do this delierately
                 //better to call it out
@@ -710,6 +716,6 @@ public class HtsPathUnitTest extends HtsjdkTest {
 
     @Test(dataProvider = "getProblematic", expectedExceptions = IllegalArgumentException.class)
     public void testAssertNoProblematicSchemeRejectedCases(String path){
-        assertNoProblematicScheme(path, null);
+        HtsPath.assertNoProblematicScheme(path, null);
     }
 }

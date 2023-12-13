@@ -283,7 +283,7 @@ public class HtsPath implements IOPath, Serializable {
     }
 
     /**
-     * Check for problems associated with the presence of a heirachical scheme.
+     * Check for problems associated with the presence of a hierarchical scheme.
      *
      * It's better to reject cases like `://` or `ftp://I forgot to encode this` than to treat them as relative file paths
      * It's almost certainly an error on the users part instead of an atttempt to intentionally reference a file named
@@ -295,19 +295,19 @@ public class HtsPath implements IOPath, Serializable {
      * @param pathString the path being examined
      * @param cause the original failure reason
      */
-     static void assertNoProblematicScheme(String pathString, URISyntaxException cause){
+    static void assertNoProblematicScheme(String pathString, URISyntaxException cause){
         if(pathString.equals(HIERARCHICAL_SCHEME_SEPARATOR)){
             throw new IllegalArgumentException(HIERARCHICAL_SCHEME_SEPARATOR + " is not a valid path.", cause);
         }
 
-        if(pathString.endsWith(HIERARCHICAL_SCHEME_SEPARATOR)){
+        final String[] split = pathString.split(HIERARCHICAL_SCHEME_SEPARATOR, -1);
+        final String scheme = split[0];
+
+        if(split.length == 2 && pathString.endsWith(HIERARCHICAL_SCHEME_SEPARATOR)) {
             throw new IllegalArgumentException("A path consisting of only a scheme is not allowed: " + pathString, cause);
         }
 
-        final String[] split = pathString.split(HIERARCHICAL_SCHEME_SEPARATOR);
-
         if(split.length > 1){
-            final String scheme = split[0];
             if(scheme == null || scheme.isEmpty()){
                 throw new IllegalArgumentException("Malformed path " + pathString + " includes an empty scheme.", cause);
             }
