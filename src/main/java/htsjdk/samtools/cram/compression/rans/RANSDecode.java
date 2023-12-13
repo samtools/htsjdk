@@ -15,6 +15,9 @@ public abstract class RANSDecode {
         return decodingSymbols;
     }
 
+    // This method assumes that inBuffer is already rewound.
+    // It uncompresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the uncompressed data.
     public abstract ByteBuffer uncompress(final ByteBuffer inBuffer);
 
     // Lazy initialization of working memory for the decoder

@@ -12,6 +12,9 @@ public abstract class RANSEncode<T extends RANSParams> {
         return encodingSymbols;
     }
 
+    // This method assumes that inBuffer is already rewound.
+    // It compresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the compressed data.
     public abstract ByteBuffer compress(final ByteBuffer inBuffer, final T params);
 
     // Lazy initialization of working memory for the encoder
