@@ -54,7 +54,7 @@ import java.util.NoSuchElementException;
  *
  * @author bradtaylor
  */
-public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
+public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> implements AutoCloseable {
     private int availableRecordsInMemory; // how many more records can we store in memory
     private final int blockSize; // the size of each block
     private final List<File> tmpDirs; // the list of temporary directories to use
@@ -78,7 +78,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         this.tmpDirs = tmpDirs;
         this.queueHeadRecordIndex = -1;
         this.queueTailRecordIndex = -1;
-        this.blocks = new ArrayDeque<BufferBlock>();
+        this.blocks = new ArrayDeque<>();
         this.header = header;
         this.clazz = clazz;
     }
@@ -184,6 +184,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     /**
      * Close IO resources associated with each underlying BufferBlock
      */
+    @Override
     public void close() {
         while (!blocks.isEmpty()) {
             final BufferBlock block = blocks.pollFirst();
@@ -194,7 +195,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     /**
      * This stores blocks of records, either in memory or on disk, or both!
      */
-    private class BufferBlock {
+    private class BufferBlock implements AutoCloseable {
         private final DiskBackedQueue<SAMRecord> recordsQueue;
         private final int maxBlockSize;
         private long currentStartIndex;
@@ -256,7 +257,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
             }
         }
 
-        private int ensureIndexFitsInAnInt(final long value) {
+        private static int ensureIndexFitsInAnInt(final long value) {
             if (value < Integer.MIN_VALUE || Integer.MAX_VALUE < value) throw new SAMException("Error: index out of range: " + value);
             return (int)value;
         }
@@ -288,7 +289,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
             if (this.canEmit()) {
                 try {
                     // create a wrapped record for the head of the queue, and set the underlying record's examined information appropriately
-                    final SamRecordWithOrdinal samRecordWithOrdinal = clazz.newInstance();
+                    final SamRecordWithOrdinal samRecordWithOrdinal = clazz.getDeclaredConstructor().newInstance();
                     samRecordWithOrdinal.setRecord(this.recordsQueue.poll());
                     samRecordWithOrdinal.setRecordOrdinal(this.currentStartIndex);
                     samRecordWithOrdinal.setResultState(this.resultStateIndexes.get(ensureIndexFitsInAnInt(this.currentStartIndex - this.originalStartIndex)));
@@ -316,6 +317,15 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
          * Close disk IO resources associated with the underlying records queue.
          * This must be called when a block is no longer needed in order to prevent memory leaks.
          */
-        public void clear() { this.recordsQueue.clear(); }
+        public void clear() { this.recordsQueue.close(); }
+
+        /**
+         * Close disk IO resources associated with the underlying records queue.
+         * This must be called when a block is no longer needed in order to prevent memory leaks.
+         */
+        @Override
+        public void close() {
+            clear();
+        }
     }
 }
