@@ -85,10 +85,9 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             // set order flag to "0" in the first byte of the outBuffer
             outBuffer.put(0,(byte)(outBuffer.get(0) & ~RANSNx16Params.ORDER_FLAG_MASK));
             if (inputBuffer.remaining() == 0){
-                outBuffer.limit(outBuffer.position()); //TODO: check if this is correct
+                outBuffer.limit(outBuffer.position());
                 outBuffer.rewind();
                 return outBuffer;
-
             }
             compressOrder0WayN(inputBuffer, new RANSNx16Params(outBuffer.get(0)), outBuffer);
             return outBuffer;
@@ -113,8 +112,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         initializeRANSEncoder();
         final int inSize = inBuffer.remaining();
         int bitSize = (int) Math.ceil(Math.log(inSize) / Math.log(2));
-
-        // TODO: Can bitSize be 0 and should we handle it?
         if (bitSize > Constants.TOTAL_FREQ_SHIFT) {
             bitSize = Constants.TOTAL_FREQ_SHIFT;
         }
@@ -199,7 +196,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         Utils.normaliseFrequenciesOrder1(frequencies, Constants.TOTAL_FREQ_SHIFT);
         final int prefix_size = outBuffer.position();
 
-        // TODO: How is the buffer size calculated? js: 257*257*3+9
         ByteBuffer frequencyTable = allocateOutputBuffer(1);
         final ByteBuffer compressedFrequencyTable = allocateOutputBuffer(1);
 

@@ -36,12 +36,11 @@ public abstract class RANSEncode<T extends RANSParams> {
     }
 
     protected ByteBuffer allocateOutputBuffer(final int inSize) {
-        // TODO: This should vary depending on the RANS type and order
         // This calculation is identical to the one in samtools rANS_static.c
-        // Presumably the frequency table (always big enough for order 1) = 257*257, then * 3 for each entry
-        // (byte->symbol, 2 bytes -> scaled frequency), + 9 for the header (order byte, and 2 int lengths
-        // for compressed/uncompressed lengths) ? Plus additional 5% for..., for what ???
-        final int compressedSize = (int) (1.05 * inSize + 257 * 257 * 3 + 9);
+        // Presumably the frequency table (always big enough for order 1) = 257*257,
+        // then * 3 for each entry (byte->symbol, 2 bytes -> scaled frequency),
+        // + 9 for the header (order byte, and 2 int lengths for compressed/uncompressed lengths).
+        final int compressedSize = (int) (inSize + 257 * 257 * 3 + 9);
         final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize);
         if (outputBuffer.remaining() < compressedSize) {
             throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");

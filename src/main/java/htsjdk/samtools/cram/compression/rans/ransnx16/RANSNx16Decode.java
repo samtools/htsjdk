@@ -14,6 +14,7 @@ import java.util.Arrays;
 public class RANSNx16Decode extends RANSDecode {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
     private static final int FREQ_TABLE_OPTIONALLY_COMPRESSED_MASK = 0x01;
+    private static final int RLE_META_OPTIONALLY_COMPRESSED_MASK = 0x01;
 
     // This method assumes that inBuffer is already rewound.
     // It uncompresses the data in the inBuffer, leaving it consumed.
@@ -45,7 +46,7 @@ public class RANSNx16Decode extends RANSDecode {
         // if pack, get pack metadata, which will be used later to decode packed data
         int packDataLength = 0;
         int numSymbols = 0;
-        int[] packMappingTable = new int[0];
+        int[] packMappingTable = null;
         if (ransNx16Params.isPack()) {
             packDataLength = uncompressedSize;
             numSymbols = inBuffer.get() & 0xFF;
@@ -75,13 +76,14 @@ public class RANSNx16Decode extends RANSDecode {
             uncompressedRLEMetaData = decodeRLEMeta(inBuffer, uncompressedRLEMetaDataLength, rleSymbols, ransNx16Params);
         }
 
-        ByteBuffer outBuffer = ByteBuffer.allocate(uncompressedSize);;
+        ByteBuffer outBuffer;
         // If CAT is set then, the input is uncompressed
         if (ransNx16Params.isCAT()) {
-            byte[] data = new byte[uncompressedSize];
+            final byte[] data = new byte[uncompressedSize];
             inBuffer.get(data, 0, uncompressedSize);
             outBuffer = ByteBuffer.wrap(data);
         } else {
+            outBuffer = ByteBuffer.allocate(uncompressedSize);
             if (uncompressedSize != 0) {
                 switch (ransNx16Params.getOrder()) {
                     case ZERO:
@@ -258,32 +260,30 @@ public class RANSNx16Decode extends RANSDecode {
         // and Reverse Lookup table
 
         final int[] alphabet = readAlphabet(cp);
-        final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
+        final ArithmeticDecoder decoder = getD()[0];
 
-        // read frequencies, normalise frequencies then calculate C and R
+        // read frequencies, normalise frequencies
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if (alphabet[j] > 0) {
-                if ((frequencies[j] = (cp.get() & 0xFF)) >= 0x80){
-                    frequencies[j] &= ~0x80;
-                    frequencies[j] = (( frequencies[j] &0x7f) << 7) | (cp.get() & 0x7F);
+                if ((decoder.frequencies[j] = (cp.get() & 0xFF)) >= 0x80){
+                    decoder.frequencies[j] &= ~0x80;
+                    decoder.frequencies[j] = (( decoder.frequencies[j] &0x7f) << 7) | (cp.get() & 0x7F);
                 }
             }
         }
-        Utils.normaliseFrequenciesOrder0Shift(frequencies, Constants.TOTAL_FREQ_SHIFT);
-        final ArithmeticDecoder decoder = getD()[0];
+        Utils.normaliseFrequenciesOrder0Shift(decoder.frequencies, Constants.TOTAL_FREQ_SHIFT);
+
         final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
         int cumulativeFrequency = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if(alphabet[j]>0){
 
                 // set RANSDecodingSymbol
-                decoder.freq[j] = frequencies[j];
-                decoder.cumulativeFreq[j] = cumulativeFrequency;
-                decodingSymbols[j].set(decoder.cumulativeFreq[j], decoder.freq[j]);
+                decodingSymbols[j].set(cumulativeFrequency, decoder.frequencies[j]);
 
                 // update Reverse Lookup table
-                Arrays.fill(decoder.reverseLookup, cumulativeFrequency, cumulativeFrequency + decoder.freq[j], (byte) j);
-                cumulativeFrequency += decoder.freq[j];
+                Arrays.fill(decoder.reverseLookup, cumulativeFrequency, cumulativeFrequency + decoder.frequencies[j], (byte) j);
+                cumulativeFrequency += decoder.frequencies[j];
             }
         }
     }
@@ -291,7 +291,6 @@ public class RANSNx16Decode extends RANSDecode {
     private void readFrequencyTableOrder1(
             final ByteBuffer cp,
             final int shift) {
-        final int[][] frequencies = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
         final ArithmeticDecoder[] D = getD();
         final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();
         final int[] alphabet = readAlphabet(cp);
@@ -304,8 +303,8 @@ public class RANSNx16Decode extends RANSDecode {
                         if (run > 0) {
                             run--;
                         } else {
-                            frequencies[i][j] = Utils.readUint7(cp);
-                            if (frequencies[i][j] == 0){
+                            D[i].frequencies[j] = Utils.readUint7(cp);
+                            if (D[i].frequencies[j] == 0){
                                 run = Utils.readUint7(cp);
                             }
                         }
@@ -313,20 +312,18 @@ public class RANSNx16Decode extends RANSDecode {
                 }
 
                 // For each symbol, normalise it's order 0 frequency table
-                Utils.normaliseFrequenciesOrder0Shift(frequencies[i],shift);
+                Utils.normaliseFrequenciesOrder0Shift(D[i].frequencies,shift);
                 int cumulativeFreq=0;
 
                 // set decoding symbols
                 for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                    D[i].freq[j]=frequencies[i][j];
-                    D[i].cumulativeFreq[j]=cumulativeFreq;
                     decodingSymbols[i][j].set(
-                            D[i].cumulativeFreq[j],
-                            D[i].freq[j]
+                            cumulativeFreq,
+                            D[i].frequencies[j]
                     );
                     /* Build reverse lookup table */
-                    Arrays.fill(D[i].reverseLookup, cumulativeFreq, cumulativeFreq + D[i].freq[j], (byte) j);
-                    cumulativeFreq+=frequencies[i][j];
+                    Arrays.fill(D[i].reverseLookup, cumulativeFreq, cumulativeFreq + D[i].frequencies[j], (byte) j);
+                    cumulativeFreq+=D[i].frequencies[j];
                 }
             }
         }
@@ -360,7 +357,10 @@ public class RANSNx16Decode extends RANSDecode {
             final int[] rleSymbols,
             final RANSNx16Params ransNx16Params) {
         final ByteBuffer uncompressedRLEMetaData;
-        if ((uncompressedRLEMetaDataLength & 0x01)!=0) {
+
+        // The bottom bit of uncompressedRLEMetaDataLength is a flag to indicate
+        // whether rle metadata is uncompressed (1) or com- pressed (0).
+        if ((uncompressedRLEMetaDataLength & RLE_META_OPTIONALLY_COMPRESSED_MASK)!=0) {
             final byte[] uncompressedRLEMetaDataArray = new byte[(uncompressedRLEMetaDataLength-1)/2];
             inBuffer.get(uncompressedRLEMetaDataArray, 0, (uncompressedRLEMetaDataLength-1)/2);
             uncompressedRLEMetaData = ByteBuffer.wrap(uncompressedRLEMetaDataArray);

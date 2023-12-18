@@ -192,21 +192,20 @@ public class RANS4x8Decode extends RANSDecode {
         final ArithmeticDecoder decoder = getD()[0];
         final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
         int rle = 0;
-        int x = 0;
+        int cumulativeFrequency = 0;
         int j = cp.get() & 0xFF;
         do {
-            if ((decoder.freq[j] = (cp.get() & 0xFF)) >= 0x80) {
-                decoder.freq[j] &= ~0x80;
-                decoder.freq[j] = ((decoder.freq[j] & 0x7F) << 8) | (cp.get() & 0xFF);
+            if ((decoder.frequencies[j] = (cp.get() & 0xFF)) >= 0x80) {
+                decoder.frequencies[j] &= ~0x80;
+                decoder.frequencies[j] = ((decoder.frequencies[j] & 0x7F) << 8) | (cp.get() & 0xFF);
             }
-            decoder.cumulativeFreq[j] = x;
 
-            decodingSymbols[j].set(decoder.cumulativeFreq[j], decoder.freq[j]);
+            decodingSymbols[j].set(cumulativeFrequency, decoder.frequencies[j]);
 
             /* Build reverse lookup table */
-            Arrays.fill(decoder.reverseLookup, x, x + decoder.freq[j], (byte) j);
+            Arrays.fill(decoder.reverseLookup, cumulativeFrequency, cumulativeFrequency + decoder.frequencies[j], (byte) j);
 
-            x += decoder.freq[j];
+            cumulativeFrequency += decoder.frequencies[j];
 
             if (rle == 0 && j + 1 == (0xFF & cp.get(cp.position()))) {
                 j = cp.get() & 0xFF;
@@ -219,7 +218,7 @@ public class RANS4x8Decode extends RANSDecode {
             }
         } while (j != 0);
 
-        assert (x <= Constants.TOTAL_FREQ);
+        assert (cumulativeFrequency <= Constants.TOTAL_FREQ);
     }
 
     private void readStatsOrder1(final ByteBuffer cp) {
@@ -229,29 +228,28 @@ public class RANS4x8Decode extends RANSDecode {
         int i = 0xFF & cp.get();
         do {
             int rle_j = 0;
-            int x = 0;
+            int cumulativeFrequency = 0;
             int j = 0xFF & cp.get();
             do {
-                if ((D[i].freq[j] = (0xFF & cp.get())) >= 0x80) {
-                    D[i].freq[j] &= ~0x80;
-                    D[i].freq[j] = ((D[i].freq[j] & 0x7F) << 8) | (0xFF & cp.get());
+                if ((D[i].frequencies[j] = (0xFF & cp.get())) >= 0x80) {
+                    D[i].frequencies[j] &= ~0x80;
+                    D[i].frequencies[j] = ((D[i].frequencies[j] & 0x7F) << 8) | (0xFF & cp.get());
                 }
-                D[i].cumulativeFreq[j] = x;
 
-                if (D[i].freq[j] == 0) {
-                    D[i].freq[j] = Constants.TOTAL_FREQ;
+                if (D[i].frequencies[j] == 0) {
+                    D[i].frequencies[j] = Constants.TOTAL_FREQ;
                 }
 
                 decodingSymbols[i][j].set(
-                        D[i].cumulativeFreq[j],
-                        D[i].freq[j]
+                        cumulativeFrequency,
+                        D[i].frequencies[j]
                 );
 
                 /* Build reverse lookup table */
-                Arrays.fill(D[i].reverseLookup, x, x + D[i].freq[j], (byte) j);
+                Arrays.fill(D[i].reverseLookup, cumulativeFrequency, cumulativeFrequency + D[i].frequencies[j], (byte) j);
 
-                x += D[i].freq[j];
-                assert (x <= Constants.TOTAL_FREQ);
+                cumulativeFrequency += D[i].frequencies[j];
+                assert (cumulativeFrequency <= Constants.TOTAL_FREQ);
 
                 if (rle_j == 0 && j + 1 == (0xFF & cp.get(cp.position()))) {
                     j = (0xFF & cp.get());

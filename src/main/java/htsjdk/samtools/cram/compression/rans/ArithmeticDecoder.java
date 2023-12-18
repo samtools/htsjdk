@@ -25,23 +25,20 @@
 package htsjdk.samtools.cram.compression.rans;
 
 final public class ArithmeticDecoder {
-    public final int[] freq = new int[Constants.NUMBER_OF_SYMBOLS];
-    public final int[] cumulativeFreq = new int[Constants.NUMBER_OF_SYMBOLS];
+    public final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
 
     // reverse lookup table
     public final byte[] reverseLookup = new byte[Constants.TOTAL_FREQ];
 
     public ArithmeticDecoder() {
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            freq[i] = 0;
-            cumulativeFreq[i] = 0;
+            frequencies[i] = 0;
         }
     }
 
     public void reset() {
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            freq[i] = 0;
-            cumulativeFreq[i] = 0;
+            frequencies[i] = 0;
         }
         for (int i = 0; i < Constants.TOTAL_FREQ; i++) {
             reverseLookup[i] = 0;

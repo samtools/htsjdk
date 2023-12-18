@@ -157,11 +157,11 @@ final public class Utils {
         }
     }
 
-    public static void normaliseFrequenciesOrder0Shift(final int[] F, final int bits){
+    public static void normaliseFrequenciesOrder0Shift(final int[] frequencies, final int bits){
 
         // compute total frequency
         int totalFrequency = 0;
-        for (int freq : F) {
+        for (int freq : frequencies) {
             totalFrequency += freq;
         }
         if (totalFrequency == 0 || totalFrequency == (1<<bits)){
@@ -177,8 +177,8 @@ final public class Utils {
 
         // scale the frequencies to (1 << bits) using the calculated shift
         for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
-            if (F[symbol]!=0){
-            F[symbol] <<= shift;
+            if (frequencies[symbol]!=0){
+            frequencies[symbol] <<= shift;
             }
         }
     }
