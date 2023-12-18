@@ -11,7 +11,7 @@ plugins {
     id 'jacoco'
     id 'com.palantir.git-version' version '0.11.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id 'com.github.spotbugs' version "5.0.13"
+    id 'com.github.spotbugs' version "6.0.4"
 }
 
 repositories {
@@ -174,7 +174,8 @@ if(project == rootProject) {
 }
 
 spotbugs {
-    reportLevel = 'high'
+    effort = com.github.spotbugs.snom.Effort.valueOf('DEFAULT')
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf('DEFAULT')
     excludeFilter = file('gradle/spotbugs-exclude.xml')
 }
 
