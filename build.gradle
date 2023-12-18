@@ -10,7 +10,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id 'com.palantir.git-version' version '0.11.0'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'com.github.spotbugs' version "5.0.13"
 }
 
@@ -62,11 +62,11 @@ group = 'com.github.samtools'
 
 defaultTasks 'jar'
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-tasks.withType(Javadoc) {
+tasks.withType(Javadoc).configureEach {
     options.addStringOption('encoding', 'UTF-8')
     options.addStringOption('Xdoclint:none', '-quiet')
 }
@@ -81,7 +81,7 @@ jar {
 
 import org.gradle.internal.os.OperatingSystem;
 
-tasks.withType(Test) { task ->
+tasks.withType(Test).configureEach { task ->
     task.outputs.upToDateWhen { false } // tests will always rerun
 
     // Always run serially because there are some very badly behaved tests in HTSJDK that
@@ -99,8 +99,8 @@ tasks.withType(Test) { task ->
 
     beforeTest { descriptor ->
         count++
-        if( count % 200 == 0) {
-            logger.lifecycle("Finished "+ Integer.toString(count++) + " tests")
+        if (count % 200 == 0) {
+            logger.lifecycle("Finished " + Integer.toString(count++) + " tests")
         }
     }
 
@@ -118,7 +118,7 @@ tasks.withType(Test) { task ->
 
 }
 
-task testWithDefaultReference(type: Test) {
+tasks.register('testWithDefaultReference', Test) {
     description = "Run tests with a default reference File"
     jvmArgs += '-Dsamjdk.reference_fasta=src/test/resources/htsjdk/samtools/cram/ce.fa'
 
@@ -127,7 +127,7 @@ task testWithDefaultReference(type: Test) {
     }
 }
 
-task testWithOptimisticVCF4_4(type: Test) {
+tasks.register('testWithOptimisticVCF4_4', Test) {
     description = "Run tests with optimistic VCF 4.4 reading"
     jvmArgs += '-Dsamjdk.optimistic_vcf_4_4=true'
 
@@ -149,7 +149,7 @@ test {
 } dependsOn testWithDefaultReference, testWithOptimisticVCF4_4
 
 
-task testFTP(type: Test) {
+tasks.register('testFTP', Test) {
     description = "Runs the tests that require connection to a remote ftp server"
     useTestNG {
         includeGroups "ftp"
@@ -157,7 +157,7 @@ task testFTP(type: Test) {
     }
 }
 
-task testExternalApis(type: Test) {
+tasks.register('testExternalApis', Test) {
     description = "Run the SRA, ENA, and HTTP tests (tests that interact with external APIs)"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
@@ -169,7 +169,7 @@ task testExternalApis(type: Test) {
 
 if(project == rootProject) {
     wrapper {
-        gradleVersion = '7.6'
+        gradleVersion = '8.5'
     }
 }
 
@@ -249,8 +249,4 @@ signing {
     sign publishing.publications.htsjdk
 }
 
-gradle.taskGraph.beforeTask { Task task ->
-    println "executing $task ..."
-}
-
-task install(dependsOn:publishToMavenLocal)
+tasks.register('install') { dependsOn publishToMavenLocal }
