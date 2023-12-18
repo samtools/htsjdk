@@ -122,21 +122,21 @@ public class RansTest extends HtsjdkTest {
         return testCases.toArray(new Object[][]{});
     }
 
-    public Object[][] getRansNx16DecodeOnlyCodecs() {
+    public Object[][] getRansNx16Encoder() {
 
-        // params: RANS encoder, RANS decoder, RANS params
+        // params: RANS encoder, RANS params
         return new Object[][]{
-                {new RANSNx16Encode(), new RANSNx16Decode(), new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK)},
-                {new RANSNx16Encode(), new RANSNx16Decode(), new RANSNx16Params(RANSNx16Params.ORDER_FLAG_MASK|RANSNx16Params.STRIPE_FLAG_MASK)}
+                {new RANSNx16Encode(), new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK)},
+                {new RANSNx16Encode(), new RANSNx16Params(RANSNx16Params.ORDER_FLAG_MASK|RANSNx16Params.STRIPE_FLAG_MASK)}
         };
     }
 
-    @DataProvider(name="RansNx16DecodeOnlyAndData")
-    public Object[][] getRansNx16DecodeOnlyAndData() {
+    @DataProvider(name="RansNx16RejectEncodeStripe")
+    public Object[][] getRansNx16RejectEncodeStripe() {
 
         // params: RANS encoder, RANS decoder, RANS params, test data
         // this data provider provides all the non-empty testdata input for RANS Nx16 codec
-        return TestNGUtils.cartesianProduct(getRansNx16DecodeOnlyCodecs(), getRansTestData());
+        return TestNGUtils.cartesianProduct(getRansNx16Encoder(), getRansTestData());
     }
 
     public Object[][] getAllRansCodecs() {
@@ -241,12 +241,11 @@ public class RansTest extends HtsjdkTest {
     }
 
     @Test(
-            dataProvider = "RansNx16DecodeOnlyAndData",
+            dataProvider = "RansNx16RejectEncodeStripe",
             expectedExceptions = { CRAMException.class },
             expectedExceptionsMessageRegExp = "RANSNx16 Encoding with Stripe Flag is not implemented.")
     public void testRansNx16RejectEncodeStripe(
             final RANSNx16Encode ransEncode,
-            final RANSNx16Decode unused,
             final RANSNx16Params params,
             final TestDataEnvelope td) {
 
