@@ -29,20 +29,20 @@ jacocoTestReport {
 }
 
 dependencies {
-    implementation 'commons-logging:commons-logging:1.2'
+    implementation 'commons-logging:commons-logging:1.3.0'
     implementation "org.xerial.snappy:snappy-java:1.1.10.5"
-    implementation "org.apache.commons:commons-compress:1.24.0"
+    implementation "org.apache.commons:commons-compress:1.25.0"
     implementation 'org.tukaani:xz:1.9'
-    implementation "org.json:json:20230618"
+    implementation "org.json:json:20231013"
     implementation 'org.openjdk.nashorn:nashorn-core:15.4'
     
     api "gov.nih.nlm.ncbi:ngs-java:2.9.0"
     api "org.apache.commons:commons-jexl:2.1.1"
 
-    testImplementation 'org.testng:testng:7.7.0'
-    testImplementation 'com.google.jimfs:jimfs:1.2'
-    testImplementation "com.google.guava:guava:31.1-jre"
-    testImplementation 'org.apache.commons:commons-lang3:3.12.0'
+    testImplementation 'org.testng:testng:7.8.0'
+    testImplementation 'com.google.jimfs:jimfs:1.3.0'
+    testImplementation "com.google.guava:guava:33.0.0-jre"
+    testImplementation 'org.apache.commons:commons-lang3:3.14.0'
 }
 
 java {
