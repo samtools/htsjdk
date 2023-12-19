@@ -174,8 +174,8 @@ if(project == rootProject) {
 }
 
 spotbugs {
-    effort = com.github.spotbugs.snom.Effort.valueOf('DEFAULT')
-    reportLevel = com.github.spotbugs.snom.Confidence.valueOf('DEFAULT')
+    effort = com.github.spotbugs.snom.Effort.valueOf('MAX')
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf('HIGH')
     excludeFilter = file('gradle/spotbugs-exclude.xml')
 }
 
