@@ -431,7 +431,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                                 break;
                             }
                         }
-                        Utils.writeUint7(run,cp);
+                        cp.put((byte) run);
                     }
                 }
             }

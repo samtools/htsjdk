@@ -193,30 +193,32 @@ public class RANS4x8Decode extends RANSDecode {
         final RANSDecodingSymbol[] decodingSymbols = getDecodingSymbols()[0];
         int rle = 0;
         int cumulativeFrequency = 0;
-        int j = cp.get() & 0xFF;
+        int symbol = cp.get() & 0xFF;
         do {
-            if ((decoder.frequencies[j] = (cp.get() & 0xFF)) >= 0x80) {
-                decoder.frequencies[j] &= ~0x80;
-                decoder.frequencies[j] = ((decoder.frequencies[j] & 0x7F) << 8) | (cp.get() & 0xFF);
+            if ((decoder.frequencies[symbol] = (cp.get() & 0xFF)) >= 0x80) {
+
+                // read a variable sized unsigned integer with ITF8 encoding
+                decoder.frequencies[symbol] &= ~0x80;
+                decoder.frequencies[symbol] = ((decoder.frequencies[symbol] & 0x7F) << 8) | (cp.get() & 0xFF);
             }
 
-            decodingSymbols[j].set(cumulativeFrequency, decoder.frequencies[j]);
+            decodingSymbols[symbol].set(cumulativeFrequency, decoder.frequencies[symbol]);
 
             /* Build reverse lookup table */
-            Arrays.fill(decoder.reverseLookup, cumulativeFrequency, cumulativeFrequency + decoder.frequencies[j], (byte) j);
+            Arrays.fill(decoder.reverseLookup, cumulativeFrequency, cumulativeFrequency + decoder.frequencies[symbol], (byte) symbol);
 
-            cumulativeFrequency += decoder.frequencies[j];
+            cumulativeFrequency += decoder.frequencies[symbol];
 
-            if (rle == 0 && j + 1 == (0xFF & cp.get(cp.position()))) {
-                j = cp.get() & 0xFF;
+            if (rle == 0 && symbol + 1 == (0xFF & cp.get(cp.position()))) {
+                symbol = cp.get() & 0xFF;
                 rle = cp.get() & 0xFF;
             } else if (rle != 0) {
                 rle--;
-                j++;
+                symbol++;
             } else {
-                j = cp.get() & 0xFF;
+                symbol = cp.get() & 0xFF;
             }
-        } while (j != 0);
+        } while (symbol != 0);
 
         assert (cumulativeFrequency <= Constants.TOTAL_FREQ);
     }
@@ -232,6 +234,8 @@ public class RANS4x8Decode extends RANSDecode {
             int j = 0xFF & cp.get();
             do {
                 if ((D[i].frequencies[j] = (0xFF & cp.get())) >= 0x80) {
+
+                    // read a variable sized unsigned integer with ITF8 encoding
                     D[i].frequencies[j] &= ~0x80;
                     D[i].frequencies[j] = ((D[i].frequencies[j] & 0x7F) << 8) | (0xFF & cp.get());
                 }
