@@ -174,7 +174,7 @@ public class RansTest extends HtsjdkTest {
             final TestDataEnvelope td,
             final Integer lowerLimit,
             final Integer upperLimit){
-        final ByteBuffer in = ByteBuffer.wrap(td.testArray);
+        final ByteBuffer in = Utils.wrap(td.testArray);
         for (int rawSize = lowerLimit; rawSize < upperLimit; rawSize++) {
             in.position(0);
             in.limit(rawSize);
@@ -188,7 +188,7 @@ public class RansTest extends HtsjdkTest {
             final RANS4x8Decode ransDecode,
             final RANS4x8Params params) {
         final int rawSize = 1001;
-        final ByteBuffer rawData = ByteBuffer.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
+        final ByteBuffer rawData = Utils.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
         final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode, ransDecode,params);
         Assert.assertTrue(compressed.limit() > Constants.RANS_4x8_PREFIX_BYTE_LENGTH); // minimum prefix len when input is not Empty
         Assert.assertEquals(compressed.get(), (byte) params.getOrder().ordinal());
@@ -202,7 +202,7 @@ public class RansTest extends HtsjdkTest {
             final RANSNx16Decode ransDecode,
             final RANSNx16Params params) {
         final int rawSize = 1001;
-        final ByteBuffer rawData = ByteBuffer.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
+        final ByteBuffer rawData = Utils.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
         final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode,ransDecode,params);
         rawData.rewind();
         Assert.assertTrue(compressed.limit() > 1); // minimum prefix len when input is not Empty
@@ -237,7 +237,7 @@ public class RansTest extends HtsjdkTest {
             final RANSDecode ransDecode,
             final RANSParams params,
             final TestDataEnvelope td) {
-        ransRoundTrip(ransEncode, ransDecode, params, ByteBuffer.wrap(td.testArray));
+        ransRoundTrip(ransEncode, ransDecode, params, Utils.wrap(td.testArray));
     }
 
     @Test(
@@ -251,7 +251,7 @@ public class RansTest extends HtsjdkTest {
 
         // When td is not Empty, Encoding with Stripe Flag should throw an Exception
         // as Encode Stripe is not implemented
-        ransEncode.compress(ByteBuffer.wrap(td.testArray), params);
+        ransEncode.compress(Utils.wrap(td.testArray), params);
     }
 
     @Test(
@@ -261,7 +261,7 @@ public class RansTest extends HtsjdkTest {
             expectedExceptionsMessageRegExp = "Bit Packing is not permitted when number " +
                     "of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: 0")
     public void testRANSNx16RejectDecodePack(){
-        final ByteBuffer compressedData = ByteBuffer.wrap(new byte[]{(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00});
+        final ByteBuffer compressedData = Utils.wrap(new byte[]{(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00});
         final RANSNx16Decode ransDecode = new RANSNx16Decode();
         ransDecode.uncompress(compressedData);
     }
