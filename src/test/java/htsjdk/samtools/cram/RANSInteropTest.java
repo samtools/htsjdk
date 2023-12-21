@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.Utils;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
@@ -176,7 +177,7 @@ public class RANSInteropTest extends HtsjdkTest {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer uncompressedInteropBytes = Utils.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
             // Stripe Flag is not implemented in RANSNx16 Encoder.
             // The encoder throws CRAMException if Stripe Flag is used.
@@ -207,8 +208,8 @@ public class RANSInteropTest extends HtsjdkTest {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-            final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
+            final ByteBuffer uncompressedInteropBytes = Utils.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer preCompressedInteropBytes = Utils.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
             final ByteBuffer uncompressedHtsjdkBytes = ransDecode.uncompress(preCompressedInteropBytes);

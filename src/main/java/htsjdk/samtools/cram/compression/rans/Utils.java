@@ -1,6 +1,8 @@
 package htsjdk.samtools.cram.compression.rans;
 
+import htsjdk.samtools.cram.CRAMException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 final public class Utils {
 
@@ -191,4 +193,33 @@ final public class Utils {
             }
         }
     }
+
+    public static ByteBuffer allocateOutputBuffer(final int inSize) {
+        // This calculation is identical to the one in samtools rANS_static.c
+        // Presumably the frequency table (always big enough for order 1) = 257*257,
+        // then * 3 for each entry (byte->symbol, 2 bytes -> scaled frequency),
+        // + 9 for the header (order byte, and 2 int lengths for compressed/uncompressed lengths).
+        final int compressedSize = (int) (inSize + 257 * 257 * 3 + 9);
+        final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize).order(ByteOrder.LITTLE_ENDIAN);
+        if (outputBuffer.remaining() < compressedSize) {
+            throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");
+        }
+        return outputBuffer;
+    }
+
+    // returns a new LITTLE_ENDIAN ByteBuffer of size = bufferSize
+    public static ByteBuffer allocateByteBuffer(final int bufferSize){
+        return ByteBuffer.allocate(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    // returns a LITTLE_ENDIAN ByteBuffer that is created by wrapping a byte[]
+    public static ByteBuffer wrap(final byte[] inputBytes){
+        return ByteBuffer.wrap(inputBytes).order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    // returns a LITTLE_ENDIAN ByteBuffer that is created by inputBuffer.slice()
+    public static ByteBuffer slice(final ByteBuffer inputBuffer){
+        return inputBuffer.slice().order(ByteOrder.LITTLE_ENDIAN);
+    }
+
 }
