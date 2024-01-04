@@ -28,4 +28,56 @@ public class Utils {
         } while ((c & 0x80) != 0);
         return i;
     }
+
+    public static ByteBuffer decodePack(
+            final ByteBuffer inBuffer,
+            final byte[] packMappingTable,
+            final int numSymbols,
+            final int uncompressedPackOutputLength) {
+        ByteBuffer outBufferPack = ByteBuffer.allocate(uncompressedPackOutputLength);
+        int j = 0;
+
+        if (numSymbols <= 1) {
+            for (int i=0; i < uncompressedPackOutputLength; i++){
+                outBufferPack.put(i, packMappingTable[0]);
+            }
+        }
+
+        // 1 bit per value
+        else if (numSymbols <= 2) {
+            int v = 0;
+            for (int i=0; i < uncompressedPackOutputLength; i++){
+                if (i % 8 == 0){
+                    v = inBuffer.get(j++);
+                }
+                outBufferPack.put(i, packMappingTable[v & 1]);
+                v >>=1;
+            }
+        }
+
+        // 2 bits per value
+        else if (numSymbols <= 4){
+            int v = 0;
+            for(int i=0; i < uncompressedPackOutputLength; i++){
+                if (i % 4 == 0){
+                    v = inBuffer.get(j++);
+                }
+                outBufferPack.put(i, packMappingTable[v & 3]);
+                v >>=2;
+            }
+        }
+
+        // 4 bits per value
+        else if (numSymbols <= 16){
+            int v = 0;
+            for(int i=0; i < uncompressedPackOutputLength; i++){
+                if (i % 2 == 0){
+                    v = inBuffer.get(j++);
+                }
+                outBufferPack.put(i, packMappingTable[v & 15]);
+                v >>=4;
+            }
+        }
+        return outBufferPack;
+    }
 }

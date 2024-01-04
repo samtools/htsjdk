@@ -21,7 +21,7 @@ public class RangeCoder {
         this.cache = 0;
     }
 
-    protected void rangeDecodeStart(ByteBuffer inBuffer){
+    protected void rangeDecodeStart(final ByteBuffer inBuffer){
         for (int i = 0; i < 5; i++){
 
             // Get next 5 bytes. Ensure it is +ve
@@ -29,9 +29,9 @@ public class RangeCoder {
         }
     }
 
-    protected void rangeDecode(ByteBuffer inBuffer, int sym_low, int sym_freq, int tot_freq){
-        code -= sym_low * range;
-        range *= sym_freq;
+    protected void rangeDecode(final ByteBuffer inBuffer, final int cumulativeFrequency, final int symbolFrequency){
+        code -= cumulativeFrequency * range;
+        range *= symbolFrequency;
 
         while (range < (1<<24)) {
             range <<= 8;
@@ -39,17 +39,21 @@ public class RangeCoder {
         }
     }
 
-    protected int rangeGetFrequency(final int tot_freq){
-        range =  (long) Math.floor(range / tot_freq);
+    protected int rangeGetFrequency(final int totalFrequency){
+        range =  (long) Math.floor(range / totalFrequency);
         return (int) Math.floor(code / range);
     }
 
-    protected void rangeEncode(final ByteBuffer outBuffer, final int sym_low, final int sym_freq, final int tot_freq){
-        long old_low = low;
-        range = (long) Math.floor(range/tot_freq);
-        low += sym_low * range;
+    protected void rangeEncode(
+            final ByteBuffer outBuffer,
+            final int cumulativeFrequency,
+            final int symbolFrequency,
+            final int totalFrequency){
+        final long old_low = low;
+        range = (long) Math.floor(range/totalFrequency);
+        low += cumulativeFrequency * range;
         low &= 0xFFFFFFFFL; // keep bottom 4 bytes, shift the top byte out of low
-        range *= sym_freq;
+        range *= symbolFrequency;
 
         if (low < old_low) {
             carry = true;
@@ -70,7 +74,7 @@ public class RangeCoder {
         }
     }
 
-    private void rangeShiftLow(ByteBuffer outBuffer) {
+    private void rangeShiftLow(final ByteBuffer outBuffer) {
         // rangeShiftLow tracks the total number of extra bytes to emit and
         // carry indicates whether they are a string of 0xFF or 0x00 values
 

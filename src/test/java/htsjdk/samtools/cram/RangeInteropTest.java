@@ -19,11 +19,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.filterEmbeddedNewlines;
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.getInteropCompressedFilePaths;
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.getParamsFormatFlags;
-import static htsjdk.samtools.cram.CRAMInteropTestUtils.getUnCompressedFilePath;
-
 public class RangeInteropTest extends HtsjdkTest  {
     public static final String COMPRESSED_RANGE_DIR = "arith";
 
@@ -34,13 +29,13 @@ public class RangeInteropTest extends HtsjdkTest  {
         // compressed testfile path, uncompressed testfile path,
         // Range encoder, Range decoder, Range params
         final List<Object[]> testCases = new ArrayList<>();
-        for (Path path : getInteropCompressedFilePaths(COMPRESSED_RANGE_DIR)) {
+        for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANGE_DIR)) {
             Object[] objects = new Object[]{
                     path,
-                    getUnCompressedFilePath(path),
+                    CRAMInteropTestUtils.getUnCompressedFilePath(path),
                     new RangeEncode(),
                     new RangeDecode(),
-                    new RangeParams(getParamsFormatFlags(path))
+                    new RangeParams(CRAMInteropTestUtils.getParamsFormatFlags(path))
             };
             testCases.add(objects);
         }
@@ -70,7 +65,7 @@ public class RangeInteropTest extends HtsjdkTest  {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through Range codec and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
             if (params.isStripe()) {
                 Assert.assertThrows(CRAMException.class, () -> rangeEncode.compress(uncompressedInteropBytes, params));
@@ -95,11 +90,16 @@ public class RangeInteropTest extends HtsjdkTest  {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
              final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
         ) {
-
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
-            // by filtering out the embedded newlines, and then round trip through Range codec and compare the
-            // results
-            final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            // by filtering out the embedded newlines, and then round trip through Range codec
+            // and compare the results
+
+            final ByteBuffer uncompressedInteropBytes;
+            if (uncompressedInteropPath.toString().contains("htscodecs/tests/dat/u")) {
+                uncompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(uncompressedInteropStream));
+            } else {
+                uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            }
             final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo

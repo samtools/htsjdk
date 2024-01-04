@@ -8,7 +8,7 @@ public class ByteModel {
     // the cumulative frequencies of all symbols prior to this symbol,
     // and the total of all frequencies.
     public int totalFrequency;
-    public int maxSymbol;
+    public final int maxSymbol;
     public final int[] symbols;
     public final int[] frequencies;
 
@@ -24,17 +24,7 @@ public class ByteModel {
         }
     }
 
-    // TODO: use this method to reset
-    public void reset() {
-        totalFrequency = 0;
-        for (int i = 0; i <= maxSymbol; i++) {
-            symbols[i] = 0;
-            frequencies[i] = 0;
-        }
-        // maxSymbol = 0; // TODO: ???
-    }
-
-    public int modelDecode(ByteBuffer inBuffer, RangeCoder rangeCoder){
+    public int modelDecode(final ByteBuffer inBuffer, final RangeCoder rangeCoder){
 
         // decodes one symbol
         final int freq = rangeCoder.rangeGetFrequency(totalFrequency);
@@ -45,7 +35,7 @@ public class ByteModel {
         }
 
         // update rangecoder
-        rangeCoder.rangeDecode(inBuffer,cumulativeFrequency,frequencies[x],totalFrequency);
+        rangeCoder.rangeDecode(inBuffer,cumulativeFrequency,frequencies[x]);
 
         // update model frequencies
         frequencies[x] += Constants.STEP;
@@ -57,7 +47,7 @@ public class ByteModel {
         }
 
         // keep symbols approximately frequency sorted
-        int symbol = symbols[x];
+        final int symbol = symbols[x];
         if (x > 0 && frequencies[x] > frequencies[x-1]){
             // Swap frequencies[x], frequencies[x-1]
             int tmp = frequencies[x];
@@ -81,7 +71,7 @@ public class ByteModel {
         }
     }
 
-    public void modelEncode(final ByteBuffer outBuffer, RangeCoder rangeCoder, int symbol){
+    public void modelEncode(final ByteBuffer outBuffer, final RangeCoder rangeCoder, final int symbol){
 
         // encodes one input symbol
         int cumulativeFrequency = 0;

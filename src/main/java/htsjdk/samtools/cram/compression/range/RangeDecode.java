@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.Utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -39,16 +38,16 @@ public class RangeDecode {
         // if pack, get pack metadata, which will be used later to decode packed data
         int packDataLength = 0;
         int numSymbols = 0;
-        int[] packMappingTable = new int[0];
+        byte[] packMappingTable = null;
         if (rangeParams.isPack()){
             packDataLength = outSize;
             numSymbols = inBuffer.get() & 0xFF;
 
             // if (numSymbols > 16 or numSymbols==0), raise exception
             if (numSymbols <= 16 && numSymbols!=0) {
-                packMappingTable = new int[numSymbols];
+                packMappingTable = new byte[numSymbols];
                 for (int i = 0; i < numSymbols; i++) {
-                    packMappingTable[i] = inBuffer.get() & 0xFF;
+                    packMappingTable[i] = inBuffer.get();
                 }
                 outSize = Utils.readUint7(inBuffer);
             } else {
@@ -92,8 +91,8 @@ public class RangeDecode {
         }
 
         // if pack, then decodePack
-        if (rangeParams.isPack() && packMappingTable.length > 0) {
-            outBuffer = decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
+        if (rangeParams.isPack()) {
+            outBuffer = Utils.decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
         }
         outBuffer.rewind();
         return outBuffer;
@@ -225,55 +224,6 @@ public class RangeDecode {
         final byte [] extUncompressedBytes = compressor.uncompress(extCompressedBytes);
         outBuffer.put(extUncompressedBytes);
         return outBuffer;
-    }
-
-    private ByteBuffer decodePack(ByteBuffer inBuffer, final int[] packMappingTable, int numSymbols, int uncompressedPackOutputLength) {
-        ByteBuffer outBufferPack = ByteBuffer.allocate(uncompressedPackOutputLength);
-        int j = 0;
-
-        if (numSymbols <= 1) {
-            for (int i=0; i < uncompressedPackOutputLength; i++){
-                outBufferPack.put(i, (byte) packMappingTable[0]);
-            }
-        }
-
-        // 1 bit per value
-        else if (numSymbols <= 2) {
-            int v = 0;
-            for (int i=0; i < uncompressedPackOutputLength; i++){
-                if (i % 8 == 0){
-                    v = inBuffer.get(j++);
-                }
-                outBufferPack.put(i, (byte) packMappingTable[v & 1]);
-                v >>=1;
-            }
-        }
-
-        // 2 bits per value
-        else if (numSymbols <= 4){
-            int v = 0;
-            for(int i=0; i < uncompressedPackOutputLength; i++){
-                if (i % 4 == 0){
-                    v = inBuffer.get(j++);
-                }
-                outBufferPack.put(i, (byte) packMappingTable[v & 3]);
-                v >>=2;
-            }
-        }
-
-        // 4 bits per value
-        else if (numSymbols <= 16){
-            int v = 0;
-            for(int i=0; i < uncompressedPackOutputLength; i++){
-                if (i % 2 == 0){
-                    v = inBuffer.get(j++);
-                }
-                outBufferPack.put(i, (byte) packMappingTable[v & 15]);
-                v >>=4;
-            }
-        }
-        inBuffer = outBufferPack;
-        return inBuffer;
     }
 
     private ByteBuffer decodeStripe(ByteBuffer inBuffer, final int outSize){
