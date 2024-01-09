@@ -34,7 +34,7 @@ public class BundleJSON {
     public static final String JSON_SCHEMA_VERSION            = "0.1.0"; // TODO: bump this to 1.0.0
 
     final private static Set<String> TOP_LEVEL_PROPERTIES = Collections.unmodifiableSet(
-            new HashSet<String>() {
+            new HashSet<>() {
                 private static final long serialVersionUID = 1L;
                 {
                     add(JSON_PROPERTY_SCHEMA_NAME);

@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * A {@link Bundle} specifically for reads and reads-related resources. A {@link ReadsBundle} has a
+ * A class for creating a {@link Bundle} for reads and reads-related resources. A {@link ReadsBundle} has a
  * primary resource with content type {@link BundleResourceType#ALIGNED_READS}; and an optional index
  * resource. ReadsBundles can also contain other resources.
  *
