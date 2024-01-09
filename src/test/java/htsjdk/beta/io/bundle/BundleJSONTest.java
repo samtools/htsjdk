@@ -31,125 +31,124 @@ public class BundleJSONTest extends HtsjdkTest {
                 // json string, primary key, corresponding array of resources
 
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat) +
-                                "\",\"format\":\"BAM\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(BundleResourceTestData.readsWithFormat)
+                    """
+                    {
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"ALIGNED_READS",
+                        "ALIGNED_READS":{"path":"%s","format":"BAM"}
+                    }""".formatted(getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(BundleResourceTestData.readsWithFormat)
                 },
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) + "\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(BundleResourceTestData.readsNoFormat)
+                    """
+                    {
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"ALIGNED_READS",
+                        "ALIGNED_READS":{"path":"%s"}
+                    }""".formatted(getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(BundleResourceTestData.readsNoFormat)
                 },
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat) +
-                                "\",\"format\":\"BAI\"},\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat) +
-                                "\",\"format\":\"BAM\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(
-                                BundleResourceTestData.readsWithFormat,
-                                BundleResourceTestData.indexWithFormat)
+                    """
+                    {
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"ALIGNED_READS",
+                        "READS_INDEX":{"path":"%s","format":"BAI"},
+                        "ALIGNED_READS":{"path":"%s","format":"BAM"}
+                    }""".formatted(
+                            getURIStringFromIOPath(BundleResourceTestData.indexWithFormat),
+                            getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(
+                            BundleResourceTestData.readsWithFormat,
+                            BundleResourceTestData.indexWithFormat)
                 },
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat) +
-                                "\",\"format\":\"BAI\"},\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) +
-                                "\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(
-                                BundleResourceTestData.readsNoFormat,
-                                BundleResourceTestData.indexWithFormat)
+                    """
+                    {
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"ALIGNED_READS",
+                        "READS_INDEX":{"path":"%s","format":"BAI"},
+                        "ALIGNED_READS":{"path":"%s"}
+                    }""".formatted(
+                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat),
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(
+                            BundleResourceTestData.readsNoFormat,
+                            BundleResourceTestData.indexWithFormat)
                 },
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat) +
-                                "\"},\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat) +
-                                "\",\"format\":\"BAM\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(
-                                BundleResourceTestData.readsWithFormat,
-                                BundleResourceTestData.indexNoFormat) },
+                    """
+                    {
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"ALIGNED_READS",
+                        "READS_INDEX":{"path":"%s"},
+                        "ALIGNED_READS":{"path":"%s","format":"BAM"}
+                    }""".formatted(
+                        getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
+                        getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(
+                            BundleResourceTestData.readsWithFormat,
+                            BundleResourceTestData.indexNoFormat)
+                },
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat) + "\"},\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) + "\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(
-                                BundleResourceTestData.readsNoFormat,
-                                BundleResourceTestData.indexNoFormat)
+                    """
+                    {   
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"ALIGNED_READS",
+                        "READS_INDEX":{"path":"%s"},
+                        "ALIGNED_READS":{"path":"%s"}
+                    }""".formatted(
+                            getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
+                            getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(
+                            BundleResourceTestData.readsNoFormat,
+                            BundleResourceTestData.indexNoFormat)
                 },
 
                 // bundle with a single resource that has a custom content type
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"CUSTOM\",\n" +
-                                "  \"CUSTOM\":{\"path\":\"" + getURIStringFromIOPath(CUSTOM_RESOURCE) + "\"}\n" +
-                                "}\n",
-                        "CUSTOM",
-                        Arrays.asList(CUSTOM_RESOURCE)
+                    """
+                    {   
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                        "primary":"CUSTOM",
+                        "CUSTOM":{"path":"%s"}
+                    }""".formatted(getURIStringFromIOPath(CUSTOM_RESOURCE)),
+                    "CUSTOM",
+                    Arrays.asList(CUSTOM_RESOURCE)
                 },
 
                 // three resources, one of which is a custom content type
                 {
-                        "{\n" +
-                                "  \"schemaName\":\"htsbundle\",\n" +
-                                "  \"schemaVersion\":\"0.1.0\",\n" +
-                                "  \"primary\":\"ALIGNED_READS\",\n" +
-                                "  \"READS_INDEX\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat) +
-                                "\"},\n" +
-                                "  \"ALIGNED_READS\":{\"path\":\"" +
-                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat) +
-                                "\"},\n" +
-                                "  \"CUSTOM\":{\"path\":\"" + getURIStringFromIOPath(CUSTOM_RESOURCE) + "\"}\n" +
-                                "}\n",
-                        BundleResourceType.ALIGNED_READS,
-                        Arrays.asList(
-                                BundleResourceTestData.readsNoFormat,
-                                BundleResourceTestData.indexNoFormat,
-                                CUSTOM_RESOURCE)
+                    """
+                    {
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"0.1.0",
+                            "primary":"ALIGNED_READS",
+                            "READS_INDEX":{"path":"%s"},
+                            "ALIGNED_READS":{"path":"%s"},
+                            "CUSTOM":{"path":"%s"}
+                    }""".formatted(
+                            getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
+                            getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
+                            getURIStringFromIOPath(CUSTOM_RESOURCE)),
+                    BundleResourceType.ALIGNED_READS,
+                    Arrays.asList(
+                            BundleResourceTestData.readsNoFormat,
+                            BundleResourceTestData.indexNoFormat,
+                            CUSTOM_RESOURCE)
                 },
         };
     }
@@ -197,41 +196,90 @@ public class BundleJSONTest extends HtsjdkTest {
     @DataProvider(name = "invalidBundleJSON")
     public Object[][] getInvalidBundleJSON() {
         return new Object[][]{
-                { null, "cannot be null" },
-                { "", "The string is empty" },
+                {null, "cannot be null"},
+                {"", "The string is empty"},
 
                 // missing schema name
-                { "{}" , "missing the required property schemaName" },
+                {"{}", "missing the required property schemaName"},
 
                 // still missing schema name
-                { "{\"schemaVersion\":\"0.1.0\"}", "missing the required property schemaName" },
+                {
+                    """
+                        {"schemaVersion":"0.1.0"}
+                    """,
+                    "missing the required property schemaName"
+                },
 
                 // incorrect schema name
-                { "{\"schemaName\":\"bogusname\", \"schemaVersion\":\"0.1.0\"}", "Expected bundle schema name" },
+                {
+                    """
+                        {"schemaName":"bogusname", "schemaVersion":"0.1.0"}
+                    """,
+                    "Expected bundle schema name"
+                },
 
                 // missing schema version
-                { "{\"schemaName\":\"htsbundle\"}", "missing the required property schemaVersion" },
+                {
+                    """
+                        { "schemaName":"htsbundle" }
+                    """,
+                    "missing the required property schemaVersion"
+                },
 
                 // incorrect schema version
-                { "{\"schemaName\":\"htsbundle\", \"schemaVersion\":\"99.99.99\"}", "Expected bundle schema version" },
+                {
+                    """
+                        {"schemaName":"htsbundle", "schemaVersion":"99.99.99"}
+                    """,
+                    "Expected bundle schema version"
+                },
 
                 // missing primary property
-                { "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
-                        ".bam\",\"format\":\"BAM\"}}",
-                        "missing the required property primary"},
+                {
+                    """
+                        {
+                            "schemaVersion":"0.1.0",
+                            "schemaName":"htsbundle",
+                            "ALIGNED_READS":{"path":"myreads.bam","format":"BAM"}
+                        }
+                   """,
+                   "missing the required property primary"
+                },
 
                 // primary property is present, but the resource it specifies is not in the bundle
-                { "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
-                        ".bam\",\"format\":\"BAM\"},\"primary\":\"MISSING_RESOURCE\"}",
-                        "not present in the bundle's resources"},
+                {
+                    """
+                        {
+                            "schemaVersion":"0.1.0",
+                            "schemaName":"htsbundle",
+                            "ALIGNED_READS":{"path":"myreads.bam","format":"BAM"},
+                            "primary":"MISSING_RESOURCE"
+                        }
+                    """,
+                    "not present in the bundle's resources"
+                },
 
-                // syntax error (missing quote in before schemaName
-                { "{\"schemaVersion\":\"0.1.0\",schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"myreads" +
-                        ".bam\",\"format\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
-                        "Expected a ':' after a key at 36" },
-                // no enclosing {} -> UnsupportedOperationException (no text message)
-                {"\"schemaName\":\"htsbundle\", \"schemaVersion\":\"0.1.0\"",
-                        "", },
+                // syntax error (missing quote before schemaName)
+                {
+                    """
+                        {
+                            "schemaVersion":"0.1.0",
+                            schemaName":"htsbundle",
+                            "ALIGNED_READS":{"path":"myreads.bam","format":"BAM"},
+                            "primary":"ALIGNED_READS"
+                        }
+                    """,
+                    "Expected a ':' after a key at 58 [character 19 line 3]"
+                },
+
+                // missing enclosing {} -> UnsupportedOperationException (no text message)
+                {
+                    """
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"0.1.0",
+                    """,
+                    "A JSONObject text must begin with '{' at 5 [character 6 line 1]",
+                },
         };
     }
 
