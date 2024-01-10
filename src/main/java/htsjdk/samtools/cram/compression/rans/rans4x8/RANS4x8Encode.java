@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.compression.rans.rans4x8;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
@@ -15,7 +16,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
     // streams smaller than this value don't have sufficient symbol context for ORDER-1 encoding,
     // so always use ORDER-0
     private static final int MINIMUM_ORDER_1_SIZE = 4;
-    private static final ByteBuffer EMPTY_BUFFER = Utils.allocateByteBuffer(0);
+    private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
     // This method assumes that inBuffer is already rewound.
     // It compresses the data in the inBuffer, leaving it consumed.
@@ -44,7 +45,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     private ByteBuffer compressOrder0Way4(final ByteBuffer inBuffer) {
         final int inputSize = inBuffer.remaining();
-        final ByteBuffer outBuffer = Utils.allocateOutputBuffer(inputSize);
+        final ByteBuffer outBuffer = CompressionUtils.allocateOutputBuffer(inputSize);
 
         // move the output buffer ahead to the start of the frequency table (we'll come back and
         // write the output stream prefix at the end of this method)
@@ -55,7 +56,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
         // using the normalised frequencies, set the RANSEncodingSymbols
         buildSymsOrder0(normalizedFreq);
-        final ByteBuffer cp = Utils.slice(outBuffer);
+        final ByteBuffer cp = CompressionUtils.slice(outBuffer);
 
         // write Frequency table
         final int frequencyTableSize = writeFrequenciesOrder0(cp, normalizedFreq);
@@ -65,7 +66,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         final RANSEncodingSymbol[] syms = getEncodingSymbols()[0];
         final int in_size = inBuffer.remaining();
         long rans0, rans1, rans2, rans3;
-        final ByteBuffer ptr = Utils.slice(cp);
+        final ByteBuffer ptr = CompressionUtils.slice(cp);
         rans0 = Constants.RANS_4x8_LOWER_BOUND;
         rans1 = Constants.RANS_4x8_LOWER_BOUND;
         rans2 = Constants.RANS_4x8_LOWER_BOUND;
@@ -112,7 +113,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     private ByteBuffer compressOrder1Way4(final ByteBuffer inBuffer) {
         final int inSize = inBuffer.remaining();
-        final ByteBuffer outBuffer = Utils.allocateOutputBuffer(inSize);
+        final ByteBuffer outBuffer = CompressionUtils.allocateOutputBuffer(inSize);
 
         // move to start of frequency
         outBuffer.position(Constants.RANS_4x8_PREFIX_BYTE_LENGTH);
@@ -123,7 +124,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         // using the normalised frequencies, set the RANSEncodingSymbols
         buildSymsOrder1(normalizedFreq);
 
-        final ByteBuffer cp = Utils.slice(outBuffer);
+        final ByteBuffer cp = CompressionUtils.slice(outBuffer);
         final int frequencyTableSize = writeFrequenciesOrder1(cp, normalizedFreq);
         inBuffer.rewind();
         final int in_size = inBuffer.remaining();
@@ -156,7 +157,7 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         byte l3 = inBuffer.get(in_size - 1);
 
         // Slicing is needed for buffer reversing later
-        final ByteBuffer ptr = Utils.slice(cp);
+        final ByteBuffer ptr = CompressionUtils.slice(cp);
         final RANSEncodingSymbol[][] syms = getEncodingSymbols();
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
             final byte c3 = inBuffer.get(i3);

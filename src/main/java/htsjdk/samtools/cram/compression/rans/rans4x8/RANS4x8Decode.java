@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.compression.rans.rans4x8;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.rans.ArithmeticDecoder;
 import htsjdk.samtools.cram.compression.rans.Constants;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
@@ -15,7 +16,7 @@ import java.util.Arrays;
 public class RANS4x8Decode extends RANSDecode {
 
     private static final int RAW_BYTE_LENGTH = 4;
-    private static final ByteBuffer EMPTY_BUFFER = Utils.allocateByteBuffer(0);
+    private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
     // This method assumes that inBuffer is already rewound.
     // It uncompresses the data in the inBuffer, leaving it consumed.
@@ -39,7 +40,7 @@ public class RANS4x8Decode extends RANSDecode {
 
         // uncompressed bytes length
         final int outSize = inBuffer.getInt();
-        final ByteBuffer outBuffer = Utils.allocateByteBuffer(outSize);
+        final ByteBuffer outBuffer = CompressionUtils.allocateByteBuffer(outSize);
         initializeRANSDecoder();
         switch (order) {
             case ZERO:

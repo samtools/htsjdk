@@ -1,8 +1,6 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.samtools.cram.CRAMException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 final public class Utils {
 
@@ -52,32 +50,6 @@ final public class Utils {
             ret = (ret << 16) | i;
         }
         return ret;
-    }
-
-    public static void writeUint7(final int i, final ByteBuffer cp) {
-        int s = 0;
-        int X = i;
-        do {
-            s += 7;
-            X >>= 7;
-        } while (X > 0);
-        do {
-            s -= 7;
-            //writeByte
-            final int s_ = (s > 0) ? 1 : 0;
-            cp.put((byte) (((i >> s) & 0x7f) + (s_ << 7)));
-        } while (s > 0);
-    }
-
-    public static int readUint7(final ByteBuffer cp) {
-        int i = 0;
-        int c;
-        do {
-            //read byte
-            c = cp.get();
-            i = (i << 7) | (c & 0x7f);
-        } while ((c & 0x80) != 0);
-        return i;
     }
 
     public static void normaliseFrequenciesOrder0(final int[] F, final int bits) {
@@ -192,34 +164,6 @@ final public class Utils {
                 normaliseFrequenciesOrder0Shift(F[symbol],shift);
             }
         }
-    }
-
-    public static ByteBuffer allocateOutputBuffer(final int inSize) {
-        // This calculation is identical to the one in samtools rANS_static.c
-        // Presumably the frequency table (always big enough for order 1) = 257*257,
-        // then * 3 for each entry (byte->symbol, 2 bytes -> scaled frequency),
-        // + 9 for the header (order byte, and 2 int lengths for compressed/uncompressed lengths).
-        final int compressedSize = (int) (inSize + 257 * 257 * 3 + 9);
-        final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize).order(ByteOrder.LITTLE_ENDIAN);
-        if (outputBuffer.remaining() < compressedSize) {
-            throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");
-        }
-        return outputBuffer;
-    }
-
-    // returns a new LITTLE_ENDIAN ByteBuffer of size = bufferSize
-    public static ByteBuffer allocateByteBuffer(final int bufferSize){
-        return ByteBuffer.allocate(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
-    }
-
-    // returns a LITTLE_ENDIAN ByteBuffer that is created by wrapping a byte[]
-    public static ByteBuffer wrap(final byte[] inputBytes){
-        return ByteBuffer.wrap(inputBytes).order(ByteOrder.LITTLE_ENDIAN);
-    }
-
-    // returns a LITTLE_ENDIAN ByteBuffer that is created by inputBuffer.slice()
-    public static ByteBuffer slice(final ByteBuffer inputBuffer){
-        return inputBuffer.slice().order(ByteOrder.LITTLE_ENDIAN);
     }
 
 }
