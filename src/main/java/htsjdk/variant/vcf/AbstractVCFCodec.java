@@ -596,7 +596,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         if ( GTAlleles == null ) {
             StringTokenizer st = new StringTokenizer(GT, VCFConstants.PHASING_TOKENS);
-            GTAlleles = new ArrayList<Allele>(st.countTokens());
+            GTAlleles = new ArrayList<>(st.countTokens());
             while ( st.hasMoreTokens() ) {
                 String genotype = st.nextToken();
                 GTAlleles.add(oneAllele(genotype, alleles));
@@ -754,17 +754,18 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (genotypeParts == null)
             genotypeParts = new String[header.getColumnCount() - NUM_STANDARD_FIELDS];
 
-        int nParts = ParsingUtils.split(str, genotypeParts, VCFConstants.FIELD_SEPARATOR_CHAR);
-        if ( nParts != genotypeParts.length )
+        final int nParts = ParsingUtils.split(str, genotypeParts, VCFConstants.FIELD_SEPARATOR_CHAR);
+        if ( nParts != genotypeParts.length ) {
             generateException("there are " + (nParts-1) + " genotypes while the header requires that " + (genotypeParts.length-1) + " genotypes be present for all records at " + chr + ":" + pos, lineNo);
+        }
 
-        ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nParts);
+        final ArrayList<Genotype> genotypes = new ArrayList<>(nParts);
 
         // get the format keys
-        List<String> genotypeKeys = ParsingUtils.split(genotypeParts[0], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
+        final List<String> genotypeKeys = ParsingUtils.split(genotypeParts[0], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
         // cycle through the sample names
-        Iterator<String> sampleNameIterator = header.getGenotypeSamples().iterator();
+        final Iterator<String> sampleNameIterator = header.getGenotypeSamples().iterator();
 
         // clear out our allele mapping
         alleleMap.clear();
@@ -807,9 +808,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                             else
                                 gb.GQ((int)Math.round(VCFUtils.parseVcfDouble(genotypeValues.get(i))));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
-                            gb.AD(decodeInts(genotypeValues.get(i)));
+                            gb.AD(decodeIntsFast(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
-                            gb.PL(decodeInts(genotypeValues.get(i)));
+                            gb.PL(decodeIntsFast(genotypeValues.get(i)));
                             PlIsSet = true;
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
                             // Do not overwrite PL with data from GL
@@ -857,6 +858,32 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             return null;
         }
         return values;
+    }
+
+    private static final int[] splitBuffer = new int[100];
+    public static int[] decodeIntsFast(final String string) {
+        int i = 0;
+        int lastIndex = -1;
+        try {
+            while (true) {
+                final int index = string.indexOf(',',lastIndex+1);
+                if (index == -1) {
+                    final String substring = string.substring(lastIndex+1);
+                    splitBuffer[i] = Integer.parseInt(substring);
+                    i++;
+                    break;
+                } else {
+                    final String substring = string.substring(lastIndex+1, index);
+                    splitBuffer[i] = Integer.parseInt(substring);
+                    lastIndex = index;
+                    i++;
+                }
+                if(i >=)
+            }
+            return Arrays.copyOfRange(splitBuffer, 0, i);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

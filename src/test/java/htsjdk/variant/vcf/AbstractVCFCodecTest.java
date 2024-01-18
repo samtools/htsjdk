@@ -93,4 +93,12 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
             }
         }
     }
+
+    @Test
+    public void decodeInstFastTest(){
+        Assert.assertEquals(AbstractVCFCodec.decodeIntsFast("1"), new int[]{1});
+        Assert.assertEquals(AbstractVCFCodec.decodeIntsFast("1,2,3"), new int[]{1,2,3});
+        Assert.assertEquals(AbstractVCFCodec.decodeIntsFast("2,5"), new int[]{2,5});
+        Assert.assertEquals(AbstractVCFCodec.decodeIntsFast("200,5,23"), new int[]{200,5,23});
+    }
 }
