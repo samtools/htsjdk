@@ -33,8 +33,8 @@ import htsjdk.tribble.readers.LineIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A feature codec for the VCF 4 specification
@@ -129,36 +129,29 @@ public class VCFCodec extends AbstractVCFCodec {
      * parse the filter string, first checking to see if we already have parsed it in a previous attempt
      *
      * @param filterString the string to parse
+     * @param filterCache
      * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value in a VCF)
      */
     @Override
-    protected List<String> parseFilters(final String filterString) {
+    protected List<String> parseFilters(final String filterString, final Map<String, List<String>> filterCache) {
         // null for unfiltered
-        if ( filterString.equals(VCFConstants.UNFILTERED) )
+        if ( filterString.equals(VCFConstants.UNFILTERED) ) {
             return null;
-
-        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) )
+        }
+        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) ) {
             return Collections.emptyList();
-        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
+        }
+        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) ) {
             generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
-        if (filterString.isEmpty())
+        }
+        if (filterString.isEmpty()) {
             generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
+        }
 
-        // do we have the filter string cached?
-        if ( filterHash.containsKey(filterString) )
-            return filterHash.get(filterString);
-
-        // empty set for passes filters
-        final List<String> fFields = new LinkedList<String>();
-        // otherwise we have to parse and cache the value
-        if ( !filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR) )
-            fFields.add(filterString);
-        else
-            fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
-
-        filterHash.put(filterString, Collections.unmodifiableList(fFields));
-
-        return fFields;
+        return filterCache.computeIfAbsent(filterString, string ->
+                filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR)
+                        ? Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR))
+                        : List.of(filterString));
     }
 
     @Override

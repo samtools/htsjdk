@@ -107,11 +107,11 @@ public class LazyGenotypesContext extends GenotypesContext {
      * {@link GenotypesContext#GenotypesContext(java.util.ArrayList, java.util.Map, java.util.List)}
      */
     public static class LazyData {
-        final ArrayList<Genotype> genotypes;
+        final List<Genotype> genotypes;
         final Map<String, Integer> sampleNameToOffset;
         final List<String> sampleNamesInOrder;
 
-        public LazyData(final ArrayList<Genotype> genotypes,
+        public LazyData(final List<Genotype> genotypes,
                         final List<String> sampleNamesInOrder,
                         final Map<String, Integer> sampleNameToOffset) {
             this.genotypes = genotypes;
@@ -144,7 +144,7 @@ public class LazyGenotypesContext extends GenotypesContext {
      * @return
      */
     @Override
-    protected ArrayList<Genotype> getGenotypes() {
+    protected List<Genotype> getGenotypes() {
         decode();
         return notToBeDirectlyAccessedGenotypes;
     }

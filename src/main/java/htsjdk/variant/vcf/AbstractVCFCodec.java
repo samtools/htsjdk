@@ -43,6 +43,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
@@ -60,7 +63,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     private VCFTextTransformer vcfTextTransformer = passThruTextTransformer;
 
     // a mapping of the allele
-    protected Map<String, List<Allele>> alleleMap = new HashMap<String, List<Allele>>(3);
+    protected ConcurrentMap<String, List<Allele>> genotypeToAlleleCache = new ConcurrentHashMap<>(3);
     
     // for performance testing purposes
     public static boolean validate = true;
@@ -72,14 +75,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     protected final String[] locParts = new String[6];
 
     // for performance we cache the hashmap of filter encodings for quick lookup
-    protected HashMap<String,List<String>> filterHash = new HashMap<String,List<String>>();
+    protected ConcurrentMap<String,List<String>> filterCache = new ConcurrentHashMap<>();
 
     // we store a name to give to each of the variant contexts we emit
     protected String name = "Unknown";
 
     protected int lineNo = 0;
 
-    protected Map<String, String> stringCache = new HashMap<String, String>();
+    protected ConcurrentMap<String, String> stringCache = new ConcurrentHashMap<>();
 
     protected boolean warnedAboutNoEqualsForNonFlag = false;
 
@@ -124,10 +127,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     /**
      * parse the filter string, first checking to see if we already have parsed it in a previous attempt
+     *
      * @param filterString the string to parse
+     * @param filterCache
      * @return a set of the filters applied
      */
-    protected abstract List<String> parseFilters(String filterString);
+    protected abstract List<String> parseFilters(String filterString, final Map<String, List<String>> filterCache);
 
     /**
      * create a VCF header from a set of header record lines
@@ -400,7 +405,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         lineNo++;
 
         // parse out the required fields
-        final String chr = getCachedString(parts[0]);
+        final String chr = getCachedString(parts[0], stringCache);
         builder.chr(chr);
         int pos = -1;
         try {
@@ -421,7 +426,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         final String alts = parts[4];
         builder.log10PError(parseQual(parts[5]));
 
-        final List<String> filters = parseFilters(getCachedString(parts[6]));
+        final List<String> filters = parseFilters(getCachedString(parts[6], stringCache), filterCache);
         if ( filters != null ) {
             builder.filters(new HashSet<>(filters));
         }
@@ -447,7 +452,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (parts.length > NUM_STANDARD_FIELDS && includeGenotypes) {
             final LazyGenotypesContext.LazyParser lazyParser = new LazyVCFGenotypesParser(alleles, chr, pos);
             final int nGenotypes = header.getNGenotypeSamples();
-            LazyGenotypesContext lazy = new LazyGenotypesContext(lazyParser, parts[8], nGenotypes);
+            final LazyGenotypesContext lazy = new LazyGenotypesContext(lazyParser, parts[8], nGenotypes);
 
             // did we resort the sample names?  If so, we need to load the genotype data
             if ( !header.samplesWereAlreadySorted() )
@@ -488,15 +493,11 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * Return a cached copy of the supplied string.
      *
      * @param str string
+     * @param cache
      * @return interned string
      */
-    protected String getCachedString(String str) {
-        String internedString = stringCache.get(str);
-        if ( internedString == null ) {
-            internedString = new String(str);
-            stringCache.put(internedString, internedString);
-        }
-        return internedString;
+    protected static String getCachedString(String str, final Map<String, String> cache) {
+        return cache.computeIfAbsent(str, key -> key);
     }
 
     /**
@@ -505,7 +506,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a mapping of keys to objects
      */
     private Map<String, Object> parseInfo(String infoField) {
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
 
         if ( infoField.isEmpty() )
             generateException("The VCF specification requires a valid (non-zero length) info field");
@@ -569,42 +570,40 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return an Allele
      */
     protected static Allele oneAllele(String index, List<Allele> alleles) {
-        if ( index.equals(VCFConstants.EMPTY_ALLELE) )
+        if ( index.equals(VCFConstants.EMPTY_ALLELE) ) {
             return Allele.NO_CALL;
+        }
         final int i;
         try {
             i = Integer.parseInt(index);
         } catch ( NumberFormatException e ) {
             throw new TribbleException.InternalCodecException("The following invalid GT allele index was encountered in the file: " + index);
         }
-        if ( i >= alleles.size() )
+        if ( i >= alleles.size() ) {
             throw new TribbleException.InternalCodecException("The allele with index " + index + " is not defined in the REF/ALT columns in the record");
+        }
         return alleles.get(i);
     }
 
 
     /**
      * parse genotype alleles from the genotype string
-     * @param GT         GT string
+     * @param gt         GT string
      * @param alleles    list of possible alleles
      * @param cache      cache of alleles for GT
      * @return the allele list for the GT string
      */
-    protected static List<Allele> parseGenotypeAlleles(String GT, List<Allele> alleles, Map<String, List<Allele>> cache) {
+    protected static List<Allele> parseGenotypeAlleles(final String gt, final List<Allele> alleles, final Map<String, List<Allele>> cache) {
         // cache results [since they are immutable] and return a single object for each genotype
-        List<Allele> GTAlleles = cache.get(GT);
-
-        if ( GTAlleles == null ) {
-            StringTokenizer st = new StringTokenizer(GT, VCFConstants.PHASING_TOKENS);
-            GTAlleles = new ArrayList<>(st.countTokens());
+        return cache.computeIfAbsent(gt, g -> {
+            final StringTokenizer st = new StringTokenizer(g, VCFConstants.PHASING_TOKENS);
+            final List<Allele> gtAlleles = new ArrayList<>(st.countTokens());
             while ( st.hasMoreTokens() ) {
-                String genotype = st.nextToken();
-                GTAlleles.add(oneAllele(genotype, alleles));
+                final String genotype = st.nextToken();
+                gtAlleles.add(oneAllele(genotype, alleles));
             }
-            cache.put(GT, GTAlleles);
-        }
-
-        return GTAlleles;
+            return gtAlleles;
+        });
     }
 
     /**
@@ -751,100 +750,125 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                                                               final List<Allele> alleles,
                                                               final String chr,
                                                               final int pos) {
-        if (genotypeParts == null)
+        if (genotypeParts == null) {
             genotypeParts = new String[header.getColumnCount() - NUM_STANDARD_FIELDS];
+        }
 
         final int nParts = ParsingUtils.split(str, genotypeParts, VCFConstants.FIELD_SEPARATOR_CHAR);
         if ( nParts != genotypeParts.length ) {
             generateException("there are " + (nParts-1) + " genotypes while the header requires that " + (genotypeParts.length-1) + " genotypes be present for all records at " + chr + ":" + pos, lineNo);
         }
 
-        final ArrayList<Genotype> genotypes = new ArrayList<>(nParts);
 
         // get the format keys
         final List<String> genotypeKeys = ParsingUtils.split(genotypeParts[0], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
         // cycle through the sample names
-        final Iterator<String> sampleNameIterator = header.getGenotypeSamples().iterator();
+        final List<String> sampleNames = header.getGenotypeSamples();
 
         // clear out our allele mapping
-        alleleMap.clear();
+        genotypeToAlleleCache.clear();
 
-        // cycle through the genotype strings
-        boolean PlIsSet = false;
-        for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
-            List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
-            genotypeValues = vcfTextTransformer.decodeText(genotypeValues);
+        // cycle through the genotype strings]
+        final List<Genotype> genotypes = IntStream.range(1, nParts)
+                .parallel()
+                .mapToObj(genotypeOffset -> {
+                    final String unparsedGenotypeString = genotypeParts[genotypeOffset];
+                    final String sampleName = sampleNames.get(genotypeOffset - 1);
+                    final ErrorInfo errorInfo = new ErrorInfo(chr, pos, lineNo, parts[8], parts[genotypeOffset]);
+                    return processSingleGenotype(unparsedGenotypeString, vcfTextTransformer, alleles, genotypeKeys, errorInfo, version, sampleName, genotypeToAlleleCache, stringCache, filterCache, this);
+                })
+                .toList();
 
-            final String sampleName = sampleNameIterator.next();
-            final GenotypeBuilder gb = new GenotypeBuilder(sampleName);
 
-            // check to see if the value list is longer than the key list, which is a problem
-            if (genotypeKeys.size() < genotypeValues.size())
-                generateException("There are too many keys for the sample " + sampleName + ", keys = " + parts[8] + ", values = " + parts[genotypeOffset]);
+        return new LazyGenotypesContext.LazyData(genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
+    }
 
-            int genotypeAlleleLocation = -1;
-            if (!genotypeKeys.isEmpty()) {
-                gb.maxAttributes(genotypeKeys.size() - 1);
+    private static Genotype processSingleGenotype(final String unparsedGenotypeString, final VCFTextTransformer textTransformer, final List<Allele> alleles, final List<String> genotypeKeys, final ErrorInfo errorInfo, final VCFHeaderVersion version,
+                                                  final String sampleName, final ConcurrentMap<String, List<Allele>> genotypeToAlleleCache, final ConcurrentMap<String, String> stringCache, final ConcurrentMap<String, List<String>> filterCache, AbstractVCFCodec codec) {
+        boolean PlIsSet = false; // this is now a per genotype value, previously it was a per variant value
+        final List<String> rawGenotypeValues = ParsingUtils.split(unparsedGenotypeString, VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
+        final List<String> genotypeValues = textTransformer.decodeText(rawGenotypeValues);
 
-                for (int i = 0; i < genotypeKeys.size(); i++) {
-                    final String gtKey = genotypeKeys.get(i);
-                    boolean missing = i >= genotypeValues.size();
+        final GenotypeBuilder gb = new GenotypeBuilder(sampleName);
 
-                    // todo -- all of these on the fly parsing of the missing value should be static constants
-                    if (gtKey.equals(VCFConstants.GENOTYPE_KEY)) {
-                        genotypeAlleleLocation = i;
-                    } else if ( missing ) {
-                        // if its truly missing (there no provided value) skip adding it to the attributes
-                    } else if (gtKey.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
-                        final List<String> filters = parseFilters(getCachedString(genotypeValues.get(i)));
-                        if ( filters != null ) gb.filters(filters);
-                    } else if ( genotypeValues.get(i).equals(VCFConstants.MISSING_VALUE_v4) ) {
+        // check to see if the value list is longer than the key list, which is a problem
+        if (genotypeKeys.size() < genotypeValues.size()) {
+            generateException("There are too many keys for the sample " + sampleName + ", keys = " + errorInfo.keys() + ", values = " + errorInfo.values(), errorInfo.lineNumber());
+        }
+
+        int genotypeAlleleLocation = -1;
+        if (!genotypeKeys.isEmpty()) {
+            gb.maxAttributes(genotypeKeys.size() - 1);
+
+            for (int i = genotypeKeys.size() - 1; i >= 0; i--) {
+                final String gtKey = genotypeKeys.get(i);
+                final boolean missing = i >= genotypeValues.size();
+
+                // todo -- all of these on the fly parsing of the missing value should be static constants
+                if (gtKey.equals(VCFConstants.GENOTYPE_KEY)) {
+                    genotypeAlleleLocation = i;
+                } else if ( missing ) {
+                    // if its truly missing (there no provided value) skip adding it to the attributes
+                } else {
+                    final String values = genotypeValues.get(i);
+                    if (gtKey.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+                        final String filterString = getCachedString(values, stringCache);
+                        final List<String> filters = codec.parseFilters(filterString, filterCache);
+                        if ( filters != null ) {
+                            gb.filters(filters);
+                        }
+                    } else if ( values.equals(VCFConstants.MISSING_VALUE_v4) ) {
                         // don't add missing values to the map
                     } else {
-                        if (gtKey.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
-                            if ( genotypeValues.get(i).equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3) )
-                                gb.noGQ();
-                            else
-                                gb.GQ((int)Math.round(VCFUtils.parseVcfDouble(genotypeValues.get(i))));
-                        } else if (gtKey.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
-                            gb.AD(decodeIntsFast(genotypeValues.get(i)));
-                        } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
-                            gb.PL(decodeIntsFast(genotypeValues.get(i)));
-                            PlIsSet = true;
-                        } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
-                            // Do not overwrite PL with data from GL
-                            if (!PlIsSet) {
-                                gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
+                        switch (gtKey) {
+                            case VCFConstants.GENOTYPE_QUALITY_KEY -> {
+                                if (values.equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3)) {
+                                    gb.noGQ();
+                                } else {
+                                    gb.GQ((int) Math.round(VCFUtils.parseVcfDouble(values)));
+                                }
                             }
-                        } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
-                            gb.DP(Integer.parseInt(genotypeValues.get(i)));
-                        } else {
-                            gb.attribute(gtKey, genotypeValues.get(i));
+                            case VCFConstants.GENOTYPE_ALLELE_DEPTHS -> gb.AD(decodeIntsFast(values));
+                            case VCFConstants.GENOTYPE_PL_KEY -> {
+                                gb.PL(decodeIntsFast(values));
+                                PlIsSet = true;
+                            }
+                            case VCFConstants.GENOTYPE_LIKELIHOODS_KEY -> {
+                                // Do not overwrite PL with data from GL
+                                if (!PlIsSet) {
+                                    gb.PL(GenotypeLikelihoods.fromGLField(values).getAsPLs());
+                                }
+                            }
+                            case VCFConstants.DEPTH_KEY -> gb.DP(Integer.parseInt(values));
+                            default -> gb.attribute(gtKey, values);
                         }
                     }
                 }
             }
-
-            // check to make sure we found a genotype field if our version is less than 4.1 file
-            if ( ! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_1) && genotypeAlleleLocation == -1 )
-                generateException("Unable to find the GT field for the record; the GT field is required before VCF4.1");
-            if ( genotypeAlleleLocation > 0 )
-                generateException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present");
-
-            final List<Allele> GTalleles = (genotypeAlleleLocation == -1 ? new ArrayList<Allele>(0) : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, alleleMap));
-            gb.alleles(GTalleles);
-            gb.phased(genotypeAlleleLocation != -1 && genotypeValues.get(genotypeAlleleLocation).indexOf(VCFConstants.PHASED) != -1);
-
-            // add it to the list
-            try {
-                genotypes.add(gb.make());
-            } catch (TribbleException e) {
-                throw new TribbleException.InternalCodecException(e.getMessage() + ", at position " + chr+":"+pos);
-            }
         }
 
-        return new LazyGenotypesContext.LazyData(genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
+        // check to make sure we found a genotype field if our version is less than 4.1 file
+        if ( ! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_1) && genotypeAlleleLocation == -1 ) {
+            generateException("Unable to find the GT field for the record; the GT field is required before VCF4.1", errorInfo.lineNumber);
+        }
+        if ( genotypeAlleleLocation > 0 ) {
+            generateException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present", errorInfo.lineNumber);
+        }
+
+        final List<Allele> gtAlleles = genotypeAlleleLocation == -1
+                ? new ArrayList<>(0)
+                : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, genotypeToAlleleCache);
+
+        gb.alleles(gtAlleles);
+        gb.phased(genotypeAlleleLocation != -1 && genotypeValues.get(genotypeAlleleLocation).contains(VCFConstants.PHASED));
+
+        // add it to the list
+        try {
+            return gb.make();
+        } catch (TribbleException e) {
+            throw new TribbleException.InternalCodecException(e.getMessage() + ", at position " + errorInfo.chr() +":"+ errorInfo.pos());
+        }
     }
 
     private static final int[] decodeInts(final String string) {
@@ -859,7 +883,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
         return values;
     }
-
+    
     private static final int[] splitBuffer = new int[100];
     public static int[] decodeIntsFast(final String string) {
         int i = 0;
@@ -878,7 +902,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     lastIndex = index;
                     i++;
                 }
-                if(i >=)
+                if(i >= 100){
+                    throw new IllegalArgumentException();
+                }
             }
             return Arrays.copyOfRange(splitBuffer, 0, i);
         } catch (NumberFormatException e) {
@@ -918,4 +944,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     public TabixFormat getTabixFormat() {
         return TabixFormat.VCF;
     }
+
+    private record ErrorInfo(String chr, int pos, int lineNumber, String keys, String values) {}
 }

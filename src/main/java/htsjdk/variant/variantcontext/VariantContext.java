@@ -370,7 +370,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
         private static void validateGenotypes(final VariantContext variantContext) {
 
-            final ArrayList<Genotype> genotypes = variantContext.genotypes.getGenotypes();
+            final List<Genotype> genotypes = variantContext.genotypes.getGenotypes();
 
             if (genotypes == null) {
                 throw new IllegalStateException("Genotypes is null");

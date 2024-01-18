@@ -70,7 +70,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * ACCESS THIS VARIABLE.  USE getGenotypes() INSTEAD.
      *
      */
-    protected ArrayList<Genotype> notToBeDirectlyAccessedGenotypes;
+    protected List<Genotype> notToBeDirectlyAccessedGenotypes;
 
     /**
      * Cached value of the maximum ploidy observed among all samples
@@ -300,7 +300,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     //
     // ---------------------------------------------------------------------------
 
-    protected ArrayList<Genotype> getGenotypes() {
+    protected List<Genotype> getGenotypes() {
         return notToBeDirectlyAccessedGenotypes;
     }
 
