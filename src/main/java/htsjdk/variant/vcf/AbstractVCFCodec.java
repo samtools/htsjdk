@@ -183,7 +183,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 // for this file.
                 if ( remappedSampleName != null ) {
                     // We currently only support on-the-fly sample name remapping for single-sample VCFs
-                    if ( sampleNames.isEmpty() || sampleNames.size() > 1 ) {
+                    if (sampleNames.size() != 1) {
                         throw new TribbleException(String.format("Cannot remap sample name to %s because %s samples are specified in the VCF header, and on-the-fly sample name remapping is only supported for single-sample VCFs",
                                                                  remappedSampleName, sampleNames.isEmpty() ? "no" : "multiple"));
                     }
@@ -716,8 +716,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             return isVCFStream(Files.newInputStream(path), MAGIC_HEADER_LINE) ||
                     isVCFStream(new GZIPInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE) ||
                     isVCFStream(new BlockCompressedInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE);
-        } catch ( FileNotFoundException e ) {
-            return false;
         } catch ( IOException e ) {
             return false;
         }
@@ -726,12 +724,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     private static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
         try {
             byte[] buff = new byte[MAGIC_HEADER_LINE.length()];
-            int nread = stream.read(buff, 0, MAGIC_HEADER_LINE.length());
+            int nread = stream.readNBytes(buff, 0, MAGIC_HEADER_LINE.length());
             boolean eq = Arrays.equals(buff, MAGIC_HEADER_LINE.getBytes());
             return eq;
-        } catch ( IOException e ) {
-            return false;
-        } catch ( RuntimeException e ) {
+        } catch (IOException | RuntimeException e ) {
             return false;
         } finally {
             try { stream.close(); } catch ( IOException e ) {}
@@ -774,8 +770,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 .parallel()
                 .mapToObj(genotypeOffset -> {
                     final String unparsedGenotypeString = genotypeParts[genotypeOffset];
+                    final ErrorInfo errorInfo = new ErrorInfo(chr, pos, lineNo, parts[8], null);
                     final String sampleName = sampleNames.get(genotypeOffset - 1);
-                    final ErrorInfo errorInfo = new ErrorInfo(chr, pos, lineNo, parts[8], parts[genotypeOffset]);
                     return processSingleGenotype(unparsedGenotypeString, vcfTextTransformer, alleles, genotypeKeys, errorInfo, version, sampleName, genotypeToAlleleCache, stringCache, filterCache, this);
                 })
                 .toList();
@@ -856,12 +852,19 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             generateException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present", errorInfo.lineNumber);
         }
 
-        final List<Allele> gtAlleles = genotypeAlleleLocation == -1
-                ? new ArrayList<>(0)
-                : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, genotypeToAlleleCache);
+
+        final List<Allele> gtAlleles;
+        if (genotypeAlleleLocation == -1) {
+            //no GT field
+            gtAlleles = Collections.emptyList();
+            gb.phased(false);
+        } else {
+            final String genotypeString = genotypeValues.get(genotypeAlleleLocation);
+            gtAlleles = parseGenotypeAlleles(genotypeString, alleles, genotypeToAlleleCache);
+            gb.phased(genotypeString.contains(VCFConstants.PHASED));
+        }
 
         gb.alleles(gtAlleles);
-        gb.phased(genotypeAlleleLocation != -1 && genotypeValues.get(genotypeAlleleLocation).contains(VCFConstants.PHASED));
 
         // add it to the list
         try {
