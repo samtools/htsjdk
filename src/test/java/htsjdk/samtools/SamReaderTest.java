@@ -25,7 +25,9 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.PeekableIterator;
+import htsjdk.samtools.util.ProgressLogger;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -263,6 +265,62 @@ public class SamReaderTest extends HtsjdkTest {
 
         while (iter.hasNext()) {
             iter.next();
+        }
+    }
+
+    @DataProvider(name = "bamTestCases")
+    public Object[][] bamTestPositiveCases() {
+        final Object[][] scenarios = new Object[][]{
+                {"compressed.bam"},
+                {"NA12878_garvan_head.bam"},
+                {"empty_no_empty_gzip_block.bam"},
+        };
+        return scenarios;
+    }
+
+    @Test(dataProvider = "bamTestCases")
+    public void perftestBamAsyncIterator(String inputBam) throws IOException {
+        final File input = new File(TEST_DATA_DIR, inputBam);
+        try(final SamReader asyncReader = SamReaderFactory.makeDefault()
+                .setUseAsyncIo(false)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(input)) {
+            ProgressLogger logger = new ProgressLogger(Log.getInstance(SamReaderTest.class), 10000000);
+            for (SAMRecord r : asyncReader) {
+                // performance testing
+                logger.record(r);
+            }
+        }
+    }
+    @Test(dataProvider = "bamTestCases")
+    public void testBamAsyncIterator(String inputBam) throws IOException {
+        final File input = new File(TEST_DATA_DIR, inputBam);
+        try(final SamReader reader = SamReaderFactory.makeDefault()
+                .setUseAsyncIo(false)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(input)) {
+            try(final SamReader asyncReader = SamReaderFactory.makeDefault()
+                    .setUseAsyncIo(true)
+                    .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                    .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                    .open(input)) {
+                SAMRecordIterator it = reader.iterator();
+                SAMRecordIterator asyncIt = asyncReader.iterator();
+                while (it.hasNext()) {
+                    Assert.assertTrue(asyncIt.hasNext());
+                    // check the records match
+                    SAMRecord record = it.next();
+                    SAMRecord asyncRecord = asyncIt.next();
+                    Assert.assertEquals(record, asyncRecord);
+                    // check the BAM file metadata matches
+                    BAMFileSpan recordSpan = (BAMFileSpan)record.getFileSource().getFilePointer();
+                    BAMFileSpan asyncSpan = (BAMFileSpan)asyncRecord.getFileSource().getFilePointer();
+                    Assert.assertEquals(recordSpan.getFirstOffset(), asyncSpan.getFirstOffset());
+                }
+                Assert.assertEquals(it.hasNext(), asyncIt.hasNext());
+            }
         }
     }
 
