@@ -26,6 +26,9 @@ package htsjdk.samtools;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.beta.io.IOPathUtils;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.FileExtensions;
@@ -255,7 +258,6 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         factory.setCreateMd5File(true);
         // index only created if coordinate sorted
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        header.addSequence(new SAMSequenceRecord("chr1", 123));
         header.addReadGroup(new SAMReadGroupRecord("1"));
         return factory;
     }
@@ -437,6 +439,48 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         }
 
         verifyWriterOutput(outputFile, new ReferenceSource(referenceFile), nRecs, true);
+    }
+
+    @Test(expectedExceptions=RuntimeException.class)
+    public void testRejectMissingMD5WithNoReferenceDictionary() throws IOException {
+        final IOPath testCRAM = new HtsPath(TEST_DATA_DIR + "/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram");
+        final IOPath originalReference = new HtsPath("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz");
+
+        // this reference has a reference dictionary, so copy it so it won't be found in order to test that
+        // the lack of a dictionary causes a cram with no MD5s to be rejected
+        final IOPath referenceCopy = IOPathUtils.createTempPath("fastaWithNoDictionary", ".fasta");
+        final IOPath outputFile = IOPathUtils.createTempPath("fastaWithNoDictionaryTest", ".cram");
+        IOUtil.copyFile(originalReference.toPath().toFile(), referenceCopy.toPath().toFile());
+
+        try (final SamReader samReader = SamReaderFactory.make().open(testCRAM.toPath().toFile());
+             final SAMFileWriter samWriter = new SAMFileWriterFactory().makeWriter(
+                     samReader.getFileHeader(), true, outputFile.toPath().toFile(), originalReference.toPath().toFile())) {
+        } catch (final RuntimeException e) {
+            Assert.assertTrue(e.getMessage().contains("The attempt to repair the missing sequence MD5s"));
+            throw e;
+        }
+    }
+
+    @Test
+    public void testRepairMissingMD5sFromReferenceDictionary() throws IOException {
+        // use a CRAM that has a header sequence dictionary with no MD5s, and a corresponding reference
+        // that has a ref .dict
+        final IOPath testCRAM = new HtsPath(TEST_DATA_DIR + "/cram/cramQueryTest.cram");
+        final IOPath reference = new HtsPath(TEST_DATA_DIR + "/cram/human_g1k_v37.20.21.1-100.fasta");
+
+        final IOPath outputFile = IOPathUtils.createTempPath("fastaWithNoDictionaryTest", ".cram");
+        try (final SamReader samReader = SamReaderFactory.make().open(testCRAM.toPath().toFile());
+             // no need to transfer the records, only the header
+             final SAMFileWriter samWriter = new SAMFileWriterFactory().makeWriter(
+                     samReader.getFileHeader(), true, outputFile.toPath().toFile(), reference.toPath().toFile())) {
+            // make sure the original header has no MD5s, otherwise the test won't prove anything
+            Assert.assertTrue(!samReader.getFileHeader().getSequenceDictionary().getSequencesWithMissingMD5s().isEmpty());
+        }
+
+        //now make sure the newly written file contains md5s
+        try (final SamReader samReader = SamReaderFactory.make().open(outputFile.toPath().toFile())) {
+            Assert.assertTrue(samReader.getFileHeader().getSequenceDictionary().getSequencesWithMissingMD5s().isEmpty());
+        }
     }
 
     @Test

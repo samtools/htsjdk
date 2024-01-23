@@ -24,16 +24,16 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Locatable;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -145,6 +145,23 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     public SAMSequenceRecord setMd5(final String value) {
         setAttribute(MD5_TAG, value);
+        return this;
+    }
+
+    /**
+     * Set the M5 attribute for this sequence using the provided sequenceBases.
+     * @param sequenceBases sequence bases to use to compute the MD5 for this sequence
+     * @return the update sequence record
+     */
+    public SAMSequenceRecord setComputedMd5(final byte[] sequenceBases) {
+        try {
+            final MessageDigest md5Digester = MessageDigest.getInstance("MD5");
+            if (md5Digester != null) {
+                setMd5(SequenceUtil.md5DigestToString(md5Digester.digest()));
+            }
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error getting MD5 algorithm for sequence record MD5 computation", e);
+        }
         return this;
     }
 
