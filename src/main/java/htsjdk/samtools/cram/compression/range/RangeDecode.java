@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
+import htsjdk.samtools.cram.compression.CompressionUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -27,7 +28,7 @@ public class RangeDecode {
         final RangeParams rangeParams = new RangeParams(formatFlags);
 
        // noSz
-        outSize = rangeParams.isNosz() ? outSize : Utils.readUint7(inBuffer);
+        outSize = rangeParams.isNosz() ? outSize : CompressionUtils.readUint7(inBuffer);
 
         // stripe
         if (rangeParams.isStripe()) {
@@ -49,7 +50,7 @@ public class RangeDecode {
                 for (int i = 0; i < numSymbols; i++) {
                     packMappingTable[i] = inBuffer.get();
                 }
-                outSize = Utils.readUint7(inBuffer);
+                outSize = CompressionUtils.readUint7(inBuffer);
             } else {
                 throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: " + numSymbols);
             }
@@ -92,7 +93,7 @@ public class RangeDecode {
 
         // if pack, then decodePack
         if (rangeParams.isPack()) {
-            outBuffer = Utils.decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
+            outBuffer = CompressionUtils.decodePack(outBuffer, packMappingTable, numSymbols, packDataLength);
         }
         outBuffer.rewind();
         return outBuffer;
@@ -124,22 +125,16 @@ public class RangeDecode {
 
         int maxSymbols = inBuffer.get() & 0xFF;
         maxSymbols = maxSymbols==0 ? 256 : maxSymbols;
-
-        final List<ByteModel> byteModelList = new ArrayList();
-
+        final List<ByteModel> byteModelList = new ArrayList(maxSymbols);
         for(int i=0;i<maxSymbols;i++){
             byteModelList.add(new ByteModel(maxSymbols));
         }
-
         final RangeCoder rangeCoder = new RangeCoder();
         rangeCoder.rangeDecodeStart(inBuffer);
-
-        int last = 0;
-        for (int i = 0; i < outSize; i++) {
-            outBuffer.put(i, (byte) byteModelList.get(last).modelDecode(inBuffer, rangeCoder));
-            last = outBuffer.get(i)& 0xFF;
+        for (int last = 0, i = 0; i < outSize; i++) {
+            last = byteModelList.get(last).modelDecode(inBuffer, rangeCoder);
+            outBuffer.put(i, (byte) last);
         }
-
         return outBuffer;
     }
 
@@ -230,33 +225,31 @@ public class RangeDecode {
 
         final int numInterleaveStreams = inBuffer.get() & 0xFF;
 
-        // retrieve lengths of compressed interleaved streams
-        int[] clen = new int[numInterleaveStreams];
+        // read lengths of compressed interleaved streams
         for ( int j=0; j<numInterleaveStreams; j++ ){
-            clen[j] = Utils.readUint7(inBuffer);
+            CompressionUtils.readUint7(inBuffer); // not storing these values as they are not used
         }
 
         // Decode the compressed interleaved stream
-        int[] ulen = new int[numInterleaveStreams];
-        ByteBuffer[] T = new ByteBuffer[numInterleaveStreams];
-
+        final int[] uncompressedLengths = new int[numInterleaveStreams];
+        final ByteBuffer[] transposedData = new ByteBuffer[numInterleaveStreams];
         for ( int j=0; j<numInterleaveStreams; j++){
-            ulen[j] = (int) Math.floor(((double) outSize)/numInterleaveStreams);
+            uncompressedLengths[j] = (int) Math.floor(((double) outSize)/numInterleaveStreams);
             if ((outSize % numInterleaveStreams) > j){
-                ulen[j]++;
+                uncompressedLengths[j]++;
             }
 
-            T[j] = uncompress(inBuffer, ulen[j]);
+            transposedData[j] = uncompress(inBuffer, uncompressedLengths[j]);
         }
 
         // Transpose
-        ByteBuffer out = ByteBuffer.allocate(outSize);
+        final ByteBuffer outBuffer = CompressionUtils.allocateByteBuffer(outSize);
         for (int j = 0; j <numInterleaveStreams; j++) {
-            for (int i = 0; i < ulen[j]; i++) {
-                out.put((i*numInterleaveStreams)+j, T[j].get(i));
+            for (int i = 0; i < uncompressedLengths[j]; i++) {
+                outBuffer.put((i*numInterleaveStreams)+j, transposedData[j].get(i));
             }
         }
-        return out;
+        return outBuffer;
     }
 
 }

@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.samtools.cram.compression.range.RangeDecode;
+import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
@@ -74,6 +76,11 @@ public abstract class ExternalCompressor {
                 return compressorSpecificArg == NO_COMPRESSION_ARG ?
                         new RANSExternalCompressor(new RANS4x8Encode(), new RANS4x8Decode()) :
                         new RANSExternalCompressor(compressorSpecificArg, new RANS4x8Encode(), new RANS4x8Decode());
+
+            case RANGE:
+                return compressorSpecificArg == NO_COMPRESSION_ARG ?
+                        new RangeExternalCompressor(new RangeEncode(), new RangeDecode()) :
+                        new RangeExternalCompressor(compressorSpecificArg, new RangeEncode(), new RangeDecode());
 
             case BZIP2:
                 ValidationUtils.validateArg(

@@ -89,7 +89,8 @@ public class CompressorCache {
                     );
                 }
                 return getCachedCompressorForMethod(compressorTuple.a, compressorTuple.b);
-
+            case RANGE:
+                return getCachedCompressorForMethod(compressionMethod, compressorSpecificArg);
             default:
                 throw new IllegalArgumentException(String.format("Unknown compression method %s", compressionMethod));
         }

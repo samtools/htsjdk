@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 
 public class RangeCoder {
 
+    private static final long MAX_RANGE = 0xFFFFFFFFL;
+
     private long low;
     private long range;
     private long code;
@@ -14,7 +16,7 @@ public class RangeCoder {
     protected RangeCoder() {
         // Spec: RangeEncodeStart
         this.low = 0;
-        this.range = 0xFFFFFFFFL; // 4 bytes of all 1's
+        this.range = MAX_RANGE; // 4 bytes of all 1's
         this.code = 0;
         this.FFnum = 0;
         this.carry = false;
@@ -23,10 +25,9 @@ public class RangeCoder {
 
     protected void rangeDecodeStart(final ByteBuffer inBuffer){
         for (int i = 0; i < 5; i++){
-
-            // Get next 5 bytes. Ensure it is +ve
             code = (code << 8) + (inBuffer.get() & 0xFF);
         }
+        code &= MAX_RANGE;
     }
 
     protected void rangeDecode(final ByteBuffer inBuffer, final int cumulativeFrequency, final int symbolFrequency){
@@ -68,7 +69,6 @@ public class RangeCoder {
     }
 
     protected void rangeEncodeEnd(final ByteBuffer outBuffer){
-        //TODO: Where is the magic number 5 coming from?
         for(int i = 0; i < 5; i++){
             rangeShiftLow(outBuffer);
         }
@@ -96,7 +96,7 @@ public class RangeCoder {
                 }
 
             }
-            cache = (int) (low >> 24); // Copy of top byte ready for next flush
+            cache = (int) (low >>> 24); // Copy of top byte ready for next flush
             carry = false;
         } else {
             FFnum++;
