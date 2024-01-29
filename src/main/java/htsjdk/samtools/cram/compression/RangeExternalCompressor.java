@@ -32,13 +32,13 @@ public class RangeExternalCompressor extends ExternalCompressor{
     @Override
     public byte[] compress(byte[] data) {
         final RangeParams params = new RangeParams(formatFlags);
-        final ByteBuffer buffer = rangeEncode.compress(ByteBuffer.wrap(data), params);
+        final ByteBuffer buffer = rangeEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        final ByteBuffer buf = rangeDecode.uncompress(ByteBuffer.wrap(data));
+        final ByteBuffer buf = rangeDecode.uncompress(CompressionUtils.wrap(data));
         return toByteArray(buf);
     }
 

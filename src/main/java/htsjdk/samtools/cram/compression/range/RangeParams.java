@@ -30,7 +30,7 @@ public class RangeParams {
         }
     }
 
-    public RangeParams(int formatFlags) {
+    public RangeParams(final int formatFlags) {
         this.formatFlags = formatFlags;
     }
 

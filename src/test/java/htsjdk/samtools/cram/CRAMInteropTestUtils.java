@@ -84,17 +84,14 @@ public class CRAMInteropTestUtils {
         }
     }
 
-    protected static final int getParamsFormatFlags(final Path compressedInteropPath){
-        // Returns formatFlags from compressed file path
-        final String compressedFileName = compressedInteropPath.getFileName().toString();
-        final int lastDotIndex = compressedFileName.lastIndexOf(".");
-        if (lastDotIndex >= 0 && lastDotIndex < compressedFileName.length() - 1) {
-            return Integer.parseInt(compressedFileName.substring(lastDotIndex + 1));
-        } else {
-            throw new CRAMException("The format of the compressed File Name is not as expected. " +
-                    "The name of the compressed file should contain a period followed by a number that" +
-                    "indicates the order of compression. Actual compressed file name = "+ compressedFileName);
-        }
+    // return a list of all raw test files in the htscodecs/tests/dat directory
+    protected static final List<Path> getInteropRawTestFiles() throws IOException {
+        final List<Path> paths = new ArrayList<>();
+        Files.newDirectoryStream(
+                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
+                        path -> (Files.isRegularFile(path)) && !Files.isHidden(path))
+                .forEach(path -> paths.add(path));
+        return paths;
     }
 
 }

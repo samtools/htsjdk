@@ -11,14 +11,19 @@ import java.util.List;
 
 public class RangeDecode {
 
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
+    // This method assumes that inBuffer is already rewound.
+    // It uncompresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the uncompressed data.
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
+
+        // For Range decoding, the bytes are read in little endian from the input stream
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         return uncompress(inBuffer, 0);
     }
 
-    private ByteBuffer uncompress(final ByteBuffer inBuffer, int outSize) {
+    private ByteBuffer uncompress(final ByteBuffer inBuffer, final int outSize) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -28,11 +33,11 @@ public class RangeDecode {
         final RangeParams rangeParams = new RangeParams(formatFlags);
 
        // noSz
-        outSize = rangeParams.isNosz() ? outSize : CompressionUtils.readUint7(inBuffer);
+        int uncompressedSize = rangeParams.isNosz() ? outSize : CompressionUtils.readUint7(inBuffer);
 
         // stripe
         if (rangeParams.isStripe()) {
-                return decodeStripe(inBuffer, outSize);
+                return decodeStripe(inBuffer, uncompressedSize);
         }
 
         // pack
@@ -41,7 +46,7 @@ public class RangeDecode {
         int numSymbols = 0;
         byte[] packMappingTable = null;
         if (rangeParams.isPack()){
-            packDataLength = outSize;
+            packDataLength = uncompressedSize;
             numSymbols = inBuffer.get() & 0xFF;
 
             // if (numSymbols > 16 or numSymbols==0), raise exception
@@ -50,43 +55,49 @@ public class RangeDecode {
                 for (int i = 0; i < numSymbols; i++) {
                     packMappingTable[i] = inBuffer.get();
                 }
-                outSize = CompressionUtils.readUint7(inBuffer);
+                uncompressedSize = CompressionUtils.readUint7(inBuffer);
             } else {
-                throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: " + numSymbols);
+                throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. " +
+                        "Number of distinct symbols: " + numSymbols);
             }
         }
 
-        ByteBuffer outBuffer = ByteBuffer.allocate(outSize);
+        ByteBuffer outBuffer;
         if (rangeParams.isCAT()){
-            byte[] data = new byte[outSize];
-            inBuffer.get( data,0, outSize);
-            outBuffer = ByteBuffer.wrap(data);
+            outBuffer = CompressionUtils.slice(inBuffer);
+            outBuffer.limit(uncompressedSize);
+            // While resetting the position to the end is not strictly necessary,
+            // it is being done for the sake of completeness and
+            // to meet the requirements of the tests that verify the boundary conditions.
+            inBuffer.position(inBuffer.position()+uncompressedSize);
         } else if (rangeParams.isExternalCompression()){
-            byte[] extCompressedBytes = new byte[inBuffer.remaining()];
+            final byte[] extCompressedBytes = new byte[inBuffer.remaining()];
             int extCompressedBytesIdx = 0;
-            int start = inBuffer.position();
-            int end = inBuffer.limit();
+            final int start = inBuffer.position();
+            final int end = inBuffer.limit();
             for (int i = start; i < end; i++) {
                 extCompressedBytes[extCompressedBytesIdx] = inBuffer.get();
                 extCompressedBytesIdx++;
             }
-            uncompressEXT(extCompressedBytes, outBuffer);
+            outBuffer = uncompressEXT(extCompressedBytes);
         } else if (rangeParams.isRLE()){
+            outBuffer = CompressionUtils.allocateByteBuffer(uncompressedSize);
             switch (rangeParams.getOrder()) {
                 case ZERO:
-                    uncompressRLEOrder0(inBuffer, outBuffer, outSize);
+                    uncompressRLEOrder0(inBuffer, outBuffer, uncompressedSize);
                     break;
                 case ONE:
-                    uncompressRLEOrder1(inBuffer, outBuffer, outSize);
+                    uncompressRLEOrder1(inBuffer, outBuffer, uncompressedSize);
                     break;
             }
         } else {
-            switch (rangeParams.getOrder()) {
+            outBuffer = CompressionUtils.allocateByteBuffer(uncompressedSize);
+            switch (rangeParams.getOrder()){
                 case ZERO:
-                    uncompressOrder0(inBuffer, outBuffer, outSize);
+                    uncompressOrder0(inBuffer, outBuffer, uncompressedSize);
                     break;
                 case ONE:
-                    uncompressOrder1(inBuffer, outBuffer, outSize);
+                    uncompressOrder1(inBuffer, outBuffer, uncompressedSize);
                     break;
             }
         }
@@ -100,7 +111,7 @@ public class RangeDecode {
 
     }
 
-    private ByteBuffer uncompressOrder0(
+    private void uncompressOrder0(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int outSize) {
@@ -115,10 +126,9 @@ public class RangeDecode {
         for (int i = 0; i < outSize; i++) {
             outBuffer.put(i, (byte) byteModel.modelDecode(inBuffer, rangeCoder));
         }
-        return outBuffer;
     }
 
-    private ByteBuffer uncompressOrder1(
+    private void uncompressOrder1(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int outSize) {
@@ -135,17 +145,16 @@ public class RangeDecode {
             last = byteModelList.get(last).modelDecode(inBuffer, rangeCoder);
             outBuffer.put(i, (byte) last);
         }
-        return outBuffer;
     }
 
-    private ByteBuffer uncompressRLEOrder0(
+    private void uncompressRLEOrder0(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int outSize) {
 
         int maxSymbols = inBuffer.get() & 0xFF;
         maxSymbols = maxSymbols == 0 ? 256 : maxSymbols;
-        ByteModel modelLit = new ByteModel(maxSymbols);
+        final ByteModel modelLit = new ByteModel(maxSymbols);
         final List<ByteModel> byteModelRunsList = new ArrayList(258);
         for (int i=0; i <=257; i++){
             byteModelRunsList.add(i, new ByteModel(4));
@@ -156,7 +165,8 @@ public class RangeDecode {
         int i = 0;
         while (i < outSize) {
             outBuffer.put(i,(byte) modelLit.modelDecode(inBuffer, rangeCoder));
-            int part = byteModelRunsList.get(outBuffer.get(i)&0xFF).modelDecode(inBuffer,rangeCoder);
+            final int last = outBuffer.get(i) & (0xFF);
+            int part = byteModelRunsList.get(last).modelDecode(inBuffer,rangeCoder);
             int run = part;
             int rctx = 256;
             while (part == 3) {
@@ -165,14 +175,13 @@ public class RangeDecode {
                 run += part;
             }
             for (int j = 1; j <= run; j++){
-                outBuffer.put(i+j, outBuffer.get(i));
+                outBuffer.put(i+j, (byte) last);
             }
             i += run+1;
         }
-        return outBuffer;
     }
 
-    private ByteBuffer uncompressRLEOrder1(
+    private void uncompressRLEOrder1(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
             final int outSize) {
@@ -188,7 +197,7 @@ public class RangeDecode {
             byteModelRunsList.add(i, new ByteModel(4));
         }
 
-        RangeCoder rangeCoder = new RangeCoder();
+        final RangeCoder rangeCoder = new RangeCoder();
         rangeCoder.rangeDecodeStart(inBuffer);
 
         int last = 0;
@@ -196,7 +205,7 @@ public class RangeDecode {
         while (i < outSize) {
             outBuffer.put(i,(byte) byteModelLitList.get(last).modelDecode(inBuffer, rangeCoder));
             last = outBuffer.get(i) & 0xFF;
-            int part = byteModelRunsList.get(outBuffer.get(i)&0xFF).modelDecode(inBuffer,rangeCoder);
+            int part = byteModelRunsList.get(last).modelDecode(inBuffer,rangeCoder);
             int run = part;
             int rctx = 256;
             while (part == 3) {
@@ -205,24 +214,19 @@ public class RangeDecode {
                 run += part;
             }
             for (int j = 1; j <= run; j++){
-                outBuffer.put(i+j, outBuffer.get(i));
+                outBuffer.put(i+j, (byte)last);
             }
             i += run+1;
         }
-        return outBuffer;
     }
 
-    private ByteBuffer uncompressEXT(
-            final byte[] extCompressedBytes,
-            final ByteBuffer outBuffer) {
+    private ByteBuffer uncompressEXT(final byte[] extCompressedBytes) {
         final BZIP2ExternalCompressor compressor = new BZIP2ExternalCompressor();
         final byte [] extUncompressedBytes = compressor.uncompress(extCompressedBytes);
-        outBuffer.put(extUncompressedBytes);
-        return outBuffer;
+        return CompressionUtils.wrap(extUncompressedBytes);
     }
 
-    private ByteBuffer decodeStripe(ByteBuffer inBuffer, final int outSize){
-
+    private ByteBuffer decodeStripe(final ByteBuffer inBuffer, final int outSize){
         final int numInterleaveStreams = inBuffer.get() & 0xFF;
 
         // read lengths of compressed interleaved streams

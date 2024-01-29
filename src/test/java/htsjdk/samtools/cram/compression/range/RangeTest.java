@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
@@ -143,7 +144,7 @@ public class RangeTest extends HtsjdkTest {
                               final RangeDecode rangeDecode,
                               final RangeParams rangeParams,
                               final TestDataEnvelope td) {
-        rangeRoundTrip(rangeEncode, rangeDecode, rangeParams, ByteBuffer.wrap(td.testArray));
+        rangeRoundTrip(rangeEncode, rangeDecode, rangeParams, CompressionUtils.wrap(td.testArray));
     }
 
     @Test(dataProvider = "allRangeCodecsAndDataForTinySmallLarge")
@@ -154,7 +155,7 @@ public class RangeTest extends HtsjdkTest {
             final TestDataEnvelope td,
             final Integer lowerLimit,
             final Integer upperLimit){
-        final ByteBuffer in = ByteBuffer.wrap(td.testArray);
+        final ByteBuffer in = CompressionUtils.wrap(td.testArray);
         for (int size = lowerLimit; size < upperLimit; size++) {
             in.position(0);
             in.limit(size);
@@ -174,7 +175,7 @@ public class RangeTest extends HtsjdkTest {
 
         // When td is not Empty, Encoding with Stripe Flag should throw an Exception
         // as Encode Stripe is not implemented
-        final ByteBuffer compressed = rangeEncode.compress(ByteBuffer.wrap(td.testArray), params);
+        final ByteBuffer compressed = rangeEncode.compress(CompressionUtils.wrap(td.testArray), params);
     }
 
     // testRangeBuffersMeetBoundaryExpectations

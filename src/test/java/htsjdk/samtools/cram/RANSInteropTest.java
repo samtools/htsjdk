@@ -51,7 +51,7 @@ public class RANSInteropTest extends HtsjdkTest {
                 RANSParams.ORDER.ZERO,
                 RANSParams.ORDER.ONE);
         final List<Object[]> testCases = new ArrayList<>();
-        getInteropRawTestFiles()
+        CRAMInteropTestUtils.getInteropRawTestFiles()
                 .forEach(path ->
                         rans4x8ParamsOrderList.stream().map(rans4x8ParamsOrder -> new Object[]{
                                 path,
@@ -84,7 +84,7 @@ public class RANSInteropTest extends HtsjdkTest {
                 RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
                 RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
-        getInteropRawTestFiles()
+        CRAMInteropTestUtils.getInteropRawTestFiles()
                 .forEach(path ->
                         ransNx16ParamsFormatFlagList.stream().map(ransNx16ParamsFormatFlag -> new Object[]{
                                 path,
@@ -100,15 +100,13 @@ public class RANSInteropTest extends HtsjdkTest {
 
         // params:
         // compressed testfile path, uncompressed testfile path,
-        // RANS encoder, RANS decoder, RANS params
+        // RANS decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANS4X8_DIR)) {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
-                    new RANS4x8Encode(),
-                    new RANS4x8Decode(),
-                    new RANS4x8Params(RANSParams.ORDER.fromInt(CRAMInteropTestUtils.getParamsFormatFlags(path)))
+                    new RANS4x8Decode()
             };
             testCases.add(objects);
         }
@@ -120,15 +118,13 @@ public class RANSInteropTest extends HtsjdkTest {
 
         // params:
         // compressed testfile path, uncompressed testfile path,
-        // RANS encoder, RANS decoder, RANS params
+        // RANS decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANSNX16_DIR)) {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
-                    new RANSNx16Encode(),
-                    new RANSNx16Decode(),
-                    new RANSNx16Params(CRAMInteropTestUtils.getParamsFormatFlags(path))
+                    new RANSNx16Decode()
             };
             testCases.add(objects);
         }
@@ -139,7 +135,7 @@ public class RANSInteropTest extends HtsjdkTest {
     public Object[][] getRoundTripTestCases() throws IOException {
 
         // params:
-        // compressed testfile path, uncompressed testfile path,
+        // uncompressed testfile path,
         // RANS encoder, RANS decoder, RANS params
         return Stream.concat(Arrays.stream(get4x8RoundTripTestCases()), Arrays.stream(getNx16RoundTripTestCases()))
                 .toArray(Object[][]::new);
@@ -150,7 +146,7 @@ public class RANSInteropTest extends HtsjdkTest {
 
         // params:
         // compressed testfile path, uncompressed testfile path,
-        // RANS encoder, RANS decoder, RANS params
+        // RANS decoder
         return Stream.concat(Arrays.stream(get4x8DecodeOnlyTestCases()), Arrays.stream(getNx16DecodeOnlyTestCases()))
                 .toArray(Object[][]::new);
     }
@@ -158,7 +154,7 @@ public class RANSInteropTest extends HtsjdkTest {
     @Test(description = "Test if CRAM Interop Test Data is available")
     public void testHtsCodecsCorpusIsAvailable() {
         if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException(String.format("RANS Interop Test Data is not available at %s",
+            throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
                     CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
         }
     }
@@ -198,9 +194,7 @@ public class RANSInteropTest extends HtsjdkTest {
     public void testDecodeOnly(
             final Path compressedFilePath,
             final Path uncompressedInteropPath,
-            final RANSEncode<RANSParams> unusedRansEncode,
-            final RANSDecode ransDecode,
-            final RANSParams unusedRansParams) throws IOException {
+            final RANSDecode ransDecode) throws IOException {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
              final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
         ) {
@@ -220,16 +214,6 @@ public class RANSInteropTest extends HtsjdkTest {
             throw new SkipException("Skipping testDecodeOnly as either input file " +
                     "or precompressed file is missing.", ex);
         }
-    }
-
-    // return a list of all raw test files in the htscodecs/tests/dat directory
-    private List<Path> getInteropRawTestFiles() throws IOException {
-        final List<Path> paths = new ArrayList<>();
-        Files.newDirectoryStream(
-                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
-                        path -> (Files.isRegularFile(path)) && !Files.isHidden(path))
-                .forEach(path -> paths.add(path));
-        return paths;
     }
 
 }

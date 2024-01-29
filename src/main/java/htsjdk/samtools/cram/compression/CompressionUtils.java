@@ -147,15 +147,13 @@ public class CompressionUtils {
         return outBufferPack;
     }
 
-
-
     public static ByteBuffer allocateOutputBuffer(final int inSize) {
         // This calculation is identical to the one in samtools rANS_static.c
         // Presumably the frequency table (always big enough for order 1) = 257*257,
         // then * 3 for each entry (byte->symbol, 2 bytes -> scaled frequency),
         // + 9 for the header (order byte, and 2 int lengths for compressed/uncompressed lengths).
         final int compressedSize = (int) (inSize + 257 * 257 * 3 + 9);
-        final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer outputBuffer = allocateByteBuffer(compressedSize);
         if (outputBuffer.remaining() < compressedSize) {
             throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");
         }

@@ -10,8 +10,11 @@ import htsjdk.samtools.cram.compression.CompressionUtils;
 
 public class RangeEncode<T extends RangeParams> {
 
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
+    private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
+    // This method assumes that inBuffer is already rewound.
+    // It compresses the data in the inBuffer, leaving it consumed.
+    // Returns a rewound ByteBuffer containing the compressed data.
     public ByteBuffer compress(final ByteBuffer inBuffer, final RangeParams rangeParams) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
@@ -110,9 +113,7 @@ public class RangeEncode<T extends RangeParams> {
                 maxSymbol = inBuffer.get(i) & 0xFF;
             }
         }
-        maxSymbol++; // TODO: Is this correct? Not what spec states!!
-
-        // TODO: initialize byteModel -> set and reset symbols?
+        maxSymbol++;
         final ByteModel byteModel = new ByteModel(maxSymbol);
         outBuffer.put((byte) maxSymbol);
         final RangeCoder rangeCoder = new RangeCoder();
@@ -134,28 +135,19 @@ public class RangeEncode<T extends RangeParams> {
                 maxSymbol = inBuffer.get(i) & 0xFF;
             }
         }
-        maxSymbol++; // TODO: Is this correct? Not what spec states!!
-
+        maxSymbol++;
         final List<ByteModel> byteModelList = new ArrayList();
-
-        // TODO: initialize byteModel -> set and reset symbols?
-
         for (int i = 0; i < maxSymbol; i++) {
             byteModelList.add(i, new ByteModel(maxSymbol));
         }
         outBuffer.put((byte) maxSymbol);
-
-        // TODO: should we pass outBuffer to rangecoder?
         final RangeCoder rangeCoder = new RangeCoder();
-
         int last = 0;
         for (int i = 0; i < inSize; i++) {
             byteModelList.get(last).modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
             last = inBuffer.get(i) & 0xFF;
         }
         rangeCoder.rangeEncodeEnd(outBuffer);
-
-        // TODO: should we set littleEndian true somehwere?
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }
@@ -180,8 +172,6 @@ public class RangeEncode<T extends RangeParams> {
         }
         outBuffer.put((byte) maxSymbols);
         final RangeCoder rangeCoder = new RangeCoder();
-
-
         int i = 0;
         while (i < inSize) {
             modelLit.modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
@@ -230,8 +220,6 @@ public class RangeEncode<T extends RangeParams> {
         }
         outBuffer.put((byte) maxSymbols);
         final RangeCoder rangeCoder = new RangeCoder();
-
-
         int i = 0;
         int last = 0;
         while (i < inSize) {

@@ -17,25 +17,57 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class RangeInteropTest extends HtsjdkTest  {
     public static final String COMPRESSED_RANGE_DIR = "arith";
 
+    // enumerates the different flag combinations
     @DataProvider(name = "roundTripTestCases")
     public Object[][] getRoundTripTestCases() throws IOException {
 
         // params:
-        // compressed testfile path, uncompressed testfile path,
+        // uncompressed testfile path,
         // Range encoder, Range decoder, Range params
+        final List<Integer> rangeParamsFormatFlagList = Arrays.asList(
+                0x00,
+                RangeParams.ORDER_FLAG_MASK,
+                RangeParams.RLE_FLAG_MASK,
+                RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+                RangeParams.CAT_FLAG_MASK,
+                RangeParams.CAT_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK | RangeParams. ORDER_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
+                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+                RangeParams.EXT_FLAG_MASK,
+                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK);
+        final List<Object[]> testCases = new ArrayList<>();
+        CRAMInteropTestUtils.getInteropRawTestFiles()
+                .forEach(path ->
+                        rangeParamsFormatFlagList.stream().map(rangeParamsFormatFlag -> new Object[]{
+                                path,
+                                new RangeEncode(),
+                                new RangeDecode(),
+                                new RangeParams(rangeParamsFormatFlag)
+                        }).forEach(testCases::add));
+        return testCases.toArray(new Object[][]{});
+    }
+
+    // uses the available compressed interop test files
+    @DataProvider(name = "decodeOnlyTestCases")
+    public Object[][] getDecodeOnlyTestCases() throws IOException {
+
+        // params:
+        // compressed testfile path, uncompressed testfile path,
+        // Range decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANGE_DIR)) {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
-                    new RangeEncode(),
-                    new RangeDecode(),
-                    new RangeParams(CRAMInteropTestUtils.getParamsFormatFlags(path))
+                    new RangeDecode()
             };
             testCases.add(objects);
         }
@@ -55,7 +87,6 @@ public class RangeInteropTest extends HtsjdkTest  {
             dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk Range Codec. Compare the output with the original file" )
     public void testRangeRoundTrip(
-            final Path unusedCompressedFilePath,
             final Path uncompressedFilePath,
             final RangeEncode rangeEncode,
             final RangeDecode rangeDecode,
@@ -79,14 +110,12 @@ public class RangeInteropTest extends HtsjdkTest  {
 
     @Test (
             dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
-            dataProvider = "roundTripTestCases",
+            dataProvider = "decodeOnlyTestCases",
             description = "Uncompress the existing compressed file using htsjdk Range codec and compare it with the original file.")
     public void testDecodeOnly(
             final Path compressedFilePath,
             final Path uncompressedInteropPath,
-            final RangeEncode<RangeParams> unusedRangeEncode,
-            final RangeDecode rangeDecode,
-            final RangeParams unusedRangeParams) throws IOException {
+            final RangeDecode rangeDecode) throws IOException {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
              final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
         ) {

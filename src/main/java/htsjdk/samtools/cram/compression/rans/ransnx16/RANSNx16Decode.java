@@ -82,11 +82,11 @@ public class RANSNx16Decode extends RANSDecode {
         // If CAT is set then, the input is uncompressed
         if (ransNx16Params.isCAT()) {
             outBuffer = CompressionUtils.slice(inBuffer);
-
+            outBuffer.limit(uncompressedSize);
             // While resetting the position to the end is not strictly necessary,
             // it is being done for the sake of completeness and
             // to meet the requirements of the tests that verify the boundary conditions.
-            inBuffer.position(inBuffer.limit());
+            inBuffer.position(inBuffer.position()+uncompressedSize);
         } else {
             outBuffer = CompressionUtils.allocateByteBuffer(uncompressedSize);
 

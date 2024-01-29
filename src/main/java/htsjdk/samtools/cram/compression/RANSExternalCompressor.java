@@ -68,13 +68,13 @@ public final class RANSExternalCompressor extends ExternalCompressor {
     @Override
     public byte[] compress(final byte[] data) {
         final RANS4x8Params params = new RANS4x8Params(order);
-        final ByteBuffer buffer = ransEncode.compress(ByteBuffer.wrap(data), params);
+        final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        final ByteBuffer buf = ransDecode.uncompress(ByteBuffer.wrap(data));
+        final ByteBuffer buf = ransDecode.uncompress(CompressionUtils.wrap(data));
         return toByteArray(buf);
     }
 
