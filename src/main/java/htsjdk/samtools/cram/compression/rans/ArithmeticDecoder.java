@@ -24,24 +24,24 @@
  */
 package htsjdk.samtools.cram.compression.rans;
 
-final class ArithmeticDecoder {
-    final FC[] fc = new FC[256];
+final public class ArithmeticDecoder {
+    public final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
 
-    // reverse lookup table ?
-    byte[] R = new byte[Constants.TOTFREQ];
+    // reverse lookup table
+    public final byte[] reverseLookup = new byte[Constants.TOTAL_FREQ];
 
     public ArithmeticDecoder() {
-        for (int i = 0; i < 256; i++) {
-            fc[i] = new FC();
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            frequencies[i] = 0;
         }
     }
 
     public void reset() {
-        for (int i = 0; i < 256; i++) {
-            fc[i].reset();
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            frequencies[i] = 0;
         }
-        for (int i = 0; i < Constants.TOTFREQ; i++) {
-            R[i] = 0;
+        for (int i = 0; i < Constants.TOTAL_FREQ; i++) {
+            reverseLookup[i] = 0;
         }
     }
 
