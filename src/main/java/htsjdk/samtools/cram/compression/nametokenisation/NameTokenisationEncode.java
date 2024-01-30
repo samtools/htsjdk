@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
 import htsjdk.samtools.cram.compression.nametokenisation.tokens.EncodeToken;
-import htsjdk.samtools.cram.compression.nametokenisation.tokens.Token;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
@@ -17,21 +16,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_CHAR;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DELTA;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DELTA0;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DIFF;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DIGITS;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DIGITS0;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DUP;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_DZLEN;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_END;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_MATCH;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_STRING;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOKEN_TYPE;
-import static htsjdk.samtools.cram.compression.nametokenisation.TokenStreams.TOTAL_TOKEN_TYPES;
 import static htsjdk.samtools.cram.compression.rans.Utils.writeUint7;
-
 
 public class NameTokenisationEncode {
 
@@ -78,12 +63,12 @@ public class NameTokenisationEncode {
             tokeniseName(tokensList, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex);
         }
         for (int tokenPosition = 0; tokenPosition < maxToken; tokenPosition++) {
-            List<Token> tokenStream = new ArrayList(TOTAL_TOKEN_TYPES);
-            for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-                tokenStream.add(new Token(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN)));
+            List<ByteBuffer> tokenStream = new ArrayList(TokenStreams.TOTAL_TOKEN_TYPES);
+            for (int i = 0; i < TokenStreams.TOTAL_TOKEN_TYPES; i++) {
+                tokenStream.add(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN));
             }
-            fillByteStreams( tokenStream,tokensList,tokenPosition,numNames);
-            serializeByteStreams( tokenStream,useArith,outBuffer);
+            fillByteStreams(tokenStream,tokensList,tokenPosition,numNames);
+            serializeByteStreams(tokenStream,useArith,outBuffer);
         }
 
         // sets limit to current position and position to '0'
@@ -103,9 +88,9 @@ public class NameTokenisationEncode {
         tokensList.add(new ArrayList<>());
         if (nameIndexMap.containsKey(name)) {
             // TODO: Add Test to cover this code
-            tokensList.get(currentNameIndex).add(new EncodeToken(String.valueOf(currentNameIndex - nameIndexMap.get(name)), String.valueOf(currentNameIndex - nameIndexMap.get(name)),TOKEN_DUP));
+            tokensList.get(currentNameIndex).add(new EncodeToken(String.valueOf(currentNameIndex - nameIndexMap.get(name)), String.valueOf(currentNameIndex - nameIndexMap.get(name)),TokenStreams.TOKEN_DUP));
         } else {
-            tokensList.get(currentNameIndex).add(new EncodeToken(String.valueOf(currentNameIndex == 0 ? 0 : 1),String.valueOf(currentNameIndex == 0 ? 0 : 1),TOKEN_DIFF));
+            tokensList.get(currentNameIndex).add(new EncodeToken(String.valueOf(currentNameIndex == 0 ? 0 : 1),String.valueOf(currentNameIndex == 0 ? 0 : 1),TokenStreams.TOKEN_DIFF));
         }
         // Get the list of tokens `tok` for the current name
         nameIndexMap.put(name, currentNameIndex);
@@ -121,15 +106,15 @@ public class NameTokenisationEncode {
             // because at position "0", we have a token that provides info if the name is a DIFF or DUP
             // token 0 = DIFF vs DUP
             int tokenIndex = i + 1;
-            byte type = TOKEN_STRING;
+            byte type = TokenStreams.TOKEN_STRING;
             String str = tok.get(i); // absolute value of the token
             String val = tok.get(i); // relative value of the token (comparing to prevname's token at the same token position)
             if (tok.get(i).matches("^0+[0-9]*$")) {
-                type = TOKEN_DIGITS0;
+                type = TokenStreams.TOKEN_DIGITS0;
             } else if (tok.get(i).matches("^[0-9]+$")) {
-                type = TOKEN_DIGITS;
+                type = TokenStreams.TOKEN_DIGITS;
             } else if (tok.get(i).length() == 1) {
-                type = TOKEN_CHAR;
+                type = TokenStreams.TOKEN_CHAR;
             }
 
             // compare the current token with token from the previous name at the current token's index
@@ -137,24 +122,24 @@ public class NameTokenisationEncode {
             if (prevNameIndex >=0 && tokensList.get(prevNameIndex).size() > tokenIndex) {
                 EncodeToken prevToken = tokensList.get(prevNameIndex).get(tokenIndex);
                 if (prevToken.getActualTokenValue().equals(tok.get(i))) {
-                    type = TOKEN_MATCH;
+                    type = TokenStreams.TOKEN_MATCH;
                     val = "";
-                } else if (type==TOKEN_DIGITS
-                        && (prevToken.getTokenType() == TOKEN_DIGITS || prevToken.getTokenType() == TOKEN_DELTA)) {
+                } else if (type==TokenStreams.TOKEN_DIGITS
+                        && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA)) {
                     int v = Integer.parseInt(val);
                     int s = Integer.parseInt(prevToken.getActualTokenValue());
                     int d = v - s;
                     tokenFrequencies[tokenIndex]++;
                     if (d >= 0 && d < 256 && tokenFrequencies[tokenIndex] > currentNameIndex / 2) {
-                        type = TOKEN_DELTA;
+                        type = TokenStreams.TOKEN_DELTA;
                         val = String.valueOf(d);
                     }
-                } else if (type==TOKEN_DIGITS0 && prevToken.getActualTokenValue().length() == val.length()
-                        && (prevToken.getTokenType() == TOKEN_DIGITS0 || prevToken.getTokenType() == TOKEN_DELTA0)) {
+                } else if (type==TokenStreams.TOKEN_DIGITS0 && prevToken.getActualTokenValue().length() == val.length()
+                        && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0 || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
                     int d = Integer.parseInt(val) - Integer.parseInt(prevToken.getActualTokenValue());
                     tokenFrequencies[tokenIndex]++;
                     if (d >= 0 && d < 256 && tokenFrequencies[tokenIndex] > currentNameIndex / 2) {
-                        type = TOKEN_DELTA0;
+                        type = TokenStreams.TOKEN_DELTA0;
                         val = String.valueOf(d);
                     }
                 }
@@ -168,7 +153,7 @@ public class NameTokenisationEncode {
             }
         }
 
-        tokensList.get(currentNameIndex).add(new EncodeToken("","",TOKEN_END));
+        tokensList.get(currentNameIndex).add(new EncodeToken("","",TokenStreams.TOKEN_END));
         final int currMaxToken = tokensList.get(currentNameIndex).size();
         if (maxToken < currMaxToken)
             maxToken = currMaxToken;
@@ -177,14 +162,14 @@ public class NameTokenisationEncode {
     }
 
     public void fillByteStreams(
-            final List<Token> tokenStream,
+            final List<ByteBuffer> tokenStream,
             final List<List<EncodeToken>> tokensList,
             final int tokenPosition,
             final int numNames) {
 
         // Fill tokenStreams object using tokensList
         for (int nameIndex = 0; nameIndex < numNames; nameIndex++) {
-            if (tokenPosition > 0 && tokensList.get(nameIndex).get(0).getTokenType() == TOKEN_DUP) {
+            if (tokenPosition > 0 && tokensList.get(nameIndex).get(0).getTokenType() == TokenStreams.TOKEN_DUP) {
                 continue;
             }
             if (tokensList.get(nameIndex).size() <= tokenPosition) {
@@ -192,39 +177,39 @@ public class NameTokenisationEncode {
             }
             EncodeToken encodeToken = tokensList.get(nameIndex).get(tokenPosition);
             byte type = encodeToken.getTokenType();
-            tokenStream.get(TOKEN_TYPE).getByteBuffer().put(type);
+            tokenStream.get(TokenStreams.TOKEN_TYPE).put(type);
             switch (type) {
-                case TOKEN_DIFF:
-                    tokenStream.get(TOKEN_DIFF).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                case TokenStreams.TOKEN_DIFF:
+                    tokenStream.get(TokenStreams.TOKEN_DIFF).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
-                case TOKEN_DUP:
-                    tokenStream.get(TOKEN_DUP).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                case TokenStreams.TOKEN_DUP:
+                    tokenStream.get(TokenStreams.TOKEN_DUP).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
-                case TOKEN_STRING:
-                    writeString(tokenStream.get(TOKEN_STRING).getByteBuffer(),encodeToken.getRelativeTokenValue());
+                case TokenStreams.TOKEN_STRING:
+                    writeString(tokenStream.get(TokenStreams.TOKEN_STRING),encodeToken.getRelativeTokenValue());
                     break;
 
-                case TOKEN_CHAR:
-                    tokenStream.get(TOKEN_CHAR).getByteBuffer().put(encodeToken.getRelativeTokenValue().getBytes()[0]);
+                case TokenStreams.TOKEN_CHAR:
+                    tokenStream.get(TokenStreams.TOKEN_CHAR).put(encodeToken.getRelativeTokenValue().getBytes()[0]);
                     break;
 
-                case TOKEN_DIGITS:
-                    tokenStream.get(TOKEN_DIGITS).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                case TokenStreams.TOKEN_DIGITS:
+                    tokenStream.get(TokenStreams.TOKEN_DIGITS).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
-                case TOKEN_DIGITS0:
-                    tokenStream.get(TOKEN_DIGITS0).getByteBuffer().putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
-                    tokenStream.get(TOKEN_DZLEN).getByteBuffer().put((byte) encodeToken.getRelativeTokenValue().length());
+                case TokenStreams.TOKEN_DIGITS0:
+                    tokenStream.get(TokenStreams.TOKEN_DIGITS0).putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    tokenStream.get(TokenStreams.TOKEN_DZLEN).put((byte) encodeToken.getRelativeTokenValue().length());
                     break;
 
-                case TOKEN_DELTA:
-                    tokenStream.get(TOKEN_DELTA).getByteBuffer().put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                case TokenStreams.TOKEN_DELTA:
+                    tokenStream.get(TokenStreams.TOKEN_DELTA).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
-                case TOKEN_DELTA0:
-                    tokenStream.get(TOKEN_DELTA0).getByteBuffer().put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                case TokenStreams.TOKEN_DELTA0:
+                    tokenStream.get(TokenStreams.TOKEN_DELTA0).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
             }
         }
@@ -273,15 +258,15 @@ public class NameTokenisationEncode {
     }
 
     protected void serializeByteStreams(
-            final List<Token> tokenStream,
+            final List<ByteBuffer> tokenStream,
             final int useArith,
             final ByteBuffer outBuffer) {
 
         // Compress and serialise tokenStreams
-        for (int tokenType = 0; tokenType <= TOKEN_END; tokenType++) {
-            if (tokenStream.get(tokenType).getByteBuffer().remaining() > 0) {
+        for (int tokenType = 0; tokenType <= TokenStreams.TOKEN_END; tokenType++) {
+            if (tokenStream.get(tokenType).remaining() > 0) {
                 outBuffer.put((byte) (tokenType + ((tokenType == 0) ? 128 : 0)));
-                ByteBuffer tempOutByteBuffer = tryCompress(tokenStream.get(tokenType).getByteBuffer(), useArith);
+                ByteBuffer tempOutByteBuffer = tryCompress(tokenStream.get(tokenType), useArith);
                 writeUint7(tempOutByteBuffer.limit(),outBuffer);
                 outBuffer.put(tempOutByteBuffer);
             }

@@ -23,7 +23,7 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
     public static final String COMPRESSED_TOK_DIR = "tok3";
 
     @DataProvider(name = "allNameTokenizationFiles")
-    public Object[][] getAllRansCodecsForRoundTrip() throws IOException {
+    public Object[][] getAllNameTokenizationCodecsForRoundTrip() throws IOException {
 
         // params:
         // compressed testfile path, uncompressed testfile path, NameTokenization encoder, NameTokenization decoder
@@ -123,11 +123,10 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
         // Returns original filename from compressed file name
         int lastDotIndex = compressedFileName.lastIndexOf(".");
         if (lastDotIndex >= 0) {
-            String fileName = compressedFileName.substring(0, lastDotIndex);
-            return fileName;
+            return compressedFileName.substring(0, lastDotIndex);
         } else {
             throw new CRAMException("The format of the compressed File Name is not as expected. " +
-                    "The name of the compressed file should contain a perios followed by a number that" +
+                    "The name of the compressed file should contain a period followed by a number that" +
                     "indicates type of compression. Actual compressed file name = "+ compressedFileName);
         }
     }

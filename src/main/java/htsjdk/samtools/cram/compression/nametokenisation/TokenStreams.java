@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.nametokenisation.tokens.Token;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.Utils;
@@ -31,7 +30,7 @@ public class TokenStreams {
     private static final int DUP_TOKEN_FLAG_MASK = 0x40;
     private static final int TYPE_TOKEN_FLAG_MASK = 0x3F;
 
-    private final List<List<Token>> tokenStreams;
+    private final List<List<ByteBuffer>> tokenStreams;
 
     public TokenStreams() {
         tokenStreams = new ArrayList<>(TOTAL_TOKEN_TYPES);
@@ -70,9 +69,9 @@ public class TokenStreams {
                     // Ensure that the size of tokenStream for each type of token = tokenPosition
                     // by adding an empty ByteBuffer if needed
                     for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-                        final List<Token> currTokenStream = tokenStreams.get(i);
+                        final List<ByteBuffer> currTokenStream = tokenStreams.get(i);
                         if (currTokenStream.size() < tokenPosition) {
-                            currTokenStream.add(new Token(ByteBuffer.allocate(0)));
+                            currTokenStream.add(ByteBuffer.allocate(0));
                         }
                         if (currTokenStream.size() < tokenPosition) {
                             throw new CRAMException("TokenStream is missing Token(s) at Token Type: " + i);
@@ -91,12 +90,12 @@ public class TokenStreams {
                 }
                 typeDataByteBuffer.rewind();
                 typeDataByteBuffer.put(0, (byte) tokenType);
-                tokenStreams.get(0).add(new Token(typeDataByteBuffer));
+                tokenStreams.get(0).add(typeDataByteBuffer);
             }
             if (isDupToken) {
                 final int dupPosition = inputByteBuffer.get() & 0xFF;
                 final int dupType = inputByteBuffer.get() & 0xFF;
-                final Token dupTokenStream = new Token(tokenStreams.get(dupType).get(dupPosition).getByteBuffer().duplicate());
+                final ByteBuffer dupTokenStream = tokenStreams.get(dupType).get(dupPosition).duplicate();
                 tokenStreams.get(tokenType).add(tokenPosition,dupTokenStream);
             } else {
                 final int clen = Utils.readUint7(inputByteBuffer);
@@ -111,16 +110,16 @@ public class TokenStreams {
                     RANSDecode ransdecode = new RANSNx16Decode();
                     uncompressedDataByteBuffer = ransdecode.uncompress(ByteBuffer.wrap(dataBytes));
                 }
-                this.getTokenStreamByType(tokenType).add(tokenPosition,new Token(uncompressedDataByteBuffer));
+                this.getTokenStreamByType(tokenType).add(tokenPosition,uncompressedDataByteBuffer);
             }
         }
     }
 
-    public List<Token> getTokenStreamByType(final int tokenType) {
+    public List<ByteBuffer> getTokenStreamByType(final int tokenType) {
         return tokenStreams.get(tokenType);
     }
 
     public ByteBuffer getTokenStreamByteBuffer(final int tokenPosition, final int tokenType) {
-        return tokenStreams.get(tokenType).get(tokenPosition).getByteBuffer();
+        return tokenStreams.get(tokenType).get(tokenPosition);
     }
 }
