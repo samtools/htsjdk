@@ -1,9 +1,9 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
-import htsjdk.samtools.cram.compression.rans.Utils;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
 
 import java.nio.ByteBuffer;
@@ -98,7 +98,7 @@ public class TokenStreams {
                 final ByteBuffer dupTokenStream = tokenStreams.get(dupType).get(dupPosition).duplicate();
                 tokenStreams.get(tokenType).add(tokenPosition,dupTokenStream);
             } else {
-                final int clen = Utils.readUint7(inputByteBuffer);
+                final int clen = CompressionUtils.readUint7(inputByteBuffer);
                 final byte[] dataBytes = new byte[clen];
                 inputByteBuffer.get(dataBytes, 0, clen); // offset in the dst byte array
                 final ByteBuffer uncompressedDataByteBuffer;

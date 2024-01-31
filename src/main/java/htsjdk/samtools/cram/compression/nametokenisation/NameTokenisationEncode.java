@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
+import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.nametokenisation.tokens.EncodeToken;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
@@ -15,8 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static htsjdk.samtools.cram.compression.rans.Utils.writeUint7;
 
 public class NameTokenisationEncode {
 
@@ -267,7 +266,7 @@ public class NameTokenisationEncode {
             if (tokenStream.get(tokenType).remaining() > 0) {
                 outBuffer.put((byte) (tokenType + ((tokenType == 0) ? 128 : 0)));
                 ByteBuffer tempOutByteBuffer = tryCompress(tokenStream.get(tokenType), useArith);
-                writeUint7(tempOutByteBuffer.limit(),outBuffer);
+                CompressionUtils.writeUint7(tempOutByteBuffer.limit(),outBuffer);
                 outBuffer.put(tempOutByteBuffer);
             }
         }
