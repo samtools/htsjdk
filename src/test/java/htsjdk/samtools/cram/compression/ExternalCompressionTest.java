@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.Defaults;
+import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -29,6 +30,20 @@ public class ExternalCompressionTest extends HtsjdkTest {
                 {BlockCompressionMethod.RANS, 1, RANSExternalCompressor.class},
                 {BlockCompressionMethod.RANS, 0, RANSExternalCompressor.class},
                 {BlockCompressionMethod.RANS, ExternalCompressor.NO_COMPRESSION_ARG, RANSExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, 1, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, 0x00, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.ORDER_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.RLE_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.CAT_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.CAT_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.PACK_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.PACK_FLAG_MASK | RangeParams. ORDER_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.EXT_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK, RangeExternalCompressor.class},
+                {BlockCompressionMethod.RANGE, ExternalCompressor.NO_COMPRESSION_ARG, RangeExternalCompressor.class},
         };
     }
 
