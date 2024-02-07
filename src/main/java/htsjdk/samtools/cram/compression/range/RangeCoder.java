@@ -11,7 +11,7 @@ public class RangeCoder {
     private boolean carry;
     private int cache;
 
-    protected RangeCoder() {
+    public RangeCoder() {
         // Spec: RangeEncodeStart
         this.low = 0;
         this.range = Constants.MAX_RANGE; // 4 bytes of all 1's
@@ -21,7 +21,7 @@ public class RangeCoder {
         this.cache = 0;
     }
 
-    protected void rangeDecodeStart(final ByteBuffer inBuffer){
+    public void rangeDecodeStart(final ByteBuffer inBuffer){
         for (int i = 0; i < 5; i++){
             code = (code << 8) + (inBuffer.get() & 0xFF);
         }
