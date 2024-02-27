@@ -68,8 +68,6 @@ public class CompressorCache {
                 return getCachedCompressorForMethod(compressionMethod, compressorSpecificArg);
 
             case RANS:
-                // for efficiency, we want to share the same underlying RANS object with both order-0 and
-                // order-1 ExternalCompressors
                 final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG ?
                                 RANS4x8Params.ORDER.ZERO.ordinal() :
                                 compressorSpecificArg;
