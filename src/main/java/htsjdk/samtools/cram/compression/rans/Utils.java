@@ -24,8 +24,9 @@ final public class Utils {
             reverse(byteBuffer.array(), byteBuffer.arrayOffset(), byteBuffer.limit());
         } else {
             for (int i = 0; i < byteBuffer.limit(); i++) {
+                byte tmp = byteBuffer.get(i);
                 byteBuffer.put(i, byteBuffer.get(byteBuffer.limit() - i - 1));
-                byteBuffer.put(byteBuffer.limit() - i - 1, byteBuffer.get(i));
+                byteBuffer.put(byteBuffer.limit() - i - 1, tmp);
             }
         }
     }
@@ -117,12 +118,14 @@ final public class Utils {
 
             // log2 N = Math.log(N)/Math.log(2)
             int bitSize = (int) Math.ceil(Math.log(F[Constants.NUMBER_OF_SYMBOLS][j]) / Math.log(2));
-            if (bitSize > shift)
+            if (bitSize > shift) {
                 bitSize = shift;
+            }
 
             // TODO: check if handling bitSize = 0 is required
-            if (bitSize == 0)
+            if (bitSize == 0) {
                 bitSize = 1; // bitSize cannot be zero
+            }
 
             // special case -> if a symbol occurs only once and at the end of the input,
             // then the order 0 freq table associated with it should have a frequency of 1 for symbol 0
@@ -152,7 +155,7 @@ final public class Utils {
         // scale the frequencies to (1 << bits) using the calculated shift
         for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
             if (frequencies[symbol]!=0){
-            frequencies[symbol] <<= shift;
+                frequencies[symbol] <<= shift;
             }
         }
     }
