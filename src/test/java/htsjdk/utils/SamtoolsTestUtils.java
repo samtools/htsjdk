@@ -48,6 +48,11 @@ public class SamtoolsTestUtils {
         return samtoolsPath == null ? "/usr/local/bin/samtools" : samtoolsPath;
     }
 
+    public static String getCRAMInteropData() {
+        final String samtoolsPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
+        return samtoolsPath == null ? "../htscodecs/tests" : "./samtools-"+expectedSamtoolsVersion+ "/htslib-"+expectedHtslibVersion+"/htscodecs/tests";
+    }
+
     /**
      * Execute a samtools command line if a local samtools executable is available see {@link #isSamtoolsAvailable()}.
      *
