@@ -5,14 +5,14 @@ import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * An immutable collection of related resources (a primary resource, such as "reads", "variants",
- * "features", or "reference"), plus zero or more related companion resources ("index", "dictionary",
+ * An immutable collection of related resources, including a (single, required) primary resource, such as "reads",
+ * "variants", "features", or "reference", plus zero or more related secondary resources ("index", "dictionary",
  * "MD5", etc.).
  * <p>
  * Each resource in a {@link Bundle} is represented by a {@link BundleResource}, which in turn describes
@@ -22,14 +22,14 @@ import java.util.Optional;
  * in {@link BundleResourceType}.
  * <p>
  * A {@link Bundle} must have one resource that is designated as the "primary" resource, specified
- * by a content type string. A resource with "primary content type" is is guaranteed to be present in
+ * by a content type string. A resource with "primary content type" is guaranteed to be present in
  * the {@link Bundle}.
  * <p>
  * Since each resource in a {@link Bundle} has a content type that is unique within that {@link Bundle},
  * a Bundle can not be used to represent a list of similar items where each item is equivalent to
  * each other item (i.e., a list of shards, where each shard in the list is equivalent to each other
  * shard). Rather {@link Bundle}s are used to represent related resources where each resource has a unique
- * character or role  relative to the other resources (i.e., a "reads" resource and a corresponding "index"
+ * character or role relative to the other resources (i.e., a "reads" resource and a corresponding "index"
  * resource).
  * <p>
  * Bundles that contain only serializable ({@link IOPathResource}) resources may be serialized to, and
@@ -38,7 +38,9 @@ import java.util.Optional;
 public class Bundle implements Iterable<BundleResource>, Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final Map<String, BundleResource> resources = new LinkedHashMap<>();
+    // don't use  LinkedHashMap here; using HashMap resolves unnatural resource ordering issues that arise
+    // when creating a bundle from serialized files or strings
+    private final Map<String, BundleResource> resources = new HashMap<>(); // content type -> resource
     private final String primaryContentType;
 
     /**
