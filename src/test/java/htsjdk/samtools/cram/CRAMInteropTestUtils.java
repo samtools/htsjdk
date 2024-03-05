@@ -12,7 +12,7 @@ public class CRAMInteropTestUtils {
 
     /**
      * Return the location of the locally checked-in test CRAM 3.1 test interop data dir (the files
-     * there are copied from the originals in htscodecs), and should be updated periodically.
+     * there are copied from the originals in htscodecs, and should be updated periodically).
      */
     public static Path getInteropTestDataLocation() {
         return Paths.get("src/test/resources/htsjdk/samtools/cram/3.1_streams/");

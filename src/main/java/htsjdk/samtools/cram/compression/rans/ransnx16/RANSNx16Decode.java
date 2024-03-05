@@ -360,7 +360,7 @@ public class RANSNx16Decode extends RANSDecode {
         final ByteBuffer uncompressedRLEMetaData;
 
         // The bottom bit of uncompressedRLEMetaDataLength is a flag to indicate
-        // whether rle metadata is uncompressed (1) or com- pressed (0).
+        // whether rle metadata is uncompressed (1) or compressed (0).
         if ((uncompressedRLEMetaDataLength & RLE_META_OPTIONALLY_COMPRESSED_MASK)!=0) {
             final byte[] uncompressedRLEMetaDataArray = new byte[(uncompressedRLEMetaDataLength-1)/2];
             inBuffer.get(uncompressedRLEMetaDataArray, 0, (uncompressedRLEMetaDataLength-1)/2);

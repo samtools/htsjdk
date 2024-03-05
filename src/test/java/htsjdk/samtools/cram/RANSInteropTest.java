@@ -13,7 +13,6 @@ import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 import org.apache.commons.compress.utils.IOUtils;
 import org.testng.Assert;
-import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -21,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,13 +27,15 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * RANSInteropTest tests if the htsjdk RANS4x8 and RANSNx16 implementations are interoperable
+ * Verify that the htsjdk RANS4x8 and RANSNx16 implementations are interoperable
  * with the htslib implementations. The test files for Interop tests originate a separate repository,
- * currently at https://github.com/samtools/htscodecs, but are checked into this repo as wrll.
+ * currently at https://github.com/samtools/htscodecs, but are checked into this repo as well.
  */
 public class RANSInteropTest extends HtsjdkTest {
-    public static final String COMPRESSED_RANS4X8_DIR = "r4x8";
-    public static final String COMPRESSED_RANSNX16_DIR = "r4x16";
+    // The precompressed interop files are versions of the raw test files that are located
+    // in the interop test data directory that have been precompressed using James B.'s htscodec code.
+    public static final String PRE_COMPRESSED_RANS4X8_DIR = "r4x8"; // precompressed interop files
+    public static final String PRE_COMPRESSED_RANSNX16_DIR = "r4x16";  // precompressed interop files
 
     // enumerates the different flag combinations
     public Object[][] get4x8RoundTripTestCases() throws IOException {
@@ -98,7 +98,7 @@ public class RANSInteropTest extends HtsjdkTest {
         // compressed testfile path, uncompressed testfile path,
         // RANS encoder, RANS decoder, RANS params
         final List<Object[]> testCases = new ArrayList<>();
-        for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANS4X8_DIR)) {
+        for (final Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(PRE_COMPRESSED_RANS4X8_DIR)) {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
@@ -118,7 +118,7 @@ public class RANSInteropTest extends HtsjdkTest {
         // compressed testfile path, uncompressed testfile path,
         // RANS encoder, RANS decoder, RANS params
         final List<Object[]> testCases = new ArrayList<>();
-        for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANSNX16_DIR)) {
+        for (final Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(PRE_COMPRESSED_RANSNX16_DIR)) {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
@@ -153,7 +153,7 @@ public class RANSInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "roundTripTestCases",
-            description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
+            description = "Roundtrip using htsjdk RANS. Compare the round tripped output with the original uncompressed file" )
     public void testRANSRoundTrip(
             final Path uncompressedFilePath,
             final RANSEncode<RANSParams> ransEncode,
@@ -164,7 +164,8 @@ public class RANSInteropTest extends HtsjdkTest {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = CompressionUtils.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer uncompressedInteropBytes = CompressionUtils.wrap(
+                    CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
             // Stripe Flag is not implemented in RANSNx16 Encoder.
             // The encoder throws CRAMException if Stripe Flag is used.
@@ -180,31 +181,28 @@ public class RANSInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "decodeOnlyTestCases",
-            description = "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
-    public void testDecodeOnly(
-            final Path compressedFilePath,
-            final Path uncompressedInteropPath,
+            description = "Uncompress the pre-compressed test file using htsjdk RANS, and compare it with theoriginal  uncompressed test file.")
+    public void testRANSDecodeOnly(
+            final Path preCompressedPath,
+            final Path uncompressedPath,
             final RANSEncode<RANSParams> unusedRansEncode,
             final RANSDecode ransDecode,
             final RANSParams unusedRansParams) throws IOException {
-        try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
-             final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
+        try (final InputStream uncompressedStream = Files.newInputStream(uncompressedPath);
+             final InputStream preCompressedStream = Files.newInputStream(preCompressedPath)
         ) {
 
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through RANS and compare the
             // results
-            final ByteBuffer uncompressedInteropBytes = CompressionUtils.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-            final ByteBuffer preCompressedInteropBytes = CompressionUtils.wrap(IOUtils.toByteArray(preCompressedInteropStream));
+            final ByteBuffer uncompressedBytes = CompressionUtils.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedStream)));
+            final ByteBuffer preCompressedBytes = CompressionUtils.wrap(IOUtils.toByteArray(preCompressedStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
-            final ByteBuffer uncompressedHtsjdkBytes = ransDecode.uncompress(preCompressedInteropBytes);
+            final ByteBuffer uncompressedHtsjdkBytes = ransDecode.uncompress(preCompressedBytes);
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
-            Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);
-        } catch (final NoSuchFileException ex){
-            throw new SkipException("Skipping testDecodeOnly as either input file " +
-                    "or precompressed file is missing.", ex);
+            Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedBytes);
         }
     }
 
