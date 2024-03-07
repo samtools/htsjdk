@@ -11,19 +11,19 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
     @DataProvider(name="allowedAttributeTypes")
     public Object[][] allowedTypes() {
         return  new Object[][] {
-                {new String("a string")},
-                {new Byte((byte) 7)},
-                {new Short((short) 8)},
-                {new Integer(0)},
-                {new Character('C')},
-                {new Float(0.1F)},
+                {"a string"},
+                {Byte.valueOf((byte) 7)},
+                {Short.valueOf((short) 8)},
+                {Integer.valueOf(0)},
+                {Character.valueOf('C')},
+                {Float.valueOf(0.1F)},
                 // unsigned longs
-                {new Long(0)},
-                {new Long(BinaryCodec.MAX_UINT)},
+                {Long.valueOf(0)},
+                {Long.valueOf(BinaryCodec.MAX_UINT)},
                 // signed longs
-                {new Long(-1L)},
-                {new Long(Integer.MAX_VALUE)},
-                {new Long(Integer.MIN_VALUE)},
+                {Long.valueOf(-1L)},
+                {Long.valueOf(Integer.MAX_VALUE)},
+                {Long.valueOf(Integer.MIN_VALUE)},
                 // array values
                 {new byte[]{0, 1, 2}},
                 {new short[]{3, 4, 5}},
@@ -45,9 +45,9 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
     @DataProvider(name="notAllowedAttributeTypes")
     public Object[][] notAllowedTypes() {
         return  new Object[][] {
-                {new Long(BinaryCodec.MAX_UINT + 1L)},
-                {new Long(Integer.MIN_VALUE - 1L)},
-                {new Double(0.3F)},
+                {Long.valueOf(BinaryCodec.MAX_UINT + 1L)},
+                {Long.valueOf(Integer.MIN_VALUE - 1L)},
+                {Double.valueOf(0.3F)},
                 {new Object()},
                 {new Object[]{}},
                 {new Integer[]{}}
@@ -76,7 +76,7 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
     @Test(dataProvider="allowedUnsignedArrayTypes")
     public void test_isAllowedUnsignedArrayAttribute(final Object value) {
         final short binaryTag = SAMTag.makeBinaryTag("UI");
-        Assert.assertNotNull(new SAMBinaryTagAndUnsignedArrayValue(binaryTag, value));
+        new SAMBinaryTagAndUnsignedArrayValue(binaryTag, value);
     }
 
     @DataProvider(name="notAllowedUnsignedArrayTypes")
@@ -97,29 +97,29 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
     public Object[][] hashCopyEquals() {
         final short tag = SAMTag.makeBinaryTag("UI");
         return new Object[][] {
-                {new SAMBinaryTagAndValue(tag, new String("a string")), new SAMBinaryTagAndValue(tag, new String("a string")), true, true},
-                {new SAMBinaryTagAndValue(tag, new String("a string")), new SAMBinaryTagAndValue(tag, new String("different string")), false, false},
+                {new SAMBinaryTagAndValue(tag, "a string"), new SAMBinaryTagAndValue(tag, "a string"), true, true},
+                {new SAMBinaryTagAndValue(tag, "a string"), new SAMBinaryTagAndValue(tag, "different string"), false, false},
 
-                {new SAMBinaryTagAndValue(tag, new Byte((byte) 0)), new SAMBinaryTagAndValue(tag, new Byte((byte) 0)), true, true},
-                {new SAMBinaryTagAndValue(tag, new Byte((byte) 0)), new SAMBinaryTagAndValue(tag, new Byte((byte) 1)), false, false},
+                {new SAMBinaryTagAndValue(tag, Byte.valueOf((byte) 0)), new SAMBinaryTagAndValue(tag, Byte.valueOf((byte) 0)), true, true},
+                {new SAMBinaryTagAndValue(tag, Byte.valueOf((byte) 0)), new SAMBinaryTagAndValue(tag, Byte.valueOf((byte) 1)), false, false},
 
-                {new SAMBinaryTagAndValue(tag, new Short((short) 0)), new SAMBinaryTagAndValue(tag, new Short((short) 0)), true, true},
-                {new SAMBinaryTagAndValue(tag, new Short((short) 0)), new SAMBinaryTagAndValue(tag, new Short((short) 1)), false, false},
+                {new SAMBinaryTagAndValue(tag, Short.valueOf((short) 0)), new SAMBinaryTagAndValue(tag, Short.valueOf((short) 0)), true, true},
+                {new SAMBinaryTagAndValue(tag, Short.valueOf((short) 0)), new SAMBinaryTagAndValue(tag, Short.valueOf((short) 1)), false, false},
 
-                {new SAMBinaryTagAndValue(tag, new Integer(0)), new SAMBinaryTagAndValue(tag, new Integer(0)), true, true},
-                {new SAMBinaryTagAndValue(tag, new Integer(0)), new SAMBinaryTagAndValue(tag, new Integer(0)), true, true},
+                {new SAMBinaryTagAndValue(tag, Integer.valueOf(0)), new SAMBinaryTagAndValue(tag, Integer.valueOf(0)), true, true},
+                {new SAMBinaryTagAndValue(tag, Integer.valueOf(0)), new SAMBinaryTagAndValue(tag, Integer.valueOf(0)), true, true},
 
-                {new SAMBinaryTagAndValue(tag, new Character('C')), new SAMBinaryTagAndValue(tag, new Character('C')), true, true},
-                {new SAMBinaryTagAndValue(tag, new Character('C')), new SAMBinaryTagAndValue(tag, new Character('D')), false, false},
+                {new SAMBinaryTagAndValue(tag, Character.valueOf('C')), new SAMBinaryTagAndValue(tag, Character.valueOf('C')), true, true},
+                {new SAMBinaryTagAndValue(tag, Character.valueOf('C')), new SAMBinaryTagAndValue(tag, Character.valueOf('D')), false, false},
 
-                {new SAMBinaryTagAndValue(tag,new Float(0.1F)), new SAMBinaryTagAndValue(tag, new Float(0.1F)), true, true},
-                {new SAMBinaryTagAndValue(tag, new Float(0.1F)), new SAMBinaryTagAndValue(tag, new Float(0.2F)), false, false},
+                {new SAMBinaryTagAndValue(tag,Float.valueOf(0.1F)), new SAMBinaryTagAndValue(tag, Float.valueOf(0.1F)), true, true},
+                {new SAMBinaryTagAndValue(tag, Float.valueOf(0.1F)), new SAMBinaryTagAndValue(tag, Float.valueOf(0.2F)), false, false},
 
-                {new SAMBinaryTagAndValue(tag,new Long(37L)), new SAMBinaryTagAndValue(tag, new Long(37L)), true, true},
-                {new SAMBinaryTagAndValue(tag, new Long(37L)), new SAMBinaryTagAndValue(tag, new Long(38L)), false, false},
+                {new SAMBinaryTagAndValue(tag,Long.valueOf(37L)), new SAMBinaryTagAndValue(tag, Long.valueOf(37L)), true, true},
+                {new SAMBinaryTagAndValue(tag, Long.valueOf(37L)), new SAMBinaryTagAndValue(tag, Long.valueOf(38L)), false, false},
 
-                {new SAMBinaryTagAndValue(tag,new Long(BinaryCodec.MAX_UINT)), new SAMBinaryTagAndValue(tag, new Long(BinaryCodec.MAX_UINT)), true, true},
-                {new SAMBinaryTagAndValue(tag, new Long(BinaryCodec.MAX_UINT)), new SAMBinaryTagAndValue(tag, new Long(BinaryCodec.MAX_UINT-1)), false, false},
+                {new SAMBinaryTagAndValue(tag,Long.valueOf(BinaryCodec.MAX_UINT)), new SAMBinaryTagAndValue(tag, Long.valueOf(BinaryCodec.MAX_UINT)), true, true},
+                {new SAMBinaryTagAndValue(tag, Long.valueOf(BinaryCodec.MAX_UINT)), new SAMBinaryTagAndValue(tag, Long.valueOf(BinaryCodec.MAX_UINT-1)), false, false},
 
                 // arrays
 
