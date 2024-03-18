@@ -12,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -202,8 +201,8 @@ public class BundleJSONTest extends HtsjdkTest {
             final String jsonString,
             final String primaryKey,
             final List<BundleResource> resources) {
-        final Collection<Bundle> expectedBundleCollection = Arrays.asList(new Bundle(primaryKey, resources));
-        final Collection<Bundle> actualBundleCollection = BundleJSON.toBundleCollection(jsonString);
+        final List<Bundle> expectedBundleCollection = Arrays.asList(new Bundle(primaryKey, resources));
+        final List<Bundle> actualBundleCollection = BundleJSON.toBundleList(jsonString);
         Assert.assertEquals(actualBundleCollection, expectedBundleCollection);
     }
 
@@ -334,7 +333,7 @@ public class BundleJSONTest extends HtsjdkTest {
     @Test(dataProvider = "invalidBundleJSON", expectedExceptions = IllegalArgumentException.class)
     public void testRejectInvalidJSONAsCollection(final String jsonString, final String expectedMessageFragment) {
         try {
-            BundleJSON.toBundleCollection(jsonString);
+            BundleJSON.toBundleList(jsonString);
         } catch (final IllegalArgumentException e) {
             Assert.assertTrue(e.getMessage().contains(expectedMessageFragment));
             throw e;
@@ -454,19 +453,19 @@ public class BundleJSONTest extends HtsjdkTest {
             final String jsonString,
             final List<Bundle> bundles) {
         // create a bundle collection from the input JSON, make sure if equals the test collection
-        final Collection<Bundle> bundlesFromJSON = BundleJSON.toBundleCollection(jsonString);
+        final List<Bundle> bundlesFromJSON = BundleJSON.toBundleList(jsonString);
         Assert.assertEquals(bundlesFromJSON, bundles);
 
         // now write the test collection of bundles to JSON, and then roundtrip it back to a bundle collection
         final String actualJSONString = BundleJSON.toJSON(bundles);
-        final Collection<Bundle> bundlesFromRoundtripJSON = BundleJSON.toBundleCollection(actualJSONString);
+        final List<Bundle> bundlesFromRoundtripJSON = BundleJSON.toBundleList(actualJSONString);
         Assert.assertEquals(bundlesFromRoundtripJSON, bundles);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRejectEmptyCollection() {
         try {
-            BundleJSON.toBundleCollection("[]");
+            BundleJSON.toBundleList("[]");
         } catch (final IllegalArgumentException e) {
             Assert.assertTrue(e.getMessage().contains("JSON bundle collection must contain at least one bundle"));
             throw e;

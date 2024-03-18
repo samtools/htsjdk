@@ -5,8 +5,8 @@ import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,7 +40,7 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
 
     // don't use  LinkedHashMap here; using HashMap resolves unnatural resource ordering issues that arise
     // when creating a bundle from serialized files or strings
-    private final Map<String, BundleResource> resources = new HashMap<>(); // content type -> resource
+    private final Map<String, BundleResource> resources = new LinkedHashMap<>(); // content type -> resource
     private final String primaryContentType;
 
     /**
@@ -55,7 +55,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         ValidationUtils.validateArg(primaryContentType.length() > 0,
                 "A non-zero length primary resource content type must be provided");
         ValidationUtils.nonNull(resources, "resource collection");
-        ValidationUtils.nonEmpty(resources,"resource collection");
+        if (resources.isEmpty()) {
+            throw new IllegalArgumentException("A bundle must contain at least one resource");
+        }
 
         resources.forEach(r -> {
             if (null != this.resources.putIfAbsent(r.getContentType(), r)) {
