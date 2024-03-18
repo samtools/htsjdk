@@ -4,11 +4,7 @@ import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * An immutable collection of related resources, including a (single, required) primary resource, such as "reads",
@@ -34,13 +30,15 @@ import java.util.Optional;
  * <p>
  * Bundles that contain only serializable ({@link IOPathResource}) resources may be serialized to, and
  * deserialized from JSON.
+ *
+ * Note that the order of resources in a bundle is not significant, and is not guaranteed to be preserved.
  */
 public class Bundle implements Iterable<BundleResource>, Serializable {
     private static final long serialVersionUID = 1L;
 
-    // don't use  LinkedHashMap here; using HashMap resolves unnatural resource ordering issues that arise
-    // when creating a bundle from serialized files or strings
-    private final Map<String, BundleResource> resources = new HashMap<>(); // content type -> resource
+    // Note that this uses LinkedHashMap to preserve the input order of the resources,
+    // but that order is not preserved when round tripping through JSON.
+    private final Map<String, BundleResource> resources = new LinkedHashMap<>(); // content type -> resource
     private final String primaryContentType;
 
     /**
@@ -55,7 +53,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
         ValidationUtils.validateArg(primaryContentType.length() > 0,
                 "A non-zero length primary resource content type must be provided");
         ValidationUtils.nonNull(resources, "resource collection");
-        ValidationUtils.nonEmpty(resources,"resource collection");
+        if (resources.isEmpty()) {
+            throw new IllegalArgumentException("A bundle must contain at least one resource");
+        }
 
         resources.forEach(r -> {
             if (null != this.resources.putIfAbsent(r.getContentType(), r)) {
@@ -154,5 +154,19 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
     @Override
     public String toString() {
         return String.format("%s/%d resource(s)", primaryContentType, resources.size());
+    }
+
+    // compare two bundles for equality without regard for resource order
+    public static boolean equalsIgnoreOrder(final Bundle bundle1, final Bundle bundle2) {
+        if (bundle1 == null || bundle2 == null) {
+            return false;
+        } else if (!bundle1.getPrimaryContentType().equals(bundle2.getPrimaryContentType())) {
+            return false;
+        } else if (bundle1.getResources().size() != bundle2.getResources().size()) {
+            return false;
+        }
+        final HashSet<BundleResource> bundle1Set = new HashSet<>(bundle1.getResources());
+        final HashSet<BundleResource> bundle2Set = new HashSet<>(bundle2.getResources());
+        return bundle1Set.equals(bundle2Set);
     }
 }

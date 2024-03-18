@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 
 // Example JSON :
@@ -82,6 +83,11 @@ public class BundleTest extends HtsjdkTest {
                 Assert.assertEquals(ir, BundleResourceTestData.indexNoFormat);
             }
         }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectEmptyBundle() {
+        new Bundle(BundleResourceType.ALIGNED_READS, Collections.EMPTY_LIST);
     }
 
 }

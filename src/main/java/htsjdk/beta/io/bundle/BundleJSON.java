@@ -10,8 +10,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -36,14 +34,8 @@ public class BundleJSON {
     public static final String JSON_SCHEMA_NAME               = "htsbundle";
     public static final String JSON_SCHEMA_VERSION            = "0.1.0"; // TODO: bump this to 1.0.0
 
-    final private static Set<String> TOP_LEVEL_PROPERTIES = Collections.unmodifiableSet(
-            new HashSet<>() {
-                private static final long serialVersionUID = 1L;
-                {
-                    add(JSON_PROPERTY_SCHEMA_NAME);
-                    add(JSON_PROPERTY_SCHEMA_VERSION);
-                    add(JSON_PROPERTY_PRIMARY);
-                }});
+    final private static Set<String> TOP_LEVEL_PROPERTIES =
+            Set.of(JSON_PROPERTY_SCHEMA_NAME, JSON_PROPERTY_SCHEMA_VERSION, JSON_PROPERTY_PRIMARY);
 
     /**
      * Serialize a bundle to a JSON string representation. All resources in the bundle must
@@ -77,14 +69,14 @@ public class BundleJSON {
     }
 
     /**
-     * Convert a (non-empty) Collection of Bundles to a JSON array string representation.
-     * @param bundles a Collection of Bundles to serialize to JSON
-     * @return a JSON string (array) representation of the collection of bundles
-     * @throw IllegalArgumentException if the collection is empty
+     * Convert a (non-empty) List of Bundles to a JSON array string representation.
+     * @param bundles a List of Bundles to serialize to JSON
+     * @return a JSON string (array) representation of the list of bundles
+     * @throw IllegalArgumentException if the list is empty
      */
-    public static String toJSON(final Collection<Bundle> bundles) {
+    public static String toJSON(final List<Bundle> bundles) {
         if (bundles.isEmpty()) {
-            throw new IllegalArgumentException("A bundle collection must contain at least one bundle");
+            throw new IllegalArgumentException("A bundle list must contain at least one bundle");
         }
         return bundles.stream()
                 .map(BundleJSON::toJSON)
@@ -120,35 +112,34 @@ public class BundleJSON {
             return toBundle(new JSONObject(jsonString), ioPathConstructor);
         } catch (JSONException | UnsupportedOperationException e) {
             // see if the user provided a collection instead of a single bundle, and if so, present it as
-            // a Bundle as long as it only contains one Bundle
+            // a Bundle as long as it only contains one BundleResource
             try {
-                final Collection<Bundle> bundles = toBundleCollection(jsonString, ioPathConstructor);
+                final List<Bundle> bundles = toBundleList(jsonString, ioPathConstructor);
                 if (bundles.size() > 1) {
                     throw new IllegalArgumentException(
-                        String.format("A JSON string with more than one bundle was provided but only a single Bundle is allowed",
-                                e.getMessage(),
+                        String.format("A JSON string with more than one bundle was provided but only a single bundle is allowed in this context (%s)",
                                 e.getMessage()));
                 }
                 return bundles.stream().findFirst().get();
             } catch (JSONException | UnsupportedOperationException e2) {
                 throw new IllegalArgumentException(
-                        String.format("JSON can be interpreted neither as an individual bundle (%s) nor as a bundle collection (%s)",
-                                e2.getMessage(),
-                                e.getMessage()),
+                        String.format("The JSON can be interpreted neither as an individual bundle (%s) nor as a bundle collection (%s)",
+                                e.getMessage(),
+                                e2.getMessage()),
                         e);
             }
         }
     }
 
     /**
-     * Create a Collection<Bundle> from a jsonString, using a custom class that implements {@link IOPath} for all
+     * Create a List<Bundle> from a jsonString, using a custom class that implements {@link IOPath} for all
      * resources.
      * @param jsonString the json string must conform to the bundle schema, and may contain an array or single object
      * @param ioPathConstructor constructor to use to create the backing IOPath for all resources
-     * @return Collection<Bundle>
+     * @return List<Bundle>
      * @param <T> IOPath-derived class to use for IOPathResources
      */
-    public static <T extends IOPath> Collection<Bundle> toBundleCollection(
+    public static <T extends IOPath> List<Bundle> toBundleList(
             final String jsonString,
             final Function<String, T> ioPathConstructor) {
         ValidationUtils.nonEmpty(jsonString, "json bundle string");
@@ -177,20 +168,20 @@ public class BundleJSON {
                         e);
             }
         }
-        if (bundles.size() < 1) {
+        if (bundles.isEmpty()) {
             throw new IllegalArgumentException("JSON bundle collection must contain at least one bundle");
         }
         return bundles;
     }
 
     /**
-     * Create a Collection<Bundle> from a jsonString.
+     * Create a List<Bundle> from a jsonString.
      *
      * @param jsonString a JSON strings that conform to the bundle schema; may be an array or single object
-     * @return a {@link Collection<Bundle>} created from a Collection of jsonStrings
+     * @return a {@link List<Bundle>} created from a Collection of jsonStrings
      */
-    public static Collection<Bundle> toBundleCollection(final String jsonString) {
-        return toBundleCollection(jsonString, HtsPath::new);
+    public static List<Bundle> toBundleList(final String jsonString) {
+        return toBundleList(jsonString, HtsPath::new);
     }
 
     private static <T extends IOPath> Bundle toBundle(
@@ -213,15 +204,12 @@ public class BundleJSON {
 
             final String primaryContentType = getRequiredPropertyAsString(jsonObject, JSON_PROPERTY_PRIMARY);
             final Collection<BundleResource> bundleResources = toBundleResources(jsonObject, ioPathConstructor);
-            if (bundleResources.isEmpty()) {
-                LOG.warn("Empty resource bundle found in: ", jsonObject.toString());
-            }
             return new Bundle(primaryContentType, bundleResources);
         } catch (JSONException | UnsupportedOperationException e) {
             throw new IllegalArgumentException(e);
         }
     }
-    private static  <T extends IOPath> IOPathResource toBundleResource(
+    private static <T extends IOPath> IOPathResource toBundleResource(
             final String contentType,
             final JSONObject jsonObject,
             final Function<String, T> ioPathConstructor) {
@@ -229,7 +217,7 @@ public class BundleJSON {
         return new IOPathResource(
                 ioPathConstructor.apply(getRequiredPropertyAsString(jsonObject, JSON_PROPERTY_PATH)),
                 contentType,
-                format == null ? null : format);
+                format);
     }
     private static <T extends IOPath> Collection<BundleResource> toBundleResources(
             final JSONObject jsonResources,
@@ -249,7 +237,7 @@ public class BundleJSON {
         return bundleResources;
     }
 
-    private static String getRequiredPropertyAsString(JSONObject jsonDocument, String propertyName) {
+    private static String getRequiredPropertyAsString(final JSONObject jsonDocument, final String propertyName) {
         final String propertyValue = jsonDocument.optString(propertyName, null);
         if (propertyValue == null) {
             throw new IllegalArgumentException(

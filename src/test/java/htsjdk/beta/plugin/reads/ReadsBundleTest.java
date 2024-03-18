@@ -2,11 +2,7 @@ package htsjdk.beta.plugin.reads;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.io.bundle.Bundle;
-import htsjdk.beta.io.bundle.BundleBuilder;
-import htsjdk.beta.io.bundle.BundleJSON;
-import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.*;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import org.testng.Assert;
@@ -138,8 +134,7 @@ public class ReadsBundleTest extends HtsjdkTest {
             final String jsonString,
             final ReadsBundle<IOPath> expectedReadsBundle)  {
         final ReadsBundle<IOPath> bundleFromJSON = ReadsBundle.getReadsBundleFromString(jsonString);
-        Assert.assertEquals(bundleFromJSON, expectedReadsBundle);
-        Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), expectedReadsBundle.getPrimaryContentType());
+        Assert.assertTrue(Bundle.equalsIgnoreOrder(bundleFromJSON, expectedReadsBundle));
         Assert.assertTrue(bundleFromJSON.getReads().getIOPath().isPresent());
         Assert.assertEquals(bundleFromJSON.getReads().getIOPath().get(), expectedReadsBundle.getReads().getIOPath().get());
     }
@@ -152,8 +147,7 @@ public class ReadsBundleTest extends HtsjdkTest {
         IOPathUtils.writeStringToPath(jsonFilePath, jsonString);
         final ReadsBundle<IOPath> bundleFromPath = ReadsBundle.getReadsBundleFromPath(jsonFilePath);
 
-        Assert.assertEquals(bundleFromPath, expectedReadsBundle);
-        Assert.assertEquals(bundleFromPath.getPrimaryContentType(), expectedReadsBundle.getPrimaryContentType());
+        Assert.assertTrue(Bundle.equalsIgnoreOrder(bundleFromPath, expectedReadsBundle));
         Assert.assertTrue(bundleFromPath.getReads().getIOPath().isPresent());
         Assert.assertEquals(bundleFromPath.getReads().getIOPath().get(), expectedReadsBundle.getReads().getIOPath().get());
     }
