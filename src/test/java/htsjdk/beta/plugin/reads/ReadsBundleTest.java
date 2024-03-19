@@ -118,15 +118,17 @@ public class ReadsBundleTest extends HtsjdkTest {
                     }""".formatted(BAM_FILE, INDEX_FILE),
                     // ReadsBundle doesn't automatically infer format, so create one manually
                     new ReadsBundle(
+                            //NOTE: we call addSecondary FIRST because we're attempting to match the order of the
+                            // resources as they are after they've been serialized to JSON
                             new BundleBuilder()
-                                    .addPrimary(
+                                    .addSecondary(
+                                            new IOPathResource(new HtsPath(INDEX_FILE),
+                                                    BundleResourceType.READS_INDEX,
+                                                    BundleResourceType.READS_INDEX_BAI)
+                                    ).addPrimary(
                                             new IOPathResource(new HtsPath(BAM_FILE),
                                             BundleResourceType.ALIGNED_READS,
                                             BundleResourceType.READS_BAM)
-                                    ).addSecondary(
-                                            new IOPathResource(new HtsPath(INDEX_FILE),
-                                            BundleResourceType.READS_INDEX,
-                                            BundleResourceType.READS_INDEX_BAI)
                                     ).build().getResources()
                     )
                 },

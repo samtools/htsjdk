@@ -38,8 +38,6 @@ import java.util.Optional;
 public class Bundle implements Iterable<BundleResource>, Serializable {
     private static final long serialVersionUID = 1L;
 
-    // don't use  LinkedHashMap here; using HashMap resolves unnatural resource ordering issues that arise
-    // when creating a bundle from serialized files or strings
     private final Map<String, BundleResource> resources = new LinkedHashMap<>(); // content type -> resource
     private final String primaryContentType;
 
