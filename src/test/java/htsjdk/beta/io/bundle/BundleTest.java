@@ -84,4 +84,9 @@ public class BundleTest extends HtsjdkTest {
         }
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRejectEmptyBundle() {
+        new Bundle(BundleResourceType.ALIGNED_READS, Collections.EMPTY_LIST);
+    }
+
 }

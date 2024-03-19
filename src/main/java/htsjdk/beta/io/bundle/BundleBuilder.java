@@ -54,7 +54,7 @@ public final class BundleBuilder {
      * least one (primary) resource must have been previously added to create a valid bundle.
      *
      * @return a {@link Bundle}
-     * @throws IllegalStateException if no primary resouuce has been added
+     * @throws IllegalStateException if no primary resource has been added
      */
     public Bundle build() {
         if (primaryResource == null) {
