@@ -29,9 +29,10 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -102,8 +103,10 @@ public class SAMSequenceDictionaryExtractor {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path vcf) {
-                try (VCFFileReader vcfPathReader = new VCFFileReader(vcf, false)){
-                    return vcfPathReader.getFileHeader().getSequenceDictionary();
+                try (SeekableStream vcfSeekableStream = new SeekablePathStream(vcf)){
+                    return VCFHeaderReader.readHeaderFrom(vcfSeekableStream).getSequenceDictionary();
+                } catch (IOException e) {
+                    throw new RuntimeIOException(e);
                 }
             }
         },
