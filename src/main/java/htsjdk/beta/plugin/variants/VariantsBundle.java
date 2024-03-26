@@ -4,17 +4,14 @@ import htsjdk.beta.io.IOPathUtils;
 import htsjdk.beta.io.bundle.*;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Optional;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -26,41 +23,38 @@ import java.util.function.Function;
  * Note that this class is merely a convenience class for the case where the variants are backed by files on disk.
  * A bundle that contains variants and related resources can be created manually using the {@link Bundle} class.
  * This class provides convenient constructors, and validation for JSON interconversions. To create a VariantsBundle
- * for variants sources that are backed by streams or otherv{@link BundleResource} types, the {@link Bundle} and
+ * for variants sources that are backed by streams or other {@link BundleResource} types, the {@link Bundle} and
  * {@link BundleBuilder} classes can be used to construct such bundles directly.
- *
- * @param <T> The type to use when creating a new IOPathResource for a {@link htsjdk.beta.plugin.variants.VariantsBundle}.
- *          Note that any resources that are manually inserted into a {@link htsjdk.beta.plugin.variants.VariantsBundle}
- *          using the {@link #VariantsBundle(Collection)} constructor may have IOPathResources that do not conform to
- *          this type.
  */
-public class VariantsBundle<T extends IOPath> extends Bundle implements Serializable {
+public class VariantsBundle extends Bundle implements Serializable {
     private static final long serialVersionUID = 1L;
-    private static final Log LOG = Log.getInstance(htsjdk.beta.plugin.variants.VariantsBundle.class);
-
+    private static final Log LOG = Log.getInstance(VariantsBundle.class);
     /**
      * Create a {@link htsjdk.beta.plugin.variants.VariantsBundle} containing only a variants resource.
      *
      * @param vcfPath An {@link IOPath}-derived object that represents a source of variants.
      */
-    public VariantsBundle(final T vcfPath) {
-        this(Arrays.asList(toInputResource(
-                BundleResourceType.VARIANT_CONTEXTS,
-                ValidationUtils.nonNull(vcfPath, BundleResourceType.VARIANTS_VCF))));
+    public VariantsBundle(final IOPath vcfPath) {
+        this(Arrays.asList(
+                new IOPathResource(
+                        ValidationUtils.nonNull(vcfPath, "IOPath must not be null"),
+                        BundleResourceType.VARIANT_CONTEXTS)));
     }
 
     /**
      * Create a {@link htsjdk.beta.plugin.variants.VariantsBundle} containing only variants and an index.
      *
      * @param vcfPath An {@link IOPath}-derived object that represents a source of variants.
+     * @param indexPath An {@link IOPath}-derived object that represents the companion index for {@code vcfPath}.
      */
-    public VariantsBundle(final T vcfPath, final T indexPath) {
+    public VariantsBundle(final IOPath vcfPath, final IOPath indexPath) {
         this(Arrays.asList(
-                toInputResource(BundleResourceType.VARIANT_CONTEXTS,
-                                ValidationUtils.nonNull(vcfPath, BundleResourceType.VARIANTS_VCF)),
-                toInputResource(
-                        BundleResourceType.VARIANTS_INDEX,
-                        ValidationUtils.nonNull(indexPath, BundleResourceType.VARIANTS_INDEX))));
+                new IOPathResource(
+                        ValidationUtils.nonNull(vcfPath, "IOPath must not be null"),
+                        BundleResourceType.VARIANT_CONTEXTS),
+                new IOPathResource(ValidationUtils.nonNull(
+                        indexPath, "IOPath must not be null"),
+                        BundleResourceType.VARIANTS_INDEX)));
     }
 
     /**
@@ -68,15 +62,12 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
      * resource with content type {@link BundleResourceType#VARIANTS_VCF} must be present in the resources, or
      * this constructor will throw.
      *
-     * Note that this constructor allows existing {@link IOPathResource}s that do not conform to the type
-     * {@link T} to be included in the resulting {@link htsjdk.beta.plugin.variants.VariantsBundle}.
-     *
      * @param resources collection of {@link BundleResource}. the collection must include a resource with
      *                 content type {@link BundleResourceType#VARIANTS_VCF}.
      * @throws IllegalArgumentException if no resource with content type {@link BundleResourceType#VARIANTS_VCF} is
      * included in the input {@link BundleResource} collection
      */
-    protected VariantsBundle(final Collection<BundleResource> resources) {
+    public VariantsBundle(final Collection<BundleResource> resources) {
         super(BundleResourceType.VARIANT_CONTEXTS, resources);
     }
 
@@ -93,7 +84,7 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
      * Get the optional {@link BundleResourceType#VARIANTS_INDEX} resource for this {@link htsjdk.beta.plugin.variants.VariantsBundle}.
      *
      * @return the optional {@link BundleResourceType#VARIANTS_INDEX} resrouce for this {@link htsjdk.beta.plugin.variants.VariantsBundle},
-     * or Optional.empty if no index resource is present in the bundle.
+     * or Optional.empty() if no index resource is present in the bundle.
      */
     public Optional<BundleResource> getIndex() {
         return get(BundleResourceType.VARIANTS_INDEX);
@@ -106,8 +97,22 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
      *                 must contain a resource with content type VARIANT_CONTEXTS.
      * @return a {@link VariantsBundle} created from jsonPath
      */
-    public static VariantsBundle<IOPath> getVariantsBundleFromPath(final IOPath jsonPath) {
+    public static VariantsBundle getVariantsBundleFromPath(final IOPath jsonPath) {
         return getVariantsBundleFromString(IOPathUtils.getStringFromPath(jsonPath));
+    }
+
+    /**
+     * Create a {@link VariantsBundle} from a JSON string contained in jsonPath.
+     *
+     * @param <T> the IOPath-derived type of the IOPathResources to be used in the new bundle
+     * @param jsonPath the path to a file that contains a {@link Bundle} serialized to JSON. The bundle
+     *                 must contain a resource with content type VARIANT_CONTEXTS.
+     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type {@code T}
+     * @return a {@link VariantsBundle} created from jsonPath
+     */
+    public static <T extends IOPath> VariantsBundle getVariantsBundleFromPath(final IOPath jsonPath,
+                                                                                 final Function<String, T> ioPathConstructor) {
+        return getVariantsBundleFromString(IOPathUtils.getStringFromPath(jsonPath), ioPathConstructor);
     }
 
     /**
@@ -116,7 +121,7 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
      * @param jsonString the jsonString to use to create the {@link htsjdk.beta.plugin.variants.VariantsBundle}
      * @return a {@link htsjdk.beta.plugin.variants.VariantsBundle}
      */
-    public static VariantsBundle<IOPath> getVariantsBundleFromString(final String jsonString) {
+    public static VariantsBundle getVariantsBundleFromString(final String jsonString) {
         return getVariantsBundleFromString(jsonString, HtsPath::new);
     }
 
@@ -124,15 +129,15 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
      * Create a {@link htsjdk.beta.plugin.variants.VariantsBundle} from a JSON string with all IOPathResources using
      * an IOPath-derived class of type {@code T}.
      *
+     * @param <T> the IOPath-derived type of the IOPathResources to be used in the new bundle
      * @param jsonString the string to use to create the {@link htsjdk.beta.plugin.variants.VariantsBundle}
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type {@code T}
-     * @param <T> the type of
      * @return a newly created {@link htsjdk.beta.plugin.variants.VariantsBundle}
      */
-    public static <T extends IOPath> VariantsBundle<T> getVariantsBundleFromString(
+    public static <T extends IOPath> VariantsBundle getVariantsBundleFromString(
             final String jsonString,
             final Function<String, T> ioPathConstructor) {
-        return new VariantsBundle<>(BundleJSON.toBundle(jsonString, ioPathConstructor).getResources());
+        return new VariantsBundle(BundleJSON.toBundle(jsonString, ioPathConstructor).getResources());
     }
 
     /**
@@ -143,39 +148,36 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
      * @return a {@link htsjdk.beta.plugin.variants.VariantsBundle} containing variants and companion index, if it can
      * be found.
      */
-    public static VariantsBundle<IOPath> resolveIndex(final IOPath variants) {
+    public static Optional<IOPath> resolveIndex(final IOPath variants) {
         return resolveIndex(variants, HtsPath::new);
     }
 
     /**
-     * Find the companion index for a variants source, and create a new {@link htsjdk.beta.plugin.variants.VariantsBundle} containing the
-     * variants and the companion index, if one can be found.
+     * Attempts to find the companion index for a variants source based on commonly used file extensions, and
+     * create a new {@link htsjdk.beta.plugin.variants.VariantsBundle} containing the variants and the companion
+     * index, if one can be found.
      *
-     * An index can only be resolved for an IOPath that represents on a file system for which an NIO
+     * An index can only be resolved for an IOPath that represents a file on a file system for which an NIO
      * provider is installed. Remote paths that use a protocol scheme for which no NIO file system is
      * available will (silently) not be resolved.
      *
-     * @param variants the variants source to use
+     * @param <T> the IOPath-derived type of the IOPath to be returned
+     * @param variantsHtsPath the IOPath-derived object representing the variants source to use
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
-     * @param <T> the IOPath-derived type of the IOPathResources in the new bundle
-     * @return a {@link htsjdk.beta.plugin.variants.VariantsBundle} containing variants and companion index, if it can be found
+     * @return a {@link IOPath}-derived object of type T containing the companion index for {@code variantsPath},
+     * if it can be found
      */
-    public static <T extends IOPath> VariantsBundle<T> resolveIndex(
-            final T variants,
+    public static <T extends IOPath> Optional<T> resolveIndex(
+            final T variantsHtsPath,
             final Function<String, T> ioPathConstructor) {
-        if (variants.hasFileSystemProvider()) {
-            final Path index = SamFiles.findIndex(variants.toPath());
-            if (index == null) {
-                return new VariantsBundle<>(variants);
-            } else {
-                return new VariantsBundle<T>(variants, ioPathConstructor.apply(index.toUri().toString()));
+        final Set<String> indexExtensions = Set.of(FileExtensions.TRIBBLE_INDEX, FileExtensions.TABIX_INDEX);
+        for (final String extension : indexExtensions) {
+            final T putativeIndexPath = IOPathUtils.replaceExtension(variantsHtsPath, extension, true, ioPathConstructor);
+            if (Files.exists(putativeIndexPath.toPath())) {
+                return Optional.of(putativeIndexPath);
             }
         }
-        return new VariantsBundle<>(variants);
-    }
-
-    public static boolean looksLikeAVariantsBundle(final IOPath rawVCFPath) {
-        return rawVCFPath.getURI().getPath().endsWith(BundleJSON.BUNDLE_EXTENSION);
+        return Optional.empty();
     }
 
     private static <T extends IOPath> IOPathResource toInputResource(final String providedContentType, final T ioPath) {
@@ -206,12 +208,11 @@ public class VariantsBundle<T extends IOPath> extends Bundle implements Serializ
         if (extension.isPresent()) {
             final String ext = extension.get();
             if (ext.equals(FileExtensions.VCF)) {
-                return Optional.of(new Tuple<>(BundleResourceType.VARIANT_CONTEXTS, BundleResourceType.VARIANTS_VCF));
+                return Optional.of(new Tuple<>(BundleResourceType.VARIANT_CONTEXTS, "VCF"));
             } else if (ext.equals(FileExtensions.COMPRESSED_VCF)) {
-                return Optional.of(new Tuple<>(BundleResourceType.VARIANT_CONTEXTS, BundleResourceType.VARIANTS_VCF));
+                return Optional.of(new Tuple<>(BundleResourceType.VARIANT_CONTEXTSS, "VCF"));
             } //TODO...finish this
         }
         return Optional.empty();
     }
-
 }

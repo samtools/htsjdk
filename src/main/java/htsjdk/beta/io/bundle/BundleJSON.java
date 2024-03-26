@@ -46,6 +46,9 @@ public class BundleJSON {
      * @throws IllegalArgumentException if any resource in bundle is not an IOPathResources.
      */
     public static String toJSON(final Bundle bundle) {
+        ValidationUtils.validateArg(
+                !bundle.getPrimaryContentType().equals(JSON_PROPERTY_PRIMARY),
+                "Primary content type cannot be named 'primary'");
         final JSONObject outerJSON = new JSONObject()
             .put(JSON_PROPERTY_SCHEMA_NAME, JSON_SCHEMA_NAME)
             .put(JSON_PROPERTY_SCHEMA_VERSION, JSON_SCHEMA_VERSION)
