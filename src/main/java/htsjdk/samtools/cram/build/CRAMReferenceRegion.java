@@ -113,9 +113,14 @@ public class CRAMReferenceRegion {
 
         // Re-resolve the reference bases if we don't have a current region or if the region we have
         // doesn't span the *entire* contig requested.
+        final SAMSequenceRecord newSequenceRecord = sequenceDictionary.getSequence(referenceIndex);
+        if (newSequenceRecord == null) {
+            throw new IllegalArgumentException(
+                    String.format("Requested reference sequence index %d not found", referenceIndex));
+        }
         if ((referenceIndex != this.referenceIndex) ||
                 regionStart != 0 ||
-                (regionLength < referenceBases.length)) {
+                (regionLength != newSequenceRecord.getSequenceLength())) {
             setCurrentSequence(referenceIndex);
             referenceBases = referenceSource.getReferenceBases(sequenceRecord, true);
             if (referenceBases == null) {

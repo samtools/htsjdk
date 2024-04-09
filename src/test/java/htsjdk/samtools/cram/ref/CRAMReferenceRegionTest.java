@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.build.CRAMReferenceRegion;
+import htsjdk.samtools.cram.structure.AlignmentContext;
 import htsjdk.samtools.cram.structure.CRAMStructureTestHelper;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
@@ -165,6 +166,39 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
 
         final byte[] fullContigBases = getRepeatingBaseSequence(CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH, reversed);
         Assert.assertEquals(bases, Arrays.copyOfRange(fullContigBases, requestedOffset, requestedOffset + requestedLength));
+    }
+
+    // simulate the state transitions that occur when writing a CRAM file
+    @Test
+    public void testSerialStateTransitions() {
+        // start with an entire reference sequence
+        final CRAMReferenceRegion cramReferenceRegion = getAlternatingReferenceRegion();
+        cramReferenceRegion.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        final long fullRegionFragmentLength = cramReferenceRegion.getRegionLength();
+        Assert.assertEquals(fullRegionFragmentLength, CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH);
+
+        // transition to a shorter reference fragment using fetchReferenceBasesByRegion, then back to the full region
+        final int SHORT_FRAGMENT_LENGTH = 5;
+        Assert.assertTrue(SHORT_FRAGMENT_LENGTH < fullRegionFragmentLength);
+        cramReferenceRegion.fetchReferenceBasesByRegion(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, 0, SHORT_FRAGMENT_LENGTH);
+        Assert.assertEquals(cramReferenceRegion.getRegionLength(), SHORT_FRAGMENT_LENGTH);
+
+        // now transition back to the full sequence
+        cramReferenceRegion.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        Assert.assertEquals(cramReferenceRegion.getRegionLength(), fullRegionFragmentLength);
+
+        // transition to a shorter region fragment length using fetchReferenceBasesByRegion(AlignmentContext), then back to the full region
+        Assert.assertTrue(SHORT_FRAGMENT_LENGTH < fullRegionFragmentLength);
+        cramReferenceRegion.fetchReferenceBasesByRegion(
+                new AlignmentContext(
+                        new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                        1,
+                        SHORT_FRAGMENT_LENGTH));
+        Assert.assertEquals(cramReferenceRegion.getRegionLength(), SHORT_FRAGMENT_LENGTH);
+
+        // now transition back to the full sequence
+        cramReferenceRegion.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        Assert.assertEquals(cramReferenceRegion.getRegionLength(), fullRegionFragmentLength);
     }
 
     @Test
