@@ -9,6 +9,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.util.*;
@@ -27,6 +28,7 @@ import java.util.function.Function;
  * {@link BundleBuilder} classes can be used to construct such bundles directly.
  */
 public class VariantsBundle extends Bundle implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
     private static final Log LOG = Log.getInstance(VariantsBundle.class);
     /**
@@ -35,7 +37,7 @@ public class VariantsBundle extends Bundle implements Serializable {
      * @param vcfPath An {@link IOPath}-derived object that represents a source of variants.
      */
     public VariantsBundle(final IOPath vcfPath) {
-        this(Arrays.asList(
+        this(List.of(
                 new IOPathResource(
                         ValidationUtils.nonNull(vcfPath, "IOPath must not be null"),
                         BundleResourceType.VARIANT_CONTEXTS)));
@@ -48,7 +50,7 @@ public class VariantsBundle extends Bundle implements Serializable {
      * @param indexPath An {@link IOPath}-derived object that represents the companion index for {@code vcfPath}.
      */
     public VariantsBundle(final IOPath vcfPath, final IOPath indexPath) {
-        this(Arrays.asList(
+        this(List.of(
                 new IOPathResource(
                         ValidationUtils.nonNull(vcfPath, "IOPath must not be null"),
                         BundleResourceType.VARIANT_CONTEXTS),
