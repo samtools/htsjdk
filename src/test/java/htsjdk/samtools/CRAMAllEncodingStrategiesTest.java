@@ -25,28 +25,42 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     public Object[][] roundTripTestFiles() {
         return new Object[][] {
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta") },
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                        false, false },
+                // use lenient equality to only test read names, bases and qual scores
+                { new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
+                        new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
+                { new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
+                        new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false }
         };
     }
 
     @Test(dataProvider = "roundTripTestFiles")
-    public final void testRoundTripDefaultEncodingStrategy(final File sourceFile, final File referenceFile) throws IOException {
+    public final void testRoundTripDefaultEncodingStrategy(
+            final File sourceFile,
+            final File referenceFile,
+            final boolean lenientEquality,
+            final boolean emitDetail) throws IOException {
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
         final File tempOutCRAM = File.createTempFile("testRoundTrip", ".cram");
         tempOutCRAM.deleteOnExit();
         CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
-        assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, false);
-        assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
+        assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, lenientEquality, emitDetail);
+        assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile, lenientEquality, emitDetail);
     }
 
     @Test(dataProvider = "roundTripTestFiles")
-    public final void testAllEncodingStrategyCombinations(final File cramSourceFile, final File referenceFile) throws IOException {
+    public final void testAllEncodingStrategyCombinations(
+            final File cramSourceFile,
+            final File referenceFile,
+            final boolean lenientEquality,
+            final boolean emitDetail) throws IOException {
         for (final Tuple<String, CRAMEncodingStrategy> testStrategy : getAllEncodingStrategies()) {
             final File tempOutCRAM = File.createTempFile("allEncodingStrategyCombinations", ".cram");
             tempOutCRAM.deleteOnExit();
             CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy.b, cramSourceFile, tempOutCRAM, referenceFile);
-            assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, false);
-            assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile);
+            assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, lenientEquality, emitDetail);
+            assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile, lenientEquality, emitDetail);
         }
     }
 
@@ -82,6 +96,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             final File sourceFile,
             final File targetCRAMFile,
             final File referenceFile,
+            final boolean lenientEquality,
             final boolean emitDetail) throws IOException {
         try (final SamReader sourceReader = SamReaderFactory.makeDefault()
                 .referenceSequence(referenceFile)
@@ -91,7 +106,13 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             final SAMRecordIterator sourceIterator = sourceReader.iterator();
             final SAMRecordIterator targetIterator = copyReader.getIterator();
             while (sourceIterator.hasNext() && targetIterator.hasNext()) {
-                if (emitDetail) {
+                if (lenientEquality) {
+                    final SAMRecord sourceRec = sourceIterator.next();
+                    final SAMRecord targetRec = targetIterator.next();
+                    Assert.assertEquals(targetRec.getReadName(), sourceRec.getReadName());
+                    Assert.assertEquals(targetRec.getReadBases(), sourceRec.getReadBases());
+                    Assert.assertEquals(targetRec.getBaseQualities(), sourceRec.getBaseQualities());
+                } else if (emitDetail) {
                     final SAMRecord sourceRec = sourceIterator.next();
                     final SAMRecord targetRec = targetIterator.next();
                     if (!sourceRec.equals(targetRec)) {
@@ -108,13 +129,17 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         }
     }
 
-    private void assertRoundtripFidelityWithSamtools(final File sourceCRAM, final File referenceFile) throws IOException {
+    private void assertRoundtripFidelityWithSamtools(
+            final File sourceCRAM,
+            final File referenceFile,
+            final boolean lenientEquality,
+            final boolean emitDetail) throws IOException {
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
             final File samtoolsOutFile = SamtoolsTestUtils.convertToCRAM(
                     sourceCRAM,
                     referenceFile,
                     "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, false);
+            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, lenientEquality, emitDetail);
         }
     }
 
