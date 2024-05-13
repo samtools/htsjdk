@@ -21,18 +21,30 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
     private final CompressorCache compressorCache = new CompressorCache();
 
-    @DataProvider(name="roundTripTestFiles")
-    public Object[][] roundTripTestFiles() {
+    @DataProvider(name="defaultStrategyRoundTripTestFiles")
+    public Object[][] defaultStrategyRoundTripTestFiles() {
         return new Object[][] {
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
                         false, false },
-                // use lenient equality to only test read names, bases and qual scores
+                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                        false, false },
+                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.1-unMapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                        false, false },
+                { new File(TEST_DATA_DIR, "NA12878.unmapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                        false, false },
+                { new File("src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram"),
+                        new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
+                        false, false },
+
+                // these tests use lenient equality to only validate read names, bases and qual scores
                 { new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
                         new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
                 { new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
                         new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
-
                 // files created by rewriting the htsjdk test file src/test/resources/htsjdk/samtools/cram/mitoAlignmentStartTest.cram
                 // using code that replicates the first read (which is aligned to position 1 of the mito contig) either
                 // 10,000 or 20,000 times, to create a file with 2 or 3 containers, respectively, that have reads aligned to
@@ -44,7 +56,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "roundTripTestFiles")
+    @Test(dataProvider = "defaultStrategyRoundTripTestFiles")
     public final void testRoundTripDefaultEncodingStrategy(
             final File sourceFile,
             final File referenceFile,
@@ -58,7 +70,15 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile, lenientEquality, emitDetail);
     }
 
-    @Test(dataProvider = "roundTripTestFiles")
+    @DataProvider(name="encodingStrategiesTestFiles")
+    public Object[][] encodingStrategiesTestFiles() {
+        return new Object[][] {
+                { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"), false, false },
+        };
+    }
+
+    @Test(dataProvider = "encodingStrategiesTestFiles")
     public final void testAllEncodingStrategyCombinations(
             final File cramSourceFile,
             final File referenceFile,
