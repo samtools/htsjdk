@@ -31,6 +31,15 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 { new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
                         new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
                 { new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
+                        new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
+
+                // files created by rewriting the htsjdk test file src/test/resources/htsjdk/samtools/cram/mitoAlignmentStartTest.cram
+                // using code that replicates the first read (which is aligned to position 1 of the mito contig) either
+                // 10,000 or 20,000 times, to create a file with 2 or 3 containers, respectively, that have reads aligned to
+                // position 1 of the contig
+                { new File(TEST_DATA_DIR, "mitoAlignmentStartTest_2_containers_aligned_to_pos_1.cram"),
+                        new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
+                { new File(TEST_DATA_DIR, "mitoAlignmentStartTest_3_containers_aligned_to_pos_1.cram"),
                         new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false }
         };
     }
