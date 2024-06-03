@@ -10,12 +10,23 @@ import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.SamtoolsTestUtils;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.*;
 
+/**
+ * Test roundtripping files through the GATK writer using both the default HTSJDK encoding strategy, plus a variety
+ * of alternative encoding strategies, in order to stress test the writer implementation. Compares the results with
+ * the original file, and then roundtrips the newly written CRAM through the samtools writer, validating that samtools
+ * can consume the HTSJDK-written files with the expected level of roundtrip fidelity (CRAMs don't always roundtrip
+ * with complete bit-level fidelity, i.e, samtools will resurrect NM/MD tags whether they were present in the original
+ * file or not unless they are specifically excluded, etc.). So in some case, you can't use full SAMRecord comparisons,
+ * in which case we fall back to lenient equality and restrict the comparison to read names, bases, alignment start/stop,
+ * and quality scores.
+ */
 public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
@@ -24,12 +35,15 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     @DataProvider(name="defaultStrategyRoundTripTestFiles")
     public Object[][] defaultStrategyRoundTripTestFiles() {
         return new Object[][] {
+                // a test file with artificially small slices and containers to force multiple slices and containers
                 { new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
                         false, false },
+                // the same file without the artificially small container constraints
                 { new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram"),
                         new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
                         false, false },
+                // a test file with only unmapped reads
                 { new File(TEST_DATA_DIR, "NA12878.unmapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
                         false, false },
@@ -37,9 +51,13 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                 { new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram"),
                         new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
                         true, false },
-                // these tests use lenient equality to only validate read names, bases and qual scores
+
+                // these tests use lenient equality to only validate read names, bases, alignment start/stop, and qual scores
+
+                // a user-contributed file with reads aligned only to the mito contig that has been rewritten (long ago) with GATK
                 { new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
                         new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
+                // the original user-contributed file with reads aligned only to the mito contig
                 { new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
                         new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"), true, false },
                 // files created by rewriting the htsjdk test file src/test/resources/htsjdk/samtools/cram/mitoAlignmentStartTest.cram
@@ -59,11 +77,13 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             final File referenceFile,
             final boolean lenientEquality,
             final boolean emitDetail) throws IOException {
+        // test the default encoding strategy
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
         final File tempOutCRAM = File.createTempFile("testRoundTrip", ".cram");
         tempOutCRAM.deleteOnExit();
         CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
         assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, lenientEquality, emitDetail);
+        // test interop with samtools using this encoding
         assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile, lenientEquality, emitDetail);
     }
 
@@ -86,6 +106,7 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             tempOutCRAM.deleteOnExit();
             CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy.b, cramSourceFile, tempOutCRAM, referenceFile);
             assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, lenientEquality, emitDetail);
+            // test interop with samtools using this encoding
             assertRoundtripFidelityWithSamtools(tempOutCRAM, referenceFile, lenientEquality, emitDetail);
         }
     }
@@ -136,6 +157,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                     final SAMRecord sourceRec = sourceIterator.next();
                     final SAMRecord targetRec = targetIterator.next();
                     Assert.assertEquals(targetRec.getReadName(), sourceRec.getReadName());
+                    Assert.assertEquals(targetRec.getAlignmentStart(), sourceRec.getAlignmentStart());
+                    Assert.assertEquals(targetRec.getAlignmentEnd(), sourceRec.getAlignmentEnd());
                     Assert.assertEquals(targetRec.getReadBases(), sourceRec.getReadBases());
                     Assert.assertEquals(targetRec.getBaseQualities(), sourceRec.getBaseQualities());
                 } else if (emitDetail) {
@@ -166,6 +189,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
                     referenceFile,
                     "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
             assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, lenientEquality, emitDetail);
+        } else {
+            throw new SkipException("samtools is not installed, skipping test");
         }
     }
 

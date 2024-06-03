@@ -168,7 +168,11 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
         Assert.assertEquals(bases, Arrays.copyOfRange(fullContigBases, requestedOffset, requestedOffset + requestedLength));
     }
 
-    // simulate the state transitions that occur when writing a CRAM file
+    // Simulate the state transitions that occur when writing a CRAM file; specifically, use transitions that mirror
+    // the ones that occur when writing a CRAM with the conditions that affect (and that fail without the fix to)
+    // https://github.com/broadinstitute/gatk/issues/8768, i.e., a container with one or more containers with reads
+    // aligned to position 1 of a given contig, followed by one or more containers with reads aligned past position 1
+    // of the same contig.
     @Test
     public void testSerialStateTransitions() {
         // start with an entire reference sequence
@@ -183,8 +187,9 @@ public class CRAMReferenceRegionTest extends HtsjdkTest {
         cramReferenceRegion.fetchReferenceBasesByRegion(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, 0, SHORT_FRAGMENT_LENGTH);
         Assert.assertEquals(cramReferenceRegion.getRegionLength(), SHORT_FRAGMENT_LENGTH);
 
-        // now transition back to the full sequence
+        // now transition back to the full sequence; this is where the bug previously would have occurred
         cramReferenceRegion.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        // this assert would fail without the fix
         Assert.assertEquals(cramReferenceRegion.getRegionLength(), fullRegionFragmentLength);
 
         // transition to a shorter region fragment length using fetchReferenceBasesByRegion(AlignmentContext), then back to the full region
