@@ -39,6 +39,8 @@ import htsjdk.utils.ValidationUtils;
  * {@link #fetchReferenceBases(int)} or {@link #fetchReferenceBasesByRegion(int, int, int)}. It caches the bases
  * from the previous request, along with metadata about the (0-based) start offset, and length of the
  * cached bases.
+ *
+ * NOTE: this class is not thread-safe/safe for concurrent access across threads.
  */
 public class CRAMReferenceRegion {
     private static final Log log = Log.getInstance(CRAMReferenceRegion.class);
@@ -113,17 +115,18 @@ public class CRAMReferenceRegion {
 
         // Re-resolve the reference bases if we don't have a current region or if the region we have
         // doesn't span the *entire* contig requested.
+        final SAMSequenceRecord newSequenceRecord = getSAMSequenceRecord(referenceIndex);
         if ((referenceIndex != this.referenceIndex) ||
                 regionStart != 0 ||
-                (regionLength < referenceBases.length)) {
+                (regionLength != newSequenceRecord.getSequenceLength())) {
             setCurrentSequence(referenceIndex);
-            referenceBases = referenceSource.getReferenceBases(sequenceRecord, true);
+            referenceBases = referenceSource.getReferenceBases(newSequenceRecord, true);
             if (referenceBases == null) {
                 throw new IllegalArgumentException(
-                        String.format("A reference must be supplied (reference sequence %s not found).", sequenceRecord));
+                        String.format("A reference must be supplied (reference sequence %s not found).", newSequenceRecord));
             }
             regionStart = 0;
-            regionLength = sequenceRecord.getSequenceLength();
+            regionLength = newSequenceRecord.getSequenceLength();
         }
     }
 
