@@ -123,7 +123,7 @@ public class CRAMReferenceRegion {
             referenceBases = referenceSource.getReferenceBases(newSequenceRecord, true);
             if (referenceBases == null) {
                 throw new IllegalArgumentException(
-                        String.format("A reference must be supplied (reference sequence %s not found).", sequenceRecord));
+                        String.format("A reference must be supplied (reference sequence %s not found).", newSequenceRecord));
             }
             regionStart = 0;
             regionLength = newSequenceRecord.getSequenceLength();
