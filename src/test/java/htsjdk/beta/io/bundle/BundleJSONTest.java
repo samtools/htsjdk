@@ -39,7 +39,7 @@ public class BundleJSONTest extends HtsjdkTest {
                         "primary":"ALIGNED_READS",
                         "ALIGNED_READS":{"path":"%s","format":"BAM"}
                     }""".formatted(getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(BundleResourceTestData.readsWithFormat)
                 },
                 {
@@ -50,7 +50,7 @@ public class BundleJSONTest extends HtsjdkTest {
                         "primary":"ALIGNED_READS",
                         "ALIGNED_READS":{"path":"%s"}
                     }""".formatted(getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(BundleResourceTestData.readsNoFormat)
                 },
                 {
@@ -64,7 +64,7 @@ public class BundleJSONTest extends HtsjdkTest {
                     }""".formatted(
                             getURIStringFromIOPath(BundleResourceTestData.indexWithFormat),
                             getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(
                             BundleResourceTestData.readsWithFormat,
                             BundleResourceTestData.indexWithFormat)
@@ -80,7 +80,7 @@ public class BundleJSONTest extends HtsjdkTest {
                     }""".formatted(
                                 getURIStringFromIOPath(BundleResourceTestData.indexWithFormat),
                                 getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(
                             BundleResourceTestData.readsNoFormat,
                             BundleResourceTestData.indexWithFormat)
@@ -96,7 +96,7 @@ public class BundleJSONTest extends HtsjdkTest {
                     }""".formatted(
                         getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
                         getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(
                             BundleResourceTestData.readsWithFormat,
                             BundleResourceTestData.indexNoFormat)
@@ -112,7 +112,7 @@ public class BundleJSONTest extends HtsjdkTest {
                     }""".formatted(
                             getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
                             getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(
                             BundleResourceTestData.readsNoFormat,
                             BundleResourceTestData.indexNoFormat)
@@ -145,7 +145,7 @@ public class BundleJSONTest extends HtsjdkTest {
                             getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
                             getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
                             getURIStringFromIOPath(CUSTOM_RESOURCE)),
-                    BundleResourceType.ALIGNED_READS,
+                    BundleResourceType.CT_ALIGNED_READS,
                     Arrays.asList(
                             BundleResourceTestData.readsNoFormat,
                             BundleResourceTestData.indexNoFormat,
@@ -368,7 +368,7 @@ public class BundleJSONTest extends HtsjdkTest {
 
         // create a bundle collection from the JSON, make sure it has a valid Bundle
         final Bundle bundleFromJSON = BundleJSON.toBundle(jsonCollectionWithOneBundle);
-        Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), BundleResourceType.ALIGNED_READS);
+        Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), BundleResourceType.CT_ALIGNED_READS);
         Assert.assertEquals(bundleFromJSON.getResources().size(), 1);
         Assert.assertEquals(bundleFromJSON.getPrimaryResource(), BundleResourceTestData.readsWithFormat);
     }
@@ -393,7 +393,7 @@ public class BundleJSONTest extends HtsjdkTest {
                             "primary":"ALIGNED_READS",
                             "ALIGNED_READS":{"path":"%s","format":"BAM"}
                         }]""".formatted(getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
-                        Arrays.asList(new Bundle( BundleResourceType.ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
+                        Arrays.asList(new Bundle( BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
                 },
                 {
                         // 2 bundles
@@ -413,8 +413,8 @@ public class BundleJSONTest extends HtsjdkTest {
                                 getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
                                 getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
                         Arrays.asList(
-                                new Bundle(BundleResourceType.ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)),
-                                new Bundle(BundleResourceType.ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsNoFormat)))
+                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)),
+                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsNoFormat)))
                 },
                 {
                         // 3 bundles
@@ -441,9 +441,9 @@ public class BundleJSONTest extends HtsjdkTest {
                                 getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
                                 getURIStringFromIOPath(BundleResourceTestData.readsWithFormat)),
                         Arrays.asList(
-                                new Bundle(BundleResourceType.ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)),
-                                new Bundle(BundleResourceType.ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsNoFormat)),
-                                new Bundle(BundleResourceType.ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
+                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)),
+                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsNoFormat)),
+                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
                 }
         };
     }

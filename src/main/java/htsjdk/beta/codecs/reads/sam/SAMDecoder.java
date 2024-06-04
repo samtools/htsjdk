@@ -11,7 +11,7 @@ import htsjdk.utils.ValidationUtils;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_SAM} decoders.
+ * Base class for {@link BundleResourceType#FMT_READS_SAM} decoders.
  */
 @InternalAPI
 public abstract class SAMDecoder implements ReadsDecoder {
@@ -21,7 +21,7 @@ public abstract class SAMDecoder implements ReadsDecoder {
 
     /**
      * Create a SAM decoder for the given input bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS}, and the resource must be an
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS}, and the resource must be an
      * appropriate format and version for this encoder (to find an encoder for a bundle, see
      * {@link htsjdk.beta.plugin.registry.ReadsResolver}.
      *
@@ -33,7 +33,7 @@ public abstract class SAMDecoder implements ReadsDecoder {
         ValidationUtils.nonNull(inputBundle,"inputBundle");
         ValidationUtils.nonNull(readsDecoderOptions, "readsDecoderOptions");
         this.inputBundle = inputBundle;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
         this.readsDecoderOptions = readsDecoderOptions;
     }
 

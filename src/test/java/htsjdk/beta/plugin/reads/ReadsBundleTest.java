@@ -43,11 +43,17 @@ public class ReadsBundleTest extends HtsjdkTest {
     public void testNoReadsInSerializedBundle() {
         final String vcfJSON = """
             {
-                "schemaVersion":"0.1.0",
+                "schemaVersion":"%s",
                 "schemaName":"htsbundle",
-                "VARIANT_CONTEXTS":{"path":"my.vcf","format":"VCF"},
-                "primary":"VARIANT_CONTEXTS"
-            }""";
+                "%s":{"path":"my.vcf","format":"%s"},
+                "primary":"%s"
+            }"""
+                .formatted(
+                        BundleJSON.JSON_SCHEMA_VERSION,
+                        BundleResourceType.CT_VARIANT_CONTEXTS,
+                        BundleResourceType.FMT_VARIANTS_VCF,
+                        BundleResourceType.CT_VARIANT_CONTEXTS
+                );
         try {
             ReadsBundle.getReadsBundleFromString(vcfJSON);
         } catch (final IllegalArgumentException e) {
@@ -76,29 +82,36 @@ public class ReadsBundleTest extends HtsjdkTest {
                     // reads only, without format included
                     """
                     {
-                        "schemaVersion":"0.1.0",
+                        "schemaVersion":"%s",
                         "schemaName":"htsbundle",
-                        "ALIGNED_READS":{"path":"%s"},
-                        "primary":"ALIGNED_READS"
-                    }""".formatted(BAM_FILE),
+                        "%s":{"path":"%s"},
+                        "primary":"%s"
+                    }""".formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_ALIGNED_READS, BAM_FILE,
+                            BundleResourceType.CT_ALIGNED_READS
+                    ),
                     new ReadsBundle<IOPath>(new HtsPath(BAM_FILE))
                 },
                 {
                     // reads only, with format included
                     """
                     {
-                        "schemaVersion":"0.1.0",
+                        "schemaVersion":"%s",
                         "schemaName":"htsbundle",
-                        "ALIGNED_READS":{"path":"%s", "format":"BAM"},
-                        "primary":"ALIGNED_READS"
-                    }""".formatted(BAM_FILE),
+                        "%s":{"path":"%s", "format":"%s"},
+                        "primary":"%s"
+                    }""".formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_ALIGNED_READS, BAM_FILE, BundleResourceType.FMT_READS_BAM,
+                            BundleResourceType.CT_ALIGNED_READS),
                     // ReadsBundle doesn't automatically infer format, so create one manually
                     new ReadsBundle(
                             new BundleBuilder()
                                     .addPrimary(
                                             new IOPathResource(new HtsPath(BAM_FILE),
-                                            BundleResourceType.ALIGNED_READS,
-                                            BundleResourceType.READS_BAM)
+                                            BundleResourceType.CT_ALIGNED_READS,
+                                            BundleResourceType.FMT_READS_BAM)
                                     ).build().getResources()
                     )
                 },
@@ -106,23 +119,28 @@ public class ReadsBundleTest extends HtsjdkTest {
                     // reads with index, with format included
                     """
                     {
-                        "schemaVersion":"0.1.0",
+                        "schemaVersion":"%s",
                         "schemaName":"htsbundle",
-                        "ALIGNED_READS":{"path":"%s", "format":"BAM"},
-                        "READS_INDEX":{"path":"%s", "format":"BAI"},
-                        "primary":"ALIGNED_READS"
-                    }""".formatted(BAM_FILE, INDEX_FILE),
+                        "%s":{"path":"%s", "format":"%s"},
+                        "%s":{"path":"%s", "format":"%s"},
+                        "primary":"%s"
+                    }""".formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_ALIGNED_READS, BAM_FILE, BundleResourceType.FMT_READS_BAM,
+                            BundleResourceType.CT_READS_INDEX, INDEX_FILE, BundleResourceType.FMT_READS_INDEX_BAI,
+                            BundleResourceType.CT_ALIGNED_READS
+                    ),
                     // ReadsBundle doesn't automatically infer format, so create one manually
                     new ReadsBundle(
                             new BundleBuilder()
                                     .addPrimary(
                                             new IOPathResource(new HtsPath(BAM_FILE),
-                                            BundleResourceType.ALIGNED_READS,
-                                            BundleResourceType.READS_BAM)
+                                            BundleResourceType.CT_ALIGNED_READS,
+                                            BundleResourceType.FMT_READS_BAM)
                                     ).addSecondary(
                                             new IOPathResource(new HtsPath(INDEX_FILE),
-                                            BundleResourceType.READS_INDEX,
-                                            BundleResourceType.READS_INDEX_BAI)
+                                            BundleResourceType.CT_READS_INDEX,
+                                            BundleResourceType.FMT_READS_INDEX_BAI)
                                     ).build().getResources()
                     )
                 },

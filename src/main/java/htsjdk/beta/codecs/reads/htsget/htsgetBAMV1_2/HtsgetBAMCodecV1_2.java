@@ -14,14 +14,14 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import java.util.Optional;
 
 /**
- * Version 1.2 of {@link BundleResourceType#READS_HTSGET_BAM} codec.
+ * Version 1.2 of {@link BundleResourceType#FMT_READS_HTSGET_BAM} codec.
  */
 public class HtsgetBAMCodecV1_2 extends HtsgetBAMCodec {
 
     @Override
     public HtsgetBAMDecoder getDecoder(final Bundle inputBundle,
                                        final ReadsDecoderOptions decodeOptions) {
-        final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
+        final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS);
         final Optional<IOPath> inputPath = readsResource.getIOPath();
         if (!inputPath.isPresent()) {
             throw new IllegalArgumentException("The reads source must be a IOPath");

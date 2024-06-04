@@ -28,7 +28,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
      * Create a new HaploidReferenceResolver.
      */
     public HaploidReferenceResolver() {
-        super(BundleResourceType.HAPLOID_REFERENCE);
+        super(BundleResourceType.CT_HAPLOID_REFERENCE);
     }
 
     /**
@@ -67,7 +67,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
         ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
 
         final Bundle referenceBundle = new BundleBuilder().addPrimary(
-                new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE)).build();
+                new IOPathResource(inputPath, BundleResourceType.CT_HAPLOID_REFERENCE)).build();
 
         return getHaploidReferenceDecoder(referenceBundle, HaploidReferenceDecoderOptions);
     }

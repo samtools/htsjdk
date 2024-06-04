@@ -13,18 +13,18 @@ public class BundleResourceTestData {
 
     public static final IOPathResource readsWithFormat = new IOPathResource(
             READS_FILE,
-            BundleResourceType.ALIGNED_READS,
-            BundleResourceType.READS_BAM);
+            BundleResourceType.CT_ALIGNED_READS,
+            BundleResourceType.FMT_READS_BAM);
     public static final IOPathResource readsNoFormat = new IOPathResource(
             READS_FILE,
-            BundleResourceType.ALIGNED_READS);
+            BundleResourceType.CT_ALIGNED_READS);
     public static final IOPathResource indexWithFormat = new IOPathResource(
             READS_INDEX,
-            BundleResourceType.READS_INDEX,
-            BundleResourceType.READS_INDEX_BAI);
+            BundleResourceType.CT_READS_INDEX,
+            BundleResourceType.FMT_READS_INDEX_BAI);
     public static final IOPathResource indexNoFormat = new IOPathResource(
             READS_INDEX,
-            BundleResourceType.READS_INDEX);
+            BundleResourceType.CT_READS_INDEX);
 
     public final static class CustomHtsPath extends HtsPath {
         public CustomHtsPath(final String pathString) {

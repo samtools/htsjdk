@@ -10,7 +10,7 @@ import htsjdk.utils.ValidationUtils;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_BAM} encoders.
+ * Base class for {@link BundleResourceType#FMT_READS_BAM} encoders.
  */
 public abstract class BAMEncoder implements ReadsEncoder {
     private final Bundle outputBundle;
@@ -21,7 +21,7 @@ public abstract class BAMEncoder implements ReadsEncoder {
      * InternalAPI
      *
      * Create a BAM encoder for the given output bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
      * NOTE: callers that provide an output stream resource should provide a buffered output stream
@@ -36,7 +36,7 @@ public abstract class BAMEncoder implements ReadsEncoder {
 
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
+        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override

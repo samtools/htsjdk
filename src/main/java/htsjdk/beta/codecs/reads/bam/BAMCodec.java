@@ -16,7 +16,7 @@ import java.util.Set;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_BAM} codecs.
+ * Base class for {@link BundleResourceType#FMT_READS_BAM} codecs.
  */
 @InternalAPI
 public abstract class BAMCodec implements ReadsCodec {
