@@ -43,7 +43,7 @@ public class ReadsBundleTest extends HtsjdkTest {
     public void testNoReadsInSerializedBundle() {
         final String vcfJSON = """
             {
-                "schemaVersion":"0.1.0",
+                "schemaVersion":"%s",
                 "schemaName":"htsbundle",
                 "%s":{"path":"my.vcf","format":"%s"},
                 "primary":"%s"
