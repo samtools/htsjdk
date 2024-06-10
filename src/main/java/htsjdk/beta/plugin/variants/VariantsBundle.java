@@ -18,8 +18,8 @@ import java.util.function.Function;
 /**
  * A {@link Bundle} for variants and variants-related resources that are backed by on disk files. A {@link
  * htsjdk.beta.plugin.variants.VariantsBundle} has a primary resource with content type {@link
- * BundleResourceType#VARIANT_CONTEXTS}; and an optional index resource. A VariantsBundle can also contain
- * additional resources.
+ * BundleResourceType#PRIMARY_CT_VARIANT_CONTEXTS}; and an optional index resource. A VariantsBundle can also
+ * contain additional resources.
  *
  * Note that this class is merely a convenience class for the case where the variants are backed by files on disk.
  * A bundle that contains variants and related resources can be created manually using the {@link Bundle} class.
@@ -37,10 +37,7 @@ public class VariantsBundle extends Bundle implements Serializable {
      * @param vcfPath An {@link IOPath}-derived object that represents a source of variants.
      */
     public VariantsBundle(final IOPath vcfPath) {
-        this(List.of(
-                new IOPathResource(
-                        ValidationUtils.nonNull(vcfPath, "IOPath must not be null"),
-                        BundleResourceType.VARIANT_CONTEXTS)));
+        this(List.of(toInputResource(BundleResourceType.CT_VARIANT_CONTEXTS, vcfPath)));
     }
 
     /**
@@ -51,45 +48,43 @@ public class VariantsBundle extends Bundle implements Serializable {
      */
     public VariantsBundle(final IOPath vcfPath, final IOPath indexPath) {
         this(List.of(
-                new IOPathResource(
-                        ValidationUtils.nonNull(vcfPath, "IOPath must not be null"),
-                        BundleResourceType.VARIANT_CONTEXTS),
-                new IOPathResource(ValidationUtils.nonNull(
-                        indexPath, "IOPath must not be null"),
-                        BundleResourceType.VARIANTS_INDEX)));
+                toInputResource(BundleResourceType.CT_VARIANT_CONTEXTS, vcfPath),
+                toInputResource(BundleResourceType.CT_VARIANTS_INDEX, indexPath)));
     }
 
     /**
      * Create a {@link htsjdk.beta.plugin.variants.VariantsBundle} using the resources in an existing bundle. A
-     * resource with content type {@link BundleResourceType#VARIANTS_VCF} must be present in the resources, or
-     * this constructor will throw.
+     * resource with content type {@link BundleResourceType#CT_VARIANT_CONTEXTS} must be present in the
+     * resources, or this constructor will throw.
      *
      * @param resources collection of {@link BundleResource}. the collection must include a resource with
-     *                 content type {@link BundleResourceType#VARIANTS_VCF}.
-     * @throws IllegalArgumentException if no resource with content type {@link BundleResourceType#VARIANTS_VCF} is
-     * included in the input {@link BundleResource} collection
+     *                 content type {@link BundleResourceType#CT_VARIANT_CONTEXTS}.
+     * @throws IllegalArgumentException if no resource with content type
+     * {@link BundleResourceType#CT_VARIANT_CONTEXTS} is included in the input {@link BundleResource}
+     * collection.
      */
     public VariantsBundle(final Collection<BundleResource> resources) {
-        super(BundleResourceType.VARIANT_CONTEXTS, resources);
+        super(BundleResourceType.CT_VARIANT_CONTEXTS, resources);
     }
 
     /**
-     * return the {@link BundleResourceType#VARIANTS_VCF} {@link BundleResource} for this {@link htsjdk.beta.plugin.variants.VariantsBundle}
-     *
-     * @return the {@link BundleResourceType#VARIANTS_VCF} {@link BundleResource} for this {@link htsjdk.beta.plugin.variants.VariantsBundle}
+     * @return the {@link BundleResourceType#CT_VARIANT_CONTEXTS} {@link BundleResource} for this
+     * {@link htsjdk.beta.plugin.variants.VariantsBundle}
      */
     public BundleResource getVariants() {
-        return getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
+        return getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS);
     }
 
     /**
-     * Get the optional {@link BundleResourceType#VARIANTS_INDEX} resource for this {@link htsjdk.beta.plugin.variants.VariantsBundle}.
+     * Get the optional {@link BundleResourceType#CT_VARIANTS_INDEX} resource for this
+     * {@link htsjdk.beta.plugin.variants.VariantsBundle}.
      *
-     * @return the optional {@link BundleResourceType#VARIANTS_INDEX} resrouce for this {@link htsjdk.beta.plugin.variants.VariantsBundle},
-     * or Optional.empty() if no index resource is present in the bundle.
+     * @return the optional {@link BundleResourceType#CT_VARIANTS_INDEX} resource for this
+     * {@link htsjdk.beta.plugin.variants.VariantsBundle}, or Optional.empty() if no index resource is present in
+     * the bundle.
      */
     public Optional<BundleResource> getIndex() {
-        return get(BundleResourceType.VARIANTS_INDEX);
+        return get(BundleResourceType.CT_VARIANTS_INDEX);
     }
 
     /**
@@ -210,10 +205,10 @@ public class VariantsBundle extends Bundle implements Serializable {
         if (extension.isPresent()) {
             final String ext = extension.get();
             if (ext.equals(FileExtensions.VCF)) {
-                return Optional.of(new Tuple<>(BundleResourceType.VARIANT_CONTEXTS, "VCF"));
+                return Optional.of(new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
             } else if (ext.equals(FileExtensions.COMPRESSED_VCF)) {
-                return Optional.of(new Tuple<>(BundleResourceType.VARIANT_CONTEXTSS, "VCF"));
-            } //TODO...finish this
+                return Optional.of(new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
+            }
         }
         return Optional.empty();
     }

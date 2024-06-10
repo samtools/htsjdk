@@ -1,13 +1,10 @@
 package htsjdk.beta.plugin.variants;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
 import htsjdk.beta.io.bundle.*;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -48,12 +45,17 @@ public class VariantsBundleTest extends HtsjdkTest {
     public void testNoVCFInSerializedBundle() {
         final String vcfJSON = """
                 {
-                    "schemaVersion":"0.1.0",
+                    "schemaVersion":"%s",
                     "schemaName":"htsbundle",
-                    "ALIGNED_READS":{"path":"my.cram","format":"READS_CRAM"},
-                    "primary":"ALIGNED_READS"
+                    "%s":{"path":"my.cram","format":"%s"},
+                    "primary":"%s"
                 }
-                """.formatted();
+                """.formatted(
+                    BundleJSON.JSON_SCHEMA_VERSION,
+                    BundleResourceType.CT_ALIGNED_READS,
+                    BundleResourceType.FMT_READS_CRAM,
+                    BundleResourceType.CT_ALIGNED_READS
+                );
         try {
             VariantsBundle.getVariantsBundleFromString(vcfJSON);
         } catch (final IllegalArgumentException e) {
@@ -80,56 +82,66 @@ public class VariantsBundleTest extends HtsjdkTest {
                         """
                                 {
                                     "schemaName":"htsbundle",
-                                    "schemaVersion":"0.1.0",
-                                    "VARIANT_CONTEXTS":{"path":"%s"},
-                                    "primary":"VARIANT_CONTEXTS"
+                                    "schemaVersion":"%s",
+                                    "%s":{"path":"%s"},
+                                    "primary":"%s"
                                 }
-                                """.formatted(VCF_FILE),
+                                """.formatted(
+                                        BundleJSON.JSON_SCHEMA_VERSION,
+                                        BundleResourceType.CT_VARIANT_CONTEXTS,
+                                        VCF_FILE,
+                                        BundleResourceType.CT_VARIANT_CONTEXTS),
                         new VariantsBundle(new HtsPath(VCF_FILE))
                 },
                 {
                         // vcf only, with format included
                         """
                                 {
-                                    "schemaVersion":"0.1.0",
+                                    "schemaVersion":"%s",
                                     "schemaName":"htsbundle",
-                                    "VARIANT_CONTEXTS":{"path":"%s","format":"VCF"},
-                                    "primary":"VARIANT_CONTEXTS"
+                                    "%s":{"path":"%s","format":"%s"},
+                                    "primary":"%s"
                                 }
-                                """.formatted(VCF_FILE),
+                                """.formatted(
+                                    BundleJSON.JSON_SCHEMA_VERSION,
+                                    BundleResourceType.CT_VARIANT_CONTEXTS, VCF_FILE, BundleResourceType.FMT_VARIANTS_VCF,
+                                    BundleResourceType.CT_VARIANT_CONTEXTS),
                         // VariantsBundle doesn't automatically infer format, so create one manually
                         new VariantsBundle(
                                 new BundleBuilder().addPrimary(
                                                 new IOPathResource(
                                                         new HtsPath(VCF_FILE),
-                                                        BundleResourceType.VARIANT_CONTEXTS,
-                                                        BundleResourceType.VARIANTS_VCF))
+                                                        BundleResourceType.CT_VARIANT_CONTEXTS,
+                                                        BundleResourceType.FMT_VARIANTS_VCF))
                                         .build().getResources())
                 },
                 {
                         // vcf with an index, with format included
                         """
                                 {
-                                    "schemaVersion":"0.1.0",
+                                    "schemaVersion":"%s",
                                     "schemaName":"htsbundle",
-                                    "VARIANT_CONTEXTS":{"path":"%s","format":"VCF"},
-                                    "VARIANTS_INDEX":{"path":"%s","format":"IDX"},
-                                    "primary":"VARIANT_CONTEXTS"
+                                    "%s":{"path":"%s","format":"%s"},
+                                    "%s":{"path":"%s"},
+                                    "primary":"%s"
                                 }
-                                """.formatted(VCF_FILE, VCF_INDEX_FILE),
+                                """.formatted(
+                                    BundleJSON.JSON_SCHEMA_VERSION,
+                                    BundleResourceType.CT_VARIANT_CONTEXTS, VCF_FILE, BundleResourceType.FMT_VARIANTS_VCF,
+                                    BundleResourceType.CT_VARIANTS_INDEX, VCF_INDEX_FILE,
+                                    BundleResourceType.CT_VARIANT_CONTEXTS),
                         // VariantsBundle doesn't automatically infer format, so create one manually
                         new VariantsBundle(
                                 new BundleBuilder()
                                         .addPrimary(
                                                 new IOPathResource(
                                                         new HtsPath(VCF_FILE),
-                                                        BundleResourceType.VARIANT_CONTEXTS,
-                                                        BundleResourceType.VARIANTS_VCF))
+                                                        BundleResourceType.CT_VARIANT_CONTEXTS,
+                                                        BundleResourceType.FMT_VARIANTS_VCF))
                                         .addSecondary(
                                                 new IOPathResource(
                                                         new HtsPath(VCF_INDEX_FILE),
-                                                        BundleResourceType.VARIANTS_INDEX,
-                                                        "IDX"))
+                                                        BundleResourceType.CT_VARIANTS_INDEX))
                                         .build().getResources())
                 },
         };
@@ -151,7 +163,7 @@ public class VariantsBundleTest extends HtsjdkTest {
         IOPathUtils.writeStringToPath(jsonFilePath, jsonString);
         final VariantsBundle bundleFromPath = VariantsBundle.getVariantsBundleFromPath(jsonFilePath);
 
-        Assert.assertTrue(BundleTest.equalsIgnoreOrder(bundleFromPath, expectedVariantsBundle));
+        Assert.assertTrue(Bundle.equalsIgnoreOrder(bundleFromPath, expectedVariantsBundle));
         Assert.assertTrue(bundleFromPath.getVariants().getIOPath().isPresent());
         Assert.assertEquals(bundleFromPath.getVariants().getIOPath().get(), expectedVariantsBundle.getVariants().getIOPath().get());
     }
