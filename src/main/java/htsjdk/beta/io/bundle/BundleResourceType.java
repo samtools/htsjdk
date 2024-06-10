@@ -5,8 +5,7 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 
 /**
- * Constants for specifying tandard primary content types, secondary content types, and (optional) formats
- * for resources contained in a {@link Bundle}.
+ * Constants for specifying standard content types and formats for resources contained in a {@link Bundle}.
  *
  * Bundles generally contain one primary resource, plus one or more secondary resources such as an index or md5 file.
  * Each resource has an associated content type, and optionally a format. The bundle itself has a primary content
@@ -17,8 +16,8 @@ import htsjdk.beta.plugin.variants.VariantsFormats;
  * correspond to one of the enum values in {@link htsjdk.beta.plugin.HtsContentType}, since each of these has a
  * corresponding {@link htsjdk.beta.plugin.HtsCodec} that handles that type of resource, such as reads or variants.
  *
- * Secondary resources can also be any string, but the standard secondary content types are defined here, i.e., for
- * primary content type "READS", a secondary content type might be "READS_INDEX".
+ * Secondary resource content types can also be any string, but the standard secondary content types are defined
+ * here, i.e., for primary content type "READS", a secondary content type might be "READS_INDEX".
  *
  * Finally, each resource in a bundle can have an optional format, which is a string that corresponds to the format
  * for that resource. For example, a primary content type of "READS" might have a format of "BAM".
