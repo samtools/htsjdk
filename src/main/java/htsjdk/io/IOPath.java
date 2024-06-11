@@ -77,6 +77,14 @@ public interface IOPath {
         return getURI().getScheme();
     }
 
+//    default String resolveSibling(final String sibling) {
+//        return getSiblingPath(sibling).toString();
+//    }
+//
+//    default String getSiblingPath(final String sibling) {
+//        return toPath().resolveSibling(sibling).toString();
+//    }
+
     /**
      * @return an {@link Optional} containing the extension of the last component of the hierarchical part of the
      * scheme-specific part of the URI, if any, including the ".", or Optional.empty() if the hierarchical name ends
