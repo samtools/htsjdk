@@ -31,7 +31,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * Create a ReadsResolver.
      */
     public ReadsResolver() {
-        super(BundleResourceType.ALIGNED_READS);
+        super(BundleResourceType.CT_ALIGNED_READS);
     }
 
     /**

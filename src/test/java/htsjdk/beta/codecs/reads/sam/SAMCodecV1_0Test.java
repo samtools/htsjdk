@@ -58,17 +58,17 @@ public class SAMCodecV1_0Test extends HtsjdkTest {
 
         return new Object[][] {
                 {
-                        new Bundle(BundleResourceType.ALIGNED_READS, Collections.singletonList(
-                                new IOPathResource(inputPath, BundleResourceType.ALIGNED_READS)
+                        new Bundle(BundleResourceType.CT_ALIGNED_READS, Collections.singletonList(
+                                new IOPathResource(inputPath, BundleResourceType.CT_ALIGNED_READS)
                         )),
                         outputPath
                 },
                 {
-                        new Bundle(BundleResourceType.ALIGNED_READS, Collections.singletonList(
+                        new Bundle(BundleResourceType.CT_ALIGNED_READS, Collections.singletonList(
                                 new InputStreamResource(
                                         inputPath.getInputStream(),
                                         "test sam stream",
-                                        BundleResourceType.ALIGNED_READS)
+                                        BundleResourceType.CT_ALIGNED_READS)
                         )),
                         outputPath
                 },
@@ -88,7 +88,7 @@ public class SAMCodecV1_0Test extends HtsjdkTest {
             Assert.assertNotNull(samDecoder);
             Assert.assertEquals(samDecoder.getFileFormat(), ReadsFormats.SAM);
             Assert.assertTrue(samDecoder.getDisplayName().contains(
-                    inputBundle.get(BundleResourceType.ALIGNED_READS).get().getDisplayName()));
+                    inputBundle.get(BundleResourceType.CT_ALIGNED_READS).get().getDisplayName()));
 
             Assert.assertNotNull(samEncoder);
             Assert.assertEquals(samEncoder.getFileFormat(), ReadsFormats.SAM);

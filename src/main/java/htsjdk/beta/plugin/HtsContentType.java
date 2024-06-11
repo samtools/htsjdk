@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.variants.VariantsFormats;
  * of HTS data such as "aligned reads". Each content type has an associated set of interfaces that
  * are used with that type (for example, codecs with content type {@link #ALIGNED_READS} expose a
  * set interfaces for reading and writing aligned reads data). The content types and the packages
- * containing the the common interfaces that are defined for each type are:
+ * containing the common interfaces that are defined for each type are:
  * <p>
  * <ul>
  *     <li> For {@link HtsContentType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>

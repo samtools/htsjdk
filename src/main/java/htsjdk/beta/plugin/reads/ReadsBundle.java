@@ -23,8 +23,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * A {@link Bundle} specifically for reads and reads-related resources. A {@link ReadsBundle} has a
- * primary resource with content type {@link BundleResourceType#ALIGNED_READS}; and an optional index
+ * A class for creating a {@link Bundle} for reads and reads-related resources. A {@link ReadsBundle} has a
+ * primary resource with content type {@link BundleResourceType#CT_ALIGNED_READS}; and an optional index
  * resource. ReadsBundles can also contain other resources.
  *
  * {@link ReadsBundle} is primarily a convenience layer for the common case where a {@link Bundle}
@@ -48,8 +48,8 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      */
     public ReadsBundle(final T reads) {
         this(Arrays.asList(toInputResource(
-                BundleResourceType.ALIGNED_READS,
-                ValidationUtils.nonNull(reads, BundleResourceType.ALIGNED_READS))));
+                BundleResourceType.CT_ALIGNED_READS,
+                ValidationUtils.nonNull(reads, BundleResourceType.CT_ALIGNED_READS))));
     }
 
     /**
@@ -59,45 +59,45 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      */
     public ReadsBundle(final T reads, final T index) {
         this(Arrays.asList(
-                toInputResource(BundleResourceType.ALIGNED_READS, ValidationUtils.nonNull(reads, BundleResourceType.ALIGNED_READS)),
+                toInputResource(BundleResourceType.CT_ALIGNED_READS, ValidationUtils.nonNull(reads, BundleResourceType.CT_ALIGNED_READS)),
                 toInputResource(
-                        BundleResourceType.READS_INDEX,
-                        ValidationUtils.nonNull(index, BundleResourceType.READS_INDEX))));
+                        BundleResourceType.CT_READS_INDEX,
+                        ValidationUtils.nonNull(index, BundleResourceType.CT_READS_INDEX))));
     }
 
     /**
      * Create a {@link ReadsBundle} using the resources in an existing bundle. A resource with content type
-     * {@link BundleResourceType#ALIGNED_READS} must be present in the resources, or this constructor will throw.
+     * {@link BundleResourceType#CT_ALIGNED_READS} must be present in the resources, or this constructor will throw.
      *
      * Note that this constructor allows existing {@link IOPathResource}s that do not conform to the type
      * {@link T} to be included in the resulting {@link ReadsBundle}.
      *
      * @param resources collection of {@link BundleResource}. the collection must include a resource with
-     *                 content type {@link BundleResourceType#ALIGNED_READS}.
-     * @throws IllegalArgumentException if no resource with content type {@link BundleResourceType#ALIGNED_READS} is
+     *                 content type {@link BundleResourceType#CT_ALIGNED_READS}.
+     * @throws IllegalArgumentException if no resource with content type {@link BundleResourceType#CT_ALIGNED_READS} is
      * included in the input {@link BundleResource} collection
      */
     protected ReadsBundle(final Collection<BundleResource> resources) {
-        super(BundleResourceType.ALIGNED_READS, resources);
+        super(BundleResourceType.CT_ALIGNED_READS, resources);
     }
 
    /**
-    * return the {@link BundleResourceType#ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
+    * return the {@link BundleResourceType#CT_ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
     *
-    * @return the {@link BundleResourceType#ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
+    * @return the {@link BundleResourceType#CT_ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
     */
     public BundleResource getReads() {
-        return getOrThrow(BundleResourceType.ALIGNED_READS);
+        return getOrThrow(BundleResourceType.CT_ALIGNED_READS);
     }
 
     /**
-     * Get the optional {@link BundleResourceType#READS_INDEX} resource for this {@link ReadsBundle}.
+     * Get the optional {@link BundleResourceType#CT_READS_INDEX} resource for this {@link ReadsBundle}.
      *
-     * @return the optional {@link BundleResourceType#READS_INDEX} resrouce for this {@link ReadsBundle},
+     * @return the optional {@link BundleResourceType#CT_READS_INDEX} resrouce for this {@link ReadsBundle},
      * or Optional.empty if no index resource is present in the bundle.
      */
     public Optional<BundleResource> getIndex() {
-        return get(BundleResourceType.READS_INDEX);
+        return get(BundleResourceType.CT_READS_INDEX);
     }
 
     /**
@@ -195,7 +195,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
 
     // Try to infer the contentType/format, i.e., READS/BAM from an IOPath. Currently this
     // exists purely to check for logical inconsistencies. It can detect cases that are illogical
-    // (an IOPath that has format CRAM, but file extension BAM), but it can't determinstically
+    // (an IOPath that has format CRAM, but file extension BAM), but it can't deterministically
     // and correctly infer the types in all cases without reproducing all the logic embedded in all the
     // codecs (i.e., an htsget IOPath ends in ".bam", but has format HTSGET_BAM, not BAM - detecting
     // that here would require parsing the entire IOPath structure, which is best left to the codecs
@@ -206,11 +206,11 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
         if (extension.isPresent()) {
             final String ext = extension.get();
             if (ext.equals(FileExtensions.BAM)) {
-                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM));
+                return Optional.of(new Tuple<>(BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_BAM));
             } else if (ext.equals(FileExtensions.CRAM)) {
-                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_CRAM));
+                return Optional.of(new Tuple<>(BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_CRAM));
             } else if (ext.equals((FileExtensions.SAM))) {
-                return Optional.of(new Tuple<>(BundleResourceType.ALIGNED_READS, BundleResourceType.READS_SAM));
+                return Optional.of(new Tuple<>(BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_SAM));
             }
             //TODO: finish this, else SRA, htsget,...
         }
