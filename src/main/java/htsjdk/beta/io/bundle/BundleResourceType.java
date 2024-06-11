@@ -26,10 +26,10 @@ import htsjdk.beta.plugin.variants.VariantsFormats;
 public class BundleResourceType {
 
     /**************************************** Common primary content types ******************************************/
-    public static final String CT_ALIGNED_READS = HtsContentType.ALIGNED_READS.name();
-    public static final String CT_VARIANT_CONTEXTS = HtsContentType.VARIANT_CONTEXTS.name();
-    public static final String CT_HAPLOID_REFERENCE = HtsContentType.HAPLOID_REFERENCE.name();
-    public static final String CT_FEATURES = HtsContentType.FEATURES.name();
+    public static final String CT_ALIGNED_READS = "ALIGNED_READS";
+    public static final String CT_VARIANT_CONTEXTS = "VARIANT_CONTEXTS";
+    public static final String CT_HAPLOID_REFERENCE = "HAPLOID_REFERENCE";
+    public static final String CT_FEATURES = "FEATURES";
 
     /****************************************** Resource types for READS ********************************************/
     /** Formats for primary content type {@link BundleResourceType#CT_ALIGNED_READS} */
