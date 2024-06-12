@@ -60,7 +60,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
     }
 
     private void doTest(final List<SAMRecord> samRecords, final ByteArrayOutputStream outStream, final OutputStream indexStream) {
-        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final SAMFileHeader header = CRAMTestUtils.addFakeSequenceMD5s(createSAMHeader(SAMFileHeader.SortOrder.coordinate));
         final ReferenceSource refSource = createReferenceSource();
 
         final CRAMContainerStreamWriter containerStream = new CRAMContainerStreamWriter(outStream, indexStream, refSource, header, "test");
@@ -104,7 +104,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
     @Test(description = "Test CRAMContainerStream aggregating multiple partitions")
     public void testCRAMContainerAggregatePartitions() throws IOException {
-        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final SAMFileHeader header = CRAMTestUtils.addFakeSequenceMD5s(createSAMHeader(SAMFileHeader.SortOrder.coordinate));
         final ReferenceSource refSource = createReferenceSource();
 
         // create a bunch of records and write them out to separate streams in groups
@@ -163,13 +163,26 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
     @Test(description = "Test CRAMContainerStream with crai index")
     public void testCRAMContainerStreamWithCraiIndex() throws IOException {
         final List<SAMRecord> samRecords = createRecords(100);
-        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final SAMFileHeader header = CRAMTestUtils.addFakeSequenceMD5s(createSAMHeader(SAMFileHeader.SortOrder.coordinate));
         try (ByteArrayOutputStream outStream = new ByteArrayOutputStream();
              ByteArrayOutputStream indexStream = new ByteArrayOutputStream()) {
             doTestWithIndexer(samRecords, outStream, header, new CRAMCRAIIndexer(indexStream, header));
             outStream.flush();
             indexStream.flush();
             checkCRAMContainerStream(outStream, indexStream, ".crai");
+        }
+    }
+
+    @Test(expectedExceptions=RuntimeException.class)
+    public void testRejectDictionaryWithMissingMD5s() {
+        final SAMFileHeader samHeader = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final ReferenceSource refSource = createReferenceSource();
+        try {
+            new CRAMContainerStreamWriter(outStream, null, refSource, samHeader, "test");
+        } catch (final RuntimeException e) {
+            Assert.assertTrue(e.getMessage().contains("missing the required MD5 checksum"));
+            throw e;
         }
     }
 
