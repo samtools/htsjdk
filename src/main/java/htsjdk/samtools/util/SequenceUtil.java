@@ -110,6 +110,14 @@ public class SequenceUtil {
         bases['.'] = A_MASK | C_MASK | G_MASK | T_MASK;
     };
 
+    /**
+     * Different modes on how to compare bases, e.g. considering ambiguity codes or applying the SAM NM tag spec.
+     */
+    protected enum BaseComparisonMode {
+        MatchExact,
+        MatchAmbiguity,
+        NMTagMode
+    }
 
     /**
      * Calculate the reverse complement of the specified sequence
@@ -435,18 +443,41 @@ public class SequenceUtil {
      * @param refBase the reference base to match
      * @param negativeStrand set to true if the base to test is on the negative strand and should be reverse complemented (only applies if bisulfiteSequence is true)
      * @param bisulfiteSequence set to true if the base to match is a bisulfite sequence and needs to be converted
-     * @param matchAmbiguousRef causes the match to return true when the read base is a subset of the possible IUPAC reference bases, but not the other way around
+     * @param comparisonMode determines how matches should be counted, e.g. if ambiguity codes should count as matches, or if the SAM NM tag spec should be applied
      * @return true if the bases match, false otherwise
      */
     private static boolean basesMatch(final byte readBase, final byte refBase, final boolean negativeStrand,
-                                      final boolean bisulfiteSequence, final boolean matchAmbiguousRef) {
-        if (bisulfiteSequence) {
-            if (matchAmbiguousRef) return bisulfiteBasesMatchWithAmbiguity(negativeStrand, readBase, refBase);
-            else return bisulfiteBasesEqual(negativeStrand, readBase, refBase);
-        } else {
-            if (matchAmbiguousRef) return readBaseMatchesRefBaseWithAmbiguity(readBase, refBase);
-            else return basesEqual(readBase, refBase);
+                                      final boolean bisulfiteSequence, final BaseComparisonMode comparisonMode) {
+        switch (comparisonMode) {
+            case MatchExact:
+                if (bisulfiteSequence) {
+                    return bisulfiteBasesEqual(negativeStrand, readBase, refBase);
+                } else {
+                    return basesEqual(readBase, refBase);
+                }
+            case MatchAmbiguity:
+                if (bisulfiteSequence) {
+                    return bisulfiteBasesMatchWithAmbiguity(negativeStrand, readBase, refBase);
+                } else {
+                    return readBaseMatchesRefBaseWithAmbiguity(readBase, refBase);
+                }
+            case NMTagMode:
+                // TODO Different treatment for bisulfite?
+                return readBaseMatchesRefBaseForNM(readBase, refBase);
+            default:
+                throw new IllegalStateException("Invalid BaseComparisonMode: Not implemented.");
         }
+    }
+
+    /**
+     * Determine if the bases match according to the SAM NM tag spec, which defines matching ambiguity codes (such as N - N) as mismatches.
+     *
+     * @param readBase the read base to match
+     * @param refBase the reference base to match
+     * @return true if the bases match and are from [ACGTacgt], false otherwise
+     */
+    public static boolean readBaseMatchesRefBaseForNM(final byte readBase, final byte refBase) {
+        return readBase == '=' || isValidBase(readBase) && isValidBase(refBase) && basesEqual(readBase, refBase);
     }
 
     /** Calculates the number of mismatches between the read and the reference sequence provided. */
@@ -460,7 +491,7 @@ public class SequenceUtil {
     }
 
     /**
-     * Calculates the number of mismatches between the read and the reference sequence provided.
+     * Calculates the number of mismatches between the read and the reference sequence provided. Bases have to match exactly and no ambiguity codes will be considered.
      *
      * @param referenceBases    Array of ASCII bytes that covers at least the the portion of the reference sequence
      *                          to which read is aligned from getReferenceStart to getReferenceEnd.
@@ -471,11 +502,11 @@ public class SequenceUtil {
      *                          as mismatches.
      */
     public static int countMismatches(final SAMRecord read, final byte[] referenceBases, final int referenceOffset, final boolean bisulfiteSequence) {
-        return countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence, false);
+        return countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence, BaseComparisonMode.MatchExact);
     }
 
     public static int countMismatches(final SAMRecord read, final byte[] referenceBases, final int referenceOffset,
-                                      final boolean bisulfiteSequence, final boolean matchAmbiguousRef) {
+                                      final boolean bisulfiteSequence, final BaseComparisonMode baseComparisonMode) {
         try {
             int mismatches = 0;
 
@@ -488,7 +519,7 @@ public class SequenceUtil {
 
                 for (int i = 0; i < length; ++i) {
                     if (!basesMatch(readBases[readBlockStart + i], referenceBases[referenceBlockStart + i],
-                            read.getReadNegativeStrandFlag(), bisulfiteSequence, matchAmbiguousRef)) {
+                            read.getReadNegativeStrandFlag(), bisulfiteSequence, baseComparisonMode)) {
                         ++mismatches;
                     }
                 }
@@ -640,7 +671,7 @@ public class SequenceUtil {
      */
     public static int calculateSamNmTag(final SAMRecord read, final byte[] referenceBases,
                                         final int referenceOffset, final boolean bisulfiteSequence) {
-        int samNm = countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence, false);
+        int samNm = countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence, BaseComparisonMode.NMTagMode);
         for (final CigarElement el : read.getCigar().getCigarElements()) {
             if (el.getOperator() == CigarOperator.INSERTION || el.getOperator() == CigarOperator.DELETION) {
                 samNm += el.getLength();
@@ -971,7 +1002,6 @@ public class SequenceUtil {
         final byte[] seq = record.getReadBases();
         final int alignmentStart = record.getAlignmentStart() - 1;
         int cigarIndex, blockRefPos, blockReadStart, matchCount = 0;
-        int nmCount = 0;
         final StringBuilder mdString = new StringBuilder();
 
         final int nElements = cigarElements.size();
@@ -997,7 +1027,6 @@ public class SequenceUtil {
                         mdString.append(matchCount);
                         mdString.appendCodePoint(refBase);
                         matchCount = 0;
-                        ++nmCount;
                     }
                 }
                 if (inBlockOffset < blockLength) break;
@@ -1013,11 +1042,9 @@ public class SequenceUtil {
                 matchCount = 0;
                 if (inBlockOffset < blockLength) break;
                 blockRefPos += blockLength;
-                nmCount += blockLength;
             } else if (op == CigarOperator.INSERTION
                     || op == CigarOperator.SOFT_CLIP) {
                 blockReadStart += blockLength;
-                if (op == CigarOperator.INSERTION) nmCount += blockLength;
             } else if (op == CigarOperator.SKIPPED_REGION) {
                 blockRefPos += blockLength;
             }
@@ -1025,7 +1052,7 @@ public class SequenceUtil {
         mdString.append(matchCount);
 
         if (calcMD) record.setAttribute(SAMTag.MD, mdString.toString());
-        if (calcNM) record.setAttribute(SAMTag.NM, nmCount);
+        if (calcNM) record.setAttribute(SAMTag.NM, calculateSamNmTag(record, ref));
     }
 
     public static byte upperCase(final byte base) {
