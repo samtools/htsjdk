@@ -354,7 +354,7 @@ public class CigarUtil {
         for (CigarElement e : cigar){
             for (int i = 0; i < e.getLength(); i++){
                 CigarOperator o = e.getOperator();
-                result[i+pos] = (char) CigarOperator.enumToCharacter(o);
+                result[i+pos] = o.asChar();
             }
             pos += e.getLength();
         }
