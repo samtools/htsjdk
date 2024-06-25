@@ -702,4 +702,48 @@ public class IntervalListTest extends HtsjdkTest {
     public void testBreaks(final Path brokenIntervalFile){
         IntervalList.fromPath(brokenIntervalFile);
     }
+
+    @Test
+    public void testLargeIteratorMerge() {
+        final IntervalList intervals = new IntervalList(this.fileHeader);
+        intervals.add(new Interval("1", 1, 2, false, "foo"));
+        for (int i = 2; i < 100000; i++) {
+            intervals.add(new Interval("1", i, i + 1, false, "bar"));
+        }
+        final Interval merged = new IntervalList.IntervalMergerIterator(intervals.iterator(), true, false, false).next();
+        Assert.assertEquals(merged, new Interval("1", 1, 100000, false, "foo"));
+    }
+
+    @DataProvider
+    public static Object[][] lessMemForMergeWithNoNames() {
+        String contig = "1";
+        Interval interval1 = new Interval(contig, 1, 100);
+        Interval interval2 = new Interval(contig, 101, 200);
+        Interval interval3 = new Interval(contig, 301, 400);
+        Interval overlapInterval = new Interval(contig, 350, 450);
+        Interval interval4 = new Interval(contig, 401, 500);
+        Interval combined1 = new Interval(contig, 1, 200);
+        Interval combined2 = new Interval(contig, 301, 500);
+        return new Object[][]{
+                {Arrays.asList(interval1), Arrays.asList(interval1)},
+                {Arrays.asList(interval1, interval2), Arrays.asList(combined1)},
+                {Arrays.asList(interval1, interval2, interval3), Arrays.asList(combined1, interval3)},
+                {Arrays.asList(interval1, interval2, interval3, interval4), Arrays.asList(combined1, combined2)},
+                {Arrays.asList(interval1, interval2, interval3, overlapInterval, interval4), Arrays.asList(combined1, combined2)},
+        };
+    }
+
+    @Test(dataProvider = "lessMemForMergeWithNoNames")
+    public void testLessMemForMergeWithNoNames(final List<Interval> intervals, final List<Interval> expected) {
+        final IntervalList intervalList = new IntervalList(this.fileHeader);
+        intervalList.addall(intervals);
+
+        final IntervalList.IntervalMergerIterator firstNameMergerIterator = new IntervalList.IntervalMergerIterator(intervals.iterator(), true, false, false);
+        Collection<Interval> firstNameMerged = CollectionUtil.makeCollection(firstNameMergerIterator);
+        Assert.assertEquals(firstNameMerged, expected);
+
+        final IntervalList.IntervalMergerIterator concatNameMergerIterator = new IntervalList.IntervalMergerIterator(intervals.iterator(), true, false, true);
+        Collection<Interval> concatNameMerged = CollectionUtil.makeCollection(concatNameMergerIterator);
+        Assert.assertEquals(concatNameMerged, expected);
+    }
 }

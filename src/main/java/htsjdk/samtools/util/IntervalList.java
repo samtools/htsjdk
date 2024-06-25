@@ -888,20 +888,29 @@ public class IntervalList implements Iterable<Interval> {
 
         private Interval getNext() {
             Interval next;
+            int start = current == null ? -1 : current.getStart();
             while (inputIntervals.hasNext()) {
                 next = inputIntervals.next();
                 if (current == null) {
                     toBeMerged.add(next);
                     current = new MutableFeature(next);
+                    start = next.getStart();
                     currentStrandNegative = next.isNegativeStrand();
                 } else if (current.overlaps(next) || (combineAbuttingIntervals && current.withinDistanceOf(next,1))) {
                     if (enforceSameStrands && currentStrandNegative != next.isNegativeStrand()) {
                         throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                     }
-                    toBeMerged.add(next);
+                    if (concatenateNames) {
+                        toBeMerged.add(next);
+                    }
                     current.end = Math.max(current.getEnd(), next.getEnd());
                 } else {
                     // Emit merged/unique interval
+                    if (!concatenateNames) {
+                        if (start!=-1) {
+                            toBeMerged.add(new Interval(current.contig, start, current.getEnd()));
+                        }
+                    }
                     final Interval retVal = merge(toBeMerged, concatenateNames);
                     toBeMerged.clear();
                     current.setAll(next);
@@ -911,6 +920,11 @@ public class IntervalList implements Iterable<Interval> {
                 }
             }
             // Emit merged/unique interval
+            if (!concatenateNames) {
+                if (start!=-1) {
+                    toBeMerged.add(new Interval(current.contig, start, current.getEnd()));
+                }
+            }
             final Interval retVal = merge(toBeMerged, concatenateNames);
             toBeMerged.clear();
             current = null;
