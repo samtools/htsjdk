@@ -711,39 +711,56 @@ public class IntervalListTest extends HtsjdkTest {
             intervals.add(new Interval("1", i, i + 1, false, "bar"));
         }
         final Interval merged = new IntervalList.IntervalMergerIterator(intervals.iterator(), true, false, false).next();
-        Assert.assertEquals(merged, new Interval("1", 1, 100000, false, "foo"));
+        Assert.assertEquals(merged, new Interval("1", 1, 100000));
+        Assert.assertEquals(merged.getName(), "foo");
     }
 
     @DataProvider
     public static Object[][] lessMemForMergeWithNoNames() {
         String contig = "1";
-        Interval interval1 = new Interval(contig, 1, 100);
-        Interval interval2 = new Interval(contig, 101, 200);
-        Interval interval3 = new Interval(contig, 301, 400);
-        Interval overlapInterval = new Interval(contig, 350, 450);
-        Interval interval4 = new Interval(contig, 401, 500);
-        Interval combined1 = new Interval(contig, 1, 200);
-        Interval combined2 = new Interval(contig, 301, 500);
+        Interval interval1 = new Interval(contig, 1, 100, false, "foo");
+        Interval interval2 = new Interval(contig, 101, 200, false, "bar");
+        Interval interval3 = new Interval(contig, 301, 400, false, "baz");
+        Interval overlapInterval = new Interval(contig, 350, 450, false, "overlap");
+        Interval interval4 = new Interval(contig, 401, 500, false, "qux");
+        Interval combined1NoConcat = new Interval(contig, 1, 200, false, "foo");
+        Interval combined2NoConcat = new Interval(contig, 301, 500, false, "baz");
+        Interval combined1WithConcat = new Interval(contig, 1, 200, false, "foo|bar");
+        Interval combined2WithConcat = new Interval(contig, 301, 500, false, "baz|qux");
+        Interval combined2WithConcatAndOverlap = new Interval(contig, 301, 500, false, "baz|overlap|qux");
         return new Object[][]{
-                {Arrays.asList(interval1), Arrays.asList(interval1)},
-                {Arrays.asList(interval1, interval2), Arrays.asList(combined1)},
-                {Arrays.asList(interval1, interval2, interval3), Arrays.asList(combined1, interval3)},
-                {Arrays.asList(interval1, interval2, interval3, interval4), Arrays.asList(combined1, combined2)},
-                {Arrays.asList(interval1, interval2, interval3, overlapInterval, interval4), Arrays.asList(combined1, combined2)},
+                {Collections.emptyList(), Collections.emptyList(), Collections.emptyList()},
+                {Arrays.asList(interval1), Arrays.asList(interval1), Arrays.asList(interval1)},
+                {Arrays.asList(interval1, interval2), Arrays.asList(combined1NoConcat), Arrays.asList(combined1WithConcat)},
+                {Arrays.asList(interval1, interval2, interval3), Arrays.asList(combined1NoConcat, interval3), Arrays.asList(combined1WithConcat, interval3)},
+                {Arrays.asList(interval1, interval2, interval3, interval4), Arrays.asList(combined1NoConcat, combined2NoConcat), Arrays.asList(combined1WithConcat, combined2WithConcat)},
+                {Arrays.asList(interval1, interval2, interval3, overlapInterval, interval4), Arrays.asList(combined1NoConcat, combined2NoConcat), Arrays.asList(combined1WithConcat, combined2WithConcatAndOverlap)}
         };
     }
 
     @Test(dataProvider = "lessMemForMergeWithNoNames")
-    public void testLessMemForMergeWithNoNames(final List<Interval> intervals, final List<Interval> expected) {
+    public void testLessMemForMergeWithNoNames(final List<Interval> intervals, final List<Interval> expectedNoConcat, final List<Interval> expectedWithConcat) {
         final IntervalList intervalList = new IntervalList(this.fileHeader);
         intervalList.addall(intervals);
 
         final IntervalList.IntervalMergerIterator firstNameMergerIterator = new IntervalList.IntervalMergerIterator(intervals.iterator(), true, false, false);
         Collection<Interval> firstNameMerged = CollectionUtil.makeCollection(firstNameMergerIterator);
-        Assert.assertEquals(firstNameMerged, expected);
+        Assert.assertEquals(firstNameMerged, expectedNoConcat);
+        List<Interval> firstNameMergedList = new ArrayList<>(firstNameMerged);
+        for(int i=0; i<firstNameMergedList.size(); i++){
+            Interval actual = firstNameMergedList.get(i);
+            Interval expected = expectedNoConcat.get(i);
+            Assert.assertEquals(actual.getName(), expected.getName());
+        }
 
         final IntervalList.IntervalMergerIterator concatNameMergerIterator = new IntervalList.IntervalMergerIterator(intervals.iterator(), true, false, true);
         Collection<Interval> concatNameMerged = CollectionUtil.makeCollection(concatNameMergerIterator);
-        Assert.assertEquals(concatNameMerged, expected);
+        Assert.assertEquals(concatNameMerged, expectedWithConcat);
+        List<Interval> allNamesMergedList = new ArrayList<>(concatNameMerged);
+        for(int i=0; i<allNamesMergedList.size(); i++){
+            Interval actual = allNamesMergedList.get(i);
+            Interval expected = expectedWithConcat.get(i);
+            Assert.assertEquals(actual.getName(), expected.getName());
+        }
     }
 }
