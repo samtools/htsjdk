@@ -45,6 +45,8 @@ public class SamPairUtil {
      * FR means the read that's mapped to the forward strand comes before the
      * read mapped to the reverse strand when their 5'-end coordinates are
      * compared.
+     *
+     * PairOrientation only makes sense for a pair of reads that are both mapped to the same contig/chromosome
      */
     public static enum PairOrientation
     {
@@ -57,31 +59,41 @@ public class SamPairUtil {
 
     /**
      * Computes the pair orientation of the given SAMRecord.
-     * @param r
+     * @param record the record for which the pair orientation is requested
      * @return PairOrientation of the given SAMRecord.
      * @throws IllegalArgumentException If the record is not a paired read, or
-     * one or both reads are unmapped.
+     * one or both reads are unmapped, or is the two records do are not mapped to the
+     * same reference.
+     *
+     * NOTA BENE: This is NOT the orientation byte as used in Picard's MarkDuplicates. For that please look
+     * in ReadEnds (in Picard).
      */
-    public static PairOrientation getPairOrientation(final SAMRecord r)
+    public static PairOrientation getPairOrientation(final SAMRecord record)
     {
-        final boolean readIsOnReverseStrand = r.getReadNegativeStrandFlag();
+        final boolean readIsOnReverseStrand = record.getReadNegativeStrandFlag();
 
-        if(r.getReadUnmappedFlag() || !r.getReadPairedFlag() || r.getMateUnmappedFlag()) {
-            throw new IllegalArgumentException("Invalid SAMRecord: " + r.getReadName() + ". This method only works for SAMRecords " +
+        if(record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
+            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() + ". This method only works for SAMRecords " +
                     "that are paired reads with both reads aligned.");
         }
 
-        if(readIsOnReverseStrand == r.getMateNegativeStrandFlag() )  {
+        if (!record.getReferenceIndex().equals(record.getMateReferenceIndex())) {
+            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() + ". This method only works for SAMRecords " +
+                    "that are paired reads with both reads aligned to the same reference. Found difference references:" +
+                    record.getReferenceName() + " and " + record.getMateReferenceName() + ".");
+        }
+
+        if(readIsOnReverseStrand == record.getMateNegativeStrandFlag() )  {
             return PairOrientation.TANDEM;
         }
 
         final long positiveStrandFivePrimePos = ( readIsOnReverseStrand
-                ?  r.getMateAlignmentStart()  //mate's 5' position  ( x---> )
-                :  r.getAlignmentStart() );   //read's 5' position  ( x---> )
+                ?  record.getMateAlignmentStart()  //mate's 5' position  ( x---> )
+                :  record.getAlignmentStart() );   //read's 5' position  ( x---> )
 
         final long negativeStrandFivePrimePos = ( readIsOnReverseStrand
-                ?  r.getAlignmentEnd()                                   //read's 5' position  ( <---x )
-                :  r.getAlignmentStart() + r.getInferredInsertSize() );  //mate's 5' position  ( <---x )
+                ?  record.getAlignmentEnd()                                   //read's 5' position  ( <---x )
+                :  record.getAlignmentStart() + record.getInferredInsertSize() );  //mate's 5' position  ( <---x )
 
         return ( positiveStrandFivePrimePos < negativeStrandFivePrimePos
                 ? PairOrientation.FR
