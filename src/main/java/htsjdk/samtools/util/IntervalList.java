@@ -864,6 +864,7 @@ public class IntervalList implements Iterable<Interval> {
 
         MutableFeature current = null;
         boolean currentStrandNegative = false;
+        String currentFirstName = null;
 
         public IntervalMergerIterator(Iterator<Interval> intervals, final boolean combineAbuttingIntervals, final boolean enforceSameStrand, final boolean concatenateNames) {
             this.inputIntervals = intervals;
@@ -891,27 +892,37 @@ public class IntervalList implements Iterable<Interval> {
             while (inputIntervals.hasNext()) {
                 next = inputIntervals.next();
                 if (current == null) {
-                    toBeMerged.add(next);
+                    if (concatenateNames) {
+                        toBeMerged.add(next);
+                    }
                     current = new MutableFeature(next);
                     currentStrandNegative = next.isNegativeStrand();
+                    currentFirstName = next.getName();
                 } else if (current.overlaps(next) || (combineAbuttingIntervals && current.withinDistanceOf(next,1))) {
                     if (enforceSameStrands && currentStrandNegative != next.isNegativeStrand()) {
                         throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                     }
-                    toBeMerged.add(next);
+                    if (concatenateNames) {
+                        toBeMerged.add(next);
+                    }
                     current.end = Math.max(current.getEnd(), next.getEnd());
                 } else {
                     // Emit merged/unique interval
-                    final Interval retVal = merge(toBeMerged, concatenateNames);
+                    final Interval retVal = concatenateNames ? merge(toBeMerged, concatenateNames) :
+                            new Interval(current.getContig(), current.getStart(), current.getEnd(), currentStrandNegative, currentFirstName);
                     toBeMerged.clear();
                     current.setAll(next);
                     currentStrandNegative = next.isNegativeStrand();
-                    toBeMerged.add(next);
+                    currentFirstName = next.getName();
+                    if (concatenateNames) {
+                        toBeMerged.add(next);
+                    }
                     return retVal;
                 }
             }
             // Emit merged/unique interval
-            final Interval retVal = merge(toBeMerged, concatenateNames);
+            final Interval retVal = concatenateNames ? merge(toBeMerged, concatenateNames) :
+                    new Interval(current.getContig(), current.getStart(), current.getEnd(), currentStrandNegative, currentFirstName);
             toBeMerged.clear();
             current = null;
             return retVal;
