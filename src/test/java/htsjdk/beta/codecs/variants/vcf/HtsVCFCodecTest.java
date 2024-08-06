@@ -89,11 +89,11 @@ public class HtsVCFCodecTest extends HtsjdkTest {
         try (final VariantsDecoder variantsDecoder = HtsDefaultRegistry.getVariantsResolver().getVariantsDecoder(inputPath);
              final OutputStream os = outputPath.getOutputStream()) {
             final Bundle outputBundle = new Bundle(
-                    BundleResourceType.VARIANT_CONTEXTS,
+                    BundleResourceType.CT_VARIANT_CONTEXTS,
                     Collections.singletonList(new OutputStreamResource(
                             os,
                             OUTPUT_DISPLAY_NAME,
-                            BundleResourceType.VARIANT_CONTEXTS)));
+                            BundleResourceType.CT_VARIANT_CONTEXTS)));
              try (final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(
                      outputBundle,
                      variantsEncoderOptions)) {
@@ -150,8 +150,8 @@ public class HtsVCFCodecTest extends HtsjdkTest {
         // use a vcf that is known to have an on-disk companion index to ensure that attempts to make
         // index queries are rejected if the index is not explicitly included in the input bundle
         final Bundle variantsBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(TEST_VCF_WITH_INDEX, BundleResourceType.VARIANT_CONTEXTS))
-                .addSecondary(new IOPathResource(TEST_VCF_INDEX, BundleResourceType.VARIANTS_INDEX))
+                .addPrimary(new IOPathResource(TEST_VCF_WITH_INDEX, BundleResourceType.CT_VARIANT_CONTEXTS))
+                .addSecondary(new IOPathResource(TEST_VCF_INDEX, BundleResourceType.CT_VARIANTS_INDEX))
                 .build();
 
         try (final VariantsDecoder variantsDecoder =
@@ -185,8 +185,8 @@ public class HtsVCFCodecTest extends HtsjdkTest {
     @Test(dataProvider="unsupportedQueryCases", expectedExceptions = HtsjdkUnsupportedOperationException.class)
     public void testRejectUnsupportedQueries(final Function<VariantsDecoder, ?> queryFunction) {
         final Bundle variantsBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(TEST_VCF_WITH_INDEX, BundleResourceType.VARIANT_CONTEXTS))
-                .addSecondary(new IOPathResource(TEST_VCF_INDEX, BundleResourceType.VARIANTS_INDEX))
+                .addPrimary(new IOPathResource(TEST_VCF_WITH_INDEX, BundleResourceType.CT_VARIANT_CONTEXTS))
+                .addSecondary(new IOPathResource(TEST_VCF_INDEX, BundleResourceType.CT_VARIANTS_INDEX))
                 .build();
 
         try (final VariantsDecoder variantsDecoder =
@@ -202,9 +202,9 @@ public class HtsVCFCodecTest extends HtsjdkTest {
         // use a bam that is known to have an on-disk companion index to ensure that attempts to make
         // index queries are rejected if the index is not explicitly included in the input bundle
         final Bundle variantsBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(TEST_VCF_WITH_INDEX, BundleResourceType.VARIANT_CONTEXTS))
+                .addPrimary(new IOPathResource(TEST_VCF_WITH_INDEX, BundleResourceType.CT_VARIANT_CONTEXTS))
                 .build();
-        Assert.assertFalse(variantsBundle.get(BundleResourceType.VARIANTS_INDEX).isPresent());
+        Assert.assertFalse(variantsBundle.get(BundleResourceType.CT_VARIANTS_INDEX).isPresent());
 
         try (final VariantsDecoder variantsDecoder =
                      HtsDefaultRegistry.getVariantsResolver().getVariantsDecoder(variantsBundle)) {
@@ -221,7 +221,7 @@ public class HtsVCFCodecTest extends HtsjdkTest {
     public void testGetDecoderForFormatAndVersion() {
         final IOPath tempOutputPath = IOPathUtils.createTempPath("testGetDecoderForFormatAndVersion", ".vcf");
         final Bundle outputBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(tempOutputPath, BundleResourceType.VARIANT_CONTEXTS))
+                .addPrimary(new IOPathResource(tempOutputPath, BundleResourceType.CT_VARIANT_CONTEXTS))
                 .build();
         try (final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(
                 outputBundle,

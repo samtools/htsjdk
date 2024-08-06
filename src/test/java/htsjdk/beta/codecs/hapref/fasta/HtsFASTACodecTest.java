@@ -55,9 +55,9 @@ public class HtsFASTACodecTest extends HtsjdkTest {
         final IOPath inputPath = new HtsPath(TEST_DIR + "/hg19mini.fasta");
         final Bundle streamBundle = new BundleBuilder().addPrimary(
                 new SeekableStreamResource(
-                        new IOPathResource(inputPath, BundleResourceType.HAPLOID_REFERENCE).getSeekableStream().get(),
+                        new IOPathResource(inputPath, BundleResourceType.CT_HAPLOID_REFERENCE).getSeekableStream().get(),
                         inputPath.toString(),
-                        BundleResourceType.HAPLOID_REFERENCE)
+                        BundleResourceType.CT_HAPLOID_REFERENCE)
         ).build();
         try (final HaploidReferenceDecoder fastaDecoder =
                      HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(streamBundle)) {
@@ -85,7 +85,7 @@ public class HtsFASTACodecTest extends HtsjdkTest {
         final IOPath outPath = IOPathUtils.createTempPath("testFastEncoder", ".fasta");
         new FASTACodecV1_0().getEncoder(
                 new BundleBuilder()
-                        .addPrimary(new IOPathResource(outPath, BundleResourceType.HAPLOID_REFERENCE))
+                        .addPrimary(new IOPathResource(outPath, BundleResourceType.CT_HAPLOID_REFERENCE))
                         .build(),
                 new HaploidReferenceEncoderOptions());
     }
