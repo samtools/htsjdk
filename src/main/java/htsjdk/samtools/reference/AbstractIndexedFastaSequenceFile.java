@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.io.IOPath;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -66,6 +67,27 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         reset();
         if (getSequenceDictionary() != null) {
             sanityCheckDictionaryAgainstIndex(path.toAbsolutePath().toString(), getSequenceDictionary(), index);
+        }
+    }
+
+    /**
+     * Create a AbstractIndexedFastaSequenceFile from explicitly provided files. No assumptions are made
+     * about the relative location of the files (i.e., that they are siblings).
+     *
+     * @param fastaPath the path to the fasta file. may not be null.
+     * @param dictPath the path to the sequence dictionary. may be null.
+     * @param index the associated index object; may not be null.
+     */
+    protected AbstractIndexedFastaSequenceFile(final IOPath fastaPath, final IOPath dictPath, final FastaSequenceIndex index) {
+        super(fastaPath.toPath(), fastaPath.getURIString(), loadSequenceDictionary(dictPath));
+        if (index == null) {
+            throw new IllegalArgumentException("Null index for fasta " + index);
+        }
+        this.index = index;
+        IOUtil.assertFileIsReadable(fastaPath.toPath());
+        reset();
+        if (getSequenceDictionary() != null) {
+            sanityCheckDictionaryAgainstIndex(fastaPath.getRawInputString(), getSequenceDictionary(), index);
         }
     }
 
