@@ -13,7 +13,7 @@ public class CRAMEncoderV2_1 extends CRAMEncoder {
 
     /**
      * Create a CRAM encoder for the given output bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
      * @param outputBundle bundle to encode

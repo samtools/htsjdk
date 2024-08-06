@@ -72,13 +72,13 @@ public class HtsCodecRegistryTest extends HtsjdkTest {
 
     private Bundle getCustomIOPathBundle() {
         final Bundle bundle = HtsCodecResolverTest.makeInputIOPathBundleWithContent(
-                BundleResourceType.ALIGNED_READS,
+                BundleResourceType.CT_ALIGNED_READS,
                 HtsTestCodecFormats.FILE_FORMAT_1,
                 HtsCodecResolverTest.FORMAT_1_FILE_EXTENSION,
                 HtsTestCodecFormats.FILE_FORMAT_1 + HtsCodecResolverTest.V1_0,
                 true
         );
-        final IOPath customFormatIOPath = bundle.get(BundleResourceType.ALIGNED_READS).get().getIOPath().get();
+        final IOPath customFormatIOPath = bundle.get(BundleResourceType.CT_ALIGNED_READS).get().getIOPath().get();
         final ReadsBundle readsBundle = new ReadsBundle(customFormatIOPath);
 
         return readsBundle;

@@ -32,7 +32,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     public FASTADecoderV1_0(final Bundle inputBundle) {
         this.inputBundle = inputBundle;
         this.displayName = inputBundle.getPrimaryResource().getDisplayName();
-        final BundleResource referenceResource = inputBundle.getOrThrow(BundleResourceType.HAPLOID_REFERENCE);
+        final BundleResource referenceResource = inputBundle.getOrThrow(BundleResourceType.CT_HAPLOID_REFERENCE);
         if (referenceResource.getIOPath().isPresent()) {
             referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
                     referenceResource.getIOPath().get().toPath(), true);
@@ -129,7 +129,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
      * @return true if input {@link Bundle} contains a reads index resource
      */
     private static boolean bundleContainsIndex(final Bundle inputBundle) {
-        return inputBundle.get(BundleResourceType.READS_INDEX).isPresent();
+        return inputBundle.get(BundleResourceType.CT_READS_INDEX).isPresent();
     }
 
 }
