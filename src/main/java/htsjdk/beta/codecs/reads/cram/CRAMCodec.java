@@ -26,7 +26,7 @@ import java.util.Set;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_CRAM} codecs.
+ * Base class for {@link BundleResourceType#FMT_READS_CRAM} codecs.
  */
 @InternalAPI
 public abstract class CRAMCodec implements ReadsCodec {

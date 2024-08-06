@@ -20,7 +20,7 @@ public class VariantsCodecUtils {
      */
     @InternalAPI
     public static boolean bundleContainsIndex(final Bundle inputBundle) {
-        return inputBundle.get(BundleResourceType.VARIANTS_INDEX).isPresent();
+        return inputBundle.get(BundleResourceType.CT_VARIANTS_INDEX).isPresent();
     }
 
     /**

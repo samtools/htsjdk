@@ -11,7 +11,7 @@ import htsjdk.utils.ValidationUtils;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_BAM} decoders.
+ * Base class for {@link BundleResourceType#FMT_READS_BAM} decoders.
  */
 @InternalAPI
 public abstract class BAMDecoder implements ReadsDecoder {
@@ -21,7 +21,7 @@ public abstract class BAMDecoder implements ReadsDecoder {
 
     /**
      * Create a BAM decoder for the given input bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS}, and the resource must be an
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS}, and the resource must be an
      * appropriate format and version for this encoder (to find an encoder for a bundle, see
      * {@link htsjdk.beta.plugin.registry.ReadsResolver}.
      *
@@ -34,7 +34,7 @@ public abstract class BAMDecoder implements ReadsDecoder {
         ValidationUtils.nonNull(readsDecoderOptions, "readsDecoderOptions");
 
         this.inputBundle = inputBundle;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
         this.readsDecoderOptions = readsDecoderOptions;
     }
 

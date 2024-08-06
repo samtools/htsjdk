@@ -229,16 +229,13 @@ public class HtsPath implements IOPath, Serializable {
 
         HtsPath that = (HtsPath) o;
 
-        if (!getRawInputString().equals(that.getRawInputString())) return false;
         if (!getURI().equals(that.getURI())) return false;
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = getRawInputString().hashCode();
-        result = 31 * result + getURI().hashCode();
-        return result;
+        return getURI().hashCode();
     }
 
     // Called during HtsPath construction to construct and return a URI for the provided input string.

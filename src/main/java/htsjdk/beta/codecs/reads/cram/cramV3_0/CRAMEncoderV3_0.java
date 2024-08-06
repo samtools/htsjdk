@@ -13,7 +13,7 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
 
     /**
      * Create a new CRAM CRAM v3.0 encoder for the given output bundle. The primary resource in the
-     * bundle must have content type {@link BundleResourceType#ALIGNED_READS} (to find an encoder for a bundle,
+     * bundle must have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find an encoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
      * @param outputBundle output {@link Bundle} to encode

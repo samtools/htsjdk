@@ -15,7 +15,7 @@ import java.util.Arrays;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_SAM} codecs.
+ * Base class for {@link BundleResourceType#FMT_READS_SAM} codecs.
  */
 @InternalAPI
 public abstract class SAMCodec implements ReadsCodec {

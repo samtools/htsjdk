@@ -18,7 +18,7 @@ import java.util.Set;
 
 /**
  * Base class for concrete implementations of reads codecs that handle
- * {@link BundleResourceType#READS_HTSGET_BAM} codecs.
+ * {@link BundleResourceType#FMT_READS_HTSGET_BAM} codecs.
  *
  * Note: writing to htsget is not supported, so there is no Htsget encoder.
  */

@@ -24,8 +24,11 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -34,16 +37,14 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.utils.ValidationUtils;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -136,12 +137,99 @@ public class ReferenceSequenceFileFactory {
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
             try {
-                return IOUtil.isBlockCompressed(path, true) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
+                return IOUtil.isBlockCompressed(path, true) ?
+                        new BlockCompressedIndexedFastaSequenceFile(path) :
+                        new IndexedFastaSequenceFile(path);
             } catch (final IOException e) {
                 throw new SAMException("Error opening FASTA: " + path, e);
             }
         } else {
             return new FastaSequenceFile(path, truncateNamesAtWhitespace);
+        }
+    }
+
+    /**
+     * Attempts to determine the type of the reference file specified in the bundle, and return an instance
+     * of ReferenceSequenceFile that is appropriate to use to read the reference.
+     *
+     * @param referenceBundle a Bundle containing resources for the reference file, index, and dictionary
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFileFromBundle(
+            final Bundle referenceBundle,
+            final boolean truncateNamesAtWhitespace,
+            final boolean preferIndexed) {
+        ValidationUtils.nonNull(referenceBundle, "reference bundle");
+
+        // required fasta path
+        final BundleResource fastaResource = referenceBundle.getOrThrow(BundleResourceType.CT_HAPLOID_REFERENCE);
+        final IOPath fastaPath = fastaResource.getIOPath().orElseThrow(
+                () -> new RuntimeException("The fasta bundle resource must contain a fasta resource that is backed by an IOPath."));
+        if (!Files.exists(fastaPath.toPath())) {
+            throw new RuntimeException(String.format("FASTA file %s does not exist", fastaPath));
+        }
+
+        // optional dictionary path
+        IOPath dictPath = null;
+        final Optional<BundleResource> dictPathResource = referenceBundle.get(BundleResourceType.CT_REFERENCE_DICTIONARY);
+        if (dictPathResource.isPresent()) {
+            final BundleResource dictResource = dictPathResource.get();
+            final Optional<IOPath> optDictPath = dictResource.getIOPath();
+            if (optDictPath.isPresent()) {
+                dictPath = optDictPath.get();
+                if (!Files.exists(dictPath.toPath())) {
+                    throw new RuntimeException(String.format("Sequence dictionary file %s does not exist", dictPath));
+                }
+            }
+        }
+
+        // optional index. Using faidx requires truncateNamesAtWhitespace
+        IOPath indexPath = null;
+        IOPath gziIndexPath = null;
+        if (preferIndexed) {
+            if (!truncateNamesAtWhitespace) {
+                throw new RuntimeException("preferIndexed option requires truncateNamesAtWhitespace");
+            }
+            final Optional<BundleResource> indexPathResource = referenceBundle.get(BundleResourceType.CT_REFERENCE_INDEX);
+            if (indexPathResource.isPresent()) {
+                final BundleResource indexResource = indexPathResource.get();
+                final Optional<IOPath> optIndexIOPath = indexResource.getIOPath();
+                if (optIndexIOPath.isPresent()) {
+                    indexPath = optIndexIOPath.get();
+                    if (preferIndexed && !Files.exists(indexPath.toPath())) {
+                        throw new RuntimeException(String.format("FASTA index file %s does not exist", indexPath));
+                    }
+                }
+            }
+
+            final Optional<BundleResource> gziIndexPathResource = referenceBundle.get(BundleResourceType.CT_REFERENCE_INDEX_GZI);
+            if (gziIndexPathResource.isPresent()) {
+                final BundleResource gziIndexResource = gziIndexPathResource.get();
+                final Optional<IOPath> optGziIndexPath = gziIndexResource.getIOPath();
+                if (optGziIndexPath.isPresent()) {
+                    gziIndexPath = optGziIndexPath.get();
+                    if (!Files.exists(gziIndexPath.toPath())) {
+                        throw new RuntimeException(String.format("GZI index file %s does not exist", gziIndexPath));
+                    }
+                }
+            }
+        }
+
+        try {
+            if (IOUtil.isBlockCompressed(fastaPath.toPath(), true) && preferIndexed && indexPath != null && gziIndexPath != null) {
+                return new BlockCompressedIndexedFastaSequenceFile(
+                        fastaPath,
+                        dictPath,
+                        new FastaSequenceIndex(indexPath.toPath()),
+                        GZIIndex.loadIndex(gziIndexPath.toPath()));
+            } else if (preferIndexed && indexPath != null) {
+                return new IndexedFastaSequenceFile(fastaPath, dictPath, new FastaSequenceIndex(indexPath.toPath()));
+            } else {
+                return new FastaSequenceFile(fastaPath, dictPath, truncateNamesAtWhitespace);
+            }
+        } catch (final IOException e) {
+            throw new SAMException("Error opening FASTA: " + fastaPath, e);
         }
     }
 
