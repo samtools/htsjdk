@@ -9,8 +9,17 @@ import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;
+import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.GZIIndex;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Function;
 
 /**
  * Class with methods for resolving inputs and outputs to haploid reference encoders and decoders.
@@ -66,9 +75,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
 
-        final Bundle referenceBundle = new BundleBuilder().addPrimary(
-                new IOPathResource(inputPath, BundleResourceType.CT_HAPLOID_REFERENCE)).build();
-
+        final Bundle referenceBundle = referenceBundleFromFastaPath(inputPath, HtsPath::new);
         return getHaploidReferenceDecoder(referenceBundle, HaploidReferenceDecoderOptions);
     }
 
@@ -108,6 +115,49 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
         ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
 
         return (HaploidReferenceDecoder) resolveForDecoding(inputBundle).getDecoder(inputBundle, HaploidReferenceDecoderOptions);
+    }
+
+    /**
+     * Create q reference bundle given only a fasta path, including an index and a dictionary
+     * file if they are present and located in the same directory as the fasta.
+     *
+     * @param fastaPath location of the fasta
+     * @param ioPathConstructor a constructor used to create IOPath-derived objects for the bundle
+     * @return a reference Bundle
+     * @param <T>
+     */
+    public static <T extends IOPath> Bundle referenceBundleFromFastaPath(final IOPath fastaPath, final Function<String, T> ioPathConstructor)  {
+        final BundleBuilder referenceBundleBuilder = new BundleBuilder();
+        referenceBundleBuilder.addPrimary(new IOPathResource(fastaPath, BundleResourceType.CT_HAPLOID_REFERENCE));
+
+        final Path dictPath = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(fastaPath.toPath());
+        if (Files.exists(dictPath)) {
+            referenceBundleBuilder.addSecondary(
+                    new IOPathResource(
+                            ioPathConstructor.apply(dictPath.toUri().toString()),
+                            BundleResourceType.CT_REFERENCE_DICTIONARY));
+        }
+
+        final Path idxPath = ReferenceSequenceFileFactory.getFastaIndexFileName(fastaPath.toPath());
+        if (Files.exists(idxPath)) {
+            referenceBundleBuilder.addSecondary(
+                    new IOPathResource(
+                            ioPathConstructor.apply(idxPath.toUri().toString()),
+                            BundleResourceType.CT_REFERENCE_INDEX));
+        }
+
+        try {
+            if (IOUtil.isBlockCompressed(fastaPath.toPath(), true)) {
+                final Path gziPath = GZIIndex.resolveIndexNameForBgzipFile(fastaPath.toPath());
+                referenceBundleBuilder.addSecondary(
+                        new IOPathResource(
+                                ioPathConstructor.apply(gziPath.toUri().toString()),
+                                BundleResourceType.CT_REFERENCE_INDEX_GZI));
+            }
+        } catch (IOException e) {
+            throw new HtsjdkException("Error while checking for block compression", e);
+        }
+        return referenceBundleBuilder.build();
     }
 
 }
