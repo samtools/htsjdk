@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_CRAM} decoders.
+ * Base class for {@link BundleResourceType#FMT_READS_CRAM} decoders.
  */
 @InternalAPI
 public abstract class CRAMDecoder implements ReadsDecoder {
@@ -57,7 +57,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
 
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
 
         samReader = getSamReaderForCRAM(inputBundle, readsDecoderOptions);
         samFileHeader = samReader.getFileHeader();

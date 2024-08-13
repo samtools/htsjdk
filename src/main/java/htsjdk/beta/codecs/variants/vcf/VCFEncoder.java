@@ -51,7 +51,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
 
         this.outputBundle = outputBundle;
         this.variantsEncoderOptions = variantsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS).getDisplayName();
+        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS).getDisplayName();
     }
 
    @Override
@@ -109,7 +109,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
         final VariantContextWriterBuilder writerBuilder =
                 variantsEncoderOptionsToVariantContextWriterBuilder(
                         variantsEncoderOptions,
-                        outputBundle.get(BundleResourceType.VARIANTS_INDEX).isPresent()
+                        outputBundle.get(BundleResourceType.CT_VARIANTS_INDEX).isPresent()
                 );
         setWriterBuilderOutputs(writerBuilder, outputBundle);
         return writerBuilder.build();
@@ -154,11 +154,11 @@ public abstract class VCFEncoder implements VariantsEncoder {
     private static void setWriterBuilderOutputs(
             final VariantContextWriterBuilder writerBuilder,
             final Bundle outputBundle) {
-        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
+        final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS);
         if (!variantsResource.hasOutputType()) {
             throw new IllegalArgumentException(String.format(
                     "The provided %s resource (%s) must be a writeable/output resource",
-                    BundleResourceType.VARIANT_CONTEXTS,
+                    BundleResourceType.CT_VARIANT_CONTEXTS,
                     variantsResource));
         }
 
@@ -208,7 +208,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
     }
 
     private static Optional<IOPath> getIndexIOPath(final Bundle outputBundle) {
-        final Optional<BundleResource> optIndexResource = outputBundle.get(BundleResourceType.VARIANTS_INDEX);
+        final Optional<BundleResource> optIndexResource = outputBundle.get(BundleResourceType.CT_VARIANTS_INDEX);
         if (!optIndexResource.isPresent()) {
             return Optional.empty();
         }
@@ -216,7 +216,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
         if (!indexResource.hasOutputType()) {
             throw new IllegalArgumentException(String.format(
                     "The provided %s index resource (%s) must be a writeable/output resource",
-                    BundleResourceType.VARIANTS_INDEX,
+                    BundleResourceType.CT_VARIANTS_INDEX,
                     indexResource));
         }
         if (!indexResource.getIOPath().isPresent()) {

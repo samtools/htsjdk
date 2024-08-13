@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 
 /**
  * Base class for concrete implementations of reads decoders that handle
- * {@link BundleResourceType#READS_HTSGET_BAM} decoding.
+ * {@link BundleResourceType#FMT_READS_HTSGET_BAM} decoding.
  */
 public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     private final Bundle inputBundle;
@@ -19,7 +19,7 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     public HtsgetBAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override

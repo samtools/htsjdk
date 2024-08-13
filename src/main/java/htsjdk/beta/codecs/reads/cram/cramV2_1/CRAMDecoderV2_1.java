@@ -13,7 +13,7 @@ public class CRAMDecoderV2_1 extends CRAMDecoder {
 
     /**
      * Create a new V2.1 CRAM decoder. The primary resource in the input
-     * bundle must have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * bundle must have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
      * @param bundle the input {@link Bundle} to decode

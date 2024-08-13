@@ -24,7 +24,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
 
     /**
      * Create a V1.0 BAM encoder for the given output bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
      * @param outputBundle bundle to encode
@@ -87,9 +87,9 @@ public class BAMEncoderV1_0 extends BAMEncoder {
 
         final boolean preSorted = readsEncoderOptions.isPreSorted();
 
-        final BundleResource readsResource = getOutputBundle().getOrThrow(BundleResourceType.ALIGNED_READS);
-        final Optional<BundleResource> optIndexResource = getOutputBundle().get(BundleResourceType.READS_INDEX);
-        final Optional<BundleResource> optMD5Resource = getOutputBundle().get(BundleResourceType.MD5);
+        final BundleResource readsResource = getOutputBundle().getOrThrow(BundleResourceType.CT_ALIGNED_READS);
+        final Optional<BundleResource> optIndexResource = getOutputBundle().get(BundleResourceType.CT_READS_INDEX);
+        final Optional<BundleResource> optMD5Resource = getOutputBundle().get(BundleResourceType.CT_MD5);
 
         //TODO: BAMFileWriter currently only supports writing an index to a plain file, so for now
         // throw if an index is requested on any other type

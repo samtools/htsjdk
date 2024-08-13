@@ -9,7 +9,7 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 /**
  * InternalAPI
  *
- * Base class for {@link BundleResourceType#READS_SAM} encoders.
+ * Base class for {@link BundleResourceType#FMT_READS_SAM} encoders.
  */
 public abstract class SAMEncoder implements ReadsEncoder {
     private final Bundle outputBundle;
@@ -20,7 +20,7 @@ public abstract class SAMEncoder implements ReadsEncoder {
      * InternalAPI
      *
      * Create a SAM encoder for the given output bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS} (to find a decoder for a bundle,
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *
      * NOTE: callers that provide an output stream resource should provide a buffered output stream
@@ -32,7 +32,7 @@ public abstract class SAMEncoder implements ReadsEncoder {
     public SAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.ALIGNED_READS).getDisplayName();
+        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override

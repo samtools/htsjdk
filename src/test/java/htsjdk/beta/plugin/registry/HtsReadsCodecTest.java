@@ -32,13 +32,13 @@ public class HtsReadsCodecTest extends HtsjdkTest {
                 { new BundleBuilder().addPrimary(
                         new IOPathResource(
                                 new HtsPath(TEST_DIR + "example.bam"),
-                                BundleResourceType.ALIGNED_READS)).build() },
+                                BundleResourceType.CT_ALIGNED_READS)).build() },
 
                 { new BundleBuilder().addPrimary(
                         new InputStreamResource(
                                 new HtsPath(TEST_DIR + "example.bam").getInputStream(),
                                 "testReadsStream",
-                                BundleResourceType.ALIGNED_READS)).build() },
+                                BundleResourceType.CT_ALIGNED_READS)).build() },
         };
     }
 

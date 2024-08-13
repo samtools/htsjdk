@@ -25,7 +25,7 @@ public class SAMDecoderV1_0 extends SAMDecoder {
 
     /**
      * Create a V1.0 SAM decoder for the given input bundle. The primary resource in the bundle must
-     * have content type {@link BundleResourceType#ALIGNED_READS}, and the resource must be an
+     * have content type {@link BundleResourceType#CT_ALIGNED_READS}, and the resource must be an
      * appropriate format and version for this encoder (to find an encoder for a bundle, see
      * {@link htsjdk.beta.plugin.registry.ReadsResolver}.
      *

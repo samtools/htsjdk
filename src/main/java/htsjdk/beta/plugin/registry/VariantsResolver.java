@@ -33,7 +33,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * Create a VariantsResolver.
      */
     public VariantsResolver() {
-        super(BundleResourceType.VARIANT_CONTEXTS);
+        super(BundleResourceType.CT_VARIANT_CONTEXTS);
     }
 
     /**
@@ -68,7 +68,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
         final Bundle inputBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(inputPath, BundleResourceType.VARIANT_CONTEXTS))
+                .addPrimary(new IOPathResource(inputPath, BundleResourceType.CT_VARIANT_CONTEXTS))
                 .build();
         return getVariantsDecoder(inputBundle, variantsDecoderOptions);
     }
@@ -143,7 +143,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
 
         final Bundle outputBundle = new BundleBuilder()
-                .addPrimary(new IOPathResource(outputPath, BundleResourceType.VARIANT_CONTEXTS))
+                .addPrimary(new IOPathResource(outputPath, BundleResourceType.CT_VARIANT_CONTEXTS))
                 .build();
         return getVariantsEncoder(outputBundle, variantsEncoderOptions);
     }

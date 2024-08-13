@@ -63,7 +63,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
 
         this.inputBundle = inputBundle;
         this.variantsDecoderOptions = variantsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS).getDisplayName();
+        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS).getDisplayName();
         vcfReader = getVCFReader(inputBundle, vcfCodec, variantsDecoderOptions);
         vcfHeader = (VCFHeader) vcfReader.getHeader();
     }
@@ -191,11 +191,11 @@ public abstract class VCFDecoder implements VariantsDecoder {
             final Bundle inputBundle,
             final AbstractVCFCodec vcfCodec,
             final VariantsDecoderOptions decoderOptions) {
-        final BundleResource variantsResource = inputBundle.getOrThrow(BundleResourceType.VARIANT_CONTEXTS);
+        final BundleResource variantsResource = inputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS);
         if (!variantsResource.hasInputType()) {
             throw new IllegalArgumentException(String.format(
                     "The provided %s resource (%s) must be a readable/input resource",
-                    BundleResourceType.VARIANT_CONTEXTS,
+                    BundleResourceType.CT_VARIANT_CONTEXTS,
                     variantsResource));
         } else if (!variantsResource.getIOPath().isPresent()) {
             throw new HtsjdkUnsupportedOperationException("VCF reader from stream not implemented");
@@ -223,7 +223,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
 
     // the underlying readers can't handle index streams, so  for now we can only handle IOPaths
     private static Optional<IOPath> getIndexIOPath(final Bundle inputBundle) {
-        final Optional<BundleResource> optIndexResource = inputBundle.get(BundleResourceType.VARIANTS_INDEX);
+        final Optional<BundleResource> optIndexResource = inputBundle.get(BundleResourceType.CT_VARIANTS_INDEX);
         if (!optIndexResource.isPresent()) {
             return Optional.empty();
         }
@@ -231,7 +231,7 @@ public abstract class VCFDecoder implements VariantsDecoder {
         if (!indexResource.hasInputType()) {
             throw new IllegalArgumentException(String.format(
                 "The provided %s index resource (%s) must be a readable/input resource",
-                BundleResourceType.VARIANTS_INDEX,
+                BundleResourceType.CT_VARIANTS_INDEX,
                indexResource));
         }
         if (!indexResource.getIOPath().isPresent()) {

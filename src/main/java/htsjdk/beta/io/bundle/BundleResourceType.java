@@ -5,59 +5,64 @@ import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 
 /**
- * Namespace for standard constants to specify content type and format for resources
- * contained in a {@link Bundle}.
+ * Constants for specifying tandard primary content types, secondary content types, and (optional) formats
+ * for resources contained in a {@link Bundle}.
+ *
+ * Bundles generally contain one primary resource, plus one or more secondary resources such as an index or md5 file.
+ * Each resource has an associated content type, and optionally a format. The bundle itself has a primary content
+ * type, which is the content type of the primary resource (and the bundle must always contain a resource with the
+ * content type that corresponds to the primary content type of the bundle).
+ *
+ * Although any string can be used as a primary content type in a bundle, the standard primary content types generally
+ * correspond to one of the enum values in {@link htsjdk.beta.plugin.HtsContentType}, since each of these has a
+ * corresponding {@link htsjdk.beta.plugin.HtsCodec} that handles that type of resource, such as reads or variants.
+ *
+ * Secondary resources can also be any string, but the standard secondary content types are defined here, i.e., for
+ * primary content type "READS", a secondary content type might be "READS_INDEX".
+ *
+ * Finally, each resource in a bundle can have an optional format, which is a string that corresponds to the format
+ * for that resource. For example, a primary content type of "READS" might have a format of "BAM".
  */
 public class BundleResourceType {
 
-    /**
-     * Primary content types for use in resource bundles. These names are aligned with enum values
-     * in {@link htsjdk.beta.plugin.HtsContentType}, since each one represents the name of the
-     * primary resource required by {@link htsjdk.beta.plugin.HtsCodec}s for that
-     * {@link htsjdk.beta.plugin.HtsContentType}.
-     */
-    public static final String ALIGNED_READS = HtsContentType.ALIGNED_READS.name();
-    public static final String HAPLOID_REFERENCE = HtsContentType.HAPLOID_REFERENCE.name();
-    public static final String VARIANT_CONTEXTS = HtsContentType.VARIANT_CONTEXTS.name();
-    public static final String FEATURES = HtsContentType.FEATURES.name();
+    /**************************************** Common primary content types ******************************************/
+    public static final String CT_ALIGNED_READS = "ALIGNED_READS";
+    public static final String CT_VARIANT_CONTEXTS = "VARIANT_CONTEXTS";
+    public static final String CT_HAPLOID_REFERENCE = "HAPLOID_REFERENCE";
+    public static final String CT_FEATURES = "FEATURES";
 
-    /**
-     * file format names for content type {@link BundleResourceType#ALIGNED_READS}
-     */
-    public static final String READS_SAM = ReadsFormats.SAM;
-    public static final String READS_BAM = ReadsFormats.BAM;
-    public static final String READS_CRAM = ReadsFormats.CRAM;
-    public static final String READS_HTSGET_BAM = ReadsFormats.HTSGET_BAM;
+    /****************************************** Resource types for READS ********************************************/
+    /** Formats for primary content type {@link BundleResourceType#CT_ALIGNED_READS} */
+    public static final String FMT_READS_SAM = ReadsFormats.SAM;
+    public static final String FMT_READS_BAM = ReadsFormats.BAM;
+    public static final String FMT_READS_CRAM = ReadsFormats.CRAM;
+    public static final String FMT_READS_HTSGET_BAM = ReadsFormats.HTSGET_BAM;
 
-    /**
-     * secondary content types names for primary content type {@link #ALIGNED_READS} resources
-     */
-    public static final String READS_INDEX = "READS_INDEX";
+    /** Secondary content types names for content type {@link #CT_ALIGNED_READS} resources */
+    public static final String CT_READS_INDEX = "READS_INDEX";
+    /** Formats for secondary content type {@link BundleResourceType#CT_READS_INDEX} resources */
+    public static final String FMT_READS_INDEX_BAI = "BAI";
+    public static final String FMT_READS_INDEX_CRAI = "CRAI";
+    public static final String FMT_READS_INDEX_CSI = "CSI";
 
-    /**
-     * file format names for secondary content type {@link BundleResourceType#READS_INDEX} resources
-     */
-    public static final String READS_INDEX_BAI = "BAI";
-    public static final String READS_INDEX_CRAI = "CRAI";
-    public static final String READS_INDEX_CSI = "CSI";
+    /****************************************** Resource types for VARIANTS ******************************************/
+    /** Format names for content type {@link BundleResourceType#CT_VARIANT_CONTEXTS} */
+    public static final String FMT_VARIANTS_VCF = VariantsFormats.VCF;
+    public static final String FMT_VARIANTS_BCF = VariantsFormats.BCF;
 
-    /**
-     * secondary content types names for primary content type {@link #VARIANT_CONTEXTS} resources
-     */
-    public static final String VARIANTS_INDEX = "VARIANTS_INDEX";
+    /** Secondary content types for primary content type {@link #CT_VARIANT_CONTEXTS} resources */
+    public static final String CT_VARIANTS_INDEX = "VARIANTS_INDEX";
 
-    /**
-     * file format names for content type {@link BundleResourceType#VARIANT_CONTEXTS}
-     */
-    public static final String VARIANTS_VCF = VariantsFormats.VCF;
+    /****************************************** Resource types for HAPLOID REFERENCES ********************************/
+    /** Secondary content types for {@link BundleResourceType#CT_HAPLOID_REFERENCE} resources*/
+    public static final String CT_REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
+    public static final String CT_REFERENCE_INDEX = "REFERENCE_INDEX";
 
-    /**
-     * secondary content type names for {@link BundleResourceType#HAPLOID_REFERENCE} resources
-     */
-    public static final String REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
-    public static final String REFERENCE_INDEX = "REFERENCE_INDEX";
 
-    // General secondary content types
-    public static final String MD5 = "MD5";
+    /****************************************** Resource types for FEATURES ********************************/
+
+
+    /****************************************** MISCELLANEOUS Resource types  ********************************/
+    public static final String CT_MD5 = "MD5";
 
 }

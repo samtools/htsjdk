@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Version 1.2 of {@link BundleResourceType#READS_HTSGET_BAM} decoder.
+ * Version 1.2 of {@link BundleResourceType#FMT_READS_HTSGET_BAM} decoder.
  */
 public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
@@ -30,7 +30,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     public HtsgetBAMDecoderV1_2(final Bundle inputBundle, final ReadsDecoderOptions decoderOptions) {
         super(inputBundle, decoderOptions);
-        final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.ALIGNED_READS);
+        final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS);
         if (!readsResource.getIOPath().isPresent()) {
             throw new IllegalArgumentException(String.format(
                     "Htsget requires an IOPath input resource. The bundle resource %s doesn't contain the required IOPath.",

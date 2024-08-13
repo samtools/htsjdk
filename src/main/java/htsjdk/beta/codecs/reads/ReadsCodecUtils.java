@@ -36,11 +36,11 @@ final public class ReadsCodecUtils {
             final ReadsDecoderOptions readsDecoderOptions) {
         final SamInputResource samInputResource = readsToSamInputResource(
                 inputBundle,
-                BundleResourceType.ALIGNED_READS,
+                BundleResourceType.CT_ALIGNED_READS,
                 readsDecoderOptions);
         indexToSamInputResource(
                 inputBundle,
-                BundleResourceType.READS_INDEX,
+                BundleResourceType.CT_READS_INDEX,
                 readsDecoderOptions,
                 samInputResource);
         return samInputResource;
@@ -77,7 +77,7 @@ final public class ReadsCodecUtils {
      */
     @InternalAPI
     public static boolean bundleContainsIndex(final Bundle inputBundle) {
-        return inputBundle.get(BundleResourceType.READS_INDEX).isPresent();
+        return inputBundle.get(BundleResourceType.CT_READS_INDEX).isPresent();
     }
 
     /**

@@ -2,11 +2,7 @@ package htsjdk.beta.plugin.reads;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.io.bundle.Bundle;
-import htsjdk.beta.io.bundle.BundleBuilder;
-import htsjdk.beta.io.bundle.BundleJSON;
-import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.*;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import org.testng.Assert;
@@ -21,7 +17,7 @@ public class ReadsBundleTest extends HtsjdkTest {
     @Test
     public void testReadsBundleReadsOnly() {
         final IOPath readsPath = new HtsPath(BAM_FILE);
-        final ReadsBundle<IOPath> readsBundle = new ReadsBundle(readsPath);
+        final ReadsBundle<IOPath> readsBundle = new ReadsBundle<>(readsPath);
 
         Assert.assertTrue(readsBundle.getReads().getIOPath().isPresent());
         Assert.assertEquals(readsBundle.getReads().getIOPath().get(), readsPath);
@@ -32,7 +28,7 @@ public class ReadsBundleTest extends HtsjdkTest {
     public void testReadsBundleReadsAndIndex() {
         final IOPath readsPath = new HtsPath(BAM_FILE);
         final IOPath indexPath = new HtsPath(INDEX_FILE);
-        final ReadsBundle<IOPath> readsBundle = new ReadsBundle(readsPath, indexPath);
+        final ReadsBundle<IOPath> readsBundle = new ReadsBundle<>(readsPath, indexPath);
 
         Assert.assertTrue(readsBundle.getReads().getIOPath().isPresent());
         Assert.assertEquals(readsBundle.getReads().getIOPath().get(), readsPath);
@@ -45,7 +41,19 @@ public class ReadsBundleTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNoReadsInSerializedBundle() {
-        final String vcfJSON = "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"VARIANT_CONTEXTS\":{\"path\":\"my.vcf\",\"format\":\"VCF\"},\"primary\":\"VARIANT_CONTEXTS\"}";
+        final String vcfJSON = """
+            {
+                "schemaVersion":"0.1.0",
+                "schemaName":"htsbundle",
+                "%s":{"path":"my.vcf","format":"%s"},
+                "primary":"%s"
+            }"""
+                .formatted(
+                        BundleJSON.JSON_SCHEMA_VERSION,
+                        BundleResourceType.CT_VARIANT_CONTEXTS,
+                        BundleResourceType.FMT_VARIANTS_VCF,
+                        BundleResourceType.CT_VARIANT_CONTEXTS
+                );
         try {
             ReadsBundle.getReadsBundleFromString(vcfJSON);
         } catch (final IllegalArgumentException e) {
@@ -71,19 +79,70 @@ public class ReadsBundleTest extends HtsjdkTest {
 
                 // json string, primary key, corresponding array of resources
                 {
-                    // without format included
-                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\"},\"primary\":\"ALIGNED_READS\"}",
+                    // reads only, without format included
+                    """
+                    {
+                        "schemaVersion":"%s",
+                        "schemaName":"htsbundle",
+                        "%s":{"path":"%s"},
+                        "primary":"%s"
+                    }""".formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_ALIGNED_READS, BAM_FILE,
+                            BundleResourceType.CT_ALIGNED_READS
+                    ),
                     new ReadsBundle<IOPath>(new HtsPath(BAM_FILE))
                 },
                 {
-                    // with format included
-                    "{\"schemaVersion\":\"0.1.0\",\"schemaName\":\"htsbundle\",\"ALIGNED_READS\":{\"path\":\"" + BAM_FILE + "\",\"format\":\"BAM\"},\"primary\":\"ALIGNED_READS\"}",
+                    // reads only, with format included
+                    """
+                    {
+                        "schemaVersion":"%s",
+                        "schemaName":"htsbundle",
+                        "%s":{"path":"%s", "format":"%s"},
+                        "primary":"%s"
+                    }""".formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_ALIGNED_READS, BAM_FILE, BundleResourceType.FMT_READS_BAM,
+                            BundleResourceType.CT_ALIGNED_READS),
                     // ReadsBundle doesn't automatically infer format, so create one manually
                     new ReadsBundle(
-                            new BundleBuilder().addPrimary(
-                                    new IOPathResource(new HtsPath(BAM_FILE), BundleResourceType.ALIGNED_READS, BundleResourceType.READS_BAM))
-                                    .build()
-                            .getResources())
+                            new BundleBuilder()
+                                    .addPrimary(
+                                            new IOPathResource(new HtsPath(BAM_FILE),
+                                            BundleResourceType.CT_ALIGNED_READS,
+                                            BundleResourceType.FMT_READS_BAM)
+                                    ).build().getResources()
+                    )
+                },
+                {
+                    // reads with index, with format included
+                    """
+                    {
+                        "schemaVersion":"%s",
+                        "schemaName":"htsbundle",
+                        "%s":{"path":"%s", "format":"%s"},
+                        "%s":{"path":"%s", "format":"%s"},
+                        "primary":"%s"
+                    }""".formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_ALIGNED_READS, BAM_FILE, BundleResourceType.FMT_READS_BAM,
+                            BundleResourceType.CT_READS_INDEX, INDEX_FILE, BundleResourceType.FMT_READS_INDEX_BAI,
+                            BundleResourceType.CT_ALIGNED_READS
+                    ),
+                    // ReadsBundle doesn't automatically infer format, so create one manually
+                    new ReadsBundle(
+                            new BundleBuilder()
+                                    .addPrimary(
+                                            new IOPathResource(new HtsPath(BAM_FILE),
+                                            BundleResourceType.CT_ALIGNED_READS,
+                                            BundleResourceType.FMT_READS_BAM)
+                                    ).addSecondary(
+                                            new IOPathResource(new HtsPath(INDEX_FILE),
+                                            BundleResourceType.CT_READS_INDEX,
+                                            BundleResourceType.FMT_READS_INDEX_BAI)
+                                    ).build().getResources()
+                    )
                 },
         };
     }
@@ -93,8 +152,7 @@ public class ReadsBundleTest extends HtsjdkTest {
             final String jsonString,
             final ReadsBundle<IOPath> expectedReadsBundle)  {
         final ReadsBundle<IOPath> bundleFromJSON = ReadsBundle.getReadsBundleFromString(jsonString);
-        Assert.assertEquals(bundleFromJSON, expectedReadsBundle);
-        Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), expectedReadsBundle.getPrimaryContentType());
+        Assert.assertTrue(Bundle.equalsIgnoreOrder(bundleFromJSON, expectedReadsBundle));
         Assert.assertTrue(bundleFromJSON.getReads().getIOPath().isPresent());
         Assert.assertEquals(bundleFromJSON.getReads().getIOPath().get(), expectedReadsBundle.getReads().getIOPath().get());
     }
@@ -107,8 +165,7 @@ public class ReadsBundleTest extends HtsjdkTest {
         IOPathUtils.writeStringToPath(jsonFilePath, jsonString);
         final ReadsBundle<IOPath> bundleFromPath = ReadsBundle.getReadsBundleFromPath(jsonFilePath);
 
-        Assert.assertEquals(bundleFromPath, expectedReadsBundle);
-        Assert.assertEquals(bundleFromPath.getPrimaryContentType(), expectedReadsBundle.getPrimaryContentType());
+        Assert.assertTrue(Bundle.equalsIgnoreOrder(bundleFromPath, expectedReadsBundle));
         Assert.assertTrue(bundleFromPath.getReads().getIOPath().isPresent());
         Assert.assertEquals(bundleFromPath.getReads().getIOPath().get(), expectedReadsBundle.getReads().getIOPath().get());
     }

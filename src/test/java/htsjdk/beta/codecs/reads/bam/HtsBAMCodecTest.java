@@ -57,17 +57,17 @@ public class HtsBAMCodecTest  extends HtsjdkTest {
 
         return new Object[][] {
                 {
-                        new Bundle(BundleResourceType.ALIGNED_READS, Collections.singletonList(
-                                new IOPathResource(inputPath, BundleResourceType.ALIGNED_READS)
+                        new Bundle(BundleResourceType.CT_ALIGNED_READS, Collections.singletonList(
+                                new IOPathResource(inputPath, BundleResourceType.CT_ALIGNED_READS)
                         )),
                         outputPath
                 },
                 {
-                        new Bundle(BundleResourceType.ALIGNED_READS, Collections.singletonList(
+                        new Bundle(BundleResourceType.CT_ALIGNED_READS, Collections.singletonList(
                                 new InputStreamResource(
                                         inputPath.getInputStream(),
                                         "test bam stream",
-                                        BundleResourceType.ALIGNED_READS)
+                                        BundleResourceType.CT_ALIGNED_READS)
                         )),
                         outputPath
                 },
