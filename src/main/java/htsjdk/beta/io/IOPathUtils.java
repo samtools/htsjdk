@@ -73,43 +73,63 @@ public class IOPathUtils {
     }
 
     /**
-     * Takes an IOPath and returns a new IOPath object that keeps the same basename as the original but has
-     * a new extension. If append is set to false, only the last component of an extension will be replaced.
-     * e.g. "my.fasta.gz" -> "my.fasta.tmp"
+     * Takes an IOPath and returns a new IOPath object that keeps the same basename as the original but with
+     * a new extension. Only the last component of the extension will be replaced, e.g. ("my.fasta.gz", ".tmp") ->
+     * "my.fasta.tmp". If the original path has no extension, an exception will be thrown.
      *
      * If the input IOPath was created from a rawInputString that specifies a relative local path, the new path will
      * have a rawInputString that specifies an absolute path.
      *
-     * Examples:
-     *     - (test_na12878.bam, .bai) -> test_na12878.bai (append = false)
-     *     - (test_na12878.bam, .md5) -> test_na12878.bam.md5 (append = true)
+     * Examples
+     *     - ("test_na12878.bam", ".bai") -> "test_na12878.bai"
+     *     - ("test_na12878.bam", "bai") -> "test_na12878.bai"
+     *     - ("test_na12878.ext.bam, ".bai") -> "test_na12878.ext.md5"
      *
      * @param path The original path
-     * @param newExtension A new file extension. Must include the leading dot e.g. ".txt", ".bam"
-     * @param append If set to true, append the new extension to the original basename. If false, replace the original extension
-     *               with the new extension. If append = false and the original name has no extension, an exception will be thrown.
+     * @param newExtension The new file extension. If no leading "." is provided as part of the new extension, one will be added.
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
      * @return A new IOPath object with the new extension
      */
     public static <T extends IOPath> T replaceExtension(
             final IOPath path,
             final String newExtension,
-            final boolean append,
             final Function<String, T> ioPathConstructor){
-        ValidationUtils.validateArg(newExtension.startsWith("."), "newExtension must start with a dot '.'");
-
-        final String oldFileName = path.toPath().getFileName().toString();
-
-        String newFileName;
-        if (append){
-            newFileName = oldFileName + newExtension;
-        } else {
-            final Optional<String> oldExtension = path.getExtension();
-            if (oldExtension.isEmpty()){
-                throw new RuntimeException("The original path must have an extension when append = false: " + path.getURIString());
-            }
-            newFileName = oldFileName.replaceAll(oldExtension.get() + "$", newExtension);
+        final String extensionToUse = newExtension.startsWith(".") ?
+                newExtension :
+                "." + newExtension;
+        final Optional<String> oldExtension = path.getExtension();
+        if (oldExtension.isEmpty()){
+            throw new RuntimeException("The original path has no extension to replace" + path.getURIString());
         }
+        final String oldFileName = path.toPath().getFileName().toString();
+        final String newFileName = oldFileName.replaceAll(oldExtension.get() + "$", extensionToUse);
         return ioPathConstructor.apply(path.toPath().resolveSibling(newFileName).toUri().toString());
+    }
+
+    /**
+     * Takes an IOPath and returns a new IOPath object that keeps the same name as the original, but with
+     * the new extension added.  If no leading "." is provided as part of the new extension, one will be added.
+     *
+     * If the input IOPath was created from a rawInputString that specifies a relative local path, the new path will
+     * have a rawInputString that specifies an absolute path.
+     *
+     * Examples:
+     *     - ("test_na12878.bam", ".bai") -> "test_na12878.bam.bai"
+     *     - ("test_na12878.bam", "md5") -> "test_na12878.bam.md5"
+     *
+     * @param path The original path
+     * @param extension The file extension to add. If no leading "." is provided as part of the extension, one will be added.
+     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
+     * @return A new IOPath object with the new extension
+     */
+    public static <T extends IOPath> T appendExtension(
+            final IOPath path,
+            final String extension,
+            final Function<String, T> ioPathConstructor){
+        final String oldFileName = path.toPath().getFileName().toString();
+        final String newExtension = extension.startsWith(".") ?
+                extension :
+                "." + extension;
+        return ioPathConstructor.apply(path.toPath().resolveSibling(oldFileName + newExtension).toUri().toString());
     }
 }

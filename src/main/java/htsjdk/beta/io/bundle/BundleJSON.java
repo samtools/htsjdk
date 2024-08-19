@@ -123,7 +123,7 @@ public class BundleJSON {
                         String.format("A JSON string with more than one bundle was provided but only a single bundle is allowed in this context (%s)",
                                 e.getMessage()));
                 }
-                return bundles.stream().findFirst().get();
+                return bundles.get(0);
             } catch (JSONException | UnsupportedOperationException e2) {
                 throw new IllegalArgumentException(
                         String.format("The JSON can be interpreted neither as an individual bundle (%s) nor as a bundle collection (%s)",

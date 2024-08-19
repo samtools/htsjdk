@@ -169,7 +169,7 @@ public class VariantsBundle extends Bundle implements Serializable {
             final Function<String, T> ioPathConstructor) {
         final Set<String> indexExtensions = Set.of(FileExtensions.TRIBBLE_INDEX, FileExtensions.TABIX_INDEX);
         for (final String extension : indexExtensions) {
-            final T putativeIndexPath = IOPathUtils.replaceExtension(variantsHtsPath, extension, true, ioPathConstructor);
+            final T putativeIndexPath = IOPathUtils.appendExtension(variantsHtsPath, extension, ioPathConstructor);
             if (Files.exists(putativeIndexPath.toPath())) {
                 return Optional.of(putativeIndexPath);
             }
