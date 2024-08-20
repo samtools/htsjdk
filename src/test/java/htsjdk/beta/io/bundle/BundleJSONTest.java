@@ -34,8 +34,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"%s",
                         "%s":{"path":"%s","format":"BAM"}
                     }""".formatted(
@@ -49,8 +51,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"%s",
                         "%s":{"path":"%s"}
                     }""".formatted(
@@ -63,8 +67,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"%s",
                         "%s":{"path":"%s","format":"%s"},
                         "%s":{"path":"%s","format":"%s"}
@@ -81,8 +87,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"%s",
                         "%s":{"path":"%s","format":"%s"},
                         "%s":{"path":"%s"}
@@ -99,8 +107,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"%s",
                         "%s":{"path":"%s"},
                         "%s":{"path":"%s","format":"%s"}
@@ -117,8 +127,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {   
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"%s",
                         "%s":{"path":"%s"},
                         "%s":{"path":"%s"}
@@ -137,8 +149,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {   
-                        "schemaName":"htsbundle",
-                        "schemaVersion":"%s",
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"%s",
+                        },
                         "primary":"CUSTOM",
                         "CUSTOM":{"path":"%s"}
                     }""".formatted(
@@ -152,12 +166,14 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                     {
+                        "schema":{
                             "schemaName":"htsbundle",
                             "schemaVersion":"%s",
-                            "primary":"%s",
-                            "%s":{"path":"%s"},
-                            "%s":{"path":"%s"},
-                            "CUSTOM":{"path":"%s"}
+                        },
+                        "primary":"%s",
+                        "%s":{"path":"%s"},
+                        "%s":{"path":"%s"},
+                        "CUSTOM":{"path":"%s"}
                     }""".formatted(
                             BundleJSON.JSON_SCHEMA_VERSION,
                             BundleResourceType.CT_ALIGNED_READS,
@@ -230,14 +246,18 @@ public class BundleJSONTest extends HtsjdkTest {
     public void testRejectMultipleBundlesAsSingleBundle() {
        final String multipleBundles = """
           [{
-              "schemaName":"htsbundle",
-              "schemaVersion":"%s",
-              "primary":"%s",
-              "%s":{"path":"%s","format":"%s"}
+               "schema":{
+                    "schemaName":"htsbundle",
+                    "schemaVersion":"%s",
+               },
+               "primary":"%s",
+               "%s":{"path":"%s","format":"%s"}
           },
           {
-              "schemaName":"htsbundle",
-              "schemaVersion":"%s",
+               "schema":{
+                    "schemaName":"htsbundle",
+                    "schemaVersion":"%s",
+               },
               "primary":"%s",
               "%s":{"path":"%s"}
           }]""".formatted(
@@ -258,13 +278,17 @@ public class BundleJSONTest extends HtsjdkTest {
                 {null, "cannot be null"},
                 {"", "The string is empty"},
 
-                // missing schema name
-                {"{}", "missing the required property schemaName"},
+                // missing schema entirely
+                {"{}", "[\"schema\"] not found"},
 
-                // still missing schema name
+                // missing schema name
                 {
                     """
-                        {"schemaVersion":"%s"}
+                    {
+                        "schema":{
+                            "schemaVersion":"%s",
+                        }
+                    }
                     """.formatted(BundleJSON.JSON_SCHEMA_VERSION),
                     "missing the required property schemaName"
                 },
@@ -272,7 +296,12 @@ public class BundleJSONTest extends HtsjdkTest {
                 // incorrect schema name
                 {
                     """
-                        {"schemaName":"bogusname", "schemaVersion":"%s"}
+                    {
+                        "schema":{
+                            "schemaName":"bogusname",
+                            "schemaVersion":"%s",
+                        }
+                    }
                     """.formatted(BundleJSON.JSON_SCHEMA_VERSION),
                     "Expected bundle schema name"
                 },
@@ -280,7 +309,11 @@ public class BundleJSONTest extends HtsjdkTest {
                 // missing schema version
                 {
                     """
-                        { "schemaName":"htsbundle" }
+                    {
+                        "schema":{
+                            "schemaName":"htsbundle",
+                        }
+                    }
                     """,
                     "missing the required property schemaVersion"
                 },
@@ -288,7 +321,12 @@ public class BundleJSONTest extends HtsjdkTest {
                 // incorrect schema version
                 {
                     """
-                        {"schemaName":"htsbundle", "schemaVersion":"99.99.99"}
+                    {
+                        "schema":{
+                            "schemaName":"htsbundle",
+                            "schemaVersion":"99.99.99",
+                        }
+                    }
                     """,
                     "Expected bundle schema version"
                 },
@@ -297,8 +335,10 @@ public class BundleJSONTest extends HtsjdkTest {
                 {
                     """
                         {
-                            "schemaVersion":"%s",
-                            "schemaName":"htsbundle",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "%s":{"path":"myreads.bam","format":"%s"}
                         }
                    """.formatted(
@@ -309,12 +349,14 @@ public class BundleJSONTest extends HtsjdkTest {
                 // primary property is present, but the resource it specifies is not in the bundle
                 {
                     """
-                        {
-                            "schemaVersion":"%s",
+                    {
+                        "schema":{
                             "schemaName":"htsbundle",
-                            "%s":{"path":"myreads.bam","format":"%s"},
-                            "primary":"MISSING_RESOURCE"
-                        }
+                            "schemaVersion":"%s",
+                        },
+                        "%s":{"path":"myreads.bam","format":"%s"},
+                        "primary":"MISSING_RESOURCE"
+                    }
                     """.formatted(
                             BundleJSON.JSON_SCHEMA_VERSION,
                             BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_BAM),
@@ -324,26 +366,30 @@ public class BundleJSONTest extends HtsjdkTest {
                 // syntax error (missing quote before schemaName)
                 {
                     """
-                        {
-                            "schemaVersion":"%s",
+                    {
+                        "schema":{
                             schemaName":"htsbundle",
-                            "%s":{"path":"myreads.bam","format":"%s"},
-                            "primary":"%s"
-                        }
+                            "schemaVersion":"%s",
+                        },
+                        "%s":{"path":"myreads.bam","format":"%s"},
+                        "primary":"%s"
+                    }
                     """.formatted(
                             BundleJSON.JSON_SCHEMA_VERSION,
                             BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_BAM,
                             BundleResourceType.CT_ALIGNED_READS),
-                    "Expected a ':' after a key at 58 [character 19 line 3]"
+                    "Expected a ':' after a key at 36 [character 19 line 3]"
                 },
 
                 // missing enclosing {} -> UnsupportedOperationException (no text message)
                 {
                     """
+                    "schema":{
                         "schemaName":"htsbundle",
                         "schemaVersion":"%s",
+                    }
                     """.formatted(BundleJSON.JSON_SCHEMA_VERSION),
-                    "A JSONObject text must begin with '{' at 5 [character 6 line 1]",
+                    "A JSONObject text must begin with '{' at 1 [character 2 line 1]",
                 },
         };
     }
@@ -389,8 +435,10 @@ public class BundleJSONTest extends HtsjdkTest {
         final String jsonCollectionWithOneBundle =
                 """
                 [{
-                    "schemaName":"htsbundle",
-                    "schemaVersion":"%s",
+                    "schema":{
+                        "schemaName":"htsbundle",
+                        "schemaVersion":"%s",
+                    },
                     "primary":"%s",
                     "%s":{"path":"%s","format":"BAM"}
                 }]""".formatted(
@@ -420,8 +468,10 @@ public class BundleJSONTest extends HtsjdkTest {
                         // 1 bundle
                         """
                         [{
-                            "schemaName":"htsbundle",
-                            "schemaVersion":"%s",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "primary":"%s",
                             "%s":{"path":"%s","format":"%s"}
                         }]""".formatted(
@@ -434,14 +484,18 @@ public class BundleJSONTest extends HtsjdkTest {
                         // 2 bundles
                         """
                         [{
-                            "schemaName":"htsbundle",
-                            "schemaVersion":"%s",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "primary":"%s",
                             "%s":{"path":"%s","format":"%s"}
                         },
                         {
-                            "schemaName":"htsbundle",
-                            "schemaVersion":"%s",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "primary":"%s",
                             "%s":{"path":"%s"}
                         }]""".formatted(
@@ -459,20 +513,26 @@ public class BundleJSONTest extends HtsjdkTest {
                         // 3 bundles
                         """
                         [{
-                            "schemaName":"htsbundle",
-                            "schemaVersion":"%s",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "primary":"%s",
                             "%s":{"path":"%s","format":"%s"}
                         },
                         {
-                            "schemaName":"htsbundle",
-                            "schemaVersion":"%s",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "primary":"%s",
                             "%s":{"path":"%s"}
                         },
                         {
-                            "schemaName":"htsbundle",
-                            "schemaVersion":"%s",
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
                             "primary":"%s",
                             "%s":{"path":"%s","format":"%s"}
                         }]""".formatted(

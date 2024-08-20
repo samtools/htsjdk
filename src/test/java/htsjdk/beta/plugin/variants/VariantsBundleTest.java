@@ -45,8 +45,10 @@ public class VariantsBundleTest extends HtsjdkTest {
     public void testNoVCFInSerializedBundle() {
         final String vcfJSON = """
                 {
-                    "schemaVersion":"%s",
-                    "schemaName":"htsbundle",
+                    schema: {
+                        schemaVersion: "%s",
+                        schemaName: "htsbundle"
+                    },
                     "%s":{"path":"my.cram","format":"%s"},
                     "primary":"%s"
                 }
@@ -80,32 +82,36 @@ public class VariantsBundleTest extends HtsjdkTest {
                 {
                         // vcf only, without format included
                         """
-                                {
-                                    "schemaName":"htsbundle",
-                                    "schemaVersion":"%s",
-                                    "%s":{"path":"%s"},
-                                    "primary":"%s"
-                                }
-                                """.formatted(
-                                        BundleJSON.JSON_SCHEMA_VERSION,
-                                        BundleResourceType.CT_VARIANT_CONTEXTS,
-                                        VCF_FILE,
-                                        BundleResourceType.CT_VARIANT_CONTEXTS),
+                        {
+                            schema: {
+                                schemaVersion: "%s",
+                                schemaName: "htsbundle"
+                            },
+                            "%s":{"path":"%s"},
+                            "primary":"%s"
+                        }
+                        """.formatted(
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_VARIANT_CONTEXTS,
+                                VCF_FILE,
+                                BundleResourceType.CT_VARIANT_CONTEXTS),
                         new VariantsBundle(new HtsPath(VCF_FILE))
                 },
                 {
                         // vcf only, with format included
                         """
-                                {
-                                    "schemaVersion":"%s",
-                                    "schemaName":"htsbundle",
-                                    "%s":{"path":"%s","format":"%s"},
-                                    "primary":"%s"
-                                }
-                                """.formatted(
-                                    BundleJSON.JSON_SCHEMA_VERSION,
-                                    BundleResourceType.CT_VARIANT_CONTEXTS, VCF_FILE, BundleResourceType.FMT_VARIANTS_VCF,
-                                    BundleResourceType.CT_VARIANT_CONTEXTS),
+                        {
+                            schema: {
+                                schemaVersion: "%s",
+                                schemaName: "htsbundle"
+                            },
+                            "%s":{"path":"%s","format":"%s"},
+                            "primary":"%s"
+                        }
+                        """.formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_VARIANT_CONTEXTS, VCF_FILE, BundleResourceType.FMT_VARIANTS_VCF,
+                            BundleResourceType.CT_VARIANT_CONTEXTS),
                         // VariantsBundle doesn't automatically infer format, so create one manually
                         new VariantsBundle(
                                 new BundleBuilder().addPrimary(
@@ -118,18 +124,20 @@ public class VariantsBundleTest extends HtsjdkTest {
                 {
                         // vcf with an index, with format included
                         """
-                                {
-                                    "schemaVersion":"%s",
-                                    "schemaName":"htsbundle",
-                                    "%s":{"path":"%s","format":"%s"},
-                                    "%s":{"path":"%s"},
-                                    "primary":"%s"
-                                }
-                                """.formatted(
-                                    BundleJSON.JSON_SCHEMA_VERSION,
-                                    BundleResourceType.CT_VARIANT_CONTEXTS, VCF_FILE, BundleResourceType.FMT_VARIANTS_VCF,
-                                    BundleResourceType.CT_VARIANTS_INDEX, VCF_INDEX_FILE,
-                                    BundleResourceType.CT_VARIANT_CONTEXTS),
+                        {
+                            schema: {
+                                schemaVersion: "%s",
+                                schemaName: "htsbundle"
+                            },
+                            "%s":{"path":"%s","format":"%s"},
+                            "%s":{"path":"%s"},
+                            "primary":"%s"
+                        }
+                        """.formatted(
+                            BundleJSON.JSON_SCHEMA_VERSION,
+                            BundleResourceType.CT_VARIANT_CONTEXTS, VCF_FILE, BundleResourceType.FMT_VARIANTS_VCF,
+                            BundleResourceType.CT_VARIANTS_INDEX, VCF_INDEX_FILE,
+                            BundleResourceType.CT_VARIANT_CONTEXTS),
                         // VariantsBundle doesn't automatically infer format, so create one manually
                         new VariantsBundle(
                                 new BundleBuilder()

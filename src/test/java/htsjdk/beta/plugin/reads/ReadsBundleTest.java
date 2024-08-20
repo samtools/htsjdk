@@ -43,6 +43,10 @@ public class ReadsBundleTest extends HtsjdkTest {
     public void testNoReadsInSerializedBundle() {
         final String vcfJSON = """
             {
+                schema: {
+                    schemaVersion: "%s",
+                    schemaName: "htsbundle"
+                },
                 "schemaVersion":"%s",
                 "schemaName":"htsbundle",
                 "%s":{"path":"my.vcf","format":"%s"},
@@ -82,8 +86,10 @@ public class ReadsBundleTest extends HtsjdkTest {
                     // reads only, without format included
                     """
                     {
-                        "schemaVersion":"%s",
-                        "schemaName":"htsbundle",
+                        schema: {
+                            schemaVersion: "%s",
+                            schemaName: "htsbundle"
+                        },
                         "%s":{"path":"%s"},
                         "primary":"%s"
                     }""".formatted(
@@ -97,8 +103,10 @@ public class ReadsBundleTest extends HtsjdkTest {
                     // reads only, with format included
                     """
                     {
-                        "schemaVersion":"%s",
-                        "schemaName":"htsbundle",
+                        schema: {
+                            schemaVersion: "%s",
+                            schemaName: "htsbundle"
+                        },
                         "%s":{"path":"%s", "format":"%s"},
                         "primary":"%s"
                     }""".formatted(
@@ -119,8 +127,10 @@ public class ReadsBundleTest extends HtsjdkTest {
                     // reads with index, with format included
                     """
                     {
-                        "schemaVersion":"%s",
-                        "schemaName":"htsbundle",
+                        schema: {
+                            schemaVersion: "%s",
+                            schemaName: "htsbundle"
+                        },
                         "%s":{"path":"%s", "format":"%s"},
                         "%s":{"path":"%s", "format":"%s"},
                         "primary":"%s"

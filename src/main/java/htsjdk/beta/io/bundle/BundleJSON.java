@@ -25,6 +25,7 @@ public class BundleJSON {
     public static final String BUNDLE_EXTENSION = ".json";
     private static final Log LOG = Log.getInstance(BundleJSON.class);
 
+    public static final String JSON_PROPERTY_SCHEMA           = "schema";
     public static final String JSON_PROPERTY_SCHEMA_NAME      = "schemaName";
     public static final String JSON_PROPERTY_SCHEMA_VERSION   = "schemaVersion";
     public static final String JSON_PROPERTY_PRIMARY          = "primary";
@@ -34,8 +35,7 @@ public class BundleJSON {
     public static final String JSON_SCHEMA_NAME               = "htsbundle";
     public static final String JSON_SCHEMA_VERSION            = "0.1.0"; // TODO: bump this to 1.0.0
 
-    final private static Set<String> TOP_LEVEL_PROPERTIES =
-            Set.of(JSON_PROPERTY_SCHEMA_NAME, JSON_PROPERTY_SCHEMA_VERSION, JSON_PROPERTY_PRIMARY);
+    final private static Set<String> TOP_LEVEL_PROPERTIES = Set.of(JSON_PROPERTY_SCHEMA, JSON_PROPERTY_PRIMARY);
 
     /**
      * Serialize a bundle to a JSON string representation. All resources in the bundle must
@@ -49,9 +49,11 @@ public class BundleJSON {
         ValidationUtils.validateArg(
                 !bundle.getPrimaryContentType().equals(JSON_PROPERTY_PRIMARY),
                 "Primary content type cannot be named 'primary'");
+        final JSONObject schemaMap = new JSONObject()
+                .put(JSON_PROPERTY_SCHEMA_NAME, JSON_SCHEMA_NAME)
+                .put(JSON_PROPERTY_SCHEMA_VERSION, JSON_SCHEMA_VERSION);
         final JSONObject outerJSON = new JSONObject()
-            .put(JSON_PROPERTY_SCHEMA_NAME, JSON_SCHEMA_NAME)
-            .put(JSON_PROPERTY_SCHEMA_VERSION, JSON_SCHEMA_VERSION)
+            .put(JSON_PROPERTY_SCHEMA, schemaMap)
             .put(JSON_PROPERTY_PRIMARY, bundle.getPrimaryContentType());
 
         bundle.forEach(bundleResource -> {
@@ -191,15 +193,17 @@ public class BundleJSON {
             final JSONObject jsonObject, // must be a single Bundle object
             final Function<String, T> ioPathConstructor) {
         try {
-            // validate the schema name
-            final String schemaName = getRequiredPropertyAsString(jsonObject, JSON_PROPERTY_SCHEMA_NAME);
+            // validate the schema name and version
+            final JSONObject schemaMap = jsonObject.getJSONObject(JSON_PROPERTY_SCHEMA);
+            if (schemaMap == null) {
+                throw new IllegalArgumentException("JSON bundle is missing the required schema property");
+            }
+            final String schemaName = getRequiredPropertyAsString(schemaMap, JSON_PROPERTY_SCHEMA_NAME);
             if (!schemaName.equals(JSON_SCHEMA_NAME)) {
                 throw new IllegalArgumentException(
                         String.format("Expected bundle schema name %s but found %s", JSON_SCHEMA_NAME, schemaName));
             }
-
-            // validate the schema version
-            final String schemaVersion = getRequiredPropertyAsString(jsonObject, JSON_PROPERTY_SCHEMA_VERSION);
+            final String schemaVersion = getRequiredPropertyAsString(schemaMap, JSON_PROPERTY_SCHEMA_VERSION);
             if (!schemaVersion.equals(JSON_SCHEMA_VERSION)) {
                 throw new IllegalArgumentException(String.format("Expected bundle schema version %s but found %s",
                         JSON_SCHEMA_VERSION, schemaVersion));
