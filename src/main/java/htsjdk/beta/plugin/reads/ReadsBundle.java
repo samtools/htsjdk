@@ -47,9 +47,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * @param reads An {@link IOPath}-derived object that represents a source of reads.
      */
     public ReadsBundle(final T reads) {
-        this(Arrays.asList(toInputResource(
-                BundleResourceType.CT_ALIGNED_READS,
-                ValidationUtils.nonNull(reads, BundleResourceType.CT_ALIGNED_READS))));
+        this(Arrays.asList(toInputResource(BundleResourceType.CT_ALIGNED_READS, reads)));
     }
 
     /**
@@ -59,10 +57,8 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      */
     public ReadsBundle(final T reads, final T index) {
         this(Arrays.asList(
-                toInputResource(BundleResourceType.CT_ALIGNED_READS, ValidationUtils.nonNull(reads, BundleResourceType.CT_ALIGNED_READS)),
-                toInputResource(
-                        BundleResourceType.CT_READS_INDEX,
-                        ValidationUtils.nonNull(index, BundleResourceType.CT_READS_INDEX))));
+                toInputResource(BundleResourceType.CT_ALIGNED_READS, reads),
+                toInputResource(BundleResourceType.CT_READS_INDEX, index)));
     }
 
     /**
@@ -172,10 +168,6 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
             }
         }
         return new ReadsBundle<>(reads);
-    }
-
-    public static boolean looksLikeAReadsBundle(final IOPath rawReadPath) {
-        return rawReadPath.getURI().getPath().endsWith(BundleJSON.BUNDLE_EXTENSION);
     }
 
     private static <T extends IOPath> IOPathResource toInputResource(final String providedContentType, final T ioPath) {
