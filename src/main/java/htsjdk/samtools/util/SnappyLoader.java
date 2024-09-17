@@ -25,24 +25,21 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
-import org.xerial.snappy.SnappyError;
-import org.xerial.snappy.SnappyInputStream;
-import org.xerial.snappy.SnappyOutputStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Checks if Snappy is available, and provides methods for wrapping InputStreams and OutputStreams with Snappy if so.
+ * Checks if Snappy is available, and provides methods for wrapping InputStreams and OutputStreams with Snappy if it is.
+ *
+ * @implNote this class must not import Snappy code in order to prevent exceptions if the Snappy Library is not available.
+ * Snappy code is handled by {@link SnappyLoaderInternal}.
  */
 public class SnappyLoader {
-    private static final int SNAPPY_BLOCK_SIZE = 32768;  // keep this as small as can be without hurting compression ratio.
     private static final Log logger = Log.getInstance(SnappyLoader.class);
 
     private final boolean snappyAvailable;
-
 
     public SnappyLoader() {
         this(Defaults.DISABLE_SNAPPY_COMPRESSOR);
@@ -52,24 +49,18 @@ public class SnappyLoader {
         if (disableSnappy) {
             logger.debug("Snappy is disabled via system property.");
             snappyAvailable = false;
-        }
-        else {
-            boolean tmpSnappyAvailable = false;
-            try (final OutputStream test = new SnappyOutputStream(new ByteArrayOutputStream(1000))){
-                test.write("Hello World!".getBytes());
-                tmpSnappyAvailable = true;
-                logger.debug("Snappy successfully loaded.");
+        } else {
+            boolean tmpAvailable;
+            try {
+                //This triggers trying to import Snappy code, which causes an exception if the library is missing.
+                tmpAvailable = SnappyLoaderInternal.tryToLoadSnappy();
+            } catch (NoClassDefFoundError e){
+                tmpAvailable = false;
+                logger.error(e, "Snappy java library was requested but not found. If Snappy is " +
+                        "intentionally missing, this message may be suppressed by setting " +
+                        "-D"+ Defaults.SAMJDK_PREFIX + Defaults.DISABLE_SNAPPY_PROPERTY_NAME + "=true " );
             }
-            /*
-             * ExceptionInInitializerError: thrown by Snappy if native libs fail to load.
-             * IllegalStateException: thrown within the `test.write` call above if no UTF-8 encoder is found.
-             * IOException: potentially thrown by the `test.write` and `test.close` calls.
-             * SnappyError: potentially thrown for a variety of reasons by Snappy.
-             */
-            catch (final ExceptionInInitializerError | IllegalStateException | IOException | SnappyError e) {
-                logger.warn(e, "Snappy native library failed to load.");
-            }
-            snappyAvailable = tmpSnappyAvailable;
+            snappyAvailable = tmpAvailable;
         }
     }
 
@@ -81,7 +72,7 @@ public class SnappyLoader {
      * @throws SAMException if Snappy is not available will throw an exception.
      */
     public InputStream wrapInputStream(final InputStream inputStream) {
-        return wrapWithSnappyOrThrow(inputStream, SnappyInputStream::new);
+        return wrapWithSnappyOrThrow(inputStream, SnappyLoaderInternal.getInputStreamWrapper());
     }
 
     /**
@@ -89,10 +80,13 @@ public class SnappyLoader {
      * @throws SAMException if Snappy is not available
      */
     public OutputStream wrapOutputStream(final OutputStream outputStream) {
-        return wrapWithSnappyOrThrow(outputStream, (stream) -> new SnappyOutputStream(stream, SNAPPY_BLOCK_SIZE));
+        return wrapWithSnappyOrThrow(outputStream, SnappyLoaderInternal.getOutputStreamWrapper());
     }
 
-    private interface IOFunction<T,R> {
+    /**
+     * Function which can throw IOExceptions
+     */
+    interface IOFunction<T,R> {
         R apply(T input) throws IOException;
     }
 
@@ -111,4 +105,5 @@ public class SnappyLoader {
             throw new SAMException(errorMessage);
         }
     }
+
 }
