@@ -40,6 +40,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.zip.GZIPInputStream;
 
 import static htsjdk.samtools.SamReader.Type.*;
 
@@ -104,7 +105,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         final byte blob[] = os.toByteArray();
         Assert.assertTrue(blob.length > 2);
         final int head = ((int) blob[0] & 0xff) | ((blob[1] << 8) & 0xff00);
-        Assert.assertTrue(java.util.zip.GZIPInputStream.GZIP_MAGIC == head);
+        Assert.assertTrue(GZIPInputStream.GZIP_MAGIC == head);
     }
 
     @Test(description = "create a SAM in memory,  should start with '@HD'")

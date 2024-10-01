@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.index;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
@@ -210,7 +211,7 @@ public class IndexFactory {
     private static InputStream indexFileInputStream(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
         final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile, indexWrapper);
         if (indexFile.endsWith(".gz")) {
-            return new GZIPInputStream(inputStreamInitial);
+            return new SafeGZIPInputStream(inputStreamInitial);
         }
         else if (indexFile.endsWith(FileExtensions.TABIX_INDEX)) {
             return new BlockCompressedInputStream(inputStreamInitial);

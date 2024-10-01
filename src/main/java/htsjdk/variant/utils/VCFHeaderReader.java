@@ -1,6 +1,6 @@
 package htsjdk.variant.utils;
 
-import htsjdk.samtools.SamStreams;
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.IOUtil;
@@ -17,7 +17,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Utility class to read a VCF header without being told beforehand whether the input is VCF or BCF.
@@ -51,7 +50,7 @@ public final class VCFHeaderReader {
     private static InputStream bufferAndDecompressIfNecessary(final InputStream in) throws IOException {
         BufferedInputStream bis = new BufferedInputStream(in);
         // IOUTil.isGZIPInputStream looks for any gzipped stream (including block compressed)
-        return IOUtil.isGZIPInputStream(bis) ? new GZIPInputStream(bis) : bis;
+        return IOUtil.isGZIPInputStream(bis) ? new SafeGZIPInputStream(bis) : bis;
     }
 
     private static <FEATURE_TYPE extends Feature, SOURCE> VCFHeader readHeaderFrom(final InputStream in, final FeatureCodec<FEATURE_TYPE, SOURCE> featureCodec) throws IOException {

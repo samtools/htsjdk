@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -40,7 +41,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.function.Function;
-import java.util.zip.GZIPInputStream;
 
 /**
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
@@ -410,7 +410,7 @@ public abstract class SamReaderFactory {
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (IOUtil.isGZIPInputStream(bufferedStream)) {
-                        primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                        primitiveSamReader = new SAMTextReader(new SafeGZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isCRAMFile(bufferedStream)) {
                         if (referenceSource == null) {
                             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();

@@ -1,5 +1,6 @@
 package htsjdk.tribble.gff;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -24,7 +25,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Codec for parsing Gff3 files, as defined in https://github.com/The-Sequence-Ontology/Specifications/blob/31f62ad469b31769b43af42e0903448db1826925/gff3.md
@@ -306,7 +306,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
             if (canDecode) {
 
                 // Crack open the file and look at the top of it:
-                final InputStream inputStream = IOUtil.hasGzipFileExtension(p)? new GZIPInputStream(Files.newInputStream(p)) : Files.newInputStream(p);
+                final InputStream inputStream = IOUtil.hasGzipFileExtension(p)? new SafeGZIPInputStream(Files.newInputStream(p)) : Files.newInputStream(p);
 
                 try ( BufferedReader br = new BufferedReader(new InputStreamReader(inputStream)) ) {
 

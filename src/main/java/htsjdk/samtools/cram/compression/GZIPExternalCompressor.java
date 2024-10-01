@@ -24,6 +24,7 @@
  */
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
@@ -83,7 +84,7 @@ public final class GZIPExternalCompressor extends ExternalCompressor {
         // embedded in a CRAM stream, the writeCompressionLevel value is not recovered
         // from the block, and therefore does not necessarily reflect the value that was used
         // to compress the data that is now being uncompressed
-        try (final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data))) {
+        try (final GZIPInputStream gzipInputStream = new SafeGZIPInputStream(new ByteArrayInputStream(data))) {
             return InputStreamUtils.readFully(gzipInputStream);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);

@@ -25,6 +25,7 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
@@ -120,7 +121,7 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
 
     @Test(dataProvider = "compressedVcfsToTest")
     public void testWrappedSeekableStreamInGZIPinputStream(final File input, final long nLines) throws Exception {
-        try (final LineReader reader = new BufferedLineReader(new GZIPInputStream(new SeekableFileStream(input)))) {
+        try (final LineReader reader = new BufferedLineReader(new SafeGZIPInputStream(new SeekableFileStream(input)))) {
             for (int i = 0; i < nLines; i++) {
                 Assert.assertNotNull(reader.readLine(), "line #" + reader.getLineNumber());
             }
@@ -131,7 +132,7 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
 
     @Test(dataProvider = "compressedVcfsToTest")
     public void testConsistencyWithBgzip(final File input, final long nLines) throws Exception {
-        try (final InputStream gzIs = new GZIPInputStream(new SeekableFileStream(input));
+        try (final InputStream gzIs = new SafeGZIPInputStream(new SeekableFileStream(input));
              final InputStream bgzIs = new BlockCompressedInputStream(input)) {
             int bgz = bgzIs.read();
             while (bgz != -1) {

@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
@@ -43,7 +44,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
     public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
@@ -715,7 +715,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             Path path = IOUtil.getPath(potentialInput);
             //isVCFStream closes the stream that's passed in
             return isVCFStream(Files.newInputStream(path), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new GZIPInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE) ||
+                    isVCFStream(new SafeGZIPInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE) ||
                     isVCFStream(new BlockCompressedInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE);
         } catch ( FileNotFoundException e ) {
             return false;

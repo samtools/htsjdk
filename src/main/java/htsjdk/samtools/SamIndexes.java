@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -113,7 +114,7 @@ public enum SamIndexes {
 
             if (IOUtil.isGZIPInputStream(bss)) {
                 bss.seek(0);
-                GZIPInputStream gzipStream = new GZIPInputStream(bss);
+                GZIPInputStream gzipStream = new SafeGZIPInputStream(bss);
                 if (doesStreamStartWith(gzipStream, CSI.magic)) {
                     indexType = CSI;
                 } else {

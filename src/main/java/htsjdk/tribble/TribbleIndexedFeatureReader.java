@@ -24,6 +24,7 @@
 package htsjdk.tribble;
 
 import htsjdk.io.HtsPath;
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -256,7 +257,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (IOUtil.hasBlockCompressedExtension(new HtsPath(path).getURI())) {
                 // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
-                is = new GZIPInputStream(new BufferedInputStream(is));
+                is = new SafeGZIPInputStream(new BufferedInputStream(is));
             }
             pbs = new PositionalBufferedStream(is);
             final SOURCE source = codec.makeSourceFromStream(pbs);
@@ -330,7 +331,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (IOUtil.hasBlockCompressedExtension(path)) {
                 // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
                 // and seekableStream does not support single byte reads
-                final InputStream is = new GZIPInputStream(new BufferedInputStream(inputStream, 512000));
+                final InputStream is = new SafeGZIPInputStream(new BufferedInputStream(inputStream, 512000));
                 pbs = new PositionalBufferedStream(is, 1000);  // Small buffer as this is buffered already.
             } else {
                 pbs = new PositionalBufferedStream(inputStream, 512000);

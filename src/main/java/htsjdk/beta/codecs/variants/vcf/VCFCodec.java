@@ -6,6 +6,7 @@ import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.plugin.variants.VariantsFormats;
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -17,7 +18,6 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
 
 /**
  * InternalAPI
@@ -62,7 +62,7 @@ public abstract class VCFCodec implements VariantsCodec {
         final byte[] signatureBytes = new byte[getSignatureLength()];
         try {
             final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream) ?
-                    new GZIPInputStream(probingInputStream) :
+                    new SafeGZIPInputStream(probingInputStream) :
                     probingInputStream;
             final int numRead = wrappedInputStream.read(signatureBytes);
             if (numRead < 0) {

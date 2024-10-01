@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
@@ -735,7 +736,7 @@ public class IOUtil {
     public static InputStream openGzipFileForReading(final Path path) {
 
         try {
-            return new GZIPInputStream(Files.newInputStream(path));
+            return new SafeGZIPInputStream(Files.newInputStream(path));
         }
         catch (IOException ioe) {
             throw new SAMException("Error opening file: " + path, ioe);
@@ -1304,7 +1305,7 @@ public class IOUtil {
         stream.mark(GZIP_HEADER_READ_LENGTH);
 
         try {
-            final GZIPInputStream gunzip = new GZIPInputStream(stream);
+            final GZIPInputStream gunzip = new SafeGZIPInputStream(stream);
             final int ch = gunzip.read();
             return true;
         } catch (final IOException ioe) {

@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.io.SafeGZIPInputStream;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.build.CramIO;
@@ -14,7 +15,6 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Scanner;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -136,7 +136,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
         Scanner scanner = null;
 
         try {
-            scanner = new Scanner(new GZIPInputStream(is));
+            scanner = new Scanner(new SafeGZIPInputStream(is));
             while (scanner.hasNextLine()) {
                 final String line = scanner.nextLine();
                 craiIndex.addEntry(new CRAIEntry(line));
