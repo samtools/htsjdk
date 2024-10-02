@@ -333,6 +333,17 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void testOpenIrregularPath() throws IOException {
+        // See: htsjdk.samtools.SamInputResource.of(java.nio.file.Path)
+        // Related to https://github.com/samtools/htsjdk/issues/1716
+        final File irregularFile = new File("/dev/null");
+        try (final SamReader fileReader = SamReaderFactory.makeDefault().open(irregularFile);
+             final SamReader pathReader = SamReaderFactory.makeDefault().open(irregularFile.toPath())) {
+            Assert.assertEquals(fileReader.getResourceDescription(), pathReader.getResourceDescription());
+        }
+    }
+
     @DataProvider(name = "URIFallbackProvider")
     public Object[][] URIFallbackProvider() throws MalformedURLException {
         return new Object[][]{

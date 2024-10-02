@@ -100,7 +100,9 @@ public abstract class SamReaderFactory {
     public SamReader open(final Path path,
             Function<SeekableByteChannel, SeekableByteChannel> dataWrapper,
             Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
-        final SamInputResource r = SamInputResource.of(path, dataWrapper);
+        final SamInputResource r = dataWrapper == null
+                ? SamInputResource.of(path)
+                : SamInputResource.of(path, dataWrapper);
         final Path indexMaybe = SamFiles.findIndex(path);
         if (indexMaybe != null) r.index(indexMaybe, indexWrapper);
         return open(r);
