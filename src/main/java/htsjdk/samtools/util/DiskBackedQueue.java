@@ -54,7 +54,7 @@ import java.util.stream.Collectors;
  *
  * Created by bradt on 4/28/14.
  */
-public class DiskBackedQueue<E> implements Queue<E> {
+public class DiskBackedQueue<E> implements Queue<E>, AutoCloseable {
     private final int maxRecordsInRamQueue;
     private final Queue<E> ramRecords;
     private Path diskRecords = null;
@@ -95,7 +95,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         this.tmpDirs = tmpDirs;
         this.codec = codec;
         this.maxRecordsInRamQueue = (maxRecordsInRam == 0) ? 0 : maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
-        this.ramRecords = new ArrayDeque<E>(this.maxRecordsInRamQueue);
+        this.ramRecords = new ArrayDeque<>(this.maxRecordsInRamQueue);
     }
 
     /**
@@ -246,18 +246,6 @@ public class DiskBackedQueue<E> implements Queue<E> {
         this.inputStream = null;
         this.diskRecords = null;
         this.canAdd = true;
-    }
-
-    /**
-     * Clean up disk resources in case clear() has not been explicitly called (as would be preferable)
-     * Closes the input and output streams associated with this DiskBackedQueue and deletes the temporary file
-     *
-     * @throws Throwable
-     */
-    @Override
-    protected void finalize() throws Throwable {
-        this.closeIOResources();
-        super.finalize(); // NB: intellij wanted me to do this. Need I?  I'm not extending anything
     }
 
     /**
@@ -419,5 +407,14 @@ public class DiskBackedQueue<E> implements Queue<E> {
     @Override
     public <T1> T1[] toArray(final T1[] a) {
         throw new UnsupportedOperationException("DiskBackedQueue does not support toArray(T1[] a)");
+    }
+
+    /**
+    * Clean up disk resources in case clear() has not been explicitly called (as would be preferable)
+    * Closes the input and output streams associated with this DiskBackedQueue and deletes the temporary file
+    */
+    @Override
+    public void close() {
+        clear();
     }
 }
