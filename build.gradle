@@ -83,7 +83,7 @@ import org.gradle.internal.os.OperatingSystem;
 
 tasks.withType(Test).configureEach { task ->
     task.outputs.upToDateWhen { false } // tests will always rerun
-
+    systemProperty "java.nio.file.spi.DefaultFileSystemProvider", "htsjdk.io.PipeSafeFileSystemProvider"
     // Always run serially because there are some very badly behaved tests in HTSJDK that
     // will cause errors and even deadlocks if run multi-threaded
     task.maxParallelForks = 1
