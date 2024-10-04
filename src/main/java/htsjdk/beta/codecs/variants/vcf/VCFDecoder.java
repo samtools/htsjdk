@@ -206,9 +206,9 @@ public abstract class VCFDecoder implements VariantsDecoder {
         //TODO: this resolves the index automatically. it should check to make sure the provided index
         // matches the one that is automatically resolved, otherwise throw since the request will not be honored
         return AbstractFeatureReader.getFeatureReader(
-                variantsIOPath.toPath().toString(),
+                variantsIOPath.getURIString(),
                 indexIOPath.isPresent() ?
-                        indexIOPath.get().toPath().toString() :
+                        indexIOPath.get().getURIString() :
                         null,
                 vcfCodec,
                 indexIOPath.isPresent(),
