@@ -7,7 +7,7 @@ task compare {
     }
     command {
         echo "Checking the result from previous test:"
-        echo "$result"
+        echo "~{result}"
     }
     runtime {
         docker: image_to_use
