@@ -1,0 +1,4 @@
+{
+  "test_workflow.input_file": "gs://hellbender/test/resources/nio/big.txt"
+}
+
