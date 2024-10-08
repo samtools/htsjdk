@@ -1,4 +1,4 @@
 {
-  "eval_workflow.result": "default"
+  "eval_workflow.result": "test_output:test_workflow.result"
 }
 
