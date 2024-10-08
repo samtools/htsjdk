@@ -1,0 +1,4 @@
+{
+  "test_workflow.image_to_use": "ubuntu:latest"
+}
+
