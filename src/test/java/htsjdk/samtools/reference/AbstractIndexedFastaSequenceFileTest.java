@@ -24,7 +24,11 @@
 
 package htsjdk.samtools.reference;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloserUtil;
@@ -40,6 +44,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -369,4 +374,95 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
                     withFilesAdjacent.getSubsequenceAt("chrM", 100, 1000).getBases());
         }
     }
+
+    //test for IndexedFastaSequenceFile (non-gzipped)
+    @Test
+    public void testIndexedFastaSequenceFileFromNio() throws IOException {
+        final String dataDir = "src/test/resources/htsjdk/samtools/reference";
+        final IOPath fastaFile = new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta").getAbsolutePath());
+        final IOPath indexFile = new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.fai").getAbsolutePath());;
+
+        // move everything to a jimfs NIO file system so that each file is in a separate directory so it is in
+        // a directory by iteself, so we can catch any downstream code that makes assumptions that the index
+        // files are siblings of the fasta in the same directory
+        try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+
+            // move the fasta
+            final Path fastaDir = jimfs.getPath("fastaDir");
+            final Path nioFastaDir = Files.createDirectory(fastaDir);
+            Assert.assertEquals(nioFastaDir, fastaDir);
+            final IOPath remoteFasta = new HtsPath(
+                    Files.copy(
+                            fastaFile.toPath(),
+                            nioFastaDir.resolve(fastaFile.getBaseName().get() + fastaFile.getExtension().get())).toUri().toString());
+
+            // move the index file into a separate dir
+            final Path indexDir = jimfs.getPath("indexDir");
+            final Path nioIndexDir = Files.createDirectory(indexDir);
+            Assert.assertEquals(nioIndexDir, indexDir);
+            final IOPath remoteIndex = new HtsPath(
+                    Files.copy(
+                            indexFile.toPath(),
+                            nioFastaDir.resolve(indexFile.getBaseName().get() + indexFile.getExtension().get())).toUri().toString());
+
+            final FastaSequenceIndex fsi = new FastaSequenceIndex(remoteIndex.toPath());
+            final IndexedFastaSequenceFile ifsf = new IndexedFastaSequenceFile(remoteFasta, null, fsi);
+            final ReferenceSequence rs = ifsf.getSubsequenceAt("chrM", 4, 10);
+            Assert.assertEquals(rs.getBaseString(), "CACAGGT");
+        }
+    }
+
+    @Test
+    public void testBlockCompressedIndexedFastaSequenceFileFromNio() throws IOException {
+        final String dataDir = "src/test/resources/htsjdk/samtools/reference";
+        final IOPath fastaFile = new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz").getAbsolutePath());
+        final IOPath indexFile = new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.fai").getAbsolutePath());;
+        final IOPath gziIndexFile = new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz.gzi").getAbsolutePath());;
+
+        // move everything to a jimfs NIO file system so that each file is in a separate directory so it is in
+        // a directory by iteself, so we can catch any downstream code that makes assumptions that the index
+        // files are siblings of the fasta in the same directory
+        try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+
+            // move the fasta
+            final Path fastaDir = jimfs.getPath("fastaDir");
+            final Path nioFastaDir = Files.createDirectory(fastaDir);
+            Assert.assertEquals(nioFastaDir, fastaDir);
+            final IOPath remoteFasta = new HtsPath(
+                    Files.copy(
+                            fastaFile.toPath(),
+                            nioFastaDir.resolve(fastaFile.getBaseName().get() + fastaFile.getExtension().get())).toUri().toString());
+
+            // move the index file into a completely separate dir
+            final Path indexDir = jimfs.getPath("indexDir");
+            final Path nioIndexDir = Files.createDirectory(indexDir);
+            Assert.assertEquals(nioIndexDir, indexDir);
+            final IOPath remoteIndex = new HtsPath(
+                    Files.copy(
+                            indexFile.toPath(),
+                            nioFastaDir.resolve(indexFile.getBaseName().get() + indexFile.getExtension().get())).toUri().toString());
+
+            // move the optional gzi index ito yet another separate dir
+            final Path gziDir = jimfs.getPath("gziDir");
+            final Path nioGZIDir = Files.createDirectory(gziDir);
+            Assert.assertEquals(nioGZIDir, gziDir);
+            final IOPath remoteGZI =
+                    new HtsPath(
+                            Files.copy(
+                                    gziIndexFile.toPath(),
+                                    nioGZIDir.resolve(gziIndexFile.getBaseName().get() + gziIndexFile.getExtension().get())
+                            ).toUri().toString()
+                    );
+
+            final FastaSequenceIndex fsi = new FastaSequenceIndex(remoteIndex.toPath());
+            final BlockCompressedIndexedFastaSequenceFile ifsf = new BlockCompressedIndexedFastaSequenceFile(
+                    remoteFasta,
+                    null,
+                    fsi,
+                    GZIIndex.loadIndex(remoteGZI.toPath()));
+            final ReferenceSequence rs = ifsf.getSubsequenceAt("chrM", 4, 10);
+            Assert.assertEquals(rs.getBaseString(), "CACAGGT");
+        }
+    }
+
 }
