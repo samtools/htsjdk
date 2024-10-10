@@ -15,6 +15,7 @@ src/htsjdk.iml
 #gradle stuff
 /.gradle/
 /build/
+*.class
 
 #jenv
 .java-version
