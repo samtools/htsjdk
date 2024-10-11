@@ -14,15 +14,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ 17 ]
+        java: [ 17, 21]
         experimental: [false]
+        include:
+           - java: 23
+             experimental: true
       fail-fast: false
     continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up java ${{ matrix.Java }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.Java }}
           distribution: 'adopt'
@@ -39,7 +42,7 @@ jobs:
         run: ./gradlew test jacocoTestReport
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.Java }}
           path: build/reports/tests
@@ -48,9 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Tests that require external APIs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'adopt'
@@ -65,7 +68,7 @@ jobs:
 #        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-external-apis
           path: build/reports/tests
@@ -74,9 +77,9 @@ jobs:
     runs-on: ubuntu-latest
     name: FTP tests
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'adopt'
@@ -91,7 +94,7 @@ jobs:
 #        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-ftp
           path: build/reports/tests
@@ -99,9 +102,9 @@ jobs:
     runs-on: ubuntu-latest
     name: SpotBugs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'adopt'
@@ -112,7 +115,7 @@ jobs:
         run: ./gradlew spotBugsMain spotBugsTest
       - name: Upload spotBugs Report
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spotBugs-Report
           path: build/reports/spotbugs

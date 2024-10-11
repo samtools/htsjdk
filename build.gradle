@@ -48,6 +48,9 @@ dependencies {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(23)
     }
     withJavadocJar()
     withSourcesJar()
@@ -64,6 +67,7 @@ defaultTasks 'jar'
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+    options.release.set(17)
 }
 
 tasks.withType(Javadoc).configureEach {
