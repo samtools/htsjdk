@@ -225,9 +225,22 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
     public static boolean isTabix(String resourcePath, String indexPath) throws IOException {
         if(indexPath == null){
-            indexPath = ParsingUtils.appendToPath(resourcePath, FileExtensions.TABIX_INDEX);
+            String tempTbiIndexPath = ParsingUtils.appendToPath(resourcePath, FileExtensions.TABIX_INDEX);
+            String tempCsiIndexPath = ParsingUtils.appendToPath(resourcePath, FileExtensions.CSI);
+            if(IOUtil.hasBlockCompressedExtension(resourcePath)){
+                if(ParsingUtils.resourceExists(tempTbiIndexPath)){
+                    indexPath = tempTbiIndexPath;
+                    return true;
+                }
+                else if(ParsingUtils.resourceExists(tempCsiIndexPath)){
+                    indexPath = tempCsiIndexPath;
+                    return true;
+                }
+                else return false;
+            }
+            else return false;
         }
-        return IOUtil.hasBlockCompressedExtension(resourcePath) && ParsingUtils.resourceExists(indexPath);
+        else return IOUtil.hasBlockCompressedExtension(resourcePath) && ParsingUtils.resourceExists(indexPath);
     }
 
     public static class ComponentMethods{
