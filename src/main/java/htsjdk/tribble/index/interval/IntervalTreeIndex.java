@@ -25,6 +25,7 @@ import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -210,7 +211,7 @@ public class IntervalTreeIndex extends AbstractIndex {
 
             tree = new IntervalTree();
 
-            name = dis.readString();
+            name = dis.readString(StandardCharsets.US_ASCII);
             int nIntervals = dis.readInt();
             while (nIntervals-- > 0) {
 
