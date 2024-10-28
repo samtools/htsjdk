@@ -30,6 +30,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
@@ -138,6 +139,21 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         System.err.printf("testFirstSequence runtime: %dms%n", (endTime - startTime)) ;
     }
 
+    @Test(dataProvider="homosapiens")
+    public void testSubsequenceAtLocatable(AbstractIndexedFastaSequenceFile sequenceFile) {
+        long startTime = System.currentTimeMillis();
+        ReferenceSequence sequence = sequenceFile.getSubsequenceAt(new Interval("chrM",1,firstBasesOfChrM.length()));
+        long endTime = System.currentTimeMillis();
+
+        Assert.assertEquals(sequence.getName(),"chrM","Sequence contig is not correct");
+        Assert.assertEquals(sequence.getContigIndex(),0,"Sequence contig index is not correct");
+        Assert.assertEquals(StringUtil.bytesToString(sequence.getBases()),firstBasesOfChrM,"First n bases of chrM are incorrect");
+
+        CloserUtil.close(sequenceFile);
+
+        System.err.printf("testSubsequenceAtLocatable runtime: %dms%n", (endTime - startTime)) ;
+    }
+    
     @Test(dataProvider="homosapiens")
     public void testFirstSequenceExtended(AbstractIndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
