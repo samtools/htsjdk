@@ -32,7 +32,7 @@ public abstract class VCFCodec implements VariantsCodec {
         {
             add(FileExtensions.VCF);
             add(FileExtensions.COMPRESSED_VCF);
-            add(".vcf.bgz");
+            add(FileExtensions.COMPRESSED_VCF_BGZ);
         }
     };
 

@@ -65,9 +65,10 @@ public final class FileExtensions {
     public static final String VCF = ".vcf";
     public static final String VCF_INDEX = TRIBBLE_INDEX;
     public static final String BCF = ".bcf";
+    public static final String COMPRESSED_VCF_BGZ = ".vcf.bgz"; // suffix used by gnomad see https://gnomad.broadinstitute.org/data#v4
     public static final String COMPRESSED_VCF = ".vcf.gz";
     public static final String COMPRESSED_VCF_INDEX = ".tbi";
-    public static final List<String> VCF_LIST = Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, BCF));
+    public static final List<String> VCF_LIST = Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, COMPRESSED_VCF_BGZ, BCF));
 
     public static final String INTERVAL_LIST = ".interval_list";
     public static final String COMPRESSED_INTERVAL_LIST = ".interval_list.gz";

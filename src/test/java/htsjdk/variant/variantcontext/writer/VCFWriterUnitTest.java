@@ -90,7 +90,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void testBasicWriteAndRead(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
-        if (FileExtensions.COMPRESSED_VCF.equals(extension)) {
+        if (FileExtensions.COMPRESSED_VCF.equals(extension) || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + FileExtensions.VCF_INDEX);
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
@@ -136,7 +136,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
         fakeVCFFile.deleteOnExit();
-        if (FileExtensions.COMPRESSED_VCF.equals(extension)) {
+        if (FileExtensions.COMPRESSED_VCF.equals(extension) || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
@@ -159,7 +159,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFFile);
                 FileInputStream fis = new FileInputStream(fakeVCFFile)) {
             AsciiLineReaderIterator iterator =
-                    new AsciiLineReaderIterator(new AsciiLineReader(".vcf.gz".equals(extension) ? bcis : fis));
+                    new AsciiLineReaderIterator(new AsciiLineReader(FileExtensions.COMPRESSED_VCF.equals(extension) || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension) ? bcis : fis));
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());
@@ -300,7 +300,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         final File vcf = new File(tempDir, "test" + extension);
         final String indexExtension;
-        if (extension.equals(FileExtensions.COMPRESSED_VCF)) {
+        if (extension.equals(FileExtensions.COMPRESSED_VCF) || extension.equals(FileExtensions.COMPRESSED_VCF_BGZ)) {
             indexExtension = FileExtensions.TABIX_INDEX;
         } else {
             indexExtension = FileExtensions.TRIBBLE_INDEX;
@@ -333,7 +333,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 // TODO: BCF doesn't work because header is not properly constructed.
                 // {".bcf"},
                 {FileExtensions.VCF},
-                {FileExtensions.COMPRESSED_VCF}
+                {FileExtensions.COMPRESSED_VCF},
+                {FileExtensions.COMPRESSED_VCF_BGZ}
         };
     }
 
