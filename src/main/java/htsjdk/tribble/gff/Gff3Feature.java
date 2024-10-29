@@ -77,8 +77,8 @@ public interface Gff3Feature extends Feature {
      * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the specified key
      * @throws IllegalArgumentException if there is more than one value.
      */
-    default Optional<String> getAttr(final String key) {
-       return getBaseData().getAttr(key);
+    default Optional<String> getUniqueAttribute(final String key) {
+       return getBaseData().getUniqueAttribute(key);
     }
     
     default Map<String, List<String>> getAttributes() { return getBaseData().getAttributes();}

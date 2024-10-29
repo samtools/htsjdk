@@ -187,7 +187,7 @@ public class Gff3BaseData implements Locatable {
      * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the specified key
      * @throws IllegalArgumentException if there is more than one value
      */
-    public Optional<String> getAttr(final String key) {
+    public Optional<String> getUniqueAttribute(final String key) {
         final List<String> atts = getAttribute(key);
         switch(atts.size()) {
             case 0 : return Optional.empty();
