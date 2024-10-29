@@ -1,5 +1,6 @@
 package htsjdk.tribble.gff;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.annotation.Strand;
 
 import java.util.ArrayList;
@@ -7,8 +8,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public class Gff3BaseData {
+public class Gff3BaseData implements Locatable {
     private final String contig;
     private final String source;
     private final String type;
@@ -116,6 +118,7 @@ public class Gff3BaseData {
         return hash;
     }
 
+    @Override
     public String getContig() {
         return contig;
     }
@@ -128,10 +131,12 @@ public class Gff3BaseData {
         return type;
     }
 
+    @Override
     public int getStart() {
         return start;
     }
 
+    @Override
     public int getEnd() {
         return end;
     }
@@ -152,10 +157,45 @@ public class Gff3BaseData {
         return attributes;
     }
 
+    /** 
+     * get the values as List for the <tt>key</tt>, or an empty list if this <tt>key</tt> is not present
+     * 
+     * @param key key whose presence in this map is to be tested
+     * @return the values as List, or an empty list if this key is not present
+     */
     public List<String> getAttribute(final String key) {
         return attributes.getOrDefault(key, Collections.emptyList());
     }
 
+    /**
+     * Returns <tt>true</tt> if this record contains an attribute for the specified key.
+     * 
+     * @param key key whose presence in this map is to be tested
+     * @return <tt>true</tt> if this map contains an attribute for the specified key
+     */
+    public boolean hasAttribute(final String key) {
+        return attributes.containsKey(key);
+    }
+    
+    /**
+     * Most attributes in a GFF file are present just one time in a line, e.g. : <tt>gene_biotype</tt>,  <tt>gene_name</tt>, etc ...  
+     * This function returns an <tt>Optional.empty</tt> if the <tt>key</tt> is not present,
+     *  an <tt>Optional.of(value)</tt> if there is only one value associated to the <tt>key</tt>,
+     *  or it throws an <tt>IllegalArgumentException</tt> if there is more than one value.
+     * 
+     * @param key key whose presence in the attributes is to be tested
+     * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the specified key
+     * @throws IllegalArgumentException if there is more than one value
+     */
+    public Optional<String> getUniqueAttribute(final String key) {
+        final List<String> atts = getAttribute(key);
+        switch(atts.size()) {
+            case 0 : return Optional.empty();
+            case 1 : return Optional.of(atts.get(0));
+            default : throw new IllegalArgumentException("getUniqueAttribute cannot be called with key="+key+" because it contains more than one value " + String.join(", ", atts));
+        }
+    }
+    
     public String getId() {
         return id;
     }

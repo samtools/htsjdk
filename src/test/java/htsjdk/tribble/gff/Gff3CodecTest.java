@@ -79,6 +79,8 @@ public class Gff3CodecTest extends HtsjdkTest {
         for (final Gff3Feature feature : reader.iterator()) {
             for(final String key : skip_attributes) {
                 Assert.assertTrue(feature.getAttribute(key).isEmpty());
+                Assert.assertFalse(feature.hasAttribute(key));
+                Assert.assertFalse(feature.getUniqueAttribute(key).isPresent());
             }
             countTotalFeatures++;
         }
@@ -199,6 +201,10 @@ public class Gff3CodecTest extends HtsjdkTest {
         Assert.assertEquals(feature.getType(), "a region");
         Assert.assertEquals(feature.getID(), "this is the ID of this wacky feature^&%##$%*&>,. ,.");
         Assert.assertEquals(feature.getAttribute("Another key"), Arrays.asList("Another=value", "And a second, value"));
+        Assert.assertTrue(feature.hasAttribute("Another key"));
+        Assert.assertTrue(feature.hasAttribute(Gff3Constants.ID_ATTRIBUTE_KEY));
+        Assert.assertTrue(feature.getUniqueAttribute(Gff3Constants.ID_ATTRIBUTE_KEY).isPresent());
+        Assert.assertFalse(feature.getUniqueAttribute("missing").isPresent());
     }
 
 

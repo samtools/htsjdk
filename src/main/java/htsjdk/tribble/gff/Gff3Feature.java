@@ -5,6 +5,7 @@ import htsjdk.tribble.annotation.Strand;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -55,7 +56,31 @@ public interface Gff3Feature extends Feature {
     default List<String> getAttribute(final String key) {
         return getBaseData().getAttribute(key);
     }
+    
+    /**
+     * Returns <tt>true</tt> if this record contains an attribute for the specified key.
+     * 
+     * @param key key whose presence in this map is to be tested
+     * @return <tt>true</tt> if this map contains an attribute for the specified key
+     */
+    default boolean hasAttribute(final String key) {
+        return getBaseData().hasAttribute(key);
+    }
 
+    /**
+     * Most attributes in a GFF file are present just one time in a line, e.g. : <tt>gene_biotype</tt>,  <tt>gene_name</tt>, etc ...  
+     * This function returns an <tt>Optional.empty</tt> if the <tt>key</tt> is not present,
+     *  an <tt>Optional.of(value)</tt> if there is only one value associated to the <tt>key</tt>,
+     *  or it throws an <tt>IllegalArgumentException</tt> if there is more than one value.
+     * 
+     * @param key key whose presence in the attributes is to be tested
+     * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the specified key
+     * @throws IllegalArgumentException if there is more than one value.
+     */
+    default Optional<String> getUniqueAttribute(final String key) {
+       return getBaseData().getUniqueAttribute(key);
+    }
+    
     default Map<String, List<String>> getAttributes() { return getBaseData().getAttributes();}
 
     default String getID() { return getBaseData().getId();}
