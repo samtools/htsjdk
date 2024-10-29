@@ -192,7 +192,7 @@ public class Gff3BaseData implements Locatable {
         switch(atts.size()) {
             case 0 : return Optional.empty();
             case 1 : return Optional.of(atts.get(0));
-            default : throw new IllegalArgumentException("getAttr cannot be called with key="+key+" because it contains more than one value " + String.join(", ", atts));
+            default : throw new IllegalArgumentException("getUniqueAttribute cannot be called with key="+key+" because it contains more than one value " + String.join(", ", atts));
         }
     }
     
