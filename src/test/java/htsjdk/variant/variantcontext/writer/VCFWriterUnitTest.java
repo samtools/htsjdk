@@ -159,7 +159,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFFile);
                 FileInputStream fis = new FileInputStream(fakeVCFFile)) {
             AsciiLineReaderIterator iterator =
-                    new AsciiLineReaderIterator(new AsciiLineReader(".vcf.gz".equals(extension) ? bcis : fis));
+                    new AsciiLineReaderIterator(new AsciiLineReader(FileExtensions.COMPRESSED_VCF.equals(extension) || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension) ? bcis : fis));
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());
