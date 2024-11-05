@@ -35,11 +35,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -47,9 +43,17 @@ import java.util.function.Function;
  */
 public class TabixReader implements AutoCloseable {
     private final String mFilePath;
-    private final String mIndexPath;
+    private String mIndexPath;
     private final Function<SeekableByteChannel, SeekableByteChannel> mIndexWrapper;
     private final BlockCompressedInputStream mFp;
+
+    private int min_shift;
+
+    private int depth;
+
+    private int l_aux;
+
+    private int maxBins;
 
     private int mPreset;
     private int mSc;
@@ -62,11 +66,15 @@ public class TabixReader implements AutoCloseable {
 
     private Map<String, Integer> mChr2tid;
 
+    private static final byte[] CSI_MAGIC = {'C','S','I',1};
+
     private static int MAX_BIN = 37450;
     //private static int TAD_MIN_CHUNK_GAP = 32768; (not used)
     private static int TAD_LIDX_SHIFT = 14;
     /** default buffer size for <code>readLine()</code> */
     private static final int DEFAULT_BUFFER_SIZE = 1000;
+
+    private boolean isCsiIndex = false;
 
     protected static class TPair64 implements Comparable<TPair64> {
         long u, v;
@@ -157,8 +165,14 @@ public class TabixReader implements AutoCloseable {
         mFilePath = filePath;
         mFp = new BlockCompressedInputStream(stream);
         mIndexWrapper = indexWrapper;
-        if(indexPath == null){
-            mIndexPath = ParsingUtils.appendToPath(filePath, FileExtensions.TABIX_INDEX);
+        if(indexPath == null) {
+            String tempTbiIndexPath = ParsingUtils.appendToPath(filePath, FileExtensions.TABIX_INDEX);
+            String tempCsiIndexPath = ParsingUtils.appendToPath(filePath, FileExtensions.CSI);
+            if (ParsingUtils.resourceExists(tempTbiIndexPath)) {
+                mIndexPath = tempTbiIndexPath;
+            } else if (ParsingUtils.resourceExists(tempCsiIndexPath)) {
+                mIndexPath = tempCsiIndexPath;
+            }
         } else {
             mIndexPath = indexPath;
         }
@@ -183,6 +197,25 @@ public class TabixReader implements AutoCloseable {
         for (k = 585 + (beg >> 17); k <= 585 + (end >> 17); ++k) list[i++] = k;
         for (k = 4681 + (beg >> 14); k <= 4681 + (end >> 14); ++k) list[i++] = k;
         return i;
+    }
+
+
+    /** regions to bins for CSI index. */
+    private static int reg2bins(long startPos, long endPos, int min_shift, int depth, int[] bins)
+    {
+        final long maxPos = (1L << (min_shift + 3 * depth)) - 1;
+        final long start = (startPos <= 0) ? 0 : ((long) startPos - 1L) & maxPos;
+        final long end = (endPos <= 0) ? maxPos : ((long) endPos - 1L) & maxPos;
+        if (start > end) {
+            return -1;
+        }
+
+        int l, t, n, s = min_shift + depth*3;
+        for (t = l = n = 0; l <= depth; s -= 3, t += 1<<l*3, ++l) {
+            int b = t + (int)(start>>s), e = t + (int)(end>>s), i;
+            for (i = b; i <= e; ++i) bins[n++] = i;
+        }
+        return n;
     }
 
     public static int readInt(final InputStream is) throws IOException {
@@ -231,18 +264,47 @@ public class TabixReader implements AutoCloseable {
         byte[] buf = new byte[4];
 
         is.read(buf, 0, 4); // read "TBI\1"
-        mSeq = new String[readInt(is)]; // # sequences
-        mChr2tid = new HashMap<String, Integer>( this.mSeq.length );
+
+        if(Arrays.equals(buf, CSI_MAGIC))
+            isCsiIndex = true;
+
+        if(isCsiIndex)
+        {
+            min_shift = readInt(is);
+            depth = readInt(is);
+            l_aux = readInt(is);
+        }
+        if(!isCsiIndex) {
+            mSeq = new String[readInt(is)]; // # sequences
+        }
         mPreset = readInt(is);
         mSc = readInt(is);
         mBc = readInt(is);
         mEc = readInt(is);
         mMeta = readInt(is);
         readInt(is);//unused
+        int l_nm = readInt(is);
+
+        if(isCsiIndex)
+        {
+            buf = new byte[l_nm];
+            is.read(buf);
+        }
+
+        if(isCsiIndex)
+        {
+            mSeq = new String[readInt(is)]; // # sequences
+        }
+
+        mChr2tid = new HashMap<String, Integer>(this.mSeq.length);
+
         // read sequence dictionary
-        int i, j, k, l = readInt(is);
-        buf = new byte[l];
-        is.read(buf);
+        int i, j, k;
+        if(!isCsiIndex)
+        {
+            buf = new byte[l_nm];
+            is.read(buf);
+        }
         for (i = j = k = 0; i < buf.length; ++i) {
             if (buf[i] == 0) {
                 byte[] b = new byte[i - j];
@@ -255,6 +317,7 @@ public class TabixReader implements AutoCloseable {
         }
         // read the index
         mIndex = new TIndex[mSeq.length];
+
         for (i = 0; i < mSeq.length; ++i) {
             // the binning index
             int n_bin = readInt(is);
@@ -262,6 +325,9 @@ public class TabixReader implements AutoCloseable {
             mIndex[i].b = new HashMap<Integer, TPair64[]>(n_bin);
             for (j = 0; j < n_bin; ++j) {
                 int bin = readInt(is);
+                long loffset;
+                if(isCsiIndex)
+                    loffset = readLong(is);
                 TPair64[] chunks = new TPair64[readInt(is)];
                 for (k = 0; k < chunks.length; ++k) {
                     long u = readLong(is);
@@ -271,9 +337,12 @@ public class TabixReader implements AutoCloseable {
                 mIndex[i].b.put(bin, chunks);
             }
             // the linear index
-            mIndex[i].l = new long[readInt(is)];
-            for (k = 0; k < mIndex[i].l.length; ++k)
-                mIndex[i].l[k] = readLong(is);
+            // Disabled for Csi format
+            if(!isCsiIndex) {
+                mIndex[i].l = new long[readInt(is)];
+                for (k = 0; k < mIndex[i].l.length; ++k)
+                    mIndex[i].l[k] = readLong(is);
+            }
         }
         // close
         is.close();
@@ -457,9 +526,22 @@ public class TabixReader implements AutoCloseable {
         long min_off;
         if (tid < 0 || beg < 0 || end <= 0 || tid >= this.mIndex.length) return EOF_ITERATOR;
         TIndex idx = mIndex[tid];
-        int[] bins = new int[MAX_BIN];
-        int i, l, n_off, n_bins = reg2bins(beg, end, bins);
-        if (idx.l.length > 0)
+        //int idx_len = idx.l.length;
+        int[] bins;
+        if(!isCsiIndex)
+            bins = new int[MAX_BIN];
+        else
+            bins = new int[((1<<3*depth) - 1)/7+1]; //plus one to prevent oob
+
+        int i, l, n_off;
+        int n_bins;
+
+        if(!isCsiIndex)
+            n_bins = reg2bins(beg, end, bins);
+        else
+            n_bins = reg2bins(beg, end, min_shift, depth, bins);
+
+        if (!isCsiIndex && idx.l.length > 0) //disable linear index for CSI
             min_off = (beg >> TAD_LIDX_SHIFT >= idx.l.length) ? idx.l[idx.l.length - 1] : idx.l[beg >> TAD_LIDX_SHIFT];
         else min_off = 0;
         for (i = n_off = 0; i < n_bins; ++i) {
