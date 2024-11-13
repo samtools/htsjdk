@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.fqzcomp.FQZCompDecode;
 import org.apache.commons.compress.utils.IOUtils;
@@ -68,6 +69,11 @@ public class FQZCompInteropTest extends HtsjdkTest {
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
             final ByteBuffer uncompressedHtsjdkBytes = fqzcompDecode.uncompress(preCompressedInteropBytes);
+
+            // for some reason, the raw, uncompressed interop test file streams appear to be fastq rather than phred (!),
+            // so before we can compare the results to the raw stream, we need convert them so they match the native
+            // format returned by the codec
+            SAMUtils.fastqToPhred(uncompressedInteropBytes.array());
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);

@@ -1,17 +1,17 @@
 package htsjdk.samtools.cram.compression.fqzcomp;
 
-public class FQZParam {
-    private int context;
-    private int parameterFlags; // Per-parameter block bit-flags
-    // TODO: rename - follow names from spec. These flags should be set using parameterFlags value
-    private boolean doDedup;
-    private int fixedLen;
-    private boolean doSel;
-    private boolean doQmap;
-    private boolean doPos;
-    private boolean doDelta;
-    private boolean doQtab;
+import java.nio.ByteBuffer;
 
+public class FQZParam {
+    private static final int DEDUP_FLAG_MASK = 0x02;
+    private static final int FIXED_LEN_FLAG_MASK = 0x04;
+    private static final int SEL_FLAG_MASK = 0x08;
+    private static final int QMAP_FLAG_MASK = 0x10;
+    private static final int PTAB_FLAG_MASK = 0x20;
+    private static final int DTAB_FLAG_MASK = 0x40;
+    private static final int QTAB_FLAG_MASK = 0x80;
+
+    private int context;
     private int maxSymbols; // Total number of distinct quality values
     private int qualityContextBits; // Total number of bits for Quality context
     private int qualityContextShift; // Left bit shift per successive quality in quality context
@@ -24,23 +24,62 @@ public class FQZParam {
     private int[] positionContextTable; // Position context lookup table
     private int[] deltaContextTable; // Delta context lookup table
 
-    private static final int DEDUP_FLAG_MASK = 0x02;
-    private static final int FIXED_LEN_FLAG_MASK = 0x04;
-    private static final int SEL_FLAG_MASK = 0x08;
-    private static final int QMAP_FLAG_MASK = 0x10;
-    private static final int PTAB_FLAG_MASK = 0x20;
-    private static final int DTAB_FLAG_MASK = 0x40;
-    private static final int QTAB_FLAG_MASK = 0x80;
+    // cached parameter flags
+    private boolean doDedup;
+    private int fixedLen;
+    private boolean doSel;
+    private boolean doQmap;
+    private boolean doPos;
+    private boolean doDelta;
+    private boolean doQtab;
 
-    public FQZParam() {
+    public FQZParam(final ByteBuffer inBuffer, final int numberOfSymbols) {
+        this.context = (inBuffer.get() & 0xFF) | ((inBuffer.get() & 0xFF) << 8);
+        cacheParameterFlags(inBuffer.get() & 0xFF);
+        this.maxSymbols = (inBuffer.get() & 0xFF);
+        final int x = inBuffer.get() & 0xFF;
+        this.qualityContextBits = x >> 4;
+        this.qualityContextShift = x & 0x0F;
+        final int y = inBuffer.get() & 0xFF;
+        this.qualityContextLocation = y >> 4;
+        this.selectorContextLocation = y & 0x0F;
+        final int z = inBuffer.get() & 0xFF;
+        this.positionContextLocation = z >> 4;
+        this.deltaContextLocation = z & 0x0F;
+
+        // Read Quality Map. Example: "unbin" Illumina Qualities
+        qualityMap = new int[numberOfSymbols];
+        if (isDoQmap()) {
+            for (int i = 0; i < getMaxSymbols(); i++) {
+                qualityMap[i] = inBuffer.get() & 0xFF;
+            }
+        } else {
+            for (int i = 0; i < numberOfSymbols; i++) {
+                qualityMap[i] = i;
+            }
+        }
+
+        // Read tables
+        qualityContextTable = new int[1024];
+        if (getQualityContextBits() > 0 && isDoQtab()) {
+            FQZUtils.readArray(inBuffer, qualityContextTable, numberOfSymbols);
+        } else {
+            for (int i = 0; i < numberOfSymbols; i++) {
+                qualityContextTable[i] = i;  // NOP
+            }
+        }
+        if (isDoPos()) {
+            this.positionContextTable = new int[1024];
+            FQZUtils.readArray(inBuffer, positionContextTable, 1024);
+        }
+        if (isDoDelta()) {
+            this.deltaContextTable = new int[numberOfSymbols];
+            FQZUtils.readArray(inBuffer, deltaContextTable, numberOfSymbols);
+        }
     }
 
     public int getContext() {
         return context;
-    }
-
-    public int getParameterFlags() {
-        return parameterFlags;
     }
 
     public boolean isDoDedup() {
@@ -115,91 +154,18 @@ public class FQZParam {
         return deltaContextTable;
     }
 
-    public void setContext(int context) {
-        this.context = context;
-    }
-
-    public void setParameterFlags(int parameterFlags) {
-        this.parameterFlags = parameterFlags;
-        setDoDedup((parameterFlags & DEDUP_FLAG_MASK) != 0);
-        setFixedLen(parameterFlags & FIXED_LEN_FLAG_MASK);
-        setDoSel((parameterFlags & SEL_FLAG_MASK) != 0);
-        setDoQmap((parameterFlags & QMAP_FLAG_MASK) != 0);
-        setDoPos((parameterFlags & PTAB_FLAG_MASK) != 0);
-        setDoDelta((parameterFlags & DTAB_FLAG_MASK) != 0);
-        setDoQtab((parameterFlags & QTAB_FLAG_MASK) != 0);
-    }
-
-    public void setDoDedup(boolean doDedup) {
-        this.doDedup = doDedup;
-    }
-
     public void setFixedLen(int fixedLen) {
         this.fixedLen = fixedLen;
     }
 
-    public void setDoSel(boolean doSel) {
-        this.doSel = doSel;
-    }
-
-    public void setDoQmap(boolean doQmap) {
-        this.doQmap = doQmap;
-    }
-
-    public void setDoPos(boolean doPos) {
-        this.doPos = doPos;
-    }
-
-    public void setDoDelta(boolean doDelta) {
-        this.doDelta = doDelta;
-    }
-
-    public void setDoQtab(boolean doQtab) {
-        this.doQtab = doQtab;
-    }
-
-    public void setMaxSymbols(int maxSymbols) {
-        this.maxSymbols = maxSymbols;
-    }
-
-    public void setQualityContextBits(int qualityContextBits) {
-        this.qualityContextBits = qualityContextBits;
-    }
-
-    public void setQualityContextShift(int qualityContextShift) {
-        this.qualityContextShift = qualityContextShift;
-    }
-
-    public void setQualityContextLocation(int qualityContextLocation) {
-        this.qualityContextLocation = qualityContextLocation;
-    }
-
-    public void setSelectorContextLocation(int selectorContextLocation) {
-        this.selectorContextLocation = selectorContextLocation;
-    }
-
-    public void setPositionContextLocation(int positionContextLocation) {
-        this.positionContextLocation = positionContextLocation;
-    }
-
-    public void setDeltaContextLocation(int deltaContextLocation) {
-        this.deltaContextLocation = deltaContextLocation;
-    }
-
-    public void setQualityMap(int[] qualityMap) {
-        this.qualityMap = qualityMap;
-    }
-
-    public void setQualityContextTable(int[] qualityContextTable) {
-        this.qualityContextTable = qualityContextTable;
-    }
-
-    public void setPositionContextTable(int[] positionContextTable) {
-        this.positionContextTable = positionContextTable;
-    }
-
-    public void setDeltaContextTable(int[] deltaContextTable) {
-        this.deltaContextTable = deltaContextTable;
+    private void cacheParameterFlags(int parameterFlags) {
+        this.doDedup = (parameterFlags & DEDUP_FLAG_MASK) != 0;
+        setFixedLen(parameterFlags & FIXED_LEN_FLAG_MASK);  //TODO: f'd up - is this a flag or an int ?
+        this.doSel = (parameterFlags & SEL_FLAG_MASK) != 0;
+        this.doQmap = (parameterFlags & QMAP_FLAG_MASK) != 0;
+        this.doPos = (parameterFlags & PTAB_FLAG_MASK) != 0;
+        this.doDelta = (parameterFlags & DTAB_FLAG_MASK) != 0;
+        this.doQtab = (parameterFlags & QTAB_FLAG_MASK) != 0;
     }
 
 }
