@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+//TODO: interop test failures:
+// u32.4, u32.65, u32.1, u32.9
+//
 public class RangeInteropTest extends HtsjdkTest  {
     public static final String COMPRESSED_RANGE_DIR = "arith";
 
@@ -74,16 +77,7 @@ public class RangeInteropTest extends HtsjdkTest  {
         return testCases.toArray(new Object[][]{});
     }
 
-    @Test(description = "Test if CRAM Interop Test Data is available")
-    public void testHtsCodecsCorpusIsAvailable() {
-        if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
-                    CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
-        }
-    }
-
     @Test (
-            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
             dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk Range Codec. Compare the output with the original file" )
     public void testRangeRoundTrip(
@@ -109,7 +103,6 @@ public class RangeInteropTest extends HtsjdkTest  {
     }
 
     @Test (
-            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
             dataProvider = "decodeOnlyTestCases",
             description = "Uncompress the existing compressed file using htsjdk Range codec and compare it with the original file.")
     public void testDecodeOnly(
@@ -124,7 +117,7 @@ public class RangeInteropTest extends HtsjdkTest  {
             // and compare the results
 
             final ByteBuffer uncompressedInteropBytes;
-            if (uncompressedInteropPath.toString().contains("htscodecs/tests/dat/u")) {
+            if (uncompressedInteropPath.toString().endsWith("dat/u32")) {
                 uncompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(uncompressedInteropStream));
             } else {
                 uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));

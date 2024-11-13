@@ -30,12 +30,7 @@ import java.util.stream.Stream;
 
 /**
  * RANSInteropTest tests if the htsjdk RANS4x8 and RANSNx16 implementations are interoperable
- * with the htslib implementations. The test files for Interop tests is kept in a separate repository,
- * currently at https://github.com/samtools/htscodecs so it can be shared across htslib/samtools/htsjdk.
- *
- * For local development env, the Interop test files must be downloaded locally and made available at "../htscodecs/tests"
- * For CI env, the Interop test files are made available from the existing samtools installation
- * at "/samtools-1.14/htslib-1.14/htscodecs/tests"
+ * with the htslib implementations. The test files for Interop tests are from the htslib repo.
  */
 public class RANSInteropTest extends HtsjdkTest {
     public static final String COMPRESSED_RANS4X8_DIR = "r4x8";
@@ -151,16 +146,7 @@ public class RANSInteropTest extends HtsjdkTest {
                 .toArray(Object[][]::new);
     }
 
-    @Test(description = "Test if CRAM Interop Test Data is available")
-    public void testHtsCodecsCorpusIsAvailable() {
-        if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
-                    CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
-        }
-    }
-
     @Test (
-            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
             dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
@@ -188,7 +174,6 @@ public class RANSInteropTest extends HtsjdkTest {
     }
 
     @Test (
-            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
             dataProvider = "decodeOnlyTestCases",
             description = "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
     public void testDecodeOnly(

@@ -42,16 +42,7 @@ public class FQZCompInteropTest extends HtsjdkTest {
         return testCases.toArray(new Object[][]{});
     }
 
-    @Test(description = "Test if CRAM Interop Test Data is available")
-    public void testHtsCodecsCorpusIsAvailable() {
-        if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
-                    CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
-        }
-    }
-
     @Test (
-            dependsOnMethods = "testHtsCodecsCorpusIsAvailable",
             dataProvider = "decodeOnlyTestCases",
             description = "Uncompress the existing compressed file using htsjdk FQZComp and compare it with the original file.")
     public void testDecodeOnly(
