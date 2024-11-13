@@ -38,17 +38,7 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
         return testCases.toArray(new Object[][]{});
     }
 
-    //TODO: check in the interop streams and get rid of these getCorpus methods
-    @Test(description = "Test if CRAM Interop Test Data is available")
-    public void testGetHTSCodecsCorpus() {
-        if (!CRAMInteropTestUtils.isInteropTestDataAvailable()) {
-            throw new SkipException(String.format("CRAM Interop Test Data is not available at %s",
-                    CRAMInteropTestUtils.INTEROP_TEST_FILES_PATH));
-        }
-    }
-
     @Test (
-            dependsOnMethods = "testGetHTSCodecsCorpus",
             dataProvider = "allNameTokenizationInteropTests",
             description = "Roundtrip using htsjdk NameTokenization Codec. Compare the output with the original file" )
     public void testNameTokenizationRoundTrip(
@@ -76,7 +66,6 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
     }
 
     @Test (
-            dependsOnMethods = "testGetHTSCodecsCorpus",
             dataProvider = "allNameTokenizationInteropTests",
             description = "Compress the original file using htsjdk NameTokenization Codec and compare it with the existing compressed file. " +
                     "Uncompress the existing compressed file using htsjdk NameTokenization Codec and compare it with the original file.")
@@ -106,7 +95,7 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
     private List<Path> getPreCompressedInteropNameTokTestFiles() throws IOException {
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                CRAMInteropTestUtils.getInteropTestDataLocation().resolve("names/"+COMPRESSED_TOK_DIR),
+                CRAMInteropTestUtils.getCRAM31_Htslib_InteropTestDataLocation().resolve("names/"+COMPRESSED_TOK_DIR),
                         path -> Files.isRegularFile(path))
                 .forEach(path -> paths.add(path));
         return paths;

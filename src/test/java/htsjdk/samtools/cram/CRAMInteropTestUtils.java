@@ -8,29 +8,19 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import htsjdk.utils.SamtoolsTestUtils;
-
 /**
- * Interop test data is kept in a separate repository, currently at https://github.com/samtools/htscodecs
- * so it can be shared across htslib/samtools/htsjdk.
+ * Interop test data originates in a separate repository, currently at https://github.com/samtools/htslib, in htscodecs,
+ * but we keep a copy in htsjdk so we can use it for round trip tests in CI without needing to clone a second repo.
  */
 public class CRAMInteropTestUtils {
-    public static final String INTEROP_TEST_FILES_PATH = SamtoolsTestUtils.getCRAMInteropData();
-
-    /**
-     * @return true if interop test data is available, otherwise false
-     */
-    public static boolean isInteropTestDataAvailable() {
-        final Path testDataPath = getInteropTestDataLocation();
-        return Files.exists(testDataPath);
-    }
+    public static final String INTEROP_TEST_FILES_PATH = "src/test/resources/htsjdk/samtools/cram/htslib_interop/";
 
     /**
      * @return the name and location of the local interop test data as specified by the
      * variable INTEROP_TEST_FILES_PATH
      */
-    public static Path getInteropTestDataLocation() {
-        return Paths.get(INTEROP_TEST_FILES_PATH);
+    public static Path getCRAM31_Htslib_InteropTestDataLocation() {
+        return Paths.get(INTEROP_TEST_FILES_PATH + "cram31/");
     }
 
     // the input files have embedded newlines that the test remove before round-tripping...
@@ -59,7 +49,7 @@ public class CRAMInteropTestUtils {
     protected static List<Path> getInteropCompressedFilePaths(final String compressedDir) throws IOException {
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat/"+compressedDir),
+                        CRAMInteropTestUtils.getCRAM31_Htslib_InteropTestDataLocation().resolve("dat/"+compressedDir),
                         path -> Files.isRegularFile(path))
                 .forEach(path -> paths.add(path));
         return paths;
@@ -88,7 +78,7 @@ public class CRAMInteropTestUtils {
     protected static final List<Path> getInteropRawTestFiles() throws IOException {
         final List<Path> paths = new ArrayList<>();
         Files.newDirectoryStream(
-                        CRAMInteropTestUtils.getInteropTestDataLocation().resolve("dat"),
+                        CRAMInteropTestUtils.getCRAM31_Htslib_InteropTestDataLocation().resolve("dat"),
                         path -> (Files.isRegularFile(path)) && !Files.isHidden(path))
                 .forEach(path -> paths.add(path));
         return paths;
