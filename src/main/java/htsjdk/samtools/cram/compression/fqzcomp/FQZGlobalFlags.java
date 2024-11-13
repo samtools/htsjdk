@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.compression.fqzcomp;
 
+import java.nio.ByteBuffer;
+
 public class FQZGlobalFlags {
     public static final int MULTI_PARAM_FLAG_MASK = 0x01;
     public static final int SELECTOR_TABLE_FLAG_MASK = 0x02;
@@ -7,8 +9,8 @@ public class FQZGlobalFlags {
 
     private int globalFlags;
 
-    public FQZGlobalFlags(final int globalFlags) {
-        this.globalFlags = globalFlags;
+    public FQZGlobalFlags(final ByteBuffer inBuffer) {
+        this.globalFlags = inBuffer.get() & 0xFF;
     }
 
     // returns True if more than one parameter block is present
