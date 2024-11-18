@@ -1,0 +1,4 @@
+tasks.withType(Test) {
+    minHeapSize = "500M"
+    maxHeapSize = "3500M"
+}
