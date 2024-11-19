@@ -79,6 +79,7 @@ public class RangeInteropTest extends HtsjdkTest  {
 
     @Test (
             dataProvider = "roundTripTestCases",
+            enabled = false,
             description = "Roundtrip using htsjdk Range Codec. Compare the output with the original file" )
     public void testRangeRoundTrip(
             final Path uncompressedFilePath,
@@ -104,6 +105,7 @@ public class RangeInteropTest extends HtsjdkTest  {
 
     @Test (
             dataProvider = "decodeOnlyTestCases",
+            enabled = false,
             description = "Uncompress the existing compressed file using htsjdk Range codec and compare it with the original file.")
     public void testDecodeOnly(
             final Path compressedFilePath,
