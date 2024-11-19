@@ -56,15 +56,27 @@ public class ReaderTest extends HtsjdkTest {
 
     @Test
     public void testMassiveLines() throws IOException {
-        System.gc(); // releive heap pressure before we strt this test so we don't run out of heap space
-        final StringBuilder b = new StringBuilder();
-        for ( int i = 0; i < 10; i++ ) {
-            for ( int j = 0; j < 1000000; j++) {
-                b.append(i + "." + j);
+        try {
+            final StringBuilder b = new StringBuilder();
+            for (int i = 0; i < 10; i++) {
+                for (int j = 0; j < 1000000; j++) {
+                    b.append(i + "." + j);
+                }
+                b.append("\n");
             }
-            b.append("\n");
+            testStream(b.toString());
+        } catch (OutOfMemoryError e) {
+            System.out.println(String.format("Before Free: %d Max: %d Total: %d",
+                    Runtime.getRuntime().freeMemory(),
+                    Runtime.getRuntime().maxMemory(),
+                    Runtime.getRuntime().totalMemory()));
+            System.gc(); // releive heap pressure before we strt this test so we don't run out of heap space
+            System.out.println(String.format("After Free: %d Max: %d Total: %d",
+                    Runtime.getRuntime().freeMemory(),
+                    Runtime.getRuntime().maxMemory(),
+                    Runtime.getRuntime().totalMemory()));
+            Assert.fail("Ran out of memory");
         }
-        testStream(b.toString());
     }
 
     @Test
