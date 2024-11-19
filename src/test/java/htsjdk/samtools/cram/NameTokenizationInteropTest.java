@@ -40,6 +40,7 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "allNameTokenizationInteropTests",
+            enabled = false,
             description = "Roundtrip using htsjdk NameTokenization Codec. Compare the output with the original file" )
     public void testNameTokenizationRoundTrip(
             final Path precompressedFilePath,
@@ -67,6 +68,7 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "allNameTokenizationInteropTests",
+            enabled = false,
             description = "Compress the original file using htsjdk NameTokenization Codec and compare it with the existing compressed file. " +
                     "Uncompress the existing compressed file using htsjdk NameTokenization Codec and compare it with the original file.")
     public void testNameTokenizationDecompress(

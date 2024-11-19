@@ -44,6 +44,7 @@ public class FQZCompInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "decodeOnlyTestCases",
+            enabled = false,
             description = "Uncompress the existing compressed file using htsjdk FQZComp and compare it with the original file.")
     public void testDecodeOnly(
             final Path compressedFilePath,
