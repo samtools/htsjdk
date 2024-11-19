@@ -148,7 +148,6 @@ public class RANSInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "roundTripTestCases",
-            enabled = false,
             description = "Roundtrip using htsjdk RANS. Compare the output with the original file" )
     public void testRANSRoundTrip(
             final Path uncompressedFilePath,
@@ -176,7 +175,6 @@ public class RANSInteropTest extends HtsjdkTest {
 
     @Test (
             dataProvider = "decodeOnlyTestCases",
-            enabled = false,
             description = "Uncompress the existing compressed file using htsjdk RANS and compare it with the original file.")
     public void testDecodeOnly(
             final Path compressedFilePath,

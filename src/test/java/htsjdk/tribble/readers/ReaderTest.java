@@ -56,6 +56,7 @@ public class ReaderTest extends HtsjdkTest {
 
     @Test
     public void testMassiveLines() throws IOException {
+        System.gc(); // releive heap pressure before we strt this test so we don't run out of heap space
         final StringBuilder b = new StringBuilder();
         for ( int i = 0; i < 10; i++ ) {
             for ( int j = 0; j < 1000000; j++) {
