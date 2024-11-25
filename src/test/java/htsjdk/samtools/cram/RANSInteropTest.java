@@ -36,6 +36,11 @@ public class RANSInteropTest extends HtsjdkTest {
     public static final String COMPRESSED_RANS4X8_DIR = "r4x8";
     public static final String COMPRESSED_RANSNX16_DIR = "r4x16";
 
+    private RANSEncode rans4x8Encoder = new RANS4x8Encode();
+    private RANSDecode rans4x8Decoder = new RANS4x8Decode();
+    private RANSNx16Encode ransNx16Encoder = new RANSNx16Encode();
+    private RANSNx16Decode ransNx16Decoder = new RANSNx16Decode();
+
     // enumerates the different flag combinations
     public Object[][] get4x8RoundTripTestCases() throws IOException {
 
@@ -50,8 +55,8 @@ public class RANSInteropTest extends HtsjdkTest {
                 .forEach(path ->
                         rans4x8ParamsOrderList.stream().map(rans4x8ParamsOrder -> new Object[]{
                                 path,
-                                new RANS4x8Encode(),
-                                new RANS4x8Decode(),
+                                rans4x8Encoder,
+                                rans4x8Decoder,
                                 new RANS4x8Params(rans4x8ParamsOrder)
                         }).forEach(testCases::add));
         return testCases.toArray(new Object[][]{});
@@ -83,8 +88,8 @@ public class RANSInteropTest extends HtsjdkTest {
                 .forEach(path ->
                         ransNx16ParamsFormatFlagList.stream().map(ransNx16ParamsFormatFlag -> new Object[]{
                                 path,
-                                new RANSNx16Encode(),
-                                new RANSNx16Decode(),
+                                ransNx16Encoder,
+                                ransNx16Decoder,
                                 new RANSNx16Params(ransNx16ParamsFormatFlag)
                         }).forEach(testCases::add));
         return testCases.toArray(new Object[][]{});
@@ -101,7 +106,7 @@ public class RANSInteropTest extends HtsjdkTest {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
-                    new RANS4x8Decode()
+                    rans4x8Decoder
             };
             testCases.add(objects);
         }
@@ -119,7 +124,7 @@ public class RANSInteropTest extends HtsjdkTest {
             Object[] objects = new Object[]{
                     path,
                     CRAMInteropTestUtils.getUnCompressedFilePath(path),
-                    new RANSNx16Decode()
+                    ransNx16Decoder
             };
             testCases.add(objects);
         }
