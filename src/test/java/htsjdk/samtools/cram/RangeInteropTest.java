@@ -20,9 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-//TODO: interop test failures:
-// u32.4, u32.65, u32.1, u32.9
-//
 public class RangeInteropTest extends HtsjdkTest  {
     public static final String COMPRESSED_RANGE_DIR = "arith";
 
@@ -49,10 +46,8 @@ public class RangeInteropTest extends HtsjdkTest  {
         final List<Object[]> testCases = new ArrayList<>();
         CRAMInteropTestUtils.getInteropRawTestFiles()
                 .forEach(path ->
-                        rangeParamsFormatFlagList.stream().map(rangeParamsFormatFlag -> new Object[]{
+                        rangeParamsFormatFlagList.stream().map(rangeParamsFormatFlag -> new Object[] {
                                 path,
-                                new RangeEncode(),
-                                new RangeDecode(),
                                 new RangeParams(rangeParamsFormatFlag)
                         }).forEach(testCases::add));
         return testCases.toArray(new Object[][]{});
@@ -67,10 +62,9 @@ public class RangeInteropTest extends HtsjdkTest  {
         // Range decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (Path path : CRAMInteropTestUtils.getInteropCompressedFilePaths(COMPRESSED_RANGE_DIR)) {
-            Object[] objects = new Object[]{
+            Object[] objects = new Object[] {
                     path,
-                    CRAMInteropTestUtils.getUnCompressedFilePath(path),
-                    new RangeDecode()
+                    CRAMInteropTestUtils.getUnCompressedFilePath(path)
             };
             testCases.add(objects);
         }
@@ -80,11 +74,7 @@ public class RangeInteropTest extends HtsjdkTest  {
     @Test (
             dataProvider = "roundTripTestCases",
             description = "Roundtrip using htsjdk Range Codec. Compare the output with the original file" )
-    public void testRangeRoundTrip(
-            final Path uncompressedFilePath,
-            final RangeEncode rangeEncode,
-            final RangeDecode rangeDecode,
-            final RangeParams params) throws IOException {
+    public void testRangeRoundTrip(final Path uncompressedFilePath, final RangeParams params) throws IOException {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedFilePath)) {
 
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
@@ -92,6 +82,8 @@ public class RangeInteropTest extends HtsjdkTest  {
             // results
             final ByteBuffer uncompressedInteropBytes = ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
+            final RangeEncode rangeEncode = new RangeEncode();
+            final RangeDecode rangeDecode = new RangeDecode();
             if (params.isStripe()) {
                 Assert.assertThrows(CRAMException.class, () -> rangeEncode.compress(uncompressedInteropBytes, params));
             } else {
@@ -105,10 +97,7 @@ public class RangeInteropTest extends HtsjdkTest  {
     @Test (
             dataProvider = "decodeOnlyTestCases",
             description = "Uncompress the existing compressed file using htsjdk Range codec and compare it with the original file.")
-    public void testDecodeOnly(
-            final Path compressedFilePath,
-            final Path uncompressedInteropPath,
-            final RangeDecode rangeDecode) throws IOException {
+    public void testDecodeOnly(final Path compressedFilePath, final Path uncompressedInteropPath) throws IOException {
         try (final InputStream uncompressedInteropStream = Files.newInputStream(uncompressedInteropPath);
              final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
         ) {
@@ -125,6 +114,7 @@ public class RangeInteropTest extends HtsjdkTest  {
             final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
+            final RangeDecode rangeDecode = new RangeDecode();
             final ByteBuffer uncompressedHtsjdkBytes = rangeDecode.uncompress(preCompressedInteropBytes);
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
