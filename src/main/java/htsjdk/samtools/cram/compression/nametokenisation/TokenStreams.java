@@ -24,6 +24,7 @@ public class TokenStreams {
     public static final byte TOKEN_DELTA0 = 0x09;
     public static final byte TOKEN_MATCH = 0x0A;
     public static final byte TOKEN_END = 0x0C;
+
     public static final int TOTAL_TOKEN_TYPES = 13;
 
     private static final int NEW_TOKEN_FLAG_MASK = 0x80;
@@ -32,12 +33,7 @@ public class TokenStreams {
 
     private final List<List<ByteBuffer>> tokenStreams;
 
-    public TokenStreams() {
-        tokenStreams = new ArrayList<>(TOTAL_TOKEN_TYPES);
-        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            tokenStreams.add(new ArrayList<>());
-        }
-    }
+    //TODO: can we use the fact that there is a 128 token max per name to optimize this at all?
 
     public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
         // The outer index corresponds to type of the token
@@ -50,17 +46,20 @@ public class TokenStreams {
 
         // TokenStreams[type = TOKEN_TYPE(0x00), pos = all except 0]
         // contains a ByteBuffer of length = number of names
-        // This ByteBuffer helps determine the type of each of the token at the specicfied pos
+        // This ByteBuffer helps determine the type of each of the token at the specified pos
 
-        this();
+        tokenStreams = new ArrayList<>(TOTAL_TOKEN_TYPES);
+        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+            tokenStreams.add(new ArrayList<>());
+        }
         int tokenPosition = -1;
         while (inputByteBuffer.hasRemaining()) {
             final byte tokenTypeFlags = inputByteBuffer.get();
             final boolean isNewToken = ((tokenTypeFlags & NEW_TOKEN_FLAG_MASK) != 0);
             final boolean isDupToken = ((tokenTypeFlags & DUP_TOKEN_FLAG_MASK) != 0);
-            final int tokenType = (tokenTypeFlags & TYPE_TOKEN_FLAG_MASK);
+            final int tokenType = tokenTypeFlags & TYPE_TOKEN_FLAG_MASK;
             if (tokenType < 0 || tokenType > TOKEN_END) {
-                throw new CRAMException("Invalid Token tokenType: " + tokenType);
+                throw new CRAMException("Invalid name tokenizer Token tokenType: " + tokenType);
             }
             if (isNewToken) {
                 tokenPosition++;
@@ -74,13 +73,12 @@ public class TokenStreams {
                             currTokenStream.add(ByteBuffer.allocate(0));
                         }
                         if (currTokenStream.size() < tokenPosition) {
-                            throw new CRAMException("TokenStream is missing Token(s) at Token Type: " + i);
+                            throw new CRAMException("TokenStream is missing token(s) at token type: " + i);
                         }
                     }
                 }
             }
             if ((isNewToken) && (tokenType != TOKEN_TYPE)) {
-
                 // Spec: if we have a byte stream B5,DIGIT S but no B5,T Y P E
                 // then we assume the contents of B5,T Y P E consist of one DIGITS tokenType
                 // followed by as many MATCH types as are needed.
@@ -103,14 +101,14 @@ public class TokenStreams {
                 inputByteBuffer.get(dataBytes, 0, clen); // offset in the dst byte array
                 final ByteBuffer uncompressedDataByteBuffer;
                 if (useArith != 0) {
-                    RangeDecode rangeDecode = new RangeDecode();
+                    final RangeDecode rangeDecode = new RangeDecode();
                     uncompressedDataByteBuffer = rangeDecode.uncompress(ByteBuffer.wrap(dataBytes));
 
                 } else {
-                    RANSDecode ransdecode = new RANSNx16Decode();
-                    uncompressedDataByteBuffer = ransdecode.uncompress(ByteBuffer.wrap(dataBytes));
+                    final RANSNx16Decode ransDecode = new RANSNx16Decode();
+                    uncompressedDataByteBuffer = ransDecode.uncompress(ByteBuffer.wrap(dataBytes));
                 }
-                this.getTokenStreamByType(tokenType).add(tokenPosition,uncompressedDataByteBuffer);
+                getTokenStreamByType(tokenType).add(tokenPosition,uncompressedDataByteBuffer);
             }
         }
     }
