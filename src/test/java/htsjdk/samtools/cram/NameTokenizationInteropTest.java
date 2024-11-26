@@ -29,11 +29,14 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
         // compressed testfile path, uncompressed testfile path, NameTokenization encoder, NameTokenization decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (final Path preCompressedFilePath : getPreCompressedInteropNameTokTestFiles()) {
-                Object[] objects = new Object[] {
+            for (boolean useArith: new boolean[]{true, false}) {
+                Object[] objects = new Object[]{
                         preCompressedFilePath,
-                        getExpectedRawPathFromCompressedPath(preCompressedFilePath)
+                        getExpectedRawPathFromCompressedPath(preCompressedFilePath),
+                        useArith
                 };
                 testCases.add(objects);
+            }
         }
         return testCases.toArray(new Object[][]{});
     }
@@ -42,14 +45,15 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
             dataProvider = "allNameTokenizationInteropTests",
             description = "Roundtrip using htsjdk NameTokenization Codec. Compare the output with the original file" )
     public void testNameTokenizationRoundTrip(
-            final Path precompressedFilePath,
-            final Path expectedRawFilePath) throws IOException {
+            final Path unused_precompressedFilePath,
+            final Path expectedRawFilePath,
+            final boolean useArith) throws IOException {
 
         try (final InputStream expectedRawInteropStream = Files.newInputStream(expectedRawFilePath)) {
             final ByteBuffer expectedRawInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(expectedRawInteropStream));
 
             final NameTokenisationEncode nameTokenisationEncode = new NameTokenisationEncode();
-            final ByteBuffer compressedHtsjdkBytes = nameTokenisationEncode.compress(expectedRawInteropBytes);
+            final ByteBuffer compressedHtsjdkBytes = nameTokenisationEncode.compress(expectedRawInteropBytes, useArith);
 
             final NameTokenisationDecode nameTokenisationDecode = new NameTokenisationDecode();
             //TODO: get rid of the intermediate String returned by uncompress....
@@ -71,7 +75,8 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
                     "Uncompress the existing compressed file using htsjdk NameTokenization Codec and compare it with the original file.")
     public void testNameTokenizationDecompress(
             final Path precompressedFilePath,
-            final Path expectedUncompressedFilePath) throws IOException {
+            final Path expectedUncompressedFilePath,
+            final boolean unused_useArith) throws IOException {
         try (final InputStream preCompressedInteropStream = Files.newInputStream(precompressedFilePath);
             final InputStream expectedUnCompressedStream = Files.newInputStream(expectedUncompressedFilePath)) {
 

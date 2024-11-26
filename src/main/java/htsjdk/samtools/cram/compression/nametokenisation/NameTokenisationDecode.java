@@ -10,6 +10,7 @@ import java.util.StringJoiner;
 
 public class NameTokenisationDecode {
 
+
     public static String uncompress(final ByteBuffer inBuffer) {
         //TODO: make this stop sentinel into a shared static constant
         // Actually, this doesn't need to be exposed as an arg on this, so move it into the uncompress method
@@ -20,7 +21,7 @@ public class NameTokenisationDecode {
             final ByteBuffer inBuffer,
             final String separator) {
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        final int uncompressedLength =  inBuffer.getInt() & 0xFFFFFFFF; //unused variable. Following the spec
+        final int uncompressedLength =  inBuffer.getInt() & 0xFFFFFFFF; //unused but we have to consume it
         final int numNames =  inBuffer.getInt() & 0xFFFFFFFF;
         final int useArith = inBuffer.get() & 0xFF;
         final TokenStreams tokenStreams = new TokenStreams(inBuffer, useArith, numNames);
