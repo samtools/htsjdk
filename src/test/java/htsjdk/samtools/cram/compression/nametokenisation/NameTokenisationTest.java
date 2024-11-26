@@ -75,24 +75,21 @@ public class NameTokenisationTest extends HtsjdkTest {
 
         final List<Object[]> testCases = new ArrayList<>();
         for (String readName : readNamesList) {
-            Object[] objects = new Object[]{
-                    new NameTokenisationEncode(),
-                    new NameTokenisationDecode(),
-                    new TestDataEnvelope(readName.getBytes())};
+            Object[] objects = new Object[] { new TestDataEnvelope(readName.getBytes()) };
             testCases.add(objects);
         }
         return testCases.toArray(new Object[][]{});
     }
 
     @Test(dataProvider = "nameTokenisation")
-    public void testRoundTrip(
-            final NameTokenisationEncode nameTokenisationEncode,
-            final NameTokenisationDecode nameTokenisationDecode,
-            final TestDataEnvelope td) {
-        ByteBuffer uncompressedBuffer =  ByteBuffer.wrap(td.testArray);
-        ByteBuffer compressedBuffer = nameTokenisationEncode.compress(uncompressedBuffer, 0);
-        String decompressedNames = nameTokenisationDecode.uncompress(compressedBuffer);
-        ByteBuffer decompressedNamesBuffer = StandardCharsets.UTF_8.encode(decompressedNames);
+    public void testRoundTrip(final TestDataEnvelope td) {
+        final NameTokenisationEncode nameTokenisationEncode = new NameTokenisationEncode();
+        final NameTokenisationDecode nameTokenisationDecode = new NameTokenisationDecode();
+
+        final ByteBuffer uncompressedBuffer =  ByteBuffer.wrap(td.testArray);
+        final ByteBuffer compressedBuffer = nameTokenisationEncode.compress(uncompressedBuffer, false);
+        final String decompressedNames = nameTokenisationDecode.uncompress(compressedBuffer);
+        final ByteBuffer decompressedNamesBuffer = StandardCharsets.UTF_8.encode(decompressedNames);
         uncompressedBuffer.rewind();
         Assert.assertEquals(decompressedNamesBuffer, uncompressedBuffer);
     }

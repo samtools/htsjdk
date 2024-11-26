@@ -18,15 +18,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NameTokenisationEncode {
-
     private int maxToken;
     private int maxLength;
 
-    public ByteBuffer compress(final ByteBuffer inBuffer){
-        return compress(inBuffer, 0);
-    }
-
-    public ByteBuffer compress(final ByteBuffer inBuffer, final int useArith){
+    public ByteBuffer compress(final ByteBuffer inBuffer, final boolean useArith) {
         maxToken = 0;
         maxLength = 0;
         ArrayList<String> names = new ArrayList<>();
@@ -35,6 +30,7 @@ public class NameTokenisationEncode {
         // convert buffer to array of names
         while(inBuffer.hasRemaining()){
             byte currentByte = inBuffer.get();
+            //TODO: is this \n the same as the shared separator ? where is this defined ?
             if ((currentByte) == '\n' || inBuffer.position()==inBuffer.limit()){
                 int length = inBuffer.position() - lastPosition;
                 byte[] bytes = new byte[length];
@@ -50,7 +46,7 @@ public class NameTokenisationEncode {
         ByteBuffer outBuffer = allocateOutputBuffer((inBuffer.limit()*2)+10000);
         outBuffer.putInt(inBuffer.limit());
         outBuffer.putInt(numNames);
-        outBuffer.put((byte)useArith);
+        outBuffer.put((byte)(useArith == true ? 1 : 0));
 
         // Instead of List<List<String>> for tokensList like we did in Decoder, we use List<List<EncodeToken>>
         // as we also need to store the TOKEN_TYPE, relative value when compared to prev name's token
@@ -67,7 +63,7 @@ public class NameTokenisationEncode {
                 tokenStream.add(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN));
             }
             fillByteStreams(tokenStream,tokensList,tokenPosition,numNames);
-            serializeByteStreams(tokenStream,useArith,outBuffer);
+            serializeByteStreams(tokenStream, useArith, outBuffer);
         }
 
         // sets limit to current position and position to '0'
@@ -220,7 +216,7 @@ public class NameTokenisationEncode {
         tokenStreamBuffer.put((byte) 0);
     }
 
-    public static ByteBuffer tryCompress(final ByteBuffer src, final int useArith) {
+    public static ByteBuffer tryCompress(final ByteBuffer src, final boolean useArith) {
         // compress with different formatFlags
         // and return the compressed output ByteBuffer with the least number of bytes
         int bestcompressedByteLength = 1 << 30;
@@ -235,15 +231,15 @@ public class NameTokenisationEncode {
 
             ByteBuffer tmpByteBuffer = null;
             try {
-                if (useArith!=0) {
+                if (useArith == true) {
                     // Encode using Range
-                    RangeEncode rangeEncode = new RangeEncode();
+                   final  RangeEncode rangeEncode = new RangeEncode();
                     src.rewind();
                     tmpByteBuffer = rangeEncode.compress(src,new RangeParams(formatFlags));
 
                 } else {
                     // Encode using RANS
-                    RANSEncode ransEncode = new RANSNx16Encode();
+                    final RANSEncode ransEncode = new RANSNx16Encode();
                     src.rewind();
                     tmpByteBuffer = ransEncode.compress(src, new RANSNx16Params(formatFlags));
                 }
@@ -258,7 +254,7 @@ public class NameTokenisationEncode {
 
     protected void serializeByteStreams(
             final List<ByteBuffer> tokenStream,
-            final int useArith,
+            final boolean useArith,
             final ByteBuffer outBuffer) {
 
         // Compress and serialise tokenStreams
