@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 
-public class RangeEncode<T extends RangeParams> {
+public class RangeEncode {
 
     private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
@@ -63,7 +63,6 @@ public class RangeEncode<T extends RangeParams> {
         }
 
         if (rangeParams.isCAT()) {
-
             // Data is uncompressed
             outBuffer.put(inputBuffer);
             outBuffer.limit(outBuffer.position());

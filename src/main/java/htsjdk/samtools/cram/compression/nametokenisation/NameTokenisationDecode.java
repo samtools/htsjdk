@@ -10,23 +10,23 @@ import java.util.StringJoiner;
 
 public class NameTokenisationDecode {
 
-
-    public static String uncompress(final ByteBuffer inBuffer) {
+    public String uncompress(final ByteBuffer inBuffer) {
         //TODO: make this stop sentinel into a shared static constant
         // Actually, this doesn't need to be exposed as an arg on this, so move it into the uncompress method
         return uncompress(inBuffer, "\0");
     }
 
-    public static String uncompress(
+    public String uncompress(
             final ByteBuffer inBuffer,
             final String separator) {
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         final int uncompressedLength =  inBuffer.getInt() & 0xFFFFFFFF; //unused but we have to consume it
         final int numNames =  inBuffer.getInt() & 0xFFFFFFFF;
         final int useArith = inBuffer.get() & 0xFF;
+
         final TokenStreams tokenStreams = new TokenStreams(inBuffer, useArith, numNames);
         final List<List<String>> tokensList = new ArrayList<>(numNames);
-        for(int i = 0; i < numNames; i++) {
+        for (int i = 0; i < numNames; i++) {
             tokensList.add(new ArrayList<>());
         }
         final StringJoiner decodedNamesJoiner = new StringJoiner(separator);
@@ -57,7 +57,7 @@ public class NameTokenisationDecode {
         }
         int tokenPosition = 1; // At position 0, we get nameType information
         byte type;
-        StringBuilder decodedNameBuilder = new StringBuilder();
+        final StringBuilder decodedNameBuilder = new StringBuilder();
         do {
             type = tokenStreams.getTokenStreamByteBuffer(tokenPosition, TokenStreams.TOKEN_TYPE).get();
             String currentToken = "";
@@ -88,8 +88,18 @@ public class NameTokenisationDecode {
                 case TokenStreams.TOKEN_MATCH:
                     currentToken = tokensList.get(prevNameIndex).get(tokenPosition-1);
                     break;
-                default:
+                case TokenStreams.TOKEN_END: // tolerate END, it terminates the enclosing loop
                     break;
+
+                // These are either consumed elsewhere or shouldn't be present in this token stream
+                case TokenStreams.TOKEN_TYPE:
+                case TokenStreams.TOKEN_DUP:
+                case TokenStreams.TOKEN_DIFF:
+                case TokenStreams.TOKEN_DZLEN:
+                default:
+                    throw new CRAMException(String.format(
+                            "Invalid tokenType : %s. tokenType must be one of the valid token types",
+                            type));
             }
             tokensList.get(currentNameIndex).add(tokenPosition-1,currentToken);
             decodedNameBuilder.append(currentToken);
@@ -105,16 +115,15 @@ public class NameTokenisationDecode {
             final int prevNameIndex,
             final byte tokenType) {
         if (!(tokenType == TokenStreams.TOKEN_DELTA || tokenType == TokenStreams.TOKEN_DELTA0)){
-            throw new CRAMException(String.format("Invalid tokenType : %s. " +
-                    "tokenType must be either TOKEN_DELTA or TOKEN_DELTA0", tokenType));
+            throw new CRAMException(String.format(
+                    "Invalid tokenType : %s. tokenType must be either TOKEN_DELTA or TOKEN_DELTA0", tokenType));
         }
         int prevToken;
         try {
-            prevToken = Integer.parseInt(tokensList.get(prevNameIndex).get(tokenPosition -1));
+            prevToken = Integer.parseInt(tokensList.get(prevNameIndex).get(tokenPosition - 1));
         } catch (final NumberFormatException e) {
             final String exceptionMessageSubstring = (tokenType == TokenStreams.TOKEN_DELTA) ? "DIGITS or DELTA" : "DIGITS0 or DELTA0";
-            throw new CRAMException(String.format("The token in the prior name must be of type %s",
-                    exceptionMessageSubstring), e);
+            throw new CRAMException(String.format("The token in the prior name must be of type %s", exceptionMessageSubstring), e);
         }
         final int deltaTokenValue = tokenStreams.getTokenStreamByteBuffer(tokenPosition,tokenType).get() & 0xFF;
         return Long.toString(prevToken + deltaTokenValue);
@@ -136,7 +145,7 @@ public class NameTokenisationDecode {
     private static String readString(final ByteBuffer inputBuffer) {
         // spec: We fetch one byte at a time from the value byte stream,
         // appending to the name buffer until the byte retrieved is zero.
-        StringBuilder resultStringBuilder = new StringBuilder();
+        final StringBuilder resultStringBuilder = new StringBuilder();
         byte currentByte = inputBuffer.get();
         while (currentByte != 0) {
             resultStringBuilder.append((char) currentByte);
@@ -147,6 +156,7 @@ public class NameTokenisationDecode {
 
     private static String leftPadNumber(String value, final int len) {
         // return value such that it is at least len bytes long with leading zeros
+        //TODO: optimize this....
         while (value.length() < len) {
             value = "0" + value;
         }
