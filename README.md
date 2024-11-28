@@ -17,7 +17,9 @@ manipulating HTS data.
 
 API documentation for all versions of HTSJDK since `1.128` are available through [javadoc.io](http://www.javadoc.io/doc/com.github.samtools/htsjdk).
 
-If you believe you have found a bug or have an issue with the library please a) search the open and recently closed issues to ensure it has not already been reported, then b) log an issue.
+If you believe you have found a bug or have an issue with the library please: 
+1. Search the open and recently closed issues to ensure it has not already been reported;
+1. Then log an issue.
 
 The project has a [gitter chat room](https://gitter.im/samtools/htsjdk) if you would like to chat with the developers and others involved in the project.
 
