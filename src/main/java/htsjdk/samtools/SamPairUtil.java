@@ -62,7 +62,7 @@ public class SamPairUtil {
      * @param record the record for which the pair orientation is requested
      * @return PairOrientation of the given SAMRecord.
      * @throws IllegalArgumentException If the record is not a paired read, or
-     * one or both reads are unmapped, or is the two records do are not mapped to the
+     * one or both reads are unmapped, or if the two records are not mapped to the
      * same reference.
      *
      * NOTA BENE: This is NOT the orientation byte as used in Picard's MarkDuplicates. For that please look
@@ -73,14 +73,15 @@ public class SamPairUtil {
         final boolean readIsOnReverseStrand = record.getReadNegativeStrandFlag();
 
         if(record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
-            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() + ". This method only works for SAMRecords " +
-                    "that are paired reads with both reads aligned.");
+            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() +
+                    ". This method only works for SAMRecords that are paired reads with both reads aligned.");
         }
 
         if (!record.getReferenceIndex().equals(record.getMateReferenceIndex())) {
-            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() + ". This method only works for SAMRecords " +
-                    "that are paired reads with both reads aligned to the same reference. Found difference references:" +
-                    record.getReferenceName() + " and " + record.getMateReferenceName() + ".");
+            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() +
+                    ". This method only works for SAMRecords that are paired reads with both reads aligned to the" +
+                    " same reference. Found difference references:" + record.getReferenceName() + " and " +
+                    record.getMateReferenceName() + ".");
         }
 
         if(readIsOnReverseStrand == record.getMateNegativeStrandFlag() )  {
