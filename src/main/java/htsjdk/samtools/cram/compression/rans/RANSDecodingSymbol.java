@@ -26,7 +26,7 @@ package htsjdk.samtools.cram.compression.rans;
 
 import java.nio.ByteBuffer;
 
-final class RANSDecodingSymbol {
+final public class RANSDecodingSymbol {
     int start;  // Start of range.
     int freq;   // Symbol frequency.
 
@@ -42,7 +42,7 @@ final class RANSDecodingSymbol {
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
     // No renormalization or output happens.
-    public int advanceSymbolStep(final int r, final int scaleBits) {
+    public long advanceSymbolStep(final long r, final int scaleBits) {
         final int mask = ((1 << scaleBits) - 1);
 
         // s, x = D(x)
@@ -52,22 +52,34 @@ final class RANSDecodingSymbol {
     // Advances in the bit stream by "popping" a single symbol with range start
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
-    public int advanceSymbol(final int rIn, final ByteBuffer byteBuffer, final int scaleBits) {
+    public long advanceSymbol4x8(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
         final int mask = (1 << scaleBits) - 1;
 
         // s, x = D(x)
-        int r = rIn;
-        r = freq * (r >> scaleBits) + (r & mask) - start;
+        long ret = freq * (rIn >> scaleBits) + (rIn & mask) - start;
 
         // re-normalize
-        if (r < Constants.RANS_BYTE_L) {
+        if (ret < Constants.RANS_4x8_LOWER_BOUND) {
             do {
                 final int b = 0xFF & byteBuffer.get();
-                r = (r << 8) | b;
-            } while (r < Constants.RANS_BYTE_L);
+                ret = (ret << 8) | b;
+            } while (ret < Constants.RANS_4x8_LOWER_BOUND);
         }
+        return ret;
+    }
 
-        return r;
+    public long advanceSymbolNx16(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
+        final int mask = (1 << scaleBits) - 1;
+
+        // s, x = D(x)
+        long ret = freq * (rIn >> scaleBits) + (rIn & mask) - start;
+
+        // re-normalize
+        if (ret < (Constants.RANS_Nx16_LOWER_BOUND)){
+            final int i = (0xFF & byteBuffer.get()) | ((0xFF & byteBuffer.get()) << 8);
+            ret = (ret << 16) + i;
+        }
+        return ret;
     }
 
 }
