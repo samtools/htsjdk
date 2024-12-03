@@ -1,7 +1,8 @@
 package htsjdk.utils;
 
-import htsjdk.samtools.util.*;
-
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.ProcessExecutor;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
