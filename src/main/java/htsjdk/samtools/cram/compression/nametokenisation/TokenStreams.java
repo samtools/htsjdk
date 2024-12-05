@@ -6,8 +6,6 @@ import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TokenStreams {
     public static final byte TOKEN_TYPE = 0x00;
@@ -34,7 +32,7 @@ public class TokenStreams {
     private static int POSITION_INCREMENT = 2; // reallocate by 2 every time we exceed the initial estimate
 
     // called 'B' in the spec, (conceptually) indexed as tokenStreams(tokenType, tokenPos)
-    private final List<List<ByteBuffer>> tokenStreams;
+    private final ByteBuffer[][] tokenStreams;
 
     //TODO: its unfortunate that this class is only used by decode, but not encode
 
@@ -51,10 +49,10 @@ public class TokenStreams {
         // contains a ByteBuffer of length = number of names
         // This ByteBuffer helps determine the type of each of the token at the specified pos
 
-        tokenStreams = new ArrayList<>(TOTAL_TOKEN_TYPES);
+        tokenStreams = new ByteBuffer[TOTAL_TOKEN_TYPES][];
         int estimatedNumberOfPositions = DEFAULT_NUMBER_OF_TOKEN_POSITIONS;
         for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            tokenStreams.add(new ArrayList<>());
+            tokenStreams[i] = new ByteBuffer[estimatedNumberOfPositions];
         }
         //System.out.println("Start new token streams");
         int tokenPosition = -1;
@@ -71,20 +69,22 @@ public class TokenStreams {
 
             if (isNewPosition) {
                 tokenPosition++;
-                //if (tokenPosition > estimatedNumberOfPositions) {
-                if (tokenPosition > 0) {
+                if (tokenPosition > estimatedNumberOfPositions) {
+                //if (tokenPosition > 0) {
+                    throw new IllegalStateException("finish me");
                     // If newToken and not the first newToken
                     // Ensure that the size of tokenStream for each type of token = tokenPosition
                     // by adding an empty ByteBuffer if needed
-                    for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-                        final List<ByteBuffer> currTokenStream = tokenStreams.get(i);
-                        if (currTokenStream.size() < tokenPosition) {
-                            currTokenStream.add(ByteBuffer.allocate(0));
-                        }
-                        if (currTokenStream.size() < tokenPosition) {
-                            throw new CRAMException("TokenStream is missing token(s) at token type: " + i);
-                        }
-                    }
+//                    for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+//                        final ByteBuffer[] currTokenColumn = tokenStreams[i];
+//                        currentTokenColumn[tokenPosition] =
+//                        if (currTokenColumn.length < tokenPosition) {
+//                            currTokenColumn.add(ByteBuffer.allocate(0));
+//                        }
+//                        if (currTokenStream.size() < tokenPosition) {
+//                            throw new CRAMException("TokenStream is missing token(s) at token type: " + i);
+//                        }
+//                    }
                 }
             }
             if (isNewPosition && (tokenType != TOKEN_TYPE)) {
@@ -97,14 +97,15 @@ public class TokenStreams {
                 }
                 typeDataByteBuffer.rewind();
                 typeDataByteBuffer.put(0, (byte) tokenType);
-                tokenStreams.get(0).add(typeDataByteBuffer);
+                //TOTO: tokenPosition--?
+                tokenStreams[0][tokenPosition] = typeDataByteBuffer;
             }
             if (isDupStream) {
                 // duplicate a previous stream
                 final int dupPosition = inputByteBuffer.get() & 0xFF;
                 final int dupType = inputByteBuffer.get() & 0xFF;
-                final ByteBuffer dupTokenStream = tokenStreams.get(dupType).get(dupPosition).duplicate();
-                tokenStreams.get(tokenType).add(tokenPosition,dupTokenStream);
+                final ByteBuffer dupTokenStream = tokenStreams[dupType][dupPosition].duplicate();
+                tokenStreams[tokenType][tokenPosition] = dupTokenStream;
             } else {
                 // retrieve and decompress another input stream
                 final int clen = CompressionUtils.readUint7(inputByteBuffer);
@@ -118,20 +119,20 @@ public class TokenStreams {
                     final RANSNx16Decode ransDecode = new RANSNx16Decode();
                     decompressedTokenStream = ransDecode.uncompress(ByteBuffer.wrap(compressedTokenStream));
                 }
-                getTokenStreamByType(tokenType).add(tokenPosition, decompressedTokenStream);
+                getTokenStreamByType(tokenType)[tokenPosition] = decompressedTokenStream;
             }
         }
         displayTokenStreamSizes();
-        shrinkTokenStreams();
+        //shrinkTokenStreams();
         //displayTokenStreamSizes();
     }
 
     private void displayTokenStreamSizes() {
         for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            int nCols = tokenStreams.get(i).size();
+            int nCols = tokenStreams[i].length;
             System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
             for (int j = 0; j < nCols; j++) {
-                final ByteBuffer bf = tokenStreams.get(i).get(j);
+                final ByteBuffer bf = tokenStreams[i][j];
                 if (bf == null) {
                     System.out.print("null ");
                 } else {
@@ -143,12 +144,12 @@ public class TokenStreams {
     }
     private void shrinkTokenStreams() {
         for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            int nCols = tokenStreams.get(i).size();
+            int nCols = tokenStreams[i].length;
             //System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
             for (int j = 0; j < nCols; j++) {
-                final ByteBuffer bf = tokenStreams.get(i).get(j);
+                final ByteBuffer bf = tokenStreams[i][j];
                 if (bf.limit() == 0) {
-                    tokenStreams.get(i).set(j, null);
+                    tokenStreams[i][j] = null;
                 }
             }
         }
@@ -187,11 +188,11 @@ public class TokenStreams {
         }
     }
 
-    public List<ByteBuffer> getTokenStreamByType(final int tokenType) {
-        return tokenStreams.get(tokenType);
+    public ByteBuffer[] getTokenStreamByType(final int tokenType) {
+        return tokenStreams[tokenType];
     }
 
-    public ByteBuffer getTokenStreamByteBuffer(final int tokenPosition, final int tokenType) {
-        return getTokenStreamByType(tokenType).get(tokenPosition);
+    public ByteBuffer getTokenStreamByteBuffer(final int tokenType, final int tokenPosition) {
+        return getTokenStreamByType(tokenType)[tokenPosition];
     }
 }
