@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.compression.nametokenisation;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
-import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
 
 import java.nio.ByteBuffer;
@@ -11,9 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TokenStreams {
-
     public static final byte TOKEN_TYPE = 0x00;
-    public static final byte TOKEN_STRING  = 0x01;
+    public static final byte TOKEN_STRING = 0x01;
     public static final byte TOKEN_CHAR = 0x02;
     public static final byte TOKEN_DIGITS0 = 0x03;
     public static final byte TOKEN_DZLEN = 0x04;
@@ -27,13 +25,18 @@ public class TokenStreams {
 
     public static final int TOTAL_TOKEN_TYPES = 13;
 
-    private static final int NEW_TOKEN_FLAG_MASK = 0x80;
-    private static final int DUP_TOKEN_FLAG_MASK = 0x40;
+    private static final int NEW_POSITION_FLAG_MASK = 0x80;
+    private static final int DUP_PREVIOUS_STREAM_FLAG_MASK = 0x40;
     private static final int TYPE_TOKEN_FLAG_MASK = 0x3F;
 
+    // choose an initial estimate of the number of expected token positions, which we use to preallocate lists
+    private static final int DEFAULT_NUMBER_OF_TOKEN_POSITIONS = 32;
+    private static int POSITION_INCREMENT = 2; // reallocate by 2 every time we exceed the initial estimate
+
+    // called 'B' in the spec, (conceptually) indexed as tokenStreams(tokenType, tokenPos)
     private final List<List<ByteBuffer>> tokenStreams;
 
-    //TODO: can we use the fact that there is a 128 token max per name to optimize this at all?
+    //TODO: its unfortunate that this class is only used by decode, but not encode
 
     public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
         // The outer index corresponds to type of the token
@@ -49,20 +52,26 @@ public class TokenStreams {
         // This ByteBuffer helps determine the type of each of the token at the specified pos
 
         tokenStreams = new ArrayList<>(TOTAL_TOKEN_TYPES);
+        int estimatedNumberOfPositions = DEFAULT_NUMBER_OF_TOKEN_POSITIONS;
         for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
             tokenStreams.add(new ArrayList<>());
         }
+        //System.out.println("Start new token streams");
         int tokenPosition = -1;
         while (inputByteBuffer.hasRemaining()) {
+            //System.out.println("Pos: " + tokenPosition);
             final byte tokenTypeFlags = inputByteBuffer.get();
-            final boolean isNewToken = ((tokenTypeFlags & NEW_TOKEN_FLAG_MASK) != 0);
-            final boolean isDupToken = ((tokenTypeFlags & DUP_TOKEN_FLAG_MASK) != 0);
+
+            final boolean isNewPosition = ((tokenTypeFlags & NEW_POSITION_FLAG_MASK) != 0);
+            final boolean isDupStream = ((tokenTypeFlags & DUP_PREVIOUS_STREAM_FLAG_MASK) != 0);
             final int tokenType = tokenTypeFlags & TYPE_TOKEN_FLAG_MASK;
             if (tokenType < 0 || tokenType > TOKEN_END) {
-                throw new CRAMException("Invalid name tokenizer Token tokenType: " + tokenType);
+                throw new CRAMException("Invalid name tokenizer token stream type: " + tokenType);
             }
-            if (isNewToken) {
+
+            if (isNewPosition) {
                 tokenPosition++;
+                //if (tokenPosition > estimatedNumberOfPositions) {
                 if (tokenPosition > 0) {
                     // If newToken and not the first newToken
                     // Ensure that the size of tokenStream for each type of token = tokenPosition
@@ -78,9 +87,9 @@ public class TokenStreams {
                     }
                 }
             }
-            if ((isNewToken) && (tokenType != TOKEN_TYPE)) {
-                // Spec: if we have a byte stream B5,DIGIT S but no B5,T Y P E
-                // then we assume the contents of B5,T Y P E consist of one DIGITS tokenType
+            if (isNewPosition && (tokenType != TOKEN_TYPE)) {
+                // Spec: if we have a byte stream B[5,DIGITS] but no B[5,TYPE]
+                // then we assume the contents of B[5,TYPE] consist of one DIGITS tokenType
                 // followed by as many MATCH types as are needed.
                 final ByteBuffer typeDataByteBuffer = ByteBuffer.allocate(numNames);
                 for (int i = 0; i < numNames; i++) {
@@ -90,26 +99,91 @@ public class TokenStreams {
                 typeDataByteBuffer.put(0, (byte) tokenType);
                 tokenStreams.get(0).add(typeDataByteBuffer);
             }
-            if (isDupToken) {
+            if (isDupStream) {
+                // duplicate a previous stream
                 final int dupPosition = inputByteBuffer.get() & 0xFF;
                 final int dupType = inputByteBuffer.get() & 0xFF;
                 final ByteBuffer dupTokenStream = tokenStreams.get(dupType).get(dupPosition).duplicate();
                 tokenStreams.get(tokenType).add(tokenPosition,dupTokenStream);
             } else {
+                // retrieve and decompress another input stream
                 final int clen = CompressionUtils.readUint7(inputByteBuffer);
-                final byte[] dataBytes = new byte[clen];
-                inputByteBuffer.get(dataBytes, 0, clen); // offset in the dst byte array
-                final ByteBuffer uncompressedDataByteBuffer;
+                final byte[] compressedTokenStream = new byte[clen];
+                inputByteBuffer.get(compressedTokenStream, 0, clen); // offset in the dst byte array
+                final ByteBuffer decompressedTokenStream;
                 if (useArith != 0) {
                     final RangeDecode rangeDecode = new RangeDecode();
-                    uncompressedDataByteBuffer = rangeDecode.uncompress(ByteBuffer.wrap(dataBytes));
-
+                    decompressedTokenStream = rangeDecode.uncompress(ByteBuffer.wrap(compressedTokenStream));
                 } else {
                     final RANSNx16Decode ransDecode = new RANSNx16Decode();
-                    uncompressedDataByteBuffer = ransDecode.uncompress(ByteBuffer.wrap(dataBytes));
+                    decompressedTokenStream = ransDecode.uncompress(ByteBuffer.wrap(compressedTokenStream));
                 }
-                getTokenStreamByType(tokenType).add(tokenPosition,uncompressedDataByteBuffer);
+                getTokenStreamByType(tokenType).add(tokenPosition, decompressedTokenStream);
             }
+        }
+        displayTokenStreamSizes();
+        shrinkTokenStreams();
+        //displayTokenStreamSizes();
+    }
+
+    private void displayTokenStreamSizes() {
+        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+            int nCols = tokenStreams.get(i).size();
+            System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
+            for (int j = 0; j < nCols; j++) {
+                final ByteBuffer bf = tokenStreams.get(i).get(j);
+                if (bf == null) {
+                    System.out.print("null ");
+                } else {
+                    System.out.print(String.format("%d ", bf.limit()));
+                }
+            }
+            System.out.println();
+        }
+    }
+    private void shrinkTokenStreams() {
+        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+            int nCols = tokenStreams.get(i).size();
+            //System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
+            for (int j = 0; j < nCols; j++) {
+                final ByteBuffer bf = tokenStreams.get(i).get(j);
+                if (bf.limit() == 0) {
+                    tokenStreams.get(i).set(j, null);
+                }
+            }
+        }
+    }
+
+    private String typeToString(int i) {
+        switch (i) {
+            case TOKEN_TYPE:
+                return "TOKEN_TYPE";
+            case TOKEN_STRING:
+                return "TOKEN_STRING";
+            case TOKEN_CHAR:
+                return "TOKEN_CHAR";
+            case TOKEN_DIGITS0:
+                return "TOKEN_DIGITS0";
+            case TOKEN_DZLEN:
+                return "TOKEN_DZLEN";
+            case TOKEN_DUP:
+                return "TOKEN_DUP";
+            case TOKEN_DIFF:
+                return "TOKEN_DIFF";
+            case TOKEN_DIGITS:
+                return "TOKEN_DIGITS";
+            case TOKEN_DELTA:
+                return "TOKEN_DELTA";
+            case TOKEN_DELTA0:
+                return "TOKEN_DELTA0";
+            case TOKEN_MATCH:
+                return "TOKEN_MATCH";
+            case TOKEN_END:
+                return "TOKEN_END";
+            case 11: //NOP
+                return "NOP";
+            default:
+                throw new CRAMException("Invalid name tokenizer Token tokenType: " + i);
         }
     }
 
@@ -118,6 +192,6 @@ public class TokenStreams {
     }
 
     public ByteBuffer getTokenStreamByteBuffer(final int tokenPosition, final int tokenType) {
-        return tokenStreams.get(tokenType).get(tokenPosition);
+        return getTokenStreamByType(tokenType).get(tokenPosition);
     }
 }
