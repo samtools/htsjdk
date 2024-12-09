@@ -50,9 +50,9 @@ public class NameTokenisationDecode {
 
         // The information about whether a name is a duplicate or not
         // is obtained from the list of tokens at tokenStreams[0,0]
-        final byte nameType = tokenStreams.getTokenStreamByteBuffer(TokenStreams.TOKEN_TYPE, 0).get();
+        final byte nameType = tokenStreams.getTokenStream(0, TokenStreams.TOKEN_TYPE).get();
         //TODO: set the byte order to little endian where these are created, not here...
-        final ByteBuffer distBuffer = tokenStreams.getTokenStreamByteBuffer(nameType, 0).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer distBuffer = tokenStreams.getTokenStream(0, nameType).order(ByteOrder.LITTLE_ENDIAN);
         final int dist = distBuffer.getInt() & 0xFFFFFFFF;
         final int prevNameIndex = currentNameIndex - dist;
 
@@ -65,22 +65,22 @@ public class NameTokenisationDecode {
         byte type;
         final StringBuilder decodedNameBuilder = new StringBuilder();
         do {
-            type = tokenStreams.getTokenStreamByteBuffer(TokenStreams.TOKEN_TYPE, tokenPos).get();
+            type = tokenStreams.getTokenStream(tokenPos, TokenStreams.TOKEN_TYPE).get();
             String currentToken = "";
             switch(type){
                 case TokenStreams.TOKEN_CHAR:
-                    final char currentTokenChar = (char) tokenStreams.getTokenStreamByteBuffer(TokenStreams.TOKEN_CHAR, tokenPos).get();
+                    final char currentTokenChar = (char) tokenStreams.getTokenStream(tokenPos, TokenStreams.TOKEN_CHAR).get();
                     currentToken = String.valueOf(currentTokenChar);
                     break;
                 case TokenStreams.TOKEN_STRING:
-                    currentToken = readString(tokenStreams.getTokenStreamByteBuffer(TokenStreams.TOKEN_STRING, tokenPos));
+                    currentToken = readString(tokenStreams.getTokenStream(tokenPos, TokenStreams.TOKEN_STRING));
                     break;
                 case TokenStreams.TOKEN_DIGITS:
                     currentToken = getDigitsToken(tokenStreams, tokenPos, TokenStreams.TOKEN_DIGITS);
                     break;
                 case TokenStreams.TOKEN_DIGITS0:
                     final String digits0Token = getDigitsToken(tokenStreams, tokenPos, TokenStreams.TOKEN_DIGITS0);
-                    final int lenDigits0Token = tokenStreams.getTokenStreamByteBuffer(TokenStreams.TOKEN_DZLEN, tokenPos).get() & 0xFF;
+                    final int lenDigits0Token = tokenStreams.getTokenStream(tokenPos, TokenStreams.TOKEN_DZLEN).get() & 0xFF;
                     currentToken = leftPadNumber(digits0Token, lenDigits0Token);
                     break;
                 case TokenStreams.TOKEN_DELTA:
@@ -95,6 +95,10 @@ public class NameTokenisationDecode {
                     currentToken = tokensList.get(prevNameIndex).get(tokenPos-1);
                     break;
                 case TokenStreams.TOKEN_END: // tolerate END, it terminates the enclosing loop
+                    break;
+
+                case TokenStreams.TOKEN_NOP:
+                    //no-op token, inserted by the writer to take up space to keep the streams aligned
                     break;
 
                 // These are either consumed elsewhere or otherwise shouldn't be present in the stream at this point
@@ -133,7 +137,7 @@ public class NameTokenisationDecode {
             final String exceptionMessageSubstring = (tokenType == TokenStreams.TOKEN_DELTA) ? "DIGITS or DELTA" : "DIGITS0 or DELTA0";
             throw new CRAMException(String.format("The token in the prior name must be of type %s", exceptionMessageSubstring), e);
         }
-        final int deltaTokenValue = tokenStreams.getTokenStreamByteBuffer(tokenType, tokenPosition).get() & 0xFF;
+        final int deltaTokenValue = tokenStreams.getTokenStream(tokenPosition, tokenType).get() & 0xFF;
         return Long.toString(prevToken + deltaTokenValue);
     }
 
@@ -145,7 +149,7 @@ public class NameTokenisationDecode {
             throw new CRAMException(String.format("Invalid tokenType : %s. " +
                     "tokenType must be either TOKEN_DIGITS or TOKEN_DIGITS0", tokenType));
         }
-        final ByteBuffer digitsByteBuffer = tokenStreams.getTokenStreamByteBuffer(tokenType, tokenPosition).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer digitsByteBuffer = tokenStreams.getTokenStream(tokenPosition, tokenType).order(ByteOrder.LITTLE_ENDIAN);
         final long digits = digitsByteBuffer.getInt() & 0xFFFFFFFFL;
         return Long.toString(digits);
     }

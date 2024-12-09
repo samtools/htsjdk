@@ -19,6 +19,7 @@ public class TokenStreams {
     public static final byte TOKEN_DELTA = 0x08;
     public static final byte TOKEN_DELTA0 = 0x09;
     public static final byte TOKEN_MATCH = 0x0A;
+    public static final byte TOKEN_NOP = 0x0B; //unused
     public static final byte TOKEN_END = 0x0C;
 
     public static final int TOTAL_TOKEN_TYPES = 13;
@@ -29,35 +30,38 @@ public class TokenStreams {
 
     // choose an initial estimate of the number of expected token positions, which we use to preallocate lists
     private static final int DEFAULT_NUMBER_OF_TOKEN_POSITIONS = 32;
-    private static int POSITION_INCREMENT = 2; // reallocate by 2 every time we exceed the initial estimate
+    private static int POSITION_INCREMENT = 5; // expand allocation by 5 every time we exceed the initial estimate
 
-    // called 'B' in the spec, (conceptually) indexed as tokenStreams(tokenType, tokenPos)
-    private final ByteBuffer[][] tokenStreams;
+    // called 'B' in the spec, indexed (conceptually) as tokenStreams(tokenPos, tokenType)
+    private ByteBuffer[][] tokenStreams;
 
     //TODO: its unfortunate that this class is only used by decode, but not encode
 
     public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
-        // The outer index corresponds to type of the token
-        // and the inner index corresponds to the position of the token in a name (starting at index 1)
-        // Each element in this list of lists is a Token (ie, a ByteBuffer)
+        //TODO: update this comment to reflect position-major array organization
+//         The outer index corresponds to type of the token
+//         and the inner index corresponds to the position of the token in a name (starting at index 1)
+//         Each element in this list of lists is a Token (ie, a ByteBuffer)
+//
+//         TokenStreams[type = TOKEN_TYPE(0x00), pos = 0] contains a ByteBuffer of length = number of names
+//         This ByteBuffer helps determine if each of the names is a TOKEN_DUP or TOKEN_DIFF
+//         when compared with the previous name
+//
+//         TokenStreams[type = TOKEN_TYPE(0x00), pos = all except 0]
+//         contains a ByteBuffer of length = number of names
+//         This ByteBuffer helps determine the type of each of the token at the specified pos
 
-        // TokenStreams[type = TOKEN_TYPE(0x00), pos = 0] contains a ByteBuffer of length = number of names
-        // This ByteBuffer helps determine if each of the names is a TOKEN_DUP or TOKEN_DIFF
-        // when compared with the previous name
-
-        // TokenStreams[type = TOKEN_TYPE(0x00), pos = all except 0]
-        // contains a ByteBuffer of length = number of names
-        // This ByteBuffer helps determine the type of each of the token at the specified pos
-
-        tokenStreams = new ByteBuffer[TOTAL_TOKEN_TYPES][];
-        int estimatedNumberOfPositions = DEFAULT_NUMBER_OF_TOKEN_POSITIONS;
-        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            tokenStreams[i] = new ByteBuffer[estimatedNumberOfPositions];
+        // pre-allocate enough room for 32 token positions; we'll reallocate if we exceed this; it is ok if
+        // the actual number is less than the pre-allocated amount;
+        // note that this array is often very sparse (many cells often have null instead of an actual bytebuffer)
+        int numberOfPreallocatedPositions = DEFAULT_NUMBER_OF_TOKEN_POSITIONS;
+        tokenStreams = new ByteBuffer[numberOfPreallocatedPositions][];
+        for (int i = 0; i < numberOfPreallocatedPositions; i++) {
+            tokenStreams[i] = new ByteBuffer[TOTAL_TOKEN_TYPES];
         }
-        //System.out.println("Start new token streams");
+
         int tokenPosition = -1;
         while (inputByteBuffer.hasRemaining()) {
-            //System.out.println("Pos: " + tokenPosition);
             final byte tokenTypeFlags = inputByteBuffer.get();
 
             final boolean isNewPosition = ((tokenTypeFlags & NEW_POSITION_FLAG_MASK) != 0);
@@ -69,22 +73,15 @@ public class TokenStreams {
 
             if (isNewPosition) {
                 tokenPosition++;
-                if (tokenPosition > estimatedNumberOfPositions) {
-                //if (tokenPosition > 0) {
-                    throw new IllegalStateException("finish me");
-                    // If newToken and not the first newToken
-                    // Ensure that the size of tokenStream for each type of token = tokenPosition
-                    // by adding an empty ByteBuffer if needed
-//                    for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-//                        final ByteBuffer[] currTokenColumn = tokenStreams[i];
-//                        currentTokenColumn[tokenPosition] =
-//                        if (currTokenColumn.length < tokenPosition) {
-//                            currTokenColumn.add(ByteBuffer.allocate(0));
-//                        }
-//                        if (currTokenStream.size() < tokenPosition) {
-//                            throw new CRAMException("TokenStream is missing token(s) at token type: " + i);
-//                        }
-//                    }
+               if (tokenPosition > numberOfPreallocatedPositions) {
+                   // if we encounter a new position that is past the number of positions for which we've pre-allocated,
+                   // expand our array and copy the old values into it
+                   final ByteBuffer[][] newTokenStreams = new ByteBuffer[numberOfPreallocatedPositions + POSITION_INCREMENT][];
+                    for (int i = 0; i < numberOfPreallocatedPositions; i++) {
+                        newTokenStreams[i] = tokenStreams[i];
+                    }
+                    tokenStreams = newTokenStreams;
+                    numberOfPreallocatedPositions += POSITION_INCREMENT;
                 }
             }
             if (isNewPosition && (tokenType != TOKEN_TYPE)) {
@@ -93,19 +90,19 @@ public class TokenStreams {
                 // followed by as many MATCH types as are needed.
                 final ByteBuffer typeDataByteBuffer = ByteBuffer.allocate(numNames);
                 for (int i = 0; i < numNames; i++) {
-                    typeDataByteBuffer.put((byte) TOKEN_MATCH);
+                    typeDataByteBuffer.put(TOKEN_MATCH);
                 }
                 typeDataByteBuffer.rewind();
                 typeDataByteBuffer.put(0, (byte) tokenType);
-                //TOTO: tokenPosition--?
-                tokenStreams[0][tokenPosition] = typeDataByteBuffer;
+                //TODO: tokenPosition--?
+                tokenStreams[tokenPosition][0] = typeDataByteBuffer;
             }
             if (isDupStream) {
                 // duplicate a previous stream
                 final int dupPosition = inputByteBuffer.get() & 0xFF;
                 final int dupType = inputByteBuffer.get() & 0xFF;
-                final ByteBuffer dupTokenStream = tokenStreams[dupType][dupPosition].duplicate();
-                tokenStreams[tokenType][tokenPosition] = dupTokenStream;
+                final ByteBuffer dupTokenStream = tokenStreams[dupPosition][dupType].duplicate();
+                tokenStreams[tokenPosition][tokenType] = dupTokenStream;
             } else {
                 // retrieve and decompress another input stream
                 final int clen = CompressionUtils.readUint7(inputByteBuffer);
@@ -119,42 +116,45 @@ public class TokenStreams {
                     final RANSNx16Decode ransDecode = new RANSNx16Decode();
                     decompressedTokenStream = ransDecode.uncompress(ByteBuffer.wrap(compressedTokenStream));
                 }
-                getTokenStreamByType(tokenType)[tokenPosition] = decompressedTokenStream;
+                getTokenStreamsForPos(tokenPosition)[tokenType] = decompressedTokenStream;
             }
         }
-        displayTokenStreamSizes();
+        //displayTokenStreamSizes();
         //shrinkTokenStreams();
         //displayTokenStreamSizes();
     }
 
     private void displayTokenStreamSizes() {
-        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            int nCols = tokenStreams[i].length;
-            System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
-            for (int j = 0; j < nCols; j++) {
-                final ByteBuffer bf = tokenStreams[i][j];
+        for (int t = 0; t < TOTAL_TOKEN_TYPES; t++) {
+            System.out.print(String.format("%s ", typeToString(t)));
+        }
+        System.out.println();
+        for (int pos = 0; pos < tokenStreams.length; pos++) {
+            System.out.print(String.format("Pos %2d: ", pos));
+            for (int typ = 0; typ < tokenStreams[pos].length; typ++) {
+                final ByteBuffer bf = tokenStreams[pos][typ];
                 if (bf == null) {
-                    System.out.print("null ");
+                    System.out.print(String.format("%8s", "null"));
                 } else {
-                    System.out.print(String.format("%d ", bf.limit()));
+                    System.out.print(String.format("%8d", bf.limit()));
                 }
             }
             System.out.println();
         }
     }
-    private void shrinkTokenStreams() {
-        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-            int nCols = tokenStreams[i].length;
-            //System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
-            for (int j = 0; j < nCols; j++) {
-                final ByteBuffer bf = tokenStreams[i][j];
-                if (bf.limit() == 0) {
-                    tokenStreams[i][j] = null;
-                }
-            }
-        }
-    }
-
+//    private void shrinkTokenStreams() {
+//        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
+//            int nCols = tokenStreams[i].length;
+//            //System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
+//            for (int j = 0; j < nCols; j++) {
+//                final ByteBuffer bf = tokenStreams[i][j];
+//                if (bf.limit() == 0) {
+//                    tokenStreams[i][j] = null;
+//                }
+//            }
+//        }
+//    }
+//
     private String typeToString(int i) {
         switch (i) {
             case TOKEN_TYPE:
@@ -188,11 +188,11 @@ public class TokenStreams {
         }
     }
 
-    public ByteBuffer[] getTokenStreamByType(final int tokenType) {
-        return tokenStreams[tokenType];
+    public ByteBuffer[] getTokenStreamsForPos(final int pos) {
+        return tokenStreams[pos];
     }
 
-    public ByteBuffer getTokenStreamByteBuffer(final int tokenType, final int tokenPosition) {
-        return getTokenStreamByType(tokenType)[tokenPosition];
+    public ByteBuffer getTokenStream(final int tokenPosition, final int tokenType) {
+        return getTokenStreamsForPos(tokenPosition)[tokenType];
     }
 }
