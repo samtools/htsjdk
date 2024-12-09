@@ -35,25 +35,17 @@ public class TokenStreams {
     // called 'B' in the spec, indexed (conceptually) as tokenStreams(tokenPos, tokenType)
     private ByteBuffer[][] tokenStreams;
 
-    //TODO: its unfortunate that this class is only used by decode, but not encode
-
+    /**
+     * The outer index corresponds to the (column) position in a name (starting at index 0). The inner
+     *  index corresponds to the  token type. Each element in this list of lists is a ByteBuffer of tokens.
+     * @param inputByteBuffer
+     * @param useArith
+     * @param numNames
+     */
     public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
-        //TODO: update this comment to reflect position-major array organization
-//         The outer index corresponds to type of the token
-//         and the inner index corresponds to the position of the token in a name (starting at index 1)
-//         Each element in this list of lists is a Token (ie, a ByteBuffer)
-//
-//         TokenStreams[type = TOKEN_TYPE(0x00), pos = 0] contains a ByteBuffer of length = number of names
-//         This ByteBuffer helps determine if each of the names is a TOKEN_DUP or TOKEN_DIFF
-//         when compared with the previous name
-//
-//         TokenStreams[type = TOKEN_TYPE(0x00), pos = all except 0]
-//         contains a ByteBuffer of length = number of names
-//         This ByteBuffer helps determine the type of each of the token at the specified pos
-
         // pre-allocate enough room for 32 token positions; we'll reallocate if we exceed this; it is ok if
-        // the actual number is less than the pre-allocated amount;
-        // note that this array is often very sparse (many cells often have null instead of an actual bytebuffer)
+        // the actual number is less than the pre-allocated amount
+        // note that this array is often very sparse (unused cells have null instead of an actual ByteBuffer)
         int numberOfPreallocatedPositions = DEFAULT_NUMBER_OF_TOKEN_POSITIONS;
         tokenStreams = new ByteBuffer[numberOfPreallocatedPositions][];
         for (int i = 0; i < numberOfPreallocatedPositions; i++) {
@@ -94,7 +86,6 @@ public class TokenStreams {
                 }
                 typeDataByteBuffer.rewind();
                 typeDataByteBuffer.put(0, (byte) tokenType);
-                //TODO: tokenPosition--?
                 tokenStreams[tokenPosition][0] = typeDataByteBuffer;
             }
             if (isDupStream) {
@@ -119,9 +110,7 @@ public class TokenStreams {
                 getTokenStreamsForPos(tokenPosition)[tokenType] = decompressedTokenStream;
             }
         }
-        //displayTokenStreamSizes();
-        //shrinkTokenStreams();
-        //displayTokenStreamSizes();
+        displayTokenStreamSizes();
     }
 
     private void displayTokenStreamSizes() {
@@ -142,20 +131,8 @@ public class TokenStreams {
             System.out.println();
         }
     }
-//    private void shrinkTokenStreams() {
-//        for (int i = 0; i < TOTAL_TOKEN_TYPES; i++) {
-//            int nCols = tokenStreams[i].length;
-//            //System.out.println(String.format("Row %d %s nCols: %d", i, typeToString(i), nCols));
-//            for (int j = 0; j < nCols; j++) {
-//                final ByteBuffer bf = tokenStreams[i][j];
-//                if (bf.limit() == 0) {
-//                    tokenStreams[i][j] = null;
-//                }
-//            }
-//        }
-//    }
-//
-    private String typeToString(int i) {
+
+   private String typeToString(int i) {
         switch (i) {
             case TOKEN_TYPE:
                 return "TOKEN_TYPE";
@@ -181,10 +158,10 @@ public class TokenStreams {
                 return "TOKEN_MATCH";
             case TOKEN_END:
                 return "TOKEN_END";
-            case 11: //NOP
+            case TOKEN_NOP:
                 return "NOP";
             default:
-                throw new CRAMException("Invalid name tokenizer Token tokenType: " + i);
+                throw new CRAMException("Invalid name tokenizer tokenType: " + i);
         }
     }
 
