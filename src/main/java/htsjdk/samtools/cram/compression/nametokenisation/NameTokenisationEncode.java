@@ -1,10 +1,10 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.nametokenisation.tokens.EncodeToken;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
-import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 
@@ -18,8 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NameTokenisationEncode {
-    private final static String regex = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
-    private final static Pattern pattern = Pattern.compile(regex);
+    private final static String nameTokenizerRegex = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
+    private final static Pattern nameTokenizerPattern = Pattern.compile(nameTokenizerRegex);
 
     private int maxToken;
     private int maxLength;
@@ -67,7 +67,7 @@ public class NameTokenisationEncode {
             for (int i = 0; i < TokenStreams.TOTAL_TOKEN_TYPES; i++) {
                 tokenStream.add(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN));
             }
-            fillByteStreams(tokenStream,tokensList,tokenPosition,numNames);
+            fillByteStreams(tokenStream, tokensList, tokenPosition, numNames);
             serializeByteStreams(tokenStream, useArith, outBuffer);
         }
 
@@ -89,6 +89,7 @@ public class NameTokenisationEncode {
         if (nameIndexMap.containsKey(name)) {
             // TODO: Add Test to cover this code
             tokensList.get(currentNameIndex).add(
+                    // TODO: lift the common subexpressions
                     new EncodeToken(
                             String.valueOf(currentNameIndex - nameIndexMap.get(name)),
                             String.valueOf(currentNameIndex - nameIndexMap.get(name)),
@@ -102,7 +103,7 @@ public class NameTokenisationEncode {
         }
         // Get the list of tokens `tok` for the current name
         nameIndexMap.put(name, currentNameIndex);
-        final Matcher matcher = pattern.matcher(name);
+        final Matcher matcher = nameTokenizerPattern.matcher(name);
         final List<String> tok = new ArrayList<>();
         while (matcher.find()) {
             tok.add(matcher.group());
@@ -220,6 +221,16 @@ public class NameTokenisationEncode {
                 case TokenStreams.TOKEN_DELTA0:
                     tokenStream.get(TokenStreams.TOKEN_DELTA0).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
+
+                case TokenStreams.TOKEN_NOP:
+                case TokenStreams.TOKEN_MATCH:
+                case TokenStreams.TOKEN_END:
+                    //TODO: do we need to handle these token types here? throwing causes exceptions
+                    //throw new CRAMException("Invalid token type: " + type);
+                    break;
+
+                default:
+                    throw new CRAMException("Invalid token type: " + type);
             }
         }
     }
