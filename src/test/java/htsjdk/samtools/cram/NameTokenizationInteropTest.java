@@ -57,12 +57,12 @@ public class NameTokenizationInteropTest extends HtsjdkTest {
 
             final NameTokenisationDecode nameTokenisationDecode = new NameTokenisationDecode();
             //TODO: get rid of the intermediate String returned by uncompress....
-            final String decompressedHtsjdkString = nameTokenisationDecode.uncompress(compressedHtsjdkBytes);
+            final String uncompressedHtsjdkString = nameTokenisationDecode.uncompress(compressedHtsjdkBytes);
 
-            final ByteBuffer decompressedHtsjdkBytes = StandardCharsets.UTF_8.encode(decompressedHtsjdkString);
-            translateNameDelimiter(decompressedHtsjdkBytes);
+            final ByteBuffer uncompressedHtsjdkBytes = StandardCharsets.UTF_8.encode(uncompressedHtsjdkString);
+            translateNameDelimiter(uncompressedHtsjdkBytes);
             expectedRawInteropBytes.rewind();
-            Assert.assertEquals(decompressedHtsjdkBytes, expectedRawInteropBytes);
+            Assert.assertEquals(uncompressedHtsjdkBytes, expectedRawInteropBytes);
         } catch (final NoSuchFileException ex){
             throw new SkipException("Skipping testRangeRoundTrip as either the input precompressed file " +
                     "or the uncompressed file is missing.", ex);

@@ -9,6 +9,7 @@ import java.util.StringJoiner;
 
 public class NameTokenisationDecode {
 
+
     public String uncompress(final ByteBuffer inBuffer) {
         //TODO: make this stop sentinel into a shared static constant
         // Actually, this doesn't need to be exposed as an arg on this, so move it into the uncompress method

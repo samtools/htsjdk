@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.nametokenisation.tokens.EncodeToken;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
@@ -24,15 +23,18 @@ public class NameTokenisationEncode {
     private int maxToken;
     private int maxLength;
 
+    //TODO: can this class use the TokenStreams class
+    // TODO: reset the input stream before processing
     public ByteBuffer compress(final ByteBuffer inBuffer, final boolean useArith) {
         maxToken = 0;
         maxLength = 0;
         //TODO: make this an ArrayList of byte[] instead of String
         final ArrayList<String> names = new ArrayList<>();
-        int lastPosition = inBuffer.position();
 
         // convert buffer to array of names
-        while(inBuffer.hasRemaining()){
+        //int lastPosition = inBuffer.position();
+        //while(inBuffer.hasRemaining()){
+        for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining();) {
             final byte currentByte = inBuffer.get();
             //TODO: is this \n the same as the shared separator ? where is this defined ?
             if ((currentByte) == '\n' || inBuffer.position()==inBuffer.limit()){
@@ -222,15 +224,15 @@ public class NameTokenisationEncode {
                     tokenStream.get(TokenStreams.TOKEN_DELTA0).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
-                case TokenStreams.TOKEN_NOP:
-                case TokenStreams.TOKEN_MATCH:
-                case TokenStreams.TOKEN_END:
-                    //TODO: do we need to handle these token types here? throwing causes exceptions
-                    //throw new CRAMException("Invalid token type: " + type);
-                    break;
-
-                default:
-                    throw new CRAMException("Invalid token type: " + type);
+//                case TokenStreams.TOKEN_NOP:
+//                case TokenStreams.TOKEN_MATCH:
+//                case TokenStreams.TOKEN_END:
+//                    //TODO: do we need to handle these token types here? throwing causes exceptions
+//                    //throw new CRAMException("Invalid token type: " + type);
+//                    break;
+//
+//                default:
+//                    throw new CRAMException("Invalid token type: " + type);
             }
         }
     }
