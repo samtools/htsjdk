@@ -161,6 +161,7 @@ public class CompressionUtils {
     }
 
     // returns a new LITTLE_ENDIAN ByteBuffer of size = bufferSize
+    //TODO: rename this to allocateLittleEndianByteBuffer
     public static ByteBuffer allocateByteBuffer(final int bufferSize){
         return ByteBuffer.allocate(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
     }

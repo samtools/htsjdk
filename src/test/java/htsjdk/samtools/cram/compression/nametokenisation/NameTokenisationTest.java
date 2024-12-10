@@ -30,6 +30,7 @@ public class NameTokenisationTest extends HtsjdkTest {
 
         // a subset of read names from
         // src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam
+        //TODO:fix these to use  LOCAL_NAME_SEPARATOR
         readNamesList.add("20FUKAAXX100202:6:27:4968:125377\0" +
                 "20FUKAAXX100202:6:27:4986:125375\0" +
                 "20FUKAAXX100202:5:62:8987:1929\0" +
@@ -86,7 +87,7 @@ public class NameTokenisationTest extends HtsjdkTest {
         final NameTokenisationEncode nameTokenisationEncode = new NameTokenisationEncode();
         final NameTokenisationDecode nameTokenisationDecode = new NameTokenisationDecode();
 
-        final ByteBuffer uncompressedBuffer =  ByteBuffer.wrap(td.testArray);
+        final ByteBuffer uncompressedBuffer = ByteBuffer.wrap(td.testArray);
         final ByteBuffer compressedBuffer = nameTokenisationEncode.compress(uncompressedBuffer, false);
         final String decompressedNames = nameTokenisationDecode.uncompress(compressedBuffer);
         final ByteBuffer decompressedNamesBuffer = StandardCharsets.UTF_8.encode(decompressedNames);

@@ -8,17 +8,16 @@ import java.util.List;
 import java.util.StringJoiner;
 
 public class NameTokenisationDecode {
+    // TODO: lift these values to a common location since they're used by the encode, decoder and tests
+    // for now, since we're returning a String of all the names (instead of a list, which is more efficient) because,
+    // use a single byte to separate the names; this particular byte is chosen because the calling code in the CRAM
+    // reader for read names already assumes it will be handed a block of '\0' separated names
+    public final static byte NAME_SEPARATOR = 0;
+    public final static CharSequence LOCAL_NAME_SEPARATOR_CHARSEQUENCE = new String(new byte[] {NAME_SEPARATOR});
 
-
+    // the input must be a ByteBuffer containing the read names, separated by the NAME_SEPARATOR byte, WITHOUT
+    // a terminating separator
     public String uncompress(final ByteBuffer inBuffer) {
-        //TODO: make this stop sentinel into a shared static constant
-        // Actually, this doesn't need to be exposed as an arg on this, so move it into the uncompress method
-        return uncompress(inBuffer, "\0");
-    }
-
-    public String uncompress(
-            final ByteBuffer inBuffer,
-            final String separator) {
         inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         final int uncompressedLength =  inBuffer.getInt() & 0xFFFFFFFF; //unused but we have to consume it
         final int numNames =  inBuffer.getInt() & 0xFFFFFFFF;
@@ -27,21 +26,18 @@ public class NameTokenisationDecode {
         final TokenStreams tokenStreams = new TokenStreams(inBuffer, useArith, numNames);
 
         // track tokens we've already seen for subsequent lookup/reference (indexed as (nameIndex, tokenPosition))
+        //TODO: for performance reasons, it would probably be wise to separate the string tokens from the int tokens
+        // so we don't have to repeatedly interconvert them when fetching from this list
         final List<List<String>> previousTokens = new ArrayList<>(numNames);
         for (int i = 0; i < numNames; i++) {
             previousTokens.add(new ArrayList<>());
         }
 
-        final StringJoiner decodedNamesJoiner = new StringJoiner(separator);
+        final StringJoiner decodedNamesJoiner = new StringJoiner(LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
         for (int i = 0; i < numNames; i++) {
             decodedNamesJoiner.add(decodeSingleName(tokenStreams, previousTokens, i));
         }
-        final String uncompressedNames = decodedNamesJoiner.toString();
-        if (uncompressedLength == uncompressedNames.length() + separator.length()) {
-            return uncompressedNames + separator;
-        }
-        //TODO: this line is never executed in interop tests
-        return uncompressedNames;
+        return decodedNamesJoiner.toString();
     }
 
     private String decodeSingleName(
@@ -52,8 +48,7 @@ public class NameTokenisationDecode {
         // The information about whether a name is a duplicate or not
         // is obtained from the list of tokens at tokenStreams[0,0]
         final byte nameType = tokenStreams.getTokenStream(0, TokenStreams.TOKEN_TYPE).get();
-        //TODO: set the byte order to little endian where these are created, not here...
-        final ByteBuffer distBuffer = tokenStreams.getTokenStream(0, nameType).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer distBuffer = tokenStreams.getTokenStream(0, nameType);
         final int dist = distBuffer.getInt() & 0xFFFFFFFF;
         final int prevNameIndex = currentNameIndex - dist;
 
@@ -82,7 +77,7 @@ public class NameTokenisationDecode {
                 case TokenStreams.TOKEN_DIGITS0:
                     final String digits0Token = getDigitsToken(tokenStreams, tokenPos, TokenStreams.TOKEN_DIGITS0);
                     final int lenDigits0Token = tokenStreams.getTokenStream(tokenPos, TokenStreams.TOKEN_DZLEN).get() & 0xFF;
-                    currentToken = leftPadNumber(digits0Token, lenDigits0Token);
+                    currentToken = leftPadWith0(digits0Token, lenDigits0Token);
                     break;
                 case TokenStreams.TOKEN_DELTA:
                     currentToken = getDeltaToken(tokenStreams, tokenPos, tokensList, prevNameIndex, TokenStreams.TOKEN_DELTA);
@@ -90,7 +85,7 @@ public class NameTokenisationDecode {
                 case TokenStreams.TOKEN_DELTA0:
                     final String delta0Token = getDeltaToken(tokenStreams, tokenPos, tokensList, prevNameIndex, TokenStreams.TOKEN_DELTA0);
                     final int lenDelta0Token = tokensList.get(prevNameIndex).get(tokenPos-1).length();
-                    currentToken = leftPadNumber(delta0Token, lenDelta0Token);
+                    currentToken = leftPadWith0(delta0Token, lenDelta0Token);
                     break;
                 case TokenStreams.TOKEN_MATCH:
                     currentToken = tokensList.get(prevNameIndex).get(tokenPos-1);
@@ -112,7 +107,7 @@ public class NameTokenisationDecode {
                             "Invalid tokenType : %s. tokenType must be one of the valid token types",
                             type));
             }
-            //TODO: this is expanding the list EVERY time, which is not efficient
+            //TODO: this is expanding the list many times, which is not efficient
             tokensList.get(currentNameIndex).add(tokenPos - 1, currentToken);
             decodedNameBuilder.append(currentToken);
             tokenPos++;
@@ -150,7 +145,7 @@ public class NameTokenisationDecode {
             throw new CRAMException(String.format("Invalid tokenType : %s. " +
                     "tokenType must be either TOKEN_DIGITS or TOKEN_DIGITS0", tokenType));
         }
-        final ByteBuffer digitsByteBuffer = tokenStreams.getTokenStream(tokenPosition, tokenType).order(ByteOrder.LITTLE_ENDIAN);
+        final ByteBuffer digitsByteBuffer = tokenStreams.getTokenStream(tokenPosition, tokenType);
         final long digits = digitsByteBuffer.getInt() & 0xFFFFFFFFL;
         return Long.toString(digits);
     }
@@ -161,19 +156,23 @@ public class NameTokenisationDecode {
         final StringBuilder resultStringBuilder = new StringBuilder();
         byte currentByte = inputBuffer.get();
         while (currentByte != 0) {
+            //TODO: fix this sketchy cast
             resultStringBuilder.append((char) currentByte);
             currentByte = inputBuffer.get();
         }
         return resultStringBuilder.toString();
     }
 
-    private String leftPadNumber(String value, final int len) {
-        // return value such that it is at least len bytes long with leading zeros
-        //TODO: optimize this....
-        while (value.length() < len) {
-            value = "0" + value;
+    // return value such that it is at least len bytes long with leading zeros
+    private String leftPadWith0(final String value, final int len) {
+        if (value.length() >= len) {
+            return value;
+        } else {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("0".repeat(Math.max(0, len - value.length())));
+            sb.append(value);
+            return sb.toString();
         }
-        return value;
     }
 
 }
