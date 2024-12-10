@@ -1,14 +1,15 @@
 package htsjdk.samtools.cram.compression.nametokenisation;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.nametokenisation.tokens.EncodeToken;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,41 +18,50 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NameTokenisationEncode {
-    private final static String nameTokenizerRegex = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
-    private final static Pattern nameTokenizerPattern = Pattern.compile(nameTokenizerRegex);
+    private final static String READ_NAME_TOK_REGEX = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
+    private final static Pattern READ_NAME_PATTERN = Pattern.compile(READ_NAME_TOK_REGEX);
+
+    private final static String DIGITS0_REGEX = "^0+[0-9]*$";
+    private final static Pattern DIGITS0_PATTERN = Pattern.compile(DIGITS0_REGEX);
+
+    private final static String DIGITS_REGEX = "^[0-9]+$";
+    private final static Pattern DIGITS_PATTERN = Pattern.compile(DIGITS_REGEX);
 
     private int maxToken;
     private int maxLength;
 
-    //TODO: can this class use the TokenStreams class
-    // TODO: reset the input stream before processing
+    // the output is a ByteBuffer containing the read names, separated by the NAME_SEPARATOR byte, WITHOUT
+    // a terminating separator
     public ByteBuffer compress(final ByteBuffer inBuffer, final boolean useArith) {
         maxToken = 0;
         maxLength = 0;
-        //TODO: make this an ArrayList of byte[] instead of String
-        final ArrayList<String> names = new ArrayList<>();
+        final ArrayList<String> names = new ArrayList<>(CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE);
 
-        // convert buffer to array of names
-        //int lastPosition = inBuffer.position();
-        //while(inBuffer.hasRemaining()){
+        // extract the individual names from the input buffer
         for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining();) {
             final byte currentByte = inBuffer.get();
-            //TODO: is this \n the same as the shared separator ? where is this defined ?
-            if ((currentByte) == '\n' || inBuffer.position()==inBuffer.limit()){
+            if (currentByte == NameTokenisationDecode.NAME_SEPARATOR || inBuffer.position() == inBuffer.limit()) {
                 final int length = inBuffer.position() - lastPosition;
                 final byte[] bytes = new byte[length];
                 inBuffer.position(lastPosition);
-                inBuffer.get(bytes, 0, length);
-                names.add(new String(bytes, StandardCharsets.UTF_8).trim());
+                inBuffer.get(bytes, 0, length);  // consume the string + the terminator
+                names.add(new String(
+                        bytes,
+                        0,
+                        // special case handling end of the buffer, where there is no for the lack of a trailing separator
+                        length - (inBuffer.position() == inBuffer.limit() ? 0 : 1),
+                        StandardCharsets.UTF_8));
                 lastPosition = inBuffer.position();
             }
         }
 
         final int numNames = names.size();
-        // guess max size -> str.length*2 + 10000 (from htscodecs javascript code)
-        //TODO: what is this calculation ?
-        final ByteBuffer outBuffer = allocateOutputBuffer((inBuffer.limit()*2)+10000);
-        outBuffer.putInt(inBuffer.limit());
+        final int uncompressedInputSize = inBuffer.limit() - numNames - 1;
+        //TODO: guess max size -> str.length*2 + 10000 (from htscodecs javascript code)
+        final ByteBuffer outBuffer = CompressionUtils.allocateByteBuffer((inBuffer.limit()*2)+10000);
+        //TODO: what is the correct value here ? does/should this include
+        // the local name delimiter that we use to format the input stream (??)
+        outBuffer.putInt(uncompressedInputSize);
         outBuffer.putInt(numNames);
         outBuffer.put((byte)(useArith == true ? 1 : 0));
 
@@ -67,7 +77,7 @@ public class NameTokenisationEncode {
         for (int tokenPosition = 0; tokenPosition < maxToken; tokenPosition++) {
             final List<ByteBuffer> tokenStream = new ArrayList(TokenStreams.TOTAL_TOKEN_TYPES);
             for (int i = 0; i < TokenStreams.TOTAL_TOKEN_TYPES; i++) {
-                tokenStream.add(ByteBuffer.allocate(numNames* maxLength).order(ByteOrder.LITTLE_ENDIAN));
+                tokenStream.add(CompressionUtils.allocateByteBuffer(numNames * maxLength));
             }
             fillByteStreams(tokenStream, tokensList, tokenPosition, numNames);
             serializeByteStreams(tokenStream, useArith, outBuffer);
@@ -89,23 +99,15 @@ public class NameTokenisationEncode {
         final int prevNameIndex = currentNameIndex - 1;
         tokensList.add(new ArrayList<>());
         if (nameIndexMap.containsKey(name)) {
-            // TODO: Add Test to cover this code
-            tokensList.get(currentNameIndex).add(
-                    // TODO: lift the common subexpressions
-                    new EncodeToken(
-                            String.valueOf(currentNameIndex - nameIndexMap.get(name)),
-                            String.valueOf(currentNameIndex - nameIndexMap.get(name)),
-                            TokenStreams.TOKEN_DUP));
+            final String indStr = String.valueOf(currentNameIndex - nameIndexMap.get(name));
+            tokensList.get(currentNameIndex).add(new EncodeToken(indStr, indStr, TokenStreams.TOKEN_DUP));
         } else {
-            tokensList.get(currentNameIndex).add(
-                    new EncodeToken(
-                            String.valueOf(currentNameIndex == 0 ? 0 : 1),
-                            String.valueOf(currentNameIndex == 0 ? 0 : 1),
-                            TokenStreams.TOKEN_DIFF));
+            final String indStr = String.valueOf(currentNameIndex == 0 ? 0 : 1);
+            tokensList.get(currentNameIndex).add(new EncodeToken(indStr, indStr, TokenStreams.TOKEN_DIFF));
         }
         // Get the list of tokens `tok` for the current name
         nameIndexMap.put(name, currentNameIndex);
-        final Matcher matcher = nameTokenizerPattern.matcher(name);
+        final Matcher matcher = READ_NAME_PATTERN.matcher(name);
         final List<String> tok = new ArrayList<>();
         while (matcher.find()) {
             tok.add(matcher.group());
@@ -117,13 +119,13 @@ public class NameTokenisationEncode {
             int tokenIndex = i + 1;
             byte type = TokenStreams.TOKEN_STRING;
             final String str = tok.get(i); // absolute value of the token
-            String val = tok.get(i); // relative value of the token (comparing to prevname's token at the same token position)
-            //TODO: precompile these
-            if (tok.get(i).matches("^0+[0-9]*$")) {
+            String val = str; // relative value of the token (comparing to prevname's token at the same token position)
+
+            if (DIGITS0_PATTERN.matcher(str).matches()) {
                 type = TokenStreams.TOKEN_DIGITS0;
-            } else if (tok.get(i).matches("^[0-9]+$")) {
+            } else if (DIGITS_PATTERN.matcher(str).matches()) {
                 type = TokenStreams.TOKEN_DIGITS;
-            } else if (tok.get(i).length() == 1) {
+            } else if (str.length() == 1) {
                 type = TokenStreams.TOKEN_CHAR;
             }
 
@@ -144,7 +146,7 @@ public class NameTokenisationEncode {
                         type = TokenStreams.TOKEN_DELTA;
                         val = String.valueOf(d);
                     }
-                } else if (type==TokenStreams.TOKEN_DIGITS0 && prevToken.getActualTokenValue().length() == val.length()
+                } else if (type == TokenStreams.TOKEN_DIGITS0 && prevToken.getActualTokenValue().length() == val.length()
                         && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0 || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
                     int d = Integer.parseInt(val) - Integer.parseInt(prevToken.getActualTokenValue());
                     tokenFrequencies[tokenIndex]++;
@@ -224,15 +226,15 @@ public class NameTokenisationEncode {
                     tokenStream.get(TokenStreams.TOKEN_DELTA0).put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
                     break;
 
-//                case TokenStreams.TOKEN_NOP:
-//                case TokenStreams.TOKEN_MATCH:
-//                case TokenStreams.TOKEN_END:
-//                    //TODO: do we need to handle these token types here? throwing causes exceptions
-//                    //throw new CRAMException("Invalid token type: " + type);
-//                    break;
-//
-//                default:
-//                    throw new CRAMException("Invalid token type: " + type);
+                case TokenStreams.TOKEN_NOP:
+                case TokenStreams.TOKEN_MATCH:
+                case TokenStreams.TOKEN_END:
+                    //TODO: do we need to handle these token types here? throwing causes exceptions
+                    //throw new CRAMException("Invalid token type: " + type);
+                    break;
+
+                default:
+                    throw new CRAMException("Invalid token type: " + type);
             }
         }
     }
@@ -321,19 +323,5 @@ public class NameTokenisationEncode {
                 outBuffer.put(tempOutByteBuffer);
             }
         }
-    }
-
-    //TODO: consolidate this with the same method in CompressionUtils
-    private ByteBuffer allocateOutputBuffer(final int inSize) {
-
-        // same as the allocateOutputBuffer in RANS4x8Encode and RANSNx16Encode
-        // TODO: de-duplicate
-        final int compressedSize = (int) (1.05 * inSize + 257 * 257 * 3 + 9);
-        final ByteBuffer outputBuffer = ByteBuffer.allocate(compressedSize);
-        if (outputBuffer.remaining() < compressedSize) {
-            throw new RuntimeException("Failed to allocate sufficient buffer size for name tokenization encoder.");
-        }
-        outputBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        return outputBuffer;
     }
 }
