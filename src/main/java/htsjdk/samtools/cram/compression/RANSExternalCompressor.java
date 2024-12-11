@@ -24,47 +24,59 @@
  */
 package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.compression.rans.RANS;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class RANSExternalCompressor extends ExternalCompressor {
-    private final RANS.ORDER order;
-    private final RANS rans;
+    private final RANSParams.ORDER order;
+    private final RANS4x8Encode ransEncode;
+    private final RANS4x8Decode ransDecode;
 
     /**
      * We use a shared RANS instance for all compressors.
      * @param rans
      */
-    public RANSExternalCompressor(final RANS rans) {
-        this(RANS.ORDER.ZERO, rans);
+    public RANSExternalCompressor(
+            final RANS4x8Encode ransEncode,
+            final RANS4x8Decode ransDecode) {
+        this(RANSParams.ORDER.ZERO, ransEncode, ransDecode);
     }
 
-    public RANSExternalCompressor(final int order, final RANS rans) {
-        this(RANS.ORDER.fromInt(order), rans);
+    public RANSExternalCompressor(
+            final int order,
+            final RANS4x8Encode ransEncode,
+            final RANS4x8Decode ransDecode) {
+        this(RANSParams.ORDER.fromInt(order), ransEncode, ransDecode);
     }
 
-    public RANSExternalCompressor(final RANS.ORDER order, final RANS rans) {
+    public RANSExternalCompressor(
+            final RANSParams.ORDER order,
+            final RANS4x8Encode ransEncode,
+            final RANS4x8Decode ransDecode) {
         super(BlockCompressionMethod.RANS);
-        this.rans = rans;
+        this.ransEncode = ransEncode;
+        this.ransDecode = ransDecode;
         this.order = order;
     }
 
     @Override
     public byte[] compress(final byte[] data) {
-        final ByteBuffer buffer = rans.compress(ByteBuffer.wrap(data), order);
+        final RANS4x8Params params = new RANS4x8Params(order);
+        final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        final ByteBuffer buf = rans.uncompress(ByteBuffer.wrap(data));
+        final ByteBuffer buf = ransDecode.uncompress(CompressionUtils.wrap(data));
         return toByteArray(buf);
     }
-
-    public RANS.ORDER getOrder() { return order; }
 
     @Override
     public String toString() {
