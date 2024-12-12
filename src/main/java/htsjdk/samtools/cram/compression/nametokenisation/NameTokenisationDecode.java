@@ -25,28 +25,30 @@ public class NameTokenisationDecode {
 
         final TokenStreams tokenStreams = new TokenStreams(inBuffer, useArith, numNames);
 
-        // track tokens we've already seen for subsequent lookup/reference (indexed as (nameIndex, tokenPosition))
+        // keep track of token lists for names we've already seen for subsequent lookup/reference (indexed as (nameIndex, tokenPosition))
+
         //TODO: for performance reasons, it would probably be wise to separate the string tokens from the int tokens
         // so we don't have to repeatedly interconvert them when fetching from this list
-        final List<List<String>> previousTokens = new ArrayList<>(numNames);
+        // two dimensional array of previously encoded tokens, indexed as [nameIndex, position]
+        final List<List<String>> previousEncodedTokens = new ArrayList<>(numNames);
         for (int i = 0; i < numNames; i++) {
             //TODO: preallocate  this list to the expected number of tokens per name
-            previousTokens.add(new ArrayList<>());
+            previousEncodedTokens.add(new ArrayList<>());
         }
 
-        //TODO: if we stored the names in an index-addressible array or list as we find them, we could look them up
-        // subsequent calls to decodSingleName could return them directly when it sees a dup, rather than re-joining
-        // the tokens each time; maybe not worth it ?
+        //TODO: if we stored the names in an index-addressible array, or list, as we find them, instead of a StringJoiner,
+        // subsequent calls to decodeSingleName could look them up by index and return them directly when it sees a dup,
+        // rather than re-joining the tokens each time; maybe not worth it ?
         final StringJoiner decodedNamesJoiner = new StringJoiner(LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
         for (int i = 0; i < numNames; i++) {
-            decodedNamesJoiner.add(decodeSingleName(tokenStreams, previousTokens, i));
+            decodedNamesJoiner.add(decodeSingleName(tokenStreams, previousEncodedTokens, i));
         }
         return decodedNamesJoiner.toString();
     }
 
     private String decodeSingleName(
             final TokenStreams tokenStreams,
-            final List<List<String>> tokensList,
+            final List<List<String>> previousEncodedTokens,
             final int currentNameIndex) {
 
         // The information about whether a name is a duplicate or not
@@ -57,13 +59,13 @@ public class NameTokenisationDecode {
         final int prevNameIndex = currentNameIndex - dist;
 
         if (nameType == TokenStreams.TOKEN_DUP) {
-            // propagate the tokens for the previous name, in case there is a future instance of this same name
-            // that refers to THIS name's tokens, and then reconstruct the name by joining the tokens (we can't
-            // just return the previous name directly here since the previous names are not index-accessible because
-            // they're stored in a StringJoiner, and also, we only store the index for the most recent instance
-            // of a name anyway, since we store them in a Map<name, index))
-            tokensList.add(currentNameIndex, tokensList.get(prevNameIndex));
-            return String.join("", tokensList.get(currentNameIndex));
+            // propagate the tokens for the previous name in case there is a future instance of this same name
+            // that refers to THIS name's tokens, and then reconstruct and return the name by joining the tokens
+            // (we don't have index-accessible access the previous name directly here since the previous names are
+            // stored in a StringJoiner. and also, we only store the index for the most recent instance
+            // of a name anyway, since we store them in a Map<name, index)
+            previousEncodedTokens.add(currentNameIndex, previousEncodedTokens.get(prevNameIndex));
+            return String.join("", previousEncodedTokens.get(currentNameIndex));
         }
 
         int tokenPos = 1; // At position 0, we get nameType information
@@ -89,15 +91,15 @@ public class NameTokenisationDecode {
                     currentToken = leftPadWith0(digits0Token, lenDigits0Token);
                     break;
                 case TokenStreams.TOKEN_DELTA:
-                    currentToken = getDeltaToken(tokenStreams, tokenPos, tokensList, prevNameIndex, TokenStreams.TOKEN_DELTA);
+                    currentToken = getDeltaToken(tokenStreams, tokenPos, previousEncodedTokens, prevNameIndex, TokenStreams.TOKEN_DELTA);
                     break;
                 case TokenStreams.TOKEN_DELTA0:
-                    final String delta0Token = getDeltaToken(tokenStreams, tokenPos, tokensList, prevNameIndex, TokenStreams.TOKEN_DELTA0);
-                    final int lenDelta0Token = tokensList.get(prevNameIndex).get(tokenPos-1).length();
+                    final String delta0Token = getDeltaToken(tokenStreams, tokenPos, previousEncodedTokens, prevNameIndex, TokenStreams.TOKEN_DELTA0);
+                    final int lenDelta0Token = previousEncodedTokens.get(prevNameIndex).get(tokenPos-1).length();
                     currentToken = leftPadWith0(delta0Token, lenDelta0Token);
                     break;
                 case TokenStreams.TOKEN_MATCH:
-                    currentToken = tokensList.get(prevNameIndex).get(tokenPos-1);
+                    currentToken = previousEncodedTokens.get(prevNameIndex).get(tokenPos-1);
                     break;
                 case TokenStreams.TOKEN_END: // tolerate END, it terminates the enclosing loop
                     break;
@@ -115,7 +117,7 @@ public class NameTokenisationDecode {
                             type));
             }
             //TODO: this is expanding the list many times, which is not efficient
-            tokensList.get(currentNameIndex).add(tokenPos - 1, currentToken);
+            previousEncodedTokens.get(currentNameIndex).add(tokenPos - 1, currentToken);
             decodedNameBuilder.append(currentToken);
             tokenPos++;
         } while (type!= TokenStreams.TOKEN_END);
@@ -148,7 +150,7 @@ public class NameTokenisationDecode {
             final TokenStreams tokenStreams,
             final int tokenPosition,
             final byte tokenType ) {
-        if (!(tokenType == TokenStreams.TOKEN_DIGITS || tokenType == TokenStreams.TOKEN_DIGITS0)){
+        if (!(tokenType == TokenStreams.TOKEN_DIGITS || tokenType == TokenStreams.TOKEN_DIGITS0)) {
             throw new CRAMException(String.format("Invalid tokenType : %s. " +
                     "tokenType must be either TOKEN_DIGITS or TOKEN_DIGITS0", tokenType));
         }

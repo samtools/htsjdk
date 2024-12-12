@@ -20,6 +20,8 @@ import java.util.regex.Pattern;
 /**
  * Naive name tokenization encoder
  */
+//TODO: implement this: if a byte stream of token types is entirely MATCH apart from the very first value it is discarded.
+// It is possible to regenerate this during decode by observing the other byte streams.
 public class NameTokenisationEncode {
     private final static String READ_NAME_TOK_REGEX = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
     private final static Pattern READ_NAME_PATTERN = Pattern.compile(READ_NAME_TOK_REGEX);
@@ -59,7 +61,8 @@ public class NameTokenisationEncode {
         final HashMap<String, Integer> nameIndexMap = new HashMap<>();
         final int[] tokenFrequencies = new int[256];
         for(int nameIndex = 0; nameIndex < numNames; nameIndex++) {
-            tokeniseName(encodedTokens, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex);
+            //TODO: sketchy that we're passing encodedTokens and also modifying it....
+            encodedTokens.add(tokeniseName(encodedTokens, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex));
         }
         for (int tokenPosition = 0; tokenPosition < maxToken; tokenPosition++) {
             final List<ByteBuffer> tokenStream = new ArrayList(TokenStreams.TOTAL_TOKEN_TYPES);
@@ -78,26 +81,25 @@ public class NameTokenisationEncode {
 
     // return the token list for a new name
     private List<EncodeToken> tokeniseName(
-            final List<List<EncodeToken>> previousNameTokens,
+            final List<List<EncodeToken>> previousEncodedTokens,
             final HashMap<String, Integer> nameIndexMap,
             final int[] tokenFrequencies,
             final String name,
             final int currentNameIndex) {
         // create a new token list for this name, and populate position 0 with the token that indicates whether
         // the name is a DIFF or DUP
-        final List<EncodeToken> nameTokens = new ArrayList<>();
-        previousNameTokens.add(nameTokens);
+        final List<EncodeToken> encodedTokens = new ArrayList<>();
         if (nameIndexMap.containsKey(name)) {
             //TODO:its super wasteful to do all this string interconversion
             final String indexStr = String.valueOf(currentNameIndex - nameIndexMap.get(name));
-            nameTokens.add(0, new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DUP));
+            encodedTokens.add(0, new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DUP));
             // this is a duplicate, so just return the tokens from the previous name, or just return
             // altogether ? YES!
             //????????????????????????????????????
-            return nameTokens;
+            return encodedTokens;
         } else {
             final String indexStr = String.valueOf(currentNameIndex == 0 ? 0 : 1);
-            nameTokens.add(0,new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DIFF));
+            encodedTokens.add(0,new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DIFF));
         }
         nameIndexMap.put(name, currentNameIndex);
 
@@ -129,8 +131,8 @@ public class NameTokenisationEncode {
             // compare the current token with token from the previous name at the current token's index
             // if there exists a previous name and a token at the corresponding index of the previous name
             final int prevNameIndex = currentNameIndex - 1; // always compare against last name only
-            if (prevNameIndex >=0 && previousNameTokens.get(prevNameIndex).size() > tokenIndex) {
-                final EncodeToken prevToken = previousNameTokens.get(prevNameIndex).get(tokenIndex);
+            if (prevNameIndex >=0 && previousEncodedTokens.get(prevNameIndex).size() > tokenIndex) {
+                final EncodeToken prevToken = previousEncodedTokens.get(prevNameIndex).get(tokenIndex);
                 if (prevToken.getActualTokenValue().equals(tok.get(i))) {
                     type = TokenStreams.TOKEN_MATCH;
                     val = "";
@@ -154,7 +156,7 @@ public class NameTokenisationEncode {
                     }
                 }
             }
-            nameTokens.add(new EncodeToken(str, val, type));
+            encodedTokens.add(new EncodeToken(str, val, type));
 
             if (currMaxLength < val.length() + 3) {
                 // TODO: check this? Why isn't unint32 case handled?
@@ -165,8 +167,8 @@ public class NameTokenisationEncode {
             }
         }
 
-        nameTokens.add(new EncodeToken("","",TokenStreams.TOKEN_END));
-        final int currMaxToken = nameTokens.size();
+        encodedTokens.add(new EncodeToken("","",TokenStreams.TOKEN_END));
+        final int currMaxToken = encodedTokens.size();
         if (maxToken < currMaxToken) {
             maxToken = currMaxToken;
         }
@@ -174,7 +176,7 @@ public class NameTokenisationEncode {
             maxLength = currMaxLength;
         }
 
-        return nameTokens;
+        return encodedTokens;
     }
 
     private List<String> extractInputNames(final ByteBuffer inBuffer, final int preAllocationSize) {

@@ -63,21 +63,21 @@ public class TokenStreams {
                 tokenPosition++;
                 if (tokenPosition == numberOfPreallocatedPositions) {
                     // if we encounter a new position that is past the number of positions for which we've pre-allocated,
-                    // expand our array and copy the old values into it; this has side effects of changing the size of
-                    // the array
+                    // expand our array and copy the old values into it; this has side effects
                     numberOfPreallocatedPositions = reallocateTokenStreams(numberOfPreallocatedPositions);
                 }
                 if (tokenType != TOKEN_TYPE) {
-                    // Spec: if we have a byte stream B[5,DIGITS] but no B[5,TYPE]
+                    // Spec: if a byte stream of token types is entirely MATCH apart from the very first value,
+                    // it is discarded. It is possible to regenerate this during decode by observing the other
+                    // byte streams. if we have a byte stream B[5,DIGITS] but no B[5,TYPE]
                     // then we assume the contents of B[5,TYPE] consist of one DIGITS tokenType
                     // followed by as many MATCH types as are needed.
-                    //TODO: this matches the spec, but what is it doing ? is it correct ?
                     final ByteBuffer typeDataByteBuffer = CompressionUtils.allocateByteBuffer(numNames);
-                    for (int i = 0; i < numNames; i++) {
-                        typeDataByteBuffer.put(TOKEN_MATCH);
+                    typeDataByteBuffer.put(0, (byte) tokenType);
+                    for (int i = 1; i < numNames; i++) {
+                        typeDataByteBuffer.put(i, TOKEN_MATCH);
                     }
                     typeDataByteBuffer.rewind();
-                    typeDataByteBuffer.put(0, (byte) tokenType);
                     tokenStreams[tokenPosition][0] = typeDataByteBuffer;
                 }
             }
