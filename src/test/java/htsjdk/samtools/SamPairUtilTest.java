@@ -30,6 +30,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -48,6 +49,12 @@ public class SamPairUtilTest extends HtsjdkTest {
         Assert.assertEquals(SamPairUtil.getPairOrientation(rec1), expectedOrientation, testName + " first end");
         Assert.assertEquals(SamPairUtil.getPairOrientation(rec2), expectedOrientation, testName + " second end");
     }
+
+    @Test(dataProvider = "testGetPairOrientationFail", expectedExceptions = IllegalArgumentException.class)
+    public void testGetPairOrientationFail(final SAMRecord record) {
+        SamPairUtil.getPairOrientation(record);
+    }
+
 
     @Test(dataProvider = "testSetMateInfoMateCigar")
     public void testSetMateInfoMateCigar(final String testName,
@@ -201,6 +208,54 @@ public class SamPairUtilTest extends HtsjdkTest {
                 {"first end enclosed forward tandem", 1, 50, true, 1, 100, true, SamPairUtil.PairOrientation.TANDEM},
                 {"first end enclosed reverse tandem", 1, 50, false, 1, 100, false, SamPairUtil.PairOrientation.TANDEM},
         };
+    }
+
+    @DataProvider(name = "testGetPairOrientationFail")
+    public Iterator<Object[]> testGetPairOrientationFailDataProvider() {
+        /**
+         * @param testName
+         * @param read1Start
+         * @param read1Length
+         * @param read1Reverse
+         * @param read2Start
+         * @param read2Length
+         * @param read2Reverse
+         */
+
+        List<Object[]> tests=new ArrayList<>();
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", 100000000));
+        header.addSequence(new SAMSequenceRecord("chr2", 100000000));
+        {
+            final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
+            rec.setReadName("Unpaired");
+            rec.setReadPairedFlag(false);
+            tests.add(new Object[]{rec});
+        }
+        {
+            final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
+            rec.setReadName("Unmapped");
+            rec.setReadPairedFlag(true);
+            rec.setReadUnmappedFlag(true);
+            tests.add(new Object[]{rec});
+        }
+        {
+            final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
+            rec.setReadName("Unmapped mate");
+            rec.setReadPairedFlag(true);
+            rec.setReferenceIndex(0);
+            rec.setMateUnmappedFlag(true);
+            tests.add(new Object[]{rec});
+        }
+        {
+            final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
+            rec.setReadName("mate on difference reference");
+            rec.setReadPairedFlag(true);
+            rec.setReferenceIndex(0);
+            rec.setMateReferenceIndex(1);
+            tests.add(new Object[]{rec});
+        }
+        return tests.iterator();
     }
 
     @DataProvider(name = "testSetMateInfoMateCigar")
