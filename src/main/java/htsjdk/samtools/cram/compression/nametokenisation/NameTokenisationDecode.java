@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.StringJoiner;
 
 public class NameTokenisationDecode {
-    // TODO: lift these values to a common location since they're used by the encode, decoder and tests
+    // TODO: lift these values to a common location since they're used by the encoder, the decoder, and the tests
     // for now, since we're returning a String of all the names (instead of a list, which is more efficient) because,
     // use a single byte to separate the names; this particular byte is chosen because the calling code in the CRAM
     // reader for read names already assumes it will be handed a block of '\0' separated names
@@ -30,9 +30,13 @@ public class NameTokenisationDecode {
         // so we don't have to repeatedly interconvert them when fetching from this list
         final List<List<String>> previousTokens = new ArrayList<>(numNames);
         for (int i = 0; i < numNames; i++) {
+            //TODO: preallocate  this list to the expected number of tokens per name
             previousTokens.add(new ArrayList<>());
         }
 
+        //TODO: if we stored the names in an index-addressible array or list as we find them, we could look them up
+        // subsequent calls to decodSingleName could return them directly when it sees a dup, rather than re-joining
+        // the tokens each time; maybe not worth it ?
         final StringJoiner decodedNamesJoiner = new StringJoiner(LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
         for (int i = 0; i < numNames; i++) {
             decodedNamesJoiner.add(decodeSingleName(tokenStreams, previousTokens, i));
@@ -53,7 +57,12 @@ public class NameTokenisationDecode {
         final int prevNameIndex = currentNameIndex - dist;
 
         if (nameType == TokenStreams.TOKEN_DUP) {
-            tokensList.add(currentNameIndex, tokensList.get(prevNameIndex));    // propagate the tokens for the previous name
+            // propagate the tokens for the previous name, in case there is a future instance of this same name
+            // that refers to THIS name's tokens, and then reconstruct the name by joining the tokens (we can't
+            // just return the previous name directly here since the previous names are not index-accessible because
+            // they're stored in a StringJoiner, and also, we only store the index for the most recent instance
+            // of a name anyway, since we store them in a Map<name, index))
+            tokensList.add(currentNameIndex, tokensList.get(prevNameIndex));
             return String.join("", tokensList.get(currentNameIndex));
         }
 
@@ -92,16 +101,14 @@ public class NameTokenisationDecode {
                     break;
                 case TokenStreams.TOKEN_END: // tolerate END, it terminates the enclosing loop
                     break;
-
                 case TokenStreams.TOKEN_NOP:
                     //no-op token, inserted by the writer to take up space to keep the streams aligned
                     break;
-
                 // These are either consumed elsewhere or otherwise shouldn't be present in the stream at this point
                 case TokenStreams.TOKEN_TYPE:
                 case TokenStreams.TOKEN_DUP:   //position 0 only
                 case TokenStreams.TOKEN_DIFF:  //position 0 only
-                case TokenStreams.TOKEN_DZLEN: //consumed as part of processing TOKEN_DIGITS0
+                case TokenStreams.TOKEN_DZLEN: //gets consumed as part of processing TOKEN_DIGITS0
                 default:
                     throw new CRAMException(String.format(
                             "Invalid tokenType : %s. tokenType must be one of the valid token types",

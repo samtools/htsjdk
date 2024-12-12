@@ -37,7 +37,7 @@ public class RangeDecode {
 
         // stripe
         if (rangeParams.isStripe()) {
-                return decodeStripe(inBuffer, uncompressedSize);
+            return decodeStripe(inBuffer, uncompressedSize);
         }
 
         // pack

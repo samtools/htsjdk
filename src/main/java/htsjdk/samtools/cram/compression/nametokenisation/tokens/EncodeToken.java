@@ -6,6 +6,7 @@ public class EncodeToken {
     private String relativeTokenValue;
     private byte tokenType;
 
+    //TODO: its super wasteful to always store strings for these, since they're often ints
     public EncodeToken(final String str, final String val, final byte type) {
         this.actualTokenValue = str;
         this.relativeTokenValue = val;

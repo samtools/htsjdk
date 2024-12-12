@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Naive name tokenization encoder
+ */
 public class NameTokenisationEncode {
     private final static String READ_NAME_TOK_REGEX = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
     private final static Pattern READ_NAME_PATTERN = Pattern.compile(READ_NAME_TOK_REGEX);
@@ -33,30 +36,13 @@ public class NameTokenisationEncode {
     // the output is a ByteBuffer containing the read names, separated by the NAME_SEPARATOR byte, WITHOUT
     // a terminating separator
     public ByteBuffer compress(final ByteBuffer inBuffer, final boolean useArith) {
-        maxToken = 0;
-        maxLength = 0;
-        final ArrayList<String> names = new ArrayList<>(CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE);
-
-        // extract the individual names from the input buffer
-        for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining();) {
-            final byte currentByte = inBuffer.get();
-            if (currentByte == NameTokenisationDecode.NAME_SEPARATOR || inBuffer.position() == inBuffer.limit()) {
-                final int length = inBuffer.position() - lastPosition;
-                final byte[] bytes = new byte[length];
-                inBuffer.position(lastPosition);
-                inBuffer.get(bytes, 0, length);  // consume the string + the terminator
-                names.add(new String(
-                        bytes,
-                        0,
-                        // special case handling end of the buffer, where there is no for the lack of a trailing separator
-                        length - (inBuffer.position() == inBuffer.limit() ? 0 : 1),
-                        StandardCharsets.UTF_8));
-                lastPosition = inBuffer.position();
-            }
-        }
-
+        // strictly speaking, this is probably not even necessary, but we have to count the names anyway since its the
+        // first thing that we need to write to the output stream, so parse the names out while we're at it
+        final List<String> names = extractInputNames(inBuffer, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE);
         final int numNames = names.size();
+        //TODO: is subtracting one correct here ?
         final int uncompressedInputSize = inBuffer.limit() - numNames - 1;
+
         //TODO: guess max size -> str.length*2 + 10000 (from htscodecs javascript code)
         final ByteBuffer outBuffer = CompressionUtils.allocateByteBuffer((inBuffer.limit()*2)+10000);
         //TODO: what is the correct value here ? does/should this include
@@ -65,21 +51,23 @@ public class NameTokenisationEncode {
         outBuffer.putInt(numNames);
         outBuffer.put((byte)(useArith == true ? 1 : 0));
 
-        // Instead of List<List<String>> for tokensList like we did in Decoder, we use List<List<EncodeToken>>
-        // as we also need to store the TOKEN_TYPE, relative value when compared to prev name's token
-        // along with the token value.
-        final List<List<EncodeToken>> tokensList = new ArrayList<>(numNames);
+        // keep a List<List<EncodeToken>>, as we also need to store the TOKEN_TYPE, relative value when compared
+        // to prev name's token along with the token value.
+        final List<List<EncodeToken>> encodedTokens = new ArrayList<>(numNames);
+        //TODO: using a map is sketchy here, since read names can be duplicates; this is probably fine since it doesn't
+        // really matter which index is recorded here - any one will do
         final HashMap<String, Integer> nameIndexMap = new HashMap<>();
         final int[] tokenFrequencies = new int[256];
         for(int nameIndex = 0; nameIndex < numNames; nameIndex++) {
-            tokeniseName(tokensList, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex);
+            tokeniseName(encodedTokens, nameIndexMap, tokenFrequencies, names.get(nameIndex), nameIndex);
         }
         for (int tokenPosition = 0; tokenPosition < maxToken; tokenPosition++) {
             final List<ByteBuffer> tokenStream = new ArrayList(TokenStreams.TOTAL_TOKEN_TYPES);
             for (int i = 0; i < TokenStreams.TOTAL_TOKEN_TYPES; i++) {
+                //TODO: this is overkill - creating giant buffers, the size of which surfaces in the decoder
                 tokenStream.add(CompressionUtils.allocateByteBuffer(numNames * maxLength));
             }
-            fillByteStreams(tokenStream, tokensList, tokenPosition, numNames);
+            fillByteStreams(tokenStream, encodedTokens, tokenPosition, numNames);
             serializeByteStreams(tokenStream, useArith, outBuffer);
         }
 
@@ -88,30 +76,39 @@ public class NameTokenisationEncode {
         return outBuffer;
     }
 
-    private void tokeniseName(final List<List<EncodeToken>> tokensList,
-                              final HashMap<String, Integer> nameIndexMap,
-                              final int[] tokenFrequencies,
-                              final String name,
-                              final int currentNameIndex) {
-        int currMaxLength = 0;
-
-        // always compare against last name only
-        final int prevNameIndex = currentNameIndex - 1;
-        tokensList.add(new ArrayList<>());
+    // return the token list for a new name
+    private List<EncodeToken> tokeniseName(
+            final List<List<EncodeToken>> previousNameTokens,
+            final HashMap<String, Integer> nameIndexMap,
+            final int[] tokenFrequencies,
+            final String name,
+            final int currentNameIndex) {
+        // create a new token list for this name, and populate position 0 with the token that indicates whether
+        // the name is a DIFF or DUP
+        final List<EncodeToken> nameTokens = new ArrayList<>();
+        previousNameTokens.add(nameTokens);
         if (nameIndexMap.containsKey(name)) {
-            final String indStr = String.valueOf(currentNameIndex - nameIndexMap.get(name));
-            tokensList.get(currentNameIndex).add(new EncodeToken(indStr, indStr, TokenStreams.TOKEN_DUP));
+            //TODO:its super wasteful to do all this string interconversion
+            final String indexStr = String.valueOf(currentNameIndex - nameIndexMap.get(name));
+            nameTokens.add(0, new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DUP));
+            // this is a duplicate, so just return the tokens from the previous name, or just return
+            // altogether ? YES!
+            //????????????????????????????????????
+            return nameTokens;
         } else {
-            final String indStr = String.valueOf(currentNameIndex == 0 ? 0 : 1);
-            tokensList.get(currentNameIndex).add(new EncodeToken(indStr, indStr, TokenStreams.TOKEN_DIFF));
+            final String indexStr = String.valueOf(currentNameIndex == 0 ? 0 : 1);
+            nameTokens.add(0,new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DIFF));
         }
-        // Get the list of tokens `tok` for the current name
         nameIndexMap.put(name, currentNameIndex);
+
+        // tokenise the current name
         final Matcher matcher = READ_NAME_PATTERN.matcher(name);
         final List<String> tok = new ArrayList<>();
         while (matcher.find()) {
             tok.add(matcher.group());
         }
+
+        int currMaxLength = 0;
         for (int i = 0; i < tok.size(); i++) {
             // In the list of tokens, all the tokens are offset by 1
             // because at position "0", we have a token that provides info if the name is a DIFF or DUP
@@ -131,8 +128,9 @@ public class NameTokenisationEncode {
 
             // compare the current token with token from the previous name at the current token's index
             // if there exists a previous name and a token at the corresponding index of the previous name
-            if (prevNameIndex >=0 && tokensList.get(prevNameIndex).size() > tokenIndex) {
-                final EncodeToken prevToken = tokensList.get(prevNameIndex).get(tokenIndex);
+            final int prevNameIndex = currentNameIndex - 1; // always compare against last name only
+            if (prevNameIndex >=0 && previousNameTokens.get(prevNameIndex).size() > tokenIndex) {
+                final EncodeToken prevToken = previousNameTokens.get(prevNameIndex).get(tokenIndex);
                 if (prevToken.getActualTokenValue().equals(tok.get(i))) {
                     type = TokenStreams.TOKEN_MATCH;
                     val = "";
@@ -156,23 +154,49 @@ public class NameTokenisationEncode {
                     }
                 }
             }
-            tokensList.get(currentNameIndex).add(new EncodeToken(str, val, type));
+            nameTokens.add(new EncodeToken(str, val, type));
 
             if (currMaxLength < val.length() + 3) {
                 // TODO: check this? Why isn't unint32 case handled?
                 // +3 for integers; 5 -> (Uint32)5 (from htscodecs javascript code)
+                //if (max_len < T[n][t].val.length+3)  // +3 for integers; 5 -> (Uint32)5
+                //    max_len = T[n][t].val.length+3
                 currMaxLength = val.length() + 3;
             }
         }
 
-        tokensList.get(currentNameIndex).add(new EncodeToken("","",TokenStreams.TOKEN_END));
-        final int currMaxToken = tokensList.get(currentNameIndex).size();
+        nameTokens.add(new EncodeToken("","",TokenStreams.TOKEN_END));
+        final int currMaxToken = nameTokens.size();
         if (maxToken < currMaxToken) {
             maxToken = currMaxToken;
         }
         if (maxLength < currMaxLength) {
             maxLength = currMaxLength;
         }
+
+        return nameTokens;
+    }
+
+    private List<String> extractInputNames(final ByteBuffer inBuffer, final int preAllocationSize) {
+        final List<String> names = new ArrayList(CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE);
+        // extract the individual names from the input buffer
+        for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining();) {
+            final byte currentByte = inBuffer.get();
+            if (currentByte == NameTokenisationDecode.NAME_SEPARATOR || inBuffer.position() == inBuffer.limit()) {
+                final int length = inBuffer.position() - lastPosition;
+                final byte[] bytes = new byte[length];
+                inBuffer.position(lastPosition);
+                inBuffer.get(bytes, 0, length);  // consume the string + the terminator
+                names.add(new String(
+                        bytes,
+                        0,
+                        // special case handling end of the buffer, where there is no for the lack of a trailing separator
+                        length - (inBuffer.position() == inBuffer.limit() ? 0 : 1),
+                        StandardCharsets.UTF_8));
+                lastPosition = inBuffer.position();
+            }
+        }
+        return names;
     }
 
     private void fillByteStreams(
@@ -319,6 +343,7 @@ public class NameTokenisationEncode {
             if (tokenStream.get(tokenType).remaining() > 0) {
                 outBuffer.put((byte) (tokenType + ((tokenType == 0) ? 128 : 0))); //TODO: check this for sign bit correctness
                 final ByteBuffer tempOutByteBuffer = tryCompress(tokenStream.get(tokenType), useArith);
+                //TODO: the use of limit is sketchy here...
                 CompressionUtils.writeUint7(tempOutByteBuffer.limit(),outBuffer);
                 outBuffer.put(tempOutByteBuffer);
             }
