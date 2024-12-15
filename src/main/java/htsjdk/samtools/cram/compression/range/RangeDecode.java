@@ -17,13 +17,12 @@ public class RangeDecode {
     // It uncompresses the data in the inBuffer, leaving it consumed.
     // Returns a rewound ByteBuffer containing the uncompressed data.
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
-
-        // For Range decoding, the bytes are read in little endian from the input stream
-        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         return uncompress(inBuffer, 0);
     }
 
     private ByteBuffer uncompress(final ByteBuffer inBuffer, final int outSize) {
+        // For Range decoding, the bytes are read in little endian from the input stream
+        inBuffer.order(ByteOrder.LITTLE_ENDIAN);
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }

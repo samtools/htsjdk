@@ -16,8 +16,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: this is dumb because we're running the same decode-only test twice, once with useArith true and once with it false,
-// which is ignored the the decode-only test anyway; we should separate the data provides to eliminate this
+//TODO: this is dumb because we're running the same decode-only test twice, once with useArith true and once with
+// it false, which is ignored the the decode-only test anyway; we should separate the data provides to eliminate this
 
 // Test the roundtrip and decompression of name tokenization encoded data using the htslib cram interop stream
 // data for the name tokenization codec.
