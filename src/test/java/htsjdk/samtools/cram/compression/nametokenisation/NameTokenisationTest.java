@@ -8,17 +8,20 @@ import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class NameTokenisationTest extends HtsjdkTest {
 
     private static class TestDataEnvelope {
         public final byte[] testArray;
-        public TestDataEnvelope(final byte[] testdata) {
+        public final boolean useArith;
+        public TestDataEnvelope(final byte[] testdata, final boolean useArith) {
             this.testArray = testdata;
+            this.useArith = useArith;
         }
         public String toString() {
-            return String.format("Array of size %d", testArray.length);
+            return String.format("Array of size %d/%b", testArray.length, useArith);
         }
     }
 
@@ -74,9 +77,10 @@ public class NameTokenisationTest extends HtsjdkTest {
                 "H0164ALXX140820:2:1101:15118:25288"); //TODO: no trailing separator...for now
 
         final List<Object[]> testCases = new ArrayList<>();
-        for (String readName : readNamesList) {
-            Object[] objects = new Object[] { new TestDataEnvelope(readName.getBytes()) };
-            testCases.add(objects);
+        for (final String readName : readNamesList) {
+            for (boolean useArith : Arrays.asList(true, false)) {
+                testCases.add(new Object[] { new TestDataEnvelope(readName.getBytes(), useArith) });
+            }
         }
         return testCases.toArray(new Object[][]{});
     }
@@ -87,7 +91,7 @@ public class NameTokenisationTest extends HtsjdkTest {
         final NameTokenisationDecode nameTokenisationDecode = new NameTokenisationDecode();
 
         final ByteBuffer uncompressedBuffer = ByteBuffer.wrap(td.testArray);
-        final ByteBuffer compressedBuffer = nameTokenisationEncode.compress(uncompressedBuffer, false);
+        final ByteBuffer compressedBuffer = nameTokenisationEncode.compress(uncompressedBuffer, td.useArith);
         final String decompressedNames = nameTokenisationDecode.uncompress(compressedBuffer);
         final ByteBuffer decompressedNamesBuffer = StandardCharsets.UTF_8.encode(decompressedNames);
         uncompressedBuffer.rewind();

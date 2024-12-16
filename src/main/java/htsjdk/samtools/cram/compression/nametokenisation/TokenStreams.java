@@ -25,9 +25,9 @@ public class TokenStreams {
 
     public static final int TOTAL_TOKEN_TYPES = 13;
 
-    private static final int NEW_POSITION_FLAG_MASK = 0x80;
-    private static final int DUP_PREVIOUS_STREAM_FLAG_MASK = 0x40;
-    private static final int TYPE_TOKEN_FLAG_MASK = 0x3F;
+    public static final byte TYPE_TOKEN_FLAG_MASK = 0x3F;
+    public static final byte DUP_PREVIOUS_STREAM_FLAG_MASK = 0x40;
+    public static final byte NEW_POSITION_FLAG_MASK = (byte) 0x80;
 
     // choose an initial estimate of the number of expected token positions, which we use to preallocate lists
     private static final int DEFAULT_NUMBER_OF_TOKEN_POSITIONS = 30;
@@ -51,8 +51,8 @@ public class TokenStreams {
         int tokenPosition = -1;
         while (inputByteBuffer.hasRemaining()) {
             final byte tokenTypeFlags = inputByteBuffer.get();
-            final boolean startNewPosition = ((tokenTypeFlags & NEW_POSITION_FLAG_MASK) != 0);
-            final boolean isDupStream = ((tokenTypeFlags & DUP_PREVIOUS_STREAM_FLAG_MASK) != 0);
+            final boolean startNewPosition = (tokenTypeFlags & NEW_POSITION_FLAG_MASK) != 0;
+            final boolean isDupStream = (tokenTypeFlags & DUP_PREVIOUS_STREAM_FLAG_MASK) != 0;
             final int tokenType = tokenTypeFlags & TYPE_TOKEN_FLAG_MASK;
             if (tokenType < 0 || tokenType > TOKEN_END) {
                 throw new CRAMException("Invalid name tokenizer token stream type: " + tokenType);
@@ -100,70 +100,70 @@ public class TokenStreams {
                     final RANSNx16Decode ransDecode = new RANSNx16Decode();
                     uncompressedTokenStream = ransDecode.uncompress(ByteBuffer.wrap(compressedTokenStream));
                 }
-                getTokenStreamsForPos(tokenPosition)[tokenType] = uncompressedTokenStream;
+                getStreamsForPos(tokenPosition)[tokenType] = uncompressedTokenStream;
             }
         }
         //displayTokenStreamSizes();
     }
 
-//    private void displayTokenStreamSizes() {
-//        for (int t = 0; t < TOTAL_TOKEN_TYPES; t++) {
-//            System.out.print(String.format("%s ", typeToString(t)));
-//        }
-//        System.out.println();
-//        for (int pos = 0; pos < tokenStreams.length; pos++) {
-//            System.out.print(String.format("Pos %2d: ", pos));
-//            for (int typ = 0; typ < tokenStreams[pos].length; typ++) {
-//                final ByteBuffer bf = tokenStreams[pos][typ];
-//                if (bf == null) {
-//                    System.out.print(String.format("%8s", "null"));
-//                } else {
-//                    System.out.print(String.format("%8d", bf.limit()));
-//                }
-//            }
-//            System.out.println();
-//        }
-//    }
-//
-//   private String typeToString(int i) {
-//        switch (i) {
-//            case TOKEN_TYPE:
-//                return "TOKEN_TYPE";
-//            case TOKEN_STRING:
-//                return "TOKEN_STRING";
-//            case TOKEN_CHAR:
-//                return "TOKEN_CHAR";
-//            case TOKEN_DIGITS0:
-//                return "TOKEN_DIGITS0";
-//            case TOKEN_DZLEN:
-//                return "TOKEN_DZLEN";
-//            case TOKEN_DUP:
-//                return "TOKEN_DUP";
-//            case TOKEN_DIFF:
-//                return "TOKEN_DIFF";
-//            case TOKEN_DIGITS:
-//                return "TOKEN_DIGITS";
-//            case TOKEN_DELTA:
-//                return "TOKEN_DELTA";
-//            case TOKEN_DELTA0:
-//                return "TOKEN_DELTA0";
-//            case TOKEN_MATCH:
-//                return "TOKEN_MATCH";
-//            case TOKEN_END:
-//                return "TOKEN_END";
-//            case TOKEN_NOP:
-//                return "NOP";
-//            default:
-//                throw new CRAMException("Invalid name tokenizer tokenType: " + i);
-//        }
-//    }
+    private void displayTokenStreamSizes() {
+        for (int t = 0; t < TOTAL_TOKEN_TYPES; t++) {
+            System.out.print(String.format("%s ", typeToString(t)));
+        }
+        System.out.println();
+        for (int pos = 0; pos < tokenStreams.length; pos++) {
+            System.out.print(String.format("Pos %2d: ", pos));
+            for (int typ = 0; typ < tokenStreams[pos].length; typ++) {
+                final ByteBuffer bf = tokenStreams[pos][typ];
+                if (bf == null) {
+                    System.out.print(String.format("%8s", "null"));
+                } else {
+                    System.out.print(String.format("%8d", bf.limit()));
+                }
+            }
+            System.out.println();
+        }
+    }
 
-    public ByteBuffer[] getTokenStreamsForPos(final int pos) {
+   private String typeToString(int i) {
+        switch (i) {
+            case TOKEN_TYPE:
+                return "TOKEN_TYPE";
+            case TOKEN_STRING:
+                return "TOKEN_STRING";
+            case TOKEN_CHAR:
+                return "TOKEN_CHAR";
+            case TOKEN_DIGITS0:
+                return "TOKEN_DIGITS0";
+            case TOKEN_DZLEN:
+                return "TOKEN_DZLEN";
+            case TOKEN_DUP:
+                return "TOKEN_DUP";
+            case TOKEN_DIFF:
+                return "TOKEN_DIFF";
+            case TOKEN_DIGITS:
+                return "TOKEN_DIGITS";
+            case TOKEN_DELTA:
+                return "TOKEN_DELTA";
+            case TOKEN_DELTA0:
+                return "TOKEN_DELTA0";
+            case TOKEN_MATCH:
+                return "TOKEN_MATCH";
+            case TOKEN_END:
+                return "TOKEN_END";
+            case TOKEN_NOP:
+                return "NOP";
+            default:
+                throw new CRAMException("Invalid name tokenizer tokenType: " + i);
+        }
+    }
+
+    public ByteBuffer[] getStreamsForPos(final int pos) {
         return tokenStreams[pos];
     }
 
-    public ByteBuffer getTokenStream(final int tokenPosition, final int tokenType) {
-        return getTokenStreamsForPos(tokenPosition)[tokenType];
+    public ByteBuffer getStream(final int tokenPosition, final int tokenType) {
+        return getStreamsForPos(tokenPosition)[tokenType];
     }
 
     private int initializeTokenStreams(final int preallocatedPositions) {

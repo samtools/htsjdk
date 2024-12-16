@@ -18,13 +18,19 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//TODO: implement this from the spec: if a byte stream of token types is entirely MATCH apart from the very
-// first value it is discarded. It is possible to regenerate this during decode by observing the other byte streams.
-//TODO:its super wasteful (but simpler) to always store the accumulated tokens as Strings, since thisresults
+//TODO:its super wasteful (but simpler) to always store the accumulated tokens as Strings, since this results
 // int lots of String<-> int interconversions
+//TODO: enforce a maximum of 128 tokens
 
 /**
- * Very naive implementation of a name tokenization encoder
+ * A very naive implementation of a name tokenization encoder.
+ *
+ * It does not currently:
+ *
+ * - recognize and encode for duplicate streams (that is, it does not ever set the DUP_PREVIOUS_STREAM_FLAG_MASK flag)
+ * - detect and encode for streams that are all match, as mentioned in the spec ("if a byte stream of token types
+ *   is entirely MATCH apart from the very first value it is discarded. It is possible to regenerate this during decode
+ *   by observing the other byte streams.")
  */
 public class NameTokenisationEncode {
     private final static String READ_NAME_TOK_REGEX = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
@@ -36,16 +42,16 @@ public class NameTokenisationEncode {
     private final static String DIGITS_REGEX = "^[0-9]+$";
     private final static Pattern DIGITS_PATTERN = Pattern.compile(DIGITS_REGEX);
 
-    private int maxNumberOfTokens; // the maximum number of tokenised columns seen across all names
-    private int maxLength;
+    private int maxPositions; // the maximum number of tokenised columns seen across all names
+    private int maxStringValueLength; // longest *String* value for any token
 
     /**
      * Output format is the read names, separated by the NAME_SEPARATOR byte, WITHOUT a terminating separator
      */
     public ByteBuffer compress(final ByteBuffer inBuffer, final boolean useArith) {
-        // strictly speaking, keeping these in a list isn't necessary, but we have to scan the entire input
-        // anyway to determine the number of names, since that's the first thing that we need to write to the
-        // output stream, so extract the names while we're scanning
+        // strictly speaking, keeping this list isn't necessary, but since the first thing that we need to write
+        // to the output stream is the number of names, we have to scan the entire input anyway to count them,
+        // so just extract them while we're scanning
         final List<String> namesToEncode = extractInputNames(inBuffer, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE);
         final int numNames = namesToEncode.size();
         final int uncompressedInputSize = inBuffer.limit() - numNames - NameTokenisationDecode.UNCOMPRESSED_LENGTH_ADJUSTMENT;
@@ -57,134 +63,123 @@ public class NameTokenisationEncode {
         outBuffer.putInt(numNames);
         outBuffer.put((byte)(useArith == true ? 1 : 0));
 
-        // keep a List<List<EncodeToken>>, as we also need to store the TOKEN_TYPE, relative value when compared
-        // to prev name's token along with the token value.
-        final List<List<EncodeToken>> tokenAccumulator = new ArrayList<>(numNames);
-        // note that using a map is a little sketchy here, since read names can be duplicates; but its fine since
-        // it doesn't really matter which index is recorded here - any one will do
+        // note that using a map with a read name key is a little sketchy here, since read names can be duplicates;
+        // but its fine since it doesn't really matter which index is recorded here - any one will suffice
         final HashMap<String, Integer> nameIndexMap = new HashMap<>();
-        final int[] tokenFrequencies = new int[256];
-        for(int nameIndex = 0; nameIndex < numNames; nameIndex++) {
-            tokenAccumulator.add(
+        final int[] tokenFrequencies = new int[256]; // DELTA vs DIGIT frequency
+        // keep track of the list of encoded tokens for each name
+        final List<List<EncodeToken>> encodedTokensByName = new ArrayList<>(numNames);
+
+        for (int nameIndex = 0; nameIndex < numNames; nameIndex++) {
+            encodedTokensByName.add(
                     tokeniseName(
                             namesToEncode.get(nameIndex),
                             nameIndex,
-                            tokenAccumulator,
+                            encodedTokensByName,
                             nameIndexMap,
                             tokenFrequencies)
             );
         }
-        for (int tokenPosition = 0; tokenPosition < maxNumberOfTokens; tokenPosition++) {
-            final List<ByteBuffer> tokenStreamForPosition = fillByteStreamsForPosition(tokenPosition, numNames, tokenAccumulator);
-            serializeByteStreamsFor(tokenStreamForPosition, useArith, outBuffer);
+
+        for (int position = 0; position < maxPositions; position++) {
+            final List<ByteBuffer> streamsForPosition = distributeTokensForPosition(
+                    encodedTokensByName,
+                    position,
+                    numNames);
+            serializeTokenStreams(streamsForPosition, outBuffer, useArith);
         }
 
-        // sets limit to current position and position to '0'
-        //outBuffer.flip();
-        outBuffer.limit(outBuffer.position());
-        outBuffer.position(0);
+        outBuffer.flip(); // set the limit to current position, and reset position to '0'
         return outBuffer;
     }
 
-    // return the token list for a new name
+    // return the encoded token list for a single name
     private List<EncodeToken> tokeniseName(
             final String name,
             final int nameIndex,
-            final List<List<EncodeToken>> tokenAccumulator,
+            final List<List<EncodeToken>> encodedTokensByName,
             final HashMap<String, Integer> nameIndexMap,
             final int[] tokenFrequencies) {
-        // create a new token list for this name, and populate position 0 with the token that indicates whether
-        // the name is a DIFF or DUP
-        final List<EncodeToken> encodedTokens = new ArrayList<>();
+
         if (nameIndexMap.containsKey(name)) {
-            final String indexStr = String.valueOf(nameIndex - nameIndexMap.get(name));
-            encodedTokens.add(0, new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DUP));
-            return encodedTokens;
+            // duplicate name, there is no need to tokenise the name, just encode the index of the duplicate
+            final String duplicateIndex = String.valueOf(nameIndex - nameIndexMap.get(name));
+            return List.of(new EncodeToken(TokenStreams.TOKEN_DUP, duplicateIndex));
         }
-        //TODO: why does this list need a 0 or 1 to tell if this is the first token ?
-        final String indexStr = String.valueOf(nameIndex == 0 ? 0 : 1);
-        encodedTokens.add(0,new EncodeToken(indexStr, indexStr, TokenStreams.TOKEN_DIFF));
+
+        final List<EncodeToken> encodedTokens = new ArrayList<>(NameTokenisationDecode.DEFAULT_POSITION_ALLOCATION);
+
+        // if this name is the first name, the diff value must be 0; otherwise for now use a naive
+        // strategy and only/always diff against the (immediately) preceding name
+        encodedTokens.add(0, new EncodeToken(TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : 1)));
         nameIndexMap.put(name, nameIndex);
 
         // tokenise the current name
         final Matcher matcher = READ_NAME_PATTERN.matcher(name);
-        final List<String> tok = new ArrayList<>();
-        while (matcher.find()) {
-            tok.add(matcher.group());
-        }
-
-        int currMaxLength = 0;
-        for (int i = 0; i < tok.size(); i++) {
-            // In the list of tokens, all the tokens are offset by 1
-            // because at position "0", we have a token that provides info if the name is a DIFF or DUP
-            // token 0 = DIFF vs DUP
-            int tokenIndex = i + 1;
+        for (int i = 1; matcher.find(); i++) {
             byte type = TokenStreams.TOKEN_STRING;
-            final String str = tok.get(i); // absolute value of the token
-            String val = str; // relative value of the token (comparing to prevname's token at the same token position)
+            final String fragmentValue = matcher.group(); // absolute value of the token
+            String relativeValue = fragmentValue; // relative value of the token (comparing to prev name's token at the same token position)
 
-            if (DIGITS0_PATTERN.matcher(str).matches()) {
+            if (DIGITS0_PATTERN.matcher(fragmentValue).matches()) {
                 type = TokenStreams.TOKEN_DIGITS0;
-            } else if (DIGITS_PATTERN.matcher(str).matches()) {
+            } else if (DIGITS_PATTERN.matcher(fragmentValue).matches()) {
                 type = TokenStreams.TOKEN_DIGITS;
-            } else if (str.length() == 1) {
+            } else if (fragmentValue.length() == 1) {
                 type = TokenStreams.TOKEN_CHAR;
             }
 
-            // compare the current token with token from the previous name at the current token's index
-            // if there exists a previous name and a token at the corresponding index of the previous name
-            final int prevNameIndex = nameIndex - 1; // naive implementation where wer always compare against last name only
-            if (prevNameIndex >=0 && tokenAccumulator.get(prevNameIndex).size() > tokenIndex) {
-                final EncodeToken prevToken = tokenAccumulator.get(prevNameIndex).get(tokenIndex);
-                if (prevToken.getActualTokenValue().equals(tok.get(i))) {
+            // compare the current token with token from the previous name (this naive implementation always
+            // compares against last name only)
+            final int prevNameIndex = nameIndex - 1;
+            if (prevNameIndex >= 0 && encodedTokensByName.get(prevNameIndex).size() > i) {
+                //there exists a token at the corresponding position of the previous name
+                final EncodeToken prevToken = encodedTokensByName.get(prevNameIndex).get(i);
+                if (prevToken.getActualValue().equals(fragmentValue)) {
+                    // identical to the previous name's token in this position
                     type = TokenStreams.TOKEN_MATCH;
-                    val = "";
-                } else if (type==TokenStreams.TOKEN_DIGITS
-                        && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA)) {
-                    int v = Integer.parseInt(val);
-                    int s = Integer.parseInt(prevToken.getActualTokenValue());
-                    int d = v - s;
-                    tokenFrequencies[tokenIndex]++;
-                    if (d >= 0 && d < 256 && tokenFrequencies[tokenIndex] > nameIndex / 2) {
+                    relativeValue = null;
+                } else if (type==TokenStreams.TOKEN_DIGITS &&
+                        (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA)) {
+                    int d = Integer.parseInt(relativeValue) - Integer.parseInt(prevToken.getActualValue());
+                    tokenFrequencies[i]++;
+                    if (d >= 0 && d < 256 && tokenFrequencies[i] > nameIndex / 2) {
                         type = TokenStreams.TOKEN_DELTA;
-                        val = String.valueOf(d);
+                        relativeValue = String.valueOf(d);
                     }
-                } else if (type == TokenStreams.TOKEN_DIGITS0 && prevToken.getActualTokenValue().length() == val.length()
-                        && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0 || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
-                    int d = Integer.parseInt(val) - Integer.parseInt(prevToken.getActualTokenValue());
-                    tokenFrequencies[tokenIndex]++;
-                    if (d >= 0 && d < 256 && tokenFrequencies[tokenIndex] > nameIndex / 2) {
+                } else if (type == TokenStreams.TOKEN_DIGITS0 &&
+                        prevToken.getActualValue().length() == relativeValue.length() &&
+                        (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0 || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
+                    int d = Integer.parseInt(relativeValue) - Integer.parseInt(prevToken.getActualValue());
+                    tokenFrequencies[i]++;
+                    if (d >= 0 && d < 256 && tokenFrequencies[i] > nameIndex / 2) {
                         type = TokenStreams.TOKEN_DELTA0;
-                        val = String.valueOf(d);
+                        relativeValue = String.valueOf(d);
                     }
                 }
             }
-            encodedTokens.add(new EncodeToken(str, val, type));
-
-            if (currMaxLength < val.length() + 3) {
-                // TODO: check this? Why isn't unint32 case handled?
-                // +3 for integers; 5 -> (Uint32)5 (from htscodecs javascript code)
-                //if (max_len < T[n][t].val.length+3)  // +3 for integers; 5 -> (Uint32)5
-                //    max_len = T[n][t].val.length+3
-                currMaxLength = val.length() + 3;
+            encodedTokens.add(new EncodeToken(type, fragmentValue, relativeValue));
+            if (type == TokenStreams.TOKEN_STRING) {
+                // update our longest value length, adding one for the null terminator we'll embed in the stream
+                maxStringValueLength = Math.max(maxStringValueLength, fragmentValue.length() + 1);
             }
         }
 
-        encodedTokens.add(new EncodeToken("","",TokenStreams.TOKEN_END));
-        final int currMaxToken = encodedTokens.size();
-        if (maxNumberOfTokens < currMaxToken) {
-            maxNumberOfTokens = currMaxToken;
-        }
-        if (maxLength < currMaxLength) {
-            maxLength = currMaxLength;
+        encodedTokens.add(new EncodeToken(TokenStreams.TOKEN_END));
+
+        // keep track of the longest list of encoded tokens (this is basically the number of columns/fragments)
+        // for use by downstream buffer allocations
+        final int currMaxPositions = encodedTokens.size();
+        if (maxPositions < currMaxPositions) {
+            maxPositions = currMaxPositions;
         }
 
         return encodedTokens;
     }
 
+    // extract the individual names from the input buffer and return in a list
     private static List<String> extractInputNames(final ByteBuffer inBuffer, final int preAllocationSize) {
-        final List<String> names = new ArrayList(CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE);
-        // extract the individual names from the input buffer
+        final List<String> names = new ArrayList(preAllocationSize);
         for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining();) {
             final byte currentByte = inBuffer.get();
             if (currentByte == NameTokenisationDecode.NAME_SEPARATOR || inBuffer.position() == inBuffer.limit()) {
@@ -204,87 +199,100 @@ public class NameTokenisationEncode {
         return names;
     }
 
-    // NOTE: the calling code relies on the fact that on return, the position of each ByteBuffer corresponds to the
-    // end of the corresponding stream
-    private List<ByteBuffer> fillByteStreamsForPosition(
+    // go through all names, appending the encoded token for the current position to the appropriate byte stream
+    // NOTE: the calling code relies on the fact that on return, the position of each ByteBuffer corresponds
+    // to the location of the end of the stream
+    private List<ByteBuffer> distributeTokensForPosition(
+            final List<List<EncodeToken>> tokenAccumulator,
             final int tokenPosition,
-            final int numNames,
-            final List<List<EncodeToken>> tokenAccumulator) {
-        // create the outer list, but don't allocate bytestreams until we actually need them, since this list is
-        // often quite sparse
+            final int numNames) {
+        // create a list, but don't preallocate the actual ByteBuffers until we actually need them (except
+        // for the TOKEN_TYPE stream, which we'll need for sure), since this list can be quite sparse
         final List<ByteBuffer> tokenStreams = Arrays.asList(new ByteBuffer[TokenStreams.TOTAL_TOKEN_TYPES]);
-         // for the token type stream
-        getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_TYPE, numNames); // for the one allocation we'll need for sure
+        // we need 1 byte per name (so, numNames) for the type stream; the distance values go in the
+        // individual streams (dup or diff)
+        getByteBufferFor(tokenStreams, TokenStreams.TOKEN_TYPE, numNames);
 
+        // for each name, push the name's encoded token for this position on to the end of the appropriate byte stream
         for (int n = 0; n < numNames; n++) {
-            final List<EncodeToken> encodedTokensForName = tokenAccumulator.get(n);
-            if (tokenPosition > 0 && encodedTokensForName.get(0).getTokenType() == TokenStreams.TOKEN_DUP) {
+            final List<EncodeToken> tokensForName = tokenAccumulator.get(n);
+            if (tokenPosition > 0 && tokensForName.get(0).getTokenType() == TokenStreams.TOKEN_DUP) {
+                // there is nothing more to do for this name, since it's a duplicate of a previous name
+                // (the index of which was written to the (dup) stream when position 0 was (previously) processed
                 continue;
             }
-            if (encodedTokensForName.size() <= tokenPosition) {
+            if (tokensForName.size() <= tokenPosition) {
+                // no encoded token for this position for this name
                 continue;
             }
-            final EncodeToken encodeToken = encodedTokensForName.get(tokenPosition);
+
+            // write the token type for this name/position to the TOKEN_TYPE stream
+            final EncodeToken encodeToken = tokensForName.get(tokenPosition);
             final byte type = encodeToken.getTokenType();
             tokenStreams.get(TokenStreams.TOKEN_TYPE).put(type);
+
+            // now write out the associated value for any token type that has one
+            // whenever we allocate a new bytebuffer, size it according to the max that it can ever
+            // be; this might be over-allocating, but that's better than under-allocating, and the
+            // stream will be trimmed when it is written out
             switch (type) {
                 case TokenStreams.TOKEN_DIFF:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIFF, numNames)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIFF, numNames * 4)
+                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
                     break;
 
                 case TokenStreams.TOKEN_DUP:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DUP, numNames)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DUP, numNames * 4)
+                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
                     break;
 
                 case TokenStreams.TOKEN_STRING:
                     writeString(
-                            getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_STRING, numNames),
-                            encodeToken.getRelativeTokenValue()
+                            getByteBufferFor(tokenStreams, TokenStreams.TOKEN_STRING, numNames * maxStringValueLength),
+                            encodeToken.getRelativeValue()
                     );
                     break;
 
                 case TokenStreams.TOKEN_CHAR:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_CHAR, numNames)
-                            .put((byte) encodeToken.getRelativeTokenValue().charAt(0));
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_CHAR, numNames * 1)
+                            .put((byte) encodeToken.getRelativeValue().charAt(0));
                     break;
 
                 case TokenStreams.TOKEN_DIGITS:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS, numNames)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS, numNames * 4)
+                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
                     break;
 
                 case TokenStreams.TOKEN_DIGITS0:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS0, numNames)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeTokenValue()));
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DZLEN, numNames)
-                        .put((byte) encodeToken.getRelativeTokenValue().length());
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS0, numNames * 4)
+                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DZLEN, numNames)
+                        .put((byte) encodeToken.getRelativeValue().length());
                     break;
 
                 case TokenStreams.TOKEN_DELTA:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DELTA, numNames)
-                            .put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    //TODO: test this conversion on numbers > 127 (Int.parseInt to byte)
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DELTA, numNames * 1)
+                            .put((byte)Integer.parseInt(encodeToken.getRelativeValue()));
                     break;
 
                 case TokenStreams.TOKEN_DELTA0:
-                    getOrCreateByteBufferFor(tokenStreams, TokenStreams.TOKEN_DELTA0, numNames)
-                            .put((byte)Integer.parseInt(encodeToken.getRelativeTokenValue()));
+                    getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DELTA0, numNames * 1)
+                            .put((byte)Integer.parseInt(encodeToken.getRelativeValue()));
                     break;
 
                 case TokenStreams.TOKEN_NOP:
                 case TokenStreams.TOKEN_MATCH:
                 case TokenStreams.TOKEN_END:
-                    //TODO: do we need to handle these token types here? throwing causes exceptions
-                    //throw new CRAMException("Invalid token type: " + type);
+                    // noop - token types with no associated value
                     break;
 
                 default:
                     throw new CRAMException("Invalid token type: " + type);
             }
         }
-        // we need to set the limit on these streams so that the downstream consumer does't try to consume
-        // the entire stream
+        // since we've over-allocated these streams,we need to set the limit on these streams so that the downstream
+        // consumer doesn't try to consume the entire stream,
         for (int i = 0; i < TokenStreams.TOTAL_TOKEN_TYPES; i++) {
             if (tokenStreams.get(i) != null) {
                 tokenStreams.get(i).limit(tokenStreams.get(i).position());
@@ -294,12 +302,14 @@ public class NameTokenisationEncode {
         return tokenStreams;
     }
 
-    private ByteBuffer getOrCreateByteBufferFor(
+    // since we don't want to allocate a ByteBuffer that we'll never use, allocate them just-in-time
+    // as need
+    private ByteBuffer getByteBufferFor(
             final List<ByteBuffer> tokenStreams,
             final int tokenType,
-            final int numNames) {
+            final int requiredSize) {
         if (tokenStreams.get(tokenType) == null) {
-            tokenStreams.set(tokenType, CompressionUtils.allocateByteBuffer(maxLength * numNames));
+            tokenStreams.set(tokenType, CompressionUtils.allocateByteBuffer(requiredSize));
         }
         return tokenStreams.get(tokenType);
     }
@@ -337,7 +347,6 @@ public class NameTokenisationEncode {
                 final RangeEncode rangeEncode = new RangeEncode();
                 nameTokenStream.rewind();
                 final ByteBuffer tmpByteBuffer = rangeEncode.compress(nameTokenStream, new RangeParams(rangeEncoderFlagSet));
-                //TODO: using "remaining" is a pretty sketchy way to do this, since it assumes that the buffer's limit is meaningful
                 if (bestCompressedLength > tmpByteBuffer.limit()) {
                     bestCompressedLength = tmpByteBuffer.limit();
                     compressedByteBuffer = tmpByteBuffer;
@@ -374,17 +383,18 @@ public class NameTokenisationEncode {
         return compressedByteBuffer;
     }
 
-    private void serializeByteStreamsFor(
+    private void serializeTokenStreams(
             final List<ByteBuffer> tokenStreams,
-            final boolean useArith,
-            final ByteBuffer outBuffer) {
+            final ByteBuffer outBuffer,
+            final boolean useArith) {
         // Compress and serialise the non-null tokenStreams
-        for (int tokenType = 0; tokenType <= TokenStreams.TOKEN_END; tokenType++) {
-            final ByteBuffer tokenBytes = tokenStreams.get(tokenType);
+        for (int tokenStreamType = 0; tokenStreamType <= TokenStreams.TOKEN_END; tokenStreamType++) {
+            final ByteBuffer tokenBytes = tokenStreams.get(tokenStreamType);
             if (tokenBytes != null && tokenBytes.position() > 0) {
-                outBuffer.put((byte) (tokenType + ((tokenType == 0) ? 128 : 0))); //TODO: check this for sign bit correctness
+                // if this encoder was aware of duplicate streams, we would need to detect and encode them
+                // here, and set the DUP_PREVIOUS_STREAM_FLAG_MASK bit
+                outBuffer.put((byte) (tokenStreamType | (tokenStreamType == 0 ? TokenStreams.NEW_POSITION_FLAG_MASK : 0)));
                 final ByteBuffer tempOutByteBuffer = tryCompress(tokenBytes, useArith);
-                //TODO: the use of limit is sketchy here...
                 CompressionUtils.writeUint7(tempOutByteBuffer.limit(), outBuffer);
                 outBuffer.put(tempOutByteBuffer);
             }
