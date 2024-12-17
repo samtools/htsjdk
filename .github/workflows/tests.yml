@@ -39,7 +39,7 @@ jobs:
         run: ./gradlew test jacocoTestReport
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.Java }}
           path: build/reports/tests
@@ -65,7 +65,7 @@ jobs:
 #        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-external-apis
           path: build/reports/tests
@@ -91,7 +91,7 @@ jobs:
 #        run: bash <(curl -s https://raw.githubusercontent.com/broadinstitute/codecov-bash-uploader/main/codecov-verified.bash)
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-ftp
           path: build/reports/tests
@@ -112,7 +112,7 @@ jobs:
         run: ./gradlew spotBugsMain spotBugsTest
       - name: Upload spotBugs Report
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spotBugs-Report
           path: build/reports/spotbugs
