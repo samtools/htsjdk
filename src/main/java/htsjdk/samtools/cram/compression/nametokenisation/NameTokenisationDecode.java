@@ -21,7 +21,7 @@ public class NameTokenisationDecode {
     public final static CharSequence LOCAL_NAME_SEPARATOR_CHARSEQUENCE = new String(new byte[] {NAME_SEPARATOR});
     public static final int UNCOMPRESSED_LENGTH_ADJUSTMENT = 1;
 
-    public static int DEFAULT_POSITION_ALLOCATION = 30;
+    public static final int DEFAULT_POSITION_ALLOCATION = 30;
 
     // the input must be a ByteBuffer containing the read names, separated by the NAME_SEPARATOR byte, WITHOUT
     // a terminating separator
