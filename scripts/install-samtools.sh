@@ -9,4 +9,4 @@ sudo apt-get install -y libncurses-dev libbz2-dev liblzma-dev
 export SAMTOOLS_VERSION=1.19.1
 wget https://github.com/samtools/samtools/releases/download/${SAMTOOLS_VERSION}/samtools-${SAMTOOLS_VERSION}.tar.bz2
 tar -xjvf samtools-${SAMTOOLS_VERSION}.tar.bz2
-cd samtools-{SAMTOOLS_VERSION} && ./configure --prefix=/usr && make && sudo make install
+cd samtools-${SAMTOOLS_VERSION} && ./configure --prefix=/usr && make && sudo make install
