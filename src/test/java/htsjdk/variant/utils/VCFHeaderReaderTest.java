@@ -22,6 +22,7 @@ public class VCFHeaderReaderTest extends HtsjdkTest {
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf"},
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz"},
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.gz"},
+                {TEST_DATA_DIR + "BCFVersion22Uncompressed.bcf"}
         };
     }
 
