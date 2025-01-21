@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.reference;
 
+import htsjdk.io.HtsPath;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -47,7 +48,7 @@ public class ReferenceSequenceFileWalker implements Closeable {
     }
 
     public ReferenceSequenceFileWalker(final Path path) {
-        this(ReferenceSequenceFileFactory.getReferenceSequenceFile(path, true, false));
+        this(ReferenceSequenceFileFactory.getReferenceSequenceFile(path, HtsPath::new, true, false));
     }
 
     public ReferenceSequenceFileWalker(final File file) {

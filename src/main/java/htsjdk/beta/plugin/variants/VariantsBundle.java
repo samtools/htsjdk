@@ -18,7 +18,7 @@ import java.util.function.Function;
 /**
  * A {@link Bundle} for variants and variants-related resources that are backed by on disk files. A {@link
  * htsjdk.beta.plugin.variants.VariantsBundle} has a primary resource with content type {@link
- * BundleResourceType#PRIMARY_CT_VARIANT_CONTEXTS}; and an optional index resource. A VariantsBundle can also
+ * BundleResourceType#CT_VARIANT_CONTEXTS}; and an optional index resource. A VariantsBundle can also
  * contain additional resources.
  *
  * Note that this class is merely a convenience class for the case where the variants are backed by files on disk.
@@ -31,6 +31,7 @@ public class VariantsBundle extends Bundle implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final Log LOG = Log.getInstance(VariantsBundle.class);
+
     /**
      * Create a {@link htsjdk.beta.plugin.variants.VariantsBundle} containing only a variants resource.
      *
