@@ -1,10 +1,9 @@
 package htsjdk.utils;
 
+import htsjdk.beta.plugin.IOUtils;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.ProcessExecutor;
-import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,23 +83,33 @@ public class SamtoolsTestUtils {
      * @param commandLineOptions additional command line options (--input-fmt-option or --output-fmt-option)
      * @return a temporary file containing the samtools-generated results.
      */
-    public static final File convertToCRAM(
-            final File inputSAMBAMCRAMFile,
-            final File referenceFile,
+    public static final IOPath convertToCRAM(
+            final IOPath inputSAMBAMCRAMFile,
+            final IOPath referenceFile,
             final String commandLineOptions) {
         assertSamtoolsAvailable();
-        try {
-            final File tempCRAMFile = File.createTempFile("samtoolsTemporaryCRAM", FileExtensions.CRAM);
-            tempCRAMFile.deleteOnExit();
-            final String commandString = String.format("view -h -C -T %s %s %s -o %s",
-                    referenceFile.getAbsolutePath(),
-                    commandLineOptions == null ? "" : commandLineOptions,
-                    inputSAMBAMCRAMFile.getAbsolutePath(),
-                    tempCRAMFile.getAbsolutePath());
-            executeSamToolsCommand(commandString);
-            return tempCRAMFile;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        final IOPath tempCRAMPath = IOUtils.createTempPath("samtoolsTemporaryCRAM", FileExtensions.CRAM);
+        tempCRAMPath.toPath().toFile().deleteOnExit();
+        final String commandString = String.format("view -h -C -T %s %s %s -o %s",
+                referenceFile.toPath().toAbsolutePath(),
+                commandLineOptions == null ? "" : commandLineOptions,
+                inputSAMBAMCRAMFile.toPath().toAbsolutePath(),
+                tempCRAMPath.toPath().toAbsolutePath());
+        executeSamToolsCommand(commandString);
+        return tempCRAMPath;
+}
+
+    public static final void convertToCRAM(
+            final IOPath inputSAMBAMCRAMPath,
+            final IOPath outputPath,
+            final IOPath referencePath,
+            final String commandLineOptions) {
+        assertSamtoolsAvailable();
+        final String commandString = String.format("view -h -C -T %s %s %s -o %s",
+                referencePath.toPath().toAbsolutePath(),
+                commandLineOptions == null ? "" : commandLineOptions,
+                inputSAMBAMCRAMPath.toPath().toAbsolutePath(),
+                outputPath.toPath().toAbsolutePath());
+        executeSamToolsCommand(commandString);
     }
 }
