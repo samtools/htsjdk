@@ -325,7 +325,7 @@ public interface Allele extends Comparable<Allele>, Serializable {
 
         for (byte base :  bases ) {
             switch (base) {
-                case 'A': case 'C': case 'G': case 'T':  case 'a': case 'c': case 'g': case 't': case 'N' : case 'n' :
+                case 'A': case 'C': case 'G': case 'T': case 'a': case 'c': case 'g': case 't': case 'N': case 'n': case '*':
                     break;
                 default:
                     return false;
