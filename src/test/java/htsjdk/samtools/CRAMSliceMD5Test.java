@@ -146,7 +146,7 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
 
             // write a valid CRAM with a valid reference source:
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (final CRAMFileWriter writer = new CRAMFileWriter(baos, referenceSourceUpperCased, samFileHeader, "test")) {
+            try (final CRAMFileWriter writer = new CRAMFileWriter(baos, referenceSourceUpperCased, CRAMTestUtils.addFakeSequenceMD5s(samFileHeader), "test")) {
                 writer.addAlignment(record);
             }
             cramData = baos.toByteArray();

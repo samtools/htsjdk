@@ -1175,7 +1175,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
                 .setCreateMd5File(false)
                 .setCreateIndex(false);
         final Path reference = IOUtil.getPath("src/test/resources/htsjdk/samtools/one-contig.fasta");
-        try (final SAMFileWriter samFileWriter = writerFactory.makeWriter(samRecords.getHeader(), false, tmp, reference)) {
+        try (final SAMFileWriter samFileWriter = writerFactory.makeWriter(CRAMTestUtils.addFakeSequenceMD5s(samRecords.getHeader()), false, tmp, reference)) {
             samFileWriter.addAlignment(record);
         }
 
