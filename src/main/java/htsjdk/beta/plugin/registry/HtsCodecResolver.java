@@ -203,7 +203,9 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         ValidationUtils.nonNull(bundle, "bundle");
         ValidationUtils.nonNull(htsVersion, "htsVersion");
 
-        final BundleResource bundleResource = getPrimaryResource(bundle, false);
+        final Bundle actualBundle = Bundle.resolveStandardIOBundle(bundle);
+
+        final BundleResource bundleResource = getPrimaryResource(actualBundle, false);
         final Optional<String> optFormatString = bundleResource.getFileFormat();
         final List<C> candidateCodecs = resolveForFormat(optFormatString);
 

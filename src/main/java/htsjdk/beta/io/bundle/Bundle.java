@@ -1,5 +1,6 @@
 package htsjdk.beta.io.bundle;
 
+import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
 
@@ -132,6 +133,50 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
      */
     @Override
     public Iterator<BundleResource> iterator() { return resources.values().iterator(); }
+
+    /**
+     * Utility method to transform a bundle with a primary resource that is an IOPath to a standard IO device
+     * (/dev/stdin, /dev/stdout, /dev/stderr, or /dev/null) to a bundle on the appropriate stream.
+     * @param sourceBundle the bundle to be resolved
+     * @return the original sourceBundle if no stdio is referenced, otherwise a substitute bundle wiht a reference
+     * to the corresponding stream
+     */
+    public static Bundle resolveStandardIOBundle(final Bundle sourceBundle) {
+        final BundleResource sourcePrimary = sourceBundle.getPrimaryResource();
+        final Optional<IOPath> ioPath = sourcePrimary.getIOPath();
+        if (ioPath.isPresent()) {
+            final String putativePath = sourcePrimary.getIOPath().get().toPath().toUri().getPath();
+            if (putativePath.equals(HtsPath.STD_OUT)) {
+                if (sourceBundle.getResources().size() != 1 && ioPath.isPresent()) {
+                    // reject this transformation ?
+                }
+                // swap the requested resource for a stream to stdout
+                return new Bundle(
+                        sourceBundle.getPrimaryContentType(),
+                        List.of(new OutputStreamResource(
+                                System.out, HtsPath.STD_OUT, sourceBundle.getPrimaryContentType())));
+            } else if (putativePath.equals(HtsPath.STD_ERR)) {
+                if (sourceBundle.getResources().size() != 1 && ioPath.isPresent()) {
+                    // reject this transformation ?
+                }
+                // swap the requested resource for a stream to stderr
+                return new Bundle(
+                        sourceBundle.getPrimaryContentType(),
+                        List.of(new OutputStreamResource(
+                                System.err, HtsPath.STD_ERR, sourceBundle.getPrimaryContentType())));
+            } else if (putativePath.equals(HtsPath.STD_IN)) {
+                if (sourceBundle.getResources().size() != 1 && ioPath.isPresent()) {
+                    // reject this transformation ?
+                }
+                // swap the requested resource for an input stream on stdin
+                return new Bundle(
+                        sourceBundle.getPrimaryContentType(),
+                        List.of(new InputStreamResource(
+                                System.in, HtsPath.STD_IN, sourceBundle.getPrimaryContentType())));
+            }
+        }
+        return sourceBundle;
+    }
 
     @Override
     public boolean equals(Object o) {

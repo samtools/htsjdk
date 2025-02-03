@@ -2,7 +2,6 @@ package htsjdk.beta.codecs.variants.vcf;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.google.common.jimfs.SystemJimfsFileSystemProvider;
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.variants.vcf.vcfv3_2.VCFCodecV3_2;
 import htsjdk.beta.codecs.variants.vcf.vcfv3_3.VCFCodecV3_3;
@@ -22,12 +21,9 @@ import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.plugin.interval.HtsQueryInterval;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
-import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
+import htsjdk.beta.plugin.variants.*;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.variants.VariantsDecoder;
-import htsjdk.beta.plugin.variants.VariantsEncoder;
-import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -36,12 +32,8 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,6 +116,51 @@ public class HtsVCFCodecTest extends HtsjdkTest {
 
                 readWriteVCF(variantsDecoder, variantsEncoder, expectedCodecVersion);
             }
+        }
+    }
+
+    @Test(dataProvider = "vcfReadWriteTests")
+    public void testWriteVCFToOutputBundle(final IOPath inputPath, final HtsVersion expectedCodecVersion) throws IOException {
+        // some test files require "AllowMissingFields" options for writing
+        final VariantsEncoderOptions variantsEncoderOptions = new VariantsEncoderOptions().setAllowFieldsMissingFromHeader(true);
+        final IOPath outputPath = IOUtils.createTempPath("roundTripVCFThroughStream", ".vcf");
+        try (final VariantsDecoder variantsDecoder = HtsDefaultRegistry.getVariantsResolver().getVariantsDecoder(inputPath)) {
+            final Bundle outputBundle = new VariantsBundle(outputPath);
+            try (final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(
+                    outputBundle,
+                    variantsEncoderOptions)) {
+                Assert.assertTrue(variantsDecoder.getDisplayName().contains(inputPath.toString()));
+                Assert.assertTrue(variantsEncoder.getDisplayName().contains(outputPath.toString()));
+                readWriteVCF(variantsDecoder, variantsEncoder, expectedCodecVersion);
+            }
+        }
+    }
+
+    //TODO: everything in here that calls readWriteVCF doesn't actually test the output, just that it doesn't throw an exception!!
+    @Test
+    public void testWriteVCFToStdout() throws IOException {
+        // some test files require "AllowMissingFields" options for writing
+        final VariantsEncoderOptions variantsEncoderOptions = new VariantsEncoderOptions().setAllowFieldsMissingFromHeader(true);
+        final Bundle outputBundle = new VariantsBundle(new HtsPath(HtsPath.STD_OUT));
+
+        final PrintStream oldStdout = System.out;
+        try (final VariantsDecoder variantsDecoder = HtsDefaultRegistry
+                .getVariantsResolver()
+                .getVariantsDecoder(new HtsPath(VARIANTS_TEST_DIR + "variant/NA12891.vcf.gz"));
+             // redirect stdout to a byte array
+             final ByteArrayOutputStream baos = new ByteArrayOutputStream(5000);
+             final PrintStream redirectStream = new PrintStream(baos))
+        {
+            System.setOut(redirectStream);
+            try (final VariantsEncoder variantsEncoder = HtsDefaultRegistry.getVariantsResolver().getVariantsEncoder(
+                    outputBundle,
+                    variantsEncoderOptions)) {
+                readWriteVCF(variantsDecoder, variantsEncoder, VCFCodecV4_2.VCF_V42_VERSION);
+                redirectStream.flush();
+                Assert.assertTrue(baos.toString().startsWith("##fileformat=VCFv4.2"));
+            }
+        } finally {
+            System.setOut(oldStdout);
         }
     }
 

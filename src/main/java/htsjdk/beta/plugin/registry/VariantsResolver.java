@@ -41,9 +41,9 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      *
      * @param inputPath the input path to decode
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputPath}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     public VariantsDecoder getVariantsDecoder(final IOPath inputPath) {
         ValidationUtils.nonNull(inputPath, "Input path");
@@ -54,12 +54,12 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
     /**
      * Get a {@link VariantsDecoder} suitable for decoding {@code inputPath} using {@code variantsDecoderOptions}.
      *
-     * @param inputPath the input path to decode
+     * @param inputPath              the input path to decode
      * @param variantsDecoderOptions decoder options to use
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputPath}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     public VariantsDecoder getVariantsDecoder(
             final IOPath inputPath,
@@ -78,9 +78,9 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      *
      * @param inputBundle the input bundle containing resources to decode
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputBundle}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public VariantsDecoder getVariantsDecoder(final Bundle inputBundle) {
@@ -93,12 +93,12 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
     /**
      * Get a {@link VariantsDecoder} suitable for decoding {@code inputBundle} using {@code variantsDecoderOptions}.
      *
-     * @param inputBundle the input bundle to decode
+     * @param inputBundle            the input bundle to decode
      * @param variantsDecoderOptions decoder options to use
      * @return a {@link VariantsDecoder} suitable for decoding {@code inputBundle}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public VariantsDecoder getVariantsDecoder(
@@ -116,9 +116,9 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      *
      * @param outputPath path to encode to
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputPath}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(final IOPath outputPath) {
         ValidationUtils.nonNull(outputPath, "Output path");
@@ -129,12 +129,12 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
     /**
      * Get a {@link VariantsEncoder} suitable for encoding to {@code outputPath} using {@code variantsEncoderOptions}.
      *
-     * @param outputPath path to encode to
+     * @param outputPath             path to encode to
      * @param variantsEncoderOptions encoder options to use
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputPath}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(
             final IOPath outputPath,
@@ -151,12 +151,12 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
     /**
      * Get a {@link VariantsEncoder} suitable for encoding to {@code outputBundle} using {@code variantsEncoderOptions}.
      *
-     * @param outputBundle output bundle containg resources to encode to
+     * @param outputBundle           output bundle containing target resources to encode
      * @param variantsEncoderOptions options to use
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputBundle}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(
             final Bundle outputBundle,
@@ -174,14 +174,14 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * Get a {@link VariantsEncoder} suitable for encoding to {@code outputBundle} using
      * {@code variantsEncoderOptions}, specifying a version and output format.
      *
-     * @param outputBundle output bundle containing resources to encode to
+     * @param outputBundle           output bundle containing resources to encode to
      * @param variantsEncoderOptions options to use
-     * @param variantsFormat the output format to use
-     * @param formatVersion the format version to use
+     * @param variantsFormat         the output format to use
+     * @param formatVersion          the format version to use
      * @return a {@link VariantsEncoder} suitable for encoding to {@code outputBundle}
-     * @throws HtsjdkException if no registered codecs can handle the resource
+     * @throws HtsjdkException       if no registered codecs can handle the resource
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
-     * that the registry contains an incorrectly written codec.
+     *                               that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
     public VariantsEncoder getVariantsEncoder(

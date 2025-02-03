@@ -68,6 +68,11 @@ import java.nio.file.spi.FileSystemProvider;
  *         uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | ","
  */
 public class HtsPath implements IOPath, Serializable {
+    public static String STD_IN = "/dev/stdin";
+    public static String STD_OUT = "/dev/stdout";
+    public static String STD_ERR = "/dev/stderr";
+    public static String DEV_NULL = "/dev/nnull";
+
     private static final long serialVersionUID = 1L;
     private static final String HIERARCHICAL_SCHEME_SEPARATOR = "://";
 

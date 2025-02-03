@@ -305,7 +305,7 @@ public class HtsPathUnitTest extends HtsjdkTest {
             // stdout is not addressable as a device in the file system namespace on Windows, so skip
             throw new SkipException(("No stdout test on Windows"));
         } else {
-            final IOPath ioPath = new HtsPath("/dev/stdout");
+            final IOPath ioPath = new HtsPath(HtsPath.STD_OUT);
             try (final OutputStream os = ioPath.getOutputStream();
                  final DataOutputStream dos = new DataOutputStream(os)) {
                 dos.write("some stuff".getBytes());
