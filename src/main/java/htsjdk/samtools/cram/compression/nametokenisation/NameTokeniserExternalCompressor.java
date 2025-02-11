@@ -22,7 +22,6 @@ public class NameTokeniserExternalCompressor extends ExternalCompressor {
 
     @Override
     public byte[] compress(byte[] data) {
-        //TODO: this method needs a useArith flag; for now use false
 
         // Arith coding is typically 1-5% smaller, but around 50-100% slower
         final ByteBuffer buffer = nameTokEncoder.compress(

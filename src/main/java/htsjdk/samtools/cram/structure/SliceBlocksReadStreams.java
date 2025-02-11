@@ -28,7 +28,6 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.ByteArrayInputStream;

@@ -7,7 +7,7 @@ import htsjdk.utils.ValidationUtils;
 
 public class FQZCompExternalCompressor extends ExternalCompressor {
 
-    // TODO: this codec is not yet full implemented; it is decode only
+    // this codec is decode only; not implemented for writing
     private final FQZCompDecode fqzCompDecoder;
 
     public FQZCompExternalCompressor(
