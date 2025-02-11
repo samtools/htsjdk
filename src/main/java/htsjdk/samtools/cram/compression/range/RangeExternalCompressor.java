@@ -1,13 +1,12 @@
-package htsjdk.samtools.cram.compression;
+package htsjdk.samtools.cram.compression.range;
 
-import htsjdk.samtools.cram.compression.range.RangeDecode;
-import htsjdk.samtools.cram.compression.range.RangeEncode;
-import htsjdk.samtools.cram.compression.range.RangeParams;
+import htsjdk.samtools.cram.compression.CompressionUtils;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;
 
-public class RangeExternalCompressor extends ExternalCompressor{
+public class RangeExternalCompressor extends ExternalCompressor {
 
     private final int formatFlags;
     private final RangeEncode rangeEncode;
@@ -23,7 +22,7 @@ public class RangeExternalCompressor extends ExternalCompressor{
             final int formatFlags,
             final RangeEncode rangeEncode,
             final RangeDecode rangeDecode) {
-        super(BlockCompressionMethod.RANGE);
+        super(BlockCompressionMethod.ADAPTIVE_ARITHMETIC);
         this.rangeEncode = rangeEncode;
         this.rangeDecode = rangeDecode;
         this.formatFlags = formatFlags;

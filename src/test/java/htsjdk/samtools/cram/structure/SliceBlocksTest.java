@@ -48,7 +48,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
         new SliceBlocks(coreBlock, Collections.emptyList());
     }
 
-    @Test(dataProvider="externalCompressionMethods", dataProviderClass = StructureTestUtils.class)
+    @Test(dataProvider="randomStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
     public void testSliceBlocksRoundTrip(final BlockCompressionMethod compressionMethod) throws IOException {
         final byte[] coreBlockContent = "core".getBytes();
         final byte[] embeddedRefBlockContent = "ref".getBytes();
