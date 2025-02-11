@@ -32,7 +32,8 @@ public enum BlockCompressionMethod {
     GZIP(1),
     BZIP2(2),
     LZMA(3),
-    RANS(4);
+    RANS(4),
+    RANGE(5);
 
     private final int methodId;
 

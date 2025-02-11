@@ -1,7 +1,8 @@
 package htsjdk.utils;
 
-import htsjdk.samtools.util.*;
-
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.ProcessExecutor;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,7 +14,7 @@ import java.nio.file.Paths;
  */
 public class SamtoolsTestUtils {
     private static final String SAMTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_SAMTOOLS_BIN";
-    public final static String expectedSamtoolsVersion = "1.19.1";
+    public final static String expectedSamtoolsVersion = "1.21";
 
     /**
      * @return true if samtools is available, otherwise false
