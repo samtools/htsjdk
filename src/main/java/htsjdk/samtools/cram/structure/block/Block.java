@@ -74,10 +74,10 @@ public class Block {
     /**
      * Protected constructor of a generic Block, to be called by static factory methods and subclasses.
      *
-     * @param compressionMethod the block compression method.  Can be RAW, if uncompressed
-     * @param contentType whether this is a header or data block, and which kind
-     * @param contentId the External Block Content ID, or NO_CONTENT_ID for non-External block
-     * @param compressedContent the compressed form of the data to be stored in this block
+     * @param compressionMethod  the block compression method.  Can be RAW, if uncompressed
+     * @param contentType        whether this is a header or data block, and which kind
+     * @param contentId          the External Block Content ID, or NO_CONTENT_ID for non-External block
+     * @param compressedContent  the compressed form of the data to be stored in this block
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
     protected Block(final BlockCompressionMethod compressionMethod,
@@ -108,7 +108,7 @@ public class Block {
      * The block will have RAW (no) compression.
      *
      * @param contentType whether this is a header or data block, and which kind
-     * @param rawContent the raw data to be stored in this block
+     * @param rawContent  the raw data to be stored in this block
      */
     private static Block createRawNonExternalBlock(final BlockContentType contentType, final byte[] rawContent) {
         if (contentType == BlockContentType.EXTERNAL) {
@@ -170,9 +170,9 @@ public class Block {
      * Create a new external data block with the given compression method, uncompressed content, and content ID.
      * The block will have EXTERNAL content type.
      *
-     * @param compressionMethod the compression method used in this block
-     * @param contentId the external identifier for the block
-     * @param compressedContent the content of this block, in compressed mode
+     * @param compressionMethod  the compression method used in this block
+     * @param contentId          the external identifier for the block
+     * @param compressedContent  the content of this block, in compressed mode
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
     public static Block createExternalBlock(final BlockCompressionMethod compressionMethod,
@@ -190,6 +190,7 @@ public class Block {
 
     /**
      * Identifies whether this is a header or data block, and which kind
+     *
      * @return the CRAM content type of the block
      */
     public final BlockContentType getContentType() {
@@ -221,9 +222,9 @@ public class Block {
     /**
      * Uncompress the stored block content (if not RAW) and return the uncompressed content.
      *
+     * @param compressorCache
      * @return The uncompressed block content.
      * @throws CRAMException The uncompressed length did not match what was expected.
-     * @param compressorCache
      */
     public final byte[] getUncompressedContent(final CompressorCache compressorCache) {
         // when uncompressing, no compressor-specific args are required since any variant of the compressor will do

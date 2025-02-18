@@ -33,7 +33,7 @@ import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public final class RANSExternalCompressor extends ExternalCompressor {
+public final class RANS4x8ExternalCompressor extends ExternalCompressor {
     private final RANSParams.ORDER order;
     private final RANS4x8Encode ransEncode;
     private final RANS4x8Decode ransDecode;
@@ -42,20 +42,20 @@ public final class RANSExternalCompressor extends ExternalCompressor {
      * We use a shared RANS instance for all compressors.
      * @param rans
      */
-    public RANSExternalCompressor(
+    public RANS4x8ExternalCompressor(
             final RANS4x8Encode ransEncode,
             final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.ZERO, ransEncode, ransDecode);
     }
 
-    public RANSExternalCompressor(
+    public RANS4x8ExternalCompressor(
             final int order,
             final RANS4x8Encode ransEncode,
             final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.fromInt(order), ransEncode, ransDecode);
     }
 
-    public RANSExternalCompressor(
+    public RANS4x8ExternalCompressor(
             final RANSParams.ORDER order,
             final RANS4x8Encode ransEncode,
             final RANS4x8Decode ransDecode) {
@@ -88,7 +88,7 @@ public final class RANSExternalCompressor extends ExternalCompressor {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        RANSExternalCompressor that = (RANSExternalCompressor) o;
+        RANS4x8ExternalCompressor that = (RANS4x8ExternalCompressor) o;
 
         return this.order == that.order;
     }
