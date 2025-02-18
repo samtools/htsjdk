@@ -1,6 +1,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
@@ -58,8 +60,11 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
 
         // now use samtools to roundtrip the original, and compare results
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-            final File tempSamtoolsFile = SamtoolsTestUtils.convertToCRAM(testFileWithMates, referenceFile, null);
-            assertEqualAlignmentFileContents(tempSamtoolsFile, htsjdkTempCRAM, referenceFile);
+            final IOPath tempSamtoolsIOPath = SamtoolsTestUtils.convertToCRAM(
+                    new HtsPath(testFileWithMates.getAbsolutePath()),
+                    new HtsPath(referenceFile.getAbsolutePath()),
+                    null);
+            assertEqualAlignmentFileContents(tempSamtoolsIOPath.toPath().toFile(), htsjdkTempCRAM, referenceFile);
         }
     }
 

@@ -1,6 +1,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.compression.*;
 import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
@@ -184,11 +186,11 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             final boolean lenientEquality,
             final boolean emitDetail) throws IOException {
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
-            final File samtoolsOutFile = SamtoolsTestUtils.convertToCRAM(
-                    sourceCRAM,
-                    referenceFile,
+            final IOPath samtoolsOutFile = SamtoolsTestUtils.convertToCRAM(
+                    new HtsPath(sourceCRAM.getAbsolutePath()),
+                    new HtsPath(referenceFile.getAbsolutePath()),
                     "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile, referenceFile, lenientEquality, emitDetail);
+            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile.toPath().toFile(), referenceFile, lenientEquality, emitDetail);
         } else {
             throw new SkipException("samtools is not installed, skipping test");
         }

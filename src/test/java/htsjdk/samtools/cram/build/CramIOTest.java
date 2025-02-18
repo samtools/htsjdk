@@ -45,7 +45,6 @@ public class CramIOTest extends HtsjdkTest {
         return new Object[] {
                 new CRAMVersion(1, 0),
                 new CRAMVersion(2, 0),
-                new CRAMVersion(3, 1),
                 new CRAMVersion(4, 0),
         };
     }
