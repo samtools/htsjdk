@@ -41,7 +41,7 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
         }
 
         // close the streams and write them to compressed slice blocks
-        final SliceBlocks sliceBlocks = sliceBlocksWriteStreams.flushStreamsToBlocks();
+        final SliceBlocks sliceBlocks = sliceBlocksWriteStreams.flushStreamsToBlocks(new CRAMCodecModelContext());
 
         // now verify all the blocks in Slice
         final byte[] coreRoundTripContent = sliceBlocks.getCoreBlock().getUncompressedContent(new CompressorCache());

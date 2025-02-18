@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;
@@ -29,7 +30,7 @@ public class RangeExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(byte[] data) {
+    public byte[] compress(byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final RangeParams params = new RangeParams(formatFlags);
         final ByteBuffer buffer = rangeEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);

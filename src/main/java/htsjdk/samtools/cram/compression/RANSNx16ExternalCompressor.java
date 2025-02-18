@@ -1,9 +1,9 @@
 package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;
@@ -38,7 +38,7 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final RANSNx16Params params = new RANSNx16Params(flags);
         final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);

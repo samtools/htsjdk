@@ -42,7 +42,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -107,6 +106,7 @@ public class Slice {
     private int byteSizeOfSliceBlocks = UNINITIALIZED_INDEXING_PARAMETER;
     private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
+    private final CRAMCodecModelContext contextModel = new CRAMCodecModelContext();
     /**
      * Create a slice by reading a serialized Slice from an input stream.
      *
@@ -245,7 +245,7 @@ public class Slice {
         this.globalRecordCounter = globalRecordCounter;
 
         final CramRecordWriter writer = new CramRecordWriter(this);
-        sliceBlocks = writer.writeToSliceBlocks(records, alignmentContext.getAlignmentStart());
+        sliceBlocks = writer.writeToSliceBlocks(contextModel, records, alignmentContext.getAlignmentStart());
 
         // we can't calculate the number of blocks until after the record writer has written everything out
         nSliceBlocks = caclulateNumberOfBlocks();

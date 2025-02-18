@@ -129,7 +129,7 @@ public class Block {
         return new Block(
                 BlockCompressionMethod.GZIP,
                 BlockContentType.FILE_HEADER, NO_CONTENT_ID,
-                (new GZIPExternalCompressor()).compress(rawContent),
+                (new GZIPExternalCompressor()).compress(rawContent, null),
                 rawContent.length);
     }
 

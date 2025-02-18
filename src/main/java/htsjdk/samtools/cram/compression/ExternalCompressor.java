@@ -13,6 +13,7 @@ import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
 
@@ -26,7 +27,13 @@ public abstract class ExternalCompressor {
         this.method = method;
     }
 
-    public abstract byte[] compress(byte[] data);
+    /**
+     * Compress the data using the codec-specific context model.
+     * @param data the data to compress
+     * @param contextModel the context model to use for compression; may be null
+     * @return the compressed data
+     */
+    public abstract byte[] compress(byte[] data, CRAMCodecModelContext contextModel);
 
     public abstract byte[] uncompress(byte[] data);
 

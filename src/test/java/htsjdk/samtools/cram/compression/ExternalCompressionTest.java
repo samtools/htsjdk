@@ -85,7 +85,7 @@ public class ExternalCompressionTest extends HtsjdkTest {
             final int compressorSpecificArg,
             final Class<ExternalCompressor> unused) {
         final ExternalCompressor compressor = ExternalCompressor.getCompressorForMethod(method, compressorSpecificArg);
-        final byte [] compressed = compressor.compress(TEST_BYTES);
+        final byte [] compressed = compressor.compress(TEST_BYTES, null);
         final byte [] restored = compressor.uncompress(compressed);
         Assert.assertEquals(TEST_BYTES, restored);
     }
