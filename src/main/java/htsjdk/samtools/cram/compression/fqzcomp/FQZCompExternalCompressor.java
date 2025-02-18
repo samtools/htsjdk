@@ -2,8 +2,8 @@ package htsjdk.samtools.cram.compression.fqzcomp;
 
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import htsjdk.utils.ValidationUtils;
 
 public class FQZCompExternalCompressor extends ExternalCompressor {
 
@@ -18,7 +18,7 @@ public class FQZCompExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(byte[] data) {
+    public byte[] compress(byte[] data, final CRAMCodecModelContext unused_contextModel) {
         throw new UnsupportedOperationException("FQZComp compression is not implemented");
     }
 

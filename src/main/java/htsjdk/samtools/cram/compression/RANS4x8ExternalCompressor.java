@@ -28,6 +28,7 @@ import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;
@@ -66,7 +67,7 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final RANS4x8Params params = new RANS4x8Params(order);
         final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);

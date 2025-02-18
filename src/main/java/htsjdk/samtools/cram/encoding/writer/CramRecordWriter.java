@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * A writer that emits CRAMCompressionRecord into the various streams that represent a Slice's data series blocks.
- * This essentially acts as a bridge between CRAMCompressionRecord fields and the various various data series streams
+ * This essentially acts as a bridge between CRAMCompressionRecord fields and the various data series streams
  * associated with a Slice. It is the inverse of CramRecordReader.
  */
 public class CramRecordWriter {
@@ -137,13 +137,13 @@ public class CramRecordWriter {
      * @param initialAlignmentStart the alignmentStart of the enclosing {@link Slice}, for delta calculation
      * @return a {@link SliceBlocks} object
      */
-    public SliceBlocks writeToSliceBlocks(final List<CRAMCompressionRecord> records, final int initialAlignmentStart) {
+    public SliceBlocks writeToSliceBlocks(final CRAMCodecModelContext contextModel, final List<CRAMCompressionRecord> records, final int initialAlignmentStart) {
         int prevAlignmentStart = initialAlignmentStart;
         for (final CRAMCompressionRecord record : records) {
             writeCRAMRecord(record, prevAlignmentStart);
             prevAlignmentStart = record.getAlignmentStart();
         }
-        return sliceBlocksWriteStreams.flushStreamsToBlocks();
+        return sliceBlocksWriteStreams.flushStreamsToBlocks(contextModel);
     }
 
     /**
