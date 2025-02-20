@@ -1,0 +1,9 @@
+{
+  "test_workflow.image_to_use": "ubuntu:latest",
+  "test_workflow.input_file" : "src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram",
+  "test_workflow.output_file" : "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.1.samtools.cram",
+  "test_workflow.reference_file" : "src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz",
+  "test_workflow.samtools_fmt" : "--output-fmt cram,version=3.1,archive",
+  "test_workflow.image_to_use" : "Test_Workflow.docker_image":"image_build:my_cool_software|ca82a6dff817ec66f44342007202690a93763949"
+}
+
