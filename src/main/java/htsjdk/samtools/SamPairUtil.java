@@ -332,6 +332,7 @@ public class SamPairUtil {
         else {
             supplemental.setAttribute(SAMTag.MC, null);
         }
+        supplemental.setAttribute(SAMTag.MQ, matePrimary.getMappingQuality());
     }
 
     /**
