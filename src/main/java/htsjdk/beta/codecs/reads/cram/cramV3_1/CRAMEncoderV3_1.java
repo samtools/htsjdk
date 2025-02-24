@@ -22,7 +22,6 @@ public class CRAMEncoderV3_1 extends CRAMEncoder {
      */
     public CRAMEncoderV3_1(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         super(outputBundle, readsEncoderOptions);
-        throw new CRAMException("CRAM v3.1 encoding is not yet supported");
     }
 
     @Override

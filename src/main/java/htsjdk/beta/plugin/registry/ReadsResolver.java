@@ -209,30 +209,4 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
                 .getEncoder(outputBundle, readsEncoderOptions);
     }
 
-    /**
-     * Temporarily override to remove the CRAM 3.1 codec from the list of candidate codecs when the request is for
-     * the newest version, since it has no write implementation yet.
-     */
-    @Override
-    protected List<ReadsCodec> filterByVersion(final List<ReadsCodec> candidateCodecs, final HtsVersion htsVersion) {
-        final List<ReadsCodec> preFilteredCodecs;
-        if (htsVersion.equals(HtsVersion.NEWEST_VERSION)) {
-            // if the request is for the newest version, then pre-filter out the CRAM 3.1 codec since it has no
-            // write implementation yet, and then delegate to the superclass to let it find the newest version among
-            // the remaining codecs
-            preFilteredCodecs = candidateCodecs.stream().filter(
-                    c -> !(c.getFileFormat().equals(ReadsFormats.CRAM)
-                            && c.getVersion().equals(CRAMCodecV3_1.VERSION_3_1)))
-                    .collect(Collectors.toList());
-            final HtsVersion newestVersion = preFilteredCodecs.stream()
-                    .map(c -> c.getVersion())
-                    .reduce(candidateCodecs.get(0).getVersion(),
-                            (HtsVersion a, HtsVersion b) -> a.compareTo(b) > 0 ? a : b);
-            return candidateCodecs.stream().filter(
-                    c -> c.getVersion().equals(newestVersion)).collect(Collectors.toList());
-        } else {
-            preFilteredCodecs = candidateCodecs;
-        }
-        return super.filterByVersion(preFilteredCodecs, htsVersion);
-    }
 }
