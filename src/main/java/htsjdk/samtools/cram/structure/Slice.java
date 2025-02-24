@@ -42,7 +42,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,6 +55,8 @@ import java.util.stream.Collectors;
  * on the corresponding reference contig.
  */
 public class Slice {
+    private final CRAMVersion cramVersion;
+
     private static final Log log = Log.getInstance(Slice.class);
     private static final int MD5_BYTE_SIZE = 16;
     // for indexing purposes
@@ -105,6 +106,7 @@ public class Slice {
     private int byteSizeOfSliceBlocks = UNINITIALIZED_INDEXING_PARAMETER;
     private int landmarkIndex = UNINITIALIZED_INDEXING_PARAMETER;
 
+    private final CRAMCodecModelContext contextModel = new CRAMCodecModelContext();
     /**
      * Create a slice by reading a serialized Slice from an input stream.
      *
@@ -118,6 +120,7 @@ public class Slice {
             final CompressionHeader compressionHeader,
             final InputStream inputStream,
             final long containerByteOffset) {
+        this.cramVersion = cramVersion;
         sliceHeaderBlock = Block.read(cramVersion, inputStream);
         if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
             throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
@@ -194,6 +197,7 @@ public class Slice {
             final long containerByteOffset,
             final long globalRecordCounter) {
         ValidationUtils.validateArg(globalRecordCounter >= 0, "record counter must be >= 0");
+        this.cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
         this.compressionHeader = compressionHeader;
         this.byteOffsetOfContainer = containerByteOffset;
 
@@ -241,11 +245,13 @@ public class Slice {
         this.globalRecordCounter = globalRecordCounter;
 
         final CramRecordWriter writer = new CramRecordWriter(this);
-        sliceBlocks = writer.writeToSliceBlocks(records, alignmentContext.getAlignmentStart());
+        sliceBlocks = writer.writeToSliceBlocks(contextModel, records, alignmentContext.getAlignmentStart());
 
         // we can't calculate the number of blocks until after the record writer has written everything out
         nSliceBlocks = caclulateNumberOfBlocks();
     }
+
+    public CRAMVersion getCramVersion() { return cramVersion; }
 
     // May be null
     public Block getSliceHeaderBlock() { return sliceHeaderBlock; }

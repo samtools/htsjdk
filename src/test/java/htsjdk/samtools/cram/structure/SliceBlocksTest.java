@@ -48,7 +48,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
         new SliceBlocks(coreBlock, Collections.emptyList());
     }
 
-    @Test(dataProvider="externalCompressionMethods", dataProviderClass = StructureTestUtils.class)
+    @Test(dataProvider="randomStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
     public void testSliceBlocksRoundTrip(final BlockCompressionMethod compressionMethod) throws IOException {
         final byte[] coreBlockContent = "core".getBytes();
         final byte[] embeddedRefBlockContent = "ref".getBytes();
@@ -134,7 +134,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
                                 compressionMethod,
                                 compressionMethod == BlockCompressionMethod.RANS ?
                                         1 :
-                                        ExternalCompressor.NO_COMPRESSION_ARG).compress(embeddedRefBlockContent),
+                                        ExternalCompressor.NO_COMPRESSION_ARG).compress(embeddedRefBlockContent, null),
                         embeddedRefBlockContent.length));
 
         // add one external block for each Data Series
@@ -146,7 +146,7 @@ public class SliceBlocksTest  extends HtsjdkTest {
                             dataSeries.getExternalBlockContentId(),
                             ExternalCompressor.getCompressorForMethod(
                                     compressionMethod,
-                                    ExternalCompressor.NO_COMPRESSION_ARG).compress(uncompressedContent.getBytes()),
+                                    ExternalCompressor.NO_COMPRESSION_ARG).compress(uncompressedContent.getBytes(), null),
                             dataSeries.getCanonicalName().getBytes().length));
             expectedExternalContentStrings.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
         }
