@@ -24,7 +24,7 @@ import org.testng.Assert;
 public class CRAM31Tests extends HtsjdkTest {
     private static final String TEST_DATA_DIR = "src/test/resources/htsjdk/samtools/cram/";
 
-    // use samtools to convert to CRAM3.1 using samtools profiles fast, normanl, small, and archive, then
+    // use samtools to convert to CRAM3.1 using samtools profiles fast, normal, small, and archive, then
     // read with htsjdk and compare the results with the original
 
     @DataProvider(name="cram31FidelityTests")
@@ -98,11 +98,12 @@ public class CRAM31Tests extends HtsjdkTest {
         };
     }
 
+    //because conversions are expensive, this tests both htsjdk cram 31.1 reading and writing together
     @Test(dataProvider = "cram31FidelityTests")
-    public void testCRAM31RoundTrip(
+    public void testCRAM31SamtoolsFidelity(
             final IOPath testInput,
             final IOPath testReference,
-            final String samtoolsCommandLineArgs) {
+            final String samtoolsCommandLineArgs) throws IOException {
 
         // for testing CRAM 3.1, we use CRAM 3.0 as our ground-truth for comparison, so check to make
         // sure that our input test file is CRAM 3.0 and not 3.1
@@ -110,12 +111,41 @@ public class CRAM31Tests extends HtsjdkTest {
 
         // use samtools to convert the input to CRAM 3.1, then compare the result of that with the original
         final IOPath cram31Path = IOUtils.createTempPath("cram31Test", "cram");
+
+        // test htsjdk cram 3.1 reading by using samtools to convert the input to CRAM 3.1, and then consuming it
+        // with htsjdk and comparing the results to the original
+        final IOPath cramSamtools31Path = IOUtils.createTempPath("cram31SamtoolsWriteTest", ".cram");
         SamtoolsTestUtils.convertToCRAM(
                 testInput,
-                cram31Path,
+                cramSamtools31Path,
                 testReference,
                 samtoolsCommandLineArgs);
-        doCRAMCompare(testInput.toPath(), cram31Path.toPath(), testReference.toPath());
+        Assert.assertEquals(getCRAMVersion(cramSamtools31Path), CramVersions.CRAM_v3_1);
+
+        // compare the original CRAM 3.0 test input with the samtools-generated 3.1 output
+        doCRAMCompare(testInput.toPath(), cramSamtools31Path.toPath(), testReference.toPath());
+
+        // now test htsjdk CRAM 3.1 writing by using htsjdk to write CRAM 3.1 and use samtools to consume it and write
+        // it back to another CRAM (3.1), and then read that result back in and compare it to the original
+        final IOPath cramHtsjdk31Path = IOUtils.createTempPath("cram31HtsjdkWriteTest", ".cram");
+        final SamReaderFactory samReaderFactory =
+                SamReaderFactory.makeDefault()
+                        .referenceSequence(testReference.toPath())
+                        .validationStringency(ValidationStringency.LENIENT);
+        try (final SamReader reader = samReaderFactory.open(testInput.toPath());
+             final SAMFileWriter writer = new SAMFileWriterFactory()
+                     .makeWriter(reader.getFileHeader().clone(), true, cramHtsjdk31Path.toPath(), testReference.toPath())) {
+            for (final SAMRecord rec : reader) {
+                writer.addAlignment(rec);
+            }
+        }
+        Assert.assertEquals(getCRAMVersion(cramHtsjdk31Path), CramVersions.CRAM_v3_1);
+
+        // compare the original test input with the htsjdk-generated 3.1 output
+        doCRAMCompare(testInput.toPath(), cramHtsjdk31Path.toPath(), testReference.toPath());
+
+        //  for completeness, compare the htsjdk-generated cram 3.1 output with the samtools-generated 3.1 output
+        doCRAMCompare(cramHtsjdk31Path.toPath(), cramSamtools31Path.toPath(), testReference.toPath());
     }
 
     public static void doCRAMCompare(

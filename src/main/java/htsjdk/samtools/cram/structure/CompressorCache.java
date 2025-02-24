@@ -78,8 +78,8 @@ public class CompressorCache {
                 return getCachedCompressorForMethod(compressionMethod, compressorSpecificArg);
 
             case RANS: {
-                // for efficiency, we want to share the same underlying RANS object with both order-0 and
-                // order-1 ExternalCompressors
+                // in previous implementations, we would cache separate order-0 and order-1 compressors for performance
+                // reasons; we no longer NEED to do so but retain this structure for now
                 final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG ?
                         RANS4x8Params.ORDER.ZERO.ordinal() :
                         compressorSpecificArg;
@@ -94,7 +94,7 @@ public class CompressorCache {
                         sharedRANS4x8Decode = new RANS4x8Decode();
                     }
                     compressorCache.put(
-                            new Tuple(BlockCompressionMethod.RANS, ransArg),
+                            compressorTuple,
                             new RANS4x8ExternalCompressor(ransArg, sharedRANS4x8Encode, sharedRANS4x8Decode)
                     );
                 }
@@ -102,8 +102,8 @@ public class CompressorCache {
             }
 
             case RANSNx16: {
-                // for efficiency, we want to share the same underlying RANSNx16 object with both order-0 and
-                // order-1 ExternalCompressors
+                // in previous implementations, we would cache separate order-0 and order-1 compressors for performance
+                // reasons; we no longer NEED to do so but retain this structure for now
                 final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG ?
                         RANSNx16Params.ORDER.ZERO.ordinal() :
                         compressorSpecificArg;
@@ -118,7 +118,7 @@ public class CompressorCache {
                         sharedRANSNx16Decode = new RANSNx16Decode();
                     }
                     compressorCache.put(
-                            new Tuple(BlockCompressionMethod.RANSNx16, ransArg),
+                            compressorTuple,
                             new RANSNx16ExternalCompressor(ransArg, sharedRANSNx16Encode, sharedRANSNx16Decode)
                     );
                 }
