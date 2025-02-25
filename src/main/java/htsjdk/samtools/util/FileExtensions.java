@@ -33,7 +33,9 @@ import java.util.Set;
  * Contains file extension constants for read, alignment, variant and annotation files
  */
 public final class FileExtensions {
-
+    /** sequences generated with UCSC/faToTwoBit */
+    public static final String TWOBIT = ".2bit";
+    
     /** extensions for read files and related formats. */
     public static final Set<String> FASTA = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         ".fasta",
@@ -45,9 +47,10 @@ public final class FileExtensions {
         ".fna",
         ".fna.gz",
         ".txt",
-        ".txt.gz"
+        ".txt.gz",
+        TWOBIT
     )));
-        
+
     public static final String FASTA_INDEX = ".fai";
 
     /** extensions for alignment files SAM, BAM, CRAM. */
