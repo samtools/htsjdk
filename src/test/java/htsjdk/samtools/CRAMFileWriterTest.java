@@ -170,7 +170,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final ReferenceSource refSource = createReferenceSource();
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-        try (CRAMFileWriter writer = new CRAMFileWriter(os, refSource, header, null)) {
+       try (CRAMFileWriter writer = new CRAMFileWriter(os, refSource, CRAMTestUtils.addFakeSequenceMD5s(header), null)) {
             writeRecordsToCRAM(writer, samRecords);
         }
 
@@ -185,7 +185,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final ByteArrayOutputStream indexStream = new ByteArrayOutputStream();
 
         final List<SAMRecord> samRecords = createRecords(100);
-        try (CRAMFileWriter writer = new CRAMFileWriter(outStream, indexStream, refSource, header, null)) {
+        try (CRAMFileWriter writer = new CRAMFileWriter(outStream, indexStream, refSource, CRAMTestUtils.addFakeSequenceMD5s(header), null)) {
             writeRecordsToCRAM(writer, samRecords);
         }
 
@@ -201,7 +201,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final ByteArrayOutputStream indexStream = new ByteArrayOutputStream();
 
         final List<SAMRecord> samRecords = createRecords(100);
-        try (CRAMFileWriter writer = new CRAMFileWriter(outStream, indexStream, false, refSource, header, null)) {
+        final SAMFileHeader repairedHeader = CRAMTestUtils.addFakeSequenceMD5s(header);
+        try (CRAMFileWriter writer = new CRAMFileWriter(outStream, indexStream, false, refSource, repairedHeader, null)) {
 
             // force records to not be coordinate sorted to ensure we're relying on presorted=false
             samRecords.sort(new SAMRecordCoordinateComparator().reversed());
@@ -246,7 +247,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final List<SAMRecord> records = new ArrayList<>();
 
         try (SamReader reader = SamReaderFactory.make().open(new File(SAM_TOOLS_TEST_DIR, "cram_tlen_reads.sorted.sam"));
-             CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram")) {
+             CRAMFileWriter writer = new CRAMFileWriter(baos, source, CRAMTestUtils.addFakeSequenceMD5s(reader.getFileHeader()), "test.cram")) {
             for (final SAMRecord record : reader) {
                 writer.addAlignment(record);
                 records.add(record);
@@ -283,7 +284,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(newFasta));
 
         final SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder();
-        samRecordSetBuilder.setHeader(SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate, 10_000, true));
+        samRecordSetBuilder.setHeader(
+                CRAMTestUtils.addFakeSequenceMD5s(
+                SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate, 10_000, true))
+        );
         samRecordSetBuilder.writeRandomReference(newFasta);
 
         final List<SAMRecord> records = new ArrayList<>();

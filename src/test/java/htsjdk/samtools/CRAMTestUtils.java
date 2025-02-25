@@ -10,6 +10,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 public final class CRAMTestUtils {
 
@@ -45,7 +46,7 @@ public final class CRAMTestUtils {
                     null,
                     true,
                     referenceSource,
-                    reader.getFileHeader(),
+                    CRAMTestUtils.addFakeSequenceMD5s(reader.getFileHeader()),
                     tempOutputCRAM.getName());
             final SAMRecordIterator inputIterator = reader.iterator();
             while (inputIterator.hasNext()) {
@@ -67,7 +68,7 @@ public final class CRAMTestUtils {
         refFile.add("chr1", ref);
         ReferenceSource source = new ReferenceSource(refFile);
         final SAMFileHeader header = records.iterator().next().getHeader();
-        return writeAndReadFromInMemoryCram(records, source, header);
+        return writeAndReadFromInMemoryCram(records, source, CRAMTestUtils.addFakeSequenceMD5s(header));
     }
 
     /**
@@ -76,7 +77,7 @@ public final class CRAMTestUtils {
      * @return a CRAMFileReader reading from an in memory buffer that has had the records written into it, uses a fake reference with all A's
      */
     public static CRAMFileReader writeAndReadFromInMemoryCram(SAMRecordSetBuilder records) throws IOException {
-        return writeAndReadFromInMemoryCram(records.getRecords(), getFakeReferenceSource(), records.getHeader());
+        return writeAndReadFromInMemoryCram(records.getRecords(), getFakeReferenceSource(), CRAMTestUtils.addFakeSequenceMD5s(records.getHeader()));
     }
 
     private static CRAMFileReader writeAndReadFromInMemoryCram(Collection<SAMRecord> records, CRAMReferenceSource source, SAMFileHeader header) throws IOException {
@@ -116,4 +117,21 @@ public final class CRAMTestUtils {
             }
         };
     }
+
+    // Synthesize fake MD5 values for test header sequences for which we don't have actual references
+    // (only fake in-memory references) or for which we can't re-create the CRAM, in order to satisfy
+    // the CRAM writer's requirement that all sequence dictionaries have MD5 checksums.
+    public static SAMFileHeader addFakeSequenceMD5s(final SAMFileHeader header) {
+        final String FAKE_MD5 = "deadbeefdeadbeefdeadbeefdeadbeef";
+        final SAMSequenceDictionary headerDictionary = header.getSequenceDictionary();
+        if (!headerDictionary.getSequencesWithMissingMD5s().isEmpty()) {
+            final SAMFileHeader repairedHeader = header.clone();
+            final SAMSequenceDictionary newDictionary = repairedHeader.getSequenceDictionary();
+            final List<SAMSequenceRecord> badSequences = newDictionary.getSequencesWithMissingMD5s();
+            badSequences.forEach(seq -> seq.setMd5(FAKE_MD5));
+            return repairedHeader;
+        }
+        return header;
+    }
+
 }
