@@ -34,8 +34,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         this.displayName = inputBundle.getPrimaryResource().getDisplayName();
         final BundleResource referenceResource = inputBundle.getOrThrow(BundleResourceType.CT_HAPLOID_REFERENCE);
         if (referenceResource.getIOPath().isPresent()) {
-            referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
-                    referenceResource.getIOPath().get().toPath(), true);
+            referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFileFromBundle(inputBundle, true, true);
         } else {
             final SeekableStream seekableStream = referenceResource.getSeekableStream().orElseThrow(
                     () -> new IllegalArgumentException(

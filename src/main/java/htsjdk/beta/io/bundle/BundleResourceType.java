@@ -56,6 +56,7 @@ public class BundleResourceType {
     /** Secondary content types for {@link BundleResourceType#CT_HAPLOID_REFERENCE} resources*/
     public static final String CT_REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
     public static final String CT_REFERENCE_INDEX = "REFERENCE_INDEX";
+    public static final String CT_REFERENCE_INDEX_GZI = "REFERENCE_INDEX_GZI";
 
 
     /****************************************** Resource types for FEATURES ********************************/
