@@ -3,5 +3,5 @@
 FROM eclipse-temurin:17
 
 COPY . .
-RUN ./gradlew compileTestJava
+RUN ./gradlew shadowJar
 ENTRYPOINT bash
