@@ -6,6 +6,8 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get -y --no-install-recommends install samtools
 
+ENV HTSJDK_SAMTOOLS_BIN=/usr/bin/samtools
+
 COPY . .
 RUN ./gradlew shadowJar
 ENTRYPOINT bash
