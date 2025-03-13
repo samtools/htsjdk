@@ -8,10 +8,13 @@ task test_htsjdk_cram_fidelity {
         String image_to_use
     }
     command {
+        htsjdk_jar=$(ls -A /build/libs | head -n 1)
+
         java -jar \
-          ./build/libs/htsjdk-*-SNAPSHOT-local.jar \
+           "/build/libs/$htsjdk_jar" \
            convert \
            ~{input_file} \
+           output.cram \
            ~{reference_file} \
            "~{samtools_fmt}"
     }
@@ -31,7 +34,7 @@ workflow test_htsjdk_cram_fidelity_workflow {
         String samtools_fmt
         String image_to_use
     }
-    call test_htsjdk {
+    call test_htsjdk_cram_fidelity {
         input:
             input_file = input_file,
             reference_file = reference_file,
@@ -39,7 +42,7 @@ workflow test_htsjdk_cram_fidelity_workflow {
             image_to_use = image_to_use
     }
     output {
-        String result = test_htsjdk.result
+        String result = test_htsjdk_cram_fidelity.result
     }
 }
 
