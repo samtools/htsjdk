@@ -1,4 +1,5 @@
 {
-  "eval_workflow.image_to_use": "ubuntu:latest"
+  "eval_workflow.image_to_use": "ubuntu:latest",
+  "eval_workflow.result": "test_output:test_htsjdk_cram_fidelity_workflow.result"
 }
 

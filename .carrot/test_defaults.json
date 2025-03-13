@@ -1,3 +1,5 @@
 {
-  "test_workflow.input_file": "gs://hellbender/test/resources/nio/big.txt"
+  "test_htsjdk_cram_fidelity_workflow.input_file" : "gs://dsp-methods-carrot-data/test_data/htsjdk/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram",
+  "test_htsjdk_cram_fidelity_workflow.reference_file" : "gs://dsp-methods-carrot-data/test_data/htsjdk/human_g1k_v37.20.21.fasta.gz",
+  "test_htsjdk_cram_fidelity_workflow.samtools_fmt" : "--output-fmt cram,version=3.1,archive"
 }
