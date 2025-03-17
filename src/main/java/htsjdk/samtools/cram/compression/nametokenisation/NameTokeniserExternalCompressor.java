@@ -6,8 +6,6 @@ import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
-import java.nio.ByteBuffer;
-
 public class NameTokeniserExternalCompressor extends ExternalCompressor {
 
     private final NameTokenisationEncode nameTokEncoder;
@@ -23,19 +21,15 @@ public class NameTokeniserExternalCompressor extends ExternalCompressor {
 
     @Override
     public byte[] compress(byte[] data, final CRAMCodecModelContext unused_contextModel) {
-
-        // Arith coding is typically 1-5% smaller, but around 50-100% slower
-        final ByteBuffer buffer = nameTokEncoder.compress(
+        return CompressionUtils.toByteArray(nameTokEncoder.compress(
                 CompressionUtils.wrap(data),
-                false,
-                NameTokenisationDecode.NAME_SEPARATOR);
-        return buffer.array();
+                false, // arith coding is typically 1-5% smaller, but around 50-100% slower
+                NameTokenisationDecode.NAME_SEPARATOR));
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        return nameTokDecoder.uncompress(CompressionUtils.wrap(data),
-                NameTokenisationDecode.NAME_SEPARATOR);
+        return nameTokDecoder.uncompress(CompressionUtils.wrap(data), NameTokenisationDecode.NAME_SEPARATOR);
     }
 
 }
