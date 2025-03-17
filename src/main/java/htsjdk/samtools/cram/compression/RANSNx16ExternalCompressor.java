@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class RANSNx16ExternalCompressor extends ExternalCompressor {
@@ -40,14 +39,12 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
     @Override
     public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final RANSNx16Params params = new RANSNx16Params(flags);
-        final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
-        return toByteArray(buffer);
+        return CompressionUtils.toByteArray(ransEncode.compress(CompressionUtils.wrap(data), params));
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        final ByteBuffer buf = ransDecode.uncompress(CompressionUtils.wrap(data));
-        return toByteArray(buf);
+        return CompressionUtils.toByteArray(ransDecode.uncompress(CompressionUtils.wrap(data)));
     }
 
     @Override
@@ -68,16 +65,6 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
     @Override
     public int hashCode() {
         return Objects.hash(getMethod(), flags);
-    }
-
-    private byte[] toByteArray(final ByteBuffer buffer) {
-        if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
-            return buffer.array();
-        }
-
-        final byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        return bytes;
     }
 
 }
