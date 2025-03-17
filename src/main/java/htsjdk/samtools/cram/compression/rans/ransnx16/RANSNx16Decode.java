@@ -97,19 +97,18 @@ public class RANSNx16Decode extends RANSDecode {
         } else {
             outBuffer = CompressionUtils.allocateByteBuffer(uncompressedSize);
 
-            // uncompressedSize is 0 in cases where Pack flag is used
-            // and number of distinct symbols in the raw data is 1
-            if (uncompressedSize != 0) {
-                switch (ransNx16Params.getOrder()) {
-                    case ZERO:
-                        uncompressOrder0WayN(inBuffer, outBuffer, uncompressedSize, ransNx16Params);
-                        break;
-                    case ONE:
-                        uncompressOrder1WayN(inBuffer, outBuffer, ransNx16Params);
-                        break;
-                    default:
-                        throw new CRAMException("Unknown rANS order: " + ransNx16Params.getOrder());
-                }
+            if (uncompressedSize == 0) {
+                throw new CRAMException("Unexpected ncompressed size of 0 in RANSNx16 stream");
+            }
+            switch (ransNx16Params.getOrder()) {
+                case ZERO:
+                    uncompressOrder0WayN(inBuffer, outBuffer, uncompressedSize, ransNx16Params);
+                    break;
+                case ONE:
+                    uncompressOrder1WayN(inBuffer, outBuffer, ransNx16Params);
+                    break;
+                default:
+                    throw new CRAMException("Unknown rANS order: " + ransNx16Params.getOrder());
             }
         }
 

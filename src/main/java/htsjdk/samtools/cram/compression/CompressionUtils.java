@@ -175,4 +175,22 @@ public class CompressionUtils {
     public static ByteBuffer slice(final ByteBuffer inputBuffer){
         return inputBuffer.slice().order(ByteOrder.LITTLE_ENDIAN);
     }
+
+    /**
+     * Return a byte array with a size that matches the limit of the provided ByteBuffer. If the ByteBuffer is
+     * backed by a byte array that matches the limit of the ByteBuffer, the backing array will be returned directly.
+     * Otherwise, copy the contents of the ByteBuffer into a new byte array and return the new byte array.
+     * @param buffer input ByteBuffer which is the source of the byte array
+     * @return A byte array. If the ByteBuffer is backed by a byte array that matches the limit of the ByteBuffer,
+     * return the backing array directly. Otherwise, copy the contents of the ByteBuffer into a new byte array.
+     */
+    public static byte[] toByteArray(final ByteBuffer buffer) {
+        if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
+            return buffer.array();
+        }
+
+        final byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        return bytes;
+    }
 }
