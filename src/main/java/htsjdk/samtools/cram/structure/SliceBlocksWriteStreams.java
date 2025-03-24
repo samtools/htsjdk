@@ -79,11 +79,11 @@ public class SliceBlocksWriteStreams {
     public ByteArrayOutputStream getExternalOutputStream(final Integer contentID) { return externalOutputStreams.get(contentID); }
 
     /**
-     * Compress and write each each stream to a corresponding Block (note that this does not write
+     * Compress and write each stream to a corresponding Block (note that this does not write
      * the blocks themselves to a container output stream - that can't happen until the slice is aggregated
      * into a container.
      */
-    public SliceBlocks flushStreamsToBlocks() {
+    public SliceBlocks flushStreamsToBlocks(final CRAMCodecModelContext contextModel) {
         closeAllStreams();
 
         // core block is raw (no compression) and must be written first (prescribed by the spec)
@@ -94,7 +94,7 @@ public class SliceBlocksWriteStreams {
             if (contentId.equals(Block.NO_CONTENT_ID)) {
                 throw new CRAMException("A valid content ID is required.  Given: " + contentId);
             }
-            externalBlocks.add(compressionHeader.getEncodingMap().createCompressedBlockForStream(contentId, contentStream));
+            externalBlocks.add(compressionHeader.getEncodingMap().createCompressedBlockForStream(contextModel, contentId, contentStream));
          });
 
         return new SliceBlocks(coreBlock, externalBlocks);

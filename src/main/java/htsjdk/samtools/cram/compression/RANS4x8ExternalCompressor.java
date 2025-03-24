@@ -28,34 +28,36 @@ import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public final class RANSExternalCompressor extends ExternalCompressor {
+public final class RANS4x8ExternalCompressor extends ExternalCompressor {
     private final RANSParams.ORDER order;
     private final RANS4x8Encode ransEncode;
     private final RANS4x8Decode ransDecode;
 
     /**
      * We use a shared RANS instance for all compressors.
-     * @param rans
+     * @param ransEncode ransEncoder to use
+     * @param ransDecode ransDecoder to use
      */
-    public RANSExternalCompressor(
+    public RANS4x8ExternalCompressor(
             final RANS4x8Encode ransEncode,
             final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.ZERO, ransEncode, ransDecode);
     }
 
-    public RANSExternalCompressor(
+    public RANS4x8ExternalCompressor(
             final int order,
             final RANS4x8Encode ransEncode,
             final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.fromInt(order), ransEncode, ransDecode);
     }
 
-    public RANSExternalCompressor(
+    public RANS4x8ExternalCompressor(
             final RANSParams.ORDER order,
             final RANS4x8Encode ransEncode,
             final RANS4x8Decode ransDecode) {
@@ -66,7 +68,7 @@ public final class RANSExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final RANS4x8Params params = new RANS4x8Params(order);
         final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
         return toByteArray(buffer);
@@ -88,7 +90,7 @@ public final class RANSExternalCompressor extends ExternalCompressor {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        RANSExternalCompressor that = (RANSExternalCompressor) o;
+        RANS4x8ExternalCompressor that = (RANS4x8ExternalCompressor) o;
 
         return this.order == that.order;
     }

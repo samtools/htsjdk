@@ -69,7 +69,7 @@ public class BlockTest extends HtsjdkTest {
     public void testFileHeaderBlockRoundTrips(final byte[] testData, final CRAMVersion cramVersion) throws IOException {
         final Block fhBlock = Block.createGZIPFileHeaderBlock(testData);
         final Block rtBlock = roundTrip(fhBlock, cramVersion);
-        contentCheck(rtBlock, testData, (new GZIPExternalCompressor()).compress(testData));
+        contentCheck(rtBlock, testData, (new GZIPExternalCompressor()).compress(testData, null));
     }
 
     @Test(dataProvider = "RoundTripTest")
@@ -100,7 +100,7 @@ public class BlockTest extends HtsjdkTest {
         final int contentID = 5;
 
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
-        final byte[] compressedData = compressor.compress(uncompressedData);
+        final byte[] compressedData = compressor.compress(uncompressedData,null);
 
         final Block extBlock = Block.createExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
 

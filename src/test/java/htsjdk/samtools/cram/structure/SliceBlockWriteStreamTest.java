@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationTest;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -32,7 +33,12 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
         // and write the name of each data series to the corresponding external stream
         for (final DataSeries dataSeries : DataSeries.values()) {
             if (!StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK.contains(dataSeries)) {
-                final String uncompressedContent = dataSeries.getCanonicalName();
+                // artificially prepare read name data since the name tokenizer requires structured data and cannot
+                // handle the raw,unstructured data which this test uses
+                final String uncompressedContent =
+                    dataSeries == DataSeries.RN_ReadName ?
+                            dataSeries.getCanonicalName() + NameTokenisationTest.LOCAL_NAME_SEPARATOR_CHARSEQUENCE :
+                            dataSeries.getCanonicalName();
                 expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
                 sliceBlocksWriteStreams
                         .getExternalOutputStream(dataSeries.getExternalBlockContentId())
@@ -41,7 +47,7 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
         }
 
         // close the streams and write them to compressed slice blocks
-        final SliceBlocks sliceBlocks = sliceBlocksWriteStreams.flushStreamsToBlocks();
+        final SliceBlocks sliceBlocks = sliceBlocksWriteStreams.flushStreamsToBlocks(new CRAMCodecModelContext());
 
         // now verify all the blocks in Slice
         final byte[] coreRoundTripContent = sliceBlocks.getCoreBlock().getUncompressedContent(new CompressorCache());
