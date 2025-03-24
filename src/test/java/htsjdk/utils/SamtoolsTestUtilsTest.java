@@ -1,6 +1,8 @@
 package htsjdk.utils;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
@@ -52,13 +54,15 @@ public class SamtoolsTestUtilsTest extends HtsjdkTest {
         final File cramReference = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.10M-10M200k.fasta");
         // This also validates that any extra command line arguments are passed through to samtools by requesting
         // that NM/MD values are synthesized in the output file (which is required for the output records to match).
-        final File tempSamtoolsCRAM = SamtoolsTestUtils.convertToCRAM(sourceFile, cramReference,
+        final IOPath tempSamtoolsPath = SamtoolsTestUtils.convertToCRAM(
+                new HtsPath(sourceFile.getAbsolutePath()),
+                new HtsPath(cramReference.getAbsolutePath()),
                 "--input-fmt-option decode_md=1 --output-fmt-option store_md=1 --output-fmt-option store_nm=1");
         final SamReaderFactory factory = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.LENIENT)
                 .referenceSequence(cramReference);
         try (final SamReader originalReader = factory.open(sourceFile);
-             final SamReader samtoolsCopyReader = factory.open(tempSamtoolsCRAM);
+             final SamReader samtoolsCopyReader = factory.open(tempSamtoolsPath.toPath());
              final CloseableIterator<SAMRecord> originalIt = originalReader.iterator();
              final CloseableIterator<SAMRecord> samtoolsIt = samtoolsCopyReader.iterator()) {
             while (originalIt.hasNext() && samtoolsIt.hasNext()) {
