@@ -128,17 +128,7 @@ public class CRAM31Tests extends HtsjdkTest {
         // now test htsjdk CRAM 3.1 writing by using htsjdk to write CRAM 3.1 and use samtools to consume it and write
         // it back to another CRAM (3.1), and then read that result back in and compare it to the original
         final IOPath cramHtsjdk31Path = IOUtils.createTempPath("cram31HtsjdkWriteTest", ".cram");
-        final SamReaderFactory samReaderFactory =
-                SamReaderFactory.makeDefault()
-                        .referenceSequence(testReference.toPath())
-                        .validationStringency(ValidationStringency.LENIENT);
-        try (final SamReader reader = samReaderFactory.open(testInput.toPath());
-             final SAMFileWriter writer = new SAMFileWriterFactory()
-                     .makeWriter(reader.getFileHeader().clone(), true, cramHtsjdk31Path.toPath(), testReference.toPath())) {
-            for (final SAMRecord rec : reader) {
-                writer.addAlignment(rec);
-            }
-        }
+        doHTSJDKWriteCRAM(testInput, cramHtsjdk31Path, testReference);
         Assert.assertEquals(getCRAMVersion(cramHtsjdk31Path), CramVersions.CRAM_v3_1);
 
         // compare the original test input with the htsjdk-generated 3.1 output
@@ -176,6 +166,20 @@ public class CRAM31Tests extends HtsjdkTest {
             throw new RuntimeException(e);
         }
         Assert.assertEquals(diffCount, 0);
+    }
+
+    public static void doHTSJDKWriteCRAM(final IOPath inputPath, final IOPath outputPath, final IOPath referencePath) throws IOException{
+        final SamReaderFactory samReaderFactory =
+                SamReaderFactory.makeDefault()
+                        .referenceSequence(referencePath.toPath())
+                        .validationStringency(ValidationStringency.LENIENT);
+        try (final SamReader reader = samReaderFactory.open(inputPath.toPath());
+             final SAMFileWriter writer = new SAMFileWriterFactory()
+                     .makeWriter(reader.getFileHeader().clone(), true, outputPath.toPath(), referencePath.toPath())) {
+            for (final SAMRecord rec : reader) {
+                writer.addAlignment(rec);
+            }
+        }
     }
 
     private static CRAMVersion getCRAMVersion(final IOPath cramPath) {

@@ -11,6 +11,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.SamtoolsTestUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -23,7 +24,8 @@ import java.util.Iterator;
 
 // A Command line program for large-scale Carrot round-trip CRAM tests, plus some tests for the command line app.
 public class CarrotTest extends HtsjdkTest {
-    private static String CONVERT_USAGE = "convert reads_file reference samtools_view_params";
+    private static String CONVERT_USAGE = "\"convert samtools reads_file reference samtools_view_params\" or " +
+            "\"convert htsjdk reads_file reference\"";
     private static String COMPARE_USAGE = "compare reads_file1 reads_file2 reference";
     final static int EXIT_CODE_SUCCESS = 0;
     final static int EXIT_CODE_DIFFS = 1;
@@ -38,6 +40,7 @@ public class CarrotTest extends HtsjdkTest {
     // 1) convert to CRAM 3.1 using samtools:
     //  inputs:
     //      convert
+    //      "samtools" or "htsjdk"
     //      input reads file (bam or cram)
     //      output reads file
     //      reference
@@ -62,15 +65,31 @@ public class CarrotTest extends HtsjdkTest {
                     if (args.length < 5) {
                         System.err.println(String.format("Usage: %s", CONVERT_USAGE));
                         System.exit(EXIT_CODE_FAILURE);
-                    } else {
-                        System.out.println(String.format("Converting %s to %s using samtools with (%s).", args[1], args[2], args[4]));
+                    }
+                    System.out.println(String.format("Converting %s to %s using %s with (%s).", args[2], args[3], args[1], args[4]));
+                    if (args[1].toUpperCase().equals("HTSJDK")) {
+                        Assert.assertNull(args[5]);
+                        try {
+                            CRAM31Tests.doHTSJDKWriteCRAM(new HtsPath(args[2]), new HtsPath(args[3]), new HtsPath(args[4]));
+                        } catch (final IOException e) {
+                            throw new RuntimeIOException(String.format("IOException during htsjdk conversion"));
+                        }
+                    } else if (args[1].toUpperCase().equals("SAMTOOLS")) {
+                        if (args.length < 6) {
+                            System.err.println(String.format("Usage: %s", CONVERT_USAGE));
+                            System.exit(EXIT_CODE_FAILURE);
+                        }
                         SamtoolsTestUtils.convertToCRAM(
-                                new HtsPath(args[1]),
                                 new HtsPath(args[2]),
                                 new HtsPath(args[3]),
-                                args[4]);
-                        System.out.println(String.format("Done converting %s to %s using samtools.", args[1], args[2]));
+                                new HtsPath(args[4]),
+                                args[5]);
+                    } else {
+                        throw new IllegalArgumentException(String.format("Unrecognized convert command: %s", args[1]));
                     }
+                    System.out.println(String.format("Done converting %s to %s.", args[2], args[3]));
+                    System.out.println(String.format("Input file size: %,d", new HtsPath(args[2]).toPath().toFile().length()));
+                    System.out.println(String.format("Output file size: %,d", new HtsPath(args[3]).toPath().toFile().length()));
                     break;
 
                 case COMPARE:
@@ -97,10 +116,17 @@ public class CarrotTest extends HtsjdkTest {
     @DataProvider(name = "carrotCLPConvertTestCases")
     public Object[][] carrotCLPConvertTestCases() {
         return new Object[][] {
-                {
+                {   // test using samtools conversion
                         "src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram",
                         "src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz",
+                        "samtools",
                         "--output-fmt cram,version=3.1,archive"
+                },
+                {   // test using htsjdk conversion
+                        "src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram",
+                        "src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz",
+                        "htsjdk",
+                        null
                 }
         };
     }
@@ -109,10 +135,12 @@ public class CarrotTest extends HtsjdkTest {
     private void testCarrotCLPConvert(
             final String inputCRAM,
             final String referenceFASTA,
+            final String conversionType, // ("htsjk" or "samtools")
             final String samtoolsArgs) throws IOException {
         final IOPath tempCRAMPath = IOUtils.createTempPath("carrotTemporaryCRAM", FileExtensions.CRAM);
         CarrotTest.main(new String[] {
                 CLPCommand.CONVERT.toString(),
+                conversionType,
                 inputCRAM,
                 tempCRAMPath.getRawInputString(),
                 referenceFASTA,
