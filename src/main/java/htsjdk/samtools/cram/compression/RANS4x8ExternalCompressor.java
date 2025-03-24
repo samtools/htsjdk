@@ -41,7 +41,8 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
 
     /**
      * We use a shared RANS instance for all compressors.
-     * @param rans
+     * @param ransEncode ransEncoder to use
+     * @param ransDecode ransDecoder to use
      */
     public RANS4x8ExternalCompressor(
             final RANS4x8Encode ransEncode,

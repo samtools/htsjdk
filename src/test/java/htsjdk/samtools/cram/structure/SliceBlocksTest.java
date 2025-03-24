@@ -48,7 +48,8 @@ public class SliceBlocksTest  extends HtsjdkTest {
         new SliceBlocks(coreBlock, Collections.emptyList());
     }
 
-    @Test(dataProvider="randomStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
+    // this test only works on compressors that can work on arbitrary (unstructured) bit streams
+    @Test(dataProvider= "unstructuredStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
     public void testSliceBlocksRoundTrip(final BlockCompressionMethod compressionMethod) throws IOException {
         final byte[] coreBlockContent = "core".getBytes();
         final byte[] embeddedRefBlockContent = "ref".getBytes();
