@@ -9,7 +9,8 @@ import java.util.Map;
 
 public class SliceBlockReadStreamTest extends HtsjdkTest {
 
-    @Test(dataProvider="randomStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
+    // this test only works on compressors that can work on arbitrary (unstructured) bit streams
+    @Test(dataProvider= "unstructuredStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
     public void testSliceBlocksReadStreamsRoundTrip(final BlockCompressionMethod compressionMethod) {
 
         // Write directly to blocks, and verify by reading through streams (SliceBlocksReadStreams)

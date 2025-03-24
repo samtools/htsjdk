@@ -7,9 +7,15 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.*;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 
+import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.utils.SamtoolsTestUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -97,7 +103,12 @@ public class CRAM31Tests extends HtsjdkTest {
             final IOPath testInput,
             final IOPath testReference,
             final String samtoolsCommandLineArgs) {
-        // use samtools to convert the input to CRAM 3.1
+
+        // for testing CRAM 3.1, we use CRAM 3.0 as our ground-truth for comparison, so check to make
+        // sure that our input test file is CRAM 3.0 and not 3.1
+        Assert.assertEquals(getCRAMVersion(testInput), CramVersions.CRAM_v3);
+
+        // use samtools to convert the input to CRAM 3.1, then compare the result of that with the original
         final IOPath cram31Path = IOUtils.createTempPath("cram31Test", "cram");
         SamtoolsTestUtils.convertToCRAM(
                 testInput,
@@ -135,6 +146,15 @@ public class CRAM31Tests extends HtsjdkTest {
             throw new RuntimeException(e);
         }
         Assert.assertEquals(diffCount, 0);
+    }
+
+    private static CRAMVersion getCRAMVersion(final IOPath cramPath) {
+        try (final InputStream fis = Files.newInputStream(cramPath.toPath())) {
+            final CramHeader cramHeader = CramIO.readCramHeader(fis);
+            return cramHeader.getCRAMVersion();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

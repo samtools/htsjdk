@@ -12,7 +12,7 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 public class CRAMDecoderV3_1 extends CRAMDecoder {
 
     /**
-     * Create a new CRAM V3.1 decoder. The primary resource in the input
+     * Create a new CRAM v3.1 decoder. The primary resource in the input
      * bundle must have content type {@link BundleResourceType#CT_ALIGNED_READS} (to find a decoder for a bundle,
      * see {@link htsjdk.beta.plugin.registry.ReadsResolver}).
      *

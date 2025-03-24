@@ -41,14 +41,14 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     public int getSignatureLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
 
     @Override
-    public boolean canDecodeSignature(final SignatureStream probingInputStream, final String sourceName) {
-        ValidationUtils.nonNull(probingInputStream, "signatureStream");
+    public boolean canDecodeSignature(final SignatureStream signatureStream, final String sourceName) {
+        ValidationUtils.nonNull(signatureStream, "input signatureStream may notbe null");
         ValidationUtils.nonNull(sourceName, "sourceName");
 
         try {
-            final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream) ?
-                    new GZIPInputStream(probingInputStream) :
-                    probingInputStream;
+            final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(signatureStream) ?
+                    new GZIPInputStream(signatureStream) :
+                    signatureStream;
             int ch = wrappedInputStream.read();
             if (ch == -1) {
                 throw new HtsjdkIOException(

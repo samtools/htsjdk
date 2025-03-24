@@ -3,16 +3,19 @@ package htsjdk.samtools.cram.compression.nametokenisation.tokens;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.nametokenisation.TokenStreams;
 
+import java.util.Objects;
+
 /**
- * A token that represents a fragment of a read name that has been tokenised.
+ * A token that represents one fragment of a read name that has been tokenized.
  *
- * Since not all token types have absolute and/or even relative values, there are a couple of subclasses used
- * to ensure that calling code never violates the assumptions of the token type. The subclasses (below)
- * enforce that the caller can only ask for and actual or relative value for token types that have them.
+ * Since not all token types have absolute and/or even relative values, there are a couple of subclasses
+ * defined below that are used to ensure that calling code never violates the assumptions of the token type.
+ * The subclasses enforce that the caller can only ask for and actual or relative value for token types that
+ * have them.
  *
- * It would be more efficient to separate the cases where we want to store a numeric fragment from the string cases,
- * but for simplicity for now we store all fragments as strings, and the caller interconverts them back to ints on
- * demand.
+ * Note: It would be more efficient to separate the encoded token cases where we want to store a numeric fragment
+ * from the cases where we store a string fragment, but for simplicity we store all fragments as strings, and let
+ * the caller interconvert them back to int on-demand.
  */
 public class EncodeToken {
 
@@ -77,6 +80,14 @@ public class EncodeToken {
         public String getActualValue() {
             throw new CRAMException("DUP and DIFF tokens have no actual value properties");
         }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                tokenType,
+                actualValue == null ? 0 : actualValue,
+                relativeValue == null ? 0 : relativeValue);
     }
 
 }

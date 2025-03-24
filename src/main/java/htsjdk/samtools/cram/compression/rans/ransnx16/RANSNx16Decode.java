@@ -98,7 +98,7 @@ public class RANSNx16Decode extends RANSDecode {
             outBuffer = CompressionUtils.allocateByteBuffer(uncompressedSize);
 
             if (uncompressedSize == 0) {
-                throw new CRAMException("Unexpected ncompressed size of 0 in RANSNx16 stream");
+                throw new CRAMException("Unexpected uncompressed size of 0 in RANSNx16 stream");
             }
             switch (ransNx16Params.getOrder()) {
                 case ZERO:
@@ -108,7 +108,7 @@ public class RANSNx16Decode extends RANSDecode {
                     uncompressOrder1WayN(inBuffer, outBuffer, ransNx16Params);
                     break;
                 default:
-                    throw new CRAMException("Unknown rANS order: " + ransNx16Params.getOrder());
+                    throw new CRAMException("Unknown rANSNx16 order: " + ransNx16Params.getOrder());
             }
         }
 

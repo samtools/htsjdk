@@ -60,7 +60,7 @@ public class NameTokenisationEncode {
         final int numNames = namesToEncode.size();
         if (numNames == 0) {
             throw new CRAMException(
-                    "Name tokenizer input format requires a separator-delimited name list. No names found in input");
+                    "Name tokenizer input format requires a separator-delimited name list. No delimited names found in input.");
         }
         final int uncompressedDataSize = Integer.max(0, inBuffer.limit());
 

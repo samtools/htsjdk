@@ -22,8 +22,7 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
     public RANSNx16ExternalCompressor(
             final RANSNx16Encode ransEncode,
             final RANSNx16Decode ransDecode) {
-        //TODO: fix this constructor call to use strongly typed flag value
-        this(0, ransEncode, ransDecode);
+        this(0, ransEncode, ransDecode); // order 0
     }
 
     public RANSNx16ExternalCompressor(
