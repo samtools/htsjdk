@@ -26,6 +26,7 @@ package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -62,7 +63,7 @@ public final class GZIPExternalCompressor extends ExternalCompressor {
     public int getWriteCompressionLevel() { return writeCompressionLevel; }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try (final GZIPOutputStream gos = new GZIPOutputStream(byteArrayOutputStream) {
             {

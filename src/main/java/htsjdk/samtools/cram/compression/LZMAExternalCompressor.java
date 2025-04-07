@@ -25,6 +25,7 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.RuntimeIOException;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
@@ -41,7 +42,7 @@ public final class LZMAExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(data.length * 2);
         try (final XZCompressorOutputStream xzCompressorOutputStream = new XZCompressorOutputStream(byteArrayOutputStream)) {
             xzCompressorOutputStream.write(data);
