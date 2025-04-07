@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * A very naive implementation of a name tokenization encoder.
@@ -341,7 +340,6 @@ public class NameTokenisationEncode {
         // and return the compressed output ByteBuffer with the least number of bytes
         int bestCompressedLength = 1 << 30;
         ByteBuffer compressedByteBuffer = null;
-        int winner = -1;
 
         if (useArith == true) { // use the range encoder
             // this code path is never executed by the default write profile, since we don't turn on the
@@ -394,7 +392,6 @@ public class NameTokenisationEncode {
                     // we don't include stripe here since it's not implemented for write
                     //RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK // 193+8
             };
-            System.out.println(String.format("\nStart size: %d", nameTokenStream.limit()));
             for (int ransNx16FlagSet : ransNx16FlagsSets) {
                 if ((ransNx16FlagSet & RANSNx16Params.ORDER_FLAG_MASK) != 0 && nameTokenStream.remaining() < 100) {
                     continue;
@@ -406,54 +403,19 @@ public class NameTokenisationEncode {
                 final RANSNx16Encode ransEncode = new RANSNx16Encode();
                 nameTokenStream.rewind();
                 final ByteBuffer tmpByteBuffer = ransEncode.compress(nameTokenStream, new RANSNx16Params(ransNx16FlagSet));
-                System.out.println(String.format("size:%10d flags: %s", tmpByteBuffer.limit(), toRANSNx16FlagSetString(ransNx16FlagSet)));
                 if (bestCompressedLength > tmpByteBuffer.limit()) {
-                    winner = ransNx16FlagSet;
                     bestCompressedLength = tmpByteBuffer.limit();
                     compressedByteBuffer = tmpByteBuffer;
                 }
             }
             if (bestCompressedLength > nameTokenStream.limit()) {
-                System.out.print(String.format("CAT saves %d bytes)", bestCompressedLength - nameTokenStream.limit()));
                 // compression doesn't buy us anything; just use CAT
                 final RANSNx16Encode ransEncode = new RANSNx16Encode();
                 nameTokenStream.rewind();
                 compressedByteBuffer = ransEncode.compress(nameTokenStream, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
-            } else {
-                System.out.print(String.format("Winner: %s %d", toRANSNx16FlagSetString(winner), bestCompressedLength));
             }
-            System.out.println();
         }
         return compressedByteBuffer;
-    }
-
-    private static String toRANSNx16FlagSetString(final int ransNx16FlagSet) {
-        final List<String> descriptions = new ArrayList<>();
-
-        if ((ransNx16FlagSet & RANSNx16Params.ORDER_FLAG_MASK) != 0) {
-            descriptions.add("ORDER");
-        }
-        if ((ransNx16FlagSet & RANSNx16Params.RLE_FLAG_MASK) != 0) {
-            descriptions.add("RLE");
-        }
-        if ((ransNx16FlagSet & RANSNx16Params.PACK_FLAG_MASK) != 0) {
-            descriptions.add("PACK");
-        }
-        if ((ransNx16FlagSet & RANSNx16Params.STRIPE_FLAG_MASK) != 0) {
-            descriptions.add("STRIPE");
-        }
-        if ((ransNx16FlagSet & RANSNx16Params.CAT_FLAG_MASK) != 0) {
-            descriptions.add("CAT");
-        }
-        if ((ransNx16FlagSet & RANSNx16Params.N32_FLAG_MASK) != 0) {
-            descriptions.add("N32_FLAG_MASK");
-        }
-        if ((ransNx16FlagSet & RANSNx16Params.NOSZ_FLAG_MASK) != 0) {
-            descriptions.add("NOSZ_FLAG_MASK");
-        }
-        return descriptions.isEmpty() ?
-                "None" :
-                descriptions.stream().collect(Collectors.joining("/"));
     }
 
     private void serializeTokenStreams(
