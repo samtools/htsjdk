@@ -110,8 +110,6 @@ public class CRAM31Tests extends HtsjdkTest {
         Assert.assertEquals(getCRAMVersion(testInput), CramVersions.CRAM_v3);
 
         // use samtools to convert the input to CRAM 3.1, then compare the result of that with the original
-        final IOPath cram31Path = IOUtils.createTempPath("cram31Test", "cram");
-
         // test htsjdk cram 3.1 reading by using samtools to convert the input to CRAM 3.1, and then consuming it
         // with htsjdk and comparing the results to the original
         final IOPath cramSamtools31Path = IOUtils.createTempPath("cram31SamtoolsWriteTest", ".cram");
