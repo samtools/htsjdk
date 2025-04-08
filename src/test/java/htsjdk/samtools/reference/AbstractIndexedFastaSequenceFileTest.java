@@ -383,7 +383,7 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         final IOPath indexFile = new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.fai").getAbsolutePath());;
 
         // move everything to a jimfs NIO file system so that each file is in a separate directory so it is in
-        // a directory by iteself, so we can catch any downstream code that makes assumptions that the index
+        // a directory by itself, so we can catch any downstream code that makes assumptions that the index
         // files are siblings of the fasta in the same directory
         try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
 
@@ -391,25 +391,26 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
             final Path fastaDir = jimfs.getPath("fastaDir");
             final Path nioFastaDir = Files.createDirectory(fastaDir);
             Assert.assertEquals(nioFastaDir, fastaDir);
-            final IOPath remoteFasta = new HtsPath(
-                    Files.copy(
-                            fastaFile.toPath(),
-                            nioFastaDir.resolve(fastaFile.getBaseName().get() + fastaFile.getExtension().get())).toUri().toString());
+            final IOPath remoteFasta = copyToRemotePath(fastaFile, nioFastaDir);
 
             // move the index file into a separate dir
             final Path indexDir = jimfs.getPath("indexDir");
             final Path nioIndexDir = Files.createDirectory(indexDir);
             Assert.assertEquals(nioIndexDir, indexDir);
-            final IOPath remoteIndex = new HtsPath(
-                    Files.copy(
-                            indexFile.toPath(),
-                            nioFastaDir.resolve(indexFile.getBaseName().get() + indexFile.getExtension().get())).toUri().toString());
+            final IOPath remoteIndex = copyToRemotePath(indexFile, nioIndexDir);
 
             final FastaSequenceIndex fsi = new FastaSequenceIndex(remoteIndex.toPath());
             final IndexedFastaSequenceFile ifsf = new IndexedFastaSequenceFile(remoteFasta, null, fsi);
             final ReferenceSequence rs = ifsf.getSubsequenceAt("chrM", 4, 10);
             Assert.assertEquals(rs.getBaseString(), "CACAGGT");
         }
+    }
+
+    private static IOPath copyToRemotePath(IOPath file, Path remoteDir) throws IOException {
+        return new HtsPath(
+                Files.copy(
+                        file.toPath(),
+                        remoteDir.resolve(file.getBaseName().get() + file.getExtension().get())).toUri().toString());
     }
 
     @Test
@@ -428,31 +429,19 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
             final Path fastaDir = jimfs.getPath("fastaDir");
             final Path nioFastaDir = Files.createDirectory(fastaDir);
             Assert.assertEquals(nioFastaDir, fastaDir);
-            final IOPath remoteFasta = new HtsPath(
-                    Files.copy(
-                            fastaFile.toPath(),
-                            nioFastaDir.resolve(fastaFile.getBaseName().get() + fastaFile.getExtension().get())).toUri().toString());
+            final IOPath remoteFasta = copyToRemotePath(fastaFile, nioFastaDir);
 
             // move the index file into a completely separate dir
             final Path indexDir = jimfs.getPath("indexDir");
             final Path nioIndexDir = Files.createDirectory(indexDir);
             Assert.assertEquals(nioIndexDir, indexDir);
-            final IOPath remoteIndex = new HtsPath(
-                    Files.copy(
-                            indexFile.toPath(),
-                            nioFastaDir.resolve(indexFile.getBaseName().get() + indexFile.getExtension().get())).toUri().toString());
+            final IOPath remoteIndex = copyToRemotePath(indexFile, nioFastaDir);
 
             // move the optional gzi index ito yet another separate dir
             final Path gziDir = jimfs.getPath("gziDir");
             final Path nioGZIDir = Files.createDirectory(gziDir);
             Assert.assertEquals(nioGZIDir, gziDir);
-            final IOPath remoteGZI =
-                    new HtsPath(
-                            Files.copy(
-                                    gziIndexFile.toPath(),
-                                    nioGZIDir.resolve(gziIndexFile.getBaseName().get() + gziIndexFile.getExtension().get())
-                            ).toUri().toString()
-                    );
+            final IOPath remoteGZI = copyToRemotePath(gziIndexFile, nioGZIDir);
 
             final FastaSequenceIndex fsi = new FastaSequenceIndex(remoteIndex.toPath());
             final BlockCompressedIndexedFastaSequenceFile ifsf = new BlockCompressedIndexedFastaSequenceFile(

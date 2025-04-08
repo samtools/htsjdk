@@ -32,8 +32,6 @@ import htsjdk.beta.plugin.IOUtils;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.cram.ref.CRAMReferenceSource;
-import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -192,18 +190,7 @@ public class ReferenceSequenceFileFactory {
         }
 
         // optional dictionary path
-        IOPath dictPath = null;
-        final Optional<BundleResource> dictPathResource = referenceBundle.get(BundleResourceType.CT_REFERENCE_DICTIONARY);
-        if (dictPathResource.isPresent()) {
-            final BundleResource dictResource = dictPathResource.get();
-            final Optional<IOPath> optDictPath = dictResource.getIOPath();
-            if (optDictPath.isPresent()) {
-                dictPath = optDictPath.get();
-                if (!Files.exists(dictPath.toPath())) {
-                    throw new RuntimeException(String.format("Sequence dictionary file %s does not exist", dictPath));
-                }
-            }
-        }
+        IOPath dictPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_DICTIONARY, "Sequence dictionary");
 
         // optional index. Using faidx requires truncateNamesAtWhitespace
         IOPath indexPath = null;
@@ -212,29 +199,8 @@ public class ReferenceSequenceFileFactory {
             if (!truncateNamesAtWhitespace) {
                 throw new RuntimeException("preferIndexed option requires truncateNamesAtWhitespace");
             }
-            final Optional<BundleResource> indexPathResource = referenceBundle.get(BundleResourceType.CT_REFERENCE_INDEX);
-            if (indexPathResource.isPresent()) {
-                final BundleResource indexResource = indexPathResource.get();
-                final Optional<IOPath> optIndexIOPath = indexResource.getIOPath();
-                if (optIndexIOPath.isPresent()) {
-                    indexPath = optIndexIOPath.get();
-                    if (preferIndexed && !Files.exists(indexPath.toPath())) {
-                        throw new RuntimeException(String.format("FASTA index file %s does not exist", indexPath));
-                    }
-                }
-            }
-
-            final Optional<BundleResource> gziIndexPathResource = referenceBundle.get(BundleResourceType.CT_REFERENCE_INDEX_GZI);
-            if (gziIndexPathResource.isPresent()) {
-                final BundleResource gziIndexResource = gziIndexPathResource.get();
-                final Optional<IOPath> optGziIndexPath = gziIndexResource.getIOPath();
-                if (optGziIndexPath.isPresent()) {
-                    gziIndexPath = optGziIndexPath.get();
-                    if (!Files.exists(gziIndexPath.toPath())) {
-                        throw new RuntimeException(String.format("GZI index file %s does not exist", gziIndexPath));
-                    }
-                }
-            }
+            indexPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX, "FASTA index");
+            gziIndexPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX_GZI, "GZI index");
         }
 
         try {
@@ -252,6 +218,18 @@ public class ReferenceSequenceFileFactory {
         } catch (final IOException e) {
             throw new SAMException("Error opening FASTA: " + fastaPath, e);
         }
+    }
+
+    private static IOPath getSecondaryBundleResource(Bundle bundle, String secondaryContentType, String description) {
+        return bundle.get(secondaryContentType)
+                .flatMap(BundleResource::getIOPath)
+                .flatMap(path -> {
+                    if (Files.exists(path.toPath())) {
+                        return Optional.of(path);
+                    } else {
+                        throw new RuntimeException(String.format("%s file %s does not exist", description, path));
+                    }
+                }).orElse(null);
     }
 
     /**
@@ -359,7 +337,7 @@ public class ReferenceSequenceFileFactory {
     public static String getFastaExtension(final Path path) {
         final String name = path.getFileName().toString();
         return FileExtensions.FASTA.stream().filter(name::endsWith).findFirst()
-                .orElseGet(() -> {throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());});
+                .orElseThrow(() -> new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath()));
     }
 
     /**
