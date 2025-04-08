@@ -118,7 +118,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
     }
 
     /**
-     * Create q reference bundle given only a fasta path, including an index and a dictionary
+     * Create a reference bundle given only a fasta path, including an index and a dictionary
      * file if they are present and located in the same directory as the fasta.
      *
      * @param fastaPath location of the fasta

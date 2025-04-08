@@ -67,7 +67,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
 
     /**
      * Constructs a FastaSequenceFile that reads from the specified fasta and dictionary file. Makes no
-     * assumptions that the fata and dict file are in the same directory.
+     * assumptions that the fasta and dict file are in the same directory.
      *
      * @param fastaPath may not be null
      * @param dictPath may be null

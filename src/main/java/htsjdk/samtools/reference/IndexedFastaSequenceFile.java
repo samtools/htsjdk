@@ -54,7 +54,6 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
      * @param file The file to open.
      * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
-     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
         this(IOUtil.toPath(file), index);
@@ -77,7 +76,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     public IndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
         super(path, index);
         try {
-            // check if the it is a valid block-compressed file
+            // check if it is a valid block-compressed file
             if (IOUtil.isBlockCompressed(path, true)) {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
             }
@@ -88,12 +87,10 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     }
 
     /**
-     */
-    /**
      * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
      *
      * @param path The file to open.
-     * @param dictPath the dictionar path (may be null)
+     * @param dictPath the dictionary path (may be null)
      * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk. may not be null.
      */
     public IndexedFastaSequenceFile(final IOPath path, final IOPath dictPath, final FastaSequenceIndex index) {
