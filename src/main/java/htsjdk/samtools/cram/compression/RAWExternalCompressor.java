@@ -24,6 +24,7 @@
  */
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 /**
@@ -36,7 +37,7 @@ public final class RAWExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         return data;
     }
 

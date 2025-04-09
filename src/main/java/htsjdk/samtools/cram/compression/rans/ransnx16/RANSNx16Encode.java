@@ -65,8 +65,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 }
             }
 
-            // skip Packing if numSymbols = 0  or numSymbols > 16
-            if (numSymbols !=0 && numSymbols <= 16) {
+            // skip Packing if numSymbols < 2  or numSymbols > 16 (if there aren't at least 2 symbols to encode, then
+            // bit packing would result in no data being emitted to the rAns stream, since we would only need to
+            // consult the packing table; so the spec says to skip packing in this case)
+            if (numSymbols > 1 && numSymbols <= 16) {
                 inputBuffer = CompressionUtils.encodePack(inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
             } else {
                 // unset pack flag in the first byte of the outBuffer

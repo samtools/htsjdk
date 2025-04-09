@@ -373,7 +373,11 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         return bundleResource.getSignatureStream(streamPrefixSize);
     }
 
-    private List<C> filterByVersion(final List<C> candidateCodecs, final HtsVersion htsVersion) {
+    /**
+     * Filter the candidate codecs, returning only those that match the requested version.
+     * Only called for encoding.
+     */
+    protected List<C> filterByVersion(final List<C> candidateCodecs, final HtsVersion htsVersion) {
         ValidationUtils.nonNull(htsVersion, "htsVersion");
         if (candidateCodecs.isEmpty()) {
             return candidateCodecs;

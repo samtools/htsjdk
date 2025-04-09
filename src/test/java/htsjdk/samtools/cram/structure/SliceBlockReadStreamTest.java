@@ -4,13 +4,13 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 
 public class SliceBlockReadStreamTest extends HtsjdkTest {
 
-    @Test(dataProvider="externalCompressionMethods", dataProviderClass = StructureTestUtils.class)
+    // this test only works on compressors that can work on arbitrary (unstructured) bit streams
+    @Test(dataProvider= "unstructuredStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
     public void testSliceBlocksReadStreamsRoundTrip(final BlockCompressionMethod compressionMethod) {
 
         // Write directly to blocks, and verify by reading through streams (SliceBlocksReadStreams)
@@ -31,7 +31,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
 
         final SliceBlocksReadStreams sliceBlocksReadStream = new SliceBlocksReadStreams(sliceBlocks, new CompressorCache());
 
-        // "core" is a a bit stream, but interpret the bits as a 4 byte string for verification
+        // "core" is a bit stream, but interpret the bits as a 4 byte string for verification
         Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[0]);
         Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[1]);
         Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[2]);
