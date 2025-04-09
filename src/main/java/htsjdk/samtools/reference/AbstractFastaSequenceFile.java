@@ -24,16 +24,16 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTextHeaderCodec;
-import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -84,13 +84,25 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     /** Attempts to find and load the sequence dictionary if present. */
     protected SAMSequenceDictionary findAndLoadSequenceDictionary(final Path fasta) {
         final Path dictPath = findSequenceDictionary(path);
-        if (dictPath == null) return null;
-
-        IOUtil.assertFileIsReadable(dictPath);
-        try (InputStream dictionaryIn = IOUtil.openFileForReading(dictPath)) {
-            return ReferenceSequenceFileFactory.loadDictionary(dictionaryIn);
+        if (dictPath == null) {
+            return null;
         }
-        catch (Exception e) {
+        return loadSequenceDictionary(new HtsPath(dictPath.toUri().toString()));
+    }
+
+    /**
+     * Attempt to load a sequence dictionary given a file path. Path may be null.
+     * @param dictPath the dictionary file to open
+     * @return the SAMSequenceDictionary, or null
+     */
+    protected static SAMSequenceDictionary loadSequenceDictionary(final IOPath dictPath) {
+        if (dictPath == null) {
+            return null;
+        }
+        IOUtil.assertFileIsReadable(dictPath.toPath());
+        try (final InputStream dictionaryStream = IOUtil.openFileForReading(dictPath.toPath())) {
+            return ReferenceSequenceFileFactory.loadDictionary(dictionaryStream);
+        } catch (final IOException e) {
             throw new SAMException("Could not open sequence dictionary file: " + dictPath, e);
         }
     }

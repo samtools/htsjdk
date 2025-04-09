@@ -273,7 +273,7 @@ public final class GZIIndex {
      *
      * @throws IOException if an I/O error occurs.
      */
-    public static final GZIIndex loadIndex(final Path indexPath) throws IOException {
+    public static GZIIndex loadIndex(final Path indexPath) throws IOException {
         if (indexPath == null) {
             throw new IllegalArgumentException("null input path");
         }

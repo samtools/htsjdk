@@ -24,8 +24,14 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.BundleJSON;
+import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.IOUtils;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -34,17 +40,16 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.utils.ValidationUtils;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Factory class for creating ReferenceSequenceFile instances for reading reference
@@ -97,7 +102,7 @@ public class ReferenceSequenceFileFactory {
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
     public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        return getReferenceSequenceFile(IOUtil.toPath(file), truncateNamesAtWhitespace, preferIndexed);
+        return getReferenceSequenceFile(IOUtil.toPath(file), HtsPath::new, truncateNamesAtWhitespace, preferIndexed);
     }
 
     /**
@@ -119,30 +124,112 @@ public class ReferenceSequenceFileFactory {
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      */
     public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace) {
-        return getReferenceSequenceFile(path, truncateNamesAtWhitespace, true);
+        return getReferenceSequenceFile(path, HtsPath::new, truncateNamesAtWhitespace, true);
     }
 
     /**
      * Attempts to determine the type of the reference file and return an instance
-     * of ReferenceSequenceFile that is appropriate to read it.
+     * of ReferenceSequenceFile that is appropriate to read it. If the file represents
+     * a Bundle file, the reference sequence file is created from the bundle.
      *
+     * @param <T> the IOPath-derived type to use for IOPathResources
      * @param path the reference sequence file path
+     * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type <T>
+     * @return a newly created {@link Bundle}
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        // this should thrown an exception if the fasta file is not supported
-        getFastaExtension(path);
-        // Using faidx requires truncateNamesAtWhitespace
-        if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
-            try {
-                return IOUtil.isBlockCompressed(path, true) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
-            } catch (final IOException e) {
-                throw new SAMException("Error opening FASTA: " + path, e);
-            }
-        } else {
-            return new FastaSequenceFile(path, truncateNamesAtWhitespace);
+    public static <T extends IOPath> ReferenceSequenceFile getReferenceSequenceFile(
+            final Path path,
+            final Function<String, T> ioPathConstructor,
+            final boolean truncateNamesAtWhitespace,
+            final boolean preferIndexed) {
+        final IOPath refIOPath = ioPathConstructor.apply(path.toUri().toString());
+        if (refIOPath.hasExtension(BundleJSON.BUNDLE_EXTENSION)) {
+            final Bundle referenceBundle = BundleJSON.toBundle(IOUtils.getStringFromPath(refIOPath), ioPathConstructor);
+            return getReferenceSequenceFileFromBundle(referenceBundle, truncateNamesAtWhitespace, preferIndexed);
         }
+        else {
+            // this should throw an exception if the fasta file is not supported
+            getFastaExtension(path);
+            // Using faidx requires truncateNamesAtWhitespace
+            if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
+                try {
+                    return IOUtil.isBlockCompressed(path, true) ?
+                            new BlockCompressedIndexedFastaSequenceFile(path) :
+                            new IndexedFastaSequenceFile(path);
+                } catch (final IOException e) {
+                    throw new SAMException("Error opening FASTA: " + path, e);
+                }
+            } else {
+                return new FastaSequenceFile(path, truncateNamesAtWhitespace);
+            }
+        }
+    }
+
+    /**
+     * Attempts to determine the type of the reference file specified in the bundle, and return an instance
+     * of ReferenceSequenceFile that is appropriate to use to read the reference.
+     *
+     * @param referenceBundle a Bundle containing resources for the reference file, index, and dictionary
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFileFromBundle(
+            final Bundle referenceBundle,
+            final boolean truncateNamesAtWhitespace,
+            final boolean preferIndexed) {
+        ValidationUtils.nonNull(referenceBundle, "reference bundle");
+
+        // required fasta path
+        final BundleResource fastaResource = referenceBundle.getOrThrow(BundleResourceType.CT_HAPLOID_REFERENCE);
+        final IOPath fastaPath = fastaResource.getIOPath().orElseThrow(
+                () -> new RuntimeException("The fasta bundle resource must contain a fasta resource that is backed by an IOPath."));
+        if (!Files.exists(fastaPath.toPath())) {
+            throw new RuntimeException(String.format("FASTA file %s does not exist", fastaPath));
+        }
+
+        // optional dictionary path
+        IOPath dictPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_DICTIONARY, "Sequence dictionary");
+
+        // optional index. Using faidx requires truncateNamesAtWhitespace
+        IOPath indexPath = null;
+        IOPath gziIndexPath = null;
+        if (preferIndexed) {
+            if (!truncateNamesAtWhitespace) {
+                throw new RuntimeException("preferIndexed option requires truncateNamesAtWhitespace");
+            }
+            indexPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX, "FASTA index");
+            gziIndexPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX_GZI, "GZI index");
+        }
+
+        try {
+            if (IOUtil.isBlockCompressed(fastaPath.toPath(), true) && preferIndexed && indexPath != null && gziIndexPath != null) {
+                return new BlockCompressedIndexedFastaSequenceFile(
+                        fastaPath,
+                        dictPath,
+                        new FastaSequenceIndex(indexPath.toPath()),
+                        GZIIndex.loadIndex(gziIndexPath.toPath()));
+            } else if (preferIndexed && indexPath != null) {
+                return new IndexedFastaSequenceFile(fastaPath, dictPath, new FastaSequenceIndex(indexPath.toPath()));
+            } else {
+                return new FastaSequenceFile(fastaPath, dictPath, truncateNamesAtWhitespace);
+            }
+        } catch (final IOException e) {
+            throw new SAMException("Error opening FASTA: " + fastaPath, e);
+        }
+    }
+
+    private static IOPath getSecondaryBundleResource(Bundle bundle, String secondaryContentType, String description) {
+        return bundle.get(secondaryContentType)
+                .flatMap(BundleResource::getIOPath)
+                .flatMap(path -> {
+                    if (Files.exists(path.toPath())) {
+                        return Optional.of(path);
+                    } else {
+                        throw new RuntimeException(String.format("%s file %s does not exist", description, path));
+                    }
+                }).orElse(null);
     }
 
     /**
@@ -250,7 +337,7 @@ public class ReferenceSequenceFileFactory {
     public static String getFastaExtension(final Path path) {
         final String name = path.getFileName().toString();
         return FileExtensions.FASTA.stream().filter(name::endsWith).findFirst()
-                .orElseGet(() -> {throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());});
+                .orElseThrow(() -> new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath()));
     }
 
     /**

@@ -24,18 +24,16 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -56,7 +54,6 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
      * @param file The file to open.
      * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
-     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
         this(IOUtil.toPath(file), index);
@@ -79,11 +76,31 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     public IndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
         super(path, index);
         try {
-            // check if the it is a valid block-compressed file
+            // check if it is a valid block-compressed file
             if (IOUtil.isBlockCompressed(path, true)) {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
             }
             this.channel = Files.newByteChannel(path);
+        } catch (IOException e) {
+            throw new SAMException("FASTA file should be readable but is not: " + path, e);
+        }
+    }
+
+    /**
+     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
+     *
+     * @param path The file to open.
+     * @param dictPath the dictionary path (may be null)
+     * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk. may not be null.
+     */
+    public IndexedFastaSequenceFile(final IOPath path, final IOPath dictPath, final FastaSequenceIndex index) {
+        super(path, dictPath, index);
+        try {
+            // reject block-compressed files (use BlockCompressedIndexedFastaSequenceFile)
+            if (IOUtil.isBlockCompressed(path.toPath(), true)) {
+                throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
+            }
+            this.channel = Files.newByteChannel(path.toPath());
         } catch (IOException e) {
             throw new SAMException("FASTA file should be readable but is not: " + path, e);
         }

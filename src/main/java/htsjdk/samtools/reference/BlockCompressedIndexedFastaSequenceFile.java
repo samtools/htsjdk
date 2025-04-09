@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
@@ -52,6 +53,32 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     public BlockCompressedIndexedFastaSequenceFile(final Path path)
             throws FileNotFoundException {
         this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
+    }
+
+    /**
+     * Create a BlockCompressedIndexedFastaSequenceFile from explicitly provided files. No assumptions are made
+     * about the relative location of the files (i.e., no assumption is made that they are siblings).
+     * @param fastaPath the fasta file
+     * @param dictPath the associated dictionary file
+     * @param index the associated index
+     * @param gziIndex the associated gziIndex
+     */
+    public BlockCompressedIndexedFastaSequenceFile(
+            final IOPath fastaPath,
+            final IOPath dictPath,
+            final FastaSequenceIndex index,
+            final GZIIndex gziIndex) {
+        super(fastaPath, dictPath, index);
+        if (gziIndex == null) {
+            throw new IllegalArgumentException("null gzi index");
+        }
+        assertIsBlockCompressed(fastaPath.toPath());
+        try {
+            stream = new BlockCompressedInputStream(new SeekablePathStream(fastaPath.toPath()));
+            gzindex = gziIndex;
+        } catch (IOException e) {
+            throw new SAMException("Fasta file should be readable but is not: " + fastaPath, e);
+        }
     }
 
     public BlockCompressedIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {

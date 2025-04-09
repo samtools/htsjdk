@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.io.IOPath;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -62,6 +63,21 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
         this.seekableStream = null;
         this.in = new FastLineReader(IOUtil.openFileForReading(path));
+    }
+
+    /**
+     * Constructs a FastaSequenceFile that reads from the specified fasta and dictionary file. Makes no
+     * assumptions that the fasta and dict file are in the same directory.
+     *
+     * @param fastaPath may not be null
+     * @param dictPath may be null
+     * @param truncateNamesAtWhitespace
+     */
+    public FastaSequenceFile(final IOPath fastaPath, final IOPath dictPath, final boolean truncateNamesAtWhitespace) {
+        super(fastaPath.toPath(), fastaPath.toString(), dictPath == null ? null : loadSequenceDictionary(dictPath));
+        this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
+        this.seekableStream = null;
+        this.in = new FastLineReader(IOUtil.openFileForReading(fastaPath.toPath()));
     }
 
     /**
