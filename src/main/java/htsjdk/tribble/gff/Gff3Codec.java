@@ -9,12 +9,15 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -44,6 +47,9 @@ public class Gff3Codec extends AbstractGxxCodec {
 
     private static final String ARTEMIS_FASTA_MARKER = ">";
 
+    protected final Queue<Gff3FeatureImpl> activeFeatures = new ArrayDeque<>();
+    private final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
+    private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
     private final Map<String, SequenceRegion> sequenceRegionMap = new LinkedHashMap<>();
 
     private final static Log logger = Log.getInstance(Gff3Codec.class);
@@ -218,56 +224,32 @@ public class Gff3Codec extends AbstractGxxCodec {
 
     @Override
     public boolean canDecode(final String inputFilePath) {
-        boolean canDecode;
         try {
             // Simple file and name checks to start with:
             Path p = IOUtil.getPath(inputFilePath);
-            canDecode = FileExtensions.GFF3.stream().anyMatch(fe -> p.toString().endsWith(fe));
+            if(!FileExtensions.GFF3.stream().anyMatch(fe -> p.toString().endsWith(fe))) {
+            	return false;
+            	}
 
-            if (canDecode) {
+            // Crack open the file and look at the top of it:
+            final InputStream inputStream = IOUtil.hasGzipFileExtension(p)? new GZIPInputStream(Files.newInputStream(p)) : Files.newInputStream(p);
 
-                // Crack open the file and look at the top of it:
-                final InputStream inputStream = IOUtil.hasGzipFileExtension(p)? new GZIPInputStream(Files.newInputStream(p)) : Files.newInputStream(p);
+            try ( BufferedReader br = new BufferedReader(new InputStreamReader(inputStream)) ) {
 
-                try ( BufferedReader br = new BufferedReader(new InputStreamReader(inputStream)) ) {
+                String line = br.readLine();
 
-                    String line = br.readLine();
-
-                    // First line must be GFF version directive
-                    if (Gff3Directive.toDirective(line) != Gff3Directive.VERSION3_DIRECTIVE) {
+                // First line must be GFF version directive
+                if (Gff3Directive.toDirective(line) != Gff3Directive.VERSION3_DIRECTIVE) {
+                    return false;
+                }
+                while (line.startsWith(Gff3Constants.COMMENT_START)) {
+                    line = br.readLine();
+                    if ( line == null ) {
                         return false;
-                    }
-                    while (line.startsWith(Gff3Constants.COMMENT_START)) {
-                        line = br.readLine();
-                        if ( line == null ) {
-                            return false;
-                        }
-                    }
-
-                    // make sure line conforms to gtf spec
-                    final List<String> fields = ParsingUtils.split(line, Gff3Constants.FIELD_DELIMITER);
-
-                    canDecode &= fields.size() == NUM_FIELDS;
-
-                    if (canDecode) {
-                        // check that start and end fields are integers
-                        try {
-                            /* final int start = */ Integer.parseInt(fields.get(3));
-                            /* final int end = */ Integer.parseInt(fields.get(4));
-                        } catch (NumberFormatException | NullPointerException nfe) {
-                            return false;
-                        }
-
-                        // check for strand
-
-                        final String strand = fields.get(GENOMIC_STRAND_INDEX);
-                        canDecode &= strand.equals(Strand.POSITIVE.toString()) ||
-                                strand.equals(Strand.NEGATIVE.toString()) ||
-                                strand.equals(Strand.NONE.toString()) ||
-                                strand.equals("?");
                     }
                 }
 
+            return canDecodeFirstLine(line);
             }
         }
         catch (final FileNotFoundException ex) {
@@ -277,8 +259,6 @@ public class Gff3Codec extends AbstractGxxCodec {
         catch (final IOException ex) {
             return false;
         }
-
-        return canDecode;
     }
 
     static List<String> decodeAttributeValue(final String attributeValue) {
@@ -366,7 +346,7 @@ public class Gff3Codec extends AbstractGxxCodec {
         activeParentIDs.clear();
     }
 
-
+    
     @Override
     public boolean isDone(final LineIterator lineIterator) {
         return !lineIterator.hasNext() && activeFeatures.isEmpty() && featuresToFlush.isEmpty();

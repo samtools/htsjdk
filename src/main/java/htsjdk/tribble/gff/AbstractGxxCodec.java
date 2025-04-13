@@ -1,30 +1,34 @@
 package htsjdk.tribble.gff;
 
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.LocationAware;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.function.Predicate;
 
-import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.AbstractFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
-import htsjdk.tribble.readers.*;
+import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.tribble.util.ParsingUtils;
-
-
-
-import java.io.*;
-import java.net.URLDecoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Abstract Base Codec for parsing Gff3 files or GTF codec
@@ -45,10 +49,7 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     protected static final int EXTRA_FIELDS_INDEX = 8;
 
 
-    protected final Queue<Gff3FeatureImpl> activeFeatures = new ArrayDeque<>();
     protected final Queue<Gff3FeatureImpl> featuresToFlush = new ArrayDeque<>();
-    protected final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
-    protected final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
     protected final Map<Integer, String> commentsWithLineNumbers = new LinkedHashMap<>();
 
 
@@ -96,7 +97,7 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
 
 
     protected final Gff3BaseData parseLine(final String line, final int currentLine, final Predicate<String> filterOutAttribute) {
-        final List<String> splitLine = ParsingUtils.split(line, Gff3Constants.FIELD_DELIMITER);
+        final List<String> splitLine = ParsingUtils.split(line, AbstractGxxConstants.FIELD_DELIMITER);
 
         if (splitLine.size() != NUM_FIELDS) {
             throw new TribbleException("Found an invalid number of columns in the given Gff3/GTF file at line + " + currentLine + " - Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
@@ -108,8 +109,8 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
             final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
             final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
             final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
-            final double score = splitLine.get(SCORE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE) ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
-            final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE) ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
+            final double score = splitLine.get(SCORE_INDEX).equals(AbstractGxxConstants.UNDEFINED_FIELD_VALUE) ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
+            final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(AbstractGxxConstants.UNDEFINED_FIELD_VALUE) ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
             final Map<String, List<String>> attributes = parseAttributesColumn(splitLine.get(EXTRA_FIELDS_INDEX));
             /* remove attibutes matching 'filterOutAttribute' */
@@ -146,22 +147,28 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     @Override
     public abstract boolean canDecode(final String inputFilePath);
 
-    static List<String> decodeAttributeValue(final String attributeValue) {
-        //split on VALUE_DELIMITER, then decode
-        final List<String> splitValues = ParsingUtils.split(attributeValue, Gff3Constants.VALUE_DELIMITER);
+    protected boolean canDecodeFirstLine(final String line) {
+        // make sure line conforms to gtf spec
+        final List<String> fields = ParsingUtils.split(line, AbstractGxxConstants.FIELD_DELIMITER);
 
-        final List<String> decodedValues = new ArrayList<>();
-        for (final String encodedValue : splitValues) {
+        if(fields.size() != NUM_FIELDS) return false;;
+
+            // check that start and end fields are integers
             try {
-                decodedValues.add(URLDecoder.decode(encodedValue.trim(), "UTF-8"));
-            } catch (final UnsupportedEncodingException ex) {
-                throw new TribbleException("Error decoding attribute " + encodedValue, ex);
+                /* final int start = */ Integer.parseInt(fields.get(3));
+                /* final int end = */ Integer.parseInt(fields.get(4));
+            } catch (NumberFormatException | NullPointerException nfe) {
+                return false;
             }
-        }
 
-        return decodedValues;
+            // check for strand
+            final String strand = fields.get(GENOMIC_STRAND_INDEX);
+            return strand.equals(Strand.POSITIVE.toString()) ||
+                    strand.equals(Strand.NEGATIVE.toString()) ||
+                    strand.equals(Strand.NONE.toString()) ||
+                    strand.equals("?");
     }
-
+    
     static String extractSingleAttribute(final List<String> values) {
         if (values == null || values.isEmpty()) {
             return null;
