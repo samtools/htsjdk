@@ -1,33 +1,30 @@
 package htsjdk.tribble.gff;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
-
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.LocationAware;
+
 import htsjdk.samtools.util.Log;
+import htsjdk.tribble.AbstractFeatureCodec;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
-import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.ParsingUtils;
+
+
+
+import java.io.*;
+import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Codec for parsing Gff3 files, as defined in https://github.com/The-Sequence-Ontology/Specifications/blob/31f62ad469b31769b43af42e0903448db1826925/gff3.md
@@ -38,17 +35,44 @@ import htsjdk.tribble.util.ParsingUtils;
  * region, using a tribble index.  In this case, a particular feature will only be linked to the subgroup of features it is linked to in the input file which overlap the given region.
  */
 
-public class Gff3Codec extends AbstractGxxCodec {
+public class GtfCodec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
+
+
+    private static final int NUM_FIELDS = 9;
+
+    private static final int CHROMOSOME_NAME_INDEX = 0;
+    private static final int ANNOTATION_SOURCE_INDEX = 1;
+    private static final int FEATURE_TYPE_INDEX = 2;
+    private static final int START_LOCATION_INDEX = 3;
+    private static final int END_LOCATION_INDEX = 4;
+    private static final int SCORE_INDEX = 5;
+    private static final int GENOMIC_STRAND_INDEX = 6;
+    private static final int GENOMIC_PHASE_INDEX = 7;
+    private static final int EXTRA_FIELDS_INDEX = 8;
+
 
     private static final String IS_CIRCULAR_ATTRIBUTE_KEY = "Is_circular";
 
     private static final String ARTEMIS_FASTA_MARKER = ">";
 
+    private final Queue<Gff3FeatureImpl> activeFeatures = new ArrayDeque<>();
+    private final Queue<Gff3FeatureImpl> featuresToFlush = new ArrayDeque<>();
+    private final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
+    private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
+
     private final Map<String, SequenceRegion> sequenceRegionMap = new LinkedHashMap<>();
+    private final Map<Integer, String> commentsWithLineNumbers = new LinkedHashMap<>();
 
     private final static Log logger = Log.getInstance(Gff3Codec.class);
 
     private boolean reachedFasta = false;
+
+    private DecodeDepth decodeDepth;
+
+    private int currentLine = 0;
+
+    /** filter to removing keys from the EXTRA_FIELDS column */
+    private final Predicate<String> filterOutAttribute;
     
     public Gff3Codec() {
         this(DecodeDepth.DEEP);
@@ -63,7 +87,9 @@ public class Gff3Codec extends AbstractGxxCodec {
      * @param filterOutAttribute  filter to remove keys from the EXTRA_FIELDS column
      */
     public Gff3Codec(final DecodeDepth decodeDepth, final Predicate<String> filterOutAttribute) {
-        super(decodeDepth,filterOutAttribute);
+        super(Gff3Feature.class);
+        this.decodeDepth = decodeDepth;
+        this.filterOutAttribute = filterOutAttribute;
         /* check required keys are always kept */
         for (final String key : new String[] {Gff3Constants.PARENT_ATTRIBUTE_KEY, Gff3Constants.ID_ATTRIBUTE_KEY, Gff3Constants.NAME_ATTRIBUTE_KEY}) {
             if (filterOutAttribute.test(key)) {
@@ -72,8 +98,17 @@ public class Gff3Codec extends AbstractGxxCodec {
         }
     }
 
+    public enum DecodeDepth {
+        DEEP ,
+        SHALLOW
+    }
+    
     @Override
-    protected Gff3Feature decode(final LineIterator lineIterator, final DecodeDepth depth) throws IOException {
+    public Gff3Feature decode(final LineIterator lineIterator) throws IOException {
+        return decode(lineIterator, decodeDepth);
+    }
+
+    private Gff3Feature decode(final LineIterator lineIterator, final DecodeDepth depth) throws IOException {
         currentLine++;
         /*
         Basic strategy: Load features into deque, create maps from a features ID to it, and from a features parents' IDs to it.  For each feature, link to parents using these maps.
@@ -111,7 +146,8 @@ public class Gff3Codec extends AbstractGxxCodec {
         }
 
 
-        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line, currentLine, super.filterOutAttribute));
+
+        final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line, currentLine, this.filterOutAttribute));
         activeFeatures.add(thisFeature);
         if (depth == DecodeDepth.DEEP) {
             //link to parents/children/co-features
@@ -159,11 +195,7 @@ public class Gff3Codec extends AbstractGxxCodec {
         return featuresToFlush.poll();
     }
 
-	@Override
-	protected Map<String, List<String>> parseAttributesColumn(String attributesString)
-			throws UnsupportedEncodingException {
-		return parseAttributes(attributesString);
-		}
+
     /**
      * Parse attributes field for gff3 feature
      * @param attributesString attributes field string from line in gff3 file
@@ -186,6 +218,33 @@ public class Gff3Codec extends AbstractGxxCodec {
         return attributes;
     }
 
+    private static Gff3BaseData parseLine(final String line, final int currentLine, final Predicate<String> filterOutAttribute) {
+        final List<String> splitLine = ParsingUtils.split(line, Gff3Constants.FIELD_DELIMITER);
+
+        if (splitLine.size() != NUM_FIELDS) {
+            throw new TribbleException("Found an invalid number of columns in the given Gff3 file at line + " + currentLine + " - Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
+        }
+
+        try {
+            final String contig = URLDecoder.decode(splitLine.get(CHROMOSOME_NAME_INDEX), "UTF-8");
+            final String source = URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
+            final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
+            final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
+            final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
+            final double score = splitLine.get(SCORE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE) ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
+            final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE) ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
+            final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
+            final Map<String, List<String>> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            /* remove attibutes matching 'filterOutAttribute' */
+            attributes.keySet().removeIf(filterOutAttribute);
+            return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
+        } catch (final NumberFormatException ex ) {
+            throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);
+        } catch (final IOException ex) {
+            throw new TribbleException("Cannot decode feature info from line " + currentLine + ".  Line is: " + line, ex);
+        }
+    }
+
     /**
      * Get list of sequence regions parsed by the codec.
      * @return list of sequence regions
@@ -194,6 +253,21 @@ public class Gff3Codec extends AbstractGxxCodec {
         return Collections.unmodifiableList(new ArrayList<>(sequenceRegionMap.values()));
     }
 
+    /**
+     * Gets map from line number to comment found on that line.  The text of the comment EXCLUDES the leading # which indicates a comment line.
+     * @return Map from line number to comment found on line
+     */
+    public Map<Integer, String> getCommentsWithLineNumbers() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(commentsWithLineNumbers));
+    }
+
+    /**
+     * Gets list of comments parsed by the codec.  Excludes leading # which indicates a comment line.
+     * @return
+     */
+    public List<String> getCommentTexts() {
+        return Collections.unmodifiableList(new ArrayList<>(commentsWithLineNumbers.values()));
+    }
 
     /**
      * If sequence region of feature's contig has been specified with sequence region directive, validates that
@@ -215,6 +289,10 @@ public class Gff3Codec extends AbstractGxxCodec {
         }
     }
 
+    @Override
+    public Feature decodeLoc(LineIterator lineIterator) throws IOException {
+        return decode(lineIterator, DecodeDepth.SHALLOW);
+    }
 
     @Override
     public boolean canDecode(final String inputFilePath) {
@@ -252,8 +330,8 @@ public class Gff3Codec extends AbstractGxxCodec {
                     if (canDecode) {
                         // check that start and end fields are integers
                         try {
-                            /* final int start = */ Integer.parseInt(fields.get(3));
-                            /* final int end = */ Integer.parseInt(fields.get(4));
+                            final int start = Integer.parseInt(fields.get(3));
+                            final int end = Integer.parseInt(fields.get(4));
                         } catch (NumberFormatException | NullPointerException nfe) {
                             return false;
                         }
@@ -270,7 +348,7 @@ public class Gff3Codec extends AbstractGxxCodec {
 
             }
         }
-        catch (final FileNotFoundException ex) {
+        catch (FileNotFoundException ex) {
             logger.error(inputFilePath + " not found.");
             return false;
         }
@@ -308,6 +386,22 @@ public class Gff3Codec extends AbstractGxxCodec {
         return values.get(0);
     }
 
+    @Override
+    public FeatureCodecHeader readHeader(LineIterator lineIterator) {
+
+        List<String> header = new ArrayList<>();
+        while(lineIterator.hasNext()) {
+            String line = lineIterator.peek();
+            if (line.startsWith(Gff3Constants.COMMENT_START)) {
+                header.add(line);
+                lineIterator.next();
+            } else {
+                break;
+            }
+        }
+
+        return new FeatureCodecHeader(header, FeatureCodecHeader.NO_HEADER_END);
+    }
 
     /**
      * Parse a directive line from a gff3 file
@@ -366,6 +460,15 @@ public class Gff3Codec extends AbstractGxxCodec {
         activeParentIDs.clear();
     }
 
+    @Override
+    public LineIterator makeSourceFromStream(final InputStream bufferedInputStream) {
+        return new LineIteratorImpl(new SynchronousLineReader(bufferedInputStream));
+    }
+
+    @Override
+    public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
+        return new AsciiLineReaderIterator(AsciiLineReader.from(bufferedInputStream));
+    }
 
     @Override
     public boolean isDone(final LineIterator lineIterator) {
@@ -380,6 +483,11 @@ public class Gff3Codec extends AbstractGxxCodec {
         activeFeatures.clear();
         activeParentIDs.clear();
         CloserUtil.close(lineIterator);
+    }
+
+    @Override
+    public TabixFormat getTabixFormat() {
+        return TabixFormat.GFF;
     }
 
     /**
@@ -474,4 +582,5 @@ public class Gff3Codec extends AbstractGxxCodec {
 
         abstract String encode(final Object object);
     }
+
 }
