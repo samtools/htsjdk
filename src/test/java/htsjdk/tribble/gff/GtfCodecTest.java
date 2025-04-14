@@ -30,7 +30,7 @@ public class GtfCodecTest extends HtsjdkTest {
     @DataProvider(name = "basicDecodeDataProvider")
     Object[][] basicDecodeDataProvider() {
         return new Object[][]{
-                {gencode47_gzipped, 2,0},
+                {gencode47_gzipped, 2, 842},
                 {gencode47_PCSK9, 1, 248}
         };
     }
