@@ -156,7 +156,7 @@ public class CompressionUtils {
         final int compressedSize = (int) (inSize + 257 * 257 * 3 + 9);
         final ByteBuffer outputBuffer = allocateByteBuffer(compressedSize);
         if (outputBuffer.remaining() < compressedSize) {
-            throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");
+            throw new CRAMException("Failed to allocate sufficient buffer size for CRAM codec.");
         }
         return outputBuffer;
     }
