@@ -17,7 +17,7 @@ public class HtsDefaultRegistry {
     /**
      * statically populate the default registry with any codecs on the classpath
      */
-    static {ServiceLoader.load(HtsCodec .class).forEach(htsDefaultCodecRegistry::registerCodec);}
+    static {ServiceLoader.load(HtsCodec.class).forEach(htsDefaultCodecRegistry::registerCodec);}
 
     /**
      * Grt the {@link HaploidReferenceResolver} resolver for this registry.

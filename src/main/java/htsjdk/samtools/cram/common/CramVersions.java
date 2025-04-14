@@ -6,16 +6,18 @@ import java.util.Set;
 public final class CramVersions {
     public static final CRAMVersion CRAM_v2_1 = new CRAMVersion(2, 1);
     public static final CRAMVersion CRAM_v3 = new CRAMVersion(3, 0);
+    public static final CRAMVersion CRAM_v3_1 = new CRAMVersion(3, 1);
 
     final static Set<CRAMVersion> supportedCRAMVersions = new HashSet<CRAMVersion>() {{
         add(CRAM_v2_1);
         add(CRAM_v3);
+        add(CRAM_v3_1);
     }};
 
     /**
      * The default CRAM version when creating a new CRAM output file or stream.
      */
-    public static final CRAMVersion DEFAULT_CRAM_VERSION = CRAM_v3;
+    public static final CRAMVersion DEFAULT_CRAM_VERSION = CRAM_v3_1;
 
     /**
      * Return true if {@code candidateVersion} is a supported CRAM version.
