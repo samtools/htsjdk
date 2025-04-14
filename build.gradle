@@ -79,21 +79,6 @@ jar {
     }
 }
 
-// A shadow jar that includes all dependencies PLUS test code, for use with carrot tests
-shadowJar {
-    configurations = [project.configurations.testRuntimeClasspath]
-    archiveClassifier = 'local'
-    sourceSets.forEach({ sourceSet ->
-        from sourceSet.output
-    })
-    manifest {
-        attributes 'Implementation-Title': 'HTSJDK',
-                'Implementation-Vendor': 'Samtools Organization',
-                'Implementation-Version': archiveVersion,
-                'Main-Class': 'htsjdk.samtools.cram.CarrotTest'
-    }
-}
-
 import org.gradle.internal.os.OperatingSystem;
 
 tasks.withType(Test).configureEach { task ->
