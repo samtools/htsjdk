@@ -1,6 +1,5 @@
 package htsjdk.beta.plugin.registry;
 
-import htsjdk.beta.codecs.reads.cram.cramV3_1.CRAMCodecV3_1;
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.plugin.HtsVersion;
@@ -12,12 +11,8 @@ import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Class with methods for resolving inputs and outputs to reads encoders and decoders.
