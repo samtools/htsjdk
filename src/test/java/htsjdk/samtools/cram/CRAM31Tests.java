@@ -110,8 +110,6 @@ public class CRAM31Tests extends HtsjdkTest {
         Assert.assertEquals(getCRAMVersion(testInput), CramVersions.CRAM_v3);
 
         // use samtools to convert the input to CRAM 3.1, then compare the result of that with the original
-        final IOPath cram31Path = IOUtils.createTempPath("cram31Test", "cram");
-
         // test htsjdk cram 3.1 reading by using samtools to convert the input to CRAM 3.1, and then consuming it
         // with htsjdk and comparing the results to the original
         final IOPath cramSamtools31Path = IOUtils.createTempPath("cram31SamtoolsWriteTest", ".cram");
@@ -128,17 +126,7 @@ public class CRAM31Tests extends HtsjdkTest {
         // now test htsjdk CRAM 3.1 writing by using htsjdk to write CRAM 3.1 and use samtools to consume it and write
         // it back to another CRAM (3.1), and then read that result back in and compare it to the original
         final IOPath cramHtsjdk31Path = IOUtils.createTempPath("cram31HtsjdkWriteTest", ".cram");
-        final SamReaderFactory samReaderFactory =
-                SamReaderFactory.makeDefault()
-                        .referenceSequence(testReference.toPath())
-                        .validationStringency(ValidationStringency.LENIENT);
-        try (final SamReader reader = samReaderFactory.open(testInput.toPath());
-             final SAMFileWriter writer = new SAMFileWriterFactory()
-                     .makeWriter(reader.getFileHeader().clone(), true, cramHtsjdk31Path.toPath(), testReference.toPath())) {
-            for (final SAMRecord rec : reader) {
-                writer.addAlignment(rec);
-            }
-        }
+        doHTSJDKWriteCRAM(testInput, cramHtsjdk31Path, testReference);
         Assert.assertEquals(getCRAMVersion(cramHtsjdk31Path), CramVersions.CRAM_v3_1);
 
         // compare the original test input with the htsjdk-generated 3.1 output
@@ -178,7 +166,21 @@ public class CRAM31Tests extends HtsjdkTest {
         Assert.assertEquals(diffCount, 0);
     }
 
-    private static CRAMVersion getCRAMVersion(final IOPath cramPath) {
+    public static void doHTSJDKWriteCRAM(final IOPath inputPath, final IOPath outputPath, final IOPath referencePath) throws IOException{
+        final SamReaderFactory samReaderFactory =
+                SamReaderFactory.makeDefault()
+                        .referenceSequence(referencePath.toPath())
+                        .validationStringency(ValidationStringency.LENIENT);
+        try (final SamReader reader = samReaderFactory.open(inputPath.toPath());
+             final SAMFileWriter writer = new SAMFileWriterFactory()
+                     .makeWriter(reader.getFileHeader().clone(), true, outputPath.toPath(), referencePath.toPath())) {
+            for (final SAMRecord rec : reader) {
+                writer.addAlignment(rec);
+            }
+        }
+    }
+
+    public static CRAMVersion getCRAMVersion(final IOPath cramPath) {
         try (final InputStream fis = Files.newInputStream(cramPath.toPath())) {
             final CramHeader cramHeader = CramIO.readCramHeader(fis);
             return cramHeader.getCRAMVersion();
