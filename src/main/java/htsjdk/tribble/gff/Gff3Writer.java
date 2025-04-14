@@ -36,7 +36,7 @@ public class Gff3Writer extends AbstractGxxWriter {
         }
     }
 
-
+    
     @Override
     protected void writeAttributes(final Map<String, List<String>> attributes) throws IOException {
         if (attributes.isEmpty()) {

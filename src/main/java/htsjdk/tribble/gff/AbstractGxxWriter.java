@@ -1,6 +1,7 @@
 package htsjdk.tribble.gff;
 
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 
@@ -88,8 +89,8 @@ public abstract class AbstractGxxWriter implements Closeable {
      * @param feature the feature to be added
      * @throws IOException
      */
-    public final void addFeature(final Gff3Feature feature) throws IOException {
-        writeFirstEightFields(feature);
+    public void addFeature(final Gff3Feature feature) throws IOException {
+    	writeFirstEightFields(feature);
         out.write(AbstractGxxConstants.FIELD_DELIMITER);
         writeAttributes(feature.getAttributes());
         out.write(AbstractGxxConstants.END_OF_LINE_CHARACTER);
@@ -129,4 +130,19 @@ public abstract class AbstractGxxWriter implements Closeable {
     public final void close() throws IOException {
         out.close();
     }
+    
+    /** opens a writer as a Gff3Writer or as a GtfWriter using the path suffix */
+    public static AbstractGxxWriter openWithFileExtension(final Path path) throws IOException {
+        if (FileExtensions.GFF3.stream().anyMatch(e -> path.toString().endsWith(e))) {
+        	return new Gff3Writer(path);
+        	}
+        else if (FileExtensions.GTF.stream().anyMatch(e -> path.toString().endsWith(e))) {
+        	return new GtfWriter(path);
+        	}
+        else
+        	{
+        	throw new IllegalArgumentException(path.toString()+" doesn't have a gtf or a gff3 suffix");
+        	}
+    	}
+    
 }

@@ -207,4 +207,11 @@ public class Gff3BaseData implements Locatable {
     public List<String> getAliases() {
         return aliases;
     }
+
+	@Override
+	public String toString() {
+		return "Gff3BaseData [contig=" + contig + ", source=" + source + ", type=" + type + ", start=" + start
+				+ ", end=" + end + ", score=" + score + ", strand=" + strand + ", phase=" + phase + ", attributes="
+				+ attributes + "]";
+	}
 }

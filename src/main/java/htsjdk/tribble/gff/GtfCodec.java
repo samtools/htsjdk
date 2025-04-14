@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,11 +32,9 @@ import htsjdk.tribble.readers.LineIterator;
 public class GtfCodec extends AbstractGxxCodec {
 	
     private final static Log logger = Log.getInstance(GtfCodec.class);
-    private final Map<String,Gff3FeatureImpl> activeGenes = new HashMap<>();
-    private final Map<String,Gff3FeatureImpl> activeTranscripts = new HashMap<>();
-    private final Map<String,List<Gff3FeatureImpl>> activeTranscriptComponents = new HashMap<>();
-    private final List<Gff3FeatureImpl> activeUncharacterized = new ArrayList<>();
-
+    private final Map<String,Gff3FeatureImpl> id2gene = new HashMap<>();
+    private final Map<String,Gff3FeatureImpl> id2transcripts = new HashMap<>();
+    private final Map<String,List<Gff3FeatureImpl>> id2TranscriptComponents = new HashMap<>();
     
     public GtfCodec() {
         this(DecodeDepth.DEEP);
@@ -91,9 +90,10 @@ public class GtfCodec extends AbstractGxxCodec {
 
         
         final Gff3FeatureImpl thisFeature = new Gff3FeatureImpl(parseLine(line, currentLine, super.filterOutAttribute));
+        super.activeFeatures.add(thisFeature);
+        
         switch(depth) {
         case SHALLOW:
-        		this.activeUncharacterized.add(thisFeature);
 	        	//flush all features immediatly
 	            prepareToFlushFeatures();
 	            break;
@@ -102,30 +102,28 @@ public class GtfCodec extends AbstractGxxCodec {
                 final String gene_id = thisFeature.getUniqueAttribute(GtfConstants.GENE_ID).orElseThrow(()->
                 	new TribbleException("attribute "+GtfConstants.GENE_ID+" missing in "+line)
                 	);
-                if(activeGenes.containsKey(gene_id)) {
+                if(id2gene.containsKey(gene_id)) {
                 	throw new TribbleException("duplicate gene "+ gene_id +"  in "+line);
                 	}
-                activeGenes.put(gene_id, thisFeature);
+                id2gene.put(gene_id, thisFeature);
         	} else if(isTranscript(thisFeature)) {
         		final String transcript_id = thisFeature.getUniqueAttribute(GtfConstants.TRANSCRIPT_ID).orElseThrow(()->
             		new TribbleException("attribute "+GtfConstants.TRANSCRIPT_ID+" missing in "+line)
         				);
-                if(activeTranscripts.containsKey(transcript_id)) {
+                if(id2transcripts.containsKey(transcript_id)) {
                 	throw new TribbleException("duplicate transcript "+ transcript_id +"  in "+line);
                 	}
-                activeTranscripts.put(transcript_id, thisFeature);
+                id2transcripts.put(transcript_id, thisFeature);
         	} else if(thisFeature.hasAttribute(GtfConstants.TRANSCRIPT_ID)){
         		final String transcript_id = thisFeature.getUniqueAttribute(GtfConstants.TRANSCRIPT_ID).orElseThrow(()->
         			new TribbleException("attribute "+GtfConstants.TRANSCRIPT_ID+" missing in "+line)
     				);
-        		List<Gff3FeatureImpl> components =this.activeTranscriptComponents.get(transcript_id);
+        		List<Gff3FeatureImpl> components =this.id2TranscriptComponents.get(transcript_id);
         		if(components==null) {
         			components = new ArrayList<>();
-        			this.activeTranscriptComponents.put(transcript_id, components);
+        			this.id2TranscriptComponents.put(transcript_id, components);
         			}
         		components.add(thisFeature);
-        	} else {
-        		this.activeUncharacterized.add(thisFeature);
         	}
         	break;
         }
@@ -173,7 +171,7 @@ public class GtfCodec extends AbstractGxxCodec {
                 i++;
             }
 
-            final String key = keyBuilder.toString();
+            final String key = URLDecoder.decode(keyBuilder.toString().trim(), "UTF-8");
 
             /* read VALUE */
             final StringBuilder valueBuilder = new StringBuilder();
@@ -242,7 +240,7 @@ public class GtfCodec extends AbstractGxxCodec {
             		values = new ArrayList<>();
             		attributes.put(key,values);
             	}
-            values.add(valueBuilder.toString());
+            values.add( URLDecoder.decode(valueBuilder.toString(), "UTF-8"));
 	            
             // skip whitespaces
             while (i < len && Character.isWhitespace(attributesString.charAt(i))) {
@@ -303,35 +301,34 @@ public class GtfCodec extends AbstractGxxCodec {
      */
     private void prepareToFlushFeatures() {
     	
-    	activeTranscripts.values().stream().forEach(FEAT->{
+    	this.id2transcripts.values().stream().forEach(FEAT->{
             final String gene_id = FEAT.getUniqueAttribute(GtfConstants.GENE_ID).orElseThrow(()->
-        	new TribbleException("attribute "+GtfConstants.GENE_ID+" missing in "+FEAT)
-        	);
-       final Gff3FeatureImpl geneFeat  = activeGenes.get(gene_id);
-        if(!activeGenes.containsKey(gene_id)) {
-        	throw new TribbleException("undefined gene "+ gene_id +"  in "+FEAT);
-        	}
-        FEAT.addParent(geneFeat);
-		});
+	        	new TribbleException("attribute "+GtfConstants.GENE_ID+" missing in "+FEAT)
+	        	);
+	        if(!id2gene.containsKey(gene_id)) {
+	        	throw new TribbleException("undefined gene "+ gene_id +"  in "+FEAT);
+	        	}
+		    final Gff3FeatureImpl geneFeat  = id2gene.get(gene_id);
+	        FEAT.addParent(geneFeat);
+			});
     	
-    	activeTranscriptComponents.values().stream().flatMap(L->L.stream()).forEach(FEAT->{
+    	this.id2TranscriptComponents.values().stream().flatMap(L->L.stream()).forEach(FEAT->{
             final String transcript_id = FEAT.getUniqueAttribute(GtfConstants.TRANSCRIPT_ID).orElseThrow(()->
         	new TribbleException("attribute "+GtfConstants.TRANSCRIPT_ID+" missing in "+FEAT)
-        	);
-       final Gff3FeatureImpl transcriptFeat  = activeTranscripts.get(transcript_id);
-        if(!activeTranscripts.containsKey(transcript_id)) {
-        	throw new TribbleException("undefined transcript_id "+ transcript_id +"  in "+FEAT);
-        	}
-        FEAT.addParent(transcriptFeat);
-		});
+	        	);
+	        if(!id2transcripts.containsKey(transcript_id)) {
+	        	throw new TribbleException("undefined transcript_id "+ transcript_id +"  in "+FEAT);
+	        	}
+	        final Gff3FeatureImpl transcriptFeat  = id2transcripts.get(transcript_id);
+	        FEAT.addParent(transcriptFeat);
+			});
+	    	
     	
-    	
-        featuresToFlush.addAll(activeGenes.values());
-        featuresToFlush.addAll(activeUncharacterized);
-    	activeTranscripts.clear();
-    	activeTranscriptComponents.clear();
-    	activeGenes.clear();
-    	activeUncharacterized.clear();
+        featuresToFlush.addAll(activeFeatures);
+    	id2transcripts.clear();
+    	id2gene.clear();
+    	id2TranscriptComponents.clear();
+    	super.activeFeatures.clear();
     }
 
 
@@ -340,20 +337,20 @@ public class GtfCodec extends AbstractGxxCodec {
 	@Override
 	public boolean isDone(LineIterator lineIterator) {
         return !lineIterator.hasNext() && 
-        		activeGenes.isEmpty() &&
-        		activeTranscriptComponents.isEmpty() &&
-        		activeTranscripts.isEmpty() && 
-        		activeUncharacterized.isEmpty() && 
-        		featuresToFlush.isEmpty();
+        		id2gene.isEmpty() &&
+        		id2transcripts.isEmpty() &&
+        		id2TranscriptComponents.isEmpty() && 
+        		featuresToFlush.isEmpty() &&
+        		super.activeFeatures.isEmpty();
 	}
 
 	@Override
 	public void close(LineIterator source) {
-		  activeGenes.clear();
-		  activeTranscriptComponents.clear();
-		  activeTranscripts.clear();
-		  activeUncharacterized.clear();
+			id2gene.clear();
+			id2transcripts.clear();
+			id2TranscriptComponents.clear();
 		 featuresToFlush.clear(); 
+		 activeFeatures.clear();
 		  CloserUtil.close(source);
 		   }
 }

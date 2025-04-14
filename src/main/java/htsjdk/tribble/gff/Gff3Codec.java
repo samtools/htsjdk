@@ -9,7 +9,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,7 +16,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -46,7 +44,6 @@ public class Gff3Codec extends AbstractGxxCodec {
 
     private static final String ARTEMIS_FASTA_MARKER = ">";
 
-    protected final Queue<Gff3FeatureImpl> activeFeatures = new ArrayDeque<>();
     private final Map<String, Set<Gff3FeatureImpl>> activeFeaturesWithIDs = new HashMap<>();
     private final Map<String, Set<Gff3FeatureImpl>> activeParentIDs = new HashMap<>();
     private final Map<String, SequenceRegion> sequenceRegionMap = new LinkedHashMap<>();

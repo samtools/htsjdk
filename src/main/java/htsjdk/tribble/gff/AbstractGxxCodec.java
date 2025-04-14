@@ -7,15 +7,12 @@ import java.net.URLDecoder;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.function.Predicate;
 
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.AbstractFeatureCodec;
 import htsjdk.tribble.Feature;
@@ -49,6 +46,7 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     protected static final int EXTRA_FIELDS_INDEX = 8;
 
 
+    protected final Queue<Gff3FeatureImpl> activeFeatures = new ArrayDeque<>();
     protected final Queue<Gff3FeatureImpl> featuresToFlush = new ArrayDeque<>();
     protected final Map<Integer, String> commentsWithLineNumbers = new LinkedHashMap<>();
 

@@ -30,22 +30,14 @@ public class GtfCodecTest extends HtsjdkTest {
     @DataProvider(name = "basicDecodeDataProvider")
     Object[][] basicDecodeDataProvider() {
         return new Object[][]{
-                {gencode47_gzipped, 2, 842},
-                {gencode47_PCSK9, 1, 248}
+                {gencode47_gzipped,  842},
+                {gencode47_PCSK9, 248}
         };
     }
 
     private void basicDecodeTest(final Path inputGtf, GtfCodec.DecodeDepth decodeDepth, final int expectedCount) throws IOException {
         final GtfCodec codec = new GtfCodec(decodeDepth);
     	Assert.assertTrue(codec.canDecode(inputGtf.toAbsolutePath().toString()));
-    	
-    	try(final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(
-        		DATA_DIR + "Homo_sapiens.GRCh38.97.chromosome.1.small.gff3.gz", null, new Gff3Codec(decodeDepth), false)) {
-	        for (final Gff3Feature feature : reader.iterator()) {
-	            
-	        }
-    	}
-    	
     	
         try(final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(
         		inputGtf.toAbsolutePath().toString(), null, codec, false)) {
@@ -57,19 +49,20 @@ public class GtfCodecTest extends HtsjdkTest {
 	    }
     }
 
+
     
     @Test(dataProvider = "basicDecodeDataProvider")
-    public void basicDecodeDeepTest(final Path inputGtf, final int expectedCountDeep, final int _ignore) throws IOException {
-    	basicDecodeTest(inputGtf,GtfCodec.DecodeDepth.DEEP,expectedCountDeep);
+    public void basicDecodeDeepTest(final Path inputGtf, final int expectedCount) throws IOException {
+    	basicDecodeTest(inputGtf,GtfCodec.DecodeDepth.DEEP,expectedCount);
     }
 
     @Test(dataProvider = "basicDecodeDataProvider")
-    public void basicDecodeShallowTest(final Path inputGtf, final int _ignore, final int expectedCountShallow) throws IOException {
-    	basicDecodeTest(inputGtf,GtfCodec.DecodeDepth.SHALLOW,expectedCountShallow);
+    public void basicDecodeShallowTest(final Path inputGtf,final int expectedCount) throws IOException {
+    	basicDecodeTest(inputGtf,GtfCodec.DecodeDepth.SHALLOW,expectedCount);
     }
     
     @Test(dataProvider = "basicDecodeDataProvider")
-    public void codecFilterOutFieldsTest(final Path inputGtf, final int _ignore,int expectedTotalFeatures) throws IOException {
+    public void codecFilterOutFieldsTest(final Path inputGtf, int expectedTotalFeatures) throws IOException {
         final Set<String> skip_attributes = new HashSet<>(Arrays.asList("tag","havana_gene"));
         final GtfCodec codec = new GtfCodec(GtfCodec.DecodeDepth.SHALLOW, S->skip_attributes.contains(S));
         Assert.assertTrue(codec.canDecode(inputGtf.toAbsolutePath().toString()));
@@ -87,6 +80,7 @@ public class GtfCodecTest extends HtsjdkTest {
         Assert.assertEquals(countTotalFeatures, expectedTotalFeatures);
     }
 
+    @Test
     public void FeatureContentTest() throws IOException {
     	final GtfCodec codec = new GtfCodec(GtfCodec.DecodeDepth.SHALLOW);
         try(final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(gencode47_PCSK9.toAbsolutePath().toString(), null,codec, false)) {
@@ -98,7 +92,7 @@ public class GtfCodecTest extends HtsjdkTest {
                 Assert.assertEquals(feature.getSource(),"HAVANA");
                 Assert.assertEquals(feature.getType(),"UTR");
                 Assert.assertEquals(feature.getStart(),55039445);
-                Assert.assertEquals(feature.getEnd(),5503983);
+                Assert.assertEquals(feature.getEnd(),55039837);
                 Assert.assertEquals(feature.getScore(),-1);
                 Assert.assertEquals(feature.getStrand(),Strand.POSITIVE);
                 Assert.assertEquals(feature.getPhase(),-1);
@@ -120,21 +114,57 @@ public class GtfCodecTest extends HtsjdkTest {
         }
     }
 
+    @Test(dataProvider = "basicDecodeDataProvider")
+    private void deepTreeTest(final Path path, int expectNumber) throws IOException {
+    	final GtfCodec codec = new GtfCodec(GtfCodec.DecodeDepth.DEEP);
+        try(final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(path.toAbsolutePath().toString(), null,codec, false)) {
+        	try(CloseableIterator<Gff3Feature> iter = reader.iterator()) {
+         	   Assert.assertTrue(iter.hasNext());
+               while(iter.hasNext()) {
+            	   Gff3Feature f1 = iter.next();
+            	   if(!f1.getType().equals("gene")) continue;
+            	   Assert.assertEquals(f1.getType(), "gene");
+            	   Assert.assertTrue(f1.hasAttribute(GtfConstants.GENE_ID));
+            	   Assert.assertTrue(f1.hasAttribute("gene_name"));
+            	   Assert.assertTrue(f1.hasChildren());
+            	   for(Gff3Feature f2 : f1.getChildren()) {
+                	   	Assert.assertEquals(f2.getType(), "transcript");
+                  	    Assert.assertTrue(f2.hasAttribute(GtfConstants.GENE_ID));
+                 	    Assert.assertTrue(f2.hasAttribute(GtfConstants.TRANSCRIPT_ID));
+                 	   Assert.assertTrue(f2.hasAttribute("gene_name"));
+                       Assert.assertEquals(f1.getUniqueAttribute("gene_name").get(),f2.getUniqueAttribute("gene_name").get());
+                       Assert.assertEquals(f1.getUniqueAttribute(GtfConstants.GENE_ID).get(),f2.getUniqueAttribute(GtfConstants.GENE_ID).get());
+                	   Assert.assertTrue(f2.hasChildren());
+                	   
+                	   for(Gff3Feature f3 : f2.getChildren()) {
+                      	   	Assert.assertNotEquals(f3.getType(), "gene");
+                       	   	Assert.assertNotEquals(f3.getType(), "transcript");
+                     	    Assert.assertTrue(f3.hasAttribute(GtfConstants.GENE_ID));
+                    	    Assert.assertTrue(f3.hasAttribute(GtfConstants.TRANSCRIPT_ID));
+                            Assert.assertEquals(f2.getUniqueAttribute(GtfConstants.GENE_ID).get(), f3.getUniqueAttribute(GtfConstants.GENE_ID).get());
+                            Assert.assertEquals(f2.getUniqueAttribute(GtfConstants.TRANSCRIPT_ID).get(), f3.getUniqueAttribute(GtfConstants.TRANSCRIPT_ID).get());
+                             Assert.assertFalse(f3.hasChildren());
+            	   		}
+            	   }
+
+               }
+        	}
+        }
+    }
+    
+    @Test
     public void decodeFeaturesTest() throws IOException {
     	String s = GtfConstants.UNDEFINED_FIELD_VALUE;
     	Map<String,List<String>> h = GtfCodec.parseAttributes(s);
         Assert.assertTrue(h.isEmpty());
         
         h = GtfCodec.parseAttributes("key1 \"ABCD\"; key2 12345 ; key3 'hello'");
-        Assert.assertTrue(h.isEmpty());
         for(String k: h.keySet()) {
             Assert.assertEquals(h.get(k).size(),1);
         	}
         Assert.assertEquals(h.get("key1").get(0),"ABCD");
         Assert.assertEquals(h.get("key2").get(0),"12345");
-        Assert.assertEquals(h.get("key3").get(0),"hello");
-        
-        
+        Assert.assertEquals(h.get("key3").get(0),"hello");        
     }
     
 }

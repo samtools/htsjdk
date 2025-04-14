@@ -313,4 +313,12 @@ public class Gff3FeatureImpl implements Gff3Feature {
         }
     }
 
+	@Override
+	public String toString() {
+		return "Gff3FeatureImpl [baseData=" + baseData + 
+				" , parents:" + this.parents.size() + 
+				" , children:" + this.children.size() +
+				"]";
+	}
+
 }
