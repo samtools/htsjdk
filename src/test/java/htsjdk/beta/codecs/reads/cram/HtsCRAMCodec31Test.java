@@ -70,7 +70,9 @@ public class HtsCRAMCodec31Test extends HtsjdkTest {
                 new ReadsDecoderOptions().setCRAMDecoderOptions(
                         new CRAMDecoderOptions().setReferencePath(referencePath));
         final ReadsEncoderOptions readsEncoderOptions =
-                new ReadsEncoderOptions().setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(referencePath));
+                new ReadsEncoderOptions()
+                        .setPreSorted(true)
+                        .setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(referencePath));
 
         try (final CRAMDecoder cramDecoder = (CRAMDecoder)
                 HtsDefaultRegistry.getReadsResolver().getReadsDecoder(sourceCRAMPath, readsDecoderOptions);
