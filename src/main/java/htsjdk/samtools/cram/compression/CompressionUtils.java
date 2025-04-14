@@ -189,7 +189,7 @@ public class CompressionUtils {
             return buffer.array();
         }
 
-        final byte[] bytes = new byte[buffer.remaining()];
+        final byte[] bytes = new byte[buffer.limit() - buffer.arrayOffset()];
         buffer.get(bytes);
         return bytes;
     }
