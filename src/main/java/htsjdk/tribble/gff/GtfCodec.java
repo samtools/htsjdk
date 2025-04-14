@@ -17,11 +17,11 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
 
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.gff.AbstractGxxCodec.DecodeDepth;
 import htsjdk.tribble.readers.LineIterator;
 
 /**
@@ -65,7 +65,6 @@ public class GtfCodec extends AbstractGxxCodec {
     private boolean isTranscript(final Gff3Feature feature) {
     	return feature.getType().equals("transcript") || feature.getType().equalsIgnoreCase("mrna") ;
     }
-    
     
     
 	@Override
@@ -136,7 +135,11 @@ public class GtfCodec extends AbstractGxxCodec {
 
 	@Override
 	protected Map<String, List<String>> parseAttributesColumn(final String attributesString) throws UnsupportedEncodingException {
-        if (attributesString.equals(GtfConstants.UNDEFINED_FIELD_VALUE)) {
+		return parseAttributes(attributesString);
+		}
+       
+	static Map<String, List<String>> parseAttributes(final String attributesString) throws UnsupportedEncodingException {
+		if (attributesString.trim().equals(GtfConstants.UNDEFINED_FIELD_VALUE)) {
             return Collections.emptyMap();
         	}
         final Map<String, List<String>> attributes = new LinkedHashMap<>();
@@ -148,6 +151,7 @@ public class GtfCodec extends AbstractGxxCodec {
             while (i < len && Character.isWhitespace(attributesString.charAt(i))) {
                 i++;
             }
+            
             // end of string
             if (i >= len) {
                 break;
@@ -157,7 +161,11 @@ public class GtfCodec extends AbstractGxxCodec {
 
             // consumme key
             while (i < len && !Character.isWhitespace(attributesString.charAt(i))) {
-                keyBuilder.append(attributesString.charAt(i));
+            	char c = attributesString.charAt(i);
+            	if(c==Gff3Constants.KEY_VALUE_SEPARATOR) {
+                	throw new TribbleException("unexpected gff3 separator "+Gff3Constants.KEY_VALUE_SEPARATOR+" in gtf line "+attributesString);
+                	}
+                keyBuilder.append(c);
                 i++;
             }
             // skip whitespaces
@@ -167,98 +175,89 @@ public class GtfCodec extends AbstractGxxCodec {
 
             final String key = keyBuilder.toString();
 
-
+            /* read VALUE */
+            final StringBuilder valueBuilder = new StringBuilder();
+            
             // no value
             if (i >= len) {
                 logger.warn("no value for '" + key + "' in " + attributesString);
-            	attributes.put(key,Collections.singletonList(""));
-                break;
             	}
-
-            final List<String> values=new ArrayList<>(1);
-            // read multiple values
-	        for(;;) {
-	            /* read VALUE */
-	            final StringBuilder valueBuilder = new StringBuilder();
+            else
+            	{
 	            // first char of value
 	            char c = attributesString.charAt(i);
-	
+		            
 	            if (c == AbstractGxxConstants.ATTRIBUTE_DELIMITER) { // no value
-	                i++;
-	                values.add("");
-	                logger.warn("no value for '" + key + "' in " + attributesString);
-	                break;
+	                logger.warn("no value for '" + key + "' in " + attributesString);                
 	            	}
-	
-	
+	            else if(c==Gff3Constants.KEY_VALUE_SEPARATOR) {
+	            	throw new TribbleException("unexpected gff3 separator '"+Gff3Constants.KEY_VALUE_SEPARATOR+"' in gtf line "+attributesString);
+	            	}
 	            // quoted string
-	            if (c == '\"') {
+	            else if (c == '\"' || c=='\'') {
+	            	final char quote_symbol = c;
 	                i++;
-	                while (i < len) {
+	                for(;;) {
+	                	if(i>=len) throw new TribbleException("unclosed quoted string in "+attributesString);
 	                    c = attributesString.charAt(i);
-	                    ++i;
 	                    if (c == '\\') {
-	                        c = (i < len ? attributesString.charAt(i) : '\0');
+	                       if(i+1>=len) throw new TribbleException("unclosed escape symbol in "+attributesString);
 	                        ++i;
+	                        c = attributesString.charAt(i);
 	                        switch (c) {
-	                            case '"':
-	                                valueBuilder.append("\"");
-	                                break;
-	                            case '\'':
-	                                valueBuilder.append("\'");
-	                                break;
-	                            case 't':
-	                                valueBuilder.append("\t");
-	                                break;
-	                            case 'n':
-	                                valueBuilder.append("\n");
-	                                break;
-	                            default:
-	                                //logger.warn("unparsed value in " + attributesString);
-	                                break;
+	                            case '"': valueBuilder.append("\""); break;
+	                            case '\'': valueBuilder.append("\'"); break;
+	                            case 't':  valueBuilder.append("\t"); break;
+	                            case 'n': valueBuilder.append("\n"); break;
+	                            default: logger.warn("unparsed escape symbol in " + attributesString); break;
 	                        }
-	                    } else if (c == '\"') {
-	                    	values.add(valueBuilder.toString());
+	                        i++;
+	                    } else if (c ==quote_symbol) {
+	                    	i++;
 	                        break;
 	                    } else {
 	                        valueBuilder.append(c);
+	                        i++;
 	                    }
-	                } // end of while
-	                
-	            
-	              
+	                } // end of for  
 	            }
-	            else /* not a quoted string */
-		            {
-		                while (i < len) {
-		                    c = attributesString.charAt(i);
-		                    ++i;
-		                    if (Character.isWhitespace(c)  || c == AbstractGxxConstants.ATTRIBUTE_DELIMITER) {
-		                        break;
-		                    }
-		                    valueBuilder.append(c);
-		                }
-		                values.add(valueBuilder.toString());
-		            }
+	       else /* not a quoted string, for example, a number */
+	            {
+	                while (i < len) {
+	                    c = attributesString.charAt(i);
+	                    if(c==Gff3Constants.KEY_VALUE_SEPARATOR) {
+	    	            	throw new TribbleException("unexpected gff3 separator '"+Gff3Constants.KEY_VALUE_SEPARATOR+"' in gtf line "+attributesString);
+	    	            	}
+	                    if (Character.isWhitespace(c)  || c == AbstractGxxConstants.ATTRIBUTE_DELIMITER) {
+	                        break;
+	                    }
+	                    valueBuilder.append(c);
+			    i++;
+	                }
+	            }
+            }// end of else 'value'
+            
+            List<String> values = attributes.get(key);
+            if(values==null) {
+            		values = new ArrayList<>();
+            		attributes.put(key,values);
+            	}
+            values.add(valueBuilder.toString());
 	            
-                // skip whitespaces
-                while (i < len && Character.isWhitespace(attributesString.charAt(i))) {
-                    i++;
-                }
-                if (i >= len) {
-                    break;
-                }
-
-                if(attributesString.charAt(i)==AbstractGxxConstants.ATTRIBUTE_DELIMITER) {
-                	i++;
-                	break;
-                	}
-	            }//end of read multiple values
-	        attributes.put(key, values);
-        	}
+            // skip whitespaces
+            while (i < len && Character.isWhitespace(attributesString.charAt(i))) {
+                i++;
+            	}
+            if (i >= len) {
+                break;
+            	}
+            if(attributesString.charAt(i)!=AbstractGxxConstants.ATTRIBUTE_DELIMITER) {
+            	throw new TribbleException("expected a '"+AbstractGxxConstants.ATTRIBUTE_DELIMITER+"' in gtf line before : \""+attributesString.substring(i)+"\". "+attributes);
+            	}
+	    i++;
+            }
         return attributes;
-
-    }
+        }
 
 	@Override
 	public boolean canDecode(final String inputFilePath) {
@@ -335,10 +334,26 @@ public class GtfCodec extends AbstractGxxCodec {
     	activeUncharacterized.clear();
     }
 
-	
+
+    
+    
 	@Override
 	public boolean isDone(LineIterator lineIterator) {
-		// TODO Auto-generated method stub
-		return false;
+        return !lineIterator.hasNext() && 
+        		activeGenes.isEmpty() &&
+        		activeTranscriptComponents.isEmpty() &&
+        		activeTranscripts.isEmpty() && 
+        		activeUncharacterized.isEmpty() && 
+        		featuresToFlush.isEmpty();
 	}
+
+	@Override
+	public void close(LineIterator source) {
+		  activeGenes.clear();
+		  activeTranscriptComponents.clear();
+		  activeTranscripts.clear();
+		  activeUncharacterized.clear();
+		 featuresToFlush.clear(); 
+		  CloserUtil.close(source);
+		   }
 }

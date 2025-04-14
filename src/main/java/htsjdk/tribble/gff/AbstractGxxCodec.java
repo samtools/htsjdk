@@ -168,7 +168,7 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
                     strand.equals(Strand.NONE.toString()) ||
                     strand.equals("?");
     }
-    
+
     static String extractSingleAttribute(final List<String> values) {
         if (values == null || values.isEmpty()) {
             return null;
@@ -211,14 +211,7 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     public abstract boolean isDone(final LineIterator lineIterator);
 
     @Override
-    public void close(final LineIterator lineIterator) {
-        //cleanup resources
-        featuresToFlush.clear();
-        activeFeaturesWithIDs.clear();
-        activeFeatures.clear();
-        activeParentIDs.clear();
-        CloserUtil.close(lineIterator);
-    }
+    public abstract void close(final LineIterator lineIterator);
 
     @Override
     public final TabixFormat getTabixFormat() {
