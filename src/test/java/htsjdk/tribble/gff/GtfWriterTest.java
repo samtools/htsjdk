@@ -30,31 +30,27 @@ public class GtfWriterTest extends HtsjdkTest {
 
     @DataProvider(name = "roundTripDataProvider")
     public Object[][] roundTripDataProvider() {
-        return new Object[][] {
-                {gencode47_gzipped},
-                {gencode47_PCSK9}
-        };
+        return new Object[][] {{gencode47_gzipped}, {gencode47_PCSK9}};
     }
-    
+
     @Test(dataProvider = "roundTripDataProvider")
     public void testRoundTrip(final Path path) {
 
         final List<String> comments1 = new ArrayList<>();
         final LinkedHashSet<Gff3Feature> features1 = readFromFile(path, comments1);
 
-            //write out to temp files (one gzipped, on not)
+        // write out to temp files (one gzipped, on not)
         try {
-        	int n;
-        	 IOUtil.newTempPath("gtfWriter", ".gtf", tmpDir);// REMOVE ME
-            final Path tempFile = Paths.get(path.toString()+".tmp.gtf");// IOUtil.newTempPath("gtfWriter", ".gtf", tmpDir);
-            final Path tempFileGzip = Paths.get(path.toString()+".tmp.gtf.gz");//IOUtil.newTempPath("gtfWriter", ".gtf.gz", tmpDir);
+            int n;
+            final Path tempFile = IOUtil.newTempPath("gtfWriter",".gtf", tmpDir);
+            final Path tempFileGzip = IOUtil.newTempPath("gtfWriter",".gtf.gz", tmpDir);
 
             n = writeToFile(tempFile, comments1, features1);
             Assert.assertEquals(n, features1.size());
             n = writeToFile(tempFileGzip, comments1, features1);
             Assert.assertEquals(n, features1.size());
 
-            //read temp files back in
+            // read temp files back in
 
             Assert.assertTrue(isGZipped(tempFileGzip.toFile()));
             final List<String> comments2 = new ArrayList<>();
@@ -76,10 +72,11 @@ public class GtfWriterTest extends HtsjdkTest {
         }
     }
 
-    private int writeToFile(final Path path, final List<String> comments, final Set<Gff3Feature> features) {
-    	int n = 0;
-        try (final AbstractGxxWriter writer =AbstractGxxWriter.openWithFileExtension(path)) {
-        	Assert.assertTrue(writer instanceof GtfWriter);
+    private int writeToFile(final Path path, final List<String> comments,
+            final Set<Gff3Feature> features) {
+        int n = 0;
+        try (final AbstractGxxWriter writer = AbstractGxxWriter.openWithFileExtension(path)) {
+            Assert.assertTrue(writer instanceof GtfWriter);
             for (final String comment : comments) {
                 writer.addComment(comment);
             }
@@ -97,8 +94,8 @@ public class GtfWriterTest extends HtsjdkTest {
     private LinkedHashSet<Gff3Feature> readFromFile(final Path path, List<String> commentsStore) {
         final GtfCodec codec = new GtfCodec();
         final LinkedHashSet<Gff3Feature> features = new LinkedHashSet<>();
-        try (final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(
-        		path.toAbsolutePath().toString(), null, codec, false)) {
+        try (final AbstractFeatureReader<Gff3Feature, LineIterator> reader = AbstractFeatureReader
+                .getFeatureReader(path.toAbsolutePath().toString(), null, codec, false)) {
             for (final Gff3Feature feature : reader.iterator()) {
                 features.add(feature);
             }
@@ -107,20 +104,16 @@ public class GtfWriterTest extends HtsjdkTest {
         } catch (final IOException ex) {
             throw new TribbleException("Error reading gtf file " + path);
         }
-	System.err.println("###ICIB "+features.size());
+        System.err.println("###ICIB " + features.size());
         return features;
     }
 
     @DataProvider(name = "encodeStringDataProvider")
     public Object[][] encodeStringDataProvider() {
-        return new Object[][] {
-                {"%", "%25"},
-                {";", "%3B"},
-                {"=", "%3D"},
-                {"&", "%26"},
-                {",", "%2C"},
-                {" ", " "},
-                {"qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM ", "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM "} //these should remain unchanged
+        return new Object[][] {{"%", "%25"}, {";", "%3B"}, {"=", "%3D"}, {"&", "%26"}, {",", "%2C"},
+                {" ", " "}, {"qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM ",
+                        "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM "} // these should
+                                                                                 // remain unchanged
         };
     }
 

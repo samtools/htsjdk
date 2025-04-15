@@ -22,19 +22,25 @@ import java.util.function.Consumer;
 
 
 /**
- * A class to write out gff3/gtf files.  Features are added using {@link #addFeature(Gff3Feature)}, directives using {@link #addDirective(Gff3Codec.Gff3Directive)},
- * and comments using {@link #addComment(String)}.  Note that the version 3 directive is automatically added at creation, so should not be added separately.
+ * A class to write out gff3/gtf files. Features are added using {@link #addFeature(Gff3Feature)},
+ * directives using {@link #addDirective(Gff3Codec.Gff3Directive)}, and comments using
+ * {@link #addComment(String)}. Note that the version 3 directive is automatically added at
+ * creation, so should not be added separately.
  */
 public abstract class AbstractGxxWriter implements Closeable {
 
     protected final OutputStream out;
 
-    protected AbstractGxxWriter(final Path path, final Set<String> fileExtensions) throws IOException {
+    protected AbstractGxxWriter(final Path path, final Set<String> fileExtensions)
+            throws IOException {
         if (fileExtensions.stream().noneMatch(e -> path.toString().endsWith(e))) {
-            throw new TribbleException("File " + path + " does not have extension consistent with gff3/gtf");
+            throw new TribbleException(
+                    "File " + path + " does not have extension consistent with gff3/gtf");
         }
 
-        final OutputStream outputStream = IOUtil.hasGzipFileExtension(path)? new BlockCompressedOutputStream(path.toFile()) : Files.newOutputStream(path);
+        final OutputStream outputStream =
+                IOUtil.hasGzipFileExtension(path) ? new BlockCompressedOutputStream(path.toFile())
+                        : Files.newOutputStream(path);
         out = new BufferedOutputStream(outputStream);
     }
 
@@ -56,22 +62,22 @@ public abstract class AbstractGxxWriter implements Closeable {
     }
 
     protected final void writeFirstEightFields(final Gff3Feature feature) throws IOException {
-        writeJoinedByDelimiter(AbstractGxxConstants.FIELD_DELIMITER, this::tryToWrite, Arrays.asList(
-                escapeString(feature.getContig()),
-                escapeString(feature.getSource()),
-                escapeString(feature.getType()),
-                Integer.toString(feature.getStart()),
-                Integer.toString(feature.getEnd()),
-                feature.getScore() < 0 ? AbstractGxxConstants.UNDEFINED_FIELD_VALUE : Double.toString(feature.getScore()),
-                feature.getStrand().toString(),
-                feature.getPhase() < 0 ? AbstractGxxConstants.UNDEFINED_FIELD_VALUE : Integer.toString(feature.getPhase())
-                )
-        );
+        writeJoinedByDelimiter(AbstractGxxConstants.FIELD_DELIMITER, this::tryToWrite,
+                Arrays.asList(escapeString(feature.getContig()), escapeString(feature.getSource()),
+                        escapeString(feature.getType()), Integer.toString(feature.getStart()),
+                        Integer.toString(feature.getEnd()),
+                        feature.getScore() < 0 ? AbstractGxxConstants.UNDEFINED_FIELD_VALUE
+                                : Double.toString(feature.getScore()),
+                        feature.getStrand().toString(),
+                        feature.getPhase() < 0 ? AbstractGxxConstants.UNDEFINED_FIELD_VALUE
+                                : Integer.toString(feature.getPhase())));
     }
 
-    protected abstract void writeAttributes(final Map<String, List<String>> attributes) throws IOException;
+    protected abstract void writeAttributes(final Map<String, List<String>> attributes)
+            throws IOException;
 
-    protected final <T> void writeJoinedByDelimiter(final char delimiter, final Consumer<T> consumer, final Collection<T> fields) throws IOException {
+    protected final <T> void writeJoinedByDelimiter(final char delimiter,
+            final Consumer<T> consumer, final Collection<T> fields) throws IOException {
         boolean isNotFirstField = false;
         for (final T field : fields) {
             if (isNotFirstField) {
@@ -86,19 +92,20 @@ public abstract class AbstractGxxWriter implements Closeable {
 
     /***
      * add a feature
+     * 
      * @param feature the feature to be added
      * @throws IOException
      */
     public void addFeature(final Gff3Feature feature) throws IOException {
-    	writeFirstEightFields(feature);
+        writeFirstEightFields(feature);
         out.write(AbstractGxxConstants.FIELD_DELIMITER);
         writeAttributes(feature.getAttributes());
         out.write(AbstractGxxConstants.END_OF_LINE_CHARACTER);
     }
 
     /***
-     * escape a String.
-     * Default behavior is to call {@link #encodeString(String)}
+     * escape a String. Default behavior is to call {@link #encodeString(String)}
+     * 
      * @param s the string to be escaped
      * @return the escaped string
      */
@@ -108,8 +115,9 @@ public abstract class AbstractGxxWriter implements Closeable {
 
     static String encodeString(final String s) {
         try {
-            //URLEncoder.encode is hardcoded to change all spaces to +, but we want spaces left unchanged so have to do this
-            //+ is escaped to %2B, so no loss of information
+            // URLEncoder.encode is hardcoded to change all spaces to +, but we want spaces left
+            // unchanged so have to do this
+            // + is escaped to %2B, so no loss of information
             return URLEncoder.encode(s, "UTF-8").replace("+", " ");
         } catch (final UnsupportedEncodingException ex) {
             throw new TribbleException("Encoding failure", ex);
@@ -118,6 +126,7 @@ public abstract class AbstractGxxWriter implements Closeable {
 
     /**
      * Add comment line
+     * 
      * @param comment the comment line (not including leading #)
      * @throws IOException
      */
@@ -130,19 +139,17 @@ public abstract class AbstractGxxWriter implements Closeable {
     public final void close() throws IOException {
         out.close();
     }
-    
+
     /** opens a writer as a Gff3Writer or as a GtfWriter using the path suffix */
     public static AbstractGxxWriter openWithFileExtension(final Path path) throws IOException {
         if (FileExtensions.GFF3.stream().anyMatch(e -> path.toString().endsWith(e))) {
-        	return new Gff3Writer(path);
-        	}
-        else if (FileExtensions.GTF.stream().anyMatch(e -> path.toString().endsWith(e))) {
-        	return new GtfWriter(path);
-        	}
-        else
-        	{
-        	throw new IllegalArgumentException(path.toString()+" doesn't have a gtf or a gff3 suffix");
-        	}
-    	}
-    
+            return new Gff3Writer(path);
+        } else if (FileExtensions.GTF.stream().anyMatch(e -> path.toString().endsWith(e))) {
+            return new GtfWriter(path);
+        } else {
+            throw new IllegalArgumentException(
+                    path.toString() + " doesn't have a gtf or a gff3 suffix");
+        }
+    }
+
 }

@@ -30,7 +30,6 @@ import htsjdk.tribble.util.ParsingUtils;
 /**
  * Abstract Base Codec for parsing Gff3 files or GTF codec
  */
-
 public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     protected static final int NUM_FIELDS = 9;
@@ -57,72 +56,93 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
 
     /** filter to removing keys from the EXTRA_FIELDS column */
     protected final Predicate<String> filterOutAttribute;
-    
+
 
 
     /**
      * @param decodeDepth a value from DecodeDepth
-     * @param filterOutAttribute  filter to remove keys from the EXTRA_FIELDS column
+     * @param filterOutAttribute filter to remove keys from the EXTRA_FIELDS column
      */
-    protected AbstractGxxCodec(final DecodeDepth decodeDepth, final Predicate<String> filterOutAttribute) {
+    protected AbstractGxxCodec(final DecodeDepth decodeDepth,
+            final Predicate<String> filterOutAttribute) {
         super(Gff3Feature.class);
         this.decodeDepth = decodeDepth;
         this.filterOutAttribute = filterOutAttribute;
-        }
-    
+    }
+
 
     public enum DecodeDepth {
-        DEEP ,
-        SHALLOW
+        DEEP, SHALLOW
     }
-    
+
     @Override
     public final Gff3Feature decode(final LineIterator lineIterator) throws IOException {
         return decode(lineIterator, decodeDepth);
     }
 
-    protected abstract Gff3Feature decode(final LineIterator lineIterator, final DecodeDepth depth) throws IOException;
+    protected abstract Gff3Feature decode(final LineIterator lineIterator, final DecodeDepth depth)
+            throws IOException;
 
-    
+
 
     /**
      * Parse attributes field for gff3 feature
+     * 
      * @param attributesString attributes field string from line in gff3 file
      * @return map of keys to values for attributes of this feature
      * @throws UnsupportedEncodingException
      */
-    protected abstract Map<String, List<String>> parseAttributesColumn(final String attributesString) throws UnsupportedEncodingException;
+    protected abstract Map<String, List<String>> parseAttributesColumn(
+            final String attributesString) throws UnsupportedEncodingException;
 
 
-    protected final Gff3BaseData parseLine(final String line, final int currentLine, final Predicate<String> filterOutAttribute) {
-        final List<String> splitLine = ParsingUtils.split(line, AbstractGxxConstants.FIELD_DELIMITER);
+    protected final Gff3BaseData parseLine(final String line, final int currentLine,
+            final Predicate<String> filterOutAttribute) {
+        final List<String> splitLine =
+                ParsingUtils.split(line, AbstractGxxConstants.FIELD_DELIMITER);
 
         if (splitLine.size() != NUM_FIELDS) {
-            throw new TribbleException("Found an invalid number of columns in the given Gff3/GTF file at line + " + currentLine + " - Given: " + splitLine.size() + " Expected: " + NUM_FIELDS + " : " + line);
+            throw new TribbleException(
+                    "Found an invalid number of columns in the given Gff3/GTF file at line + "
+                            + currentLine + " - Given: " + splitLine.size() + " Expected: "
+                            + NUM_FIELDS + " : " + line);
         }
 
         try {
             final String contig = URLDecoder.decode(splitLine.get(CHROMOSOME_NAME_INDEX), "UTF-8");
-            final String source = URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
+            final String source =
+                    URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
             final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
             final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
             final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
-            final double score = splitLine.get(SCORE_INDEX).equals(AbstractGxxConstants.UNDEFINED_FIELD_VALUE) ? -1 : Double.parseDouble(splitLine.get(SCORE_INDEX));
-            final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(AbstractGxxConstants.UNDEFINED_FIELD_VALUE) ? -1 : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
+            final double score =
+                    splitLine.get(SCORE_INDEX).equals(AbstractGxxConstants.UNDEFINED_FIELD_VALUE)
+                            ? -1
+                            : Double.parseDouble(splitLine.get(SCORE_INDEX));
+            final int phase = splitLine.get(GENOMIC_PHASE_INDEX)
+                    .equals(AbstractGxxConstants.UNDEFINED_FIELD_VALUE) ? -1
+                            : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
-            final Map<String, List<String>> attributes = parseAttributesColumn(splitLine.get(EXTRA_FIELDS_INDEX));
+            final Map<String, List<String>> attributes =
+                    parseAttributesColumn(splitLine.get(EXTRA_FIELDS_INDEX));
             /* remove attibutes matching 'filterOutAttribute' */
             attributes.keySet().removeIf(filterOutAttribute);
-            return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
-        } catch (final NumberFormatException ex ) {
-            throw new TribbleException("Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line, ex);
+            return new Gff3BaseData(contig, source, type, start, end, score, strand, phase,
+                    attributes);
+        } catch (final NumberFormatException ex) {
+            throw new TribbleException("Cannot read integer value for start/end position from line "
+                    + currentLine + ".  Line is: " + line, ex);
         } catch (final IOException ex) {
-            throw new TribbleException("Cannot decode feature info from line " + currentLine + ".  Line is: " + line, ex);
+            throw new TribbleException(
+                    "Cannot decode feature info from line " + currentLine + ".  Line is: " + line,
+                    ex);
         }
     }
 
     /**
-     * Gets map from line number to comment found on that line.  The text of the comment EXCLUDES the leading # which indicates a comment line.
+     * Gets map from line number to comment found on that line. The text of the comment EXCLUDES the
+     * leading # which indicates a comment line.
+     * 
      * @return Map from line number to comment found on line
      */
     public final Map<Integer, String> getCommentsWithLineNumbers() {
@@ -130,7 +150,8 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     }
 
     /**
-     * Gets list of comments parsed by the codec.  Excludes leading # which indicates a comment line.
+     * Gets list of comments parsed by the codec. Excludes leading # which indicates a comment line.
+     * 
      * @return
      */
     public final List<String> getCommentTexts() {
@@ -149,22 +170,22 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
         // make sure line conforms to gtf spec
         final List<String> fields = ParsingUtils.split(line, AbstractGxxConstants.FIELD_DELIMITER);
 
-        if(fields.size() != NUM_FIELDS) return false;;
+        if (fields.size() != NUM_FIELDS)
+            return false;;
 
-            // check that start and end fields are integers
-            try {
-                /* final int start = */ Integer.parseInt(fields.get(3));
-                /* final int end = */ Integer.parseInt(fields.get(4));
-            } catch (NumberFormatException | NullPointerException nfe) {
-                return false;
-            }
+        // check that start and end fields are integers
+        try {
+            /* final int start = */ Integer.parseInt(fields.get(3));
+            /* final int end = */ Integer.parseInt(fields.get(4));
+        } catch (NumberFormatException | NullPointerException nfe) {
+            return false;
+        }
 
-            // check for strand
-            final String strand = fields.get(GENOMIC_STRAND_INDEX);
-            return strand.equals(Strand.POSITIVE.toString()) ||
-                    strand.equals(Strand.NEGATIVE.toString()) ||
-                    strand.equals(Strand.NONE.toString()) ||
-                    strand.equals("?");
+        // check for strand
+        final String strand = fields.get(GENOMIC_STRAND_INDEX);
+        return strand.equals(Strand.POSITIVE.toString())
+                || strand.equals(Strand.NEGATIVE.toString())
+                || strand.equals(Strand.NONE.toString()) || strand.equals("?");
     }
 
     static String extractSingleAttribute(final List<String> values) {
@@ -182,7 +203,7 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     public final FeatureCodecHeader readHeader(LineIterator lineIterator) {
 
         List<String> header = new ArrayList<>();
-        while(lineIterator.hasNext()) {
+        while (lineIterator.hasNext()) {
             String line = lineIterator.peek();
             if (line.startsWith(Gff3Constants.COMMENT_START)) {
                 header.add(line);
@@ -201,7 +222,8 @@ public abstract class AbstractGxxCodec extends AbstractFeatureCodec<Gff3Feature,
     }
 
     @Override
-    public final LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
+    public final LocationAware makeIndexableSourceFromStream(
+            final InputStream bufferedInputStream) {
         return new AsciiLineReaderIterator(AsciiLineReader.from(bufferedInputStream));
     }
 

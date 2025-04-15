@@ -26,8 +26,8 @@ public class Gff3BaseData implements Locatable {
     private final int hashCode;
 
     public Gff3BaseData(final String contig, final String source, final String type,
-                 final int start, final int end, final Double score, final Strand strand, final int phase,
-                 final Map<String, List<String>> attributes) {
+            final int start, final int end, final Double score, final Strand strand,
+            final int phase, final Map<String, List<String>> attributes) {
         this.contig = contig;
         this.source = source;
         this.type = type;
@@ -38,16 +38,20 @@ public class Gff3BaseData implements Locatable {
         this.strand = strand;
         this.attributes = copyAttributesSafely(attributes);
         this.id = Gff3Codec.extractSingleAttribute(attributes.get(Gff3Constants.ID_ATTRIBUTE_KEY));
-        this.name = Gff3Codec.extractSingleAttribute(attributes.get(Gff3Constants.NAME_ATTRIBUTE_KEY));
-        this.aliases = attributes.getOrDefault(Gff3Constants.ALIAS_ATTRIBUTE_KEY, Collections.emptyList());
+        this.name =
+                Gff3Codec.extractSingleAttribute(attributes.get(Gff3Constants.NAME_ATTRIBUTE_KEY));
+        this.aliases =
+                attributes.getOrDefault(Gff3Constants.ALIAS_ATTRIBUTE_KEY, Collections.emptyList());
         this.hashCode = computeHashCode();
     }
 
-    private static Map<String, List<String>> copyAttributesSafely(final Map<String, List<String>> attributes) {
+    private static Map<String, List<String>> copyAttributesSafely(
+            final Map<String, List<String>> attributes) {
         final Map<String, List<String>> modifiableDeepMap = new LinkedHashMap<>();
 
         for (final Map.Entry<String, List<String>> entry : attributes.entrySet()) {
-            final List<String> unmodifiableDeepList = Collections.unmodifiableList(new ArrayList<>(entry.getValue()));
+            final List<String> unmodifiableDeepList =
+                    Collections.unmodifiableList(new ArrayList<>(entry.getValue()));
             modifiableDeepMap.put(entry.getKey(), unmodifiableDeepList);
         }
 
@@ -59,20 +63,19 @@ public class Gff3BaseData implements Locatable {
         if (other == this) {
             return true;
         }
-        if(!other.getClass().equals(Gff3BaseData.class)) {
+        if (!other.getClass().equals(Gff3BaseData.class)) {
             return false;
         }
 
         final Gff3BaseData otherBaseData = (Gff3BaseData) other;
-        boolean ret = otherBaseData.getContig().equals(getContig()) &&
-                otherBaseData.getSource().equals(getSource()) &&
-                otherBaseData.getType().equals(getType()) &&
-                otherBaseData.getStart() == getStart() &&
-                otherBaseData.getEnd() == getEnd() &&
-                ((Double)otherBaseData.getScore()).equals(score) &&
-                otherBaseData.getPhase() == getPhase() &&
-                otherBaseData.getStrand().equals(getStrand()) &&
-                otherBaseData.getAttributes().equals(getAttributes());
+        boolean ret = otherBaseData.getContig().equals(getContig())
+                && otherBaseData.getSource().equals(getSource())
+                && otherBaseData.getType().equals(getType())
+                && otherBaseData.getStart() == getStart() && otherBaseData.getEnd() == getEnd()
+                && ((Double) otherBaseData.getScore()).equals(score)
+                && otherBaseData.getPhase() == getPhase()
+                && otherBaseData.getStrand().equals(getStrand())
+                && otherBaseData.getAttributes().equals(getAttributes());
         if (getId() == null) {
             ret = ret && otherBaseData.getId() == null;
         } else {
@@ -82,7 +85,8 @@ public class Gff3BaseData implements Locatable {
         if (getName() == null) {
             ret = ret && otherBaseData.getName() == null;
         } else {
-            ret = ret && otherBaseData.getName() != null && otherBaseData.getName().equals(getName());
+            ret = ret && otherBaseData.getName() != null
+                    && otherBaseData.getName().equals(getName());
         }
 
         ret = ret && otherBaseData.getAliases().equals(getAliases());
@@ -157,8 +161,9 @@ public class Gff3BaseData implements Locatable {
         return attributes;
     }
 
-    /** 
-     * get the values as List for the <tt>key</tt>, or an empty list if this <tt>key</tt> is not present
+    /**
+     * get the values as List for the <tt>key</tt>, or an empty list if this <tt>key</tt> is not
+     * present
      * 
      * @param key key whose presence in this map is to be tested
      * @return the values as List, or an empty list if this key is not present
@@ -176,26 +181,33 @@ public class Gff3BaseData implements Locatable {
     public boolean hasAttribute(final String key) {
         return attributes.containsKey(key);
     }
-    
+
     /**
-     * Most attributes in a GFF file are present just one time in a line, e.g. : <tt>gene_biotype</tt>,  <tt>gene_name</tt>, etc ...  
-     * This function returns an <tt>Optional.empty</tt> if the <tt>key</tt> is not present,
-     *  an <tt>Optional.of(value)</tt> if there is only one value associated to the <tt>key</tt>,
-     *  or it throws an <tt>IllegalArgumentException</tt> if there is more than one value.
+     * Most attributes in a GFF file are present just one time in a line, e.g. :
+     * <tt>gene_biotype</tt>, <tt>gene_name</tt>, etc ... This function returns an
+     * <tt>Optional.empty</tt> if the <tt>key</tt> is not present, an <tt>Optional.of(value)</tt> if
+     * there is only one value associated to the <tt>key</tt>, or it throws an
+     * <tt>IllegalArgumentException</tt> if there is more than one value.
      * 
      * @param key key whose presence in the attributes is to be tested
-     * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the specified key
+     * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the
+     *         specified key
      * @throws IllegalArgumentException if there is more than one value
      */
     public Optional<String> getUniqueAttribute(final String key) {
         final List<String> atts = getAttribute(key);
-        switch(atts.size()) {
-            case 0 : return Optional.empty();
-            case 1 : return Optional.of(atts.get(0));
-            default : throw new IllegalArgumentException("getUniqueAttribute cannot be called with key="+key+" because it contains more than one value " + String.join(", ", atts));
+        switch (atts.size()) {
+            case 0:
+                return Optional.empty();
+            case 1:
+                return Optional.of(atts.get(0));
+            default:
+                throw new IllegalArgumentException("getUniqueAttribute cannot be called with key="
+                        + key + " because it contains more than one value "
+                        + String.join(", ", atts));
         }
     }
-    
+
     public String getId() {
         return id;
     }
@@ -208,10 +220,10 @@ public class Gff3BaseData implements Locatable {
         return aliases;
     }
 
-	@Override
-	public String toString() {
-		return "Gff3BaseData [contig=" + contig + ", source=" + source + ", type=" + type + ", start=" + start
-				+ ", end=" + end + ", score=" + score + ", strand=" + strand + ", phase=" + phase + ", attributes="
-				+ attributes + "]";
-	}
+    @Override
+    public String toString() {
+        return "Gff3BaseData [contig=" + contig + ", source=" + source + ", type=" + type
+                + ", start=" + start + ", end=" + end + ", score=" + score + ", strand=" + strand
+                + ", phase=" + phase + ", attributes=" + attributes + "]";
+    }
 }
