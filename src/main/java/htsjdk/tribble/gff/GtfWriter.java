@@ -37,7 +37,9 @@ public class GtfWriter extends AbstractGxxWriter {
                     out.write(GtfConstants.ATTRIBUTE_DELIMITER);
                 out.write(escapeString(key).getBytes());
                 out.write(GtfConstants.VALUE_DELIMITER);
+                out.write('\"');
                 out.write(escapeString(value).getBytes());
+                out.write('\"');
                 first = false;
             }
         }
