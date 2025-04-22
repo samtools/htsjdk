@@ -129,6 +129,29 @@ public class ReferenceSequenceFileFactory {
 
     /**
      * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.
+     *
+     * @param path the reference sequence file path
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
+        // this should thrown an exception if the fasta file is not supported
+        getFastaExtension(path);
+        // Using faidx requires truncateNamesAtWhitespace
+        if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
+            try {
+                return IOUtil.isBlockCompressed(path, true) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
+            } catch (final IOException e) {
+                throw new SAMException("Error opening FASTA: " + path, e);
+            }
+        } else {
+            return new FastaSequenceFile(path, truncateNamesAtWhitespace);
+        }
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
      * of ReferenceSequenceFile that is appropriate to read it. If the file represents
      * a Bundle file, the reference sequence file is created from the bundle.
      *
@@ -148,22 +171,8 @@ public class ReferenceSequenceFileFactory {
         if (refIOPath.hasExtension(BundleJSON.BUNDLE_EXTENSION)) {
             final Bundle referenceBundle = BundleJSON.toBundle(IOUtils.getStringFromPath(refIOPath), ioPathConstructor);
             return getReferenceSequenceFileFromBundle(referenceBundle, truncateNamesAtWhitespace, preferIndexed);
-        }
-        else {
-            // this should throw an exception if the fasta file is not supported
-            getFastaExtension(path);
-            // Using faidx requires truncateNamesAtWhitespace
-            if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
-                try {
-                    return IOUtil.isBlockCompressed(path, true) ?
-                            new BlockCompressedIndexedFastaSequenceFile(path) :
-                            new IndexedFastaSequenceFile(path);
-                } catch (final IOException e) {
-                    throw new SAMException("Error opening FASTA: " + path, e);
-                }
-            } else {
-                return new FastaSequenceFile(path, truncateNamesAtWhitespace);
-            }
+        } else {
+            return getReferenceSequenceFile(path, truncateNamesAtWhitespace, preferIndexed);
         }
     }
 
