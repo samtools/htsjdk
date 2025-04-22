@@ -171,22 +171,8 @@ public class ReferenceSequenceFileFactory {
         if (refIOPath.hasExtension(BundleJSON.BUNDLE_EXTENSION)) {
             final Bundle referenceBundle = BundleJSON.toBundle(IOUtils.getStringFromPath(refIOPath), ioPathConstructor);
             return getReferenceSequenceFileFromBundle(referenceBundle, truncateNamesAtWhitespace, preferIndexed);
-        }
-        else {
-            // this should throw an exception if the fasta file is not supported
-            getFastaExtension(path);
-            // Using faidx requires truncateNamesAtWhitespace
-            if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
-                try {
-                    return IOUtil.isBlockCompressed(path, true) ?
-                            new BlockCompressedIndexedFastaSequenceFile(path) :
-                            new IndexedFastaSequenceFile(path);
-                } catch (final IOException e) {
-                    throw new SAMException("Error opening FASTA: " + path, e);
-                }
-            } else {
-                return new FastaSequenceFile(path, truncateNamesAtWhitespace);
-            }
+        } else {
+            return getReferenceSequenceFile(path, truncateNamesAtWhitespace, preferIndexed);
         }
     }
 
