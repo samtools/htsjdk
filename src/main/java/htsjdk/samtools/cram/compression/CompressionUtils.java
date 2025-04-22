@@ -156,7 +156,7 @@ public class CompressionUtils {
         final int compressedSize = (int) (inSize + 257 * 257 * 3 + 9);
         final ByteBuffer outputBuffer = allocateByteBuffer(compressedSize);
         if (outputBuffer.remaining() < compressedSize) {
-            throw new CRAMException("Failed to allocate sufficient buffer size for RANS coder.");
+            throw new CRAMException("Failed to allocate sufficient buffer size for CRAM codec.");
         }
         return outputBuffer;
     }
@@ -174,5 +174,23 @@ public class CompressionUtils {
     // returns a LITTLE_ENDIAN ByteBuffer that is created by inputBuffer.slice()
     public static ByteBuffer slice(final ByteBuffer inputBuffer){
         return inputBuffer.slice().order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * Return a byte array with a size that matches the limit of the provided ByteBuffer. If the ByteBuffer is
+     * backed by a byte array that matches the limit of the ByteBuffer, the backing array will be returned directly.
+     * Otherwise, copy the contents of the ByteBuffer into a new byte array and return the new byte array.
+     * @param buffer input ByteBuffer which is the source of the byte array
+     * @return A byte array. If the ByteBuffer is backed by a byte array that matches the limit of the ByteBuffer,
+     * return the backing array directly. Otherwise, copy the contents of the ByteBuffer into a new byte array.
+     */
+    public static byte[] toByteArray(final ByteBuffer buffer) {
+        if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
+            return buffer.array();
+        }
+
+        final byte[] bytes = new byte[buffer.limit() - buffer.arrayOffset()];
+        buffer.get(bytes);
+        return bytes;
     }
 }

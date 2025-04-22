@@ -1,9 +1,19 @@
 package htsjdk.samtools.cram.compression;
 
+import htsjdk.samtools.cram.compression.fqzcomp.FQZCompDecode;
+import htsjdk.samtools.cram.compression.fqzcomp.FQZCompEncode;
+import htsjdk.samtools.cram.compression.fqzcomp.FQZCompExternalCompressor;
+import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationDecode;
+import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationEncode;
+import htsjdk.samtools.cram.compression.nametokenisation.NameTokeniserExternalCompressor;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
+import htsjdk.samtools.cram.compression.range.RangeExternalCompressor;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
 
@@ -17,7 +27,13 @@ public abstract class ExternalCompressor {
         this.method = method;
     }
 
-    public abstract byte[] compress(byte[] data);
+    /**
+     * Compress the data using the codec-specific context model.
+     * @param data the data to compress
+     * @param contextModel the context model to use for compression; may be null
+     * @return the compressed data
+     */
+    public abstract byte[] compress(byte[] data, CRAMCodecModelContext contextModel);
 
     public abstract byte[] uncompress(byte[] data);
 
@@ -74,13 +90,24 @@ public abstract class ExternalCompressor {
 
             case RANS:
                 return compressorSpecificArg == NO_COMPRESSION_ARG ?
-                        new RANSExternalCompressor(new RANS4x8Encode(), new RANS4x8Decode()) :
-                        new RANSExternalCompressor(compressorSpecificArg, new RANS4x8Encode(), new RANS4x8Decode());
+                        new RANS4x8ExternalCompressor(new RANS4x8Encode(), new RANS4x8Decode()) :
+                        new RANS4x8ExternalCompressor(compressorSpecificArg, new RANS4x8Encode(), new RANS4x8Decode());
 
-            case RANGE:
+            case RANSNx16:
+                return compressorSpecificArg == NO_COMPRESSION_ARG ?
+                        new RANSNx16ExternalCompressor(new RANSNx16Encode(), new RANSNx16Decode()) :
+                        new RANSNx16ExternalCompressor(compressorSpecificArg, new RANSNx16Encode(), new RANSNx16Decode());
+
+            case ADAPTIVE_ARITHMETIC:
                 return compressorSpecificArg == NO_COMPRESSION_ARG ?
                         new RangeExternalCompressor(new RangeEncode(), new RangeDecode()) :
                         new RangeExternalCompressor(compressorSpecificArg, new RangeEncode(), new RangeDecode());
+
+            case NAME_TOKENISER:
+                return new NameTokeniserExternalCompressor(new NameTokenisationEncode(), new NameTokenisationDecode());
+
+            case FQZCOMP:
+                return new FQZCompExternalCompressor(new FQZCompEncode(), new FQZCompDecode());
 
             case BZIP2:
                 ValidationUtils.validateArg(

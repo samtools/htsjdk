@@ -37,11 +37,11 @@ public class CRAMVersionTest extends HtsjdkTest {
      * @throws IOException
      */
     @Test
-    public void test_V3() throws IOException {
+    public void test_V3_1() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ReferenceSource source = new ReferenceSource((File) null);
         SAMFileHeader samFileHeader = new SAMFileHeader();
-        CRAMVersion cramVersion = CramVersions.CRAM_v3;
+        CRAMVersion cramVersion = CramVersions.CRAM_v3_1;
         CRAMFileWriter w = new CRAMFileWriter(baos, source, samFileHeader, null);
         SAMRecord record = new SAMRecord(samFileHeader);
         record.setReadName("name");

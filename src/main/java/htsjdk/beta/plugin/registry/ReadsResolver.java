@@ -205,5 +205,3 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
     }
 
 }
-
-

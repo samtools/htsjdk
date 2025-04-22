@@ -4,10 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.annotations.DataProvider;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 public class StructureTestUtils extends HtsjdkTest {
 
@@ -24,9 +21,16 @@ public class StructureTestUtils extends HtsjdkTest {
         add(DataSeries.TN_TagNameAndType);
     }});
 
-    @DataProvider(name="externalCompressionMethods")
-    public Object[] getExternalCompressionMethods() {
-        return BlockCompressionMethod.values();
+    @DataProvider(name="unstructuredStreamCompressionMethods")
+    public Object[] getUnstructuredStreamCompressionMethods() {
+        // for tests that use this provider, only choose compressors that can work on arbitrary (unstructured)
+        // bit streams; methods that require the compressed data to conform to a particular structure, such as
+        // the name tokenizer compressor which requires a list of byte-separated names, or FQZComp, for which
+        // there is not yet an encode implementation, will not be able to round-trip arbitrary test data
+        return Arrays.stream(BlockCompressionMethod.values())
+                .filter(method ->
+                        method != BlockCompressionMethod.NAME_TOKENISER && method != BlockCompressionMethod.FQZCOMP)
+                .toArray();
     }
 
 }

@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class NameTokenisationTest extends HtsjdkTest {
-    private final static CharSequence LOCAL_NAME_SEPARATOR_CHARSEQUENCE =
+    public final static CharSequence LOCAL_NAME_SEPARATOR_CHARSEQUENCE =
             new String(new byte[] {NameTokenisationDecode.NAME_SEPARATOR});
 
     private static class TestDataEnvelope {
@@ -30,12 +30,11 @@ public class NameTokenisationTest extends HtsjdkTest {
     @DataProvider(name="nameTokenisation")
     public Object[][] getNameTokenisationTestData() {
 
-        final List<String> readNamesList = new ArrayList<>();
-        readNamesList.add("");
+        final List<String> readNamesTestCases = new ArrayList<>();
 
         // a subset of read names from
         // src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam
-        readNamesList.add("20FUKAAXX100202:6:27:4968:125377" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+        readNamesTestCases.add("20FUKAAXX100202:6:27:4968:125377" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "20FUKAAXX100202:6:27:4986:125375" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "20FUKAAXX100202:5:62:8987:1929" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "20GAVAAXX100126:1:28:4295:139802" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
@@ -50,9 +49,9 @@ public class NameTokenisationTest extends HtsjdkTest {
 
         // a subset of read names from
         // src/test/resources/htsjdk/samtools/longreads/NA12878.m64020_190210_035026.chr21.5011316.5411316.unmapped.bam
-        readNamesList.add("m64020_190210_035026/44368402/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
-        readNamesList.add("m64020_190210_035026/44368402/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
-        readNamesList.add("m64020_190210_035026/44368402/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+        readNamesTestCases.add("m64020_190210_035026/44368402/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+
+        readNamesTestCases.add("m64020_190210_035026/44368402/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "m64020_190210_035026/124127126/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "m64020_190210_035026/4981311/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "m64020_190210_035026/80022195/ccs" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
@@ -75,12 +74,69 @@ public class NameTokenisationTest extends HtsjdkTest {
         );
 
         // source: https://gatk.broadinstitute.org/hc/en-us/articles/360035890671-Read-groups
-        readNamesList.add(
+        readNamesTestCases.add(
                 "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
                 "H0164ALXX140820:2:1101:15118:25288" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
 
+        readNamesTestCases.add(
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "H0164ALXX140820:3:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "H0164ALXX140820:27:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+
+        // duplicate names
+        readNamesTestCases.add(
+            "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+            "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+
+        // a few degenerate test cases; these are unlikely to be seen in practice, but they exist
+        // in test data and need to be handled
+        readNamesTestCases.add(
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+        );
+
+        readNamesTestCases.add(
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "2" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+        );
+        readNamesTestCases.add(
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+        );
+
+        readNamesTestCases.add(
+                "A read name" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+        );
+
+        readNamesTestCases.add(
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "A read name" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+        );
+
+        readNamesTestCases.add(
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "A read name" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "2" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+        );
+
+        readNamesTestCases.add(
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "H0164ALXX140820:2:1101:15118:25288" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+
+        readNamesTestCases.add(
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "A read name" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+
+        readNamesTestCases.add(
+                "H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE +
+                "A read name" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+
         final List<Object[]> testCases = new ArrayList<>();
-        for (final String readName : readNamesList) {
+        for (final String readName : readNamesTestCases) {
             for (boolean useArith : Arrays.asList(true, false)) {
                 testCases.add(new Object[] { new TestDataEnvelope(readName.getBytes(), useArith) });
             }

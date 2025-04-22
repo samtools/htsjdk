@@ -6,6 +6,7 @@ htsjdk.beta.codecs.reads.sam.samV1_0.SAMCodecV1_0
 htsjdk.beta.codecs.reads.bam.bamV1_0.BAMCodecV1_0
 htsjdk.beta.codecs.reads.cram.cramV2_1.CRAMCodecV2_1
 htsjdk.beta.codecs.reads.cram.cramV3_0.CRAMCodecV3_0
+htsjdk.beta.codecs.reads.cram.cramV3_1.CRAMCodecV3_1
 htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2.HtsgetBAMCodecV1_2
 
 # Variants codecs

@@ -25,6 +25,7 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -42,7 +43,7 @@ public final class BZIP2ExternalCompressor extends ExternalCompressor {
     }
 
     @Override
-    public byte[] compress(final byte[] data) {
+    public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try (final BZip2CompressorOutputStream bos = new BZip2CompressorOutputStream(byteArrayOutputStream)) {
             IOUtil.copyStream(new ByteArrayInputStream(data), bos);
