@@ -81,4 +81,5 @@ public final class FileExtensions {
     public static final Set<String> BLOCK_COMPRESSED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
     public static final Set<String> GFF3 = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gff3", ".gff", ".gff3.gz", ".gff.gz")));
+    public static final Set<String> GTF = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gtf", ".gtf.gz")));
 }
