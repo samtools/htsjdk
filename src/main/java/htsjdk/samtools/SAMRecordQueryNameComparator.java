@@ -31,42 +31,15 @@ import java.io.Serializable;
 public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serializable {
     private static final long serialVersionUID = 1L;
 
+    private static boolean isDigit(final char c) {
+        return Character.isDigit(c);
+    }
+
     @Override
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
-        int cmp = fileOrderCompare(samRecord1, samRecord2);
-        if (cmp != 0) {
-            return cmp;
-        }
-
-        final boolean r1Paired = samRecord1.getReadPairedFlag();
-        final boolean r2Paired = samRecord2.getReadPairedFlag();
-
-        if (r1Paired || r2Paired) {
-            if (!r1Paired) return 1;
-            else if (!r2Paired) return -1;
-            else if (samRecord1.getFirstOfPairFlag()  && samRecord2.getSecondOfPairFlag()) return -1;
-            else if (samRecord1.getSecondOfPairFlag() && samRecord2.getFirstOfPairFlag()) return 1;
-        }
-
-        if (samRecord1.getReadNegativeStrandFlag() != samRecord2.getReadNegativeStrandFlag()) {
-            return (samRecord1.getReadNegativeStrandFlag()? 1: -1);
-        }
-        if (samRecord1.isSecondaryAlignment() != samRecord2.isSecondaryAlignment()) {
-            return samRecord2.isSecondaryAlignment()? -1: 1;
-        }
-        if (samRecord1.getSupplementaryAlignmentFlag() != samRecord2.getSupplementaryAlignmentFlag()) {
-            return samRecord2.getSupplementaryAlignmentFlag() ? -1 : 1;
-        }
-        final Integer hitIndex1 = samRecord1.getIntegerAttribute(SAMTag.HI);
-        final Integer hitIndex2 = samRecord2.getIntegerAttribute(SAMTag.HI);
-        if (hitIndex1 != null) {
-            if (hitIndex2 == null) return 1;
-            else {
-                cmp = hitIndex1.compareTo(hitIndex2);
-                if (cmp != 0) return cmp;
-            }
-        } else if (hitIndex2 != null) return -1;
-        return 0;
+        final int retval = compareReadNames(samRecord1.getReadName(), samRecord2.getReadName());
+        if (retval == 0) return Integer.compare(samRecord1.getFlags()&0xc0, samRecord2.getFlags()&0xc0);
+        else return retval;
     }
 
     /**
@@ -85,7 +58,57 @@ public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serial
      * Encapsulate algorithm for comparing read names in queryname-sorted file, since there have been
      * conversations about changing the behavior.
      */
-    public static int compareReadNames(final String readName1, final String readName2) {
-        return readName1.compareTo(readName2);
+    public static int compareReadNames(final String name1, final String name2) {
+        int index1 = 0;
+        int index2 = 0;
+        final int len1 = name1.length();
+        final int len2 = name2.length();
+
+        // keep going while we have characters left
+        while (index1 < len1 && index2 < len2) {
+            if (!isDigit(name1.charAt(index1)) || !isDigit(name2.charAt(index2))) { // no more
+                if (name1.charAt(index1) != name2.charAt(index2)) {
+                    return (int) name1.charAt(index1) - (int) name2.charAt(index2);
+                } else {
+                    index1++;
+                    index2++;
+                }
+            } else { // next characters are digits
+                // skip over leading zeros
+                while (index1 < len1 && name1.charAt(index1) == '0') index1++;
+                while (index2 < len2 && name2.charAt(index2) == '0') index2++;
+                // skip over any matching digits
+                while (index1 < len1 && index2 < len2 &&
+                        isDigit(name1.charAt(index1)) &&
+                        isDigit(name2.charAt(index2)) &&
+                        name1.charAt(index1) == name2.charAt(index2)) {
+                    index1++;
+                    index2++;
+                }
+
+                boolean isDigit1 = index1 < len1 && isDigit(name1.charAt(index1));
+                boolean isDigit2 = index2 < len2 && isDigit(name2.charAt(index2));
+
+                if (isDigit1 && isDigit2) {
+                    // skip until we hit a non-digit or the end.
+                    int i = 0;
+                    while (index1 + i < len1 && index2 + i < len2 &&
+                            isDigit(name1.charAt(index1 + i)) &&
+                            isDigit(name2.charAt(index2 + i))) {
+                        i++;
+                    }
+                    if (index1 + i < len1 && isDigit(name1.charAt(index1 + i))) return 1;
+                    else if (index2 + i < len2 && isDigit(name2.charAt(index2 + i))) return -1;
+                    else return (int)name1.charAt(index1) - (int)name2.charAt(index2);
+                }
+                else if (isDigit1) return 1;
+                else if (isDigit2) return -1;
+                else if (index1 != index2) return index2 - index1;
+            }
+        }
+
+        if (index1 < len1) return 1;
+        else if (index2 < len2) return -1;
+        else return 0;
     }
 }
