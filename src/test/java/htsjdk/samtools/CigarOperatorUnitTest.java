@@ -29,6 +29,8 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
@@ -49,14 +51,45 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
         };
     }
 
+    @Test(dataProvider = "values")
+    public void testCharacterStringConstraints(final CigarOperator op) {
+        Assert.assertEquals(op.toString().length(), 1, "the string representation must have exactly one character");
+        if (op == CigarOperator.EQ) {
+            Assert.assertEquals(op.toString(), "=", "the EQ operation string must be '='");
+        } else {
+            Assert.assertEquals(op.toString(), op.name(), "except for EQ all names must be the same as the string");
+        }
+        Assert.assertEquals(op.toString().charAt(0), op.asChar(), "the character representation must match the first character of the string representation");
+        Assert.assertEquals((byte) op.asChar(), op.asByte(), "asByte must give the same result as asChar");
+    }
+
+    @DataProvider(name="values")
+    public Object[][] values() {
+        return Arrays.stream(CigarOperator.values())
+                .map(op -> new Object[] { op})
+                .toArray(Object[][]::new);
+    }
+
     @Test(dataProvider = "chars")
-    public void testCharacterToEnum(final char c, final CigarOperator op) throws Exception {
+    @Deprecated
+    public void testCharacterToEnum(final char c, final CigarOperator op)  {
         Assert.assertEquals(CigarOperator.characterToEnum(c), op);
     }
 
     @Test(dataProvider = "chars")
-    public void testEnumToCharacter(final char c, final CigarOperator op) throws Exception {
+    @Deprecated
+    public void testEnumToCharacter(final char c, final CigarOperator op) {
         Assert.assertEquals(CigarOperator.enumToCharacter(op), c);
+    }
+
+    @Test(dataProvider = "chars")
+    public void testFromChar(final char c, final CigarOperator op)  {
+        Assert.assertEquals(CigarOperator.fromChar(c), op);
+    }
+
+    @Test(dataProvider = "chars")
+    public void testAsChar(final char c, final CigarOperator op) {
+        Assert.assertEquals(op.asChar(), c);
     }
 
     @DataProvider
@@ -67,12 +100,18 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "illegalChars", expectedExceptions = IllegalArgumentException.class)
-    public void testIllegalCharacterToEnum(final char c) throws Exception {
+    @Deprecated
+    public void testIllegalCharacterToEnum(final char c) {
         CigarOperator.characterToEnum(c);
     }
 
+    @Test(dataProvider = "illegalChars", expectedExceptions = IllegalArgumentException.class)
+    public void testIllegalCharsToEnum(final char c) {
+        CigarOperator.fromChar(c);
+    }
+
     @DataProvider
-    public Object[][] binary() {
+    public Object[][] bamCode() {
         return new Object[][] {
                 {0, CigarOperator.M},
                 {1, CigarOperator.I},
@@ -86,14 +125,26 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "binary")
-    public void testBinaryToEnum(final int bin, final CigarOperator op) throws Exception {
+    @Test(dataProvider = "bamCode")
+    @Deprecated
+    public void testBinaryToEnum(final int bin, final CigarOperator op) {
         Assert.assertEquals(CigarOperator.binaryToEnum(bin), op);
     }
 
-    @Test(dataProvider = "binary")
-    public void testEnumToBinary(final int bin, final CigarOperator op) throws Exception {
+    @Test(dataProvider = "bamCode")
+    public void testFromBamCode(final int bin, final CigarOperator op) {
+        Assert.assertSame(CigarOperator.fromBamEncoding(bin), op);
+    }
+
+    @Test(dataProvider = "bamCode")
+    @Deprecated
+    public void testEnumToBinary(final int bin, final CigarOperator op) {
         Assert.assertEquals(CigarOperator.enumToBinary(op), bin);
+    }
+
+    @Test(dataProvider = "bamCode")
+    public void testBamCode(final int bin, final CigarOperator op) {
+        Assert.assertEquals(op.getBamEncoding(), bin);
     }
 
     @DataProvider
@@ -104,8 +155,17 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "illegalBinary", expectedExceptions = IllegalArgumentException.class)
-    public void testIllegalBinaryToEnum(final int bin) throws Exception {
-        CigarOperator.binaryToEnum(bin);
+    @Deprecated
+    public void testIllegalBinaryToEnum(final int bin)  {
+        @SuppressWarnings("unused")
+        final CigarOperator op = CigarOperator.binaryToEnum(bin);
+
+    }
+
+    @Test(dataProvider = "illegalBinary", expectedExceptions = IllegalArgumentException.class)
+    public void testIllegalFromBamCode(final int bin) {
+        @SuppressWarnings("unused")
+        final CigarOperator op = CigarOperator.fromBamEncoding(bin);
     }
 
     @DataProvider
@@ -127,9 +187,10 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     @Test(dataProvider = "opStatus")
     public void testIsSetOfOperations(final CigarOperator op, final boolean isClipping,
             final boolean isIndel,final boolean isSkip, final boolean isAlignment,
-            final boolean isPadding) throws Exception {
+            final boolean isPadding) {
         Assert.assertEquals(op.isClipping(), isClipping);
         Assert.assertEquals(op.isIndel(), isIndel);
+        Assert.assertEquals(op.isSkip(), isSkip);
         Assert.assertEquals(op.isIndelOrSkippedRegion(), isIndel || isSkip);
         Assert.assertEquals(op.isAlignment(), isAlignment);
         Assert.assertEquals(op.isPadding(), isPadding);
