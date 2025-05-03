@@ -63,7 +63,7 @@ public class VCF3Codec extends AbstractVCFCodec {
         VCFHeaderVersion version = null;
         boolean foundHeaderVersion = false;
         while (reader.hasNext()) {
-            lineNo++;
+            lineNo.incrementAndGet();
             final String line = reader.peek();
             if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
                 final String[] lineFields = line.substring(2).split("=");
