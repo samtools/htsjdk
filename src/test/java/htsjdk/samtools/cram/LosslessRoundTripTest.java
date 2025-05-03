@@ -24,6 +24,7 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         samFileHeader.addSequence(new SAMSequenceRecord("1", 3));
         samFileHeader.addReadGroup(new SAMReadGroupRecord("some read group"));
 
+        samFileHeader = CRAMTestUtils.addFakeSequenceMD5s(samFileHeader);
         CRAMFileWriter w = new CRAMFileWriter(baos, source, samFileHeader, null);
         SAMRecord record = new SAMRecord(samFileHeader);
         record.setReadName("name");

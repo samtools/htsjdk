@@ -140,11 +140,6 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final int refId1 = 0;
         final int refId2 = 1;
 
-        // for each ref, we alternate unmapped-placed with mapped
-
-        final int expectedMapped = 1;
-        final int expectedUnmappedPlaced = 2;
-
         try (final ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
              final ByteArrayOutputStream indexStream = new ByteArrayOutputStream()) {
             final CRAMContainerStreamWriter cramContainerStreamWriter = new CRAMContainerStreamWriter(

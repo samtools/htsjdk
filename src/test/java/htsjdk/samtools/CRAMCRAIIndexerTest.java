@@ -43,13 +43,13 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
     @Test
     public void testMultiRefContainer() throws IOException {
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        SAMFileHeader samFileHeader = new SAMFileHeader();
         samFileHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
         samFileHeader.addSequence(new SAMSequenceRecord("1", 10));
         samFileHeader.addSequence(new SAMSequenceRecord("2", 10));
         samFileHeader.addSequence(new SAMSequenceRecord("3", 10));
-
+        samFileHeader = CRAMTestUtils.addFakeSequenceMD5s(samFileHeader);
         final ReferenceSource source = new ReferenceSource(new FakeReferenceSequenceFile(samFileHeader.getSequenceDictionary().getSequences()));
 
         byte[] cramBytes;

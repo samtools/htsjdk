@@ -89,6 +89,7 @@ public class CRAMContainerStreamWriter {
         this.cramIndexer = indexer;
         this.outputStreamIdentifier = outputIdentifier;
         this.containerFactory = new ContainerFactory(samFileHeader, encodingStrategy, referenceSource);
+        samFileHeader.getSequenceDictionary().requireMD5sOrThrow(outputIdentifier);
     }
 
     /**

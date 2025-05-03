@@ -23,9 +23,10 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -36,9 +37,11 @@ import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.Deflater;
 import static htsjdk.samtools.SamReader.Type.*;
 
@@ -634,6 +637,7 @@ public class SAMFileWriterFactory implements Cloneable {
             final Path referenceFasta) {
 
         final CRAMReferenceSource referenceSource;
+        SAMFileHeader repairedHeader = header;
         if (referenceFasta == null) {
             log.info("Reference fasta is not provided when writing CRAM file " + outputFile.toUri().toString());
             log.info("Will attempt to use a default reference or download as set by defaults:");
@@ -642,6 +646,10 @@ public class SAMFileWriterFactory implements Cloneable {
 
             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
         } else {
+            // CRAMs are required to have a SAMHeader with a sequence dictionary that contains MD5
+            // checksums for each sequence. Check the proposed dictionary to see if it has MD5s, and
+            // if not, attempt to update it with MD5s from the reference dictionary, if one exists.
+            repairedHeader = repairSequenceMD5s(header, new HtsPath(referenceFasta.toUri().toString()));
             referenceSource = new ReferenceSource(referenceFasta);
         }
         OutputStream cramOS = null;
@@ -674,7 +682,7 @@ public class SAMFileWriterFactory implements Cloneable {
                 indexOS,
                 presorted,
                 referenceSource,
-                header,
+                repairedHeader,
                 outputFile.toUri().toString());
         setCRAMWriterDefaults(writer);
 
@@ -685,6 +693,35 @@ public class SAMFileWriterFactory implements Cloneable {
     private void setCRAMWriterDefaults(final CRAMFileWriter writer) {
         //TODO: set encoding params
         //writer.setEncodingParams(new CRAMEncodingStrategy());
+    }
+
+    // If any sequence records don't contain MD5s, attempt to repair them by consulting the reference's
+    // dictionary file, if one exists.
+    private SAMFileHeader repairSequenceMD5s(final SAMFileHeader header, final IOPath referenceFasta) {
+        final List<SAMSequenceRecord> missingMD5s = header.getSequenceDictionary().getSequencesWithMissingMD5s();
+        if (!missingMD5s.isEmpty()) {
+            final String missingMD5Message = SAMSequenceDictionary.createFormattedMD5Message("SAM header", missingMD5s);
+            log.warn(String.format(
+                    "%s Attempting to use the reference dictionary to repair missing MD5s required for CRAM output.",
+                    missingMD5Message));
+            final IOPath referenceDictionary = SAMSequenceDictionary.getFastaDictionaryFileName(referenceFasta);
+            try (final InputStream fastaDictionaryStream = referenceDictionary.getInputStream()) {
+                final SAMSequenceDictionary newDictionary =
+                        SAMSequenceDictionary.loadSAMSequenceDictionary(fastaDictionaryStream);
+                newDictionary.requireMD5sOrThrow(referenceFasta.toString());
+                final SAMFileHeader repairedHeader = header.clone();
+                repairedHeader.setSequenceDictionary(newDictionary);
+                return repairedHeader;
+            } catch (final IOException | RuntimeException e) {
+                throw new RuntimeException(
+                        String.format(
+                                "The attempt to repair the missing sequence MD5s (%s) using the reference dictionary %s failed.",
+                            missingMD5Message,
+                            referenceDictionary),
+                        e);
+            }
+        }
+        return header;
     }
 
     @Override
