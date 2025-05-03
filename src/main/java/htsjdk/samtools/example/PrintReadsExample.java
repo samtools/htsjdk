@@ -22,6 +22,7 @@
  */
 package htsjdk.samtools.example;
 
+import htsjdk.io.HtsPath;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -29,6 +30,7 @@ import htsjdk.samtools.util.ProgressLogger;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,7 +40,7 @@ import java.util.stream.Collectors;
  * This is a example program showing how to use SAM readers and (optionally) writers.
  * It's also useful for measuring time.
  * An example invocation is:
- * <code>java -cp dist/htsjdk-2.1.1.jar htsjdk.samtools.example.PrintReadsExample in.bam false a.bam</code>
+ * <code>java -cp build/lib/htsjdk-< VERSION >.jar htsjdk.samtools.example.PrintReadsExample src/test/resources/htsjdk/samtools/example.bam false /dev/stdout </code>
  * Arguments:
  * - the first argument is the input file (SAM or BAM)
  * - the second argument is a boolean (true or false) that indicates whether reads are to be eagerly decoded (useful for benchmarking)
@@ -55,7 +57,7 @@ public final class PrintReadsExample {
             System.out.println("Usage: " + PrintReadsExample.class.getCanonicalName() + " inFile eagerDecode [outFile]");
             System.exit(1);
         }
-        final File inputFile = new File(args[0]);
+        final Path inputFile = new HtsPath(args[0]).toPath();
         final boolean eagerDecode = Boolean.parseBoolean(args[1]); //useful to test (realistic) scenarios in which every record is always fully decoded.
         final File outputFile = args.length >= 3 ? new File(args[2]) : null;
 
@@ -64,14 +66,14 @@ public final class PrintReadsExample {
         log.info("Start with args:" + Arrays.toString(args));
         printConfigurationInfo();
 
-        SamReaderFactory readerFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
+        final SamReaderFactory readerFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
         if (eagerDecode) {
-            readerFactory = readerFactory.enable(SamReaderFactory.Option.EAGERLY_DECODE);
+            readerFactory.enable(SamReaderFactory.Option.EAGERLY_DECODE);
         }
 
         try (final SamReader reader = readerFactory.open(inputFile)) {
             final SAMFileHeader header = reader.getFileHeader();
-            try (final SAMFileWriter writer = outputFile != null ? new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile) : null) {
+            try (final SAMFileWriter writer = outputFile != null ? new SAMFileWriterFactory().makeWriter(header, true, outputFile,null) : null) {
                 final ProgressLogger pl = new ProgressLogger(log, 1000000);
                 for (final SAMRecord record : reader) {
                     if (writer != null) {
