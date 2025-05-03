@@ -16,6 +16,8 @@ import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -105,22 +107,33 @@ public class LittleEndianInputStream extends FilterInputStream {
     }
 
     /**
-     * Read a null terminated byte array and return result as a string
-     *
-     * @return
-     * @throws IOException
+     * Read a null terminated byte array and return result as a String
+     * This method decodes theh bytes as UTF-8 string
+     * @throws IOException if reading from the stream fails for some reason
+     * @throws EOFException if the stream ends without encountering a null terminator.
+     * @deprecated Prefer the {@link #readString(Charset)} which allows specifying a charset explicitly
      */
-
+    @Deprecated
     public String readString() throws IOException {
-        ByteArrayOutputStream bis = new ByteArrayOutputStream(100);
-        byte b;
-        while ((b = (byte) in.read()) != 0) {
+        return readString(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Read a null terminated byte array and return result as a String
+     * @param charset the Charset to use when decoding the bytes to a String
+     * @throws IOException if reading from the stream fails for some reason
+     * @throws EOFException if the stream ends without encountering a null terminator.
+     */
+    public String readString(final Charset charset) throws IOException {
+        final ByteArrayOutputStream bis = new ByteArrayOutputStream(100);
+        int b;
+        while ((b = in.read()) != 0) {
             if(b < 0) {
                 throw new EOFException();
             }
-            bis.write(b);
+            bis.write((byte)b);
         }
-        return new String(bis.toByteArray());
+        return bis.toString(charset.name());
     }
 
 

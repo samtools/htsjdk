@@ -29,6 +29,7 @@ import htsjdk.tribble.util.LittleEndianOutputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -302,10 +303,10 @@ public abstract class AbstractIndex implements MutableIndex {
     private void readHeader(final LittleEndianInputStream dis) throws IOException {
 
         version = dis.readInt();
-        indexedPath = IOUtil.getPath(dis.readString());
+        indexedPath = IOUtil.getPath(dis.readString(StandardCharsets.US_ASCII));
         indexedFileSize = dis.readLong();
         indexedFileTS = dis.readLong();
-        indexedFileMD5 = dis.readString();
+        indexedFileMD5 = dis.readString(StandardCharsets.US_ASCII);
         flags = dis.readInt();
         if (version < 3 && (flags & SEQUENCE_DICTIONARY_FLAG) == SEQUENCE_DICTIONARY_FLAG) {
             readSequenceDictionary(dis);
@@ -314,8 +315,8 @@ public abstract class AbstractIndex implements MutableIndex {
         if (version >= 3) {
             int nProperties = dis.readInt();
             while (nProperties-- > 0) {
-                final String key = dis.readString();
-                final String value = dis.readString();
+                final String key = dis.readString(StandardCharsets.US_ASCII);
+                final String value = dis.readString(StandardCharsets.US_ASCII);
                 properties.put(key, value);
             }
         }
@@ -332,7 +333,7 @@ public abstract class AbstractIndex implements MutableIndex {
         final int size = dis.readInt();
         if (size < 0) throw new IllegalStateException("Size of the sequence dictionary entries is negative");
         for (int x = 0; x < size; x++) {
-            dis.readString();
+            dis.readString(StandardCharsets.US_ASCII);
             dis.readInt();
         }
     }
