@@ -30,13 +30,10 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -46,7 +43,6 @@ import java.util.Iterator;
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
 abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFile {
-    static final Log log = Log.getInstance(AbstractIndexedFastaSequenceFile.class);
 
     /**
      * A representation of the sequence index, stored alongside the fasta in a .fasta.fai file.
@@ -157,22 +153,18 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * and that beyond the last position references in the index there is only one line followed by whitespaces
      *
      * @param fastaFile Path to fasta file
-     * @param FastaSequenceIndex index file to check against the dictionary.
+     * @param fastaSequenceIndexes index file to check against the fasta file.
      *
      * @throws IOException in case of io-error when reading fastaFile
      */
     public void sanityCheckFastaAgainstIndex(final Path fastaFile,
-                                                    final FastaSequenceIndex FastaSequenceIndex) throws IOException {
+                                             final FastaSequenceIndex fastaSequenceIndexes) throws IOException {
 
-        final Iterator<FastaSequenceIndexEntry> iterator = FastaSequenceIndex.iterator();
-        FastaSequenceIndexEntry fastaSequenceIndex = null;
-        while (iterator.hasNext()) {
-            fastaSequenceIndex = iterator.next();
-        }
-        assert fastaSequenceIndex != null;
-        final long lastSequenceLength = fastaSequenceIndex.getSize();
-        final long lastSequenceStart = fastaSequenceIndex.getLocation();
-        final long lastSequenceEnd = lastSequenceStart + fastaSequenceIndex.getOffset(lastSequenceLength);
+        final FastaSequenceIndexEntry lastSequenceIndex = fastaSequenceIndexes.getIndexEntry(fastaSequenceIndexes.getLastSequence());
+
+        final long lastSequenceLength = lastSequenceIndex.getSize();
+        final long lastSequenceStart = lastSequenceIndex.getLocation();
+        final long lastSequenceEnd = lastSequenceStart + lastSequenceIndex.getOffset(lastSequenceLength);
 
         final long fastaLength = Files.size(fastaFile);
         //Question: should we worry about files with lots of whitespace in their end?
@@ -180,10 +172,11 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
             throw new IllegalArgumentException("The fasta file is shorter (%d) than its index claims (%d). Please reindex the fasta.".formatted(fastaLength, lastSequenceEnd));
         }
         // if fasta file is longer than this, make sure that the remainder is just whitespaces
-        if (lastSequenceEnd + fastaSequenceIndex.getTerminatorLength() + 1 < fastaLength) {
+        long posOfInterest = lastSequenceEnd + lastSequenceIndex.getTerminatorLength();
+        if (posOfInterest < fastaLength) {
 
             final ByteBuffer channelBuffer = ByteBuffer.allocate(100);
-            long posOfInterest = lastSequenceEnd + fastaSequenceIndex.getTerminatorLength() + 1;
+
             while (posOfInterest < fastaLength) {
                 channelBuffer.clear();
                 readFromPosition(channelBuffer, posOfInterest);
@@ -272,7 +265,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         // Cast to long so the second argument cannot overflow a signed integer.
         final long minBufferSize = Math.min((long) Defaults.NON_ZERO_BUFFER_SIZE, (long)(length / basesPerLine + 2) * (long)bytesPerLine);
         if (minBufferSize > Integer.MAX_VALUE) throw new SAMException("Buffer is too large: " +  minBufferSize);
-
+        
         // Allocate a buffer for reading in sequence data.
         final ByteBuffer channelBuffer = ByteBuffer.allocate((int)minBufferSize);
 

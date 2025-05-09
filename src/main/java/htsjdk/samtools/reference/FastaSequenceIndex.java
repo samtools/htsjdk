@@ -36,11 +36,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.MatchResult;
 
 /**
@@ -50,26 +46,31 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     /**
      * Store the entries.  Use a LinkedHashMap for consistent iteration in insertion order.
      */
-    private final Map<String,FastaSequenceIndexEntry> sequenceEntries = new LinkedHashMap<String,FastaSequenceIndexEntry>();
+    private final Map<String, FastaSequenceIndexEntry> sequenceEntries = new LinkedHashMap<>();
 
+    /** this member contains the name of the last index entry that was created during initialization. 
+     * Afterwards, subsequent operations (such as rename) might change the names and thus this member becomes unreliable.
+     */
+    private final String lastSequence;
+    
     /**
      * Build a sequence index from the specified file.
      * @param indexFile File to open.
-     * @throws FileNotFoundException if the index file cannot be found.
+     * @throws SAMException if the index file cannot be found.
      */
-    public FastaSequenceIndex( File indexFile ) {
+    public FastaSequenceIndex( File indexFile ) throws SAMException {
         this(IOUtil.toPath(indexFile));
     }
 
     /**
      * Build a sequence index from the specified file.
      * @param indexFile File to open.
-     * @throws FileNotFoundException if the index file cannot be found.
+     * @throws SAMException if the index file cannot be found.
      */
-    public FastaSequenceIndex( Path indexFile ) {
+    public FastaSequenceIndex( Path indexFile ) throws SAMException { 
         IOUtil.assertFileIsReadable(indexFile);
         try (InputStream in = Files.newInputStream(indexFile)) {
-            parseIndexFile(in);
+            this.lastSequence = parseIndexFile(in);
         } catch (IOException e) {
             throw new SAMException("Fasta index file could not be opened: " + indexFile, e);
         }
@@ -80,13 +81,15 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @param in InputStream to read from.
      */
     public FastaSequenceIndex(InputStream in) {
-        parseIndexFile(in);
+        lastSequence=parseIndexFile(in);
     }
 
     /**
-     * Empty, protected constructor for unit testing.
+     * Empty, protected constructor for unit testing. Use with care, lastSequence will be incorrect.
      */
-    protected FastaSequenceIndex() {}
+    protected FastaSequenceIndex() {
+        lastSequence = "";
+    }
 
     /**
      * Add a new index entry to the list.  Protected for unit testing.
@@ -144,10 +147,13 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     /**
      * Parse the contents of an index file, caching the results internally.
      * @param in InputStream to parse.
+     *           
+     * @return the name of the last contig (for the sanity-check)
      */
-    private void parseIndexFile(InputStream in) {
+    private String parseIndexFile(InputStream in) {
         try (Scanner scanner = new Scanner(in)) {
             int sequenceIndex = 0;
+            String lastContig = null;
             while( scanner.hasNext() ) {
                 // Tokenize and validate the index line.
                 String result = scanner.findInLine("(.+)\\t+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)");
@@ -170,7 +176,9 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
                 contig = SAMSequenceRecord.truncateSequenceName(contig);
                 // Build sequence structure
                 add(new FastaSequenceIndexEntry(contig,location,size,basesPerLine,bytesPerLine, sequenceIndex++) );
+                lastContig=contig;
             }
+            return lastContig;
         }
     }
 
@@ -232,5 +240,14 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      */
     public int size() {
         return sequenceEntries.size();
+    }
+
+
+    /**
+     * @return The name of the last entry that was added when parsing the index file. Only guarranteed to be correct just
+     * after initialization. Protected for access from AbstractIndexedFastaSequenceFile.
+     */
+    protected String getLastSequence() {
+        return this.lastSequence;
     }
 }
