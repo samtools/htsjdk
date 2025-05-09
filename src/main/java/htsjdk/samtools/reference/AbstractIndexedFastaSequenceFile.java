@@ -30,19 +30,23 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+
 
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
 abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFile {
+    static final Log log = Log.getInstance(AbstractIndexedFastaSequenceFile.class);
 
     /**
      * A representation of the sequence index, stored alongside the fasta in a .fasta.fai file.
@@ -152,12 +156,13 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * checks that the length of the fasta file is at least as long as the index proclaims
      * and that beyond the last position references in the index there is only one line followed by whitespaces
      *
-     * @param fastaFile Used for error reporting only.
-     * @param index index file to check against the dictionary.
+     * @param fastaFile Path to fasta file
+     * @param FastaSequenceIndex index file to check against the dictionary.
+     *
+     * @throws IOException in case of io-error when reading fastaFile
      */
-    public static void sanityCheckFastaAgainstIndex(final String fastaFile,
-                                                    final FastaSequenceIndex FastaSequenceIndex) {
-
+    public void sanityCheckFastaAgainstIndex(final Path fastaFile,
+                                                    final FastaSequenceIndex FastaSequenceIndex) throws IOException {
 
         final Iterator<FastaSequenceIndexEntry> iterator = FastaSequenceIndex.iterator();
         FastaSequenceIndexEntry fastaSequenceIndex = null;
@@ -169,15 +174,31 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         final long lastSequenceStart = fastaSequenceIndex.getLocation();
         final long lastSequenceEnd = lastSequenceStart + fastaSequenceIndex.getOffset(lastSequenceLength);
 
-        final long fastaLength = new File(fastaFile).length();
-
+        final long fastaLength = Files.size(fastaFile);
         //Question: should we worry about files with lots of whitespace in their end?
         if (lastSequenceEnd > fastaLength) {
             throw new IllegalArgumentException("The fasta file is shorter (%d) than its index claims (%d). Please reindex the fasta.".formatted(fastaLength, lastSequenceEnd));
         }
-        // not sure why need to add 1 here.
+        // if fasta file is longer than this, make sure that the remainder is just whitespaces
         if (lastSequenceEnd + fastaSequenceIndex.getTerminatorLength() + 1 < fastaLength) {
-            throw new IllegalArgumentException("The fasta file is too long (%d) given the claims of its index (%d). Please reindex the fasta.".formatted(fastaLength, lastSequenceEnd + fastaSequenceIndex.getTerminatorLength()));
+
+            final ByteBuffer channelBuffer = ByteBuffer.allocate(100);
+            long posOfInterest = lastSequenceEnd + fastaSequenceIndex.getTerminatorLength() + 1;
+            while (posOfInterest < fastaLength) {
+                channelBuffer.clear();
+                readFromPosition(channelBuffer, posOfInterest);
+                for (int i = 0; i < channelBuffer.position(); i++) {
+                    byte b = channelBuffer.get(i);
+                    if (!Character.isWhitespace((char) b)) {
+                        throw new IllegalArgumentException(
+                                ("The fasta file %s is too long (relative to the index). In particular has a non-whitespace " +
+                                        "character (%c) as a position too great (%d) given the claims of its index (%d)." +
+                                        " Please reindex the fasta.")
+                                        .formatted(fastaFile.getFileName(), (char) b, posOfInterest + i, lastSequenceEnd));
+                    }
+                }
+                posOfInterest += channelBuffer.limit();
+            }
         }
     }
 
