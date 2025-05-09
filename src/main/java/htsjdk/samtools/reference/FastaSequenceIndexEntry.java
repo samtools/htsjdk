@@ -121,7 +121,7 @@ public class FastaSequenceIndexEntry {
         final int basesPerLine = this.getBasesPerLine();
         final int bytesPerLine = this.getBytesPerLine();
 
-        return ((pos - 1) / basesPerLine) * bytesPerLine + (pos - 1) % basesPerLine;
+        return ((pos - 1) / basesPerLine) * bytesPerLine + ((pos - 1) % basesPerLine);
     }
 
     /** get the terminator length from the bytes per line and the bases per line
