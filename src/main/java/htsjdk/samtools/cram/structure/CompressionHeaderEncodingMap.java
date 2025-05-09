@@ -218,13 +218,13 @@ public class CompressionHeaderEncodingMap {
      * @param outputStream stream to compress
      * @return Block containing the compressed contends of the stream
      */
-    public Block createCompressedBlockForStream(final Integer contentId, final ByteArrayOutputStream outputStream) {
+    public Block createCompressedBlockForStream(final CRAMCodecModelContext contextModel, final Integer contentId, final ByteArrayOutputStream outputStream) {
         final ExternalCompressor compressor = externalCompressors.get(contentId);
         final byte[] rawContent = outputStream.toByteArray();
         return Block.createExternalBlock(
                 compressor.getMethod(),
                 contentId,
-                compressor.compress(rawContent),
+                compressor.compress(rawContent, contextModel),
                 rawContent.length);
     }
 
@@ -284,17 +284,17 @@ public class CompressionHeaderEncodingMap {
         final ExternalCompressor gzip = compressorCache.getCompressorForMethod(
                 BlockCompressionMethod.GZIP,
                 encodingStrategy.getGZIPCompressionLevel());
-        final int gzipLen = gzip.compress(data).length;
+        final int gzipLen = gzip.compress(data, null).length;
 
         final ExternalCompressor rans0 = compressorCache.getCompressorForMethod(
                 BlockCompressionMethod.RANS,
                 RANS4x8Params.ORDER.ZERO.ordinal());
-        final int rans0Len = rans0.compress(data).length;
+        final int rans0Len = rans0.compress(data,null).length;
 
         final ExternalCompressor rans1 = compressorCache.getCompressorForMethod(
                 BlockCompressionMethod.RANS,
                 RANS4x8Params.ORDER.ONE.ordinal());
-        final int rans1Len = rans1.compress(data).length;
+        final int rans1Len = rans1.compress(data, null).length;
 
         // find the best of general purpose codecs:
         final int minLen = Math.min(gzipLen, Math.min(rans0Len, rans1Len));

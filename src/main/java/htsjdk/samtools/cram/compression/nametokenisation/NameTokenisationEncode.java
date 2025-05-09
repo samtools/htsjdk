@@ -43,7 +43,8 @@ public class NameTokenisationEncode {
 
     /**
      * Compress the input buffer of read names.
-     * @param inBuffer formatted as read names separated by the byte specified by the nameSeparator parameter
+     * @param inBuffer formatted as read names separated by the byte specified by the nameSeparator parameter (this
+     *                 generally happens as a result of using the ByteStopCodec to write the read names)
      * @param useArith true if the arithmetic coder should be used
      * @param nameSeparator name separator
      * @return the compressed buffer
@@ -57,6 +58,10 @@ public class NameTokenisationEncode {
                 CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,
                 nameSeparator);
         final int numNames = namesToEncode.size();
+        if (numNames == 0) {
+            throw new CRAMException(
+                    "Name tokenizer input format requires a separator-delimited name list. No delimited names found in input.");
+        }
         final int uncompressedDataSize = Integer.max(0, inBuffer.limit());
 
         // pre-allocate the output buffer; we don't know how big it will be. instead of implementing a wrapper around
@@ -111,15 +116,17 @@ public class NameTokenisationEncode {
         if (nameIndexMap.containsKey(name)) {
             // duplicate name, there is no need to tokenise the name, just encode the index of the duplicate
             final String duplicateIndex = String.valueOf(nameIndex - nameIndexMap.get(name));
-            return List.of(new EncodeToken(TokenStreams.TOKEN_DUP, duplicateIndex));
+            return List.of(new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DUP, duplicateIndex));
         }
 
         final List<EncodeToken> encodedTokens = new ArrayList<>(NameTokenisationDecode.DEFAULT_POSITION_ALLOCATION);
 
-        // if this name is the first name, the diff value must be 0; otherwise for now use a naive
-        // strategy and only/always diff against the (immediately) preceding name
-        encodedTokens.add(0, new EncodeToken(TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : 1)));
+        // if this name is the first name, the diff value (which indicates the relative position of the record against
+        // which we are diffing) must be 0; otherwise for now use a naive strategy that only/always diffs against the
+        // (immediately) preceding name by specifying a value of 1
+        encodedTokens.add(0, new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : 1)));
         nameIndexMap.put(name, nameIndex);
+        final int prevNameIndex = nameIndex - 1;
 
         // tokenise the current name
         final Matcher matcher = READ_NAME_PATTERN.matcher(name);
@@ -134,14 +141,15 @@ public class NameTokenisationEncode {
                 type = TokenStreams.TOKEN_DIGITS;
             } else if (fragmentValue.length() == 1) {
                 type = TokenStreams.TOKEN_CHAR;
-            }
+            } // else just treat it as an absolute string
 
-            // compare the current token with token from the previous name (this naive implementation always
-            // compares against last name only)
-            final int prevNameIndex = nameIndex - 1;
-            if (prevNameIndex >= 0 && encodedTokensByName.get(prevNameIndex).size() > i) {
-                //there exists a token at the corresponding position of the previous name
-                final EncodeToken prevToken = encodedTokensByName.get(prevNameIndex).get(i);
+            // compare the current token with the corresponding token from the previous name (this implementation always
+            // compares against immediately previous name only), but ONLY if the previous name actually has a
+            // corresponding token, and that token is not the terminal token
+            final EncodeToken prevToken = prevNameIndex >= 0 && encodedTokensByName.get(prevNameIndex).size() > i + 1?
+                    encodedTokensByName.get(prevNameIndex).get(i) :
+                    null;
+            if (prevToken != null && prevToken.getTokenType() != TokenStreams.TOKEN_END) {
                 if (prevToken.getActualValue().equals(fragmentValue)) {
                     // identical to the previous name's token in this position
                     type = TokenStreams.TOKEN_MATCH;
@@ -172,7 +180,7 @@ public class NameTokenisationEncode {
             }
         }
 
-        encodedTokens.add(new EncodeToken(TokenStreams.TOKEN_END));
+        encodedTokens.add(new EncodeToken.EndToken());
 
         // keep track of the longest list of encoded tokens (this is basically the number of columns/fragments)
         // for use by downstream buffer allocations
