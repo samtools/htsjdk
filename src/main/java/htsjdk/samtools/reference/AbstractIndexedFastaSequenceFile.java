@@ -31,6 +31,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -146,6 +147,41 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         }
     }
 
+    /** Do some basic checking to make sure the fasta and the index match.
+     * <p>
+     * checks that the length of the fasta file is at least as long as the index proclaims
+     * and that beyond the last position references in the index there is only one line followed by whitespaces
+     *
+     * @param fastaFile Used for error reporting only.
+     * @param index index file to check against the dictionary.
+     */
+    public static void sanityCheckFastaAgainstIndex(final String fastaFile,
+                                                    final FastaSequenceIndex FastaSequenceIndex) {
+
+
+        final Iterator<FastaSequenceIndexEntry> iterator = FastaSequenceIndex.iterator();
+        FastaSequenceIndexEntry fastaSequenceIndex = null;
+        while (iterator.hasNext()) {
+            fastaSequenceIndex = iterator.next();
+        }
+        assert fastaSequenceIndex != null;
+        final long lastSequenceLength = fastaSequenceIndex.getSize();
+        final long lastSequenceStart = fastaSequenceIndex.getLocation();
+        final long lastSequenceEnd = lastSequenceStart + fastaSequenceIndex.getOffset(lastSequenceLength);
+
+        final long fastaLength = new File(fastaFile).length();
+
+        //Question: should we worry about files with lots of whitespace in their end?
+        if (lastSequenceEnd > fastaLength) {
+            throw new IllegalArgumentException("The fasta file is shorter (%d) than its index claims (%d). Please reindex the fasta.".formatted(fastaLength, lastSequenceEnd));
+        }
+        // not sure why need to add 1 here.
+        if (lastSequenceEnd + fastaSequenceIndex.getTerminatorLength() + 1 < fastaLength) {
+            throw new IllegalArgumentException("The fasta file is too long (%d) given the claims of its index (%d). Please reindex the fasta.".formatted(fastaLength, lastSequenceEnd + fastaSequenceIndex.getTerminatorLength()));
+        }
+    }
+
+
     public FastaSequenceIndex getIndex() {
         return index;
     }
@@ -210,7 +246,8 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         final int bytesPerLine = indexEntry.getBytesPerLine();
         final int terminatorLength = bytesPerLine - basesPerLine;
 
-        long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
+        long startOffset = indexEntry.getOffset(start);
+
         // Cast to long so the second argument cannot overflow a signed integer.
         final long minBufferSize = Math.min((long) Defaults.NON_ZERO_BUFFER_SIZE, (long)(length / basesPerLine + 2) * (long)bytesPerLine);
         if (minBufferSize > Integer.MAX_VALUE) throw new SAMException("Buffer is too large: " +  minBufferSize);
