@@ -56,6 +56,27 @@ public class SamPairUtilTest extends HtsjdkTest {
     }
 
 
+    @Test(dataProvider = "testGetPairOrientation")
+    public void testGetPairOrientation2(final String testName,
+                                       final int read1Start, final int read1Length, final boolean read1Reverse,
+                                       final int read2Start, final int read2Length, final boolean read2Reverse,
+                                       final SamPairUtil.PairOrientation expectedOrientation) {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", 100000000));
+        final SAMRecord rec1 = makeSamRecord(header, read1Start, read1Length, read1Reverse, true);
+        final SAMRecord rec2 = makeSamRecord(header, read2Start, read2Length, read2Reverse, false);
+        SamPairUtil.setMateInfo(rec1, rec2, true);
+        // if the reads cover the same coordinates, the spec says that the sign of insert-length
+        // is arbitrary so switching this up to see if things still work.
+        if (read1Start == read2Start && read1Length == read2Length) {
+            rec1.setInferredInsertSize(-rec1.getInferredInsertSize());
+            rec2.setInferredInsertSize(-rec2.getInferredInsertSize());
+        }
+
+        Assert.assertEquals(SamPairUtil.getPairOrientation(rec1), expectedOrientation, testName + " first end");
+        Assert.assertEquals(SamPairUtil.getPairOrientation(rec2), expectedOrientation, testName + " second end");
+    }
+
     @Test(dataProvider = "testSetMateInfoMateCigar")
     public void testSetMateInfoMateCigar(final String testName,
                                          final int read1Start, final boolean read1Reverse, final String read1Cigar,
@@ -192,11 +213,20 @@ public class SamPairUtilTest extends HtsjdkTest {
          * @param expectedOrientation
          */
         return new Object[][]{
+                // String testName,
+                // int read1Start,
+                // int read1Length,
+                // boolean read1Reverse,
+                // int read2Start,
+                // int read2Length,
+                // boolean read2Reverse,
+                // SamPairUtil.PairOrientation expectedOrientation
                 {"normal innie", 1, 100, false, 500, 100, true, SamPairUtil.PairOrientation.FR},
                 {"overlapping innie", 1, 100, false, 50, 100, true, SamPairUtil.PairOrientation.FR},
                 {"second end enclosed innie", 1, 100, false, 50, 50, true, SamPairUtil.PairOrientation.FR},
                 {"first end enclosed innie", 1, 50, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
                 {"completely overlapping innie", 1, 100, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
+                {"completely overlapping innie 2", 1, 100, true, 1, 100, false, SamPairUtil.PairOrientation.FR},
                 {"normal outie", 1, 100, true, 500, 100, false, SamPairUtil.PairOrientation.RF},
                 {"nojump outie", 1, 100, true, 101, 100, false, SamPairUtil.PairOrientation.RF},
                 {"forward tandem", 1, 100, true, 500, 100, true, SamPairUtil.PairOrientation.TANDEM},
