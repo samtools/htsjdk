@@ -60,6 +60,11 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private static final File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static final File SEQUENCE_FILE_GZI = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz.gzi");
     private static final File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
+    private static final Path HEADER_WITH_WHITESPACE = new File(TEST_DATA_DIR,"header_with_white_space.fasta").toPath();
+    private static final Path HEADER_WITH_EXTRA_WHITESPACE = new File(TEST_DATA_DIR,"header_with_extra_white_space.fasta").toPath();
+    private static final Path CRLF = new File(TEST_DATA_DIR,"crlf.fasta").toPath();
+    private static final Path HEADER_WITH_WHITESPACE_index = AbstractIndexedFastaSequenceFile.findFastaIndex(HEADER_WITH_WHITESPACE);
+    private static final Path CRLF_index = AbstractIndexedFastaSequenceFile.findFastaIndex(CRLF);
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
     private final String extendedBasesOfChrM = "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCAT" +
@@ -67,6 +72,15 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
                                                "GAGCCGGAGCACCCTATGTCGCAGTATCTGTCTTTGATTCCTGCCTCATT";
     private final String lastBasesOfChr20 = "ttgtctgatgctcatattgt";
     private final int CHR20_LENGTH = 1000000;
+
+    @DataProvider(name="mismatched_indexes")
+    public Object[][] provideMismatchedIndexes() {
+        return new Object[][]{
+                new Object[]{HEADER_WITH_WHITESPACE,CRLF_index},
+                new Object[]{CRLF,HEADER_WITH_WHITESPACE_index}
+        };
+    }
+
 
     @DataProvider(name="homosapiens")
     public Object[][] provideSequenceFile() throws FileNotFoundException {
@@ -470,4 +484,24 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         }
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class,
+            dataProvider = "mismatched_indexes")
+    public void testWrongIndex(Path fasta, Path index) {
+        try (IndexedFastaSequenceFile indexedFastaSequenceFile = new IndexedFastaSequenceFile(fasta, new FastaSequenceIndex(index))) {
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }    
+    
+    @Test
+    public void testExtraWhitespace() {
+        try (IndexedFastaSequenceFile indexedFastaSequenceFile = 
+                     new IndexedFastaSequenceFile(HEADER_WITH_EXTRA_WHITESPACE, 
+                             new FastaSequenceIndex(HEADER_WITH_WHITESPACE_index))) {
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
