@@ -167,9 +167,9 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         final long lastSequenceEnd = lastSequenceStart + lastSequenceIndex.getOffset(lastSequenceLength);
 
         final long fastaLength = Files.size(fastaFile);
-        //Question: should we worry about files with lots of whitespace in their end?
+        
         if (lastSequenceEnd > fastaLength) {
-            throw new IllegalArgumentException("The fasta file is shorter (%d) than its index claims (%d). Please reindex the fasta.".formatted(fastaLength, lastSequenceEnd));
+            throw new IllegalArgumentException("The fasta file (%s) is shorter (%d) than its index (%s) claims (%d). Please reindex the fasta.".formatted(fastaFile.toUri().toString(),fastaLength, index.toString(), lastSequenceEnd));
         }
         // if fasta file is longer than this, make sure that the remainder is just whitespaces
         long posOfInterest = lastSequenceEnd + lastSequenceIndex.getTerminatorLength();
@@ -185,9 +185,9 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
                     if (!Character.isWhitespace((char) b)) {
                         throw new IllegalArgumentException(
                                 ("The fasta file %s is too long (relative to the index). In particular has a non-whitespace " +
-                                        "character (%c) as a position too great (%d) given the claims of its index (%d)." +
+                                        "character (%c) at a position (%d) beyond the last base (%d), according to its index (%s)." +
                                         " Please reindex the fasta.")
-                                        .formatted(fastaFile.getFileName(), (char) b, posOfInterest + i, lastSequenceEnd));
+                                        .formatted(fastaFile.toUri().toString(), (char) b, posOfInterest + i, lastSequenceEnd,index.toString()));
                     }
                 }
                 posOfInterest += channelBuffer.limit();
