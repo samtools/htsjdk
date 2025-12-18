@@ -129,10 +129,19 @@ tasks.register('testWithDefaultReference', Test) {
 
 tasks.register('testWithOptimisticVCF4_4', Test) {
     description = "Run tests with optimistic VCF 4.4 reading"
-    jvmArgs += '-Dsamjdk.optimistic_vcf_4_4=true'
+    jvmArgs += '-Dsamjdk.optimistic_vcf_4_x=true'
 
     useTestNG {
-        includeGroups "optimistic_vcf_4_4"
+        includeGroups "optimistic_vcf_4_x"
+    }
+}
+
+tasks.register('testWithOptimisticVCF4_5', Test) {
+    description = "Run tests with optimistic VCF 4.5 reading"
+    jvmArgs += '-Dsamjdk.optimistic_vcf_4_x=true'
+
+    useTestNG {
+        includeGroups "optimistic_vcf_4_x"
     }
 }
 

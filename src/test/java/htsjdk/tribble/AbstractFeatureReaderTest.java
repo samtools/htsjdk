@@ -100,7 +100,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURIString), expected);
     }
-    @Test(groups = "optimistic_vcf_4_4")
+    @Test(groups = "optimistic_vcf_4_x")
     public void testVCF4_4Optimistic() {
         final AbstractFeatureReader<VariantContext, ?> fr = AbstractFeatureReader.getFeatureReader(
                 Paths.get("src/test/resources/htsjdk/variant/", "VCF4_4HeaderTest.vcf").toString(),
@@ -109,7 +109,16 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         final VCFHeader vcfHeader = (VCFHeader) fr.getHeader();
         Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
     }
-
+    @Test(groups = "optimistic_vcf_4_x")
+    public void testVCF4_5Optimistic() {
+        final AbstractFeatureReader<VariantContext, ?> fr = AbstractFeatureReader.getFeatureReader(
+                Paths.get("src/test/resources/htsjdk/variant/", "VCF4_5HeaderTest.vcf").toString(),
+                new VCFCodec(),
+                false);
+        final VCFHeader vcfHeader = (VCFHeader) fr.getHeader();
+        Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
+    
     @DataProvider(name = "vcfFileAndWrapperCombinations")
     private static Object[][] vcfFileAndWrapperCombinations(){
         return new Object[][] {
