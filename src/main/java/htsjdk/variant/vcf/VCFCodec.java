@@ -100,12 +100,13 @@ public class VCFCodec extends AbstractVCFCodec {
                         throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
                     foundHeaderVersion = true;
                     version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if (Defaults.OPTIMISTIC_VCF_4_4 == true && version == VCFHeaderVersion.VCF4_4 ) {
+                    if (Defaults.OPTIMISTIC_VCF_4_x == true && (version == VCFHeaderVersion.VCF4_4 || version == VCFHeaderVersion.VCF4_5)) {
                         // if optimistic VCFv4.4 is enabled, accept VCFv4.4 as input, but treat it as VCFv4.3, and hope for the best
-                        log.warn("********** VCFv4.4 is not yet fully supported - processing VCFv4.4 input as VCFv4.3!  **********");
+                        log.warn("********** versions >=VCFv4.4 are not yet fully supported - processing >=VCFv4.4 input as VCFv4.3!  **********");
                         version = VCFHeaderVersion.VCF4_3;
                     } else if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 && version != VCFHeaderVersion.VCF4_3)
-                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4 and does not support " + lineFields[1]);
+                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4 and does not support " + lineFields[1]+" . "
+                            + "For Versions >= VCF4.4 you can try to set the java property -D" + Defaults.SAMJDK_PREFIX + Defaults.OPTIMISTIC_VCF_4_x_PROPERTY + "=true");
                 }
                 headerStrings.add(lineIterator.next());
             }

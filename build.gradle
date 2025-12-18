@@ -127,12 +127,12 @@ tasks.register('testWithDefaultReference', Test) {
     }
 }
 
-tasks.register('testWithOptimisticVCF4_4', Test) {
+tasks.register('testWithOptimisticVCF4_x', Test) {
     description = "Run tests with optimistic VCF 4.4 reading"
-    jvmArgs += '-Dsamjdk.optimistic_vcf_4_4=true'
+    jvmArgs += '-Dsamjdk.optimistic_vcf_4_x=true'
 
     useTestNG {
-        includeGroups "optimistic_vcf_4_4"
+        includeGroups "optimistic_vcf_4_x"
     }
 }
 
@@ -141,12 +141,12 @@ test {
 
    useTestNG {
        if (OperatingSystem.current().isUnix()) {
-           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_x", "ftp", "http", "sra", "ena"
        } else {
-           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "unix"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_x", "ftp", "http", "sra", "ena", "unix"
        }
    }
-} dependsOn testWithDefaultReference, testWithOptimisticVCF4_4
+} dependsOn testWithDefaultReference, testWithOptimisticVCF4_x
 
 
 tasks.register('testFTP', Test) {
