@@ -813,4 +813,43 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         }
     }
 
+    /**
+     * Test that when an insertion fails the base quality check, readBase is still
+     * advanced so that subsequent insertions in the same read are reported at the
+     * correct offset. Previously, failing the BQ check left readBase un-advanced,
+     * causing all subsequent CIGAR positions to be misaligned.
+     *
+     * CIGAR: 10M1I1M1I10M (read length 23)
+     * Quality string assigns BQ=5 to the first inserted base (pos 10) and BQ=30
+     * to the second inserted base (pos 12). With a cutoff of 20, only the second
+     * insertion should be reported, and it should be at read offset 12 (not 11).
+     */
+    @Test
+    public void testInsertionBqFailureDoesNotShiftSubsequentOffsets() {
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        final int startPosition = 165;
+
+        // Build quality string: 23 bases, all BQ=30 except position 10 (first insertion) = BQ=5
+        final char[] quals = new char[23];
+        java.util.Arrays.fill(quals, '?');  // '?' = ASCII 63 - 33 = BQ 30
+        quals[10] = '&';                     // '&' = ASCII 38 - 33 = BQ 5
+
+        builder.addFrag("record0", 0, startPosition, false, false,
+                "10M1I1M1I10M", new String(quals), 30);
+
+        final SamLocusIterator sli = createSamLocusIterator(builder);
+        sli.setIncludeIndels(true);
+        sli.setQualityScoreCutoff(20);
+
+        for (final SamLocusIterator.LocusInfo li : sli) {
+            for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
+                // The second insertion's first base is at read offset 12.
+                // Before the fix, the drifted readBase would report offset 11.
+                Assert.assertEquals(rao.getOffset(), 12,
+                        "Insertion reported at wrong read offset — " +
+                        "readBase drift from prior BQ-failed insertion");
+            }
+        }
+    }
+
 }

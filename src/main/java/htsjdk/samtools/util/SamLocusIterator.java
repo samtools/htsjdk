@@ -136,8 +136,10 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
                 // insertions are included in the previous base
                 if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readBase] >= minQuality){
                     accumulator.get(baseAccIndex - 1).addInserted(rec, readBase);
-                    readBase += e.getLength();
                 }
+                // Always advance past inserted bases regardless of quality check,
+                // otherwise subsequent CIGAR positions will be misaligned.
+                readBase += e.getLength();
             } else if (operator.equals(CigarOperator.D)) {
                 // accumulate for each position that spans the deletion
                 for (int i = 0; i < e.getLength(); i++) {
