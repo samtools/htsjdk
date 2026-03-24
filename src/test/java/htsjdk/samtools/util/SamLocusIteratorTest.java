@@ -27,6 +27,8 @@ import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 /**
  * @author alecw@broadinstitute.org
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
@@ -840,14 +842,18 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         sli.setIncludeIndels(true);
         sli.setQualityScoreCutoff(20);
 
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                // The second insertion's first base is at read offset 12.
-                Assert.assertEquals(rao.getOffset(), 12,
-                        "Insertion reported at wrong read offset — " +
-                        "readBase drift from prior BQ-failed insertion");
-            }
+        final List<SamLocusIterator.RecordAndOffset> insertions =
+                sli.stream().flatMap(l -> l.getInsertedInRecord().stream()).toList();
+
+        // The first insertion should be skipped by the BQ check, but the second
+        // insertion should come through
+        Assert.assertEquals(insertions.size(), 1);
+
+        for (final SamLocusIterator.RecordAndOffset rao : insertions) {
+            // The second insertion's first base is at read offset 12.
+            Assert.assertEquals(rao.getOffset(), 12,
+                    "Insertion reported at wrong read offset — " +
+                    "readBase drift from prior BQ-failed insertion");
         }
     }
-
 }
