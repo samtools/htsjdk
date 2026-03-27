@@ -6,7 +6,18 @@ import htsjdk.samtools.cram.compression.rans.Constants;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Utility methods shared across CRAM 3.1 compression codecs (rANS, Range, Name Tokeniser, etc.),
+ * including uint7 encoding, bit-packing, and STRIPE data transformation.
+ */
 public class CompressionUtils {
+    /**
+     * Write an unsigned integer using 7-bit variable-length encoding (uint7). Each output byte uses
+     * 7 bits for data and the high bit as a continuation flag (1 = more bytes follow).
+     *
+     * @param i the value to write (must be non-negative)
+     * @param cp the output buffer
+     */
     public static void writeUint7(final int i, final ByteBuffer cp) {
         int s = 0;
         int X = i;
@@ -22,6 +33,13 @@ public class CompressionUtils {
         } while (s > 0);
     }
 
+    /**
+     * Read an unsigned integer using 7-bit variable-length encoding (uint7). Each byte uses
+     * 7 bits for data and the high bit as a continuation flag (1 = more bytes follow).
+     *
+     * @param cp the input buffer
+     * @return the decoded unsigned integer value
+     */
     public static int readUint7(final ByteBuffer cp) {
         int i = 0;
         int c;
@@ -184,6 +202,51 @@ public class CompressionUtils {
      * @return A byte array. If the ByteBuffer is backed by a byte array that matches the limit of the ByteBuffer,
      * return the backing array directly. Otherwise, copy the contents of the ByteBuffer into a new byte array.
      */
+    private static final int STRIPE_NUM_STREAMS = 4;
+
+    /**
+     * Compute the uncompressed size for each stripe stream. Earlier streams get the extra bytes
+     * when totalSize is not evenly divisible by the number of streams.
+     *
+     * @param totalSize the total uncompressed size
+     * @return array of per-stream sizes
+     */
+    public static int[] buildStripeUncompressedSizes(final int totalSize) {
+        final int[] sizes = new int[STRIPE_NUM_STREAMS];
+        final int q = totalSize / STRIPE_NUM_STREAMS;
+        final int r = totalSize % STRIPE_NUM_STREAMS;
+        for (int i = 0; i < STRIPE_NUM_STREAMS; i++) {
+            sizes[i] = (i < r) ? q + 1 : q;
+        }
+        return sizes;
+    }
+
+    /**
+     * Transpose (de-interleave) input data into N=4 separate streams using round-robin byte distribution.
+     * Stream i gets bytes at positions i, i+4, i+8, ...
+     *
+     * @param inBuffer the input data (position to limit)
+     * @param sizes per-stream uncompressed sizes from {@link #buildStripeUncompressedSizes}
+     * @return array of ByteBuffers, one per stream
+     */
+    public static ByteBuffer[] stripeTranspose(final ByteBuffer inBuffer, final int[] sizes) {
+        final ByteBuffer[] chunks = new ByteBuffer[sizes.length];
+        for (int i = 0; i < sizes.length; i++) {
+            chunks[i] = allocateByteBuffer(sizes[i]);
+            for (int j = 0; j < sizes[i]; j++) {
+                chunks[i].put(j, inBuffer.get(inBuffer.position() + j * sizes.length + i));
+            }
+        }
+        return chunks;
+    }
+
+    /**
+     * @return the number of streams used by the STRIPE codec (always 4)
+     */
+    public static int getStripeNumStreams() {
+        return STRIPE_NUM_STREAMS;
+    }
+
     public static byte[] toByteArray(final ByteBuffer buffer) {
         if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
             return buffer.array();

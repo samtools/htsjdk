@@ -354,7 +354,7 @@ public class NameTokenisationEncode {
                     RangeParams.PACK_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, //129
                     //RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, //65
                     //RangeParams.ORDER_FLAG_MASK,
-                    // we don't include stripe here since it's not implemented for write
+                    // stripe is not included here as it hasn't been shown to improve compression for name tokens
                     //RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK // 193+8
             };
             for (int rangeEncoderFlagSet : rangeEncoderFlagsSets) {
@@ -389,7 +389,7 @@ public class NameTokenisationEncode {
                     // best results; this needs more validation but for now don't try the remaining combinations
                     //RANSNx16Params.ORDER_FLAG_MASK,
                     //RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK, //65
-                    // we don't include stripe here since it's not implemented for write
+                    // stripe is not included here as it hasn't been shown to improve compression for name tokens
                     //RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK // 193+8
             };
             for (int ransNx16FlagSet : ransNx16FlagsSets) {

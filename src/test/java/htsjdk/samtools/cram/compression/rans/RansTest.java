@@ -109,7 +109,9 @@ public class RansTest extends HtsjdkTest {
                 RANSNx16Params.PACK_FLAG_MASK,
                 RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
                 RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK
         );
         final List<Object[]> testCases = new ArrayList<>();
         for (Integer ransNx16ParamsFormatFlag : ransNx16ParamsFormatFlagList) {
@@ -121,23 +123,6 @@ public class RansTest extends HtsjdkTest {
             testCases.add(objects);
         }
         return testCases.toArray(new Object[][]{});
-    }
-
-    public Object[][] getRansNx16Encoder() {
-
-        // params: RANS encoder, RANS params
-        return new Object[][]{
-                {new RANSNx16Encode(), new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK)},
-                {new RANSNx16Encode(), new RANSNx16Params(RANSNx16Params.ORDER_FLAG_MASK|RANSNx16Params.STRIPE_FLAG_MASK)}
-        };
-    }
-
-    @DataProvider(name="RansNx16RejectEncodeStripe")
-    public Object[][] getRansNx16RejectEncodeStripe() {
-
-        // params: RANS encoder, RANS decoder, RANS params, test data
-        // this data provider provides all the non-empty testdata input for RANS Nx16 codec
-        return TestNGUtils.cartesianProduct(getRansNx16Encoder(), getRansTestData());
     }
 
     public Object[][] getAllRansCodecs() {
@@ -208,6 +193,12 @@ public class RansTest extends HtsjdkTest {
         rawData.rewind();
         Assert.assertTrue(compressed.limit() > 1); // minimum prefix len when input is not Empty
         final int FormatFlags = compressed.get() & 0xFF; // first byte of compressed data is the formatFlags
+
+        // STRIPE has a different internal structure (stripe framing), so skip detailed boundary checks
+        if (params.isStripe()) {
+            return;
+        }
+
         final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
         final int inSize = rawData.remaining();
         for (int i = 0; i < inSize; i ++) {
@@ -239,20 +230,6 @@ public class RansTest extends HtsjdkTest {
             final RANSParams params,
             final TestDataEnvelope td) {
         ransRoundTrip(ransEncode, ransDecode, params, CompressionUtils.wrap(td.testArray));
-    }
-
-    @Test(
-            dataProvider = "RansNx16RejectEncodeStripe",
-            expectedExceptions = { CRAMException.class },
-            expectedExceptionsMessageRegExp = "RANSNx16 Encoding with Stripe Flag is not implemented.")
-    public void testRansNx16RejectEncodeStripe(
-            final RANSNx16Encode ransEncode,
-            final RANSNx16Params params,
-            final TestDataEnvelope td) {
-
-        // When td is not Empty, Encoding with Stripe Flag should throw an Exception
-        // as Encode Stripe is not implemented
-        ransEncode.compress(CompressionUtils.wrap(td.testArray), params);
     }
 
     @Test(

@@ -19,9 +19,13 @@ public class RangeDecode {
 
     private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
-    // This method assumes that inBuffer is already rewound.
-    // It uncompresses the data in the inBuffer, leaving it consumed.
-    // Returns a rewound ByteBuffer containing the uncompressed data.
+    /**
+     * Decompress data that was compressed with the CRAM 3.1 arithmetic (range) codec.
+     * The input buffer is consumed (position advanced to limit) and the returned buffer is rewound.
+     *
+     * @param inBuffer compressed input data (position to limit is decompressed)
+     * @return a rewound ByteBuffer containing the decompressed data
+     */
     public ByteBuffer uncompress(final ByteBuffer inBuffer) {
         return uncompress(inBuffer, 0);
     }

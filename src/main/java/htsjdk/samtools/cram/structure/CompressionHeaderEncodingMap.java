@@ -27,6 +27,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationDecode;
+import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
@@ -137,7 +138,7 @@ public class CompressionHeaderEncodingMap {
         putExternalRansOrderOneEncoding(DataSeries.NS_NextFragmentReferenceSequenceID);
         putExternalGzipEncoding(encodingStrategy, DataSeries.PD_padding);
         // the QQ data series is not used by this implementation when writing CRAMs
-        putExternalRansOrderOneEncoding(DataSeries.QS_QualityScore);
+        putExternalFQZCompEncoding(DataSeries.QS_QualityScore);
         putExternalRansOrderOneEncoding(DataSeries.RG_ReadGroup);
         putExternalRansOrderZeroEncoding(DataSeries.RI_RefId);
         putExternalRansOrderOneEncoding(DataSeries.RL_ReadLength);
@@ -421,6 +422,29 @@ public class CompressionHeaderEncodingMap {
         putExternalEncoding(
                 dataSeries,
                 compressorCache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()));
+    }
+
+    // add an external encoding appropriate for the dataSeries value type, with a FQZComp quality score compressor
+    private void putExternalFQZCompEncoding(final DataSeries dataSeries) {
+        putExternalEncoding(
+                dataSeries,
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.FQZCOMP, 0));
+    }
+
+    // add an external encoding appropriate for the dataSeries value type, with a Range (arithmetic) order 1 compressor
+    private void putExternalRangeOrderOneEncoding(final DataSeries dataSeries) {
+        putExternalEncoding(
+                dataSeries,
+                compressorCache.getCompressorForMethod(
+                        BlockCompressionMethod.ADAPTIVE_ARITHMETIC,
+                        RangeParams.ORDER_FLAG_MASK));
+    }
+
+    // add an external encoding appropriate for the dataSeries value type, with a Range (arithmetic) order 0 compressor
+    private void putExternalRangeOrderZeroEncoding(final DataSeries dataSeries) {
+        putExternalEncoding(
+                dataSeries,
+                compressorCache.getCompressorForMethod(BlockCompressionMethod.ADAPTIVE_ARITHMETIC, 0));
     }
 
     @Override

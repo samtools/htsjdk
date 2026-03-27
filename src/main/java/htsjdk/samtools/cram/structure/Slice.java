@@ -244,6 +244,9 @@ public class Slice {
         this.baseCount = baseCount;
         this.globalRecordCounter = globalRecordCounter;
 
+        // Populate context model with per-record metadata needed by codecs like FQZComp
+        contextModel.populateFromRecords(records);
+
         final CramRecordWriter writer = new CramRecordWriter(this);
         sliceBlocks = writer.writeToSliceBlocks(contextModel, records, alignmentContext.getAlignmentStart());
 

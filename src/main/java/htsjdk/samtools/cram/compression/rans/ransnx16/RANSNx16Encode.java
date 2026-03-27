@@ -13,21 +13,23 @@ import java.nio.ByteOrder;
 
 /**
  * Encoder for the CRAM 3.1 rANSNx16 codec with 16-bit state renormalization (as opposed to the rAns4x8 codec,
- * which uses 8-bit state renormalization), and order-0 or order-1 context. Also supports bit-packing and run length
- * encoding. Does not support striping for write (see the spec).
+ * which uses 8-bit state renormalization), and order-0 or order-1 context. Also supports bit-packing, run length
+ * encoding, and striping.
  *
  * This codec is also used internally by the read name NameTokenisation codec.
  */
 public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
-    /////////////////////////////////////////////////////////////////////////////////////////////////
-    // Stripe flag is not implemented in the write implementation
-    /////////////////////////////////////////////////////////////////////////////////////////////////
 
     private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
-    // This method assumes that inBuffer is already rewound.
-    // It compresses the data in the inBuffer, leaving it consumed.
-    // Returns a rewound ByteBuffer containing the compressed data.
+    /**
+     * Compress data using the CRAM 3.1 rANS Nx16 codec with the given parameters.
+     * The input buffer is consumed (position advanced to limit) and the returned buffer is rewound.
+     *
+     * @param inBuffer input data to compress (position to limit is compressed)
+     * @param ransNx16Params encoding parameters controlling order, RLE, PACK, STRIPE, N32, and other flags
+     * @return a rewound ByteBuffer containing the compressed data
+     */
     public ByteBuffer compress(final ByteBuffer inBuffer, final RANSNx16Params ransNx16Params) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
@@ -45,9 +47,9 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         ByteBuffer inputBuffer = inBuffer;
 
         // Stripe
-        // Stripe flag is not implemented in the write implementation
         if (ransNx16Params.isStripe()) {
-            throw new CRAMException("RANSNx16 Encoding with Stripe Flag is not implemented.");
+            compressStripe(inputBuffer, outBuffer);
+            return outBuffer;
         }
 
         // Pack
@@ -573,6 +575,40 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
          */
         inBuffer.position(inBuffer.limit());
         return encodedBuffer;
+    }
+
+    /**
+     * Compress data using the STRIPE transformation: de-interleave the input into 4 streams,
+     * compress each independently with order-0 rANS Nx16 coding (NOSZ flag), and write the
+     * stripe framing format: [num_streams (1 byte)] [uint7 compressed sizes] [compressed data].
+     *
+     * @param inBuffer input data to compress
+     * @param outBuffer output buffer (must already contain the format flags and optional size header)
+     */
+    private void compressStripe(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
+        final int numStreams = CompressionUtils.getStripeNumStreams();
+        final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(inBuffer.remaining());
+        final ByteBuffer[] chunks = CompressionUtils.stripeTranspose(inBuffer, sizes);
+
+        // Compress each chunk independently using NOSZ flag (sizes are in the stripe framing)
+        final ByteBuffer[] compressedChunks = new ByteBuffer[numStreams];
+        for (int i = 0; i < numStreams; i++) {
+            compressedChunks[i] = compress(chunks[i], new RANSNx16Params(RANSNx16Params.NOSZ_FLAG_MASK));
+        }
+
+        // Write stripe framing: [numStreams] [compressed_size x N] [compressed_data x N]
+        outBuffer.put((byte) numStreams);
+        for (int i = 0; i < numStreams; i++) {
+            CompressionUtils.writeUint7(compressedChunks[i].remaining(), outBuffer);
+        }
+        for (int i = 0; i < numStreams; i++) {
+            outBuffer.put(compressedChunks[i]);
+        }
+
+        // Mark input as consumed (stripe uses absolute get, so position isn't advanced by transpose)
+        inBuffer.position(inBuffer.limit());
+        outBuffer.limit(outBuffer.position());
+        outBuffer.rewind();
     }
 
 }

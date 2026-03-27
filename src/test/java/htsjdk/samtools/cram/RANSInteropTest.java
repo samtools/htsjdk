@@ -87,7 +87,9 @@ public class RANSInteropTest extends HtsjdkTest {
                 RANSNx16Params.PACK_FLAG_MASK,
                 RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
                 RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
         // opportunistically gets ALL the raw test files in the interop directory, including ones intended to test
         // the other codecs; from the rans perspective they're just a stream of bits
@@ -162,15 +164,9 @@ public class RANSInteropTest extends HtsjdkTest {
                             CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream))
                     );
 
-            // Stripe Flag is not implemented in RANSNx16 Encoder.
-            // The encoder throws CRAMException if Stripe Flag is used.
-            if (params instanceof RANSNx16Params && ((RANSNx16Params) params).isStripe()) {
-                Assert.assertThrows(CRAMException.class, () -> ransEncode.compress(uncompressedInteropBytes, params));
-            } else {
-                final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
-                uncompressedInteropBytes.rewind();
-                Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
-            }
+            final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
+            uncompressedInteropBytes.rewind();
+            Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
         }
     }
 

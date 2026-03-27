@@ -17,9 +17,14 @@ public class RangeEncode {
 
     private static final ByteBuffer EMPTY_BUFFER = CompressionUtils.allocateByteBuffer(0);
 
-    // This method assumes that inBuffer is already rewound.
-    // It compresses the data in the inBuffer, leaving it consumed.
-    // Returns a rewound ByteBuffer containing the compressed data.
+    /**
+     * Compress data using the CRAM 3.1 arithmetic (range) codec with the given parameters.
+     * The input buffer is consumed (position advanced to limit) and the returned buffer is rewound.
+     *
+     * @param inBuffer input data to compress (position to limit is compressed)
+     * @param rangeParams encoding parameters controlling order, RLE, PACK, STRIPE, and other flags
+     * @return a rewound ByteBuffer containing the compressed data
+     */
     public ByteBuffer compress(final ByteBuffer inBuffer, final RangeParams rangeParams) {
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
@@ -37,9 +42,9 @@ public class RangeEncode {
 
         ByteBuffer inputBuffer = inBuffer;
 
-        // Stripe flag is not implemented in the write implementation
         if (rangeParams.isStripe()) {
-            throw new CRAMException("Range Encoding with Stripe Flag is not implemented.");
+            compressStripe(inputBuffer, outBuffer);
+            return outBuffer;
         }
 
         final int inSize = inputBuffer.remaining(); // e_len -> inSize
@@ -166,7 +171,7 @@ public class RangeEncode {
                 maxSymbols = inBuffer.get(i) & 0xFF;
             }
         }
-        maxSymbols++;  // FIXME not what spec states!
+        maxSymbols++; // number of symbols [0..max], stored as byte (256 wraps to 0, decoded as 256)
 
         final ByteModel modelLit = new ByteModel(maxSymbols);
         final List<ByteModel> byteModelRunsList = new ArrayList(258);
@@ -212,7 +217,7 @@ public class RangeEncode {
                 maxSymbols = inBuffer.get(i) & 0xFF;
             }
         }
-        maxSymbols++;  // FIXME not what spec states!
+        maxSymbols++; // number of symbols [0..max], stored as byte (256 wraps to 0, decoded as 256)
 
         final List<ByteModel> modelLitList = new ArrayList<>(maxSymbols);
         for (int i = 0; i < maxSymbols; i++) {
@@ -248,6 +253,40 @@ public class RangeEncode {
             }
         }
         rangeCoder.rangeEncodeEnd(outBuffer);
+        outBuffer.limit(outBuffer.position());
+        outBuffer.rewind();
+    }
+
+    /**
+     * Compress data using the STRIPE transformation: de-interleave the input into 4 streams,
+     * compress each independently with order-0 arithmetic coding (NOSZ flag), and write the
+     * stripe framing format: [num_streams (1 byte)] [uint7 compressed sizes] [compressed data].
+     *
+     * @param inBuffer input data to compress
+     * @param outBuffer output buffer (must already contain the format flags and optional size header)
+     */
+    private void compressStripe(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
+        final int numStreams = CompressionUtils.getStripeNumStreams();
+        final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(inBuffer.remaining());
+        final ByteBuffer[] chunks = CompressionUtils.stripeTranspose(inBuffer, sizes);
+
+        // Compress each chunk independently using NOSZ flag (sizes are in the stripe framing)
+        final ByteBuffer[] compressedChunks = new ByteBuffer[numStreams];
+        for (int i = 0; i < numStreams; i++) {
+            compressedChunks[i] = compress(chunks[i], new RangeParams(RangeParams.NOSZ_FLAG_MASK));
+        }
+
+        // Write stripe framing: [numStreams] [compressed_size x N] [compressed_data x N]
+        outBuffer.put((byte) numStreams);
+        for (int i = 0; i < numStreams; i++) {
+            CompressionUtils.writeUint7(compressedChunks[i].remaining(), outBuffer);
+        }
+        for (int i = 0; i < numStreams; i++) {
+            outBuffer.put(compressedChunks[i]);
+        }
+
+        // Mark input as consumed (stripe uses absolute get, so position isn't advanced by transpose)
+        inBuffer.position(inBuffer.limit());
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }

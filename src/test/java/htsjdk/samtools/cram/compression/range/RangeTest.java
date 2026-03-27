@@ -82,22 +82,7 @@ public class RangeTest extends HtsjdkTest {
                 RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
                 RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
                 RangeParams.EXT_FLAG_MASK,
-                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK);
-        final List<Object[]> testCases = new ArrayList<>();
-        for (Integer rangeParamsFormatFlag : rangeParamsFormatFlagList) {
-            Object[] objects = new Object[]{
-                    new RangeEncode(),
-                    new RangeDecode(),
-                    new RangeParams(rangeParamsFormatFlag)
-            };
-            testCases.add(objects);
-        }
-        return testCases.toArray(new Object[][]{});
-    }
-
-    public Object[][] getRangeDecodeOnlyCodecs() {
-        // params: Range encoder, Range decoder, Range params
-        final List<Integer> rangeParamsFormatFlagList = Arrays.asList(
+                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK,
                 RangeParams.STRIPE_FLAG_MASK,
                 RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
@@ -110,14 +95,6 @@ public class RangeTest extends HtsjdkTest {
             testCases.add(objects);
         }
         return testCases.toArray(new Object[][]{});
-    }
-
-    @DataProvider(name="RangeDecodeOnlyAndData")
-    public Object[][] getRangeDecodeOnlyAndData() {
-
-        // params: Range encoder, Range decoder, Range params, test data
-        // this data provider provides all the non-empty testdata input for Range codec
-        return TestNGUtils.cartesianProduct(getRangeDecodeOnlyCodecs(), getRangeTestData());
     }
 
     @DataProvider(name="allRangeCodecsAndData")
@@ -162,25 +139,6 @@ public class RangeTest extends HtsjdkTest {
             rangeRoundTrip(rangeEncode, rangeDecode, rangeParams, in);
         }
     }
-
-    @Test(
-            dataProvider = "RangeDecodeOnlyAndData",
-            expectedExceptions = { CRAMException.class },
-            expectedExceptionsMessageRegExp = "Range Encoding with Stripe Flag is not implemented.")
-    public void testRangeEncodeStripe(
-            final RangeEncode rangeEncode,
-            final RangeDecode unused,
-            final RangeParams params,
-            final TestDataEnvelope td) {
-
-        // When td is not Empty, Encoding with Stripe Flag should throw an Exception
-        // as Encode Stripe is not implemented
-        final ByteBuffer compressed = rangeEncode.compress(CompressionUtils.wrap(td.testArray), params);
-    }
-
-    // testRangeBuffersMeetBoundaryExpectations
-    // testRangeHeader
-    // testRangeEncodeStripe
 
     private static void rangeRoundTrip(
             final RangeEncode rangeEncode,

@@ -40,7 +40,9 @@ public class RangeInteropTest extends HtsjdkTest  {
                 RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
                 RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
                 RangeParams.EXT_FLAG_MASK,
-                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK);
+                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK,
+                RangeParams.STRIPE_FLAG_MASK,
+                RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
         //note that for the roundtrip tests, we're retrieving ALL of the raw test files in the interop directory,
         // *including* the ones intended for the other codecs such as name tok, etc., but the range codec should
@@ -77,13 +79,9 @@ public class RangeInteropTest extends HtsjdkTest  {
 
             final RangeDecode rangeDecode = new RangeDecode();
             final RangeEncode rangeEncode = new RangeEncode();
-            if (params.isStripe()) {
-                Assert.assertThrows(CRAMException.class, () -> rangeEncode.compress(uncompressedInteropBytes, params));
-            } else {
-                final ByteBuffer compressedHtsjdkBytes = rangeEncode.compress(uncompressedInteropBytes, params);
-                uncompressedInteropBytes.rewind();
-                Assert.assertEquals(rangeDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
-            }
+            final ByteBuffer compressedHtsjdkBytes = rangeEncode.compress(uncompressedInteropBytes, params);
+            uncompressedInteropBytes.rewind();
+            Assert.assertEquals(rangeDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
         }
     }
 

@@ -2,16 +2,29 @@ package htsjdk.samtools.cram.compression.range;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Adaptive frequency model for the CRAM 3.1 arithmetic range coder. Maintains per-symbol frequency
+ * counts and provides encode/decode operations that update the model after each symbol. Symbols
+ * are kept approximately sorted by frequency (descending) for cache-friendly access.
+ *
+ * <p>Each symbol starts with a frequency of 1. After encoding/decoding a symbol, its frequency
+ * is incremented by {@link Constants#STEP} (16). When total frequency exceeds {@link Constants#MAX_FREQ},
+ * all frequencies are halved (avoiding zeros).
+ *
+ * @see RangeCoder
+ */
 public class ByteModel {
-    // spec: To encode any symbol the entropy encoder needs to know
-    // the frequency of the symbol to encode,
-    // the cumulative frequencies of all symbols prior to this symbol,
-    // and the total of all frequencies.
     public int totalFrequency;
     public final int maxSymbol;
     public final int[] symbols;
     public final int[] frequencies;
 
+    /**
+     * Create a new model for the given number of distinct symbols (0 to numSymbols-1),
+     * each starting with frequency 1.
+     *
+     * @param numSymbols number of distinct symbols this model can encode/decode
+     */
     public ByteModel(final int numSymbols) {
         // Spec: ModelCreate method
         this.totalFrequency = numSymbols;
@@ -24,9 +37,14 @@ public class ByteModel {
         }
     }
 
+    /**
+     * Decode one symbol from the compressed stream, update the model frequencies, and return the symbol.
+     *
+     * @param inBuffer the compressed input stream
+     * @param rangeCoder the range coder state (must have been started with {@link RangeCoder#rangeDecodeStart})
+     * @return the decoded symbol value
+     */
     public int modelDecode(final ByteBuffer inBuffer, final RangeCoder rangeCoder){
-
-        // decodes one symbol
         final int freq = rangeCoder.rangeGetFrequency(totalFrequency);
         int cumulativeFrequency = 0;
         int x = 0;
@@ -62,8 +80,8 @@ public class ByteModel {
         return symbol;
     }
 
-    public  void modelRenormalize(){
-        // frequencies are halved
+    /** Halve all frequencies (avoiding zeros) when total frequency exceeds {@link Constants#MAX_FREQ}. */
+    public void modelRenormalize(){
         totalFrequency = 0;
         for (int i=0; i <= maxSymbol; i++){
             frequencies[i] -= Math.floorDiv(frequencies[i],2);
@@ -71,9 +89,14 @@ public class ByteModel {
         }
     }
 
+    /**
+     * Encode one symbol to the compressed stream and update the model frequencies.
+     *
+     * @param outBuffer the output stream for compressed bytes
+     * @param rangeCoder the range coder state
+     * @param symbol the symbol value to encode (must be in range 0 to maxSymbol)
+     */
     public void modelEncode(final ByteBuffer outBuffer, final RangeCoder rangeCoder, final int symbol){
-
-        // encodes one input symbol
         int cumulativeFrequency = 0;
         int i;
         for( i = 0; symbols[i] != symbol; i++){
