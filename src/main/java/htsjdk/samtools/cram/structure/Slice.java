@@ -247,11 +247,76 @@ public class Slice {
         // Populate context model with per-record metadata needed by codecs like FQZComp
         contextModel.populateFromRecords(records);
 
+        // Link mate pairs within this slice as "attached" instead of "detached".
+        // Attached mates only store a record offset (NF) instead of full mate info (MF, NS, NP, TS),
+        // significantly reducing the compressed size for coordinate-sorted paired-end data.
+        linkMatesWithinSlice(records);
+
         final CramRecordWriter writer = new CramRecordWriter(this);
         sliceBlocks = writer.writeToSliceBlocks(contextModel, records, alignmentContext.getAlignmentStart());
 
         // we can't calculate the number of blocks until after the record writer has written everything out
         nSliceBlocks = caclulateNumberOfBlocks();
+    }
+
+    /**
+     * Scan records in this slice for mate pairs and link them as "attached" instead of "detached".
+     * For each pair of records with the same read name that are both paired and neither is
+     * secondary/supplementary, the earlier record is marked with {@code CF_HAS_MATE_DOWNSTREAM}
+     * and the NF (records-to-next-fragment) offset is set. The later record remains detached
+     * but will have its mate info restored from the linked record during decode.
+     *
+     * <p>Records without a mate in this slice, or that are secondary/supplementary, remain detached.
+     *
+     * @param records the CRAM records in this slice
+     */
+    private static void linkMatesWithinSlice(final List<CRAMCompressionRecord> records) {
+        // Map read name → index of first occurrence (for mate pairing)
+        final java.util.HashMap<String, Integer> readNameToIndex = new java.util.HashMap<>(records.size());
+
+        for (int i = 0; i < records.size(); i++) {
+            final CRAMCompressionRecord record = records.get(i);
+            if (!record.isReadPaired() || record.isSecondaryAlignment() || record.isSupplementary()) {
+                // Unpaired, secondary, or supplementary reads stay detached
+                continue;
+            }
+
+            final String readName = record.getReadName();
+            final Integer previousIndex = readNameToIndex.get(readName);
+
+            if (previousIndex == null) {
+                // First occurrence of this read name — remember it
+                readNameToIndex.put(readName, i);
+            } else {
+                // Second occurrence — attempt to link as attached mate pair
+                final CRAMCompressionRecord previous = records.get(previousIndex);
+
+                // Validate that TLEN is consistent — if the recomputed insert size
+                // would differ from the original, keep both records detached to preserve
+                // the original TLEN values (matching htslib's cross-validation behavior)
+                final int computedTlen = CRAMCompressionRecord.computeInsertSize(previous, record);
+                if (previous.getTemplateSize() != computedTlen ||
+                        record.getTemplateSize() != -computedTlen) {
+                    // TLEN mismatch — keep both detached
+                    readNameToIndex.remove(readName);
+                    continue;
+                }
+
+                // Mark the earlier record as having its mate downstream
+                previous.setDetached(false);
+                previous.setHasMateDownStream(true);
+                previous.setRecordsToNextFragment(i - previousIndex - 1);
+
+                // The later record is the downstream mate — it's not detached but also
+                // doesn't have a mate downstream (it IS the downstream mate)
+                record.setDetached(false);
+                record.setHasMateDownStream(false);
+
+                // Remove from map so we don't match a third record with the same name
+                // (supplementary/secondary reads are already filtered above)
+                readNameToIndex.remove(readName);
+            }
+        }
     }
 
     public CRAMVersion getCramVersion() { return cramVersion; }
@@ -516,6 +581,7 @@ public class Slice {
                 record.restoreReadBases(
                         cramReferenceRegion,
                         getCompressionHeader().getSubstitutionMatrix());
+                record.restoreNmAndMd(cramReferenceRegion);
             }
         }
 

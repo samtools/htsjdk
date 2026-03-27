@@ -60,6 +60,12 @@ public class CRAMEncodingStrategy {
     // TrialCompressor that tries all and picks the smallest output.
     private EnumMap<DataSeries, java.util.List<CompressorDescriptor>> trialCandidatesMap;
 
+    // Whether to store NM:i and MD:Z tags verbatim. When false (default), these tags are stripped
+    // during encoding for mapped reads and regenerated from the reference during decoding. Matches
+    // htslib's store_nm/store_md options (both default to 0/false).
+    private boolean storeNM = false;
+    private boolean storeMD = false;
+
     // Advanced override: a pre-built encoding map that bypasses the compressor map entirely.
     // Used by tests that need low-level control over encoding descriptors.
     private CompressionHeaderEncodingMap customCompressionHeaderEncodingMap;
@@ -221,6 +227,38 @@ public class CRAMEncodingStrategy {
     public CompressionHeaderEncodingMap getCustomCompressionHeaderEncodingMap() {
         return customCompressionHeaderEncodingMap;
     }
+
+    /**
+     * Set whether to store the NM:i tag verbatim. When false (default), NM is stripped during
+     * encoding for mapped reads and regenerated from features + reference during decoding.
+     * Matches htslib's {@code CRAM_OPT_STORE_NM} option.
+     *
+     * @param storeNM true to store NM verbatim, false to strip and regenerate
+     * @return this strategy for chaining
+     */
+    public CRAMEncodingStrategy setStoreNM(final boolean storeNM) {
+        this.storeNM = storeNM;
+        return this;
+    }
+
+    /** @return whether NM:i tags are stored verbatim (false = stripped and regenerated) */
+    public boolean getStoreNM() { return storeNM; }
+
+    /**
+     * Set whether to store the MD:Z tag verbatim. When false (default), MD is stripped during
+     * encoding for mapped reads and regenerated from features + reference during decoding.
+     * Matches htslib's {@code CRAM_OPT_STORE_MD} option.
+     *
+     * @param storeMD true to store MD verbatim, false to strip and regenerate
+     * @return this strategy for chaining
+     */
+    public CRAMEncodingStrategy setStoreMD(final boolean storeMD) {
+        this.storeMD = storeMD;
+        return this;
+    }
+
+    /** @return whether MD:Z tags are stored verbatim (false = stripped and regenerated) */
+    public boolean getStoreMD() { return storeMD; }
 
     public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
     public int getReadsPerSlice() { return readsPerSlice; }

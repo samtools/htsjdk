@@ -953,45 +953,56 @@ public class SequenceUtil {
     }
 
     /**
-     * Calculate MD and NM similarly to Samtools, except that N->N is a match.
+     * Compute MD string and NM count from a read's CIGAR, bases, and a reference sequence slice.
+     * This is the core implementation shared by {@link #calculateMdAndNmTags(SAMRecord, byte[], boolean, boolean)}
+     * and the CRAM decoder's NM/MD regeneration.
      *
-     * @param record Input record for which to calculate NM and MD.
-     *               The appropriate tags will be added/updated in the record
-     * @param ref    The reference bases for the sequence to which the record is mapped
-     * @param calcMD A flag indicating whether to update the MD tag in the record
-     * @param calcNM A flag indicating whether to update the NM tag in the record
+     * <p>The reference bases are accessed starting at {@code refOffset} — i.e., {@code referenceBases[0]}
+     * corresponds to the genomic position {@code refOffset + 1} (1-based). The read's alignment start
+     * (1-based) determines where in the reference to begin comparing.
+     *
+     * <p>Matches are determined by upper-casing both bases before comparison. N-to-N is treated as a match
+     * (matching samtools behavior).
+     *
+     * @param cigarElements the CIGAR elements for the read
+     * @param readBases the read's base sequence
+     * @param referenceBases the reference bases covering the read's alignment region
+     * @param refOffset the 0-based genomic offset of the first base in {@code referenceBases}
+     * @param alignmentStart the 1-based alignment start position of the read
+     * @return a Tuple of (MD string, NM count)
      */
-    public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref,
-                                            final boolean calcMD, final boolean calcNM) {
-        if (!calcMD && !calcNM)
-            return;
+    public static Tuple<String, Integer> calculateMdAndNm(
+            final List<CigarElement> cigarElements,
+            final byte[] readBases,
+            final byte[] referenceBases,
+            final int refOffset,
+            final int alignmentStart) {
 
-        final Cigar cigar = record.getCigar();
-        final List<CigarElement> cigarElements = cigar.getCigarElements();
-        final byte[] seq = record.getReadBases();
-        final int alignmentStart = record.getAlignmentStart() - 1;
-        int cigarIndex, blockRefPos, blockReadStart, matchCount = 0;
+        // blockRefPos is the 0-based position in the reference array, adjusted for the offset
+        final int startInRef = alignmentStart - 1 - refOffset;
+        int blockRefPos = startInRef;
+        int blockReadStart = 0;
+        int matchCount = 0;
         int nmCount = 0;
         final StringBuilder mdString = new StringBuilder();
 
-        final int nElements = cigarElements.size();
-        for (cigarIndex = blockReadStart = 0, blockRefPos = alignmentStart; cigarIndex < nElements; ++cigarIndex) {
-            final CigarElement ce = cigarElements.get(cigarIndex);
+        for (final CigarElement ce : cigarElements) {
             int inBlockOffset;
             final int blockLength = ce.getLength();
             final CigarOperator op = ce.getOperator();
+
             if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ
                     || op == CigarOperator.X) {
                 for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
                     final int readOffset = blockReadStart + inBlockOffset;
+                    final int refIdx = blockRefPos + inBlockOffset;
 
-                    if (ref.length <= blockRefPos + inBlockOffset) break; // out of boundary
+                    if (refIdx >= referenceBases.length) break; // out of boundary
 
-                    final byte readBase = seq[readOffset];
-                    final byte refBase = ref[blockRefPos + inBlockOffset];
+                    final byte readBase = readBases[readOffset];
+                    final byte refBase = referenceBases[refIdx];
 
                     if ((bases[readBase] == bases[refBase]) || readBase == 0) {
-                        // a match
                         ++matchCount;
                     } else {
                         mdString.append(matchCount);
@@ -1007,15 +1018,15 @@ public class SequenceUtil {
                 mdString.append(matchCount);
                 mdString.append('^');
                 for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
-                    if (ref[blockRefPos + inBlockOffset] == 0) break;
-                    mdString.appendCodePoint(ref[blockRefPos + inBlockOffset]);
+                    final int refIdx = blockRefPos + inBlockOffset;
+                    if (refIdx >= referenceBases.length || referenceBases[refIdx] == 0) break;
+                    mdString.appendCodePoint(referenceBases[refIdx]);
                 }
                 matchCount = 0;
                 if (inBlockOffset < blockLength) break;
                 blockRefPos += blockLength;
                 nmCount += blockLength;
-            } else if (op == CigarOperator.INSERTION
-                    || op == CigarOperator.SOFT_CLIP) {
+            } else if (op == CigarOperator.INSERTION || op == CigarOperator.SOFT_CLIP) {
                 blockReadStart += blockLength;
                 if (op == CigarOperator.INSERTION) nmCount += blockLength;
             } else if (op == CigarOperator.SKIPPED_REGION) {
@@ -1024,8 +1035,33 @@ public class SequenceUtil {
         }
         mdString.append(matchCount);
 
-        if (calcMD) record.setAttribute(SAMTag.MD, mdString.toString());
-        if (calcNM) record.setAttribute(SAMTag.NM, nmCount);
+        return new Tuple<>(mdString.toString(), nmCount);
+    }
+
+    /**
+     * Calculate MD and NM similarly to Samtools, except that N->N is a match.
+     *
+     * @param record Input record for which to calculate NM and MD.
+     *               The appropriate tags will be added/updated in the record
+     * @param ref    The reference bases for the entire contig to which the record is mapped
+     *               (index 0 = position 1 on the contig)
+     * @param calcMD A flag indicating whether to update the MD tag in the record
+     * @param calcNM A flag indicating whether to update the NM tag in the record
+     */
+    public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref,
+                                            final boolean calcMD, final boolean calcNM) {
+        if (!calcMD && !calcNM)
+            return;
+
+        final Tuple<String, Integer> result = calculateMdAndNm(
+                record.getCigar().getCigarElements(),
+                record.getReadBases(),
+                ref,
+                0,  // ref array starts at position 1 on the contig
+                record.getAlignmentStart());
+
+        if (calcMD) record.setAttribute(SAMTag.MD, result.a);
+        if (calcNM) record.setAttribute(SAMTag.NM, result.b);
     }
 
     public static byte upperCase(final byte base) {

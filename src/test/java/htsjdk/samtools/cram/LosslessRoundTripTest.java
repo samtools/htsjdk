@@ -9,7 +9,9 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by vadim on 19/02/2016.
@@ -53,6 +55,54 @@ public class LosslessRoundTripTest extends HtsjdkTest {
 
         Assert.assertEquals(record2, record);
         reader.close();
+    }
+
+    // ---- Mate linking ----
+
+    /**
+     * Tests that paired-end reads survive CRAM round-trip with mate fields intact.
+     * Exercises {@code Slice.linkMatesWithinSlice()} which links mates as "attached"
+     * (storing only the NF offset) rather than "detached" (storing full mate info).
+     * Uses {@link SAMRecordSetBuilder} to create properly-paired records with all mate
+     * fields set correctly via {@code SamPairUtil.setMateInfo()}.
+     */
+    @Test
+    public void testMateLinking() throws IOException {
+        final SAMFileHeader header = buildHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate, false);
+        builder.setHeader(header);
+        builder.setReadLength(10);
+        builder.setUnmappedHasBasesAndQualities(true);
+
+        // 1. Normal pair, both mapped — basic attached mate case
+        builder.addPair("pair1", 0, 1, 50, false, false, "10M", "10M", false, true, 30);
+
+        // 2. One mate unmapped — mate linking skips unmapped; verifies mate unmapped flag, TLEN=0
+        builder.addPair("pairUnmap", 0, 0, 80, 0, false, true, "10M", "10M", false, false, false, false, 30);
+
+        // 3. Unpaired fragment — should pass through unaffected by mate linking
+        builder.addFrag("fragment", 0, 60, false, false, "10M", null, 30);
+
+        // 4. Pair + supplementary with same name — only primary pair should be linked
+        builder.addPair("suppPair", 0, 100, 150, false, false, "10M", "10M", false, true, 30);
+        builder.addFrag("suppPair", 0, 120, false, false, "10M", null, 30, false, true);
+
+        // Sort by coordinate since CRAM expects coordinate order
+        final List<SAMRecord> records = new ArrayList<>(builder.getRecords());
+        records.sort(header.getSortOrder().getComparatorInstance());
+
+        // Set RG and compute MD/NM on all records so they survive the strip-and-regenerate round-trip.
+        // The builder doesn't set RG (we passed addReadGroup=false) or MD/NM.
+        for (final SAMRecord rec : records) {
+            rec.setAttribute("RG", READ_GROUP);
+            if (!rec.getReadUnmappedFlag()) {
+                SequenceUtil.calculateMdAndNmTags(rec, REF_BASES, true, true);
+            }
+        }
+
+        assertRoundTrip("mateLinking", records.toArray(new SAMRecord[0]));
     }
 
     /**
