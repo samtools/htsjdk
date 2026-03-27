@@ -128,7 +128,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     public void testGetFeatureReaderWithPathAndWrappers(String file, String index,
                                                         Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                                         Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
-        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
+        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
             final AbstractFeatureReader<VariantContext, ?> featureReader = getFeatureReader(file, index, wrapper,
                                                                                             indexWrapper,
                                                                                             new VCFCodec(),
@@ -155,7 +155,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "failsWithoutWrappers", expectedExceptions = {TribbleException.class, FileTruncatedException.class})
     public void testFailureIfNoWrapper(String file, String index) throws IOException {
-        try(final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
+        try(final FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
             final FeatureReader<?> reader = getFeatureReader(file, index, null, null, new VCFCodec(), fs)){
             // should have exploded by now
         }

@@ -138,7 +138,7 @@ public class IndexFactoryTest extends HtsjdkTest {
 
     @Test
     public void testTabixOnNonDefaultFileSystem() throws IOException {
-        try (final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+        try (final FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path vcfInJimfs = TestUtils.getTribbleFileInJimfs(
                     "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz",
                     null, fs);

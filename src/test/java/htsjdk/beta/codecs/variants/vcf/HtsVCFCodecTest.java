@@ -69,7 +69,7 @@ public class HtsVCFCodecTest extends HtsjdkTest {
 
     @Test
     public void testRoundTripNio() throws IOException {
-        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())){
+        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())){
             final IOPath outputPath = IOUtils.createTempPath("roundTripVCFThroughPath", ".vcf");
             Path tribbleFileInJimfs = TestUtils.getTribbleFileInJimfs(TEST_VCF_WITH_INDEX.getRawInputString(), TEST_VCF_INDEX.getRawInputString(), fs);
             HtsPath vcf = new HtsPath(tribbleFileInJimfs.toUri().toString());

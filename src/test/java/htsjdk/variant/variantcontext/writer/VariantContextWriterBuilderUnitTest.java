@@ -352,7 +352,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 .setReferenceDictionary(dictionary)
                 .setOption(Options.INDEX_ON_THE_FLY);
 
-        try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path vcfPath = fs.getPath(vcf.getName());
             final Path vcfIdxPath = Tribble.indexPath(vcfPath);
             try(final VariantContextWriter writer = builder.setOutputPath(vcfPath).build())
