@@ -4,7 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -12,7 +12,7 @@ public class InsertSizeFilterTest extends HtsjdkTest {
     private static final int READ_LENGTH = 20;
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
 
-    @BeforeTest
+    @BeforeClass
     public void setUp() {
         builder.setReadLength(READ_LENGTH);
         builder.addFrag("mapped_unpaired", 1, 1, false);

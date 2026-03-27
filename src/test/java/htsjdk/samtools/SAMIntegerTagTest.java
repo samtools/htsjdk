@@ -29,7 +29,7 @@ import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -64,7 +64,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     enum Format {SAM, BAM, CRAM}
 
-    @BeforeTest
+    @BeforeClass
     public void loadDictionaryFromFasta () throws IOException {
         final IndexedFastaSequenceFile ff = new IndexedFastaSequenceFile(REF_FILE);
         DICTIONARY_BACKED_BY_REF_FILE = ff.getSequenceDictionary();

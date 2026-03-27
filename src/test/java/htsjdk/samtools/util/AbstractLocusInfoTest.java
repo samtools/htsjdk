@@ -28,7 +28,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -44,7 +44,7 @@ public class AbstractLocusInfoTest extends HtsjdkTest {
     private EdgingRecordAndOffset typedRecordAndOffsetEnd;
     private SAMSequenceRecord sequence = new SAMSequenceRecord("chrM", 100);
 
-    @BeforeTest
+    @BeforeClass
     public void setUp() {
         SAMRecord record = new SAMRecord(new SAMFileHeader());
         record.setReadName("testRecord");

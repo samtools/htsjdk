@@ -8,7 +8,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -20,7 +20,7 @@ import java.nio.file.Path;
 public class IntervalListWriterTest extends HtsjdkTest {
     private SAMSequenceDictionary dict;
 
-    @BeforeTest
+    @BeforeClass
     void setup() {
         this.dict = new SAMSequenceDictionary();
         this.dict.addSequence(new SAMSequenceRecord("chr1", 10000));

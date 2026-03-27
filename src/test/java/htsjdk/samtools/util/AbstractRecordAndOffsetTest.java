@@ -26,7 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -43,7 +43,7 @@ public class AbstractRecordAndOffsetTest extends HtsjdkTest {
     private byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};
     SAMRecord record;
 
-    @BeforeTest
+    @BeforeClass
     public void setUp(){
         record = new SAMRecord(new SAMFileHeader());
         record.setReadName("testRecord");

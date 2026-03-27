@@ -4,7 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -28,7 +28,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
     private static BAMFileReader bamFileReaderWrong;
     private static BAMFileReader bamFileReaderNull;
 
-    @BeforeTest
+    @BeforeClass
     public void init() throws IOException {
         bamFileReaderBAI = new BAMFileReader(bamFile, baiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
         bamFileReaderCSI = new BAMFileReader(bamFile, csiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());

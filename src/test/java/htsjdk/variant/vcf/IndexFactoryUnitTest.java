@@ -37,7 +37,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -56,7 +56,7 @@ public class IndexFactoryUnitTest extends VariantBaseTest {
 
     private SAMSequenceDictionary dict;
 
-    @BeforeTest
+    @BeforeClass
     public void setup() {
         dict = createArtificialSequenceDictionary();
     }

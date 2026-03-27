@@ -26,7 +26,7 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -116,7 +116,7 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
 
     File AccessFileWithAlternateContigName;
 
-    @BeforeTest
+    @BeforeClass
     void setup() throws IOException {
         File input = new File("src/test/resources/htsjdk/samtools/SamSequenceRecordTest/alternate_contig_names.sam");
 

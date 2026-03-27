@@ -3,8 +3,8 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -30,7 +30,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     private static HtsgetBAMFileReader bamFileReaderHtsgetPOST;
     private static HtsgetBAMFileReader bamFileReaderHtsgetAsync;
 
-    @BeforeTest
+    @BeforeClass
     public void init() throws IOException {
         bamFileReaderHtsgetGET = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
         bamFileReaderHtsgetGET.setUsingPOST(false);
@@ -45,7 +45,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
         Assert.assertFalse(bamFileReaderHtsgetAsync.isUsingPOST());
     }
 
-    @AfterTest
+    @AfterClass
     public void tearDown() {
         bamFileReaderHtsgetGET.close();
         bamFileReaderHtsgetPOST.close();
