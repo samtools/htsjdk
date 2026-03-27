@@ -4,6 +4,7 @@ import htsjdk.beta.plugin.IOUtils;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.ProcessExecutor;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,13 +39,45 @@ public class SamtoolsTestUtils {
     }
 
     /**
-     * @return the name and location of the local samtools executable as specified by the environment
-     * variable HTSJDK_SAMTOOLS_BIN, or the default value of "/usr/local/bin/samtools" if the environment
-     * variable is not set
+     * @return the name and location of the local samtools executable. Checks, in order:
+     * 1. The HTSJDK_SAMTOOLS_BIN environment variable
+     * 2. The system PATH (via "which samtools")
+     * 3. The default path "/usr/local/bin/samtools"
      */
     public static String getSamtoolsBin() {
-        final String samtoolsPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
-        return samtoolsPath == null ? "/usr/local/bin/samtools" : samtoolsPath;
+        final String envPath = System.getenv(SAMTOOLS_BINARY_ENV_VARIABLE);
+        if (envPath != null) {
+            return envPath;
+        }
+
+        final String pathResult = findSamtoolsOnPath();
+        if (pathResult != null) {
+            return pathResult;
+        }
+
+        return "/usr/local/bin/samtools";
+    }
+
+    /**
+     * Attempts to find samtools on the system PATH using "which samtools".
+     * @return the path to samtools if found, or null if not found or if the lookup fails
+     */
+    private static String findSamtoolsOnPath() {
+        try {
+            final Process process = new ProcessBuilder("which", "samtools")
+                    .redirectErrorStream(true)
+                    .start();
+            final int exitCode = process.waitFor();
+            if (exitCode == 0) {
+                final String path = new String(process.getInputStream().readAllBytes()).trim();
+                if (!path.isEmpty() && Files.exists(Paths.get(path))) {
+                    return path;
+                }
+            }
+        } catch (final IOException | InterruptedException e) {
+            // Fall through to return null
+        }
+        return null;
     }
 
     /**
