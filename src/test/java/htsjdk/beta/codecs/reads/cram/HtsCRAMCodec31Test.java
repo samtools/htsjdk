@@ -11,7 +11,7 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.CRAM31Tests;
+import htsjdk.samtools.cram.cram31.CRAM31FidelityTestBase;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
@@ -95,7 +95,7 @@ public class HtsCRAMCodec31Test extends HtsjdkTest {
         }
 
         // make sure we got a CRAM 3.1 file
-        Assert.assertEquals(CRAM31Tests.getCRAMVersion(tempCRAM31Path), CramVersions.CRAM_v3_1);
+        Assert.assertEquals(CRAM31FidelityTestBase.getCRAMVersion(tempCRAM31Path), CramVersions.CRAM_v3_1);
 
         final List<SAMRecord> recs30 = new ArrayList<>();
         final List<SAMRecord> recs31 = new ArrayList<>();
