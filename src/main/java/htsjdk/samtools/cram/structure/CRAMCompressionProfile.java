@@ -142,31 +142,42 @@ public enum CRAMCompressionProfile {
         }
     }
 
-    /** NORMAL: rANS Nx16 for entropy data, FQZComp for QS, NameTok for RN, GZIP for the rest. */
+    /** NORMAL: rANS Nx16 for low-entropy data, GZIP for positional/byte-array data, FQZComp for QS, NameTok for RN. */
     private void buildNormalMap(final EnumMap<DataSeries, CompressorDescriptor> map) {
         final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
         final CompressorDescriptor ransOrder0 = new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal());
         final CompressorDescriptor ransOrder1 = new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
 
-        // Default everything to GZIP
+        // Default everything to GZIP — then override specific series with better codecs
         for (final DataSeries ds : getWrittenDataSeries()) {
             map.put(ds, gzip);
         }
 
-        // rANS Nx16 Order 0 for position-like data
+        // rANS Nx16 Order 0 for position-like integer data with low entropy
         map.put(DataSeries.AP_AlignmentPositionOffset, ransOrder0);
         map.put(DataSeries.RI_RefId, ransOrder0);
 
-        // rANS Nx16 Order 1 for entropy-rich data
+        // rANS Nx16 Order 1 for low-entropy integer data series where rANS outperforms GZIP
         map.put(DataSeries.BA_Base, ransOrder1);
         map.put(DataSeries.BF_BitFlags, ransOrder1);
+        map.put(DataSeries.BS_BaseSubstitutionCode, ransOrder1);
         map.put(DataSeries.CF_CompressionBitFlags, ransOrder1);
+        map.put(DataSeries.FC_FeatureCode, ransOrder1);
+        map.put(DataSeries.MF_MateBitFlags, ransOrder1);
+        map.put(DataSeries.MQ_MappingQualityScore, ransOrder1);
         map.put(DataSeries.NS_NextFragmentReferenceSequenceID, ransOrder1);
-        map.put(DataSeries.QS_QualityScore, new CompressorDescriptor(BlockCompressionMethod.FQZCOMP));
         map.put(DataSeries.RG_ReadGroup, ransOrder1);
         map.put(DataSeries.RL_ReadLength, ransOrder1);
-        map.put(DataSeries.RN_ReadName, new CompressorDescriptor(BlockCompressionMethod.NAME_TOKENISER));
+        map.put(DataSeries.TL_TagIdList, ransOrder1);
         map.put(DataSeries.TS_InsertSize, ransOrder1);
+
+        // Keep GZIP for high-entropy positional data where LZ77 helps
+        // NP (mate position), FP (feature position), FN (feature count) — these have high variance
+        // IN (insertions), SC (soft clips) — byte arrays benefit from LZ77
+
+        // Specialized codecs
+        map.put(DataSeries.QS_QualityScore, new CompressorDescriptor(BlockCompressionMethod.FQZCOMP));
+        map.put(DataSeries.RN_ReadName, new CompressorDescriptor(BlockCompressionMethod.NAME_TOKENISER));
     }
 
     /** SMALL: FQZComp for QS, GZIP for everything else (no rANS, no NameTok per htslib). */

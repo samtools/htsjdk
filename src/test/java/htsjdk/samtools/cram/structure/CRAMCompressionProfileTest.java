@@ -72,6 +72,10 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         Assert.assertEquals(map.get(DataSeries.RN_ReadName).method(), BlockCompressionMethod.NAME_TOKENISER);
         Assert.assertEquals(map.get(DataSeries.BA_Base).method(), BlockCompressionMethod.RANSNx16);
         Assert.assertEquals(map.get(DataSeries.AP_AlignmentPositionOffset).method(), BlockCompressionMethod.RANSNx16);
+        Assert.assertEquals(map.get(DataSeries.MQ_MappingQualityScore).method(), BlockCompressionMethod.RANSNx16);
+        // NP and FP stay GZIP — rANS performs poorly on high-entropy positional data
+        Assert.assertEquals(map.get(DataSeries.NP_NextFragmentAlignmentStart).method(), BlockCompressionMethod.GZIP);
+        Assert.assertEquals(map.get(DataSeries.FP_FeaturePosition).method(), BlockCompressionMethod.GZIP);
     }
 
     @Test
