@@ -66,9 +66,9 @@ public final class CompressionHeaderFactory {
     public CompressionHeaderFactory(final CRAMEncodingStrategy encodingStrategy) {
         ValidationUtils.nonNull(encodingStrategy, "A CRAMEncodingStrategy is required");
 
-        this.encodingMap = encodingStrategy.getCustomCompressionHeaderEncodingMap() == null ?
-                new CompressionHeaderEncodingMap(encodingStrategy) :
-                encodingStrategy.getCustomCompressionHeaderEncodingMap();
+        this.encodingMap = encodingStrategy.getCustomCompressionHeaderEncodingMap() != null ?
+                encodingStrategy.getCustomCompressionHeaderEncodingMap() :
+                new CompressionHeaderEncodingMap(encodingStrategy);
         this.encodingStrategy = encodingStrategy;
     }
 

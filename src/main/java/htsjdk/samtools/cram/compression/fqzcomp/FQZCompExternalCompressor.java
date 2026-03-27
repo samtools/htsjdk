@@ -39,12 +39,17 @@ public class FQZCompExternalCompressor extends ExternalCompressor {
             return data;
         }
 
+        final int[] allLengths = getRecordLengths(data.length, contextModel);
+        final int[] allFlags = contextModel != null ? contextModel.getBamFlags() : null;
+
         // FQZComp iterates quality bytes and advances its record index when it exhausts each
         // record's length.  Records with zero quality bytes (missing quality scores) are never
-        // visited, so we must filter them out of the lengths array.
-        final int[] lengths = filterNonZero(getRecordLengths(data.length, contextModel));
+        // visited, so we must filter them out of both the lengths and flags arrays.
+        final int[] lengths = filterNonZero(allLengths);
+        final int[] bamFlags = allFlags != null ? filterByNonZero(allFlags, allLengths) : null;
+
         return CompressionUtils.toByteArray(
-                fqzCompEncoder.compress(CompressionUtils.wrap(data), lengths));
+                fqzCompEncoder.compress(CompressionUtils.wrap(data), lengths, bamFlags));
     }
 
     /**

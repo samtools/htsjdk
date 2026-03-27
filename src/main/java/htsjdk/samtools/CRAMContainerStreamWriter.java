@@ -2,7 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -19,6 +19,7 @@ public class CRAMContainerStreamWriter {
     private final SAMFileHeader samFileHeader;
     private final ContainerFactory containerFactory;
     private final CRAMIndexer cramIndexer;
+    private final CRAMVersion cramVersion;
 
     private long streamOffset = 0;
 
@@ -70,7 +71,7 @@ public class CRAMContainerStreamWriter {
      * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
      * containers on output stream, with an optional index.
      *
-     * @param encodingStrategy encoding strategy values
+     * @param encodingStrategy encoding strategy values (includes CRAM version)
      * @param referenceSource reference cramReferenceSource
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
      * @param outputStream where to write the CRAM stream.
@@ -88,6 +89,7 @@ public class CRAMContainerStreamWriter {
         this.outputStream = outputStream;
         this.cramIndexer = indexer;
         this.outputStreamIdentifier = outputIdentifier;
+        this.cramVersion = encodingStrategy.getCramVersion();
         this.containerFactory = new ContainerFactory(samFileHeader, encodingStrategy, referenceSource);
     }
 
@@ -107,7 +109,7 @@ public class CRAMContainerStreamWriter {
      */
     // TODO: retained for backward compatibility for disq in order to run GATK tests (remove before merging this branch)
     public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
-        final CramHeader cramHeader = new CramHeader(CramVersions.DEFAULT_CRAM_VERSION, outputStreamIdentifier);
+        final CramHeader cramHeader = new CramHeader(cramVersion, outputStreamIdentifier);
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
         streamOffset += Container.writeSAMFileHeaderContainer(cramHeader.getCRAMVersion(), requestedSAMFileHeader, outputStream);
     }
@@ -131,7 +133,7 @@ public class CRAMContainerStreamWriter {
                 writeContainer(container);
             }
             if (writeEOFContainer) {
-                CramIO.writeCramEOF(CramVersions.DEFAULT_CRAM_VERSION, outputStream);
+                CramIO.writeCramEOF(cramVersion, outputStream);
             }
             outputStream.flush();
             if (cramIndexer != null) {
@@ -144,7 +146,7 @@ public class CRAMContainerStreamWriter {
     }
 
     protected void writeContainer(final Container container) {
-        streamOffset += container.write(CramVersions.DEFAULT_CRAM_VERSION, outputStream);
+        streamOffset += container.write(cramVersion, outputStream);
         if (cramIndexer != null) {
             // using silent validation here because the reads have been through validation already or
             // they have been generated somehow through the htsjdk

@@ -27,6 +27,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -60,6 +61,7 @@ public class SAMFileWriterFactory implements Cloneable {
     private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
     private Integer maxRecordsInRam = null;
     private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
+    private CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
 
     /** simple constructor */
     public SAMFileWriterFactory() {
@@ -76,6 +78,7 @@ public class SAMFileWriterFactory implements Cloneable {
         this.tmpDir = other.tmpDir;
         this.compressionLevel = other.compressionLevel;
         this.maxRecordsInRam = other.maxRecordsInRam;
+        this.cramEncodingStrategy = other.cramEncodingStrategy;
     }
     
     @Override
@@ -239,6 +242,30 @@ public class SAMFileWriterFactory implements Cloneable {
         if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
         this.samFlagFieldOutput = samFlagFieldOutput;
         return this;
+    }
+
+    /**
+     * Set the {@link CRAMEncodingStrategy} to use when creating CRAM writers. Controls the CRAM version,
+     * compression profile, and per-data-series codec selection.
+     *
+     * <p>The default strategy uses the {@link htsjdk.samtools.cram.structure.CRAMCompressionProfile#NORMAL} profile.
+     * To use a specific profile:
+     * <pre>
+     *   factory.setCRAMEncodingStrategy(CRAMCompressionProfile.ARCHIVE.toStrategy());
+     * </pre>
+     *
+     * @param cramEncodingStrategy the encoding strategy to use for CRAM output
+     * @return this factory for chaining
+     */
+    public SAMFileWriterFactory setCRAMEncodingStrategy(final CRAMEncodingStrategy cramEncodingStrategy) {
+        if (cramEncodingStrategy == null) throw new IllegalArgumentException("CRAM encoding strategy was null");
+        this.cramEncodingStrategy = cramEncodingStrategy;
+        return this;
+    }
+
+    /** @return the current CRAM encoding strategy */
+    public CRAMEncodingStrategy getCRAMEncodingStrategy() {
+        return cramEncodingStrategy;
     }
 
     /**
@@ -524,8 +551,14 @@ public class SAMFileWriterFactory implements Cloneable {
      * @return CRAMFileWriter
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final OutputStream stream, final Path referenceFasta) {
-        // create the CRAMFileWriter directly without propagating factory settings
-        return new CRAMFileWriter(stream, new ReferenceSource(referenceFasta), header, null);
+        return new CRAMFileWriter(
+                cramEncodingStrategy,
+                stream,
+                null, // no index
+                true, // presorted
+                new ReferenceSource(referenceFasta),
+                header,
+                null);
     }
 
     /**
@@ -670,21 +703,15 @@ public class SAMFileWriterFactory implements Cloneable {
 
         final Path md5Path = IOUtil.addExtension(outputFile, ".md5");
         final CRAMFileWriter writer = new CRAMFileWriter(
+                cramEncodingStrategy,
                 createMd5File ? new Md5CalculatingOutputStream(cramOS, md5Path) : cramOS,
                 indexOS,
                 presorted,
                 referenceSource,
                 header,
                 outputFile.toUri().toString());
-        setCRAMWriterDefaults(writer);
 
         return writer;
-    }
-
-    // Set the default CRAM writer preservation parameters
-    private void setCRAMWriterDefaults(final CRAMFileWriter writer) {
-        //TODO: set encoding params
-        //writer.setEncodingParams(new CRAMEncodingStrategy());
     }
 
     @Override

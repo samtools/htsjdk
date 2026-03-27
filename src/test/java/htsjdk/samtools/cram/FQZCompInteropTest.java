@@ -222,6 +222,82 @@ public class FQZCompInteropTest extends HtsjdkTest {
         return table;
     }
 
+    /**
+     * Test FQZComp with NovaSeq-style binned quality data (4 distinct values).
+     * This should trigger quality map optimization (nsym <= 8 && nsym*2 < maxSymbol).
+     */
+    @Test(description = "FQZComp round-trip with quality map for sparse symbols (NovaSeq-style)")
+    public void testFQZCompWithQualityMap() {
+        final byte[] quals = new byte[5000];
+        final byte[] novaseqBins = {2, 12, 23, 37}; // 4 distinct values, max=37
+        final Random random = new Random(42);
+        for (int i = 0; i < quals.length; i++) {
+            quals[i] = novaseqBins[random.nextInt(novaseqBins.length)];
+        }
+
+        final FQZCompEncode encoder = new FQZCompEncode();
+        final ByteBuffer compressed = encoder.compress(CompressionUtils.wrap(quals), makeEqualLengths(50, 100));
+        final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
+        Assert.assertEquals(decompressed, CompressionUtils.wrap(quals));
+    }
+
+    /**
+     * Test FQZComp with duplicate quality records (should trigger dedup optimization).
+     */
+    @Test(description = "FQZComp round-trip with duplicate quality records")
+    public void testFQZCompWithDuplicates() {
+        // Create data where many consecutive records are identical (triggers dedup)
+        final byte[] record = {10, 20, 30, 25, 15};
+        final int numRecords = 100;
+        final byte[] quals = new byte[record.length * numRecords];
+        for (int i = 0; i < numRecords; i++) {
+            System.arraycopy(record, 0, quals, i * record.length, record.length);
+        }
+
+        final int[] lengths = makeEqualLengths(numRecords, record.length);
+        // Create BAM flags (no reverse for simplicity)
+        final int[] flags = new int[numRecords];
+
+        final FQZCompEncode encoder = new FQZCompEncode();
+        final ByteBuffer compressed = encoder.compress(CompressionUtils.wrap(quals), lengths, flags);
+        final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
+        Assert.assertEquals(decompressed, CompressionUtils.wrap(quals));
+    }
+
+    /**
+     * Test FQZComp with reverse-complemented reads (should trigger quality reversal).
+     */
+    @Test(description = "FQZComp round-trip with reverse-complemented reads")
+    public void testFQZCompWithReversal() {
+        final byte[] quals = {10, 20, 30, 40, 50, 5, 15, 25, 35, 45};
+        final int[] lengths = {5, 5};
+        // Second read is reverse-complemented (BAM flag 0x10)
+        final int[] flags = {0, 0x10};
+
+        final FQZCompEncode encoder = new FQZCompEncode();
+        final ByteBuffer compressed = encoder.compress(CompressionUtils.wrap(quals), lengths, flags);
+        final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
+        Assert.assertEquals(decompressed, CompressionUtils.wrap(quals));
+    }
+
+    /**
+     * Test FQZComp with small dataset (should trigger small-data parameter adjustments).
+     */
+    @Test(description = "FQZComp round-trip with small dataset (< 300KB)")
+    public void testFQZCompSmallDataset() {
+        // Under 300,000 bytes triggers special parameter adjustments
+        final byte[] quals = new byte[1000];
+        final Random random = new Random(77);
+        for (int i = 0; i < quals.length; i++) {
+            quals[i] = (byte) random.nextInt(42);
+        }
+
+        final FQZCompEncode encoder = new FQZCompEncode();
+        final ByteBuffer compressed = encoder.compress(CompressionUtils.wrap(quals), makeEqualLengths(10, 100));
+        final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
+        Assert.assertEquals(decompressed, CompressionUtils.wrap(quals));
+    }
+
     private static int[] makeEqualLengths(final int numRecords, final int recordLength) {
         final int[] lengths = new int[numRecords];
         java.util.Arrays.fill(lengths, recordLength);
