@@ -159,6 +159,10 @@ public class CompressionHeaderEncodingMap {
      * Build a compressor for a data series, wrapping in {@link TrialCompressor} if additional
      * trial candidates are configured for that series.
      */
+    /**
+     * Build a compressor for a data series, wrapping in {@link TrialCompressor} if additional
+     * trial candidates are configured for that series.
+     */
     private ExternalCompressor buildCompressor(
             final DataSeries ds,
             final CompressorDescriptor primaryDesc,

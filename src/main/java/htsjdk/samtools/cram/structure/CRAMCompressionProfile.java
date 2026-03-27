@@ -58,6 +58,24 @@ public enum CRAMCompressionProfile {
     private final int gzipLevel;
     private final int readsPerSlice;
 
+    /**
+     * Look up a profile by name, ignoring case. For example, {@code "archive"}, {@code "ARCHIVE"},
+     * and {@code "Archive"} all return {@link #ARCHIVE}.
+     *
+     * @param name the profile name (case-insensitive)
+     * @return the matching profile
+     * @throws IllegalArgumentException if no profile matches
+     */
+    public static CRAMCompressionProfile valueOfCaseInsensitive(final String name) {
+        for (final CRAMCompressionProfile profile : values()) {
+            if (profile.name().equalsIgnoreCase(name)) {
+                return profile;
+            }
+        }
+        throw new IllegalArgumentException("Unknown CRAM compression profile: " + name +
+                ". Must be one of: fast, normal, small, archive");
+    }
+
     CRAMCompressionProfile(final CRAMVersion cramVersion, final int gzipLevel, final int readsPerSlice) {
         this.cramVersion = cramVersion;
         this.gzipLevel = gzipLevel;
