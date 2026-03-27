@@ -245,7 +245,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public Object[][] composeAllPermutationsOfSamInputResource() {
         final List<SamInputResource> sources = new ArrayList<>();
         for (final InputResource.Type dataType : InputResource.Type.values()) {
-            if (dataType.equals(InputResource.Type.SRA_ACCESSION))
+            if (dataType.equals(InputResource.Type.SRA_ACCESSION) || dataType.equals(InputResource.Type.HTSGET))
                 continue;
 
             sources.add(new SamInputResource(composeInputResourceForType(dataType, false)));

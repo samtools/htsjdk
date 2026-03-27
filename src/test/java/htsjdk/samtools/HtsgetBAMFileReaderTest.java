@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+@Test(groups = "htsget")
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     public static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
     public static final String LOCAL_PREFIX = "htsjdk_test.";
