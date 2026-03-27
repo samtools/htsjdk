@@ -84,9 +84,7 @@ import org.gradle.internal.os.OperatingSystem;
 tasks.withType(Test).configureEach { task ->
     task.outputs.upToDateWhen { false } // tests will always rerun
 
-    // Always run serially because there are some very badly behaved tests in HTSJDK that
-    // will cause errors and even deadlocks if run multi-threaded
-    task.maxParallelForks = 1
+    task.maxParallelForks = Runtime.runtime.availableProcessors()
 
     // set heap size for the test JVM(s)
     task.minHeapSize = "1G"
