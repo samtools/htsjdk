@@ -29,7 +29,7 @@ import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.TrialCompressor;
 import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationDecode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
 import htsjdk.samtools.cram.encoding.external.ExternalByteEncoding;

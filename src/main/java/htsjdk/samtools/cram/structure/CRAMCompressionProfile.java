@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.range.RangeParams;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.util.EnumMap;

@@ -25,15 +25,19 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.compression.rans.RANSParams;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
+/**
+ * CRAM external compressor that uses the rANS 4x8 entropy coder (CRAM 3.0).
+ * Wraps shared {@link RANS4x8Encode} and {@link RANS4x8Decode} instances to
+ * avoid repeated allocation of large internal tables.
+ */
 public final class RANS4x8ExternalCompressor extends ExternalCompressor {
     private final RANSParams.ORDER order;
     private final RANS4x8Encode ransEncode;
@@ -50,6 +54,13 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
         this(RANSParams.ORDER.ZERO, ransEncode, ransDecode);
     }
 
+    /**
+     * Create a rANS 4x8 compressor with the specified order (as an integer).
+     *
+     * @param order the rANS order (0 or 1)
+     * @param ransEncode shared encoder instance
+     * @param ransDecode shared decoder instance
+     */
     public RANS4x8ExternalCompressor(
             final int order,
             final RANS4x8Encode ransEncode,
@@ -57,6 +68,13 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
         this(RANSParams.ORDER.fromInt(order), ransEncode, ransDecode);
     }
 
+    /**
+     * Create a rANS 4x8 compressor with the specified order.
+     *
+     * @param order the rANS order (ZERO or ONE)
+     * @param ransEncode shared encoder instance
+     * @param ransDecode shared decoder instance
+     */
     public RANS4x8ExternalCompressor(
             final RANSParams.ORDER order,
             final RANS4x8Encode ransEncode,
@@ -69,15 +87,12 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
 
     @Override
     public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
-        final RANS4x8Params params = new RANS4x8Params(order);
-        final ByteBuffer buffer = ransEncode.compress(CompressionUtils.wrap(data), params);
-        return toByteArray(buffer);
+        return ransEncode.compress(data, new RANS4x8Params(order));
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        final ByteBuffer buf = ransDecode.uncompress(CompressionUtils.wrap(data));
-        return toByteArray(buf);
+        return ransDecode.uncompress(data);
     }
 
     @Override
@@ -98,16 +113,6 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
     @Override
     public int hashCode() {
         return Objects.hash(getMethod(), order);
-    }
-
-    private byte[] toByteArray(final ByteBuffer buffer) {
-        if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
-            return buffer.array();
-        }
-
-        final byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        return bytes;
     }
 
 }

@@ -44,14 +44,52 @@ public class CompressionUtils {
         int i = 0;
         int c;
         do {
-            //read byte
             c = cp.get();
             i = (i << 7) | (c & 0x7f);
         } while ((c & 0x80) != 0);
         return i;
     }
 
-    // Implementation of the spec bit-packing algorithm for range coding.
+    /** Write uint7 into byte[] at posHolder[0], advancing posHolder[0]. */
+    public static void writeUint7(final int i, final byte[] buf, final int[] posHolder) {
+        int s = 0;
+        int X = i;
+        do {
+            s += 7;
+            X >>= 7;
+        } while (X > 0);
+        int pos = posHolder[0];
+        do {
+            s -= 7;
+            final int s_ = (s > 0) ? 1 : 0;
+            buf[pos++] = (byte) (((i >> s) & 0x7f) + (s_ << 7));
+        } while (s > 0);
+        posHolder[0] = pos;
+    }
+
+    /** Read uint7 from byte[] at posHolder[0], advancing posHolder[0]. */
+    public static int readUint7(final byte[] buf, final int[] posHolder) {
+        int i = 0;
+        int c;
+        do {
+            c = buf[posHolder[0]++];
+            i = (i << 7) | (c & 0x7f);
+        } while ((c & 0x80) != 0);
+        return i;
+    }
+
+    /**
+     * Pack input symbols into a smaller number of bits per value based on the number of distinct
+     * symbols. Writes the pack header (symbol count, mapping table, packed length) to outBuffer
+     * and returns the packed data as a separate buffer.
+     *
+     * @param inBuffer the input data to pack
+     * @param outBuffer the output buffer for the pack header (symbol count, mapping table, packed length)
+     * @param frequencyTable frequency counts for each byte value (0-255)
+     * @param packMappingTable mapping from original symbol to packed value
+     * @param numSymbols the number of distinct symbols in the input
+     * @return a ByteBuffer containing the packed data
+     */
     public static ByteBuffer encodePack(
             final ByteBuffer inBuffer,
             final ByteBuffer outBuffer,
@@ -115,6 +153,16 @@ public class CompressionUtils {
         return encodedBuffer; // Here position = 0 since we have always accessed the data buffer using index
     }
 
+    /**
+     * Unpack bit-packed data back to one byte per symbol, reversing the transformation
+     * performed by {@link #encodePack}.
+     *
+     * @param inBuffer the packed input data
+     * @param packMappingTable mapping from packed value back to original symbol
+     * @param numSymbols the number of distinct symbols (determines bits per value)
+     * @param uncompressedPackOutputLength the expected number of output bytes
+     * @return a ByteBuffer containing the unpacked data
+     */
     public static ByteBuffer decodePack(
             final ByteBuffer inBuffer,
             final byte[] packMappingTable,
@@ -166,6 +214,13 @@ public class CompressionUtils {
         return outBufferPack;
     }
 
+    /**
+     * Allocate an output buffer large enough to hold compressed rANS data, including worst-case
+     * frequency table overhead and header bytes.
+     *
+     * @param inSize the uncompressed input size
+     * @return a little-endian ByteBuffer sized for the worst-case compressed output
+     */
     public static ByteBuffer allocateOutputBuffer(final int inSize) {
         // This calculation is identical to the one in samtools rANS_static.c
         // Presumably the frequency table (always big enough for order 1) = 257*257,
@@ -179,29 +234,37 @@ public class CompressionUtils {
         return outputBuffer;
     }
 
-    // returns a new LITTLE_ENDIAN ByteBuffer of size = bufferSize
+    /**
+     * Allocate a new little-endian ByteBuffer of the specified size.
+     *
+     * @param bufferSize the capacity of the buffer
+     * @return a new little-endian ByteBuffer
+     */
     public static ByteBuffer allocateByteBuffer(final int bufferSize){
         return ByteBuffer.allocate(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
     }
 
-    // returns a LITTLE_ENDIAN ByteBuffer that is created by wrapping a byte[]
+    /**
+     * Wrap a byte array in a little-endian ByteBuffer.
+     *
+     * @param inputBytes the byte array to wrap
+     * @return a little-endian ByteBuffer backed by the input array
+     */
     public static ByteBuffer wrap(final byte[] inputBytes){
         return ByteBuffer.wrap(inputBytes).order(ByteOrder.LITTLE_ENDIAN);
     }
 
-    // returns a LITTLE_ENDIAN ByteBuffer that is created by inputBuffer.slice()
+    /**
+     * Create a little-endian slice of the given ByteBuffer (from position to limit).
+     *
+     * @param inputBuffer the buffer to slice
+     * @return a new little-endian ByteBuffer sharing the input's content
+     */
     public static ByteBuffer slice(final ByteBuffer inputBuffer){
         return inputBuffer.slice().order(ByteOrder.LITTLE_ENDIAN);
     }
 
-    /**
-     * Return a byte array with a size that matches the limit of the provided ByteBuffer. If the ByteBuffer is
-     * backed by a byte array that matches the limit of the ByteBuffer, the backing array will be returned directly.
-     * Otherwise, copy the contents of the ByteBuffer into a new byte array and return the new byte array.
-     * @param buffer input ByteBuffer which is the source of the byte array
-     * @return A byte array. If the ByteBuffer is backed by a byte array that matches the limit of the ByteBuffer,
-     * return the backing array directly. Otherwise, copy the contents of the ByteBuffer into a new byte array.
-     */
+    /** Number of interleaved streams used by the STRIPE transformation. */
     private static final int STRIPE_NUM_STREAMS = 4;
 
     /**
@@ -247,6 +310,14 @@ public class CompressionUtils {
         return STRIPE_NUM_STREAMS;
     }
 
+    /**
+     * Return a byte array with contents matching the ByteBuffer from position 0 to limit.
+     * If the buffer is backed by an array that exactly matches its limit, returns the
+     * backing array directly (no copy). Otherwise copies the data into a new array.
+     *
+     * @param buffer the source ByteBuffer
+     * @return a byte array containing the buffer's data
+     */
     public static byte[] toByteArray(final ByteBuffer buffer) {
         if (buffer.hasArray() && buffer.arrayOffset() == 0 && buffer.array().length == buffer.limit()) {
             return buffer.array();

@@ -5,8 +5,8 @@ import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.nametokenisation.tokens.EncodeToken;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 
 import java.nio.ByteBuffer;
@@ -392,7 +392,10 @@ public class NameTokenisationEncode {
             if (useArith) {
                 tmpByteBuffer = new RangeEncode().compress(nameTokenStream, new RangeParams(flagSet));
             } else {
-                tmpByteBuffer = new RANSNx16Encode().compress(nameTokenStream, new RANSNx16Params(flagSet));
+                final byte[] streamBytes = new byte[nameTokenStream.remaining()];
+                nameTokenStream.get(streamBytes);
+                final byte[] compressed = new RANSNx16Encode().compress(streamBytes, new RANSNx16Params(flagSet));
+                tmpByteBuffer = ByteBuffer.wrap(compressed);
             }
             if (bestCompressedLength > tmpByteBuffer.limit()) {
                 bestCompressedLength = tmpByteBuffer.limit();
@@ -406,7 +409,10 @@ public class NameTokenisationEncode {
             if (useArith) {
                 compressedByteBuffer = new RangeEncode().compress(nameTokenStream, new RangeParams(RangeParams.CAT_FLAG_MASK));
             } else {
-                compressedByteBuffer = new RANSNx16Encode().compress(nameTokenStream, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
+                final byte[] streamBytes = new byte[nameTokenStream.remaining()];
+                nameTokenStream.get(streamBytes);
+                final byte[] compressed = new RANSNx16Encode().compress(streamBytes, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
+                compressedByteBuffer = ByteBuffer.wrap(compressed);
             }
         }
         return compressedByteBuffer;

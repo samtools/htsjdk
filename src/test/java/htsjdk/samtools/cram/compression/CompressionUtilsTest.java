@@ -4,9 +4,9 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeParams;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -169,23 +169,19 @@ public class CompressionUtilsTest extends HtsjdkTest {
     public void testRansNx16StripeRoundTrip(final String description, final byte[] data) {
         final RANSNx16Encode encoder = new RANSNx16Encode();
         final RANSNx16Decode decoder = new RANSNx16Decode();
-        final ByteBuffer input = CompressionUtils.wrap(data);
-        final ByteBuffer compressed = encoder.compress(input, new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK));
-        final ByteBuffer decompressed = decoder.uncompress(compressed);
-        input.rewind();
-        Assert.assertEquals(decompressed, input, "rANS Nx16 STRIPE round-trip failed for: " + description);
+        final byte[] compressed = encoder.compress(data, new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK));
+        final byte[] decompressed = decoder.uncompress(compressed);
+        Assert.assertEquals(decompressed, data, "rANS Nx16 STRIPE round-trip failed for: " + description);
     }
 
     @Test(dataProvider = "stripeRoundTripData")
     public void testRansNx16StripeOrder1RoundTrip(final String description, final byte[] data) {
         final RANSNx16Encode encoder = new RANSNx16Encode();
         final RANSNx16Decode decoder = new RANSNx16Decode();
-        final ByteBuffer input = CompressionUtils.wrap(data);
-        final ByteBuffer compressed = encoder.compress(input,
+        final byte[] compressed = encoder.compress(data,
                 new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK));
-        final ByteBuffer decompressed = decoder.uncompress(compressed);
-        input.rewind();
-        Assert.assertEquals(decompressed, input, "rANS Nx16 STRIPE+ORDER1 round-trip failed for: " + description);
+        final byte[] decompressed = decoder.uncompress(compressed);
+        Assert.assertEquals(decompressed, data, "rANS Nx16 STRIPE+ORDER1 round-trip failed for: " + description);
     }
 
     private static byte[] toBytes(final ByteBuffer buf) {

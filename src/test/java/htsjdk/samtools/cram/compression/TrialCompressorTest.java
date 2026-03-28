@@ -1,9 +1,9 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import org.testng.Assert;
 import org.testng.annotations.Test;

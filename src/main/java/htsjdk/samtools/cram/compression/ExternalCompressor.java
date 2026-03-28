@@ -9,10 +9,10 @@ import htsjdk.samtools.cram.compression.nametokenisation.NameTokeniserExternalCo
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;

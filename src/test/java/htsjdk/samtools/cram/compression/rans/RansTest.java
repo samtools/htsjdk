@@ -3,12 +3,6 @@ package htsjdk.samtools.cram.compression.rans;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
@@ -239,7 +233,7 @@ public class RansTest extends HtsjdkTest {
             expectedExceptionsMessageRegExp = "Bit Packing is not permitted when number " +
                     "of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: 0")
     public void testRANSNx16RejectDecodePack(){
-        final ByteBuffer compressedData = CompressionUtils.wrap(new byte[]{(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00});
+        final byte[] compressedData = new byte[]{(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00};
         final RANSNx16Decode ransDecode = new RANSNx16Decode();
         ransDecode.uncompress(compressedData);
     }
@@ -249,10 +243,11 @@ public class RansTest extends HtsjdkTest {
             final RANSDecode ransDecode,
             final RANSParams params,
             final ByteBuffer data) {
-        final ByteBuffer compressed = ransEncode.compress(data, params);
-        final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
-        data.rewind();
-        Assert.assertEquals(data, uncompressed);
+        final byte[] inputBytes = new byte[data.remaining()];
+        data.get(inputBytes);
+        final byte[] compressed = ransEncode.compress(inputBytes, params);
+        final byte[] uncompressed = ransDecode.uncompress(compressed);
+        Assert.assertEquals(ByteBuffer.wrap(uncompressed), ByteBuffer.wrap(inputBytes));
     }
 
     public ByteBuffer ransBufferMeetBoundaryExpectations(
@@ -261,17 +256,13 @@ public class RansTest extends HtsjdkTest {
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
             final RANSParams params){
-        // helper method for Boundary Expectations test
-        final ByteBuffer compressed = ransEncode.compress(raw, params);
-        final ByteBuffer uncompressed = ransDecode.uncompress(compressed);
-        Assert.assertFalse(compressed.hasRemaining());
-        compressed.rewind();
-        Assert.assertEquals(uncompressed.limit(), rawSize);
-        Assert.assertEquals(uncompressed.position(), 0);
-        Assert.assertFalse(raw.hasRemaining());
+        final byte[] inputBytes = new byte[raw.remaining()];
+        raw.get(inputBytes);
+        final byte[] compressed = ransEncode.compress(inputBytes, params);
+        final byte[] uncompressed = ransDecode.uncompress(compressed);
+        Assert.assertEquals(uncompressed.length, rawSize);
         Assert.assertEquals(raw.limit(), rawSize);
-        Assert.assertEquals(compressed.position(), 0);
-        return compressed;
+        return ByteBuffer.wrap(compressed).order(java.nio.ByteOrder.LITTLE_ENDIAN);
     }
 
     private byte[] getNBytesWithValues(final int n, final BiFunction<Integer, Integer, Byte> valueForIndex) {

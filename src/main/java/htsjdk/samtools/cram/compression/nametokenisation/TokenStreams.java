@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.compression.nametokenisation;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -98,17 +98,32 @@ public class TokenStreams {
                     uncompressedTokenStream = rangeDecode.uncompress(CompressionUtils.wrap(compressedTokenStream));
                 } else {
                     final RANSNx16Decode ransDecode = new RANSNx16Decode();
-                    uncompressedTokenStream = ransDecode.uncompress(CompressionUtils.wrap(compressedTokenStream));
+                    uncompressedTokenStream = ByteBuffer.wrap(ransDecode.uncompress(compressedTokenStream))
+                            .order(java.nio.ByteOrder.LITTLE_ENDIAN);
                 }
                 getStreamsForPos(tokenPosition)[tokenType] = uncompressedTokenStream;
             }
         }
     }
 
+    /**
+     * Return the array of token streams for a given column position.
+     * The returned array is indexed by token type constant (e.g., {@link #TOKEN_TYPE}).
+     *
+     * @param pos the column position (0-based)
+     * @return array of ByteBuffers indexed by token type; entries may be null
+     */
     public ByteBuffer[] getStreamsForPos(final int pos) {
         return tokenStreams[pos];
     }
 
+    /**
+     * Return the token stream for a specific position and token type.
+     *
+     * @param tokenPosition the column position (0-based)
+     * @param tokenType the token type constant (e.g., {@link #TOKEN_STRING})
+     * @return the ByteBuffer for that stream, or null if not present
+     */
     public ByteBuffer getStream(final int tokenPosition, final int tokenType) {
         return getStreamsForPos(tokenPosition)[tokenType];
     }

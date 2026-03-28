@@ -20,7 +20,7 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.TrialCompressor;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.encoding.*;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;

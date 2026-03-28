@@ -1,58 +1,65 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import java.nio.ByteBuffer;
-
+/**
+ * Abstract base class for rANS encoders (both 4x8 and Nx16). Holds the shared encoding
+ * symbol matrix and provides helper methods for frequency-to-symbol setup.
+ *
+ * <p>The encoding symbol matrix is allocated once at construction and reused across
+ * compress calls. Between calls, only the symbols that were actually used are reset.
+ */
 public abstract class RANSEncode<T extends RANSParams> {
-    private RANSEncodingSymbol[][] encodingSymbols;
+    private final RANSEncodingSymbol[][] encodingSymbols;
 
-    // Getter
-    protected RANSEncodingSymbol[][] getEncodingSymbols() {
+    protected RANSEncode() {
+        encodingSymbols = new RANSEncodingSymbol[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
+        for (int i = 0; i < encodingSymbols.length; i++) {
+            for (int j = 0; j < encodingSymbols[i].length; j++) {
+                encodingSymbols[i][j] = new RANSEncodingSymbol();
+            }
+        }
+    }
+
+    protected final RANSEncodingSymbol[][] getEncodingSymbols() {
         return encodingSymbols;
     }
 
-    // This method assumes that inBuffer is already rewound.
-    // It compresses the data in the inBuffer, leaving it consumed.
-    // Returns a rewound ByteBuffer containing the compressed data.
-    public abstract ByteBuffer compress(final ByteBuffer inBuffer, final T params);
+    /**
+     * Compress a byte array using this rANS encoder.
+     *
+     * @param input the data to compress
+     * @param params encoder-specific parameters (order, flags, etc.)
+     * @return the compressed byte stream
+     */
+    public abstract byte[] compress(final byte[] input, final T params);
 
-    // Lazy initialization of working memory for the encoder
-    protected void initializeRANSEncoder() {
-        if (encodingSymbols == null) {
-            encodingSymbols = new RANSEncodingSymbol[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-            for (int i = 0; i < encodingSymbols.length; i++) {
-                for (int j = 0; j < encodingSymbols[i].length; j++) {
-                    encodingSymbols[i][j] = new RANSEncodingSymbol();
-                }
-            }
-        } else {
-            for (int i = 0; i < encodingSymbols.length; i++) {
-                for (int j = 0; j < encodingSymbols[i].length; j++) {
-                    encodingSymbols[i][j].reset();
-                }
-            }
-        }
+    /**
+     * Set up encoding symbols for Order-0 from the given normalized frequency table.
+     * Only symbols with non-zero frequency are initialized; others are reset to zero.
+     */
+    protected final void buildSymsOrder0(final int[] frequencies) {
+        resetAndUpdateEncodingSymbols(frequencies, encodingSymbols[0]);
     }
 
-    protected void buildSymsOrder0(final int[] frequencies) {
-        updateEncodingSymbols(frequencies, getEncodingSymbols()[0]);
-    }
-
-    protected void buildSymsOrder1(final int[][] frequencies) {
-        final RANSEncodingSymbol[][] encodingSymbols = getEncodingSymbols();
+    /**
+     * Set up encoding symbols for Order-1 from the given normalized frequency tables.
+     * Each row corresponds to one context symbol.
+     */
+    protected final void buildSymsOrder1(final int[][] frequencies) {
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            updateEncodingSymbols(frequencies[i], encodingSymbols[i]);
+            resetAndUpdateEncodingSymbols(frequencies[i], encodingSymbols[i]);
         }
     }
 
-    private void updateEncodingSymbols(int[] frequencies, RANSEncodingSymbol[] encodingSymbols) {
+    private void resetAndUpdateEncodingSymbols(final int[] frequencies, final RANSEncodingSymbol[] symbols) {
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            symbols[i].reset();
+        }
         int cumulativeFreq = 0;
         for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
             if (frequencies[symbol] != 0) {
-                //For each symbol, set start = cumulative frequency and freq = frequencies[symbol]
-                encodingSymbols[symbol].set(cumulativeFreq, frequencies[symbol], Constants.TOTAL_FREQ_SHIFT);
+                symbols[symbol].set(cumulativeFreq, frequencies[symbol], Constants.TOTAL_FREQ_SHIFT);
                 cumulativeFreq += frequencies[symbol];
             }
         }
     }
-
 }
