@@ -75,6 +75,7 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
         writeWithHTSJDK(testInput, cramHtsjdk31, testReference, profile);
 
         // compare original 3.0 vs HTSJDK output
+        // compare original 3.0 vs HTSJDK output
         compareCRAMFiles(testInput.toPath(), cramHtsjdk31.toPath(), testReference.toPath());
 
         // compare HTSJDK output vs samtools 3.1

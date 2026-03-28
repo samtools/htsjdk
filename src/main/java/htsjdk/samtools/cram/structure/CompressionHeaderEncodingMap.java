@@ -256,10 +256,13 @@ public class CompressionHeaderEncodingMap {
     public Block createCompressedBlockForStream(final CRAMCodecModelContext contextModel, final Integer contentId, final ByteArrayOutputStream outputStream) {
         final ExternalCompressor compressor = externalCompressors.get(contentId);
         final byte[] rawContent = outputStream.toByteArray();
+        // Compress first, then query the method — TrialCompressor determines its method
+        // during the first call to compress().
+        final byte[] compressedContent = compressor.compress(rawContent, contextModel);
         return Block.createExternalBlock(
                 compressor.getMethod(),
                 contentId,
-                compressor.compress(rawContent, contextModel),
+                compressedContent,
                 rawContent.length);
     }
 

@@ -3,57 +3,51 @@ package htsjdk.samtools.cram.compression;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * An {@link ExternalCompressor} that tries multiple candidate compressors and picks the one
- * that produces the smallest output. This implements a simplified version of htslib's trial
- * compression system ({@code cram_compress_block3} in {@code cram_io.c}).
+ * An {@link ExternalCompressor} that tries multiple candidate compressors and selects the one
+ * that produces the smallest output. Matches htslib's trial compression approach:
  *
- * <p>The trial compressor operates in two phases:
  * <ol>
- *   <li><b>Trial phase</b>: Compresses data with all candidates and selects the smallest result.
- *       Runs for {@link #NTRIALS} consecutive blocks to gather statistics.</li>
- *   <li><b>Production phase</b>: Uses the cached best compressor for {@link #TRIAL_SPAN} blocks
- *       before re-entering the trial phase.</li>
+ *   <li><b>Trial phase</b> ({@code nTrials} non-empty blocks): compresses with ALL candidates,
+ *       picks the smallest for each block, and accumulates sizes to determine the overall winner.</li>
+ *   <li><b>Production phase</b> (next {@code trialSpan} blocks): uses the cached winner only.</li>
+ *   <li><b>Re-trial</b>: after {@code trialSpan} blocks, re-enters the trial phase to adapt
+ *       to changing data characteristics.</li>
  * </ol>
  *
- * <p>Simplifications vs htslib:
- * <ul>
- *   <li>No cost weighting (pure size comparison)</li>
- *   <li>No adaptive culling of consistently-losing methods</li>
- *   <li>No anomaly-triggered retrials</li>
- * </ul>
- *
- * // TODO: Add cost weighting based on compression level (htslib meth_cost[] table)
- * // TODO: Add adaptive culling of methods that consistently lose by >20%
+ * <p>The compression method is initially null and is set after the first non-empty block is
+ * compressed. Calling {@link #getMethod()} before any non-empty {@link #compress} call will
+ * throw {@link IllegalStateException}.
  *
  * @see ExternalCompressor
  */
 public class TrialCompressor extends ExternalCompressor {
+    /** Default number of non-empty blocks to trial before selecting a winner (matching htslib NTRIALS). */
+    private static final int DEFAULT_NTRIALS = 3;
 
-    /** Number of blocks between trial phases (matching htslib TRIAL_SPAN). */
-    private static final int TRIAL_SPAN = 70;
-
-    /** Number of trial blocks to run before selecting a winner (matching htslib NTRIALS). */
-    private static final int NTRIALS = 3;
+    /** Default number of blocks between re-trials (matching htslib TRIAL_SPAN). */
+    private static final int DEFAULT_TRIAL_SPAN = 70;
 
     private final List<ExternalCompressor> candidates;
     private final long[] accumulatedSizes;
 
-    private ExternalCompressor cachedBest;
+    private int nTrials = DEFAULT_NTRIALS;
+    private int trialSpan = DEFAULT_TRIAL_SPAN;
+
+    private ExternalCompressor winner;
+    private int trialBlocksRemaining = nTrials;
     private int blocksUntilRetrial = 0;
-    private int trialBlocksRemaining = NTRIALS;
 
     /**
-     * Create a trial compressor with the given candidate compressors. The first candidate's
-     * {@link BlockCompressionMethod} is used as this compressor's method (for block headers),
-     * though the actual method used may vary per block.
+     * Create a trial compressor with the given candidate compressors.
      *
      * @param candidates the candidate compressors to try (must have at least 2)
      */
     public TrialCompressor(final List<ExternalCompressor> candidates) {
-        super(candidates.get(0).getMethod());
+        super(null); // method unknown until first trial
         if (candidates.size() < 2) {
             throw new IllegalArgumentException("TrialCompressor requires at least 2 candidates");
         }
@@ -62,43 +56,72 @@ public class TrialCompressor extends ExternalCompressor {
     }
 
     /**
-     * Compress data by trying all candidates (during trial phase) or using the cached best
-     * (during production phase).
+     * Set the number of non-empty blocks to trial before selecting a winner.
+     * Must be called before the first {@link #compress} call. Intended for testing.
+     */
+    TrialCompressor setNTrials(final int nTrials) {
+        this.nTrials = nTrials;
+        this.trialBlocksRemaining = nTrials;
+        return this;
+    }
+
+    /**
+     * Set the number of blocks between re-trials.
+     * Must be called before the first {@link #compress} call. Intended for testing.
+     */
+    TrialCompressor setTrialSpan(final int trialSpan) {
+        this.trialSpan = trialSpan;
+        return this;
+    }
+
+    /**
+     * Compress data. During the trial phase, tries all candidates and accumulates size statistics.
+     * After {@code nTrials} non-empty blocks, selects the overall winner and uses it exclusively
+     * until the next re-trial.
      *
      * @param data the data to compress
      * @param contextModel optional codec context model
-     * @return the compressed data from the winning compressor
+     * @return the compressed data from the best compressor for this block
      */
     @Override
     public byte[] compress(final byte[] data, final CRAMCodecModelContext contextModel) {
         if (data.length == 0) {
-            return data;
+            // Empty blocks don't count as trials but still need valid compressed output
+            final ExternalCompressor comp = this.winner == null ? candidates.get(0) : winner;
+            setMethod(comp.getMethod());
+            return comp.compress(data, contextModel);
         }
 
-        // Production phase: use cached best
-        if (cachedBest != null && blocksUntilRetrial > 0) {
-            blocksUntilRetrial--;
-            return cachedBest.compress(data, contextModel);
-        }
+        if (winner != null) {
+            // Production phase: use cached winner
+            if (blocksUntilRetrial > 0) {
+                blocksUntilRetrial--;
+                setMethod(winner.getMethod());
+                return winner.compress(data, contextModel);
+            }
+            // Time for re-training: reset trial counter but leave blocksUntilRetrial at 0
+            // so subsequent calls fall through to the trial code below until the trial completes.
+            else {
+                this.trialBlocksRemaining = nTrials;
+                this.winner = null;
 
-        // Trial phase: try all candidates
-        byte[] bestResult = null;
-        int bestSize = Integer.MAX_VALUE;
-        int bestIdx = 0;
-
-        for (int i = 0; i < candidates.size(); i++) {
-            final byte[] result = candidates.get(i).compress(data, contextModel);
-            accumulatedSizes[i] += result.length;
-            if (result.length < bestSize) {
-                bestSize = result.length;
-                bestResult = result;
-                bestIdx = i;
+                // Halve accumulated sizes to weight the new trial blocks
+                for (int i = 0; i < accumulatedSizes.length; i++) {
+                    accumulatedSizes[i] /= 2;
+                }
             }
         }
 
+        // Trial: compress with all candidates, track sizes and per-candidate results
+        final byte[][] results = new byte[candidates.size()][];
+        for (int i = 0; i < candidates.size(); i++) {
+            results[i] = candidates.get(i).compress(data, contextModel);
+            accumulatedSizes[i] += results[i].length;
+        }
+
         trialBlocksRemaining--;
-        if (trialBlocksRemaining <= 0) {
-            // Select winner from accumulated sizes
+        if (trialBlocksRemaining == 0) {
+            // Trial complete — select overall winner from accumulated sizes
             long bestAccum = Long.MAX_VALUE;
             int winnerIdx = 0;
             for (int i = 0; i < candidates.size(); i++) {
@@ -107,32 +130,33 @@ public class TrialCompressor extends ExternalCompressor {
                     winnerIdx = i;
                 }
             }
-            cachedBest = candidates.get(winnerIdx);
-            blocksUntilRetrial = TRIAL_SPAN;
-            trialBlocksRemaining = NTRIALS;
-            // Reset accumulators (halve instead of zero, matching htslib)
-            for (int i = 0; i < accumulatedSizes.length; i++) {
-                accumulatedSizes[i] /= 2;
-            }
-        }
+            winner = candidates.get(winnerIdx);
+            blocksUntilRetrial = trialSpan;
+            setMethod(winner.getMethod());
 
-        return bestResult;
+            // Return the winner's result for this block (even if not the smallest for this block)
+            return results[winnerIdx];
+        }
+        else {
+            // Still mid-trial — return the smallest result for this block
+            int bestIdx = 0;
+            for (int i = 1; i < results.length; i++) {
+                if (results[i].length < results[bestIdx].length) {
+                    bestIdx = i;
+                }
+            }
+            setMethod(candidates.get(bestIdx).getMethod());
+            return results[bestIdx];
+        }
     }
 
     /**
-     * Decompress data. Delegates to the first candidate since all candidates must be able to
-     * decompress the same format (the block header identifies the actual method used).
-     *
-     * <p>Note: In practice, decompression is handled by the method-specific decompressor selected
-     * based on the block's compression method ID, not through this trial compressor.
-     *
-     * @param data the compressed data
-     * @return the decompressed data
+     * Decompress data. Delegates to the winner if one has been selected, otherwise to the
+     * first candidate. In practice, decompression is handled by the method-specific decompressor
+     * selected based on the block's compression method ID, not through this trial compressor.
      */
     @Override
     public byte[] uncompress(final byte[] data) {
-        // Decompression is always done via the method-specific decompressor, not the trial compressor.
-        // This method exists only to satisfy the abstract class contract.
-        return candidates.get(0).uncompress(data);
+        return (winner != null ? winner : candidates.get(0)).uncompress(data);
     }
 }

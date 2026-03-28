@@ -85,12 +85,11 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         Assert.assertEquals(strategy.getGZIPCompressionLevel(), 6);
         Assert.assertEquals(strategy.getReadsPerSlice(), 25_000);
 
+        // SMALL uses same primary codecs as NORMAL, with BZIP2 added via trial compression
         final EnumMap<DataSeries, CompressorDescriptor> map = strategy.getCompressorMap();
         Assert.assertEquals(map.get(DataSeries.QS_QualityScore).method(), BlockCompressionMethod.FQZCOMP);
-        // SMALL does NOT use NameTokeniser (per htslib)
-        Assert.assertEquals(map.get(DataSeries.RN_ReadName).method(), BlockCompressionMethod.GZIP);
-        // SMALL does NOT use rANS
-        Assert.assertEquals(map.get(DataSeries.BA_Base).method(), BlockCompressionMethod.GZIP);
+        Assert.assertEquals(map.get(DataSeries.RN_ReadName).method(), BlockCompressionMethod.NAME_TOKENISER);
+        Assert.assertEquals(map.get(DataSeries.BA_Base).method(), BlockCompressionMethod.RANSNx16);
     }
 
     @Test

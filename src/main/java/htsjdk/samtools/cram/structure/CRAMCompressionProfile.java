@@ -180,15 +180,10 @@ public enum CRAMCompressionProfile {
         map.put(DataSeries.RN_ReadName, new CompressorDescriptor(BlockCompressionMethod.NAME_TOKENISER));
     }
 
-    /** SMALL: FQZComp for QS, GZIP for everything else (no rANS, no NameTok per htslib). */
+    /** SMALL: Same codec assignments as NORMAL but at higher compression level. Trial compression
+     *  adds BZIP2 alongside rANS/GZIP to let the trial pick the best per data series. */
     private void buildSmallMap(final EnumMap<DataSeries, CompressorDescriptor> map) {
-        final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
-
-        for (final DataSeries ds : getWrittenDataSeries()) {
-            map.put(ds, gzip);
-        }
-
-        map.put(DataSeries.QS_QualityScore, new CompressorDescriptor(BlockCompressionMethod.FQZCOMP));
+        buildNormalMap(map);
     }
 
     /** ARCHIVE: Same primary codecs as NORMAL but at higher compression, plus larger slices.
@@ -248,11 +243,32 @@ public enum CRAMCompressionProfile {
                 trialMap.put(ds, java.util.List.of(bzip2, ransOrder1));
             }
         } else if (this == SMALL) {
-            // SMALL: try BZIP2 alongside GZIP for general data series
-            for (final DataSeries ds : getWrittenDataSeries()) {
-                if (ds != DataSeries.QS_QualityScore) {
-                    trialMap.put(ds, java.util.List.of(bzip2));
-                }
+            // SMALL: same as NORMAL primary codecs but with BZIP2 added to trial candidates.
+            // htslib SMALL (level 6, use_rans=1, use_bz2=1) trials GZIP + BZIP2 + all rANS variants.
+            // For rANS-primary series: also try BZIP2 and GZIP
+            for (final DataSeries ds : new DataSeries[]{
+                    DataSeries.BA_Base, DataSeries.BF_BitFlags, DataSeries.CF_CompressionBitFlags,
+                    DataSeries.NS_NextFragmentReferenceSequenceID, DataSeries.RG_ReadGroup,
+                    DataSeries.RL_ReadLength, DataSeries.TS_InsertSize}) {
+                trialMap.put(ds, java.util.List.of(bzip2, gzip));
+            }
+            // For rANS Order 0 series: also try BZIP2 and GZIP
+            for (final DataSeries ds : new DataSeries[]{
+                    DataSeries.AP_AlignmentPositionOffset, DataSeries.RI_RefId}) {
+                trialMap.put(ds, java.util.List.of(bzip2, gzip));
+            }
+            // For GZIP-primary series: also try BZIP2 and rANS
+            final CompressorDescriptor ransOrder1 = new CompressorDescriptor(
+                    BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
+            for (final DataSeries ds : new DataSeries[]{
+                    DataSeries.BS_BaseSubstitutionCode, DataSeries.DL_DeletionLength,
+                    DataSeries.FC_FeatureCode, DataSeries.FN_NumberOfReadFeatures,
+                    DataSeries.FP_FeaturePosition, DataSeries.HC_HardClip,
+                    DataSeries.MF_MateBitFlags, DataSeries.MQ_MappingQualityScore,
+                    DataSeries.NF_RecordsToNextFragment, DataSeries.NP_NextFragmentAlignmentStart,
+                    DataSeries.PD_padding, DataSeries.RS_RefSkip, DataSeries.TL_TagIdList,
+                    DataSeries.IN_Insertion, DataSeries.SC_SoftClip}) {
+                trialMap.put(ds, java.util.List.of(bzip2, ransOrder1));
             }
         }
 
