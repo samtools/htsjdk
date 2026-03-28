@@ -19,7 +19,10 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.TrialCompressor;
+import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
 import htsjdk.samtools.cram.encoding.*;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
@@ -58,6 +61,10 @@ public final class CompressionHeaderFactory {
 
     private final Map<Integer, EncodingDetails> bestTagEncodings = new HashMap<>();
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
+
+    // Per-tag trial compressors that persist across containers. Each tag ID gets its own
+    // TrialCompressor that learns which of GZIP/rANS-0/rANS-1 works best for that tag's data.
+    private final Map<Integer, ExternalCompressor> tagTrialCompressors = new HashMap<>();
 
     /**
      * Create a CompressionHeaderFactory using the provided CRAMEncodingStrategy.
@@ -255,13 +262,19 @@ public final class CompressionHeaderFactory {
     }
 
     /**
-     * Get the best external compressor to use for the given byte array.
-     *
-     * @param data byte array to compress
-     * @return best compressor to use for the data
+     * Get the trial compressor for a tag, creating one if it doesn't exist yet. The trial
+     * compressor tries GZIP, rANS order-0, and rANS order-1 on the first few blocks, then
+     * uses the winner for subsequent blocks until re-trial.
      */
-    public ExternalCompressor getBestExternalCompressor(final byte[] data) {
-        return encodingMap.getBestExternalCompressor(data, encodingStrategy);
+    private ExternalCompressor getTagTrialCompressor(final int tagID) {
+        return tagTrialCompressors.computeIfAbsent(tagID, id -> {
+            final CompressorCache cache = new CompressorCache();
+            return new TrialCompressor(List.of(
+                    cache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
+                    cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()),
+                    cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal())
+            ));
+        });
     }
 
     byte[] getDataForTag(final List<CRAMCompressionRecord> cramCompressionRecords, final int tagID) {
@@ -370,7 +383,7 @@ public final class CompressionHeaderFactory {
         final EncodingDetails details = new EncodingDetails();
         final byte[] data = getDataForTag(records, tagID);
 
-        details.compressor = getBestExternalCompressor(data);
+        details.compressor = getTagTrialCompressor(tagID);
 
         final byte type = getTagType(tagID);
         switch (type) {
