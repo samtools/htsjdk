@@ -5,7 +5,7 @@ import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Interval;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -16,7 +16,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
     private static final int READ_LENGTH = 151;
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
 
-    @BeforeClass
+    @BeforeMethod
     public void setUp() {
         builder.setReadLength(READ_LENGTH);
         // Will be kept when an interval overlaps chromosome 1 in the first 151

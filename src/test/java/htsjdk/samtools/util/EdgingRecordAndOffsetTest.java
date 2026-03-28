@@ -27,7 +27,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -39,7 +39,7 @@ public class EdgingRecordAndOffsetTest extends HtsjdkTest {
     private final byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};
     private SAMRecord record;
 
-    @BeforeClass
+    @BeforeMethod
     public void setUp() {
         record = new SAMRecord(new SAMFileHeader());
         record.setReadName("testRecord");

@@ -15,7 +15,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -322,7 +322,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         }
     }
 
-    @BeforeClass
+    @BeforeMethod
     public void prepare() throws IOException {
         tmpCramFile = File.createTempFile(BAM_FILE.getName(), ".cram") ;
         tmpCramFile.deleteOnExit();

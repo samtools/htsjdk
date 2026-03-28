@@ -9,7 +9,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -150,7 +150,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         Assert.assertTrue(iterator.hasNext());
     }
 
-    @BeforeClass
+    @BeforeMethod
     public void beforeTest() {
         header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);

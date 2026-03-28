@@ -4,16 +4,16 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class MappingQualityFilterTest extends HtsjdkTest {
-    private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+    private SAMRecordSetBuilder builder;
 
-    @BeforeClass
+    @BeforeMethod
     public void setUp() {
-        // note the side effects...
+        builder = new SAMRecordSetBuilder();
         builder.addFrag("zeroMQ", 1, 1, false).setMappingQuality(0);
         builder.addFrag("lowMQ", 1, 1, false).setMappingQuality(10);
         builder.addFrag("highMQ", 1, 1, false).setMappingQuality(30);

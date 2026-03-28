@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.utils.ValidationUtils;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +14,7 @@ public class CRAMRecordTestHelper {
 
     final SAMRecordSetBuilder recordSetBuilder = new SAMRecordSetBuilder();
 
-    @BeforeClass
+    @BeforeMethod
     public void setupRecordSetBuilder() {
         recordSetBuilder.setHeader(createSAMHeaderWithTwoReadGroups(SAMFileHeader.SortOrder.coordinate));
     }
