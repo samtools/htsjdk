@@ -269,10 +269,23 @@ public final class CompressionHeaderFactory {
     private ExternalCompressor getTagTrialCompressor(final int tagID) {
         return tagTrialCompressors.computeIfAbsent(tagID, id -> {
             final CompressorCache cache = new CompressorCache();
+            // Extract the two-character tag name from the encoded tag ID
+            final char tag1 = (char) ((id >> 16) & 0xFF);
+            final char tag2 = (char) ((id >> 8) & 0xFF);
+
+            // BZIP2's BWT excels on structured alignment tags (SA:Z, XA:Z) where
+            // repeated substrings like contig names and CIGAR patterns are common
+            final boolean useBzip2 = (tag1 == 'S' && tag2 == 'A') || (tag1 == 'X' && tag2 == 'A');
+            if (useBzip2) {
+                return new TrialCompressor(List.of(
+                        cache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
+                        cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()),
+                        cache.getCompressorForMethod(BlockCompressionMethod.BZIP2, ExternalCompressor.NO_COMPRESSION_ARG)
+                ));
+            }
             return new TrialCompressor(List.of(
                     cache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
-                    cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()),
-                    cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal())
+                    cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal())
             ));
         });
     }

@@ -163,6 +163,7 @@ public enum CRAMCompressionProfile {
         map.put(DataSeries.BS_BaseSubstitutionCode, ransOrder1);
         map.put(DataSeries.CF_CompressionBitFlags, ransOrder1);
         map.put(DataSeries.FC_FeatureCode, ransOrder1);
+        map.put(DataSeries.FN_NumberOfReadFeatures, ransOrder1);
         map.put(DataSeries.MF_MateBitFlags, ransOrder1);
         map.put(DataSeries.MQ_MappingQualityScore, ransOrder1);
         map.put(DataSeries.NS_NextFragmentReferenceSequenceID, ransOrder1);
@@ -172,7 +173,7 @@ public enum CRAMCompressionProfile {
         map.put(DataSeries.TS_InsertSize, ransOrder1);
 
         // Keep GZIP for high-entropy positional data where LZ77 helps
-        // NP (mate position), FP (feature position), FN (feature count) — these have high variance
+        // NP (mate position), FP (feature position) — these have high variance
         // IN (insertions), SC (soft clips) — byte arrays benefit from LZ77
 
         // Specialized codecs
