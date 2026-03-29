@@ -21,8 +21,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Range codec interop tests. Encoder and decoder instances are shared across all test cases to avoid
+ * excessive memory allocation. Each encoder/decoder eagerly allocates large internal model arrays,
+ * and creating hundreds of instances causes heap exhaustion when tests run in parallel.
+ *
+ * !!!This precludes running these tests in PARALLEL!!!
+ */
 public class RangeInteropTest extends HtsjdkTest  {
     public static final String COMPRESSED_RANGE_DIR = "range";
+
+    // Shared encoder/decoder instances — reused across all test invocations
+    private final RangeEncode rangeEncoder = new RangeEncode();
+    private final RangeDecode rangeDecoder = new RangeDecode();
 
     // enumerates the different flag combinations
     @DataProvider(name = "roundTripTestCases")
@@ -77,11 +88,9 @@ public class RangeInteropTest extends HtsjdkTest  {
             final ByteBuffer uncompressedInteropBytes =
                     ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
 
-            final RangeDecode rangeDecode = new RangeDecode();
-            final RangeEncode rangeEncode = new RangeEncode();
-            final ByteBuffer compressedHtsjdkBytes = rangeEncode.compress(uncompressedInteropBytes, params);
+            final ByteBuffer compressedHtsjdkBytes = rangeEncoder.compress(uncompressedInteropBytes, params);
             uncompressedInteropBytes.rewind();
-            Assert.assertEquals(rangeDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
+            Assert.assertEquals(rangeDecoder.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
         }
     }
 
@@ -106,8 +115,7 @@ public class RangeInteropTest extends HtsjdkTest  {
             final ByteBuffer preCompressedInteropBytes = ByteBuffer.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
-            final RangeDecode rangeDecode = new RangeDecode();
-            final ByteBuffer uncompressedHtsjdkBytes = rangeDecode.uncompress(preCompressedInteropBytes);
+            final ByteBuffer uncompressedHtsjdkBytes = rangeDecoder.uncompress(preCompressedInteropBytes);
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);

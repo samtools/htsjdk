@@ -19,35 +19,36 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class ContainerTest extends HtsjdkTest {
     private static final int TEST_RECORD_COUNT = 2000;
     private static final long CONTAINER_BYTE_OFFSET = 536635;
 
     @DataProvider(name = "singleContainerAlignmentContextData")
-    private Object[][] singleContainerAlignmentContextData() {
-        return new Object[][]{
-                {
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(
+    private Iterator<Object[]> singleContainerAlignmentContextData() {
+        return Stream.<Object[]>of(
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(
                                 TEST_RECORD_COUNT,
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)),
                         new AlignmentContext(
                                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO), 1,
                                 TEST_RECORD_COUNT + CRAMStructureTestHelper.READ_LENGTH - 1)
                 },
-                {
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(
                                 TEST_RECORD_COUNT,
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE)),
                         new AlignmentContext(
                                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE), 1,
                                 TEST_RECORD_COUNT + CRAMStructureTestHelper.READ_LENGTH - 1)
                 },
-                {
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT)),
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT)),
                         AlignmentContext.UNMAPPED_UNPLACED_CONTEXT
-                },
-        };
+                }
+        ).iterator();
     }
 
     @Test(dataProvider = "singleContainerAlignmentContextData")
@@ -68,35 +69,37 @@ public class ContainerTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "multiContainerAlignmentContextData")
-    private Object[][] multiContainerAlignmentContextData() {
-
-        final List<SAMRecord> bothReferenceSequenceRecords = new ArrayList<>();
-        bothReferenceSequenceRecords.addAll(
-                CRAMStructureTestHelper.createSAMRecordsMapped(
-                        TEST_RECORD_COUNT,
-                        CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)
-        );
-        bothReferenceSequenceRecords.addAll(
-                CRAMStructureTestHelper.createSAMRecordsMapped(
-                        TEST_RECORD_COUNT,
-                        CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE)
-        );
-
-        final List<SAMRecord> allRecords = new ArrayList<>();
-        allRecords.addAll(bothReferenceSequenceRecords);
-        allRecords.addAll(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT));
-
-        return new Object[][]{
-                { new QuietTestWrapper(bothReferenceSequenceRecords),
+    private Iterator<Object[]> multiContainerAlignmentContextData() {
+        return Stream.<Object[]>of(
+                new Object[]{
+                        QuietTestWrapper.<List<SAMRecord>>lazy(() -> {
+                            final List<SAMRecord> records = new ArrayList<>();
+                            records.addAll(CRAMStructureTestHelper.createSAMRecordsMapped(
+                                    TEST_RECORD_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
+                            records.addAll(CRAMStructureTestHelper.createSAMRecordsMapped(
+                                    TEST_RECORD_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE));
+                            return records;
+                        }),
                         Arrays.asList(
-                            CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
-                            CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE) },
-                { new QuietTestWrapper(allRecords),
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
+                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE)
+                },
+                new Object[]{
+                        QuietTestWrapper.<List<SAMRecord>>lazy(() -> {
+                            final List<SAMRecord> records = new ArrayList<>();
+                            records.addAll(CRAMStructureTestHelper.createSAMRecordsMapped(
+                                    TEST_RECORD_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
+                            records.addAll(CRAMStructureTestHelper.createSAMRecordsMapped(
+                                    TEST_RECORD_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE));
+                            records.addAll(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT));
+                            return records;
+                        }),
                         Arrays.asList(
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO,
                                 CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE,
-                                ReferenceContext.UNMAPPED_UNPLACED_ID) },
-        };
+                                ReferenceContext.UNMAPPED_UNPLACED_ID)
+                }
+        ).iterator();
     }
 
     @Test(dataProvider = "multiContainerAlignmentContextData")
@@ -207,16 +210,15 @@ public class ContainerTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "getRecordsTestCases")
-    private Object[][] getRecordsTestCases() {
-
-        return new Object[][]{
-                {
-                        new QuietTestWrapper(CRAMStructureTestHelper.createSAMRecordsMapped(TEST_RECORD_COUNT,
-                                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)),
+    private Iterator<Object[]> getRecordsTestCases() {
+        return Stream.<Object[]>of(
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(
+                                TEST_RECORD_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO)),
                 },
-                {
-                        new QuietTestWrapper(CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT)),
-                },
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(TEST_RECORD_COUNT)),
+                }
 
                 // The records in these next two tests are unmapped but only "half" placed: they have either
                 // a valid reference index, or a valid start position, but not both.
@@ -230,7 +232,7 @@ public class ContainerTest extends HtsjdkTest {
                 //{
                 //        CRAMStructureTestHelper.createSAMRecordsUnmappedWithAlignmentStart(TEST_RECORD_COUNT),
                 //},
-        };
+        ).iterator();
     }
 
     @Test(dataProvider = "getRecordsTestCases")

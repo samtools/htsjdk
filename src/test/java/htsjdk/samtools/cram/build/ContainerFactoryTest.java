@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -20,66 +21,66 @@ import java.util.stream.Stream;
 public class ContainerFactoryTest extends HtsjdkTest {
 
     @DataProvider(name="singleContainerSliceDistribution")
-    private Object[][] getSingleContainerSliceDistribution() {
+    private Iterator<Object[]> getSingleContainerSliceDistribution() {
         final int RECORDS_PER_SLICE = 100;
-        return new Object[][] {
+        return Stream.<Object[]>of(
                 // samRecords, records/slice, slices/container, expected container refContext, expected slice count,
                 // expected record count/slice, expected slice refContexts,
-                {
+                new Object[]{
                         // 1 full single-ref slice with 1 rec
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(1, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(1, 0)),
                         RECORDS_PER_SLICE, 1,
                         new ReferenceContext(0),
                         1, Arrays.asList(1), Arrays.asList(new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 1 full single-ref slice with 1 rec, but allow > 1 slices/container
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(1, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(1, 0)),
                         RECORDS_PER_SLICE, 2,
                         new ReferenceContext(0),
                         1, Arrays.asList(1), Arrays.asList(new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 1 full single-ref slice with RECORDS_PER_SLICE - 1 records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0)),
                         RECORDS_PER_SLICE, 1,
                         new ReferenceContext(0),
                         1, Arrays.asList(RECORDS_PER_SLICE - 1), Arrays.asList(new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 1 full single-ref slice with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE, 0)),
                         RECORDS_PER_SLICE, 1,
                         new ReferenceContext(0),
                         1, Arrays.asList(RECORDS_PER_SLICE), Arrays.asList(new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 2 single-ref slices, one with RECORDS_PER_SLICE records, one with 1 record
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE + 1, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE + 1, 0)),
                         RECORDS_PER_SLICE, 2,
                         new ReferenceContext(0),
                         2, Arrays.asList(RECORDS_PER_SLICE, 1),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 2 single-ref slices, one with RECORDS_PER_SLICE records, one with RECORDS_PER_SLICE - 1
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped((RECORDS_PER_SLICE * 2) - 1, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped((RECORDS_PER_SLICE * 2) - 1, 0)),
                         RECORDS_PER_SLICE, 2,
                         new ReferenceContext(0),
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE - 1),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 2 full single-ref slices, each with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0)),
                         RECORDS_PER_SLICE, 2,
                         new ReferenceContext(0),
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 3 single-ref slices, two with RECORDS_PER_SLICE records, one with 1 record
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped((RECORDS_PER_SLICE * 2) + 1, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped((RECORDS_PER_SLICE * 2) + 1, 0)),
                         RECORDS_PER_SLICE, 3,
                         new ReferenceContext(0),
                         3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, 1),
@@ -88,9 +89,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
                                 new ReferenceContext(0),
                                 new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 3 full single-ref slices, each with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3, 0)),
                         RECORDS_PER_SLICE, 3,
                         new ReferenceContext(0),
                         3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE),
@@ -98,53 +99,53 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 },
 
                 // now repeat the tests, but using unmapped records
-                {
+                new Object[]{
                         // 1 full single-ref (unmapped) slice with 1 rec
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(1)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(1)),
                         RECORDS_PER_SLICE, 1,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(1), Arrays.asList(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
-                {
+                new Object[]{
                         // 1 full single-ref (unmapped) slice with 1 rec, but allow > 1 slices/container
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(1)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(1)),
                         RECORDS_PER_SLICE, 2,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(1), Arrays.asList(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
-                {
+                new Object[]{
                         // 1 full single-ref (unmapped) slice with RECORDS_PER_SLICE - 1 records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE - 1)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE - 1)),
                         RECORDS_PER_SLICE, 1,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(RECORDS_PER_SLICE - 1), Arrays.asList(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
-                {
+                new Object[]{
                         // 1 full single-ref (unmapped) slice with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE)),
                         RECORDS_PER_SLICE, 1,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         1, Arrays.asList(RECORDS_PER_SLICE), Arrays.asList(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
-                {
+                new Object[]{
                         // 2 single-ref (unmapped) slices, one with RECORDS_PER_SLICE records, one with 1 record
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE + 1)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE + 1)),
                         RECORDS_PER_SLICE, 2,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         2, Arrays.asList(RECORDS_PER_SLICE, 1),
                         Arrays.asList(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
-                {
+                new Object[]{
                         // 2 full single-ref (unmapped) slices, each with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE * 2)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE * 2)),
                         RECORDS_PER_SLICE, 2,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE),
                         Arrays.asList(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
                 },
-                {
+                new Object[]{
                         // 3 full single-ref (unmapped) slices, each with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE * 3)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE * 3)),
                         RECORDS_PER_SLICE, 3,
                         ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
                         3, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE),
@@ -157,9 +158,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 // now use a mix of mapped and unmapped/placed
                 // NOTE: a mapped reference context can contain unmapped records if they are placed, so really mapped
                 // reference context would be more correctly called a "placed" reference context
-                {
+                new Object[]{
                         // 1 full single-ref mapped slice with RECORDS_PER_SLICE records
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 Collections.singletonList(CRAMStructureTestHelper.createSAMRecordUnmappedPlaced(0, 1)),
                                 CRAMStructureTestHelper.createSAMRecordsMapped((RECORDS_PER_SLICE / 2) - 2, 0),
                                 Collections.singletonList(CRAMStructureTestHelper.createSAMRecordUnmappedPlaced(0, 1)))
@@ -171,26 +172,26 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 },
 
                 // now queryname sorted
-                {
+                new Object[]{
                         // 1 full single-ref slice with RECORDS_PER_SLICE-1 records
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE - 1,0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE - 1,0)),
                         RECORDS_PER_SLICE, 1,
                         new ReferenceContext(0),
                         1, Arrays.asList(RECORDS_PER_SLICE - 1),
                         Arrays.asList(new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // 2 full single-ref slices, one with with RECORDS_PER_SLICE records and one record
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE + 1,0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE + 1,0)),
                         RECORDS_PER_SLICE, 2,
                         new ReferenceContext(0),
                         2, Arrays.asList(RECORDS_PER_SLICE, 1),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0))
                 },
-                {
+                new Object[]{
                         // use a small number of records from multiple (not coordinate-ordered) reference contexts to
                         // force creation of a multi-ref container
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createQueryNameSortedSAMRecords(2,1),
                                 CRAMStructureTestHelper.createQueryNameSortedSAMRecords(2,0),
                                 CRAMStructureTestHelper.createQueryNameSortedSAMRecords(2,1))
@@ -203,7 +204,7 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         1, Arrays.asList(6),
                         Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)
                 }
-        };
+        ).iterator();
     }
 
     @Test(dataProvider = "singleContainerSliceDistribution")
@@ -243,38 +244,38 @@ public class ContainerFactoryTest extends HtsjdkTest {
     }
 
     @DataProvider(name="multipleContainerSliceDistribution")
-    private Object[][] getMultipleContainerSliceDistribution() {
+    private Iterator<Object[]> getMultipleContainerSliceDistribution() {
         final int RECORDS_PER_SLICE = 100;
-        return new Object[][] {
+        return Stream.<Object[]>of(
                 // input samRecords, records/slice, slices/container,
                 // expected container count, expected record count per container, expected reference context per container,
                 // expected slices per container
-                {
+                new Object[]{
                         // this generates two containers since it has two containers worth of records mapped to a single ref
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0)),
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0)),
                         RECORDS_PER_SLICE, 1,
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0)),
                         Arrays.asList(1, 1)
                 },
-                {
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3 + 1, 0)),
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 3 + 1, 0)),
                         RECORDS_PER_SLICE, 2,
                         2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE+ 1),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0)),
                         Arrays.asList(2, 2)
                 },
-                {
-                        new QuietTestWrapper<>(CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 4, 0)),
+                new Object[]{
+                        QuietTestWrapper.lazy(() -> CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 4, 0)),
                         RECORDS_PER_SLICE, 2,
                         2, Arrays.asList(RECORDS_PER_SLICE * 2, RECORDS_PER_SLICE * 2),
                         Arrays.asList(new ReferenceContext(0), new ReferenceContext(0)),
                         Arrays.asList(2, 2)
                 },
-                {
+                new Object[]{
                         // this generates one container because although it has records mapped to two different reference
                         // contigs, there aren't enough records to reach the minimum single ref threshold
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
                                 CRAMStructureTestHelper.createSAMRecordsMapped(1, 1))
                                 .flatMap(List::stream)
@@ -284,10 +285,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT),
                         Arrays.asList(1)
                 },
-                {
+                new Object[]{
                         // this generates one container because it has some mapped (but not enough to reach the
                         // minimum single ref threshold), and one unmapped
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE - 1, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(1))
                                 .flatMap(List::stream)
@@ -297,9 +298,9 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT),
                         Arrays.asList(1)
                 },
-                {
+                new Object[]{
                         // this generates two containers since it has some mapped and one unmapped
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE * 2, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))
                                 .flatMap(List::stream)
@@ -309,10 +310,10 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         Arrays.asList(new ReferenceContext(0), ReferenceContext.UNMAPPED_UNPLACED_CONTEXT),
                         Arrays.asList(2, 1)
                 },
-                {
+                new Object[]{
                         // this generates two containers since it has some mapped, but not enough to emit a single
                         // ref container, and one unmapped, which goes into a second container
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE / 2, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))
                                 .flatMap(List::stream)
@@ -324,11 +325,11 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, ReferenceContext.UNMAPPED_UNPLACED_CONTEXT),
                         Arrays.asList(1, 1)
                 },
-                {
+                new Object[]{
                         // even though we allow 2 slices/container, this generates two containers since it has
                         // some mapped and one unmapped, and we won't emit a second single-ref slice into the
                         // first container once we've emitted the multi-ref slice!
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createSAMRecordsMapped(RECORDS_PER_SLICE / 2, 0),
                                 CRAMStructureTestHelper.createSAMRecordsUnmapped(RECORDS_PER_SLICE))
                                 .flatMap(List::stream)
@@ -343,11 +344,11 @@ public class ContainerFactoryTest extends HtsjdkTest {
                 },
 
                 // queryname sorted
-                {
+                new Object[]{
                         // use records from multiple (not coordinate-ordered) reference contexts to
                         // force creation of one multi-ref (after name sorting, the first container has a mix of
                         // ref 0 and ref 1), and one single ref container
-                        new QuietTestWrapper<>(Stream.of(
+                        QuietTestWrapper.lazy(() -> Stream.of(
                                 CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE/2,1),
                                 CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE/2,0),
                                 CRAMStructureTestHelper.createQueryNameSortedSAMRecords(RECORDS_PER_SLICE,1))
@@ -359,8 +360,8 @@ public class ContainerFactoryTest extends HtsjdkTest {
                         2, Arrays.asList(RECORDS_PER_SLICE, RECORDS_PER_SLICE, RECORDS_PER_SLICE),
                         Arrays.asList(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, new ReferenceContext(1)),
                         Arrays.asList(1, 1)
-                },
-        };
+                }
+        ).iterator();
     }
 
     @Test(dataProvider = "multipleContainerSliceDistribution")

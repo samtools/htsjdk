@@ -99,7 +99,7 @@ tasks.withType(Test).configureEach { task ->
 
     // set heap size for the test JVM(s)
     task.minHeapSize = "1G"
-    task.maxHeapSize = "6G"
+    task.maxHeapSize = "10G"
 
     task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
 
@@ -160,7 +160,7 @@ test {
            excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "htsget", "unix"
        }
        parallel = "classes"
-       threadCount = 2 * Runtime.runtime.availableProcessors()
+       threadCount = Runtime.runtime.availableProcessors()
    }
 } dependsOn testWithDefaultReference, testWithOptimisticVCF4_4
 

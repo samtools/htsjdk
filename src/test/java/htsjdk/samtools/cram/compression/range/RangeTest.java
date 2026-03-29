@@ -17,8 +17,44 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+/**
+ * Tests for Range codecs.
+ *
+ * Encoder and decoder instances are shared across all test cases to avoid excessive memory allocation.
+ * Each encoder/decoder eagerly allocates large internal model arrays, and creating hundreds of instances
+ * (one per DataProvider row) causes heap exhaustion when tests run in parallel.
+ *
+ * !!!This precludes running these tests in PARALLEL!!!
+ */
 public class RangeTest extends HtsjdkTest {
     private final Random random = new Random(TestUtil.RANDOM_SEED);
+
+    // Shared encoder/decoder instances — reused across all DataProvider rows to avoid
+    // allocating hundreds of copies of their large internal model arrays.
+    private final RangeEncode rangeEncoder = new RangeEncode();
+    private final RangeDecode rangeDecoder = new RangeDecode();
+
+    // Shared test data — allocated once and referenced (not copied) by all DataProvider rows.
+    private final TestDataEnvelope EMPTY = new TestDataEnvelope(new byte[]{});
+    private final TestDataEnvelope[] testData = {
+            new TestDataEnvelope(new byte[] {0}),
+            new TestDataEnvelope(new byte[] {0, 1}),
+            new TestDataEnvelope(new byte[] {0, 1, 2}),
+            new TestDataEnvelope(new byte[] {0, 1, 2, 3}),
+            new TestDataEnvelope(new byte[1000]),
+            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)),
+            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)),
+            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)),
+            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())),
+            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)),
+            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)),
+            new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)),
+            new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)),
+            new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 1, 0.01)),
+    };
+    private final TestDataEnvelope tinyData  = new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1));
+    private final TestDataEnvelope smallData = new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01));
+    private final TestDataEnvelope largeData = new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01));
 
     private static class TestDataEnvelope {
         public final byte[] testArray;
@@ -30,90 +66,57 @@ public class RangeTest extends HtsjdkTest {
         }
     }
 
-    public Object[][] getRangeEmptyTestData() {
-        return new Object[][]{
-                { new TestDataEnvelope(new byte[]{}) },
-        };
-    }
-
-    @DataProvider(name = "rangeTestData")
-    public Object[][] getRangeTestData() {
-        return new Object[][] {
-                { new TestDataEnvelope(new byte[] {0}) },
-                { new TestDataEnvelope(new byte[] {0, 1}) },
-                { new TestDataEnvelope(new byte[] {0, 1, 2}) },
-                { new TestDataEnvelope(new byte[] {0, 1, 2, 3}) },
-                { new TestDataEnvelope(new byte[1000]) },
-                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)) },
-                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)) },
-                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)) },
-                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())) },
-                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)) },
-                { new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)) },
-                { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)) },
-                { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)) },
-                { new TestDataEnvelope(randomBytesFromGeometricDistribution(10 * 1000 * 1000 + 1, 0.01)) },
-        };
-    }
-
-    public Object[][] getRangeTestDataTinySmallLarge() {
-
-        // params: test data, lower limit, upper limit
-        return new Object[][]{
-                { new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1)), 1, 100 }, // Tiny
-                { new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)), 4, 1000 }, // Small
-                { new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01)), 100 * 1000 + 3 - 4, 100 * 1000 + 3 } // Large
-        };
-    }
+    // List of all Range parameter flag combinations to test
+    private static final List<Integer> RANGE_FORMAT_FLAGS = Arrays.asList(
+            0x00,
+            RangeParams.ORDER_FLAG_MASK,
+            RangeParams.RLE_FLAG_MASK,
+            RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+            RangeParams.CAT_FLAG_MASK,
+            RangeParams.CAT_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+            RangeParams.PACK_FLAG_MASK,
+            RangeParams.PACK_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+            RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
+            RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
+            RangeParams.EXT_FLAG_MASK,
+            RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK,
+            RangeParams.STRIPE_FLAG_MASK,
+            RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK
+    );
 
     @DataProvider(name="rangeCodecs")
     public Object[][] getRangeCodecs() {
-
-        // params: RangeEncoder, RangeDecoder, RangeParams
-        final List<Integer> rangeParamsFormatFlagList = Arrays.asList(
-                0x00,
-                RangeParams.ORDER_FLAG_MASK,
-                RangeParams.RLE_FLAG_MASK,
-                RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
-                RangeParams.CAT_FLAG_MASK,
-                RangeParams.CAT_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
-                RangeParams.PACK_FLAG_MASK,
-                RangeParams.PACK_FLAG_MASK | RangeParams. ORDER_FLAG_MASK,
-                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK,
-                RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK,
-                RangeParams.EXT_FLAG_MASK,
-                RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK,
-                RangeParams.STRIPE_FLAG_MASK,
-                RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
-        for (Integer rangeParamsFormatFlag : rangeParamsFormatFlagList) {
-            Object[] objects = new Object[]{
-                    new RangeEncode(),
-                    new RangeDecode(),
-                    new RangeParams(rangeParamsFormatFlag)
-            };
-            testCases.add(objects);
+        for (final int formatFlag : RANGE_FORMAT_FLAGS) {
+            testCases.add(new Object[]{rangeEncoder, rangeDecoder, new RangeParams(formatFlag)});
         }
         return testCases.toArray(new Object[][]{});
     }
 
+    private Object[][] getTestDataRows() {
+        final Object[][] rows = new Object[testData.length][];
+        for (int i = 0; i < testData.length; i++) {
+            rows[i] = new Object[]{ testData[i] };
+        }
+        return rows;
+    }
+
     @DataProvider(name="allRangeCodecsAndData")
     public Object[][] getAllRangeCodecsAndData() {
-
-        // params: RangeEncode, RangeDecode, RangeParams, test data
-        // this data provider provides all the testdata for all of Range codecs
         return Stream.concat(
-                        Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), getRangeTestData())),
-                        Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), getRangeEmptyTestData())))
+                        Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), getTestDataRows())),
+                        Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), new Object[][]{{ EMPTY }})))
                 .toArray(Object[][]::new);
     }
 
     @DataProvider(name="allRangeCodecsAndDataForTinySmallLarge")
     public Object[][] allRangeCodecsAndDataForTinySmallLarge() {
-
-        // params: RangeEncode, RangeDecode, RangeParams, test data, lower limit, upper limit
-        // this data provider provides Tiny, Small and Large testdata for all of Range codecs
-        return TestNGUtils.cartesianProduct(getRangeCodecs(), getRangeTestDataTinySmallLarge());
+        final Object[][] tslData = {
+                { tinyData,  1, 100 },
+                { smallData, 4, 1000 },
+                { largeData, 100 * 1000 + 3 - 4, 100 * 1000 + 3 },
+        };
+        return TestNGUtils.cartesianProduct(getRangeCodecs(), tslData);
     }
 
     @Test(dataProvider = "allRangeCodecsAndData")
@@ -151,7 +154,6 @@ public class RangeTest extends HtsjdkTest {
         Assert.assertEquals(data, uncompressed);
     }
 
-//    TODO: Add to utils
     private byte[] getNBytesWithValues(final int n, final BiFunction<Integer, Integer, Byte> valueForIndex) {
         final byte[] data = new byte[n];
         for (int i = 0; i < data.length; i++) {
@@ -159,7 +161,7 @@ public class RangeTest extends HtsjdkTest {
         }
         return data;
     }
-    //    TODO: Add to utils
+
     private byte[] randomBytesFromGeometricDistribution(final int size, final double p) {
         final byte[] data = new byte[size];
         for (int i = 0; i < data.length; i++) {
@@ -168,19 +170,9 @@ public class RangeTest extends HtsjdkTest {
         return data;
     }
 
-    /**
-     * A crude implementation of RNG for sampling geometric distribution. The
-     * value returned is offset by -1 to include zero. For testing purposes
-     * only, no refunds!
-     *
-     * @param probability the probability of success
-     * @return an almost random byte value.
-     */
-    //    TODO: Add to utils
     private byte drawByteFromGeometricDistribution(final double probability) {
         final double rand = random.nextDouble();
         final double g = Math.ceil(Math.log(1 - rand) / Math.log(1 - probability)) - 1;
         return (byte) g;
     }
-
 }

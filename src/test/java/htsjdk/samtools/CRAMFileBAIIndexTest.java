@@ -25,7 +25,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * A collection of tests for CRAM BAI index write/read that use BAMFileIndexTest/index_test.bam file as the
@@ -66,19 +68,22 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     }
 
     @DataProvider(name="bytesWithContainerAndSlicePartitioningVariations")
-    public Object[][] getBytesWithContainerAndSlicePartitioningVariations() throws IOException {
-        return new Object[][] {
-                // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
-                //{ getCRAMBytesForBAMFile(BAM_FILE, referenceSource, new CRAMEncodingStrategy()) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
-                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(100).setReadsPerSlice(100)) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
-                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(150).setReadsPerSlice(150)) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
-                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(200).setReadsPerSlice(200)) },
-                { getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
-                        new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(300).setReadsPerSlice(300)) },
-        };
+    public Iterator<Object[]> getBytesWithContainerAndSlicePartitioningVariations() {
+        // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
+        return Stream.of(100, 150, 200, 300)
+                .map(size -> {
+                    try {
+                        return new Object[]{
+                                getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
+                                        new CRAMEncodingStrategy()
+                                                .setMinimumSingleReferenceSliceSize(size)
+                                                .setReadsPerSlice(size))
+                        };
+                    } catch (final IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .iterator();
     }
 
     // Mixes testing queryAlignmentStart with each CRAMFileReaderConstructor
