@@ -2,13 +2,13 @@ package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.encoding.CRAMCodec;
+import htsjdk.samtools.cram.io.CRAMByteReader;
+import htsjdk.samtools.cram.io.CRAMByteWriter;
 import htsjdk.samtools.cram.io.IOTestCases;
 import htsjdk.samtools.util.RuntimeIOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,52 +82,34 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
     }
 
     private <T extends Number> byte[] externalByteCodecWrite(List<T> values) {
-        byte[] written;
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CRAMCodec<Byte> writeCodec = new ExternalByteCodec(null, os);
+        final CRAMByteWriter os = new CRAMByteWriter();
+        final CRAMCodec<Byte> writeCodec = new ExternalByteCodec(null, os);
 
-            for (final T value : values) {
-                writeCodec.write(value.byteValue());
-            }
-            os.flush();
-            written = os.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+        for (final T value : values) {
+            writeCodec.write(value.byteValue());
         }
-        return written;
+        return os.toByteArray();
     }
 
     private <T extends Number> byte[] externalIntegerCodecWrite(List<T> values) {
-        byte[] written;
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CRAMCodec<Integer> writeCodec = new ExternalIntegerCodec(null, os);
+        final CRAMByteWriter os = new CRAMByteWriter();
+        final CRAMCodec<Integer> writeCodec = new ExternalIntegerCodec(null, os);
 
-            for (final T value : values) {
-                writeCodec.write(value.intValue());
-            }
-            os.flush();
-            written = os.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+        for (final T value : values) {
+            writeCodec.write(value.intValue());
         }
-        return written;
+        return os.toByteArray();
     }
 
 
     private <T extends Number> byte[] externalLongCodecWrite(List<T> values) {
-        byte[] written;
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CRAMCodec<Long> writeCodec = new ExternalLongCodec(null, os);
+        final CRAMByteWriter os = new CRAMByteWriter();
+        final CRAMCodec<Long> writeCodec = new ExternalLongCodec(null, os);
 
-            for (final T value : values) {
-                writeCodec.write(value.longValue());
-            }
-            os.flush();
-            written = os.toByteArray();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+        for (final T value : values) {
+            writeCodec.write(value.longValue());
         }
-        return written;
+        return os.toByteArray();
     }
 
     private List<Long> externalByteCodecRead(byte[] written, final int length) {
@@ -145,18 +127,15 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
     private <T extends Number> List<Long> read(byte[] written, final int length, final ReadCodecConstructor<T> readCC) {
         List<Long> retval = new ArrayList<>();
 
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<T> readCodec = readCC.reader(is);
-            for (int i = 0; i < length; i++) {
-                retval.add(readCodec.read().longValue());
-            }
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+        final CRAMByteReader is = new CRAMByteReader(written);
+        final CRAMCodec<T> readCodec = readCC.reader(is);
+        for (int i = 0; i < length; i++) {
+            retval.add(readCodec.read().longValue());
         }
         return retval;
     }
 
     private interface ReadCodecConstructor<T> {
-        CRAMCodec<T> reader(final ByteArrayInputStream is);
+        CRAMCodec<T> reader(final CRAMByteReader is);
     }
 }

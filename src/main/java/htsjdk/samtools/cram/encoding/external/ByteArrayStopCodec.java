@@ -1,42 +1,43 @@
 package htsjdk.samtools.cram.encoding.external;
 
-import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import htsjdk.samtools.cram.io.CRAMByteReader;
+import htsjdk.samtools.cram.io.CRAMByteWriter;
 
 /**
- * Encode byte arrays by specifying a stop byte to separate the arrays.
- * This cannot be a byte that appears in the data.
+ * Encode/decode byte arrays delimited by a stop byte using an External Data Block.
+ * The stop byte must not appear in the data.
  */
 final class ByteArrayStopCodec extends ExternalCodec<byte[]> {
     private final int stop;
 
     /**
-     * Construct a Byte Array Stop Codec
+     * Create a codec that reads/writes byte arrays delimited by the given stop byte.
      *
-     * @param inputStream the input bytestream to read from
-     * @param outputStream the output bytestream to write to
-     * @param stopByte the byte used to mark array boundaries
+     * @param inputReader reader for the external data block (may be null if only writing)
+     * @param outputWriter writer for the external data block (may be null if only reading)
+     * @param stopByte the delimiter byte that terminates each encoded value
      */
-    public ByteArrayStopCodec(final ByteArrayInputStream inputStream,
-                              final ByteArrayOutputStream outputStream,
+    public ByteArrayStopCodec(final CRAMByteReader inputReader,
+                              final CRAMByteWriter outputWriter,
                               final byte stopByte) {
-        super(inputStream, outputStream);
+        super(inputReader, outputWriter);
         this.stop = 0xFF & stopByte;
     }
 
     @Override
     public byte[] read() {
-        final ByteArrayOutputStream readingBAOS = new ByteArrayOutputStream();
-        int b;
-        readingBAOS.reset();
-        while ((b = inputStream.read()) != -1 && b != stop) {
-            readingBAOS.write(b);
+        // Scan directly in the underlying byte[] for the stop byte instead of
+        // reading one byte at a time into a ByteArrayOutputStream.
+        final byte[] buf = inputReader.getBuffer();
+        final int startPos = inputReader.getPosition();
+        int scanPos = startPos;
+        while (scanPos < buf.length && (buf[scanPos] & 0xFF) != stop) {
+            scanPos++;
         }
-
-        return readingBAOS.toByteArray();
+        final int len = scanPos - startPos;
+        final byte[] result = inputReader.readFully(len);
+        inputReader.read(); // consume the stop byte
+        return result;
     }
 
     @Override
@@ -46,11 +47,7 @@ final class ByteArrayStopCodec extends ExternalCodec<byte[]> {
 
     @Override
     public void write(final byte[] value) {
-        try {
-            outputStream.write(value);
-            outputStream.write(stop);
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        outputWriter.write(value);
+        outputWriter.write(stop);
     }
 }

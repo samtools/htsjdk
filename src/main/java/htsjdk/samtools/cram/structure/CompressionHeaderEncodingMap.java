@@ -267,6 +267,20 @@ public class CompressionHeaderEncodingMap {
     }
 
     /**
+     * Same as {@link #createCompressedBlockForStream} but accepts a {@link htsjdk.samtools.cram.io.CRAMByteWriter}.
+     */
+    public Block createCompressedBlockForWriter(final CRAMCodecModelContext contextModel, final Integer contentId, final htsjdk.samtools.cram.io.CRAMByteWriter writer) {
+        final ExternalCompressor compressor = externalCompressors.get(contentId);
+        final byte[] rawContent = writer.toByteArray();
+        final byte[] compressedContent = compressor.compress(rawContent, contextModel);
+        return Block.createExternalBlock(
+                compressor.getMethod(),
+                contentId,
+                compressedContent,
+                rawContent.length);
+    }
+
+    /**
      * Write the encoding map out to a CRAM Stream
      * @param outputStream stream to write
      * @throws IOException
