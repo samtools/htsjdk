@@ -8,6 +8,11 @@ import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Token streams for the CRAM 3.1 name tokeniser. Stores decompressed byte streams indexed
+ * by (position, tokenType). Accepts an optional shared {@link RANSNx16Decode} instance to
+ * avoid allocating a fresh 1MB+ decoder per stream.
+ */
 public class TokenStreams {
     public static final byte TOKEN_TYPE = 0x00;
     public static final byte TOKEN_STRING = 0x01;
@@ -44,6 +49,17 @@ public class TokenStreams {
      * @param numNames - the number of read names in the slice for which this token stream is being created
      */
     public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames) {
+        this(inputByteBuffer, useArith, numNames, null);
+    }
+
+    /**
+     * @param inputByteBuffer the input buffer of token streams
+     * @param useArith true to use range coding; false for rANS coding
+     * @param numNames the number of read names in the slice
+     * @param sharedRansDecoder optional shared rANS decoder instance (avoids per-stream allocation)
+     */
+    public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames,
+                        final RANSNx16Decode sharedRansDecoder) {
         // pre-allocate enough room for 32 token positions; we'll reallocate if we exceed this; it is ok if
         // the actual number is less than the pre-allocated amount
         // note that this array is often very sparse (unused cells have null instead of an actual ByteBuffer)
@@ -97,7 +113,7 @@ public class TokenStreams {
                     final RangeDecode rangeDecode = new RangeDecode();
                     uncompressedTokenStream = rangeDecode.uncompress(CompressionUtils.wrap(compressedTokenStream));
                 } else {
-                    final RANSNx16Decode ransDecode = new RANSNx16Decode();
+                    final RANSNx16Decode ransDecode = sharedRansDecoder != null ? sharedRansDecoder : new RANSNx16Decode();
                     uncompressedTokenStream = ByteBuffer.wrap(ransDecode.uncompress(compressedTokenStream))
                             .order(java.nio.ByteOrder.LITTLE_ENDIAN);
                 }
