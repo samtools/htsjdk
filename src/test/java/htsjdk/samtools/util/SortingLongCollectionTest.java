@@ -25,10 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.File;
 import java.util.Arrays;
@@ -40,7 +37,7 @@ import java.util.Random;
 public class SortingLongCollectionTest extends HtsjdkTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
     private final File tmpDir = new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"),
-            "SortingCollectionTest");
+            "SortingLongCollectionTest");
 
     @BeforeMethod
     void setup() {
@@ -53,7 +50,7 @@ public class SortingLongCollectionTest extends HtsjdkTest {
         tmpDir.mkdir();
     }
 
-    @AfterClass
+    @AfterMethod
     void tearDown() {
         if (!tmpDir.exists()) {
             // I don't know why it wouldn't exist, but sometimes it doesn't, and it causes the unit test
