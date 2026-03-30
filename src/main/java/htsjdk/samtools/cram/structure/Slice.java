@@ -24,7 +24,6 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
-import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.CramIntArray;
@@ -201,7 +200,9 @@ public class Slice {
         this.compressionHeader = compressionHeader;
         this.byteOffsetOfContainer = containerByteOffset;
 
-        final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
+        // htslib does not write content digest tags (BD/SD/B5/S5/B1/S1) into slice headers.
+        // These are optional per the spec, and computing SHA-512 + SHA-1 per record is very expensive.
+        // Block-level CRC32 (required by CRAM 3.0+) provides data integrity verification.
         final Set<ReferenceContext> referenceContexts = new HashSet<>();
         // ignore these values if we later determine this Slice is not single-ref
         int singleRefAlignmentStart = Integer.MAX_VALUE;
@@ -209,7 +210,6 @@ public class Slice {
 
         int baseCount = 0;
         for (final CRAMCompressionRecord record : records) {
-            hasher.add(record);
             baseCount += record.getReadLength();
 
             if (record.isPlaced()) {
@@ -239,7 +239,7 @@ public class Slice {
                 singleRefAlignmentStart,
                 singleRefAlignmentEnd);
 
-        sliceTags = hasher.getAsTags();
+        sliceTags = null;
         nRecords = records.size();
         this.baseCount = baseCount;
         this.globalRecordCounter = globalRecordCounter;
