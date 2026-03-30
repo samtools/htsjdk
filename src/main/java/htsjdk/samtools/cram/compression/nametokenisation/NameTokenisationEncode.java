@@ -69,6 +69,9 @@ public class NameTokenisationEncode {
     private final static String DIGITS_REGEX = "^[0-9]+$";
     private final static Pattern DIGITS_PATTERN = Pattern.compile(DIGITS_REGEX);
 
+    // Reusable encoder instance — avoids allocating 256x256 RANSEncodingSymbol matrix per trial
+    private final RANSNx16Encode reusableRansEncoder = new RANSNx16Encode();
+
     private int maxPositions; // the maximum number of tokenised columns seen across all names
     private int maxStringValueLength; // longest *String* value for any token
 
@@ -160,16 +163,25 @@ public class NameTokenisationEncode {
         nameIndexMap.put(name, nameIndex);
         final int prevNameIndex = nameIndex - 1;
 
-        // tokenise the current name
-        final Matcher matcher = READ_NAME_PATTERN.matcher(name);
-        for (int i = 1; matcher.find(); i++) {
+        // Tokenize the name by splitting on alphanumeric / non-alphanumeric boundaries.
+        // Equivalent to regex: "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)" but without regex overhead.
+        int pos = 0;
+        for (int i = 1; pos < name.length(); i++) {
+            final int start = pos;
+            if (isAlphanumeric(name.charAt(pos))) {
+                final int limit = Math.min(name.length(), start + 9);
+                do { pos++; } while (pos < limit && isAlphanumeric(name.charAt(pos)));
+            } else {
+                do { pos++; } while (pos < name.length() && !isAlphanumeric(name.charAt(pos)));
+            }
+            final String fragmentValue = name.substring(start, pos);
+
             byte type = TokenStreams.TOKEN_STRING;
-            final String fragmentValue = matcher.group(); // absolute value of the token
             String relativeValue = fragmentValue; // relative value of the token (comparing to prev name's token at the same token position)
 
-            if (DIGITS0_PATTERN.matcher(fragmentValue).matches()) {
+            if (isAllDigitsLeadingZero(fragmentValue)) {
                 type = TokenStreams.TOKEN_DIGITS0;
-            } else if (DIGITS_PATTERN.matcher(fragmentValue).matches()) {
+            } else if (isAllDigits(fragmentValue)) {
                 type = TokenStreams.TOKEN_DIGITS;
             } else if (fragmentValue.length() == 1) {
                 type = TokenStreams.TOKEN_CHAR;
@@ -221,6 +233,30 @@ public class NameTokenisationEncode {
         }
 
         return encodedTokens;
+    }
+
+    /** Check if a character is alphanumeric (a-z, A-Z, 0-9). */
+    private static boolean isAlphanumeric(final char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+    }
+
+    /** Check if all characters are ASCII digits (equivalent to ^[0-9]+$). */
+    private static boolean isAllDigits(final String s) {
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return s.length() > 0;
+    }
+
+    /** Check if string matches ^0+[0-9]*$ (starts with at least one zero, rest are digits). */
+    private static boolean isAllDigitsLeadingZero(final String s) {
+        if (s.length() == 0 || s.charAt(0) != '0') return false;
+        for (int i = 1; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
     }
 
     // extract the individual names from the input buffer and return in a list
@@ -371,7 +407,7 @@ public class NameTokenisationEncode {
      * smallest compressed result. Flag sets are selected per token type to match htslib's
      * tok3 encoder behavior.
      */
-    private static ByteBuffer tryCompress(final ByteBuffer nameTokenStream, final boolean useArith, final int tokenType) {
+    private ByteBuffer tryCompress(final ByteBuffer nameTokenStream, final boolean useArith, final int tokenType) {
         int bestCompressedLength = 1 << 30;
         ByteBuffer compressedByteBuffer = null;
         final int streamSize = nameTokenStream.limit();
@@ -394,7 +430,7 @@ public class NameTokenisationEncode {
             } else {
                 final byte[] streamBytes = new byte[nameTokenStream.remaining()];
                 nameTokenStream.get(streamBytes);
-                final byte[] compressed = new RANSNx16Encode().compress(streamBytes, new RANSNx16Params(flagSet));
+                final byte[] compressed = reusableRansEncoder.compress(streamBytes, new RANSNx16Params(flagSet));
                 tmpByteBuffer = ByteBuffer.wrap(compressed);
             }
             if (bestCompressedLength > tmpByteBuffer.limit()) {
@@ -411,7 +447,7 @@ public class NameTokenisationEncode {
             } else {
                 final byte[] streamBytes = new byte[nameTokenStream.remaining()];
                 nameTokenStream.get(streamBytes);
-                final byte[] compressed = new RANSNx16Encode().compress(streamBytes, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
+                final byte[] compressed = reusableRansEncoder.compress(streamBytes, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
                 compressedByteBuffer = ByteBuffer.wrap(compressed);
             }
         }
