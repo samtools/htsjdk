@@ -124,6 +124,11 @@ public class FQZCompEncode {
         final ByteModel dupModel = new ByteModel(2);
         final RangeCoder rangeCoder = new RangeCoder();
 
+        // Set up range coder to write to byte[] starting after the header
+        final int headerSize = outBuffer.position();
+        final byte[] outArray = outBuffer.array();
+        rangeCoder.setOutput(outArray, headerSize);
+
         // Encoding loop
         int last = 0;
         int qctx = 0;
@@ -142,24 +147,24 @@ public class FQZCompEncode {
 
                 // Encode length (unless fixed-length and not first record)
                 if (!params.fixedLen || firstLen) {
-                    lengthModels[0].modelEncode(outBuffer, rangeCoder, (len) & 0xFF);
-                    lengthModels[1].modelEncode(outBuffer, rangeCoder, (len >> 8) & 0xFF);
-                    lengthModels[2].modelEncode(outBuffer, rangeCoder, (len >> 16) & 0xFF);
-                    lengthModels[3].modelEncode(outBuffer, rangeCoder, (len >> 24) & 0xFF);
+                    lengthModels[0].modelEncode(rangeCoder, (len) & 0xFF);
+                    lengthModels[1].modelEncode(rangeCoder, (len >> 8) & 0xFF);
+                    lengthModels[2].modelEncode(rangeCoder, (len >> 16) & 0xFF);
+                    lengthModels[3].modelEncode(rangeCoder, (len >> 24) & 0xFF);
                     firstLen = false;
                 }
 
                 // Encode reverse flag
                 if (params.doReverse) {
                     final boolean isReverse = bamFlags != null && (bamFlags[recIdx] & BAM_FREVERSE) != 0;
-                    reverseModel.modelEncode(outBuffer, rangeCoder, isReverse ? 1 : 0);
+                    reverseModel.modelEncode(rangeCoder, isReverse ? 1 : 0);
                 }
 
                 // Encode duplicate flag
                 if (params.doDedup) {
                     final boolean isDup = i > 0 && len == lastLen &&
                             arraysEqual(qualData, i - lastLen, qualData, i, len);
-                    dupModel.modelEncode(outBuffer, rangeCoder, isDup ? 1 : 0);
+                    dupModel.modelEncode(rangeCoder, isDup ? 1 : 0);
                     if (isDup) {
                         lastLen = len;
                         qualOffset = i;
@@ -182,7 +187,7 @@ public class FQZCompEncode {
             // Map quality through qmap and encode
             final int rawQ = qualData[i] & 0xFF;
             final int q = params.qmap[rawQ];
-            qualityModels[last].modelEncode(outBuffer, rangeCoder, q);
+            qualityModels[last].modelEncode(rangeCoder, q);
 
             // Update context
             qctx = (qctx << params.qshift) + params.qtab[q];
@@ -200,7 +205,9 @@ public class FQZCompEncode {
             basesRemaining--;
         }
 
-        rangeCoder.rangeEncodeEnd(outBuffer);
+        rangeCoder.rangeEncodeEnd();
+        // Update the ByteBuffer position to match what the range coder wrote
+        outBuffer.position(rangeCoder.getOutputPosition());
 
         // Post-process: undo reversal to restore input data
         if (params.doReverse) {

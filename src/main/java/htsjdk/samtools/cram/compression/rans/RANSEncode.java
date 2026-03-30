@@ -51,9 +51,8 @@ public abstract class RANSEncode<T extends RANSParams> {
     }
 
     private void resetAndUpdateEncodingSymbols(final int[] frequencies, final RANSEncodingSymbol[] symbols) {
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            symbols[i].reset();
-        }
+        // No explicit reset needed: set() overwrites all fields, and symbols with zero frequency
+        // are never accessed during encoding (only symbols present in the input are encoded).
         int cumulativeFreq = 0;
         for (int symbol = 0; symbol < Constants.NUMBER_OF_SYMBOLS; symbol++) {
             if (frequencies[symbol] != 0) {

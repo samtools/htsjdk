@@ -11,6 +11,10 @@ import java.nio.ByteBuffer;
  * symbol based on cumulative and symbol frequencies. When the range becomes too small (&lt; 2^24),
  * it renormalizes by shifting out the top byte.
  *
+ * <p>Encoding output is written to an internal {@code byte[]} buffer (set via {@link #setOutput})
+ * rather than a {@link ByteBuffer}, eliminating bounds checking and position tracking overhead
+ * in the hot encoding loop.
+ *
  * @see ByteModel
  * @see <a href="https://samtools.github.io/hts-specs/CRAMv3.pdf">CRAM 3.1 specification, Section 3.5</a>
  */
@@ -23,6 +27,10 @@ public class RangeCoder {
     private boolean carry;
     private int cache;
 
+    // Encoding output buffer (byte[] for performance — avoids ByteBuffer overhead in hot loop)
+    private byte[] outBuf;
+    private int outPos;
+
     public RangeCoder() {
         this.low = 0;
         this.range = Constants.MAX_RANGE;
@@ -30,6 +38,25 @@ public class RangeCoder {
         this.FFnum = 0;
         this.carry = false;
         this.cache = 0;
+    }
+
+    /**
+     * Set the output buffer for encoding. Must be called before any encode operations.
+     *
+     * @param buf the byte array to write compressed output to
+     * @param pos the starting write position in the buffer
+     */
+    public void setOutput(final byte[] buf, final int pos) {
+        this.outBuf = buf;
+        this.outPos = pos;
+    }
+
+    /**
+     * Return the current write position in the output buffer. Call after encoding is complete
+     * to determine how many bytes were written.
+     */
+    public int getOutputPosition() {
+        return outPos;
     }
 
     /**
@@ -69,25 +96,24 @@ public class RangeCoder {
      * @return the scaled frequency value used to identify the decoded symbol
      */
     protected int rangeGetFrequency(final int totalFrequency){
-        range =  (long) Math.floor(range / totalFrequency);
-        return (int) Math.floor(code / range);
+        range = range / totalFrequency;
+        return (int) (code / range);
     }
 
     /**
      * Encode a symbol by narrowing the range interval and emitting output bytes as needed.
+     * Output is written to the internal byte[] buffer (set via {@link #setOutput}).
      *
-     * @param outBuffer the output stream for compressed bytes
      * @param cumulativeFrequency cumulative frequency of all symbols before this one
      * @param symbolFrequency frequency of the symbol being encoded
      * @param totalFrequency sum of all symbol frequencies
      */
     protected void rangeEncode(
-            final ByteBuffer outBuffer,
             final int cumulativeFrequency,
             final int symbolFrequency,
             final int totalFrequency){
         final long old_low = low;
-        range = (long) Math.floor(range/totalFrequency);
+        range = range / totalFrequency;
         low += cumulativeFrequency * range;
         low &= 0xFFFFFFFFL; // keep bottom 4 bytes, shift the top byte out of low
         range *= symbolFrequency;
@@ -99,7 +125,7 @@ public class RangeCoder {
         // Renormalise if range gets too small
         while (range < (1<<24)) {
             range <<= 8;
-            rangeShiftLow(outBuffer);
+            rangeShiftLow();
         }
 
     }
@@ -107,16 +133,14 @@ public class RangeCoder {
     /**
      * Flush the encoder state by emitting the final 5 bytes. Must be called after all symbols
      * have been encoded to produce a valid compressed stream.
-     *
-     * @param outBuffer the output stream for compressed bytes
      */
-    public void rangeEncodeEnd(final ByteBuffer outBuffer){
+    public void rangeEncodeEnd(){
         for(int i = 0; i < 5; i++){
-            rangeShiftLow(outBuffer);
+            rangeShiftLow();
         }
     }
 
-    private void rangeShiftLow(final ByteBuffer outBuffer) {
+    private void rangeShiftLow() {
         // rangeShiftLow tracks the total number of extra bytes to emit and
         // carry indicates whether they are a string of 0xFF or 0x00 values
 
@@ -125,15 +149,15 @@ public class RangeCoder {
 
         if ((low < 0xff000000L) || carry) {
             if (carry == false) {
-                outBuffer.put((byte) cache);
+                outBuf[outPos++] = (byte) cache;
                 while (FFnum > 0) {
-                    outBuffer.put((byte) 0xFF);
+                    outBuf[outPos++] = (byte) 0xFF;
                     FFnum--;
                 }
             } else {
-                outBuffer.put((byte) (cache + 1));
+                outBuf[outPos++] = (byte) (cache + 1);
                 while (FFnum > 0) {
-                    outBuffer.put((byte) 0x00);
+                    outBuf[outPos++] = (byte) 0x00;
                     FFnum--;
                 }
 

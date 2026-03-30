@@ -126,10 +126,12 @@ public class RangeEncode {
         final ByteModel byteModel = new ByteModel(maxSymbol);
         outBuffer.put((byte) maxSymbol);
         final RangeCoder rangeCoder = new RangeCoder();
+        rangeCoder.setOutput(outBuffer.array(), outBuffer.position());
         for (int i = 0; i < inSize; i++) {
-            byteModel.modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            byteModel.modelEncode(rangeCoder, inBuffer.get(i) & 0xFF);
         }
-        rangeCoder.rangeEncodeEnd(outBuffer);
+        rangeCoder.rangeEncodeEnd();
+        outBuffer.position(rangeCoder.getOutputPosition());
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }
@@ -151,12 +153,14 @@ public class RangeEncode {
         }
         outBuffer.put((byte) maxSymbol);
         final RangeCoder rangeCoder = new RangeCoder();
+        rangeCoder.setOutput(outBuffer.array(), outBuffer.position());
         int last = 0;
         for (int i = 0; i < inSize; i++) {
-            byteModelList.get(last).modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            byteModelList.get(last).modelEncode(rangeCoder, inBuffer.get(i) & 0xFF);
             last = inBuffer.get(i) & 0xFF;
         }
-        rangeCoder.rangeEncodeEnd(outBuffer);
+        rangeCoder.rangeEncodeEnd();
+        outBuffer.position(rangeCoder.getOutputPosition());
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }
@@ -181,9 +185,10 @@ public class RangeEncode {
         }
         outBuffer.put((byte) maxSymbols);
         final RangeCoder rangeCoder = new RangeCoder();
+        rangeCoder.setOutput(outBuffer.array(), outBuffer.position());
         int i = 0;
         while (i < inSize) {
-            modelLit.modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            modelLit.modelEncode(rangeCoder, inBuffer.get(i) & 0xFF);
             int run = 1;
             while (i + run < inSize && (inBuffer.get(i + run) & 0xFF) == (inBuffer.get(i) & 0xFF)) {
                 run++;
@@ -192,17 +197,18 @@ public class RangeEncode {
             int rctx = inBuffer.get(i) & 0xFF;
             i += run + 1;
             int part = run >= 3 ? 3 : run;
-            byteModelRunsList.get(rctx).modelEncode(outBuffer, rangeCoder, part);
+            byteModelRunsList.get(rctx).modelEncode(rangeCoder, part);
             run -= part;
             rctx = 256;
             while (part == 3) {
                 part = run >= 3 ? 3 : run;
-                byteModelRunsList.get(rctx).modelEncode(outBuffer, rangeCoder, part);
+                byteModelRunsList.get(rctx).modelEncode(rangeCoder, part);
                 rctx = 257;
                 run -= part;
             }
         }
-        rangeCoder.rangeEncodeEnd(outBuffer);
+        rangeCoder.rangeEncodeEnd();
+        outBuffer.position(rangeCoder.getOutputPosition());
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }
@@ -229,10 +235,11 @@ public class RangeEncode {
         }
         outBuffer.put((byte) maxSymbols);
         final RangeCoder rangeCoder = new RangeCoder();
+        rangeCoder.setOutput(outBuffer.array(), outBuffer.position());
         int i = 0;
         int last = 0;
         while (i < inSize) {
-            modelLitList.get(last).modelEncode(outBuffer, rangeCoder, inBuffer.get(i) & 0xFF);
+            modelLitList.get(last).modelEncode(rangeCoder, inBuffer.get(i) & 0xFF);
             int run = 1;
             while (i + run < inSize && inBuffer.get(i + run) == inBuffer.get(i)) {
                 run++;
@@ -242,17 +249,18 @@ public class RangeEncode {
             last = inBuffer.get(i) & 0xFF;
             i += run + 1;
             int part = run >= 3 ? 3 : run;
-            byteModelRunsList.get(rctx).modelEncode(outBuffer, rangeCoder, part);
+            byteModelRunsList.get(rctx).modelEncode(rangeCoder, part);
             run -= part;
             rctx = 256;
             while (part == 3) {
                 part = run >= 3 ? 3 : run;
-                byteModelRunsList.get(rctx).modelEncode(outBuffer, rangeCoder, part);
+                byteModelRunsList.get(rctx).modelEncode(rangeCoder, part);
                 rctx = 257;
                 run -= part;
             }
         }
-        rangeCoder.rangeEncodeEnd(outBuffer);
+        rangeCoder.rangeEncodeEnd();
+        outBuffer.position(rangeCoder.getOutputPosition());
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }

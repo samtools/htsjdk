@@ -99,7 +99,7 @@ tasks.withType(Test).configureEach { task ->
 
     // set heap size for the test JVM(s)
     task.minHeapSize = "1G"
-    task.maxHeapSize = "10G"
+    task.maxHeapSize = "12G"
 
     task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
 
