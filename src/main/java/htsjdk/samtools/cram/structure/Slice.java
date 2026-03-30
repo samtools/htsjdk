@@ -578,10 +578,9 @@ public class Slice {
                             record.getAlignmentStart() - 1,  // 1 based to 0-based
                             record.getAlignmentEnd() - record.getAlignmentStart() + 1);
                 }
-                record.restoreReadBases(
+                record.restoreBasesAndTags(
                         cramReferenceRegion,
                         getCompressionHeader().getSubstitutionMatrix());
-                record.restoreNmAndMd(cramReferenceRegion);
             }
         }
 

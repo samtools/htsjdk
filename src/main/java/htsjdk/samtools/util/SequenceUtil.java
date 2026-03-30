@@ -63,9 +63,7 @@ public class SequenceUtil {
 
     private static final int BASES_ARRAY_LENGTH = 127;
     private static final int SHIFT_TO_LOWER_CASE = a - A;
-    /**
-     * A lookup table to find a corresponding BAM read base.
-     */
+    /** Lookup table mapping any byte to its BAM-valid upper-case equivalent (or N if invalid). */
     private static final byte[] bamReadBaseLookup = new byte[BASES_ARRAY_LENGTH];
     static {
         Arrays.fill(bamReadBaseLookup, N);
@@ -73,6 +71,21 @@ public class SequenceUtil {
             bamReadBaseLookup[base] = base;
             bamReadBaseLookup[base + SHIFT_TO_LOWER_CASE] = base;
         }
+    }
+
+    /**
+     * Returns a defensive copy of the BAM read base lookup table. The table maps each byte
+     * value (indexed by {@code value & 0x7F}) to its BAM-valid upper-case base equivalent
+     * (one of A, C, G, T, N, M, R, W, S, Y, K, V, H, D, B), or 'N' if the input is not a
+     * recognized base. Both upper and lower case inputs map to the upper case base.
+     *
+     * <p>Callers that need repeated lookups on a hot path should store the returned array
+     * in a local or static field rather than calling this method repeatedly.
+     *
+     * @return a new copy of the 127-element lookup table
+     */
+    public static byte[] getBamReadBaseLookup() {
+        return bamReadBaseLookup.clone();
     }
 
     private static final byte A_MASK = 1;

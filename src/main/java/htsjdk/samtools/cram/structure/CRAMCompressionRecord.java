@@ -84,6 +84,7 @@ public class CRAMCompressionRecord {
     // the contents hasher doesn't handle nulls
     private byte[] readBases;
     private byte[] qualityScores;
+    private Cigar cachedCigar; // populated by restoreBasesAndTags, used by toSAMRecord
     private MutableInt tagIdsIndex = new MutableInt(0);
 
     //mate info
@@ -346,7 +347,7 @@ public class CRAMCompressionRecord {
         if (isSegmentUnmapped()) {
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         } else {
-            samRecord.setCigar(readFeatures.getCigarForReadFeatures(readLength));
+            samRecord.setCigar(cachedCigar != null ? cachedCigar : readFeatures.getCigarForReadFeatures(readLength));
         }
 
         if (samRecord.getReadPairedFlag()) {
@@ -515,11 +516,14 @@ public class CRAMCompressionRecord {
     }
 
     /**
-     * Compute and store NM/MD tags from the reference region. Should be called after
-     * {@link #restoreReadBases} while the cramReferenceRegion still covers this record's span.
-     * Strips the internal cF tag if present (from htslib embed_ref=2 mode).
+     * Fused single-pass method: restore read bases from the reference + read features, build the
+     * CIGAR, and compute NM/MD tags, all in one iteration through the features. Replaces the
+     * previous separate calls to {@code restoreReadBases} + {@code restoreNmAndMd}.
+     *
+     * <p>The CIGAR is cached on this record for use by {@link #toSAMRecord()}.
      */
-    void restoreNmAndMd(final CRAMReferenceRegion cramReferenceRegion) {
+    void restoreBasesAndTags(final CRAMReferenceRegion cramReferenceRegion,
+                             final SubstitutionMatrix substitutionMatrix) {
         // Handle the cF internal tag from htslib's embed_ref=2 mode
         boolean suppressMD = false;
         boolean suppressNM = false;
@@ -535,18 +539,7 @@ public class CRAMCompressionRecord {
             }
         }
 
-        if (isSegmentUnmapped() || readLength == 0 || readBases == null || readBases.length == 0 ||
-                readFeatures == null || cramReferenceRegion.getCurrentReferenceBases() == null) {
-            return;
-        }
-
-        final int refOffset = cramReferenceRegion.getRegionStart();
-        final int startInRef = alignmentStart - 1 - refOffset;
-        if (startInRef < 0 || startInRef >= cramReferenceRegion.getCurrentReferenceBases().length) {
-            return;
-        }
-
-        // Check if NM/MD are already present in tags
+        // Determine if MD/NM computation is needed
         boolean hasNM = false;
         boolean hasMD = false;
         if (tags != null) {
@@ -555,24 +548,36 @@ public class CRAMCompressionRecord {
                 if ("MD".equals(tag.getKey())) hasMD = true;
             }
         }
-
         final boolean needMD = !hasMD && !suppressMD;
         final boolean needNM = !hasNM && !suppressNM;
 
-        if (needMD || needNM) {
-            final Cigar cigar = readFeatures.getCigarForReadFeatures(readLength);
-            final htsjdk.samtools.util.Tuple<String, Integer> result =
-                    htsjdk.samtools.util.SequenceUtil.calculateMdAndNm(
-                            cigar.getCigarElements(),
-                            readBases,
-                            cramReferenceRegion.getCurrentReferenceBases(),
-                            cramReferenceRegion.getRegionStart(),
-                            alignmentStart);
+        final boolean computeMdNm = (needMD || needNM) &&
+                readLength > 0 &&
+                readFeatures != null &&
+                cramReferenceRegion.getCurrentReferenceBases() != null;
+
+        final CRAMRecordReadFeatures.DecodeResult result = CRAMRecordReadFeatures.restoreBasesAndTags(
+                readFeatures == null ? Collections.emptyList() : readFeatures.getReadFeaturesList(),
+                isUnknownBases(),
+                alignmentStart,
+                readLength,
+                cramReferenceRegion,
+                substitutionMatrix,
+                computeMdNm);
+
+        this.readBases = result.readBases;
+        this.cachedCigar = result.cigar;
+
+        if (computeMdNm) {
             if (tags == null) {
                 tags = new ArrayList<>(2);
             }
-            if (needMD) tags.add(ReadTag.deriveTypeFromValue("MD", result.a));
-            if (needNM) tags.add(ReadTag.deriveTypeFromValue("NM", result.b));
+            if (needMD && result.mdString != null) {
+                tags.add(ReadTag.deriveTypeFromValue("MD", result.mdString));
+            }
+            if (needNM && result.nmCount >= 0) {
+                tags.add(ReadTag.deriveTypeFromValue("NM", result.nmCount));
+            }
         }
     }
 
