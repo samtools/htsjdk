@@ -3,8 +3,8 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+@Test(groups = "htsget")
 public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     public static final String HTSGET_ENDPOINT = "http://127.0.0.1:3000/reads/";
     public static final String LOCAL_PREFIX = "htsjdk_test.";
@@ -30,7 +31,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
     private static HtsgetBAMFileReader bamFileReaderHtsgetPOST;
     private static HtsgetBAMFileReader bamFileReaderHtsgetAsync;
 
-    @BeforeTest
+    @BeforeMethod
     public void init() throws IOException {
         bamFileReaderHtsgetGET = new HtsgetBAMFileReader(htsgetBAM, true, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance(), false);
         bamFileReaderHtsgetGET.setUsingPOST(false);
@@ -45,7 +46,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
         Assert.assertFalse(bamFileReaderHtsgetAsync.isUsingPOST());
     }
 
-    @AfterTest
+    @AfterMethod
     public void tearDown() {
         bamFileReaderHtsgetGET.close();
         bamFileReaderHtsgetPOST.close();

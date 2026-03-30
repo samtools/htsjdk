@@ -2,6 +2,7 @@ package htsjdk.utils;
 
 import com.google.common.collect.Lists;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 import org.testng.collections.Sets;
 
 import java.lang.reflect.Method;
@@ -22,12 +23,27 @@ public class TestNGUtils {
      * where method has the @DataProviderAnnotation and is a member of clazz.
      */
     public static Iterator<Object[]> getDataProviders(final String packageName) {
+        return getDataProviders(packageName, Collections.emptySet());
+    }
+
+    /**
+     * Returns all methods annotated with @DataProvider in the given package, excluding classes
+     * that belong to any of the specified test groups.
+     *
+     * @param packageName the package under which to look for classes and methods
+     * @param excludedGroups groups to exclude — classes with a class-level @Test annotation
+     *                       containing any of these groups will be skipped
+     * @return an iterator to collection of Object[]'s consisting of {Method method, Class clazz} pairs
+     */
+    public static Iterator<Object[]> getDataProviders(final String packageName, final Set<String> excludedGroups) {
         List<Object[]> data = new ArrayList<>();
         final ClassFinder classFinder = new ClassFinder();
         classFinder.find(packageName, Object.class);
 
         for (final Class<?> testClass : classFinder.getClasses()) {
             if (Modifier.isAbstract(testClass.getModifiers()) || Modifier.isInterface(testClass.getModifiers()))
+                continue;
+            if (hasExcludedGroup(testClass, excludedGroups))
                 continue;
             Set<Method> methodSet = Sets.newHashSet();
             methodSet.addAll(Arrays.asList(testClass.getDeclaredMethods()));
@@ -41,6 +57,17 @@ public class TestNGUtils {
         }
 
         return data.iterator();
+    }
+
+    /** Returns true if the class has a class-level @Test annotation with any group in excludedGroups. */
+    private static boolean hasExcludedGroup(final Class<?> testClass, final Set<String> excludedGroups) {
+        if (excludedGroups.isEmpty()) return false;
+        final Test testAnnotation = testClass.getAnnotation(Test.class);
+        if (testAnnotation == null) return false;
+        for (final String group : testAnnotation.groups()) {
+            if (excludedGroups.contains(group)) return true;
+        }
+        return false;
     }
 
     /**

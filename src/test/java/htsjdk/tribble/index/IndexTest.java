@@ -107,7 +107,7 @@ public class IndexTest extends HtsjdkTest {
 
     @Test(dataProvider = "writeIndexData")
     public void testWritePathIndex(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
-        try (final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+        try (final FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             // create the index
             final Index index = IndexFactory.createIndex(inputFile, codec, type);
             final Path path = fs.getPath(inputFile.getName() + ".index");

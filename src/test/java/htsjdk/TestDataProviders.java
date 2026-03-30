@@ -35,10 +35,13 @@ public class TestDataProviders extends HtsjdkTest {
                 "getDataProviders didn't find testAllDataProvidersData, which is in this class. Something is wrong.");
     }
 
+    /** Groups that require external infrastructure and are excluded from the default test run. */
+    private static final Set<String> EXCLUDED_GROUPS = Set.of("htsget", "ftp", "http", "sra", "ena");
+
     @DataProvider(name = "DataprovidersThatDontTestThemselves")
     private Iterator<Object[]> testAllDataProvidersData() throws Exception {
 
-        return TestNGUtils.getDataProviders("htsjdk");
+        return TestNGUtils.getDataProviders("htsjdk", EXCLUDED_GROUPS);
     }
 
     // runs all the @DataProviders it gets from DataprovidersThatDontTestThemselves.

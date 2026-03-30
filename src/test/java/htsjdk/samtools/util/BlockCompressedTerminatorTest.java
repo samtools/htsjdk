@@ -65,7 +65,7 @@ public class BlockCompressedTerminatorTest extends HtsjdkTest {
 
     @Test( dataProvider = "getFiles")
     public void testCheckTerminationForPaths(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
-        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())){
+        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())){
             final Path compressedFileInJimfs = Files.copy(compressedFile.toPath(), fs.getPath("something"));
             Assert.assertEquals(BlockCompressedInputStream.checkTermination(compressedFileInJimfs), expected);
         }

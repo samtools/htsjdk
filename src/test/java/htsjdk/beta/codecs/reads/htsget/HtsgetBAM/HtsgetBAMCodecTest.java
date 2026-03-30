@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 // NOTE: running these tests require a local htsget server
-
+@Test(groups = "htsget")
 public class HtsgetBAMCodecTest extends HtsjdkTest {
     private final static IOPath htsgetBAM = new HtsPath(
             HtsgetBAMFileReaderTest.HTSGET_ENDPOINT +

@@ -29,7 +29,7 @@ import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -50,7 +50,7 @@ public class LinearIndexTest extends HtsjdkTest {
 
     private LinearIndex idx;
 
-    @BeforeTest
+    @BeforeMethod
     public void setup() {
         idx = createTestIndex();
     }

@@ -84,13 +84,11 @@ import org.gradle.internal.os.OperatingSystem;
 tasks.withType(Test).configureEach { task ->
     task.outputs.upToDateWhen { false } // tests will always rerun
 
-    // Always run serially because there are some very badly behaved tests in HTSJDK that
-    // will cause errors and even deadlocks if run multi-threaded
     task.maxParallelForks = 1
 
     // set heap size for the test JVM(s)
     task.minHeapSize = "1G"
-    task.maxHeapSize = "2G"
+    task.maxHeapSize = "6G"
 
     task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
 
@@ -141,10 +139,12 @@ test {
 
    useTestNG {
        if (OperatingSystem.current().isUnix()) {
-           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "htsget"
        } else {
-           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "unix"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "htsget", "unix"
        }
+       parallel = "classes"
+       threadCount = 2 * Runtime.runtime.availableProcessors()
    }
 } dependsOn testWithDefaultReference, testWithOptimisticVCF4_4
 
