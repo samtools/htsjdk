@@ -2386,32 +2386,10 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
         return newSAM;
     }
 
-    /** Simple toString() that gives a little bit of useful info about the read. */
+    /** Returns this record formatted as it would appear in a SAM file. */
     @Override
     public String toString() {
-        final StringBuilder builder = new StringBuilder(64);
-        builder.append(getReadName());
-        if (getReadPairedFlag()) {
-            if (getFirstOfPairFlag()) {
-                builder.append(" 1/2");
-            }
-            else {
-                builder.append(" 2/2");
-            }
-        }
-
-        builder.append(' ')
-                .append(String.valueOf(getReadLength()))
-                .append('b');
-
-        if (getReadUnmappedFlag()) {
-            builder.append(" unmapped read.");
-        }
-        else {
-            builder.append(String.format(" aligned to %s:%d-%d.", getContig(), getAlignmentStart(), getAlignmentEnd()));
-        }
-
-        return builder.toString();
+        return getSAMString();
     }
 
     /**
