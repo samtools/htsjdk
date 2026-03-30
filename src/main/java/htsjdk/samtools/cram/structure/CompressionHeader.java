@@ -52,6 +52,7 @@ public class CompressionHeader {
     private final Map<Integer, EncodingDescriptor> tagEncodingMap = new TreeMap<>();
     private SubstitutionMatrix substitutionMatrix;
     private byte[][][] tagIDDictionary;
+    private TagKeyCache tagKeyCache;
 
     /**
      * Create a CompressionHeader using the default {@link CRAMEncodingStrategy}
@@ -153,6 +154,15 @@ public class CompressionHeader {
 
     public  void setTagIdDictionary(final byte[][][] dictionary) {
         this.tagIDDictionary = dictionary;
+        this.tagKeyCache = new TagKeyCache(dictionary);
+    }
+
+    /**
+     * Returns the {@link TagKeyCache} for looking up pre-computed tag key metadata.
+     * Built from the tag ID dictionary when the compression header is parsed.
+     */
+    public TagKeyCache getTagKeyCache() {
+        return tagKeyCache;
     }
 
     public void setSubstitutionMatrix(final SubstitutionMatrix substitutionMatrix) {
@@ -240,6 +250,7 @@ public class CompressionHeader {
                     final byte[] dictionaryBytes = new byte[size];
                     buffer.get(dictionaryBytes);
                     tagIDDictionary = parseDictionary(dictionaryBytes);
+                    tagKeyCache = new TagKeyCache(tagIDDictionary);
                 } else if (SM_substitutionMatrix.equals(key)) {
                     // parse subs matrix here:
                     final byte[] matrixBytes = new byte[SubstitutionMatrix.BASES_SIZE];
