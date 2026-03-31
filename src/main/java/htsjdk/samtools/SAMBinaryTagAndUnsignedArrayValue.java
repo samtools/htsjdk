@@ -39,6 +39,11 @@ public class SAMBinaryTagAndUnsignedArrayValue extends SAMBinaryTagAndValue {
         }
     }
 
+    /** Package-private constructor that skips validation, for use in BinaryTagCodec.readTags(). */
+    SAMBinaryTagAndUnsignedArrayValue(final short tag, final Object value, final boolean skipValidation) {
+        super(tag, value, skipValidation);
+    }
+
     /** Creates and returns a shallow copy of the list of tag/values. */
     @Override
     public SAMBinaryTagAndValue copy() {
