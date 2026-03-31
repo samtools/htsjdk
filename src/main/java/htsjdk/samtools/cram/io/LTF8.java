@@ -195,7 +195,7 @@ public class LTF8 {
             outputStream.write((int) ((value >> 48) & 0xFF));
             outputStream.write((int) ((value >> 40) & 0xFF));
             outputStream.write((int) ((value >> 32) & 0xFF));
-            outputStream.write((int) ((value >> 28) & 0xFF));
+            outputStream.write((int) ((value >> 24) & 0xFF));
             outputStream.write((int) ((value >> 16) & 0xFF));
             outputStream.write((int) ((value >> 8) & 0xFF));
             outputStream.write((int) (value & 0xFF));
