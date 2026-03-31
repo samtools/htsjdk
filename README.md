@@ -2,16 +2,14 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.samtools/htsjdk/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.samtools%22%20AND%20a%3A%22htsjdk%22)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/samtools/htsjdk)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
-[![Join the chat at https://gitter.im/samtools/htsjdk](https://badges.gitter.im/samtools/htsjdk.svg)](https://gitter.im/samtools/htsjdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-## A Java API for high-throughput sequencing data (HTS) formats.  
+## A Java API for high-throughput sequencing data (HTS) formats.
 
 HTSJDK is an implementation of a unified Java library for accessing
 common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also a number of useful utilities for 
 manipulating HTS data.
 
-> **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written and there is no support for BCFv2.2_**
+> **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written, VCFv4.4 can be read in lenient mode only, and there is no support for BCFv2.2._**
 
 ### Documentation & Getting Help
 
@@ -20,8 +18,6 @@ API documentation for all versions of HTSJDK since `1.128` are available through
 If you believe you have found a bug or have an issue with the library please: 
 1. Search the open and recently closed issues to ensure it has not already been reported;
 1. Then log an issue.
-
-The project has a [gitter chat room](https://gitter.im/samtools/htsjdk) if you would like to chat with the developers and others involved in the project.
 
 To receive announcements of releases and other significant project news please subscribe to the [htsjdk-announce](https://groups.google.com/forum/#!forum/htsjdk-announce) google group.
 
@@ -102,20 +98,14 @@ Broadly speaking the majority of the code is covered under the MIT license with 
 
 ### Java Minimum Version Support Policy
 
-Htsjdk currently targets Java 8 and is tested on both 8 and 11.
+Htsjdk requires Java 17 or later.  Support for Java 8 was dropped in the 4.0.0 release (August 2023).
 
-We intend to drop support for 8/11 and switch exclusively to 17+ in our next release (4.0.0).
-
-Given our promise of 6 months of warning before a move off of 8, we will atttempt to provide 3.x releases on demand if
-any critical bugs are discovered in the next 6 months.
-
-Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK
----- | ---- |-----------------------------------| ----
-6  | Feb 2013 | Aug 2013                          | Oct 2015
-7  | Apr 2015 | Oct 2015                          | Oct 2015
-8  | Jan 2019 | Feb 2022                          | TBD
-11 | Sep 2022 | Feb 2022                          | TBD
-17 | TBD      | TBD                               | TBD
+Java SE Major Release | End of Java SE Oracle Public Updates / OpenJDK support | End of Support in HTSJDK
+---- | ---- | ----
+6  | Feb 2013 | Oct 2015
+7  | Apr 2015 | Oct 2015
+8  | Jan 2019 | Aug 2023 (htsjdk 4.0.0)
+17 | Sep 2027 | Current minimum
 
  
 ### Meaning of the Htsjdk version number
@@ -131,11 +121,11 @@ We treat any accessible class/method/field as part of our API and attempt to min
   * Code which has not yet been released in a numbered version is considered unstable and subject to change without warning.
   * We consider changes to *public* code more disruptive than changes to *protected* code in classes that we believe are not generally subclassed by the downstream community.
   
-Our current version number has 3 parts. **ex: 2.19.0**
+Our current version number has 3 parts. **ex: 4.3.0**
 
-* **Major version bumps (2.19.0 -> 3.0.0)** allow large changes to the existing API's and require substantial changes in downstream projects. These are extremely rare. 
-* **Minor versions bumps ( 2.18.2 -> 2.19.0)** may include additions to the API and well as breaking changes which may require recompiling downstream projects. We attempt to limit breaking changes as much as possible and generally most projects which depend on htsjdk should be able to update to a new minor version with no changes or only simple and obvious changes. We may introduce deprecations which suggest but don't mandate more complex code changes. Minor releases may also remove functionality which has been deprecated for a long time.
-* **Patch version changes (2.18.1 -> 2.18.2)** include additions and possibly deprecations but no breaking changes.
+* **Major version bumps (3.0.5 -> 4.0.0)** allow large changes to the existing APIs and require substantial changes in downstream projects. These are extremely rare.
+* **Minor version bumps (4.2.0 -> 4.3.0)** may include additions to the API as well as breaking changes which may require recompiling downstream projects. We attempt to limit breaking changes as much as possible and generally most projects which depend on htsjdk should be able to update to a new minor version with no changes or only simple and obvious changes. We may introduce deprecations which suggest but don't mandate more complex code changes. Minor releases may also remove functionality which has been deprecated for a long time.
+* **Patch version changes (4.0.1 -> 4.0.2)** include additions and possibly deprecations but no breaking changes.
 
 
 
