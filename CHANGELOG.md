@@ -10,6 +10,47 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 5.0.0
+
+Adds **CRAM 3.1 write support** to htsjdk.  This is the culmination of the read-side codec work
+in 4.2.0 and the reader wiring in 4.3.0: htsjdk can now produce CRAM 3.1 files that are
+interoperable with samtools/htslib.
+
+### CRAM 3.1 Write Support
+
+- Enable CRAM 3.1 writing with all spec codecs: rANS Nx16, adaptive arithmetic Range coder, FQZComp, Name Tokenisation, and STRIPE
+- Add configurable compression profiles (FAST, NORMAL, BEST, ARCHIVE) with trial compression for automatic codec selection
+- Implement `TrialCompressor` to replace ad-hoc triple-compression for tags and align trial candidates with htslib
+- Add `GzipCodec` for direct Deflater/Inflater GZIP compression, wired into CRAM as a codec option
+- Strip NM/MD tags on CRAM encode and regenerate on decode, matching htslib behavior
+- Implement attached (same-slice) mate pair resolution
+- Align DataSeries content IDs with htslib for cross-implementation debugging
+- Remove unnecessary content digest tags from CRAM slice headers
+- Add `CramConverter` command-line tool for testing and benchmarking CRAM write profiles
+
+### Codec and Compression Optimizations
+
+- Refactor and optimize all rANS codecs: byte-array API, backwards-write encoding, and general simplifications
+- Optimize Name Tokeniser encoder: replace regex with hand-written parser; add per-type flags, STRIPE support, stream deduplication, and all-MATCH elimination
+- Optimize FQZComp, Range coder, and rANS encoder hot paths
+- Tune NORMAL profile codec assignments based on empirical compression testing
+
+### Performance
+
+- Replace `ByteArrayInputStream`/`ByteArrayOutputStream` with unsynchronized `CRAMByteReader`/`CRAMByteWriter` to eliminate synchronization overhead
+- Fuse read base restoration, CIGAR building, and NM/MD computation into a single pass during decode
+- Cache tag key metadata to eliminate per-record `String` allocation during CRAM decode
+- Pool `RANSNx16Decode` instances in the Name Tokeniser
+- Optimize BAM nibble-to-ASCII base decoding with a bulk lookup table
+
+### Testing and Infrastructure
+
+- Split CRAM 3.1 fidelity tests into per-profile classes for parallel execution
+- Reduce memory pressure in unit tests to eliminate OOM failures
+- Fix thread-safety bug in `VariantContextTestProvider` causing non-deterministic test counts
+
+---
+
 ## 4.3.0 (2025-05-09)
 
 Completes CRAM 3.1 read support by wiring the codec implementations (added in 4.2.0) into

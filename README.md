@@ -11,6 +11,8 @@ manipulating HTS data.
 
 > **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written, VCFv4.4 can be read in lenient mode only, and there is no support for BCFv2.2._**
 
+> **NOTE: _HTSJDK now supports both reading and writing CRAM 3.1 files.  CRAM 3.1 write support includes all codecs defined in the specification (rANS Nx16, adaptive arithmetic Range coder, FQZComp, Name Tokenisation, and STRIPE), configurable compression profiles (FAST, NORMAL, BEST, ARCHIVE), and trial compression for automatic codec selection.  Files produced by htsjdk are interoperable with samtools/htslib._**
+
 ### Documentation & Getting Help
 
 API documentation for all versions of HTSJDK since `1.128` are available through [javadoc.io](http://www.javadoc.io/doc/com.github.samtools/htsjdk).
