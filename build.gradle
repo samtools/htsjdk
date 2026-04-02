@@ -12,6 +12,7 @@ plugins {
     id 'com.palantir.git-version' version '0.11.0'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'com.github.spotbugs' version "5.0.13"
+    id 'com.gradleup.nmcp' version '1.4.4'
 }
 
 repositories {
@@ -242,25 +243,34 @@ publishing {
         }
     }
 
-    repositories {
-        maven {
-            credentials {
-                username = isRelease ? project.findProperty("sonatypeUsername") : System.env.ARTIFACTORY_USERNAME
-                password = isRelease ? project.findProperty("sonatypePassword") : System.env.ARTIFACTORY_PASSWORD
-            }
-            def release = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshot = "https://broadinstitute.jfrog.io/broadinstitute/libs-snapshot-local/"
-            url = isRelease ? release : snapshot
-        }
-    }
 }
 
 /**
  * Sign non-snapshot releases with our secret key.  This should never need to be invoked directly.
+ * Uses the system gpg command so that gpg-agent can prompt for the passphrase.
  */
 signing {
-    required { isRelease && gradle.taskGraph.hasTask("publishHtsjdkPublicationToMavenRepository") }
+    useGpgCmd()
     sign publishing.publications.htsjdk
+    required { isRelease }
+    tasks.withType(Sign).configureEach { onlyIf { isRelease } }
+}
+
+/**
+ * Publish to Maven Central via Sonatype Central Portal.
+ * Credentials: generate user tokens at https://central.sonatype.com (Account > User Token)
+ * and store as sonatypeUsername/sonatypePassword in ~/.gradle/gradle.properties
+ * or as ORG_GRADLE_PROJECT_sonatypeUsername/ORG_GRADLE_PROJECT_sonatypePassword env vars.
+ *
+ * Release:  ./gradlew publishAllPublicationsToCentralPortal -Drelease=true
+ * Snapshot: ./gradlew publishAllPublicationsToCentralPortalSnapshots
+ */
+nmcp {
+    publishAllPublicationsToCentralPortal {
+        username = project.findProperty("sonatypeUsername")
+        password = project.findProperty("sonatypePassword")
+        publishingType = "AUTOMATIC"
+    }
 }
 
 tasks.register('install') { dependsOn publishToMavenLocal }
