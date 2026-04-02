@@ -187,7 +187,7 @@ public class GeneralUtils {
      * @return
      */
     public static <T> List<List<T>> makePermutations(final List<T> objects, final int n, final boolean withReplacement) {
-        final List<List<T>> combinations = new ArrayList<List<T>>();
+        final List<List<T>> combinations = new ArrayList<>();
 
         if ( n <= 0 )
             ;
@@ -236,7 +236,7 @@ public class GeneralUtils {
         return 1;
     }
 
-    static public final <T> List<T> reverse(final List<T> l) {
+    static public <T> List<T> reverse(final List<T> l) {
         final List<T> newL = new ArrayList<T>(l);
         Collections.reverse(newL);
         return newL;
