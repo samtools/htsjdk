@@ -92,7 +92,7 @@ public class VCFCodec extends AbstractVCFCodec {
         boolean foundHeaderVersion = false;
         while (lineIterator.hasNext()) {
             line = lineIterator.peek();
-            lineNo++;
+            lineNo.incrementAndGet();
             if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
                 final String[] lineFields = line.substring(2).split("=");
                 if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0]) ) {
@@ -140,9 +140,9 @@ public class VCFCodec extends AbstractVCFCodec {
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) )
             return Collections.emptyList();
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
-            generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
+            generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo.get());
         if (filterString.isEmpty())
-            generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
+            generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo.get());
 
         // do we have the filter string cached?
         if ( filterHash.containsKey(filterString) )
