@@ -58,6 +58,14 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public static final String URI_TAG = "UR";
     public static final String SPECIES_TAG = "SP";
     public static final String DESCRIPTION_TAG = "DS";
+    public static final String TOPOLOGY_TAG = "TP";
+
+    /**
+     * Topology values.
+     */
+    public enum Topology {
+        linear, circular
+    }
 
     /**
      * If one sequence has this length, and another sequence had a different length, isSameSequence will
@@ -80,7 +88,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * The standard tags are stored in text header without type information, because the type of these tags is known.
      */
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, ALTERNATIVE_SEQUENCE_NAME_TAG, MD5_TAG, URI_TAG, SPECIES_TAG));
+            new HashSet<>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, ALTERNATIVE_SEQUENCE_NAME_TAG, MD5_TAG, URI_TAG, SPECIES_TAG, TOPOLOGY_TAG));
 
     // These are the chars matched by \\s.
     private static final char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
@@ -155,6 +163,20 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public SAMSequenceRecord setDescription(final String value) {
         setAttribute(DESCRIPTION_TAG, value);
         return this;
+    }
+
+    public Topology getTopology() {
+        final String value = getAttribute(TOPOLOGY_TAG);
+        return (value == null) ? null : Topology.valueOf(value);
+    }
+
+    public SAMSequenceRecord setTopology(final Topology value) {
+        setAttribute(TOPOLOGY_TAG, (value == null) ? null : value.name());
+        return this;
+    }
+
+    public boolean isCircular() {
+        return getTopology() == Topology.circular;
     }
 
     /**
