@@ -410,8 +410,12 @@ public class BinaryTagCodec {
         // Scan the backing array directly to avoid the double-pass of mark/reset/re-read
         final byte[] array = byteBuffer.array();
         final int start = byteBuffer.arrayOffset() + byteBuffer.position();
+        final int limit = byteBuffer.arrayOffset() + byteBuffer.limit();
         int end = start;
-        while (array[end] != 0) { end++; }
+        while (end < limit && array[end] != 0) { end++; }
+        if (end >= limit) {
+            throw new SAMFormatException("Null-terminated string tag value is not null terminated.");
+        }
         byteBuffer.position(byteBuffer.position() + (end - start) + 1); // advance past null terminator
         return StringUtil.bytesToString(array, start, end - start);
     }
