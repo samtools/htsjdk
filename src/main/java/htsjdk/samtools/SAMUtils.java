@@ -116,6 +116,20 @@ public final class SAMUtils {
             'N'
     };
 
+    /**
+     * Lookup table that maps each possible packed byte (0-255) directly to the two ASCII bases
+     * it encodes. Indexed by {@code (compressedByte & 0xFF) * 2}; the entry at that index is the
+     * high-nibble base and the next entry is the low-nibble base. This avoids per-nibble method
+     * calls and bit manipulation in the hot decode loop. Ported from htslib's {@code code2base} table.
+     */
+    private static final byte[] NIBBLE_PAIR_LOOKUP = new byte[512];
+    static {
+        for (int i = 0; i < 256; i++) {
+            NIBBLE_PAIR_LOOKUP[i * 2]     = COMPRESSED_LOOKUP_TABLE[(i >> 4) & 0xf];
+            NIBBLE_PAIR_LOOKUP[i * 2 + 1] = COMPRESSED_LOOKUP_TABLE[i & 0xf];
+        }
+    }
+
     public static final int MAX_PHRED_SCORE = 93;
 
     /**
@@ -140,25 +154,33 @@ public final class SAMUtils {
     }
 
     /**
-     * Convert from a byte array with bases stored in nybbles, with for example,=, A, C, G, T, N represented as 0, 1, 2, 4, 8, 15,
-     * to a a byte array containing =AaCcGgTtNn represented as ASCII.
+     * Convert from BAM's packed nibble representation to an ASCII byte array.
      *
-     * @param length           Number of bases (not bytes) to convert.
-     * @param compressedBases  Bases represented as nybbles, in BAM binary format.
-     * @param compressedOffset Byte offset in compressedBases to start.
-     * @return New byte array with bases as ASCII bytes.
+     * <p>In BAM format, each byte encodes two bases: the high nibble (bits 4-7) holds the first base
+     * and the low nibble (bits 0-3) holds the second. Nibble values map to IUPAC codes via
+     * {@code =ACMGRSVTWYHKDBN} (0-15). For odd-length sequences the low nibble of the last byte is
+     * unused.
+     *
+     * <p>Uses a 512-byte pre-computed lookup table ({@link #NIBBLE_PAIR_LOOKUP}) to decode two bases
+     * per iteration without per-nibble method calls, following the same approach as htslib's
+     * {@code code2base} table.
+     *
+     * @param length           number of bases (not bytes) to decode
+     * @param compressedBases  packed nibble-encoded bases in BAM binary format
+     * @param compressedOffset byte offset into {@code compressedBases} at which to start decoding
+     * @return new byte array of length {@code length} with bases as uppercase ASCII bytes
      */
     public static byte[] compressedBasesToBytes(final int length, final byte[] compressedBases, final int compressedOffset) {
         final byte[] ret = new byte[length];
-        int i;
-        for (i = 1; i < length; i += 2) {
-            final int compressedIndex = i / 2 + compressedOffset;
-            ret[i - 1] = compressedBaseToByteHigh(compressedBases[compressedIndex]);
-            ret[i] = compressedBaseToByteLow(compressedBases[compressedIndex]);
+        final int pairs = length / 2;
+        for (int i = 0; i < pairs; i++) {
+            final int lookupIndex = (compressedBases[i + compressedOffset] & 0xFF) * 2;
+            ret[i * 2]     = NIBBLE_PAIR_LOOKUP[lookupIndex];
+            ret[i * 2 + 1] = NIBBLE_PAIR_LOOKUP[lookupIndex + 1];
         }
-        // Last nybble
-        if (i == length) {
-            ret[i - 1] = compressedBaseToByteHigh(compressedBases[i / 2 + compressedOffset]);
+        // Odd-length: last base is in the high nibble of the final byte
+        if ((length & 1) != 0) {
+            ret[length - 1] = COMPRESSED_LOOKUP_TABLE[(compressedBases[pairs + compressedOffset] >> 4) & 0xF];
         }
         return ret;
     }
@@ -289,41 +311,6 @@ public final class SAMUtils {
             default:
                 throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: " + Character.toString((char) base) + "(" + base + ")");
         }
-    }
-
-    /**
-     * Returns the byte corresponding to a certain nybble
-     *
-     * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
-     * @return ASCII base, one of =ACGTNMRSVWYHKDB.
-     * @throws IllegalArgumentException if the base is not one of =ACGTNMRSVWYHKDB.
-     */
-    private static byte compressedBaseToByte(byte base) {
-        try {
-            return COMPRESSED_LOOKUP_TABLE[base];
-        } catch (IndexOutOfBoundsException e) {
-            throw new IllegalArgumentException("Bad base passed to charToCompressedBase: " + Character.toString((char) base) + "(" + base + ")");
-        }
-    }
-
-    /**
-     * Convert from BAM nybble representation of a base in low-order nybble to ASCII byte.
-     *
-     * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
-     * @return ASCII base, one of ACGTN=.
-     */
-    private static byte compressedBaseToByteLow(final int base) {
-        return compressedBaseToByte((byte) (base & 0xf));
-    }
-
-    /**
-     * Convert from BAM nybble representation of a base in high-order nybble to ASCII byte.
-     *
-     * @param base One of COMPRESSED_*_HIGH, a high-order nybble encoded base.
-     * @return ASCII base, one of ACGTN=.
-     */
-    private static byte compressedBaseToByteHigh(final int base) {
-        return compressedBaseToByte((byte) ((base >> 4) & 0xf));
     }
 
     /**

@@ -107,14 +107,16 @@ public class BAMRecord extends SAMRecord {
                         final int insertSize,
                         final byte[] restOfData) {
         super(header);
-        setReferenceIndex(referenceID);
+        // Set reference index and name directly, avoiding the round-trip through
+        // setReferenceIndex -> resolveNameFromIndex -> setReferenceName -> resolveIndexFromName
+        setReferenceNameAndIndex(resolveNameFromIndex(referenceID, header), referenceID);
         setAlignmentStart(coordinate);
         mReadNameLength = readNameLength;
         setMappingQuality(mappingQuality);
         mCigarLength = cigarLen;
         setFlags(flags);
         mReadLength = readLen;
-        setMateReferenceIndex(mateReferenceID);
+        setMateReferenceNameAndIndex(resolveNameFromIndex(mateReferenceID, header), mateReferenceID);
         setMateAlignmentStart(mateCoordinate);
         setInferredInsertSize(insertSize);
         mRestOfBinaryData = restOfData;

@@ -279,12 +279,61 @@ public class SAMUtilsTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCompressedBasesToBytes() {
+    public void testCompressedBasesToBytesAllNibbleValues() {
+        // Each byte encodes two bases. Test all 16 nibble values in both high and low positions.
         final byte[] compressedBases = new byte[]{1, 18, 36, 72, -113, -1, 51, 85, 102, 119, -103, -86, -69, -52, -35, -18};
         final byte[] bytes = SAMUtils.compressedBasesToBytes(2*compressedBases.length, compressedBases, 0);
         final byte[] expectedBases = new byte[]{'=', 'A', 'A', 'C', 'C', 'G', 'G', 'T', 'T', 'N', 'N', 'N', 'M', 'M',
                 'R', 'R', 'S', 'S', 'V', 'V', 'W', 'W', 'Y', 'Y', 'H', 'H', 'K', 'K', 'D', 'D', 'B', 'B'};
         Assert.assertEquals(new String(bytes), new String(expectedBases));
+    }
+
+    @Test
+    public void testCompressedBasesToBytesOddLength() {
+        // Odd-length: last base uses only the high nibble; low nibble is ignored
+        // 0x12 = nibbles 1,2 = A,C; 0x40 = nibbles 4,0 = G,=
+        final byte[] compressed = new byte[]{0x12, 0x40};
+        final byte[] result = SAMUtils.compressedBasesToBytes(3, compressed, 0);
+        Assert.assertEquals(new String(result), "ACG");
+    }
+
+    @Test
+    public void testCompressedBasesToBytesSingleBase() {
+        // Single base: high nibble of first byte only
+        final byte[] compressed = new byte[]{(byte) 0x80}; // nibble 8 = T
+        final byte[] result = SAMUtils.compressedBasesToBytes(1, compressed, 0);
+        Assert.assertEquals(new String(result), "T");
+    }
+
+    @Test
+    public void testCompressedBasesToBytesEmptySequence() {
+        final byte[] result = SAMUtils.compressedBasesToBytes(0, new byte[0], 0);
+        Assert.assertEquals(result.length, 0);
+    }
+
+    @Test
+    public void testCompressedBasesToBytesWithOffset() {
+        // Bytes: [junk, 0x12, 0x48] at offset 1 = A,C,G,T
+        final byte[] compressed = new byte[]{(byte) 0xFF, 0x12, 0x48};
+        final byte[] result = SAMUtils.compressedBasesToBytes(4, compressed, 1);
+        Assert.assertEquals(new String(result), "ACGT");
+    }
+
+    @Test
+    public void testCompressedBasesToBytesRoundTrip() {
+        // Round-trip: ASCII bases -> compressed -> back to ASCII
+        final byte[] originalBases = "ACGTACGTNN".getBytes();
+        final byte[] compressed = SAMUtils.bytesToCompressedBases(originalBases);
+        final byte[] decoded = SAMUtils.compressedBasesToBytes(originalBases.length, compressed, 0);
+        Assert.assertEquals(new String(decoded), new String(originalBases));
+    }
+
+    @Test
+    public void testCompressedBasesToBytesRoundTripOddLength() {
+        final byte[] originalBases = "ACGTACGTN".getBytes();
+        final byte[] compressed = SAMUtils.bytesToCompressedBases(originalBases);
+        final byte[] decoded = SAMUtils.compressedBasesToBytes(originalBases.length, compressed, 0);
+        Assert.assertEquals(new String(decoded), new String(originalBases));
     }
 
 
