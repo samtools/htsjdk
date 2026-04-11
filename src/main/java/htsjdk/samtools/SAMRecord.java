@@ -435,6 +435,24 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
     }
 
     /**
+     * Sets the reference name and index directly without resolving one from the other.
+     * The caller is responsible for ensuring the name and index are consistent.
+     */
+    void setReferenceNameAndIndex(final String referenceName, final int referenceIndex) {
+        mReferenceName = referenceName;
+        mReferenceIndex = referenceIndex;
+    }
+
+    /**
+     * Sets the mate reference name and index directly without resolving one from the other.
+     * The caller is responsible for ensuring the name and index are consistent.
+     */
+    void setMateReferenceNameAndIndex(final String mateReferenceName, final int mateReferenceIndex) {
+        mMateReferenceName = mateReferenceName;
+        mMateReferenceIndex = mateReferenceIndex;
+    }
+
+    /**
      * @return Mate reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no mate reference name
      */
     public String getMateReferenceName() {

@@ -279,11 +279,11 @@ public class BinaryTagCodec {
             final byte tagType = byteBuffer.get();
             final SAMBinaryTagAndValue tmp;
             if (tagType != 'B') {
-                tmp = new SAMBinaryTagAndValue(tag, readSingleValue(tagType, byteBuffer, validationStringency));
+                tmp = new SAMBinaryTagAndValue(tag, readSingleValue(tagType, byteBuffer, validationStringency), true);
             } else {
                 final TagValueAndUnsignedArrayFlag valueAndFlag = readArray(byteBuffer, validationStringency);
-                if (valueAndFlag.isUnsignedArray) tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, valueAndFlag.value);
-                else tmp = new SAMBinaryTagAndValue(tag, valueAndFlag.value);
+                if (valueAndFlag.isUnsignedArray) tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, valueAndFlag.value, true);
+                else tmp = new SAMBinaryTagAndValue(tag, valueAndFlag.value, true);
             }
 
             // If samjdk wrote the BAM then the attributes will be in lowest->highest tag order, to inserting at the
@@ -294,7 +294,7 @@ public class BinaryTagCodec {
                 tail = tmp;
             }
             else if (tmp.tag > tail.tag) {
-                tail.insert(tmp);
+                tail.next = tmp;
                 tail = tmp;
             }
             else {
@@ -407,19 +407,16 @@ public class BinaryTagCodec {
     }
 
     private static String readNullTerminatedString(final ByteBuffer byteBuffer) {
-        // Count the number of bytes in the string
-        byteBuffer.mark();
-        final int startPosition = byteBuffer.position();
-        while (byteBuffer.get() != 0) {}
-        final int endPosition = byteBuffer.position();
-
-        // Don't count null terminator
-        final byte[] buf = new byte[endPosition - startPosition - 1];
-        // Go back to the start of the string and read out the bytes
-        byteBuffer.reset();
-        byteBuffer.get(buf);
-        // Skip over the null terminator
-        byteBuffer.get();
-        return StringUtil.bytesToString(buf);
+        // Scan the backing array directly to avoid the double-pass of mark/reset/re-read
+        final byte[] array = byteBuffer.array();
+        final int start = byteBuffer.arrayOffset() + byteBuffer.position();
+        final int limit = byteBuffer.arrayOffset() + byteBuffer.limit();
+        int end = start;
+        while (end < limit && array[end] != 0) { end++; }
+        if (end >= limit) {
+            throw new SAMFormatException("Null-terminated string tag value is not null terminated.");
+        }
+        byteBuffer.position(byteBuffer.position() + (end - start) + 1); // advance past null terminator
+        return StringUtil.bytesToString(array, start, end - start);
     }
 }

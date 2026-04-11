@@ -65,6 +65,15 @@ public class SAMBinaryTagAndValue implements Serializable {
         this.value = value;
     }
 
+    /**
+     * Package-private constructor that skips type validation, for use in performance-critical
+     * paths (e.g. BinaryTagCodec.readTags) where the value type is known to be valid.
+     */
+    SAMBinaryTagAndValue(final short tag, final Object value, final boolean skipValidation) {
+        this.tag = tag;
+        this.value = value;
+    }
+
     // Inspect the proposed value to determine if it is an allowed value type,
     // and if the value is in range.
     protected static boolean isAllowedAttributeValue(final Object value) {
