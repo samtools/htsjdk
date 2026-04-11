@@ -154,15 +154,26 @@ public class GzipCodec {
         // Write header (reserves space; for BGZF the block size is patched after deflation)
         final int headerSize = writeHeader(output, format);
 
-        // Deflate
-        deflater.reset();
-        input.position(inputPos); // ensure input is at start for deflater
-        deflater.setInput(input);
-        deflater.finish();
+        // Extract input bytes for deflater (byte[] API for compatibility with LibdeflateDeflater)
+        final byte[] inputBytes;
+        final int inputOff;
+        input.position(inputPos);
+        if (input.hasArray()) {
+            inputBytes = input.array();
+            inputOff = input.arrayOffset() + inputPos;
+        } else {
+            inputBytes = new byte[inputSize];
+            input.get(inputBytes);
+            inputOff = 0;
+        }
 
-        // Deflate into the output buffer (after the header)
+        // Deflate into a temporary byte[] then copy to output buffer
+        deflater.reset();
+        deflater.setInput(inputBytes, inputOff, inputSize);
+        deflater.finish();
         while (!deflater.finished()) {
-            deflater.deflate(output);
+            final int n = deflater.deflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
+            output.position(output.position() + n);
         }
 
         // Write trailer: CRC32 + ISIZE (little-endian)
@@ -292,18 +303,29 @@ public class GzipCodec {
             throw new IllegalArgumentException("Invalid GZIP block: no room for deflated data and trailer");
         }
 
-        // Set up inflater with the deflated data
+        // Extract deflated bytes for inflater (byte[] API for compatibility with LibdeflateInflater)
+        final byte[] deflatedBytes;
+        final int deflatedOff;
+        if (input.hasArray()) {
+            deflatedBytes = input.array();
+            deflatedOff = input.arrayOffset() + deflatedStart;
+        } else {
+            deflatedBytes = new byte[deflatedSize];
+            input.position(deflatedStart);
+            input.get(deflatedBytes);
+            deflatedOff = 0;
+        }
+
         inflater.reset();
-        final ByteBuffer deflatedSlice = input.duplicate();
-        deflatedSlice.position(deflatedStart);
-        deflatedSlice.limit(deflatedEnd);
-        inflater.setInput(deflatedSlice);
+        inflater.setInput(deflatedBytes, deflatedOff, deflatedSize);
 
         // Inflate into output
         try {
             int totalInflated = 0;
             while (!inflater.finished() && output.hasRemaining()) {
-                totalInflated += inflater.inflate(output);
+                final int n = inflater.inflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
+                output.position(output.position() + n);
+                totalInflated += n;
             }
 
             // Read trailer: CRC32 + ISIZE

@@ -25,6 +25,7 @@ package htsjdk.samtools.util.zip;
 
 import com.fulcrumgenomics.jlibdeflate.LibdeflateCompressor;
 
+import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 
 /**
@@ -71,6 +72,19 @@ class LibdeflateDeflater extends Deflater {
     }
 
     @Override
+    public void setInput(final ByteBuffer input) {
+        final int len = input.remaining();
+        if (input.hasArray()) {
+            setInput(input.array(), input.arrayOffset() + input.position(), len);
+            input.position(input.limit());
+        } else {
+            final byte[] bytes = new byte[len];
+            input.get(bytes);
+            setInput(bytes, 0, len);
+        }
+    }
+
+    @Override
     public void finish() {
         this.finishing = true;
     }
@@ -93,6 +107,21 @@ class LibdeflateDeflater extends Deflater {
 
         done = true;
         return compressed;
+    }
+
+    @Override
+    public int deflate(final ByteBuffer output) {
+        return deflate(output, Deflater.NO_FLUSH);
+    }
+
+    @Override
+    public int deflate(final ByteBuffer output, final int flush) {
+        if (!output.hasArray()) {
+            throw new UnsupportedOperationException("LibdeflateDeflater requires a heap-backed ByteBuffer for output");
+        }
+        final int n = deflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
+        output.position(output.position() + n);
+        return n;
     }
 
     @Override
