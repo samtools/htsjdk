@@ -44,7 +44,7 @@ class SnappyLoaderInternal {
          * IOException: potentially thrown by the `test.write` and `test.close` calls.
          * SnappyError: potentially thrown for a variety of reasons by Snappy.
          */
-        catch (final ExceptionInInitializerError | IllegalStateException | IOException | SnappyError e) {
+        catch (final ExceptionInInitializerError | UnsatisfiedLinkError | IllegalStateException | IOException | SnappyError e) {
             logger.warn(e, "Snappy native library failed to load.");
         }
         snappyAvailable = tmpSnappyAvailable;
