@@ -60,6 +60,10 @@ java {
     withSourcesJar()
 }
 
+// Version is derived from git tags via the palantir git-version plugin.
+// On a tagged commit (e.g. tag "4.3.0") the version is "4.3.0".
+// On a later commit it includes the distance and hash, e.g. "4.3.0-3-gabcdef0".
+// Without -Drelease=true, "-SNAPSHOT" is appended (e.g. "4.3.0-3-gabcdef0-SNAPSHOT").
 final isRelease = Boolean.getBoolean("release")
 final gitVersion = gitVersion().replaceAll("\\.dirty", "")
 version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
