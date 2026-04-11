@@ -23,13 +23,18 @@
  */
 package htsjdk.samtools.util.zip;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.BlockGunzipper;
+
 import java.util.zip.Inflater;
 
 /**
  * Factory for {@link Inflater} objects used by {@link BlockGunzipper}.
  * This class may be extended to provide alternative inflaters (e.g., for improved performance).
- * The default implementation returns a JDK {@link Inflater}
+ *
+ * <p>By default, if {@link Defaults#USE_LIBDEFLATE} is true and the native library is available,
+ * this factory will create a {@link LibdeflateInflater}.  Otherwise it falls back to the
+ * JDK {@link Inflater}.</p>
  */
 public class InflaterFactory {
 
@@ -40,10 +45,12 @@ public class InflaterFactory {
     /**
      * Returns an inflater object that will be used when reading DEFLATE compressed files.
      * Subclasses may override to provide their own inflater implementation.
-     * The default implementation returns a JDK {@link Inflater}
      * @param gzipCompatible if true then use GZIP compatible compression
      */
     public Inflater makeInflater(final boolean gzipCompatible) {
+        if (Defaults.USE_LIBDEFLATE && DeflaterFactory.isLibdeflateAvailable()) {
+            return new LibdeflateInflater(gzipCompatible);
+        }
         return new Inflater(gzipCompatible);
     }
 }

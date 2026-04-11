@@ -104,6 +104,13 @@ public class Defaults {
 
 
     /**
+     * Whether to attempt to use jlibdeflate (libdeflate via JNI) for DEFLATE compression and decompression.
+     * When true, the default deflater/inflater factories will try to load the native library and fall back
+     * to the JDK implementation if it is not available.  Default = true.
+     */
+    public static final boolean USE_LIBDEFLATE;
+
+    /**
      * The name of the system property that disables snappy.  Default = "snappy.disable".
      */
     public static final String DISABLE_SNAPPY_PROPERTY_NAME = "snappy.disable";
@@ -138,6 +145,7 @@ public class Defaults {
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
+        USE_LIBDEFLATE = getBooleanProperty("use_libdeflate", true);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
         OPTIMISTIC_VCF_4_4 = getBooleanProperty(OPTIMISTIC_VCF_4_4_PROPERTY, false);
     }
@@ -162,6 +170,7 @@ public class Defaults {
         result.put("EBI_REFERENCE_SERVICE_URL_MASK", EBI_REFERENCE_SERVICE_URL_MASK);
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
         result.put("SAM_FLAG_FIELD_FORMAT", SAM_FLAG_FIELD_FORMAT);
+        result.put("USE_LIBDEFLATE", USE_LIBDEFLATE);
         result.put("DISABLE_SNAPPY_COMPRESSOR", DISABLE_SNAPPY_COMPRESSOR);
         return Collections.unmodifiableSortedMap(result);
     }
