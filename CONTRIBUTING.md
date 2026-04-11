@@ -14,6 +14,12 @@ To run tests:
 ./gradlew test
 ```
 
+To install to your local Maven repository (e.g. for testing with downstream projects):
+
+```bash
+./gradlew install
+```
+
 ## Publishing to Maven Central
 
 HTSJDK is published to Maven Central via the [Sonatype Central Portal](https://central.sonatype.com).

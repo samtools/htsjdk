@@ -9,9 +9,9 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id 'com.palantir.git-version' version '0.11.0'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id 'com.github.spotbugs' version "5.0.13"
+    id 'com.palantir.git-version' version '5.0.0'
+    id 'com.gradleup.shadow' version '9.4.1'
+    id 'com.github.spotbugs' version "6.4.8"
     id 'com.gradleup.nmcp' version '1.4.4'
 }
 
@@ -61,7 +61,7 @@ java {
 }
 
 final isRelease = Boolean.getBoolean("release")
-final gitVersion = gitVersion().replaceAll(".dirty", "")
+final gitVersion = gitVersion().replaceAll("\\.dirty", "")
 version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
 
 logger.info("build for version:" + version)
@@ -101,24 +101,25 @@ tasks.withType(Test).configureEach { task ->
 
     int count = 0
     // listen to events in the test execution lifecycle
-
-    beforeTest { descriptor ->
-        count++
-        if (count % 200 == 0) {
-            logger.lifecycle("Finished " + Integer.toString(count++) + " tests")
-        }
-    }
-
-    testLogging {
-        testLogging {
-            events "skipped", "failed"
-            exceptionFormat = "full"
-        }
-        afterSuite { desc, result ->
-            if (!desc.parent) { // will match the outermost suite
+    task.addTestListener(new TestListener() {
+        void beforeSuite(TestDescriptor suite) {}
+        void afterSuite(TestDescriptor suite, TestResult result) {
+            if (!suite.parent) {
                 println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
             }
         }
+        void beforeTest(TestDescriptor descriptor) {
+            count++
+            if (count % 200 == 0) {
+                logger.lifecycle("Finished " + Integer.toString(count) + " tests")
+            }
+        }
+        void afterTest(TestDescriptor descriptor, TestResult result) {}
+    })
+
+    testLogging {
+        events "skipped", "failed"
+        exceptionFormat = "full"
     }
 
 }
@@ -184,27 +185,27 @@ tasks.register('testExternalApis', Test) {
 
 if(project == rootProject) {
     wrapper {
-        gradleVersion = '8.5'
+        gradleVersion = '9.4.1'
     }
 }
 
 spotbugs {
-    reportLevel = 'high'
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf('HIGH')
     excludeFilter = file('gradle/spotbugs-exclude.xml')
 }
 
 
 spotbugsMain {
     reports {
-        xml.enabled = false
-        html.enabled = true
+        xml.required = false
+        html.required = true
     }
 }
 
 spotbugsTest {
     reports {
-        xml.enabled = false
-        html.enabled = true
+        xml.required = false
+        html.required = true
     }
 }
 
@@ -251,9 +252,11 @@ publishing {
  */
 signing {
     useGpgCmd()
-    sign publishing.publications.htsjdk
-    required { isRelease }
-    tasks.withType(Sign).configureEach { onlyIf { isRelease } }
+    sign(publishing.publications.htsjdk)
+    required = { isRelease && gradle.taskGraph.hasTask("publishAllPublicationsToCentralPortal") }
+    tasks.withType(Sign).configureEach {
+        onlyIf { isRelease && gradle.taskGraph.hasTask("publishAllPublicationsToCentralPortal") }
+    }
 }
 
 /**
