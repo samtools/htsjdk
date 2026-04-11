@@ -818,7 +818,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
     /**
      * Test that when an insertion fails the base quality check, readBase is still
      * advanced so that subsequent insertions in the same read are reported at the
-     * correct offset. 
+     * correct offset.
      *
      * CIGAR: 10M1I1M1I10M (read length 23)
      * Quality string assigns BQ=5 to the first inserted base (pos 10) and BQ=30
