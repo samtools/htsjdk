@@ -118,6 +118,8 @@ tasks.withType(Test).configureEach { task ->
 
 tasks.register('testWithDefaultReference', Test) {
     description = "Run tests with a default reference File"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     jvmArgs += '-Dsamjdk.reference_fasta=src/test/resources/htsjdk/samtools/cram/ce.fa'
 
     useTestNG {
@@ -127,6 +129,8 @@ tasks.register('testWithDefaultReference', Test) {
 
 tasks.register('testWithOptimisticVCF4_4', Test) {
     description = "Run tests with optimistic VCF 4.4 reading"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     jvmArgs += '-Dsamjdk.optimistic_vcf_4_4=true'
 
     useTestNG {
@@ -151,6 +155,8 @@ test {
 
 tasks.register('testFTP', Test) {
     description = "Runs the tests that require connection to a remote ftp server"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     useTestNG {
         includeGroups "ftp"
         excludeGroups "slow", "broken"
@@ -159,6 +165,8 @@ tasks.register('testFTP', Test) {
 
 tasks.register('testExternalApis', Test) {
     description = "Run the SRA, ENA, and HTTP tests (tests that interact with external APIs)"
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
     useTestNG {

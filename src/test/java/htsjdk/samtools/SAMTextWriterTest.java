@@ -85,7 +85,7 @@ public class SAMTextWriterTest extends HtsjdkTest {
         final File samFile = File.createTempFile("tmp.", ".sam");
         samFile.deleteOnExit();
         final Map<String, Object> tagMap = new HashMap<String, Object>();
-        tagMap.put("XC", new Character('q'));
+        tagMap.put("XC", 'q');
         tagMap.put("XI", 12345);
         tagMap.put("XF", 1.2345f);
         tagMap.put("XS", "Hi,Mom!");
