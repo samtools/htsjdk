@@ -102,11 +102,11 @@ class LibdeflateDeflater extends Deflater {
 
     @Override
     public void reset() {
-        inputBuf = null;
-        inputOff = 0;
-        inputLen = 0;
+        inputBuf  = null;
+        inputOff  = 0;
+        inputLen  = 0;
         finishing = false;
-        done = false;
+        done      = false;
     }
 
     @Override
