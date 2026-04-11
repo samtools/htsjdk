@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2026 Fulcrum Genomics
+ * Copyright (c) 2026 Tim Fennell
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -88,7 +88,7 @@ class LibdeflateDeflater extends Deflater {
         if (compressed == -1) {
             // Output buffer too small — caller will handle this (e.g. fall back to no-compression)
             done = false;
-            return len; // fill the buffer to signal it didn't fit; finished() returns false
+            return 0;
         }
 
         done = true;
@@ -97,7 +97,7 @@ class LibdeflateDeflater extends Deflater {
 
     @Override
     public boolean finished() {
-        return done;
+        return finishing && done;
     }
 
     @Override
