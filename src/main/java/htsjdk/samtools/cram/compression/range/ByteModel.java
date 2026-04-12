@@ -38,6 +38,12 @@ public class ByteModel {
         this.totalFrequency = numSymbols;
         this.maxSymbol = numSymbols - 1;
         data = new int[(maxSymbol + 1) * 2];
+        reset();
+    }
+
+    /** Reset all frequencies to 1 and restore natural symbol ordering. */
+    public void reset() {
+        totalFrequency = maxSymbol + 1;
         for (int i = 0; i <= maxSymbol; i++) {
             data[i * 2] = 1;       // frequency
             data[i * 2 + 1] = i;   // symbol

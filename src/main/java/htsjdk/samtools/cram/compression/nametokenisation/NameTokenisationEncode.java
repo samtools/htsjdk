@@ -153,8 +153,8 @@ public class NameTokenisationEncode {
 
         if (nameIndexMap.containsKey(name)) {
             // duplicate name, there is no need to tokenise the name, just encode the index of the duplicate
-            final String duplicateIndex = String.valueOf(nameIndex - nameIndexMap.get(name));
-            return List.of(new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DUP, duplicateIndex));
+            final int duplicateIndex = nameIndex - nameIndexMap.get(name);
+            return List.of(new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DUP, String.valueOf(duplicateIndex)));
         }
 
         final List<EncodeToken> encodedTokens = new ArrayList<>(NameTokenisationDecode.DEFAULT_POSITION_ALLOCATION);
@@ -199,20 +199,24 @@ public class NameTokenisationEncode {
                     relativeValue = null;
                 } else if (type==TokenStreams.TOKEN_DIGITS &&
                         (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA)) {
-                    int d = Integer.parseInt(relativeValue) - Integer.parseInt(prevToken.getActualValue());
+                    final int curVal = Integer.parseInt(relativeValue);
+                    final int d = curVal - Integer.parseInt(prevToken.getActualValue());
                     tokenFrequencies[i]++;
                     if (d >= 0 && d < 256 && tokenFrequencies[i] > nameIndex / 2) {
                         type = TokenStreams.TOKEN_DELTA;
-                        relativeValue = String.valueOf(d);
+                        encodedTokens.add(new EncodeToken(type, fragmentValue, d));
+                        continue;
                     }
                 } else if (type == TokenStreams.TOKEN_DIGITS0 &&
                         prevToken.getActualValue().length() == relativeValue.length() &&
                         (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0 || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
-                    int d = Integer.parseInt(relativeValue) - Integer.parseInt(prevToken.getActualValue());
+                    final int curVal = Integer.parseInt(relativeValue);
+                    final int d = curVal - Integer.parseInt(prevToken.getActualValue());
                     tokenFrequencies[i]++;
                     if (d >= 0 && d < 256 && tokenFrequencies[i] > nameIndex / 2) {
                         type = TokenStreams.TOKEN_DELTA0;
-                        relativeValue = String.valueOf(d);
+                        encodedTokens.add(new EncodeToken(type, fragmentValue, d));
+                        continue;
                     }
                 }
             }
@@ -322,12 +326,12 @@ public class NameTokenisationEncode {
             switch (type) {
                 case TokenStreams.TOKEN_DIFF:
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIFF, numNames * 4)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
+                            .putInt(encodeToken.getRelativeValueAsInt());
                     break;
 
                 case TokenStreams.TOKEN_DUP:
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DUP, numNames * 4)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
+                            .putInt(encodeToken.getRelativeValueAsInt());
                     break;
 
                 case TokenStreams.TOKEN_STRING:
@@ -344,24 +348,24 @@ public class NameTokenisationEncode {
 
                 case TokenStreams.TOKEN_DIGITS:
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS, numNames * 4)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
+                            .putInt(encodeToken.getRelativeValueAsInt());
                     break;
 
                 case TokenStreams.TOKEN_DIGITS0:
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS0, numNames * 4)
-                            .putInt(Integer.parseInt(encodeToken.getRelativeValue()));
+                            .putInt(encodeToken.getRelativeValueAsInt());
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DZLEN, numNames)
                         .put((byte) encodeToken.getRelativeValue().length());
                     break;
 
                 case TokenStreams.TOKEN_DELTA:
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DELTA, numNames * 1)
-                            .put((byte)Integer.parseInt(encodeToken.getRelativeValue()));
+                            .put((byte) encodeToken.getRelativeValueAsInt());
                     break;
 
                 case TokenStreams.TOKEN_DELTA0:
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DELTA0, numNames * 1)
-                            .put((byte)Integer.parseInt(encodeToken.getRelativeValue()));
+                            .put((byte) encodeToken.getRelativeValueAsInt());
                     break;
 
                 case TokenStreams.TOKEN_NOP:

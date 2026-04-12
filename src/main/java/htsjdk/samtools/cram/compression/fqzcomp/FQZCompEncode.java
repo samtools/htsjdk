@@ -32,6 +32,61 @@ public class FQZCompEncode {
     private static final int CTX_SIZE = 1 << 16;
     private static final int NUMBER_OF_SYMBOLS = 256;
 
+    // Reusable buffer to avoid per-call allocation of quality data array
+    private byte[] pooledQualData;
+
+    // Pooled model arrays to avoid 65K+ allocations per compress() call.
+    // qualityModels are keyed by maxSymbol+1 (numSymbols) since that varies per block.
+    private ByteModel[] pooledQualityModels;
+    private int pooledQualityModelsNumSymbols;
+    private final ByteModel[] pooledLengthModels = new ByteModel[4];
+    private ByteModel pooledReverseModel;
+    private ByteModel pooledDupModel;
+
+    private ByteModel[] getOrCreateQualityModels(final int numSymbols) {
+        if (pooledQualityModels == null || pooledQualityModelsNumSymbols != numSymbols) {
+            pooledQualityModels = new ByteModel[CTX_SIZE];
+            for (int i = 0; i < CTX_SIZE; i++) {
+                pooledQualityModels[i] = new ByteModel(numSymbols);
+            }
+            pooledQualityModelsNumSymbols = numSymbols;
+        } else {
+            for (int i = 0; i < CTX_SIZE; i++) {
+                pooledQualityModels[i].reset();
+            }
+        }
+        return pooledQualityModels;
+    }
+
+    private ByteModel[] getOrCreateLengthModels() {
+        for (int i = 0; i < 4; i++) {
+            if (pooledLengthModels[i] == null) {
+                pooledLengthModels[i] = new ByteModel(NUMBER_OF_SYMBOLS);
+            } else {
+                pooledLengthModels[i].reset();
+            }
+        }
+        return pooledLengthModels;
+    }
+
+    private ByteModel getOrCreateReverseModel() {
+        if (pooledReverseModel == null) {
+            pooledReverseModel = new ByteModel(2);
+        } else {
+            pooledReverseModel.reset();
+        }
+        return pooledReverseModel;
+    }
+
+    private ByteModel getOrCreateDupModel() {
+        if (pooledDupModel == null) {
+            pooledDupModel = new ByteModel(2);
+        } else {
+            pooledDupModel.reset();
+        }
+        return pooledDupModel;
+    }
+
     // Parameter flag masks (same as in FQZParam)
     private static final int PFLAG_DO_DEDUP  = 0x02;
     private static final int PFLAG_DO_LEN    = 0x04;
@@ -104,24 +159,21 @@ public class FQZCompEncode {
             }
         }
 
-        // Pre-process: reverse quality arrays for reverse-complemented reads
-        final byte[] qualData = new byte[uncompressedSize];
-        inBuffer.get(qualData);
+        // Pre-process: copy quality data into reusable buffer, reverse if needed
+        if (pooledQualData == null || pooledQualData.length < uncompressedSize) {
+            pooledQualData = new byte[uncompressedSize];
+        }
+        final byte[] qualData = pooledQualData;
+        inBuffer.get(qualData, 0, uncompressedSize);
         if (params.doReverse) {
             reverseQualitiesInPlace(qualData, recordLengths, bamFlags);
         }
 
-        // Initialize models and range coder
-        final ByteModel[] qualityModels = new ByteModel[CTX_SIZE];
-        for (int i = 0; i < CTX_SIZE; i++) {
-            qualityModels[i] = new ByteModel(params.maxSymbol + 1);
-        }
-        final ByteModel[] lengthModels = new ByteModel[4];
-        for (int i = 0; i < 4; i++) {
-            lengthModels[i] = new ByteModel(NUMBER_OF_SYMBOLS);
-        }
-        final ByteModel reverseModel = new ByteModel(2);
-        final ByteModel dupModel = new ByteModel(2);
+        // Initialize models (pooled to avoid 65K+ allocations per call) and range coder
+        final ByteModel[] qualityModels = getOrCreateQualityModels(params.maxSymbol + 1);
+        final ByteModel[] lengthModels = getOrCreateLengthModels();
+        final ByteModel reverseModel = getOrCreateReverseModel();
+        final ByteModel dupModel = getOrCreateDupModel();
         final RangeCoder rangeCoder = new RangeCoder();
 
         // Set up range coder to write to byte[] starting after the header

@@ -952,17 +952,19 @@ public class SequenceUtil {
     }
 
 
-    public static byte[] calculateMD5(final byte[] data, final int offset, final int len) {
-        final MessageDigest md5_MessageDigest;
+    private static final ThreadLocal<MessageDigest> md5Digest = ThreadLocal.withInitial(() -> {
         try {
-            md5_MessageDigest = MessageDigest.getInstance("MD5");
-            md5_MessageDigest.reset();
-
-            md5_MessageDigest.update(data, offset, len);
-            return md5_MessageDigest.digest();
+            return MessageDigest.getInstance("MD5");
         } catch (final NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    });
+
+    public static byte[] calculateMD5(final byte[] data, final int offset, final int len) {
+        final MessageDigest md = md5Digest.get();
+        md.reset();
+        md.update(data, offset, len);
+        return md.digest();
     }
 
     /**
