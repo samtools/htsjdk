@@ -379,6 +379,9 @@ public class Container {
      * @throws CRAMException when the Container is in an invalid state
      */
     private void distributeIndexingParametersToSlices() {
+        if (slices.isEmpty()) {
+            return;
+        }
         final int lastSliceIndex = slices.size() - 1;
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slices.get(i);
