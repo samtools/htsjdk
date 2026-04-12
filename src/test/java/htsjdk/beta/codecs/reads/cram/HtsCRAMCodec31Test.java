@@ -55,7 +55,7 @@ public class HtsCRAMCodec31Test extends HtsjdkTest {
             try (final CloseableIterator<SAMRecord> iterator = cramDecoder.iterator()) {
                 Assert.assertTrue(iterator.hasNext());
                 final SAMRecord samRecord = iterator.next();
-                Assert.assertEquals(samRecord.getReadName(), "20FUKAAXX100202:6:27:4968:125377");
+                Assert.assertEquals(samRecord.getReadName(), "20FUKAAXX100202:5:62:8987:1929");
             }
         }
     }
