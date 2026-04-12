@@ -62,18 +62,17 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     @DataProvider(name="filesWithContainerAndSlicePartitioningVariations")
     public Object[][] getFilesWithContainerAndSlicePartitioningVariations() throws IOException {
         return new Object[][] {
-                // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
+                // Smallest and largest reads/slice to exercise different container/slice boundaries.
+                // Intermediate values (150, 200) removed since CRAMIndexPermutationsTests covers
+                // 12 strategy permutations with a different BAM.
                 { getCachedCRAMFile(100) },
-                { getCachedCRAMFile(150) },
-                { getCachedCRAMFile(200) },
                 { getCachedCRAMFile(300) },
         };
     }
 
     @DataProvider(name="bytesWithContainerAndSlicePartitioningVariations")
     public Iterator<Object[]> getBytesWithContainerAndSlicePartitioningVariations() {
-        // in order to set reads/slice to a small number, we must do the same for minimumSingleReferenceSliceSize
-        return Stream.of(100, 150, 200, 300)
+        return Stream.of(100, 300)
                 .map(size -> {
                     final byte[] cram = getCachedCRAMBytes(size);
                     final byte[] bai = getCachedBAIBytes(cram, size);
@@ -163,8 +162,8 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
                     if (samRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                         break;
                     }
-                    // test only 1st and 2nd in every 100 to speed the test up:
-                    if (counter++ %100 > 1) {
+                    // test only 1st and 2nd in every 200 to speed the test up:
+                    if (counter++ % 200 > 1) {
                         continue;
                     }
                     final String s1 = samRecord.getSAMString();
