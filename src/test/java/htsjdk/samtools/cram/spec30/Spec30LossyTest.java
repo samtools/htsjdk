@@ -83,13 +83,7 @@ public class Spec30LossyTest extends HtsSpecsComplianceTestBase {
         assertCramMatchesSam("1006_seq");
     }
 
-    // Known limitation: when CF_UNKNOWN_BASES (bit 0x8) is set, restoreBasesAndTags() returns a
-    // simple readLength-M CIGAR without processing read features. The CRAM spec says soft-clip
-    // data is stored in the SC data series and should be used to reconstruct the original CIGAR
-    // even when sequence is '*'. Fixing this requires refactoring restoreBasesAndTags() to
-    // separate CIGAR construction from base restoration.
-    // See CRAMRecordReadFeatures.restoreBasesAndTags() line ~561.
-    @Test(enabled = false)
+    @Test
     public void testSequenceStarWithSoftClips() throws IOException {
         assertCramMatchesSam("1007_seq");
     }

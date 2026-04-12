@@ -558,25 +558,34 @@ public class CRAMRecordReadFeatures {
             final SubstitutionMatrix substitutionMatrix,
             final boolean computeMdNm) {
 
-        if (isUnknownBases || readLength == 0) {
+        if (readLength == 0) {
             final Cigar cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
             return new DecodeResult(SAMRecord.NULL_SEQUENCE, cigar, null, -1);
         }
 
-        final byte[] bases = new byte[readLength];
+        // When isUnknownBases (CF_UNKNOWN_BASES / seq '*'), we still need to process read features
+        // to reconstruct the CIGAR (e.g. soft clips stored in SC data series), but skip all base
+        // restoration, reference lookups, and MD/NM computation.
+        final byte[] bases = isUnknownBases ? null : new byte[readLength];
         final int alignmentStart = readAlignmentStart - 1; // 0-based
-        final int refOffset = cramReferenceRegion.getRegionStart();
-        final byte[] refBases = cramReferenceRegion.getCurrentReferenceBases();
+        final int refOffset = isUnknownBases ? 0 : cramReferenceRegion.getRegionStart();
+        final byte[] refBases = isUnknownBases ? null : cramReferenceRegion.getCurrentReferenceBases();
+        final boolean doBasesAndMdNm = !isUnknownBases;
 
         // MD/NM state — mdActive tracks whether we're still within the reference boundary.
         // Once we exceed the reference, we stop MD/NM computation (matching calculateMdAndNm's break behavior).
         int nmCount = 0;
-        final StringBuilder mdString = computeMdNm ? new StringBuilder(readLength) : null;
+        final boolean actuallyComputeMdNm = computeMdNm && doBasesAndMdNm;
+        final StringBuilder mdString = actuallyComputeMdNm ? new StringBuilder(readLength) : null;
         int mdMatchRun = 0;
-        boolean mdActive = computeMdNm;
+        boolean mdActive = actuallyComputeMdNm;
 
         // No features: pure reference match (fast path)
         if (readFeatures == null || readFeatures.isEmpty()) {
+            if (isUnknownBases) {
+                final Cigar cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
+                return new DecodeResult(SAMRecord.NULL_SEQUENCE, cigar, null, -1);
+            }
             final int srcStart = alignmentStart - refOffset;
             final int copyLen = Math.min(readLength, Math.max(0, refBases.length - srcStart));
             if (copyLen < readLength) {
@@ -622,19 +631,25 @@ public class CRAMRecordReadFeatures {
         for (final ReadFeature feature : readFeatures) {
             final int featurePos = feature.getPosition();
 
-            // Fill gap from reference
-            while (posInRead < featurePos) {
-                final int rp = alignmentStart + posInSeq - refOffset;
-                if (rp >= refBases.length) mdActive = false;
-                final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
-                final byte nb = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
-                bases[posInRead - 1] = nb;
-                if (mdActive) {
-                    if (SequenceUtil.basesEqual(nb, rawRef) || nb == 0) { mdMatchRun++; }
-                    else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+            // Fill gap from reference (advance positions; fill bases only when not unknownBases)
+            if (doBasesAndMdNm) {
+                while (posInRead < featurePos) {
+                    final int rp = alignmentStart + posInSeq - refOffset;
+                    if (rp >= refBases.length) mdActive = false;
+                    final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                    final byte nb = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
+                    bases[posInRead - 1] = nb;
+                    if (mdActive) {
+                        if (SequenceUtil.basesEqual(nb, rawRef) || nb == 0) { mdMatchRun++; }
+                        else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    }
+                    posInRead++;
+                    posInSeq++;
                 }
-                posInRead++;
-                posInSeq++;
+            } else {
+                final int gap = featurePos - posInRead;
+                posInSeq += gap;
+                posInRead = featurePos;
             }
 
             // Deactivate MD/NM if the current reference position is beyond the reference boundary,
@@ -663,12 +678,14 @@ public class CRAMRecordReadFeatures {
 
             switch (feature.getOperator()) {
                 case Substitution.operator: {
-                    final int rp = alignmentStart + posInSeq - refOffset;
-                    final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
-                    final byte normRef = Utils.normalizeBase(rawRef);
-                    bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[
-                            substitutionMatrix.base(normRef, ((Substitution) feature).getCode()) & 0x7F];
-                    if (mdActive) { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    if (doBasesAndMdNm) {
+                        final int rp = alignmentStart + posInSeq - refOffset;
+                        final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                        final byte normRef = Utils.normalizeBase(rawRef);
+                        bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[
+                                substitutionMatrix.base(normRef, ((Substitution) feature).getCode()) & 0x7F];
+                        if (mdActive) { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    }
                     posInRead++;
                     posInSeq++;
                     featureCigOp = CigarOperator.MATCH_OR_MISMATCH;
@@ -676,13 +693,15 @@ public class CRAMRecordReadFeatures {
                     break;
                 }
                 case ReadBase.operator: {
-                    final byte readBase = BAM_READ_BASE_LOOKUP[((ReadBase) feature).getBase() & 0x7F];
-                    bases[posInRead - 1] = readBase;
-                    if (mdActive) {
-                        final int rp = alignmentStart + posInSeq - refOffset;
-                        final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
-                        if (SequenceUtil.basesEqual(readBase, rawRef)) { mdMatchRun++; }
-                        else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    if (doBasesAndMdNm) {
+                        final byte readBase = BAM_READ_BASE_LOOKUP[((ReadBase) feature).getBase() & 0x7F];
+                        bases[posInRead - 1] = readBase;
+                        if (mdActive) {
+                            final int rp = alignmentStart + posInSeq - refOffset;
+                            final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                            if (SequenceUtil.basesEqual(readBase, rawRef)) { mdMatchRun++; }
+                            else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                        }
                     }
                     posInRead++;
                     posInSeq++;
@@ -692,13 +711,15 @@ public class CRAMRecordReadFeatures {
                 }
                 case Bases.operator: {
                     final byte[] fb = ((Bases) feature).getBases();
-                    for (int i = 0; i < fb.length; i++) {
-                        bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[fb[i] & 0x7F];
-                        if (mdActive) {
-                            final int rp = alignmentStart + posInSeq + i - refOffset;
-                            final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
-                            if (SequenceUtil.basesEqual(bases[posInRead - 1 + i], rawRef)) { mdMatchRun++; }
-                            else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    if (doBasesAndMdNm) {
+                        for (int i = 0; i < fb.length; i++) {
+                            bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[fb[i] & 0x7F];
+                            if (mdActive) {
+                                final int rp = alignmentStart + posInSeq + i - refOffset;
+                                final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                                if (SequenceUtil.basesEqual(bases[posInRead - 1 + i], rawRef)) { mdMatchRun++; }
+                                else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                            }
                         }
                     }
                     posInRead += fb.length;
@@ -707,16 +728,20 @@ public class CRAMRecordReadFeatures {
                 }
                 case Insertion.operator: {
                     final byte[] seq = ((Insertion) feature).getSequence();
-                    for (int i = 0; i < seq.length; i++) bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
-                    if (mdActive) nmCount += seq.length;
+                    if (doBasesAndMdNm) {
+                        for (int i = 0; i < seq.length; i++) bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
+                        if (mdActive) nmCount += seq.length;
+                    }
                     posInRead += seq.length;
                     featureCigOp = CigarOperator.INSERTION;
                     featureCigLen = seq.length;
                     break;
                 }
                 case InsertBase.operator: {
-                    bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[((InsertBase) feature).getBase() & 0x7F];
-                    if (mdActive) nmCount++;
+                    if (doBasesAndMdNm) {
+                        bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[((InsertBase) feature).getBase() & 0x7F];
+                        if (mdActive) nmCount++;
+                    }
                     posInRead++;
                     featureCigOp = CigarOperator.INSERTION;
                     featureCigLen = 1;
@@ -724,7 +749,9 @@ public class CRAMRecordReadFeatures {
                 }
                 case SoftClip.operator: {
                     final byte[] seq = ((SoftClip) feature).getSequence();
-                    for (int i = 0; i < seq.length; i++) bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
+                    if (doBasesAndMdNm) {
+                        for (int i = 0; i < seq.length; i++) bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
+                    }
                     posInRead += seq.length;
                     featureCigOp = CigarOperator.SOFT_CLIP;
                     featureCigLen = seq.length;
@@ -780,22 +807,26 @@ public class CRAMRecordReadFeatures {
             if (!featureCigOp.consumesReadBases()) lastCigPos -= featureCigLen;
         }
 
-        // Fill trailing reference bases
-        while (posInRead <= readLength) {
-            final int rp = alignmentStart + posInSeq - refOffset;
-            if (rp >= refBases.length) {
-                if (mdActive) { mdString.append(mdMatchRun); mdMatchRun = 0; mdActive = false; }
-                while (posInRead <= readLength) { bases[posInRead - 1] = 'N'; posInRead++; }
-                break;
+        // Fill trailing reference bases (skip when unknownBases -- just advance positions)
+        if (doBasesAndMdNm) {
+            while (posInRead <= readLength) {
+                final int rp = alignmentStart + posInSeq - refOffset;
+                if (rp >= refBases.length) {
+                    if (mdActive) { mdString.append(mdMatchRun); mdMatchRun = 0; mdActive = false; }
+                    while (posInRead <= readLength) { bases[posInRead - 1] = 'N'; posInRead++; }
+                    break;
+                }
+                final byte rawRef = refBases[rp];
+                bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
+                if (mdActive) {
+                    if (SequenceUtil.basesEqual(bases[posInRead - 1], rawRef) || bases[posInRead - 1] == 0) { mdMatchRun++; }
+                    else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                }
+                posInRead++;
+                posInSeq++;
             }
-            final byte rawRef = refBases[rp];
-            bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
-            if (mdActive) {
-                if (SequenceUtil.basesEqual(bases[posInRead - 1], rawRef) || bases[posInRead - 1] == 0) { mdMatchRun++; }
-                else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
-            }
-            posInRead++;
-            posInSeq++;
+        } else {
+            posInRead = readLength + 1;
         }
 
         // Finalize CIGAR
@@ -814,9 +845,9 @@ public class CRAMRecordReadFeatures {
 
         if (mdActive) mdString.append(mdMatchRun);
 
-        return new DecodeResult(bases, cigar,
-                computeMdNm ? mdString.toString() : null,
-                computeMdNm ? nmCount : -1);
+        return new DecodeResult(isUnknownBases ? SAMRecord.NULL_SEQUENCE : bases, cigar,
+                actuallyComputeMdNm ? mdString.toString() : null,
+                actuallyComputeMdNm ? nmCount : -1);
     }
 
     @Override
