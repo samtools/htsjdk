@@ -383,9 +383,16 @@ public class CRAMCompressionRecord {
     /**
      * Assign a synthetic read name based on the sequential index if no name was decoded.
      * Propagates the name to linked next/previous segments.
+     *
+     * <p>Note: supplementary and secondary reads are always DETACHED (never mate-linked), so they
+     * have no nextSegment/previousSegment and name propagation won’t help them. This is only safe
+     * because htsjdk always sets preserveReadNames=true when encoding (see
+     * {@link htsjdk.samtools.cram.build.CompressionHeaderFactory#createCompressionHeader}). If lossy
+     * read name mode were ever implemented, supplementary/secondary reads in different slices from
+     * their primaries would receive synthetic names that don’t match. htslib avoids this by forcing
+     * name preservation whenever SA tags are present and when not all template reads are in the
+     * same slice.</p>
      */
-    //TODO: how to resolve readnames when we don’t save them for supplementary / secondary reads that don’t
-    //appear near their primaries and don’t have a primary linking to them?
     public void assignReadName() {
         if (readName == null) {
             readName = Long.toString(getSequentialIndex());
