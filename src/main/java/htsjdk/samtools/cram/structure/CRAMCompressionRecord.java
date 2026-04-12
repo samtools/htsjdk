@@ -702,7 +702,9 @@ public class CRAMCompressionRecord {
     public int getMateAlignmentStart() { return mateAlignmentStart; }
 
     public void setTagIdsIndex(MutableInt tagIdsIndex) {
-        //TODO: why is this value deliberately shared across records
+        // The MutableInt is intentionally shared by reference across all records with the same tag
+        // combination. CompressionHeaderFactory.buildTagIdsFromCRAMRecords() groups records by their
+        // tag set and assigns a shared MutableInt to each group for counting and dictionary indexing.
         this.tagIdsIndex = tagIdsIndex;
     }
 

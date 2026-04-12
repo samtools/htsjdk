@@ -140,32 +140,31 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     /**
-     * Unpack a 3-byte tag ID int into a 3-character String (name1, name2, type).
+     * Unpack a 3-byte tag ID int into a String. If {@code withColon} is false, returns a
+     * 3-character string like "NMi"; if true, returns a 4-character string like "NM:i".
      *
      * @param value the packed int
-     * @return 3-character String, e.g. "NMi"
+     * @param withColon if true, insert ':' between the 2-char name and the type char
+     * @return unpacked tag ID string
      */
-    public static String intToNameType3Bytes(final int value) {
+    public static String intToNameType(final int value, final boolean withColon) {
         final byte b3 = (byte) (0xFF & value);
         final byte b2 = (byte) (0xFF & (value >> 8));
         final byte b1 = (byte) (0xFF & (value >> 16));
 
-        return new String(new byte[]{b1, b2, b3});
+        return withColon
+                ? new String(new byte[]{b1, b2, ':', b3})
+                : new String(new byte[]{b1, b2, b3});
     }
 
-    /**
-     * Unpack a 3-byte tag ID int into a 4-character "XX:T" String with a colon separator.
-     *
-     * @param value the packed int
-     * @return 4-character String, e.g. "NM:i"
-     */
-    //TODO: consolidate this with the method above, and add some tests
-    public static String intToNameType4Bytes(final int value) {
-        final byte b3 = (byte) (0xFF & value);
-        final byte b2 = (byte) (0xFF & (value >> 8));
-        final byte b1 = (byte) (0xFF & (value >> 16));
+    /** Shorthand for {@link #intToNameType(int, boolean) intToNameType(value, false)}. */
+    public static String intToNameType3Bytes(final int value) {
+        return intToNameType(value, false);
+    }
 
-        return new String(new byte[]{b1, b2, ':', b3});
+    /** Shorthand for {@link #intToNameType(int, boolean) intToNameType(value, true)}. */
+    public static String intToNameType4Bytes(final int value) {
+        return intToNameType(value, true);
     }
 
     /** Create a {@link SAMTagAndValue} from this ReadTag's key and value. */

@@ -131,4 +131,49 @@ public class ReadTagTest extends HtsjdkTest {
         }
         return testData;
     }
+
+    // ---- Tag ID int/String conversion tests ----
+
+    @Test
+    public void testNameType3BytesToIntRoundTrip() {
+        // Pack "NM" + 'i' into an int and unpack back to "NMi"
+        final int packed = ReadTag.nameType3BytesToInt("NM", 'i');
+        Assert.assertEquals(ReadTag.intToNameType3Bytes(packed), "NMi");
+        Assert.assertEquals(ReadTag.intToNameType4Bytes(packed), "NM:i");
+        Assert.assertEquals(ReadTag.intToNameType(packed, false), "NMi");
+        Assert.assertEquals(ReadTag.intToNameType(packed, true), "NM:i");
+    }
+
+    @Test
+    public void testIntToNameTypeVariousTags() {
+        final String[][] cases = {
+                {"RG", "Z"},
+                {"MD", "Z"},
+                {"NM", "i"},
+                {"XA", "Z"},
+                {"OQ", "Z"},
+                {"X0", "C"},
+                {"SA", "Z"},
+                {"BC", "Z"},
+        };
+        for (final String[] tag : cases) {
+            final String name = tag[0];
+            final char type = tag[1].charAt(0);
+            final int packed = ReadTag.nameType3BytesToInt(name, type);
+
+            final String expected3 = name + type;
+            final String expected4 = name + ":" + type;
+            Assert.assertEquals(ReadTag.intToNameType3Bytes(packed), expected3, "3-byte form for " + name + ":" + type);
+            Assert.assertEquals(ReadTag.intToNameType4Bytes(packed), expected4, "4-byte form for " + name + ":" + type);
+        }
+    }
+
+    @Test
+    public void testNameType3BytesToIntPackingLayout() {
+        // Verify the packing layout: name[0] in high byte, name[1] in middle, type in low byte
+        final int packed = ReadTag.nameType3BytesToInt("AB", 'c');
+        Assert.assertEquals((packed >> 16) & 0xFF, 'A');
+        Assert.assertEquals((packed >> 8) & 0xFF, 'B');
+        Assert.assertEquals(packed & 0xFF, 'c');
+    }
 }

@@ -733,9 +733,9 @@ public class Slice {
             throw new CRAMException ("No reference bases found for mapped slice .");
         }
 
-        //TODO: CRAMComplianceTest/c1#bounds triggers this (the reads are mapped beyond reference length),
-        // and CRAMEdgeCasesTest.testNullsAndBeyondRef seems to deliberately test that reads that extend
-        // beyond the reference length should be ok ?
+        // Reads are permitted to extend beyond the reference length (tested by CRAMComplianceTest/c1#bounds
+        // and CRAMEdgeCasesTest.testNullsAndBeyondRef). This matches samtools/htslib behavior. Log a warning
+        // but don't fail, since BAMs produced by some aligners contain such reads.
         if (((alignmentContext.getAlignmentStart()-1)  < cramReferenceRegion.getRegionStart()) ||
                 (alignmentContext.getAlignmentSpan() > cramReferenceRegion.getRegionLength())) {
             log.warn(String.format(
@@ -798,7 +798,8 @@ public class Slice {
         validateAlignmentSpanForReference(cramReferenceRegion);
 
         final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
-        //TODO: how can an alignment context have a start "< 1" ?
+        // Multi-ref and unmapped/unplaced slices can have alignmentStart < 1 (e.g. 0 for unmapped).
+        // In that case there's no meaningful reference span, so use a zeroed MD5.
         if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
             referenceMD5 = new byte[MD5_BYTE_SIZE];
         } else {
