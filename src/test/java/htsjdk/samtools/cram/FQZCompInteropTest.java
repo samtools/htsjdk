@@ -18,9 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 public class FQZCompInteropTest extends HtsjdkTest {
@@ -296,6 +294,85 @@ public class FQZCompInteropTest extends HtsjdkTest {
         final ByteBuffer compressed = encoder.compress(CompressionUtils.wrap(quals), makeEqualLengths(10, 100));
         final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
         Assert.assertEquals(decompressed, CompressionUtils.wrap(quals));
+    }
+
+    // --- Round-trip with hts-specs quality data files ---
+
+    @DataProvider(name = "htsSpecsRoundTripTestCases")
+    public Object[][] getHtsSpecsRoundTripTestCases() {
+        return new Object[][]{
+                {"q4"},
+                {"q8"},
+                {"q40+dir"},
+                {"qvar"},
+        };
+    }
+
+    @Test(dataProvider = "htsSpecsRoundTripTestCases",
+            description = "Round-trip hts-specs quality data through FQZComp encode/decode")
+    public void testFQZCompHtsSpecsRoundTrip(final String datasetName) throws IOException {
+        final Path rawPath = CRAMInteropTestUtils.getCRAMInteropTestDataLocation()
+                .resolve(CRAMInteropTestUtils.GZIP_PATH + datasetName + CRAMInteropTestUtils.GZIP_SUFFIX);
+
+        try (final InputStream rawStream = new GZIPInputStream(Files.newInputStream(rawPath))) {
+            // Read newline-delimited quality records, stripping the tab-delimited direction column
+            // (present in q40+dir). Each line becomes one record for FQZComp.
+            final byte[] rawBytes = IOUtils.toByteArray(rawStream);
+            final List<byte[]> records = splitIntoRecords(rawBytes);
+
+            // Convert from FASTQ ASCII to Phred and build flat array + lengths
+            int totalLen = 0;
+            final int[] recordLengths = new int[records.size()];
+            for (int i = 0; i < records.size(); i++) {
+                SAMUtils.fastqToPhred(records.get(i));
+                recordLengths[i] = records.get(i).length;
+                totalLen += recordLengths[i];
+            }
+
+            final byte[] allQuals = new byte[totalLen];
+            int offset = 0;
+            for (final byte[] record : records) {
+                System.arraycopy(record, 0, allQuals, offset, record.length);
+                offset += record.length;
+            }
+
+            // Round-trip through FQZComp
+            final ByteBuffer input = CompressionUtils.wrap(allQuals);
+            final ByteBuffer compressed = new FQZCompEncode().compress(input, recordLengths);
+            final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
+
+            input.rewind();
+            Assert.assertEquals(decompressed, input,
+                    "FQZComp hts-specs round-trip failed for: " + datasetName);
+        }
+    }
+
+    /**
+     * Split raw newline-delimited data into records, stripping any tab-delimited extra columns
+     * (e.g. the direction flag in q40+dir). Empty trailing records are excluded.
+     */
+    private static List<byte[]> splitIntoRecords(final byte[] rawBytes) {
+        final List<byte[]> records = new ArrayList<>();
+        int start = 0;
+        for (int i = 0; i <= rawBytes.length; i++) {
+            if (i == rawBytes.length || rawBytes[i] == '\n') {
+                if (i > start) {
+                    // Find tab boundary (if any) to strip extra columns
+                    int end = i;
+                    for (int j = start; j < i; j++) {
+                        if (rawBytes[j] == '\t') {
+                            end = j;
+                            break;
+                        }
+                    }
+                    final byte[] record = new byte[end - start];
+                    System.arraycopy(rawBytes, start, record, 0, record.length);
+                    records.add(record);
+                }
+                start = i + 1;
+            }
+        }
+        return records;
     }
 
     private static int[] makeEqualLengths(final int numRecords, final int recordLength) {
