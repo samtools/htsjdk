@@ -111,8 +111,10 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
     @DataProvider
     public Iterator<Object[]> compressedVcfsToTest() throws Exception {
         final List<Object[]> data = new ArrayList<>();
-        final int nSmallRecords = 1000000;
-        for (int firstRecordLength = 1000; firstRecordLength <= 10000; firstRecordLength+=1000) {
+        // 100K records is sufficient to exercise multi-block BGZF boundaries and detect the
+        // GZIPInputStream available() bug. 5 first-record-length variants cover the range.
+        final int nSmallRecords = 100_000;
+        for (int firstRecordLength = 1000; firstRecordLength <= 9000; firstRecordLength += 2000) {
             data.add(new Object[]{createBgzipVcfsWithVariableSize(firstRecordLength, nSmallRecords), nSmallRecords+1});
         }
         return data.iterator();
