@@ -190,7 +190,6 @@ public class FQZCompEncode {
         int basesRemaining = 0;
         boolean firstLen = true;
         int lastLen = 0;
-        int qualOffset = 0;
 
         for (int i = 0; i < uncompressedSize; i++) {
             if (basesRemaining == 0) {
@@ -219,7 +218,6 @@ public class FQZCompEncode {
                     dupModel.modelEncode(rangeCoder, isDup ? 1 : 0);
                     if (isDup) {
                         lastLen = len;
-                        qualOffset = i;
                         i += len - 1; // skip quality encoding, -1 because loop increments
                         recIdx++;
                         basesRemaining = 0;

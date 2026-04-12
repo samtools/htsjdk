@@ -19,13 +19,14 @@ interoperable with samtools/htslib.
 ### CRAM 3.1 Write Support
 
 - Enable CRAM 3.1 writing with all spec codecs: rANS Nx16, adaptive arithmetic Range coder, FQZComp, Name Tokenisation, and STRIPE
-- Add configurable compression profiles (FAST, NORMAL, BEST, ARCHIVE) with trial compression for automatic codec selection
+- Add configurable compression profiles (FAST, NORMAL, SMALL, ARCHIVE) with trial compression for automatic codec selection
 - Implement `TrialCompressor` to replace ad-hoc triple-compression for tags and align trial candidates with htslib
 - Add `GzipCodec` for direct Deflater/Inflater GZIP compression, wired into CRAM as a codec option
 - Strip NM/MD tags on CRAM encode and regenerate on decode, matching htslib behavior
 - Implement attached (same-slice) mate pair resolution
 - Align DataSeries content IDs with htslib for cross-implementation debugging
-- Remove unnecessary content digest tags from CRAM slice headers
+- Remove content digest tags (BD/SD/B5/S5/B1/S1) from CRAM slice headers, matching htslib/samtools behavior. These are optional per the spec and were expensive to compute. Block-level CRC32 (required by CRAM 3.0+) provides data integrity. This is technically a breaking change but has zero practical impact since no known tools consume these tags.
+- Default CRAM version for writing is now 3.1 (was 3.0)
 - Add `CramConverter` command-line tool for testing and benchmarking CRAM write profiles
 
 ### Codec and Compression Optimizations

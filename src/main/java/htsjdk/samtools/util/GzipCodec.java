@@ -265,7 +265,6 @@ public class GzipCodec {
         input.order(ByteOrder.LITTLE_ENDIAN);
 
         // Parse and validate the GZIP header
-        final int headerStart = input.position();
         if (input.remaining() < GZIP_HEADER_SIZE + GZIP_TRAILER_SIZE) {
             throw new IllegalArgumentException("Input too small to be a valid GZIP block");
         }

@@ -15,8 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Name tokenization encoder that compresses read names by tokenizing them and encoding
@@ -60,14 +58,6 @@ public class NameTokenisationEncode {
             /* TOKEN_NOP     (0x0B) */ {0},
             /* TOKEN_END     (0x0C) */ {0},
     };
-    private final static String READ_NAME_TOK_REGEX = "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)";
-    private final static Pattern READ_NAME_PATTERN = Pattern.compile(READ_NAME_TOK_REGEX);
-
-    private final static String DIGITS0_REGEX = "^0+[0-9]*$";
-    private final static Pattern DIGITS0_PATTERN = Pattern.compile(DIGITS0_REGEX);
-
-    private final static String DIGITS_REGEX = "^[0-9]+$";
-    private final static Pattern DIGITS_PATTERN = Pattern.compile(DIGITS_REGEX);
 
     // Reusable encoder instance — avoids allocating 256x256 RANSEncodingSymbol matrix per trial
     private final RANSNx16Encode reusableRansEncoder = new RANSNx16Encode();
@@ -84,6 +74,10 @@ public class NameTokenisationEncode {
      * @return the compressed buffer
      */
     public ByteBuffer compress(final ByteBuffer inBuffer, final boolean useArith, final byte nameSeparator) {
+        // Reset per-block state from any previous compress() call
+        maxPositions = 0;
+        maxStringValueLength = 0;
+
         // strictly speaking, keeping this list isn't necessary, but since the first thing that we need to write
         // to the output stream is the number of names, we have to scan the entire input anyway to count them,
         // so just extract them while we're scanning
@@ -402,7 +396,7 @@ public class NameTokenisationEncode {
     }
 
     private static void writeString(final ByteBuffer tokenStreamBuffer, final String val) {
-        tokenStreamBuffer.put(val.getBytes());
+        tokenStreamBuffer.put(val.getBytes(StandardCharsets.US_ASCII));
         tokenStreamBuffer.put((byte) 0);
     }
 

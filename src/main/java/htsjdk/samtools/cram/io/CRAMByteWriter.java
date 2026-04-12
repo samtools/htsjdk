@@ -95,8 +95,10 @@ public final class CRAMByteWriter {
     }
 
     private void grow(final int minCapacity) {
-        int newCapacity = buf.length << 1;
-        if (newCapacity < minCapacity) {
+        // Use Math.max to handle potential overflow when buf.length > 1GB
+        int newCapacity = Math.max(buf.length << 1, minCapacity);
+        if (newCapacity < 0) {
+            // Overflow — fall back to exact size needed
             newCapacity = minCapacity;
         }
         buf = Arrays.copyOf(buf, newCapacity);

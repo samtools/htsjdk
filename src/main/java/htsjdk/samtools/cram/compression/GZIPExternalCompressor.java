@@ -73,6 +73,17 @@ public final class GZIPExternalCompressor extends ExternalCompressor {
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (!super.equals(o)) return false;
+        return writeCompressionLevel == ((GZIPExternalCompressor) o).writeCompressionLevel;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * super.hashCode() + writeCompressionLevel;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s(%d)", super.toString(), writeCompressionLevel);
     }

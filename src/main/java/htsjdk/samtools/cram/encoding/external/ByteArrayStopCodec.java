@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.encoding.external;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.io.CRAMByteReader;
 import htsjdk.samtools.cram.io.CRAMByteWriter;
 
@@ -33,6 +34,11 @@ final class ByteArrayStopCodec extends ExternalCodec<byte[]> {
         int scanPos = startPos;
         while (scanPos < buf.length && (buf[scanPos] & 0xFF) != stop) {
             scanPos++;
+        }
+        if (scanPos == buf.length) {
+            throw new CRAMException(
+                    "Stop byte 0x" + Integer.toHexString(stop) +
+                    " not found in external block (scanned " + (scanPos - startPos) + " bytes)");
         }
         final int len = scanPos - startPos;
         final byte[] result = inputReader.readFully(len);

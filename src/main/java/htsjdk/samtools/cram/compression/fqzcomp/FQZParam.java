@@ -176,7 +176,7 @@ public class FQZParam {
 
     private void cacheParameterFlags(int parameterFlags) {
         this.doDedup = (parameterFlags & DEDUP_FLAG_MASK) != 0;
-        setFixedLen(parameterFlags & FIXED_LEN_FLAG_MASK);  //TODO: f'd up - is this a flag or an int ?
+        setFixedLen(parameterFlags & FIXED_LEN_FLAG_MASK);
         this.doSel = (parameterFlags & SEL_FLAG_MASK) != 0;
         this.doQmap = (parameterFlags & QMAP_FLAG_MASK) != 0;
         this.doPos = (parameterFlags & PTAB_FLAG_MASK) != 0;

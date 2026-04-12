@@ -1,14 +1,14 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
-import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
  * An {@link ExternalCompressor} that tries multiple candidate compressors and selects the one
- * that produces the smallest output. Matches htslib's trial compression approach:
+ * that produces the smallest output. Matches htslib's trial compression approach.
+ *
+ * <p>Not thread-safe. Instances must not be shared across threads.
  *
  * <ol>
  *   <li><b>Trial phase</b> ({@code nTrials} non-empty blocks): compresses with ALL candidates,

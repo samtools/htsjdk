@@ -79,7 +79,7 @@ public class RangeEncode {
             outBuffer.rewind(); // set position to 0
         } else if (rangeParams.isExternalCompression()) {
             final byte[] rawBytes = new byte[inputBuffer.remaining()];
-            inputBuffer.get(rawBytes, inBuffer.position(), inputBuffer.remaining());
+            inputBuffer.get(rawBytes, 0, inputBuffer.remaining());
             final BZIP2ExternalCompressor compressor = new BZIP2ExternalCompressor();
             final byte[] extCompressedBytes = compressor.compress(rawBytes, null);
             outBuffer.put(extCompressedBytes);

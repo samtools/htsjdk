@@ -3,7 +3,6 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.structure.CRAMCompressionProfile;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
-import htsjdk.samtools.util.CloserUtil;
 
 import java.io.File;
 import java.nio.file.Path;

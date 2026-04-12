@@ -52,6 +52,9 @@ public enum CRAMCompressionProfile {
      * <p>This profile uses trial compression: multiple codecs are tried per block and the smallest
      * result wins. Additional candidates include BZIP2, the Range (arithmetic) coder, and GZIP.
      */
+    // Note: large slices increase tag dictionary size; CompressionHeader.internalWrite()
+    // uses a fixed 100KB buffer for the tag dictionary, which may need adjustment for very
+    // large slice sizes.
     ARCHIVE(CramVersions.CRAM_v3_1, 7, 100_000);
 
     private final CRAMVersion cramVersion;
