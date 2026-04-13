@@ -1,0 +1,176 @@
+"""
+Cross-implementation CRAM validation pipeline.
+
+Converts input files to CRAM using both htsjdk and samtools, decodes with both tools,
+and verifies all outputs match the original. Run with:
+
+    pixi run snakemake --cores 4
+
+See config.yaml for pipeline configuration and samples.tsv for input files.
+"""
+
+import csv
+from pathlib import Path
+
+configfile: "config.yaml"
+
+
+# Resolve the fat JAR, supporting glob patterns in the config
+def resolve_jar(pattern):
+    import glob
+    matches = sorted(glob.glob(pattern))
+    if matches:
+        return matches[-1]  # latest version if multiple
+    if Path(pattern).exists():
+        return pattern
+    raise FileNotFoundError(f"htsjdk JAR not found: {pattern}. Run: cd .. && ./gradlew shadowJar")
+
+
+# Load sample sheet
+SAMPLES = {}
+with open("samples.tsv") as f:
+    for row in csv.DictReader(f, delimiter="\t"):
+        SAMPLES[row["sample"]] = {"input": row["input"], "reference": row["reference"]}
+
+PROFILES = config["profiles"]
+HTSJDK_JAR = resolve_jar(config["htsjdk_jar"])
+COMPARISON_MODE = config.get("comparison_mode", "strict")
+MAX_DIFFS = config.get("max_diffs", 10)
+
+
+# Comparisons to run per sample × profile:
+#   1. htsjdk roundtrip:  original vs htsjdk_encode -> htsjdk_decode
+#   2. samtools reads htsjdk:  original vs htsjdk_encode -> samtools_decode
+#   3. htsjdk reads samtools:  original vs samtools_encode -> htsjdk_decode
+#   4. samtools roundtrip:  original vs samtools_encode -> samtools_decode
+COMPARISONS = [
+    ("htsjdk_via_htsjdk",   "original"),
+    ("htsjdk_via_samtools", "original"),
+    ("samtools_via_htsjdk", "original"),
+    ("samtools_via_samtools", "original"),
+]
+
+
+rule all:
+    input:
+        expand("output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result",
+               sample=SAMPLES.keys(),
+               profile=PROFILES,
+               cmp_name=[c[0] for c in COMPARISONS],
+               cmp_base=[c[1] for c in COMPARISONS]),
+        "output/summary.txt"
+
+
+rule convert_to_bam:
+    """Convert the original input to BAM as a common baseline for comparison."""
+    input:
+        file=lambda wc: SAMPLES[wc.sample]["input"],
+        ref=lambda wc: SAMPLES[wc.sample]["reference"],
+    output:
+        "output/{sample}/original.bam"
+    shell:
+        "samtools view -b -T {input.ref} -o {output} {input.file}"
+
+
+rule htsjdk_encode:
+    """Encode to CRAM using htsjdk CramConverter."""
+    input:
+        bam="output/{sample}/original.bam",
+        ref=lambda wc: SAMPLES[wc.sample]["reference"],
+    output:
+        "output/{sample}/{profile}/htsjdk.cram"
+    params:
+        jar=HTSJDK_JAR,
+    shell:
+        "java -cp {params.jar} htsjdk.samtools.cram.CramConverter "
+        "{input.bam} {output} --reference {input.ref} --profile {wildcards.profile}"
+
+
+rule samtools_encode:
+    """Encode to CRAM using samtools."""
+    input:
+        bam="output/{sample}/original.bam",
+        ref=lambda wc: SAMPLES[wc.sample]["reference"],
+    output:
+        "output/{sample}/{profile}/samtools.cram"
+    shell:
+        "samtools view -C -T {input.ref} "
+        "--output-fmt-option version=3.1 --output-fmt-option {wildcards.profile} "
+        "-o {output} {input.bam}"
+
+
+rule htsjdk_decode:
+    """Decode CRAM to BAM using htsjdk CramConverter."""
+    input:
+        cram="output/{sample}/{profile}/{encoder}.cram",
+        ref=lambda wc: SAMPLES[wc.sample]["reference"],
+    output:
+        "output/{sample}/{profile}/{encoder}_via_htsjdk.bam"
+    params:
+        jar=HTSJDK_JAR,
+    shell:
+        "java -cp {params.jar} htsjdk.samtools.cram.CramConverter "
+        "{input.cram} {output} --reference {input.ref}"
+
+
+rule samtools_decode:
+    """Decode CRAM to BAM using samtools."""
+    input:
+        cram="output/{sample}/{profile}/{encoder}.cram",
+        ref=lambda wc: SAMPLES[wc.sample]["reference"],
+    output:
+        "output/{sample}/{profile}/{encoder}_via_samtools.bam"
+    shell:
+        "samtools view -b -T {input.ref} -o {output} {input.cram}"
+
+
+rule compare:
+    """Compare a decoded BAM against the original using CramComparison."""
+    input:
+        test="output/{sample}/{profile}/{cmp_name}.bam",
+        original="output/{sample}/original.bam",
+        ref=lambda wc: SAMPLES[wc.sample]["reference"],
+    output:
+        "output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result"
+    params:
+        jar=HTSJDK_JAR,
+        mode="--lenient" if COMPARISON_MODE == "lenient" else "",
+        max_diffs=MAX_DIFFS,
+    shell:
+        """
+        java -cp {params.jar} htsjdk.samtools.cram.CramComparison \
+            {input.test} {input.original} \
+            --reference {input.ref} {params.mode} --max-diffs {params.max_diffs} \
+            2>&1 | tee {output}
+        """
+
+
+rule summary:
+    """Aggregate all comparison results into a summary."""
+    input:
+        expand("output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result",
+               sample=SAMPLES.keys(),
+               profile=PROFILES,
+               cmp_name=[c[0] for c in COMPARISONS],
+               cmp_base=[c[1] for c in COMPARISONS]),
+    output:
+        "output/summary.txt"
+    run:
+        passed = 0
+        failed = 0
+        with open(output[0], "w") as out:
+            for f in sorted(input):
+                path = Path(f)
+                with open(f) as result:
+                    content = result.read().strip()
+                    status = "PASS" if "OK:" in content else "FAIL"
+                    if status == "PASS":
+                        passed += 1
+                    else:
+                        failed += 1
+                    line = f"{status}  {path.relative_to('output')}"
+                    out.write(line + "\n")
+                    print(line)
+            summary = f"\n{passed} passed, {failed} failed out of {passed + failed} comparisons"
+            out.write(summary + "\n")
+            print(summary)

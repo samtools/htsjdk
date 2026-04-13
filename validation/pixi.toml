@@ -1,0 +1,10 @@
+[workspace]
+name = "htsjdk-validation"
+description = "Cross-implementation CRAM validation pipeline"
+channels = ["conda-forge", "bioconda"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[dependencies]
+samtools = ">=1.21"
+snakemake-minimal = ">=8"
+openjdk = ">=17"

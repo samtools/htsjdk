@@ -1,0 +1,6 @@
+# Snakemake working files
+.snakemake/
+output/
+
+# Pixi environment
+.pixi/

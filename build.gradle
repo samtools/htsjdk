@@ -213,6 +213,12 @@ spotbugsTest {
     }
 }
 
+// Fat JAR with all dependencies for standalone CLI tools (CramConverter, CramComparison, etc.)
+shadowJar {
+    archiveClassifier.set('all')
+    mergeServiceFiles()
+}
+
 publishing {
     publications {
         htsjdk(MavenPublication) {

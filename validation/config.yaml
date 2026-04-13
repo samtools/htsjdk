@@ -1,0 +1,15 @@
+profiles:
+  - fast
+  - normal
+  - small
+  - archive
+
+# Path to the htsjdk fat JAR (built with ./gradlew shadowJar).
+# Supports glob patterns; if multiple match, the latest (alphabetically last) is used.
+htsjdk_jar: "../build/libs/*-all.jar"
+
+# Comparison mode: strict (all fields + tags) or lenient (name, flags, pos, bases, quals)
+comparison_mode: "strict"
+
+# Maximum mismatches to report per comparison
+max_diffs: 10
