@@ -6,16 +6,25 @@ and verifies all outputs match the original. Run with:
 
     pixi run snakemake --cores 4
 
-See config.yaml for pipeline configuration and samples.tsv for input files.
+Supports two sample sheet formats:
+  - Local mode (samples.tsv): 3 columns (sample, input, reference) with local file paths.
+  - Remote mode (test_datasets.tsv): 9 columns with URLs; files are downloaded automatically.
+
+Set `dataset_file` in config.yaml to choose which sample sheet to use.
+See config.yaml for pipeline configuration and README.md for full documentation.
 """
 
 import csv
 from pathlib import Path
+from urllib.parse import urlparse
 
 configfile: "config.yaml"
 
 
+# ---------------------------------------------------------------------------
 # Resolve the fat JAR, supporting glob patterns in the config
+# ---------------------------------------------------------------------------
+
 def resolve_jar(pattern):
     import glob
     matches = sorted(glob.glob(pattern))
@@ -26,11 +35,82 @@ def resolve_jar(pattern):
     raise FileNotFoundError(f"htsjdk JAR not found: {pattern}. Run: cd .. && ./gradlew shadowJar")
 
 
-# Load sample sheet
-SAMPLES = {}
-with open("samples.tsv") as f:
-    for row in csv.DictReader(f, delimiter="\t"):
-        SAMPLES[row["sample"]] = {"input": row["input"], "reference": row["reference"]}
+# ---------------------------------------------------------------------------
+# Load sample sheet (auto-detect local vs. remote format)
+# ---------------------------------------------------------------------------
+
+def ref_key_from_url(url):
+    """Derive a short, human-readable reference key from a URL."""
+    known = {
+        "GRCh38_full_analysis_set_plus_decoy_hla.fa":
+            "GRCh38_full_decoy_hla",
+        "GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz":
+            "GRCh38_GIABv3",
+        "Homo_sapiens_assembly38.fasta":
+            "Homo_sapiens_assembly38",
+        "hs37d5.fa.gz":
+            "hs37d5",
+        "Homo_sapiens_assembly38_noALT_noHLA_noDecoy_ERCC92.fasta":
+            "GRCh38_noALT_ERCC92",
+        "GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz":
+            "GRCh38_no_alt",
+    }
+    if "eutils" in url:
+        return "MN908947_3"
+    filename = Path(urlparse(url).path).name
+    return known.get(filename, filename.replace(".fasta", "").replace(".fa", "")
+                                       .replace(".fna", "").replace(".gz", ""))
+
+
+def input_extension(url):
+    """Determine BAM/CRAM extension from URL path."""
+    return "cram" if urlparse(url).path.endswith(".cram") else "bam"
+
+
+DATASET_FILE = config.get("dataset_file", "samples.tsv")
+
+SAMPLES = {}        # sample -> {"input": path, "reference": path}
+REFERENCES = {}     # ref_key -> {"url": str}           (remote mode only)
+REMOTE_INPUTS = {}  # sample -> {"url": str, "ext": str} (remote mode only)
+REMOTE_MODE = False
+
+with open(DATASET_FILE) as f:
+    reader = csv.DictReader(f, delimiter="\t")
+
+    if "input_url" in reader.fieldnames:
+        # Remote mode: test_datasets.tsv format
+        REMOTE_MODE = True
+        for row in reader:
+            sample = row["sample"]
+            input_url = row["input_url"]
+            ref_url = row["reference_url"]
+            ref_key = ref_key_from_url(ref_url)
+            ext = input_extension(input_url)
+
+            SAMPLES[sample] = {
+                "input": f"downloads/inputs/{sample}.{ext}",
+                "reference": f"downloads/references/{ref_key}/ref.fasta",
+            }
+            REFERENCES[ref_key] = {"url": ref_url}
+            REMOTE_INPUTS[sample] = {"url": input_url, "ext": ext}
+    else:
+        # Local mode: samples.tsv format (backward compatible)
+        for row in reader:
+            SAMPLES[row["sample"]] = {
+                "input": row["input"],
+                "reference": row["reference"],
+            }
+
+# Apply optional sample filter from config
+selected = config.get("samples", None)
+if selected:
+    SAMPLES = {k: v for k, v in SAMPLES.items() if k in selected}
+    REMOTE_INPUTS = {k: v for k, v in REMOTE_INPUTS.items() if k in selected}
+
+
+# ---------------------------------------------------------------------------
+# Pipeline configuration
+# ---------------------------------------------------------------------------
 
 PROFILES = config["profiles"]
 HTSJDK_JAR = resolve_jar(config["htsjdk_jar"])
@@ -38,7 +118,7 @@ COMPARISON_MODE = config.get("comparison_mode", "strict")
 MAX_DIFFS = config.get("max_diffs", 10)
 
 
-# Comparisons to run per sample × profile:
+# Comparisons to run per sample x profile:
 #   1. htsjdk roundtrip:  original vs htsjdk_encode -> htsjdk_decode
 #   2. samtools reads htsjdk:  original vs htsjdk_encode -> samtools_decode
 #   3. htsjdk reads samtools:  original vs samtools_encode -> htsjdk_decode
@@ -51,6 +131,28 @@ COMPARISONS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Helper: reference inputs for rules that need a FASTA + .fai
+# ---------------------------------------------------------------------------
+
+def ref_path(wc):
+    return SAMPLES[wc.sample]["reference"]
+
+def ref_fai(wc):
+    return SAMPLES[wc.sample]["reference"] + ".fai"
+
+def ref_inputs(wc):
+    """Return dict with ref and (in remote mode) fai paths."""
+    result = {"ref": ref_path(wc)}
+    if REMOTE_MODE:
+        result["fai"] = ref_fai(wc)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Target rule
+# ---------------------------------------------------------------------------
+
 rule all:
     input:
         expand("output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result",
@@ -61,11 +163,71 @@ rule all:
         "output/summary.txt"
 
 
+# ---------------------------------------------------------------------------
+# Download rules (remote mode only)
+# ---------------------------------------------------------------------------
+
+if REMOTE_MODE:
+
+    rule download_input:
+        """Download a remote input BAM/CRAM file."""
+        output:
+            "downloads/inputs/{sample}.{ext}"
+        params:
+            url=lambda wc: REMOTE_INPUTS[wc.sample]["url"],
+            is_s3=lambda wc: REMOTE_INPUTS[wc.sample]["url"].startswith("s3://"),
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if [[ "{params.is_s3}" == "True" ]]; then
+                aws s3 cp --no-sign-request '{params.url}' {output}
+            else
+                curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
+                mv {output}.tmp {output}
+            fi
+            """
+
+    rule download_reference:
+        """Download and decompress a remote reference FASTA."""
+        output:
+            "downloads/references/{ref_key}/ref.fasta"
+        params:
+            url=lambda wc: REFERENCES[wc.ref_key]["url"],
+            is_gz=lambda wc: REFERENCES[wc.ref_key]["url"].endswith(".gz"),
+            is_s3=lambda wc: REFERENCES[wc.ref_key]["url"].startswith("s3://"),
+        shell:
+            """
+            mkdir -p $(dirname {output})
+            if [[ "{params.is_s3}" == "True" ]]; then
+                aws s3 cp --no-sign-request '{params.url}' {output}
+            elif [[ "{params.is_gz}" == "True" ]]; then
+                curl -fSL --retry 3 --retry-delay 5 '{params.url}' | gunzip > {output}.tmp
+                mv {output}.tmp {output}
+            else
+                curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
+                mv {output}.tmp {output}
+            fi
+            """
+
+    rule index_reference:
+        """Create .fai index for a downloaded reference FASTA."""
+        input:
+            "downloads/references/{ref_key}/ref.fasta"
+        output:
+            "downloads/references/{ref_key}/ref.fasta.fai"
+        shell:
+            "samtools faidx {input}"
+
+
+# ---------------------------------------------------------------------------
+# Core pipeline rules
+# ---------------------------------------------------------------------------
+
 rule convert_to_bam:
     """Convert the original input to BAM as a common baseline for comparison."""
     input:
+        unpack(ref_inputs),
         file=lambda wc: SAMPLES[wc.sample]["input"],
-        ref=lambda wc: SAMPLES[wc.sample]["reference"],
     output:
         "output/{sample}/original.bam"
     shell:
@@ -75,8 +237,8 @@ rule convert_to_bam:
 rule htsjdk_encode:
     """Encode to CRAM using htsjdk CramConverter."""
     input:
+        unpack(ref_inputs),
         bam="output/{sample}/original.bam",
-        ref=lambda wc: SAMPLES[wc.sample]["reference"],
     output:
         "output/{sample}/{profile}/htsjdk.cram"
     params:
@@ -89,8 +251,8 @@ rule htsjdk_encode:
 rule samtools_encode:
     """Encode to CRAM using samtools."""
     input:
+        unpack(ref_inputs),
         bam="output/{sample}/original.bam",
-        ref=lambda wc: SAMPLES[wc.sample]["reference"],
     output:
         "output/{sample}/{profile}/samtools.cram"
     shell:
@@ -102,8 +264,8 @@ rule samtools_encode:
 rule htsjdk_decode:
     """Decode CRAM to BAM using htsjdk CramConverter."""
     input:
+        unpack(ref_inputs),
         cram="output/{sample}/{profile}/{encoder}.cram",
-        ref=lambda wc: SAMPLES[wc.sample]["reference"],
     output:
         "output/{sample}/{profile}/{encoder}_via_htsjdk.bam"
     params:
@@ -116,8 +278,8 @@ rule htsjdk_decode:
 rule samtools_decode:
     """Decode CRAM to BAM using samtools."""
     input:
+        unpack(ref_inputs),
         cram="output/{sample}/{profile}/{encoder}.cram",
-        ref=lambda wc: SAMPLES[wc.sample]["reference"],
     output:
         "output/{sample}/{profile}/{encoder}_via_samtools.bam"
     shell:
@@ -127,9 +289,9 @@ rule samtools_decode:
 rule compare:
     """Compare a decoded BAM against the original using CramComparison."""
     input:
+        unpack(ref_inputs),
         test="output/{sample}/{profile}/{cmp_name}.bam",
         original="output/{sample}/original.bam",
-        ref=lambda wc: SAMPLES[wc.sample]["reference"],
     output:
         "output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result"
     params:

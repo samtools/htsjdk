@@ -2,5 +2,8 @@
 .snakemake/
 output/
 
+# Downloaded remote datasets and references
+downloads/
+
 # Pixi environment
 .pixi/

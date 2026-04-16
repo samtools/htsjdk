@@ -1,3 +1,12 @@
+# Dataset file: samples.tsv (local paths, 3 columns) or test_datasets.tsv (remote URLs, 9 columns)
+dataset_file: "samples.tsv"
+
+# Optional: restrict to specific samples (default: all samples in dataset_file).
+# Uncomment and list sample names to run a subset, e.g. for testing downloads.
+# samples:
+#   - sarscov2_amplicon
+#   - geuvadis_rnaseq
+
 profiles:
   - fast
   - normal
