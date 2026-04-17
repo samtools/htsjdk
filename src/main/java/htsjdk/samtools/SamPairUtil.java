@@ -67,6 +67,15 @@ public class SamPairUtil {
      *
      * NOTA BENE: This is NOT the orientation byte as used in Picard's MarkDuplicates. For that please look
      * in ReadEnds (in Picard).
+     *
+     * When the record is on the forward strand, the mate's 5' position is
+     * computed from the mate CIGAR (MC) tag if present, and otherwise falls
+     * back to {@code getAlignmentStart() + getInferredInsertSize()}.  The
+     * fallback can produce asymmetric results (i.e., different orientations
+     * for the two ends of the same pair) when TLEN is degenerate, as happens
+     * with soft-clipped dovetail pairs whose 5' ends coincide.  Callers that
+     * need symmetric orientation on such pairs should ensure the MC tag is
+     * set on at least the forward-strand record.
      */
     public static PairOrientation getPairOrientation(final SAMRecord record)
     {
@@ -92,9 +101,26 @@ public class SamPairUtil {
                 ?  record.getMateAlignmentStart()  //mate's 5' position  ( x---> )
                 :  record.getAlignmentStart() );   //read's 5' position  ( x---> )
 
-        final long negativeStrandFivePrimePos = ( readIsOnReverseStrand
-                ?  record.getAlignmentEnd()                                   //read's 5' position  ( <---x )
-                :  record.getAlignmentStart() + record.getInferredInsertSize() );  //mate's 5' position  ( <---x )
+        final long negativeStrandFivePrimePos;
+        if (readIsOnReverseStrand) {
+            // read's 5' position  ( <---x ) - CIGAR-derived, exact
+            negativeStrandFivePrimePos = record.getAlignmentEnd();
+        } else if (SAMUtils.getMateCigarString(record) != null) {
+            // mate's 5' position  ( <---x ) derived from the mate CIGAR (MC)
+            // tag when available.  This matches what the reverse-strand
+            // branch computes for the same pair and keeps getPairOrientation
+            // symmetric across the two ends.
+            negativeStrandFivePrimePos = SAMUtils.getMateAlignmentEnd(record);
+        } else {
+            // Fallback: derive the mate's 5' position from TLEN.  When TLEN
+            // is degenerate (e.g., |TLEN| == 1 for soft-clipped dovetail
+            // pairs whose 5' ends coincide) this value may disagree with
+            // what the reverse-strand branch would compute, and
+            // getPairOrientation can return different answers depending on
+            // which end of the pair is inspected.  Callers that need
+            // symmetric results on such pairs must provide the MC tag.
+            negativeStrandFivePrimePos = record.getAlignmentStart() + record.getInferredInsertSize();
+        }
 
         return ( positiveStrandFivePrimePos < negativeStrandFivePrimePos
                 ? PairOrientation.FR
