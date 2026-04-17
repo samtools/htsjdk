@@ -339,12 +339,10 @@ rule compare:
         mode="--lenient" if COMPARISON_MODE == "lenient" else "",
         max_diffs=MAX_DIFFS,
     shell:
-        """
-        java -cp {params.jar} htsjdk.samtools.cram.CramComparison \
-            {input.test} {input.original} \
-            --reference {input.ref} {params.mode} --max-diffs {params.max_diffs} \
-            2>&1 | tee {log} > {output}
-        """
+        "java -cp {params.jar} htsjdk.samtools.cram.CramComparison "
+        "{input.test} {input.original} "
+        "--reference {input.ref} --output {output} {params.mode} --max-diffs {params.max_diffs} "
+        "> {log} 2>&1"
 
 
 rule summary:

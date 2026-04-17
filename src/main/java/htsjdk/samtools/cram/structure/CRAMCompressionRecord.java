@@ -476,14 +476,21 @@ public class CRAMCompressionRecord {
     }
 
     /**
-     * The method is similar in semantics to
-     * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
-     * computeInsertSize} but operates on CRAM native records instead of
-     * SAMRecord objects.
+     * Compute the insert size (TLEN) for a mate pair using the htslib/samtools convention:
+     * the absolute value is the number of bases from the leftmost mapped base to the rightmost
+     * mapped base across both mates. The sign is positive for the leftmost read (by alignment
+     * start), negative for the rightmost, with ties broken by the first-of-pair flag.
+     *
+     * <p>This matches htslib's TLEN computation in cram_encode.c / cram_decode.c, ensuring
+     * that linked mate pairs produce identical TLEN values regardless of which CRAM implementation
+     * performs the decoding.
+     *
+     * <p>Note: this differs from {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)}
+     * which uses 5'-to-5' distance. This method is used only for CRAM mate linking and restoration.
      *
      * @param firstEnd  first mate of the pair
      * @param secondEnd second mate of the pair
-     * @return template length
+     * @return template length for firstEnd (negate for secondEnd)
      */
     static int computeInsertSize(final CRAMCompressionRecord firstEnd, final CRAMCompressionRecord secondEnd) {
         if (firstEnd.isSegmentUnmapped() ||
@@ -492,11 +499,15 @@ public class CRAMCompressionRecord {
             return 0;
         }
 
-        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd() : firstEnd.alignmentStart;
-        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd() : secondEnd.alignmentStart;
+        final int aleft = Math.min(firstEnd.alignmentStart, secondEnd.alignmentStart);
+        final int aright = Math.max(firstEnd.getAlignmentEnd(), secondEnd.getAlignmentEnd());
+        final int magnitude = aright - aleft + 1;
 
-        final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
-        return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
+        // Positive for leftmost read, negative for rightmost; tie-break by first-of-pair flag.
+        if (firstEnd.alignmentStart < secondEnd.alignmentStart) return magnitude;
+        if (firstEnd.alignmentStart > secondEnd.alignmentStart) return -magnitude;
+        if (firstEnd.isFirstSegment()) return magnitude;
+        return -magnitude;
     }
 
     /**

@@ -3,7 +3,7 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -22,6 +22,7 @@ public class CramComparison {
             "",
             "Options:",
             "  --reference <path>    Reference FASTA (required for CRAM)",
+            "  --output <path>       Write results to file (default: stderr only)",
             "  --lenient             Compare only name, flags, position, bases, qualities",
             "  --max-diffs <N>       Stop after N mismatches (default: 10)",
             "  --ignore-tags <list>  Comma-separated tags to skip (e.g. MD,NM)",
@@ -56,6 +57,7 @@ public class CramComparison {
         final String file2 = args[1];
 
         String referencePath = null;
+        String outputPath = null;
         boolean lenient = false;
         int maxDiffs = 10;
         final Set<String> ignoreTags = new HashSet<>();
@@ -64,6 +66,9 @@ public class CramComparison {
             switch (args[i]) {
                 case "--reference": case "-r":
                     referencePath = args[++i];
+                    break;
+                case "--output": case "-o":
+                    outputPath = args[++i];
                     break;
                 case "--lenient":
                     lenient = true;
@@ -88,6 +93,22 @@ public class CramComparison {
             factory.referenceSequence(new File(referencePath));
         }
 
+        try (final PrintWriter out = outputPath != null
+                ? new PrintWriter(new BufferedWriter(new FileWriter(outputPath)))
+                : null) {
+            return compareFiles(factory, file1, file2, lenient, maxDiffs, ignoreTags, out);
+        } catch (final IOException e) {
+            System.err.println("ERROR: " + e.getMessage());
+            return 2;
+        }
+    }
+
+    /**
+     * Compare two files and write results to the output writer (if non-null) and stderr.
+     */
+    private static int compareFiles(final SamReaderFactory factory, final String file1, final String file2,
+                                    final boolean lenient, final int maxDiffs, final Set<String> ignoreTags,
+                                    final PrintWriter out) {
         long recordCount = 0;
         int diffCount = 0;
 
@@ -109,9 +130,9 @@ public class CramComparison {
                 if (diff != null) {
                     diffCount++;
                     if (diffCount <= maxDiffs) {
-                        System.err.printf("Record %d: %s%n", recordCount, diff);
-                        System.err.printf("  file1: %s%n", rec1.getSAMString().trim());
-                        System.err.printf("  file2: %s%n", rec2.getSAMString().trim());
+                        emit(out, "Record %d: %s", recordCount, diff);
+                        emit(out, "  file1: %s", rec1.getSAMString().trim());
+                        emit(out, "  file2: %s", rec2.getSAMString().trim());
                     }
                 }
             }
@@ -121,7 +142,7 @@ public class CramComparison {
                 long extra1 = 0, extra2 = 0;
                 while (it1.hasNext()) { it1.next(); extra1++; }
                 while (it2.hasNext()) { it2.next(); extra2++; }
-                System.err.printf("Record count mismatch: file1 has %d records, file2 has %d records%n",
+                emit(out, "Record count mismatch: file1 has %d records, file2 has %d records",
                         recordCount + extra1, recordCount + extra2);
                 return 1;
             }
@@ -132,16 +153,25 @@ public class CramComparison {
         }
 
         if (diffCount > 0) {
-            System.err.printf("FAIL: %d mismatches in %,d records", diffCount, recordCount);
             if (diffCount > maxDiffs) {
-                System.err.printf(" (showing first %d)", maxDiffs);
+                emit(out, "FAIL: %d mismatches in %,d records (showing first %d)", diffCount, recordCount, maxDiffs);
+            } else {
+                emit(out, "FAIL: %d mismatches in %,d records", diffCount, recordCount);
             }
-            System.err.println();
             return 1;
         }
 
-        System.err.printf("OK: %,d records match%n", recordCount);
+        emit(out, "OK: %,d records match", recordCount);
         return 0;
+    }
+
+    /** Write a formatted message to stderr and optionally to an output file. */
+    private static void emit(final PrintWriter out, final String format, final Object... args) {
+        final String message = String.format(format, args);
+        System.err.println(message);
+        if (out != null) {
+            out.println(message);
+        }
     }
 
     /** Lenient comparison: only name, flags, position, bases, qualities. */
