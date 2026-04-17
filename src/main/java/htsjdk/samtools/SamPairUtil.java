@@ -110,23 +110,29 @@ public class SamPairUtil {
         if (readIsOnReverseStrand) {
             // read's 5' position  ( <---x ) - CIGAR-derived, exact
             negativeStrandFivePrimePos = record.getAlignmentEnd();
-        } else if (SAMUtils.getMateCigarString(record) != null) {
-            // mate's 5' position  ( <---x ) derived from the mate CIGAR (MC)
-            // tag when available.  This matches what the reverse-strand
-            // branch computes for the same pair and keeps getPairOrientation
-            // symmetric across the two ends.
-            negativeStrandFivePrimePos = SAMUtils.getMateAlignmentEnd(record);
         } else {
-            // Fallback: derive the mate's 5' position from TLEN under
-            // htsjdk's convention (see computeInsertSize), where TLEN
-            // encodes an inclusive 5'-to-5' interval length with a ±1
-            // adjustment.  CoordMath.getEnd converts that length back into
-            // the mate's 5' reference position.  This fallback may still
-            // produce asymmetric results when TLEN was written by a tool
-            // that uses SAM v1 §1.4's leftmost-to-rightmost convention
-            // (e.g., bwa on a dovetail pair); callers that need symmetric
-            // results in that situation must provide the MC tag.
-            negativeStrandFivePrimePos = CoordMath.getEnd(record.getAlignmentStart(), record.getInferredInsertSize());
+            // Prefer the mate CIGAR (MC) tag when available so the mate's
+            // 5' position  ( <---x ) matches what the reverse-strand branch
+            // computes for the same pair and keeps getPairOrientation
+            // symmetric across the two ends.  Decode the mate CIGAR once
+            // rather than looking up the MC attribute twice via
+            // SAMUtils.getMateAlignmentEnd.
+            final Cigar mateCigar = SAMUtils.getMateCigar(record);
+            if (mateCigar != null) {
+                negativeStrandFivePrimePos = CoordMath.getEnd(record.getMateAlignmentStart(), mateCigar.getReferenceLength());
+            } else {
+                // Fallback: derive the mate's 5' position from TLEN under
+                // htsjdk's convention (see computeInsertSize), where TLEN
+                // encodes an inclusive 5'-to-5' interval length with a ±1
+                // adjustment.  CoordMath.getEnd converts that length back
+                // into the mate's 5' reference position.  This fallback may
+                // still produce asymmetric results when TLEN was written by
+                // a tool that uses SAM v1 §1.4's leftmost-to-rightmost
+                // convention (e.g., bwa on a dovetail pair); callers that
+                // need symmetric results in that situation must provide the
+                // MC tag.
+                negativeStrandFivePrimePos = CoordMath.getEnd(record.getAlignmentStart(), record.getInferredInsertSize());
+            }
         }
 
         return ( positiveStrandFivePrimePos <= negativeStrandFivePrimePos
