@@ -18,7 +18,12 @@ import csv
 from pathlib import Path
 from urllib.parse import urlparse
 
-configfile: "config.yaml"
+# Directory containing this Snakefile. All config, sample sheet, and JAR paths
+# are resolved relative to this directory so that --directory can be used to
+# place outputs (downloads, intermediates, results) on a separate volume.
+PIPELINE_DIR = Path(workflow.basedir)
+
+configfile: str(PIPELINE_DIR / "config.yaml")
 
 
 # ---------------------------------------------------------------------------
@@ -27,12 +32,14 @@ configfile: "config.yaml"
 
 def resolve_jar(pattern):
     import glob
-    matches = sorted(glob.glob(pattern))
+    # Resolve the pattern relative to the pipeline directory
+    resolved = str(PIPELINE_DIR / pattern)
+    matches = sorted(glob.glob(resolved))
     if matches:
         return matches[-1]  # latest version if multiple
-    if Path(pattern).exists():
-        return pattern
-    raise FileNotFoundError(f"htsjdk JAR not found: {pattern}. Run: cd .. && ./gradlew shadowJar")
+    if Path(resolved).exists():
+        return resolved
+    raise FileNotFoundError(f"htsjdk JAR not found: {resolved}. Run: cd .. && ./gradlew shadowJar")
 
 
 # ---------------------------------------------------------------------------
@@ -74,11 +81,12 @@ REFERENCES = {}     # ref_key -> {"url": str}           (remote mode only)
 REMOTE_INPUTS = {}  # sample -> {"url": str, "ext": str} (remote mode only)
 REMOTE_MODE = False
 
-with open(DATASET_FILE) as f:
+with open(PIPELINE_DIR / DATASET_FILE) as f:
     reader = csv.DictReader(f, delimiter="\t")
 
     if "input_url" in reader.fieldnames:
-        # Remote mode: test_datasets.tsv format
+        # Remote mode: test_datasets.tsv format.
+        # Download paths are relative to the working directory (--directory).
         REMOTE_MODE = True
         for row in reader:
             sample = row["sample"]
@@ -94,11 +102,13 @@ with open(DATASET_FILE) as f:
             REFERENCES[ref_key] = {"url": ref_url}
             REMOTE_INPUTS[sample] = {"url": input_url, "ext": ext}
     else:
-        # Local mode: samples.tsv format (backward compatible)
+        # Local mode: samples.tsv format (backward compatible).
+        # Paths in the TSV are relative to the pipeline directory, so resolve
+        # them to absolute paths to work correctly with --directory.
         for row in reader:
             SAMPLES[row["sample"]] = {
-                "input": row["input"],
-                "reference": row["reference"],
+                "input": str(PIPELINE_DIR / row["input"]),
+                "reference": str(PIPELINE_DIR / row["reference"]),
             }
 
 # Apply optional sample filter from config
