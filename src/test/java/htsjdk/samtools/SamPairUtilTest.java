@@ -55,6 +55,30 @@ public class SamPairUtilTest extends HtsjdkTest {
         SamPairUtil.getPairOrientation(record);
     }
 
+    /**
+     * Soft-clipped dovetail pair in which heavy 5' soft-clipping collapses the
+     * forward and reverse 5' ends onto the same reference position.  This is a
+     * common pattern after adapter read-through trimming.  Regardless of which
+     * end is inspected, getPairOrientation must return the same answer.
+     */
+    @Test
+    public void testGetPairOrientationSymmetryForSoftClippedDovetail() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", 100000000));
+
+        // R1 forward:  alignStart = 100, CIGAR = 90S10M -> 5' = 100, alignEnd = 109
+        // R2 reverse:  alignStart = 91,  CIGAR = 10M90S -> 5' (alignEnd) = 100
+        final SAMRecord r1 = makeSamRecord2(header, 100, false, "90S10M", true);
+        final SAMRecord r2 = makeSamRecord2(header, 91,  true,  "10M90S", false);
+        SamPairUtil.setMateInfo(r1, r2, true);
+
+        final SamPairUtil.PairOrientation fromR1 = SamPairUtil.getPairOrientation(r1);
+        final SamPairUtil.PairOrientation fromR2 = SamPairUtil.getPairOrientation(r2);
+        Assert.assertEquals(fromR1, fromR2,
+                "getPairOrientation must be symmetric across a pair: " +
+                "forward read returned " + fromR1 + " but reverse read returned " + fromR2);
+    }
+
 
     @Test(dataProvider = "testSetMateInfoMateCigar")
     public void testSetMateInfoMateCigar(final String testName,
@@ -207,6 +231,13 @@ public class SamPairUtilTest extends HtsjdkTest {
                 {"second end enclosed reverse tandem", 1, 100, false, 50, 50, false, SamPairUtil.PairOrientation.TANDEM},
                 {"first end enclosed forward tandem", 1, 50, true, 1, 100, true, SamPairUtil.PairOrientation.TANDEM},
                 {"first end enclosed reverse tandem", 1, 50, false, 1, 100, false, SamPairUtil.PairOrientation.TANDEM},
+                // Dovetail pair in which the forward read's 5' end coincides
+                // exactly with the reverse read's 5' end.  getPairOrientation
+                // must return the same answer regardless of which end is
+                // inspected.  The reverse-strand branch (which uses the
+                // CIGAR-derived alignment end) treats the tie as RF, so we
+                // canonicalize on that.
+                {"dovetail 5' tie", 100, 100, false, 1, 100, true, SamPairUtil.PairOrientation.RF},
         };
     }
 
