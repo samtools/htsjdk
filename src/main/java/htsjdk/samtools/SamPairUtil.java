@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.PeekableIterator;
 
 import java.util.Iterator;
@@ -42,9 +43,12 @@ public class SamPairUtil {
      * F = mapped to forward strand
      * R = mapped to reverse strand
      *
-     * FR means the read that's mapped to the forward strand comes before the
-     * read mapped to the reverse strand when their 5'-end coordinates are
-     * compared.
+     * FR means the read that's mapped to the forward strand comes at or
+     * before the read mapped to the reverse strand when their 5'-end
+     * coordinates are compared.  When the two 5'-end coordinates coincide
+     * the pair is classified as FR, keeping the FR/RF boundary continuous
+     * across overlap widths (e.g., a 1 bp overlap classifies as FR just
+     * like a 2 bp overlap does).
      *
      * PairOrientation only makes sense for a pair of reads that are both mapped to the same contig/chromosome
      */
@@ -70,12 +74,13 @@ public class SamPairUtil {
      *
      * When the record is on the forward strand, the mate's 5' position is
      * computed from the mate CIGAR (MC) tag if present, and otherwise falls
-     * back to {@code getAlignmentStart() + getInferredInsertSize()}.  The
-     * fallback can produce asymmetric results (i.e., different orientations
-     * for the two ends of the same pair) when TLEN is degenerate, as happens
-     * with soft-clipped dovetail pairs whose 5' ends coincide.  Callers that
-     * need symmetric orientation on such pairs should ensure the MC tag is
-     * set on at least the forward-strand record.
+     * back to {@code CoordMath.getEnd(getAlignmentStart(), getInferredInsertSize())}.
+     * The fallback is exact for TLEN values written under htsjdk's 5'-to-5'
+     * convention (see {@link #computeInsertSize(SAMRecord, SAMRecord)}) but
+     * can still produce asymmetric results on dovetail pairs when TLEN was
+     * written under SAM v1 §1.4's leftmost-to-rightmost convention.  Callers
+     * that need symmetric orientation on such pairs should ensure the MC tag
+     * is set on at least the forward-strand record.
      */
     public static PairOrientation getPairOrientation(final SAMRecord record)
     {
@@ -112,17 +117,19 @@ public class SamPairUtil {
             // symmetric across the two ends.
             negativeStrandFivePrimePos = SAMUtils.getMateAlignmentEnd(record);
         } else {
-            // Fallback: derive the mate's 5' position from TLEN.  When TLEN
-            // is degenerate (e.g., |TLEN| == 1 for soft-clipped dovetail
-            // pairs whose 5' ends coincide) this value may disagree with
-            // what the reverse-strand branch would compute, and
-            // getPairOrientation can return different answers depending on
-            // which end of the pair is inspected.  Callers that need
-            // symmetric results on such pairs must provide the MC tag.
-            negativeStrandFivePrimePos = record.getAlignmentStart() + record.getInferredInsertSize();
+            // Fallback: derive the mate's 5' position from TLEN under
+            // htsjdk's convention (see computeInsertSize), where TLEN
+            // encodes an inclusive 5'-to-5' interval length with a ±1
+            // adjustment.  CoordMath.getEnd converts that length back into
+            // the mate's 5' reference position.  This fallback may still
+            // produce asymmetric results when TLEN was written by a tool
+            // that uses SAM v1 §1.4's leftmost-to-rightmost convention
+            // (e.g., bwa on a dovetail pair); callers that need symmetric
+            // results in that situation must provide the MC tag.
+            negativeStrandFivePrimePos = CoordMath.getEnd(record.getAlignmentStart(), record.getInferredInsertSize());
         }
 
-        return ( positiveStrandFivePrimePos < negativeStrandFivePrimePos
+        return ( positiveStrandFivePrimePos <= negativeStrandFivePrimePos
                 ? PairOrientation.FR
                 : PairOrientation.RF );
     }

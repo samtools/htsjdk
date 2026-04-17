@@ -59,7 +59,8 @@ public class SamPairUtilTest extends HtsjdkTest {
      * Soft-clipped dovetail pair in which heavy 5' soft-clipping collapses the
      * forward and reverse 5' ends onto the same reference position.  This is a
      * common pattern after adapter read-through trimming.  Regardless of which
-     * end is inspected, getPairOrientation must return the same answer.
+     * end is inspected, getPairOrientation must return the same answer, and
+     * a 5'-tie resolves to FR.
      */
     @Test
     public void testGetPairOrientationSymmetryForSoftClippedDovetail() {
@@ -77,6 +78,8 @@ public class SamPairUtilTest extends HtsjdkTest {
         Assert.assertEquals(fromR1, fromR2,
                 "getPairOrientation must be symmetric across a pair: " +
                 "forward read returned " + fromR1 + " but reverse read returned " + fromR2);
+        Assert.assertEquals(fromR1, SamPairUtil.PairOrientation.FR,
+                "5'-tie should resolve to FR");
     }
 
 
@@ -234,10 +237,11 @@ public class SamPairUtilTest extends HtsjdkTest {
                 // Dovetail pair in which the forward read's 5' end coincides
                 // exactly with the reverse read's 5' end.  getPairOrientation
                 // must return the same answer regardless of which end is
-                // inspected.  The reverse-strand branch (which uses the
-                // CIGAR-derived alignment end) treats the tie as RF, so we
-                // canonicalize on that.
-                {"dovetail 5' tie", 100, 100, false, 1, 100, true, SamPairUtil.PairOrientation.RF},
+                // inspected.  A 5'-tie is classified as FR so that the
+                // boundary between FR and RF is continuous across overlap
+                // widths (a 1 bp overlap resolves to FR just like a 2 bp
+                // overlap does).
+                {"dovetail 5' tie", 100, 100, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
         };
     }
 
