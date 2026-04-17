@@ -183,40 +183,48 @@ if REMOTE_MODE:
         """Download a remote input BAM/CRAM file."""
         output:
             "downloads/inputs/{sample}.{ext}"
+        log:
+            "logs/download_input.{sample}.{ext}.log"
         params:
             url=lambda wc: REMOTE_INPUTS[wc.sample]["url"],
             is_s3=lambda wc: REMOTE_INPUTS[wc.sample]["url"].startswith("s3://"),
         shell:
             """
-            mkdir -p $(dirname {output})
-            if [[ "{params.is_s3}" == "True" ]]; then
-                aws s3 cp --no-sign-request '{params.url}' {output}
-            else
-                curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
-                mv {output}.tmp {output}
-            fi
+            (
+                mkdir -p $(dirname {output})
+                if [[ "{params.is_s3}" == "True" ]]; then
+                    aws s3 cp --no-sign-request '{params.url}' {output}
+                else
+                    curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
+                    mv {output}.tmp {output}
+                fi
+            ) > {log} 2>&1
             """
 
     rule download_reference:
         """Download and decompress a remote reference FASTA."""
         output:
             "downloads/references/{ref_key}/ref.fasta"
+        log:
+            "logs/download_reference.{ref_key}.log"
         params:
             url=lambda wc: REFERENCES[wc.ref_key]["url"],
             is_gz=lambda wc: REFERENCES[wc.ref_key]["url"].endswith(".gz"),
             is_s3=lambda wc: REFERENCES[wc.ref_key]["url"].startswith("s3://"),
         shell:
             """
-            mkdir -p $(dirname {output})
-            if [[ "{params.is_s3}" == "True" ]]; then
-                aws s3 cp --no-sign-request '{params.url}' {output}
-            elif [[ "{params.is_gz}" == "True" ]]; then
-                curl -fSL --retry 3 --retry-delay 5 '{params.url}' | gunzip > {output}.tmp
-                mv {output}.tmp {output}
-            else
-                curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
-                mv {output}.tmp {output}
-            fi
+            (
+                mkdir -p $(dirname {output})
+                if [[ "{params.is_s3}" == "True" ]]; then
+                    aws s3 cp --no-sign-request '{params.url}' {output}
+                elif [[ "{params.is_gz}" == "True" ]]; then
+                    curl -fSL --retry 3 --retry-delay 5 '{params.url}' | gunzip > {output}.tmp
+                    mv {output}.tmp {output}
+                else
+                    curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
+                    mv {output}.tmp {output}
+                fi
+            ) > {log} 2>&1
             """
 
     rule index_reference:
@@ -225,8 +233,10 @@ if REMOTE_MODE:
             "downloads/references/{ref_key}/ref.fasta"
         output:
             "downloads/references/{ref_key}/ref.fasta.fai"
+        log:
+            "logs/index_reference.{ref_key}.log"
         shell:
-            "samtools faidx {input}"
+            "samtools faidx {input} > {log} 2>&1"
 
 
 # ---------------------------------------------------------------------------
@@ -240,9 +250,11 @@ rule convert_to_bam:
         file=lambda wc: SAMPLES[wc.sample]["input"],
     output:
         temp("output/{sample}/original.bam")
+    log:
+        "logs/convert_to_bam.{sample}.log"
     priority: 10
     shell:
-        "samtools view -b -T {input.ref} -o {output} {input.file}"
+        "samtools view -b -T {input.ref} -o {output} {input.file} > {log} 2>&1"
 
 
 rule htsjdk_encode:
@@ -252,12 +264,15 @@ rule htsjdk_encode:
         bam="output/{sample}/original.bam",
     output:
         temp("output/{sample}/{profile}/htsjdk.cram")
+    log:
+        "logs/htsjdk_encode.{sample}.{profile}.log"
     priority: 20
     params:
         jar=HTSJDK_JAR,
     shell:
         "java -cp {params.jar} htsjdk.samtools.cram.CramConverter "
-        "{input.bam} {output} --reference {input.ref} --profile {wildcards.profile}"
+        "{input.bam} {output} --reference {input.ref} --profile {wildcards.profile} "
+        "> {log} 2>&1"
 
 
 rule samtools_encode:
@@ -267,11 +282,13 @@ rule samtools_encode:
         bam="output/{sample}/original.bam",
     output:
         temp("output/{sample}/{profile}/samtools.cram")
+    log:
+        "logs/samtools_encode.{sample}.{profile}.log"
     priority: 20
     shell:
         "samtools view -C -T {input.ref} "
         "--output-fmt-option version=3.1 --output-fmt-option {wildcards.profile} "
-        "-o {output} {input.bam}"
+        "-o {output} {input.bam} > {log} 2>&1"
 
 
 rule htsjdk_decode:
@@ -281,12 +298,15 @@ rule htsjdk_decode:
         cram="output/{sample}/{profile}/{encoder}.cram",
     output:
         temp("output/{sample}/{profile}/{encoder}_via_htsjdk.bam")
+    log:
+        "logs/htsjdk_decode.{sample}.{profile}.{encoder}.log"
     priority: 30
     params:
         jar=HTSJDK_JAR,
     shell:
         "java -cp {params.jar} htsjdk.samtools.cram.CramConverter "
-        "{input.cram} {output} --reference {input.ref}"
+        "{input.cram} {output} --reference {input.ref} "
+        "> {log} 2>&1"
 
 
 rule samtools_decode:
@@ -296,9 +316,11 @@ rule samtools_decode:
         cram="output/{sample}/{profile}/{encoder}.cram",
     output:
         temp("output/{sample}/{profile}/{encoder}_via_samtools.bam")
+    log:
+        "logs/samtools_decode.{sample}.{profile}.{encoder}.log"
     priority: 30
     shell:
-        "samtools view -b -T {input.ref} -o {output} {input.cram}"
+        "samtools view -b -T {input.ref} -o {output} {input.cram} > {log} 2>&1"
 
 
 rule compare:
@@ -309,6 +331,8 @@ rule compare:
         original="output/{sample}/original.bam",
     output:
         "output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result"
+    log:
+        "logs/compare.{sample}.{profile}.{cmp_name}.{cmp_base}.log"
     priority: 40
     params:
         jar=HTSJDK_JAR,
@@ -319,7 +343,7 @@ rule compare:
         java -cp {params.jar} htsjdk.samtools.cram.CramComparison \
             {input.test} {input.original} \
             --reference {input.ref} {params.mode} --max-diffs {params.max_diffs} \
-            2>&1 | tee {output}
+            2>&1 | tee {log} > {output}
         """
 
 
@@ -333,8 +357,11 @@ rule summary:
                cmp_base=[c[1] for c in COMPARISONS]),
     output:
         "output/summary.txt"
+    log:
+        "logs/summary.log"
     priority: 50
     run:
+        import shutil
         passed = 0
         failed = 0
         with open(output[0], "w") as out:
@@ -350,6 +377,7 @@ rule summary:
                     line = f"{status}  {path.relative_to('output')}"
                     out.write(line + "\n")
                     print(line)
-            summary = f"\n{passed} passed, {failed} failed out of {passed + failed} comparisons"
-            out.write(summary + "\n")
-            print(summary)
+            summary_line = f"\n{passed} passed, {failed} failed out of {passed + failed} comparisons"
+            out.write(summary_line + "\n")
+            print(summary_line)
+        shutil.copy(output[0], log[0])
