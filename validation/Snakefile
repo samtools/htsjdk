@@ -229,7 +229,8 @@ rule convert_to_bam:
         unpack(ref_inputs),
         file=lambda wc: SAMPLES[wc.sample]["input"],
     output:
-        "output/{sample}/original.bam"
+        temp("output/{sample}/original.bam")
+    priority: 10
     shell:
         "samtools view -b -T {input.ref} -o {output} {input.file}"
 
@@ -240,7 +241,8 @@ rule htsjdk_encode:
         unpack(ref_inputs),
         bam="output/{sample}/original.bam",
     output:
-        "output/{sample}/{profile}/htsjdk.cram"
+        temp("output/{sample}/{profile}/htsjdk.cram")
+    priority: 20
     params:
         jar=HTSJDK_JAR,
     shell:
@@ -254,7 +256,8 @@ rule samtools_encode:
         unpack(ref_inputs),
         bam="output/{sample}/original.bam",
     output:
-        "output/{sample}/{profile}/samtools.cram"
+        temp("output/{sample}/{profile}/samtools.cram")
+    priority: 20
     shell:
         "samtools view -C -T {input.ref} "
         "--output-fmt-option version=3.1 --output-fmt-option {wildcards.profile} "
@@ -267,7 +270,8 @@ rule htsjdk_decode:
         unpack(ref_inputs),
         cram="output/{sample}/{profile}/{encoder}.cram",
     output:
-        "output/{sample}/{profile}/{encoder}_via_htsjdk.bam"
+        temp("output/{sample}/{profile}/{encoder}_via_htsjdk.bam")
+    priority: 30
     params:
         jar=HTSJDK_JAR,
     shell:
@@ -281,7 +285,8 @@ rule samtools_decode:
         unpack(ref_inputs),
         cram="output/{sample}/{profile}/{encoder}.cram",
     output:
-        "output/{sample}/{profile}/{encoder}_via_samtools.bam"
+        temp("output/{sample}/{profile}/{encoder}_via_samtools.bam")
+    priority: 30
     shell:
         "samtools view -b -T {input.ref} -o {output} {input.cram}"
 
@@ -294,6 +299,7 @@ rule compare:
         original="output/{sample}/original.bam",
     output:
         "output/{sample}/{profile}/{cmp_name}_vs_{cmp_base}.result"
+    priority: 40
     params:
         jar=HTSJDK_JAR,
         mode="--lenient" if COMPARISON_MODE == "lenient" else "",
@@ -317,6 +323,7 @@ rule summary:
                cmp_base=[c[1] for c in COMPARISONS]),
     output:
         "output/summary.txt"
+    priority: 50
     run:
         passed = 0
         failed = 0
