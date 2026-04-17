@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.PeekableIterator;
 
 import java.util.Iterator;
@@ -42,9 +43,12 @@ public class SamPairUtil {
      * F = mapped to forward strand
      * R = mapped to reverse strand
      *
-     * FR means the read that's mapped to the forward strand comes before the
-     * read mapped to the reverse strand when their 5'-end coordinates are
-     * compared.
+     * FR means the read that's mapped to the forward strand comes at or
+     * before the read mapped to the reverse strand when their 5'-end
+     * coordinates are compared.  When the two 5'-end coordinates coincide
+     * the pair is classified as FR, keeping the FR/RF boundary continuous
+     * across overlap widths (e.g., a 1 bp overlap classifies as FR just
+     * like a 2 bp overlap does).
      *
      * PairOrientation only makes sense for a pair of reads that are both mapped to the same contig/chromosome
      */
@@ -67,6 +71,16 @@ public class SamPairUtil {
      *
      * NOTA BENE: This is NOT the orientation byte as used in Picard's MarkDuplicates. For that please look
      * in ReadEnds (in Picard).
+     *
+     * When the record is on the forward strand, the mate's 5' position is
+     * computed from the mate CIGAR (MC) tag if present, and otherwise falls
+     * back to {@code CoordMath.getEnd(getAlignmentStart(), getInferredInsertSize())}.
+     * The fallback is exact for TLEN values written under htsjdk's 5'-to-5'
+     * convention (see {@link #computeInsertSize(SAMRecord, SAMRecord)}) but
+     * can still produce asymmetric results on dovetail pairs when TLEN was
+     * written under SAM v1 §1.4's leftmost-to-rightmost convention.  Callers
+     * that need symmetric orientation on such pairs should ensure the MC tag
+     * is set on at least the forward-strand record.
      */
     public static PairOrientation getPairOrientation(final SAMRecord record)
     {
@@ -92,11 +106,36 @@ public class SamPairUtil {
                 ?  record.getMateAlignmentStart()  //mate's 5' position  ( x---> )
                 :  record.getAlignmentStart() );   //read's 5' position  ( x---> )
 
-        final long negativeStrandFivePrimePos = ( readIsOnReverseStrand
-                ?  record.getAlignmentEnd()                                   //read's 5' position  ( <---x )
-                :  record.getAlignmentStart() + record.getInferredInsertSize() );  //mate's 5' position  ( <---x )
+        final long negativeStrandFivePrimePos;
+        if (readIsOnReverseStrand) {
+            // read's 5' position  ( <---x ) - CIGAR-derived, exact
+            negativeStrandFivePrimePos = record.getAlignmentEnd();
+        } else {
+            // Prefer the mate CIGAR (MC) tag when available so the mate's
+            // 5' position  ( <---x ) matches what the reverse-strand branch
+            // computes for the same pair and keeps getPairOrientation
+            // symmetric across the two ends.  Decode the mate CIGAR once
+            // rather than looking up the MC attribute twice via
+            // SAMUtils.getMateAlignmentEnd.
+            final Cigar mateCigar = SAMUtils.getMateCigar(record);
+            if (mateCigar != null) {
+                negativeStrandFivePrimePos = CoordMath.getEnd(record.getMateAlignmentStart(), mateCigar.getReferenceLength());
+            } else {
+                // Fallback: derive the mate's 5' position from TLEN under
+                // htsjdk's convention (see computeInsertSize), where TLEN
+                // encodes an inclusive 5'-to-5' interval length with a ±1
+                // adjustment.  CoordMath.getEnd converts that length back
+                // into the mate's 5' reference position.  This fallback may
+                // still produce asymmetric results when TLEN was written by
+                // a tool that uses SAM v1 §1.4's leftmost-to-rightmost
+                // convention (e.g., bwa on a dovetail pair); callers that
+                // need symmetric results in that situation must provide the
+                // MC tag.
+                negativeStrandFivePrimePos = CoordMath.getEnd(record.getAlignmentStart(), record.getInferredInsertSize());
+            }
+        }
 
-        return ( positiveStrandFivePrimePos < negativeStrandFivePrimePos
+        return ( positiveStrandFivePrimePos <= negativeStrandFivePrimePos
                 ? PairOrientation.FR
                 : PairOrientation.RF );
     }
