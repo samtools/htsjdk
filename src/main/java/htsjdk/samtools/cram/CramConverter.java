@@ -161,6 +161,7 @@ public class CramConverter {
                 }
             }
         } catch (final Exception e) {
+            e.printStackTrace(System.err);
             die("Error: " + e.getMessage());
         }
 

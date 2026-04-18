@@ -47,7 +47,7 @@ def resolve_jar(pattern):
 # ---------------------------------------------------------------------------
 
 def ref_key_from_url(url):
-    """Derive a short, human-readable reference key from a URL."""
+    """Derive a short, human-readable reference key from a single URL."""
     known = {
         "GRCh38_full_analysis_set_plus_decoy_hla.fa":
             "GRCh38_full_decoy_hla",
@@ -69,6 +69,43 @@ def ref_key_from_url(url):
                                        .replace(".fna", "").replace(".gz", ""))
 
 
+def parse_reference_urls(url_string):
+    """Parse a (possibly comma-separated) reference URL string.
+
+    Each entry may carry a ``#contig_name`` suffix that instructs the pipeline
+    to rename the first FASTA header to ``>contig_name`` after download.  This
+    is useful when the upstream source uses a different contig name (e.g. NCBI
+    accession) than the BAM header expects.
+
+    Returns a list of dicts: ``[{"url": str, "rename": str | None}, ...]``.
+    """
+    parts = []
+    for raw in url_string.split(","):
+        raw = raw.strip()
+        if "#" in raw and not raw.startswith("s3://"):
+            url, rename = raw.rsplit("#", 1)
+            parts.append({"url": url, "rename": rename})
+        else:
+            parts.append({"url": raw, "rename": None})
+    return parts
+
+
+def ref_key_from_urls(url_parts):
+    """Derive a reference key from a parsed URL list.
+
+    Uses the primary (first) URL's key, then appends the rename label (or
+    derived key) for each additional URL.  This ensures that references with
+    extra contigs get a distinct key from the base reference alone.
+    """
+    key = ref_key_from_url(url_parts[0]["url"])
+    for part in url_parts[1:]:
+        if part["rename"]:
+            key += "_" + part["rename"]
+        else:
+            key += "_" + ref_key_from_url(part["url"])
+    return key
+
+
 def input_extension(url):
     """Determine BAM/CRAM extension from URL path."""
     return "cram" if urlparse(url).path.endswith(".cram") else "bam"
@@ -77,7 +114,7 @@ def input_extension(url):
 DATASET_FILE = config.get("dataset_file", "samples.tsv")
 
 SAMPLES = {}        # sample -> {"input": path, "reference": path}
-REFERENCES = {}     # ref_key -> {"url": str}           (remote mode only)
+REFERENCES = {}     # ref_key -> {"urls": [{"url": str, "rename": str|None}, ...]}
 REMOTE_INPUTS = {}  # sample -> {"url": str, "ext": str} (remote mode only)
 REMOTE_MODE = False
 
@@ -92,14 +129,15 @@ with open(PIPELINE_DIR / DATASET_FILE) as f:
             sample = row["sample"]
             input_url = row["input_url"]
             ref_url = row["reference_url"]
-            ref_key = ref_key_from_url(ref_url)
+            url_parts = parse_reference_urls(ref_url)
+            ref_key = ref_key_from_urls(url_parts)
             ext = input_extension(input_url)
 
             SAMPLES[sample] = {
                 "input": f"downloads/inputs/{sample}.{ext}",
                 "reference": f"downloads/references/{ref_key}/ref.fasta",
             }
-            REFERENCES[ref_key] = {"url": ref_url}
+            REFERENCES[ref_key] = {"urls": url_parts}
             REMOTE_INPUTS[sample] = {"url": input_url, "ext": ext}
     else:
         # Local mode: samples.tsv format (backward compatible).
@@ -202,30 +240,45 @@ if REMOTE_MODE:
             """
 
     rule download_reference:
-        """Download and decompress a remote reference FASTA."""
+        """Download, decompress, and concatenate remote reference FASTA(s).
+
+        Supports multiple URLs per reference (comma-separated in TSV).
+        Each URL may carry a #contig_name suffix to rename the FASTA header.
+        """
         output:
             "downloads/references/{ref_key}/ref.fasta"
         log:
             "logs/download_reference.{ref_key}.log"
         params:
-            url=lambda wc: REFERENCES[wc.ref_key]["url"],
-            is_gz=lambda wc: REFERENCES[wc.ref_key]["url"].endswith(".gz"),
-            is_s3=lambda wc: REFERENCES[wc.ref_key]["url"].startswith("s3://"),
-        shell:
-            """
-            (
-                mkdir -p $(dirname {output})
-                if [[ "{params.is_s3}" == "True" ]]; then
-                    aws s3 cp --no-sign-request '{params.url}' {output}
-                elif [[ "{params.is_gz}" == "True" ]]; then
-                    curl -fSL --retry 3 --retry-delay 5 '{params.url}' | gunzip > {output}.tmp
-                    mv {output}.tmp {output}
-                else
-                    curl -fSL --retry 3 --retry-delay 5 -o {output}.tmp '{params.url}'
-                    mv {output}.tmp {output}
-                fi
-            ) > {log} 2>&1
-            """
+            url_parts=lambda wc: REFERENCES[wc.ref_key]["urls"],
+        run:
+            import os
+            os.makedirs(os.path.dirname(output[0]), exist_ok=True)
+            tmp = output[0] + ".tmp"
+            logfile = log[0]
+
+            open(logfile, "w").close()
+            if os.path.exists(tmp):
+                os.remove(tmp)
+
+            for part in params.url_parts:
+                url = part["url"]
+                rename = part.get("rename")
+
+                if url.startswith("s3://"):
+                    dl_cmd = f"aws s3 cp --no-sign-request '{url}' -"
+                else:
+                    dl_cmd = f"curl -fSL --retry 3 --retry-delay 5 '{url}'"
+
+                if url.endswith(".gz"):
+                    dl_cmd += " | gunzip"
+
+                if rename:
+                    dl_cmd += " | sed '1s/^>.*/>%s/'" % rename
+
+                shell(f"({dl_cmd}) >> '{tmp}' 2>> '{logfile}'")
+
+            os.rename(tmp, output[0])
 
     rule index_reference:
         """Create .fai index for a downloaded reference FASTA."""
@@ -267,10 +320,13 @@ rule htsjdk_encode:
     log:
         "logs/htsjdk_encode.{sample}.{profile}.log"
     priority: 20
+    retries: 3
+    resources:
+        mem_mb=lambda wc, attempt: 4096 + (attempt - 1) * 2048,
     params:
         jar=HTSJDK_JAR,
     shell:
-        "java -cp {params.jar} htsjdk.samtools.cram.CramConverter "
+        "java -Xmx{resources.mem_mb}m -cp {params.jar} htsjdk.samtools.cram.CramConverter "
         "{input.bam} {output} --reference {input.ref} --profile {wildcards.profile} "
         "> {log} 2>&1"
 
@@ -301,10 +357,13 @@ rule htsjdk_decode:
     log:
         "logs/htsjdk_decode.{sample}.{profile}.{encoder}.log"
     priority: 30
+    retries: 3
+    resources:
+        mem_mb=lambda wc, attempt: 4096 + (attempt - 1) * 2048,
     params:
         jar=HTSJDK_JAR,
     shell:
-        "java -cp {params.jar} htsjdk.samtools.cram.CramConverter "
+        "java -Xmx{resources.mem_mb}m -cp {params.jar} htsjdk.samtools.cram.CramConverter "
         "{input.cram} {output} --reference {input.ref} "
         "> {log} 2>&1"
 
@@ -334,12 +393,15 @@ rule compare:
     log:
         "logs/compare.{sample}.{profile}.{cmp_name}.{cmp_base}.log"
     priority: 40
+    retries: 3
+    resources:
+        mem_mb=lambda wc, attempt: 4096 + (attempt - 1) * 2048,
     params:
         jar=HTSJDK_JAR,
         mode="--lenient" if COMPARISON_MODE == "lenient" else "",
         max_diffs=MAX_DIFFS,
     shell:
-        "java -cp {params.jar} htsjdk.samtools.cram.CramComparison "
+        "java -Xmx{resources.mem_mb}m -cp {params.jar} htsjdk.samtools.cram.CramComparison "
         "{input.test} {input.original} "
         "--reference {input.ref} --output {output} {params.mode} --max-diffs {params.max_diffs} "
         "> {log} 2>&1"
