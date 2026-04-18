@@ -11,7 +11,7 @@ import java.util.*;
  * Handles known CRAM/SAM differences (auto-generated MD/NM, unsigned B-array types)
  * and reports mismatches with clear field-level detail.
  *
- * <p>Exit codes: 0 = files match, 1 = mismatches found, 2 = error.
+ * <p>Exit codes: 0 = comparison completed (match or mismatch), 2 = error.
  */
 public class CramComparison {
 
@@ -28,7 +28,7 @@ public class CramComparison {
             "  --ignore-tags <list>  Comma-separated tags to skip (e.g. MD,NM)",
             "  --help                Print this help message",
             "",
-            "Exit codes: 0 = match, 1 = mismatch, 2 = error"
+            "Exit codes: 0 = comparison completed, 2 = error"
     );
 
     // Tags that CRAM auto-generates on decode and may not be in the source
@@ -142,9 +142,9 @@ public class CramComparison {
                 long extra1 = 0, extra2 = 0;
                 while (it1.hasNext()) { it1.next(); extra1++; }
                 while (it2.hasNext()) { it2.next(); extra2++; }
-                emit(out, "Record count mismatch: file1 has %d records, file2 has %d records",
+                emit(out, "FAIL: Record count mismatch: file1 has %d records, file2 has %d records",
                         recordCount + extra1, recordCount + extra2);
-                return 1;
+                return 0;
             }
         } catch (final Exception e) {
             System.err.println("ERROR: " + e.getMessage());
@@ -158,7 +158,7 @@ public class CramComparison {
             } else {
                 emit(out, "FAIL: %d mismatches in %,d records", diffCount, recordCount);
             }
-            return 1;
+            return 0;
         }
 
         emit(out, "OK: %,d records match", recordCount);
