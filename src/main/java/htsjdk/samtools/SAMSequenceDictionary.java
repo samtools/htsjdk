@@ -24,8 +24,15 @@
 package htsjdk.samtools;
 
 import htsjdk.beta.plugin.HtsHeader;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
+import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -292,6 +299,99 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    /**
+     * Given a fasta filename, return the name of the corresponding dictionary file.
+     */
+    public static IOPath getFastaDictionaryFileName(IOPath fastaFile) {
+        final String fastaName = fastaFile.getURIString();
+        int lastDot = fastaName.lastIndexOf('.');
+        return new HtsPath(fastaName.substring(0, lastDot) + FileExtensions.DICT);
+    }
+
+    /**
+     * Given a fasta dictionary file, returns its sequence dictionary
+     *
+     * @param fastaDictionary fasta dictionary file
+     * @return the SAMSequenceDictionary from fastaDictionaryFile
+     */
+    public static SAMSequenceDictionary loadSAMSequenceDictionary( final IOPath fastaDictionary ) {
+        try ( final InputStream fastaDictionaryStream = fastaDictionary.getInputStream() ) {
+            return loadSAMSequenceDictionary(fastaDictionaryStream);
+        }
+        catch ( IOException e ) {
+            throw new RuntimeIOException("Error loading fasta dictionary file " + fastaDictionary, e);
+        }
+    }
+
+    /**
+     * Given an InputStream connected to a fasta dictionary, returns its sequence dictionary
+     *
+     * Note: does not close the InputStream it's passed
+     *
+     * @param fastaDictionaryStream InputStream connected to a fasta dictionary
+     * @return the SAMSequenceDictionary from the fastaDictionaryStream
+     */
+    public static SAMSequenceDictionary loadSAMSequenceDictionary( final InputStream fastaDictionaryStream ) {
+        // Don't close the reader when we're done, since we don't want to close the client's InputStream for them
+        final BufferedLineReader reader = new BufferedLineReader(fastaDictionaryStream);
+
+        final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+        final SAMFileHeader header = codec.decode(reader, fastaDictionaryStream.toString());
+
+        // Make sure we have a valid sequence dictionary before continuing:
+        if (header.getSequenceDictionary() == null || header.getSequenceDictionary().isEmpty()) {
+            throw new RuntimeException (
+                    "Could not read sequence dictionary from given fasta stream " +
+                            fastaDictionaryStream
+            );
+        }
+
+        return header.getSequenceDictionary();
+    }
+
+    final void requireMD5sOrThrow(final String contextMessage) {
+        final List<SAMSequenceRecord> missingMD5s = getSequencesWithMissingMD5s();
+        if (!missingMD5s.isEmpty()) {
+            throw new RuntimeException(SAMSequenceDictionary.createFormattedMD5Message(contextMessage, missingMD5s));
+        }
+    }
+
+    /**
+     * @return all sequences in this dictionary that do not have an MD5 attribute
+     */
+    List<SAMSequenceRecord> getSequencesWithMissingMD5s() {
+        return getSequences().stream().filter(
+                seqRec -> {
+                    final String MD5 = seqRec.getMd5();
+                    return MD5 == null || MD5.length() == 0;
+                }).collect(Collectors.toList());
+    }
+
+    /**
+     * Create a formatted error string message describing which MD5s are missing from the sequence dictionary.
+     *
+     * @param contextID a string recognizable to the user describing the input that is the source of the failure
+     * @param badSequenceRecords the sequence with missing MD5s
+     * @return a message string suitable for presentation to the user
+     */
+    static String createFormattedMD5Message(final String contextID, List<SAMSequenceRecord> badSequenceRecords) {
+        final int MAX_ERRORS_REPORTED =  10;
+        if (badSequenceRecords.size() != 0) {
+            return String.format(
+                    "The sequence dictionary for %s is missing the required MD5 checksum for some contigs: %s%s.",
+                    contextID,
+                    badSequenceRecords.stream()
+                            .limit(Integer.min(badSequenceRecords.size(), MAX_ERRORS_REPORTED))
+                            .map(SAMSequenceRecord::getSequenceName)
+                            .collect(Collectors.joining(",")),
+                    badSequenceRecords.size() > MAX_ERRORS_REPORTED ?
+                            " and others":
+                            "");
+        }
+        return null;
     }
 
     @Override

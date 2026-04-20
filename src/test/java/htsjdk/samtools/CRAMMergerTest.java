@@ -208,7 +208,11 @@ public class CRAMMergerTest extends HtsjdkTest {
         // 1. Read an input CRAM and write it out in partitioned form (header, parts, terminator)
         ReferenceSource referenceSource = new ReferenceSource(CRAM_REF);
         try (SamReader samReader = SamReaderFactory.makeDefault().referenceSource(referenceSource).open(CRAM_FILE);
-             PartitionedCRAMFileWriter partitionedCRAMFileWriter = new PartitionedCRAMFileWriter(outputDir, referenceSource, samReader.getFileHeader(), 250)) {
+             PartitionedCRAMFileWriter partitionedCRAMFileWriter = new PartitionedCRAMFileWriter(
+                     outputDir,
+                     referenceSource,
+                     CRAMTestUtils.addFakeSequenceMD5s(samReader.getFileHeader()),
+                     250)) {
             for (SAMRecord samRecord : samReader) {
                 partitionedCRAMFileWriter.addAlignment(samRecord);
             }
