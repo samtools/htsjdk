@@ -81,6 +81,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
             }
             this.channel = Files.newByteChannel(path);
+            sanityCheckFastaAgainstIndex(path,index);
         } catch (IOException e) {
             throw new SAMException("FASTA file should be readable but is not: " + path, e);
         }
