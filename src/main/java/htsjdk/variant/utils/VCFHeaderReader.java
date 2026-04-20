@@ -1,6 +1,5 @@
 package htsjdk.variant.utils;
 
-import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.IOUtil;
@@ -30,6 +29,7 @@ public final class VCFHeaderReader {
      * Read a VCF header from a stream that may be a VCF file (possibly gzip or block compressed) or a BCF file.
      * After successfully reading a header the stream is positioned immediately after the header, otherwise, if an
      * exception is thrown, the state of the stream is undefined.
+     * For BCF files, the version validation is ignored
      *
      * @param in the stream to read the header from
      * @return the VCF header read from the stream
@@ -43,7 +43,12 @@ public final class VCFHeaderReader {
         if (magicBytes[0] == '#') { // VCF
             return readHeaderFrom(in, new VCFCodec());
         } else if (Arrays.equals(magicBytes, BCFVersion.MAGIC_HEADER_START)) {
-            return readHeaderFrom(in, new BCF2Codec());
+            return readHeaderFrom(in, new BCF2Codec() {
+                @Override
+                protected void validateVersionCompatibility(final BCFVersion supportedVersion, final BCFVersion actualVersion) {
+                   // ignore validation, might be used to get samples in recent BCF
+                }
+            });
         }
         throw new TribbleException.InvalidHeader("No VCF header found in " + in.getSource());
     }
