@@ -90,7 +90,18 @@ public class Gff3WriterTest extends HtsjdkTest {
     }
 
     private void writeToFile(final Path path, final List<String> comments, final Set<SequenceRegion> regions, final Set<Gff3Feature> features) {
-        try (final Gff3Writer writer = new Gff3Writer(path)) {
+    	int n=0;
+    	System.err.println("## N="+features.size());
+    	try(Gff3Writer w=new Gff3Writer(System.err)) {
+    	for (final Gff3Feature feature : features) {
+                w.addFeature(feature);
+                System.err.println("## N="+(++n)+"/"+features.size()+" "+feature.getChildren().size());
+            }
+    	} catch(Throwable err){}
+    
+        try (final AbstractGxxWriter w = AbstractGxxWriter.openWithFileExtension(path)) {
+        	Assert.assertTrue(w instanceof Gff3Writer);
+        	final Gff3Writer writer = Gff3Writer.class.cast(w);
             for (final String comment : comments) {
                 writer.addComment(comment);
             }
