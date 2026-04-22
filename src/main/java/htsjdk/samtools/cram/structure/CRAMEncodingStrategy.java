@@ -46,11 +46,20 @@ import java.util.EnumMap;
 public class CRAMEncodingStrategy {
     public static final int DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD = 1000;
     public static final int DEFAULT_READS_PER_SLICE = 10000;
+    /**
+     * Default ratio of bases-per-slice to reads-per-slice. Matches htslib's default rule
+     * {@code bases_per_slice = seqs_per_slice * 500}. A slice is flushed when either the
+     * record count or the accumulated base count is reached, preventing individual slices
+     * from growing pathologically large when input reads are long (PacBio HiFi, ONT).
+     */
+    public static final int DEFAULT_BASES_PER_READ = 500;
 
     private CRAMVersion cramVersion = CramVersions.CRAM_v3_1;
     private int gzipCompressionLevel = Defaults.COMPRESSION_LEVEL;
     private int minimumSingleReferenceSliceSize = DEFAULT_MINIMUM_SINGLE_REFERENCE_SLICE_THRESHOLD;
     private int readsPerSlice = DEFAULT_READS_PER_SLICE;
+    // 0 means "derive from readsPerSlice at query time". Explicit override via setBasesPerSlice.
+    private long basesPerSlice = 0;
     private int slicesPerContainer = 1;
 
     private EnumMap<DataSeries, CompressorDescriptor> compressorMap;
@@ -144,6 +153,32 @@ public class CRAMEncodingStrategy {
 
     public int getMinimumSingleReferenceSliceSize() {
         return minimumSingleReferenceSliceSize;
+    }
+
+    /**
+     * Set the maximum accumulated bases per slice. When the accumulated bases in a slice
+     * reaches this threshold, the slice is flushed even if {@link #getReadsPerSlice} has
+     * not been reached.  This prevents individual slices from growing pathologically large
+     * for long-read data (PacBio HiFi, ONT).
+     *
+     * <p>Setting a value of 0 reverts to the default ({@link #getReadsPerSlice} {@code *}
+     * {@link #DEFAULT_BASES_PER_READ}), matching htslib's rule.
+     *
+     * @param basesPerSlice maximum bases per slice, or 0 to use the default
+     * @return this strategy for chaining
+     */
+    public CRAMEncodingStrategy setBasesPerSlice(final long basesPerSlice) {
+        ValidationUtils.validateArg(basesPerSlice >= 0, "basesPerSlice must be >= 0");
+        this.basesPerSlice = basesPerSlice;
+        return this;
+    }
+
+    /**
+     * @return the bases-per-slice threshold.  If no explicit value was set, returns
+     * {@link #getReadsPerSlice} {@code *} {@link #DEFAULT_BASES_PER_READ} (matching htslib).
+     */
+    public long getBasesPerSlice() {
+        return basesPerSlice > 0 ? basesPerSlice : (long) readsPerSlice * DEFAULT_BASES_PER_READ;
     }
 
     /**
