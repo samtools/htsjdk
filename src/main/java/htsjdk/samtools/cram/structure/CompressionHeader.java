@@ -290,21 +290,26 @@ public class CompressionHeader {
     }
 
     private void internalWrite(final OutputStream outputStream) throws IOException {
+        // Each map below is written to outputStream as a length-prefixed byte
+        // array, so we need to know the full serialized size before writing.
+        // Buffer to a ByteArrayOutputStream first, then emit [length][bytes].
+        // Pre-sized to 100 KB (matches the previous fixed-buffer size, so the
+        // common case fits without any reallocation) but allowed to grow for
+        // rich tag sets (PacBio/Ultima flow-space, ONT mod bases) where the
+        // TD dictionary can exceed 100 KB. Reused across both blocks via reset().
+        final ByteArrayOutputStream mapStream = new ByteArrayOutputStream(100 * 1024);
+
         { // preservation map:
-            // Use ByteArrayOutputStream (grows as needed) rather than a fixed-size
-            // ByteBuffer: for rich tag sets (PacBio/Ultima flow-space, ONT mod bases)
-            // the TD dictionary alone can exceed 100 KB.
-            final ByteArrayOutputStream mapStream = new ByteArrayOutputStream();
             ITF8.writeUnsignedITF8(5, mapStream);
 
             mapStream.write(RN_readNamesIncluded.getBytes());
-            mapStream.write((byte) (preserveReadNames ? 1 : 0));
+            mapStream.write(preserveReadNames ? 1 : 0);
 
             mapStream.write(AP_alignmentPositionIsDelta.getBytes());
-            mapStream.write((byte) (APDelta ? 1 : 0));
+            mapStream.write(APDelta ? 1 : 0);
 
             mapStream.write(RR_referenceRequired.getBytes());
-            mapStream.write((byte) (referenceRequired ? 1 : 0));
+            mapStream.write(referenceRequired ? 1 : 0);
 
             mapStream.write(SM_substitutionMatrix.getBytes());
             mapStream.write(substitutionMatrix.getEncodedMatrix());
@@ -314,28 +319,26 @@ public class CompressionHeader {
             ITF8.writeUnsignedITF8(dictionaryBytes.length, mapStream);
             mapStream.write(dictionaryBytes);
 
-            final byte[] mapBytes = mapStream.toByteArray();
-            ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
-            outputStream.write(mapBytes);
+            ITF8.writeUnsignedITF8(mapStream.size(), outputStream);
+            mapStream.writeTo(outputStream);
         }
 
         encodingMap.write(outputStream);
 
         { // tag encoding map:
-            final ByteArrayOutputStream mapStream = new ByteArrayOutputStream();
+            mapStream.reset();
             ITF8.writeUnsignedITF8(tagEncodingMap.size(), mapStream);
             for (final Integer dataSeries : tagEncodingMap.keySet()) {
                 ITF8.writeUnsignedITF8(dataSeries, mapStream);
 
                 final EncodingDescriptor params = tagEncodingMap.get(dataSeries);
-                mapStream.write((byte) (0xFF & params.getEncodingID().getId()));
+                mapStream.write(0xFF & params.getEncodingID().getId());
                 ITF8.writeUnsignedITF8(params.getEncodingParameters().length, mapStream);
                 mapStream.write(params.getEncodingParameters());
             }
-            final byte[] mapBytes = mapStream.toByteArray();
 
-            ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
-            outputStream.write(mapBytes);
+            ITF8.writeUnsignedITF8(mapStream.size(), outputStream);
+            mapStream.writeTo(outputStream);
         }
     }
 
