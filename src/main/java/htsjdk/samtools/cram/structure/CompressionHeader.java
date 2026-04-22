@@ -293,11 +293,12 @@ public class CompressionHeader {
         // Each map below is written to outputStream as a length-prefixed byte
         // array, so we need to know the full serialized size before writing.
         // Buffer to a ByteArrayOutputStream first, then emit [length][bytes].
-        // Pre-sized to 100 KB (matches the previous fixed-buffer size, so the
-        // common case fits without any reallocation) but allowed to grow for
-        // rich tag sets (PacBio/Ultima flow-space, ONT mod bases) where the
-        // TD dictionary can exceed 100 KB. Reused across both blocks via reset().
-        final ByteArrayOutputStream mapStream = new ByteArrayOutputStream(100 * 1024);
+        // Pre-sized to 16 KB: enough for typical tag sets without reallocation,
+        // but small enough that we don't waste memory when most of it is unused.
+        // Rich tag sets (PacBio/Ultima flow-space, ONT mod bases) grow via the
+        // usual doubling -- a few reallocations are cheap relative to the final
+        // size. Reused across both blocks via reset().
+        final ByteArrayOutputStream mapStream = new ByteArrayOutputStream(16 * 1024);
 
         { // preservation map:
             ITF8.writeUnsignedITF8(5, mapStream);
