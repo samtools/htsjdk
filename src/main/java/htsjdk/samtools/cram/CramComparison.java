@@ -205,7 +205,12 @@ public class CramComparison {
 
         if (a.getMappingQuality() != b.getMappingQuality())
             return "mapQ: " + a.getMappingQuality() + " vs " + b.getMappingQuality();
-        if (!Objects.equals(a.getCigarString(), b.getCigarString()))
+        // CRAM stores match/mismatch information in "read features" separately from
+        // the CIGAR operator, so =/X distinction is not preserved through a roundtrip:
+        // both htsjdk and samtools emit M on decode. Normalize before comparing.
+        final String cigarA = normalizeCigar(a.getCigarString());
+        final String cigarB = normalizeCigar(b.getCigarString());
+        if (!Objects.equals(cigarA, cigarB))
             return "cigar: " + a.getCigarString() + " vs " + b.getCigarString();
         if (!Objects.equals(a.getMateReferenceName(), b.getMateReferenceName()))
             return "mateRef: " + a.getMateReferenceName() + " vs " + b.getMateReferenceName();
@@ -245,6 +250,36 @@ public class CramComparison {
         }
 
         return null;
+    }
+
+    /**
+     * Collapse =/X/M operators into a single run of M.  Non-alignment operators
+     * (I, D, N, S, H, P) are preserved as-is.  Used to tolerate the CRAM
+     * roundtrip normalization of =/X to M.
+     */
+    static String normalizeCigar(final String cigar) {
+        if (cigar == null || cigar.isEmpty() || "*".equals(cigar)) return cigar;
+        final StringBuilder sb = new StringBuilder(cigar.length());
+        int matchRun = 0;
+        int i = 0;
+        while (i < cigar.length()) {
+            int j = i;
+            while (j < cigar.length() && Character.isDigit(cigar.charAt(j))) j++;
+            final int len = Integer.parseInt(cigar.substring(i, j));
+            final char op = cigar.charAt(j);
+            if (op == '=' || op == 'X' || op == 'M') {
+                matchRun += len;
+            } else {
+                if (matchRun > 0) {
+                    sb.append(matchRun).append('M');
+                    matchRun = 0;
+                }
+                sb.append(len).append(op);
+            }
+            i = j + 1;
+        }
+        if (matchRun > 0) sb.append(matchRun).append('M');
+        return sb.toString();
     }
 
     private static Map<String, Object> getTagMap(final SAMRecord rec) {
