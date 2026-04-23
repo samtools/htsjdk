@@ -197,13 +197,18 @@ public class CramComparison {
      * Strict comparison with known CRAM tolerance:
      * - Auto-generated MD/NM tags stripped when one side lacks them
      * - Unsigned B-array type differences tolerated (CRAM stores as signed)
+     * - mapQ is ignored for unmapped reads (SAM spec leaves it undefined, and both
+     *   htsjdk and samtools normalize it to 0 on CRAM decode regardless of source)
+     * - CIGAR =/X operators are normalized to M (CRAM does not preserve the distinction)
      */
     private static String compareStrict(final SAMRecord a, final SAMRecord b, final Set<String> ignoreTags) {
         // Core fields
         final String lenientDiff = compareLenient(a, b);
         if (lenientDiff != null) return lenientDiff;
 
-        if (a.getMappingQuality() != b.getMappingQuality())
+        // Only compare mapQ for mapped reads; for unmapped reads the SAM spec leaves
+        // mapQ undefined and CRAM normalizes it to 0 regardless of the source value.
+        if (!a.getReadUnmappedFlag() && a.getMappingQuality() != b.getMappingQuality())
             return "mapQ: " + a.getMappingQuality() + " vs " + b.getMappingQuality();
         // CRAM stores match/mismatch information in "read features" separately from
         // the CIGAR operator, so =/X distinction is not preserved through a roundtrip:
