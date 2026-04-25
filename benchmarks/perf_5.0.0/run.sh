@@ -119,10 +119,16 @@ jar_for() {
 }
 
 # Picard CLI flags driven by the suffix in the variant name.
+#
+# Suffix       Picard CLI flags                                      Effective Deflater
+# ------       ----------------                                      ------------------
+# -intel       (none -- Picard's IntelDeflaterFactory engages)       Intel native (x86); falls back to JDK zlib via Picard wrapper on aarch64
+# -zlib        USE_JDK_DEFLATER=true USE_JDK_INFLATER=true           JDK zlib (htsjdk picks JDK; libdeflate also disabled below for 5.0)
+# -libdef      USE_JDK_DEFLATER=true USE_JDK_INFLATER=true           jlibdeflate (htsjdk's default in 5.0; only meaningful for 5.0)
 picard_flags_for() {
   case "$1" in
-    *-jdk|*-zlib) echo "USE_JDK_DEFLATER=true USE_JDK_INFLATER=true" ;;
-    *)            echo "" ;;
+    *-zlib|*-libdef) echo "USE_JDK_DEFLATER=true USE_JDK_INFLATER=true" ;;
+    *)               echo "" ;;
   esac
 }
 
@@ -176,10 +182,12 @@ build_cmd() {
   case "$test" in
     bam-read)
       if [[ -z "$jar" ]]; then
-        # `samtools view -c` would skip via the index. Use a full-decode read
-        # piped to /dev/null instead so we're actually exercising decompression
-        # + decoding, which is what we're benchmarking against Picard.
-        cmd_args=(sh -c "samtools view '$BAM' > /dev/null")
+        # samtools is intentionally skipped for BAM read tests: there is no
+        # like-for-like samtools equivalent of CollectQualityYieldMetrics, so
+        # any cross-tool comparison would be apples-to-oranges. We keep
+        # samtools only on the CRAM read/write tests where the comparison is
+        # meaningful.
+        return 1
       else
         # CollectQualityYieldMetrics is a single-pass-over-records tool that
         # does not plot (no R/PDF render), so the cost is mostly Picard JVM
@@ -196,7 +204,8 @@ build_cmd() {
     bam-write)
       cmd_outfile="$OUT_DIR/$variant.recompressed.bam"
       if [[ -z "$jar" ]]; then
-        cmd_args=(samtools view -b -o "$cmd_outfile" "$BAM")
+        # See note on bam-read above; same reasoning -- skip samtools.
+        return 1
       else
         cmd_args=(java)
         [[ -n "$props" ]] && cmd_args+=("$props")

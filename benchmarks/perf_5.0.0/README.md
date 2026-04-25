@@ -10,33 +10,33 @@ For each combination of *variant* × *test* we record wall-clock time and (for w
 
 | Test | Driver | Why it's here |
 |---|---|---|
-| `bam-read` | Picard `CollectQualityYieldMetrics I=$BAM` (samtools: `samtools view '$BAM' > /dev/null`) | end-to-end realistic, read-heavy. Substantiates the "BAM read is faster in 5.0" claim. CQM (not CIM) is used so we don't pay R-driven PDF-render overhead, which would otherwise inflate the comparison against samtools by ~10s. |
-| `bam-write` | Picard `SamFormatConverter I=$BAM O=...bam` (samtools: `samtools view -b -o ... $BAM`) | exercises the BAM compression path. Substantiates the jlibdeflate-vs-zlib-vs-IntelDeflater story. |
-| `cram-read` | Picard `CollectQualityYieldMetrics I=$CRAM R=$REF` (samtools: `samtools view --reference $REF $CRAM > /dev/null`) | substantiates the CRAM read speed-ups. |
+| `bam-read` | Picard `CollectQualityYieldMetrics I=$BAM`. **samtools is intentionally skipped** -- there's no like-for-like samtools equivalent of CQM, so any cross-tool comparison would be apples-to-oranges. | end-to-end realistic, read-heavy. Substantiates the "BAM read is faster in 5.0" claim. CQM (not CIM) is used so we don't pay R-driven PDF-render overhead. |
+| `bam-write` | Picard `SamFormatConverter I=$BAM O=...bam`. **samtools is intentionally skipped** -- same reasoning as bam-read. | exercises the BAM compression path. Substantiates the jlibdeflate-vs-zlib-vs-IntelDeflater story. |
+| `cram-read` | Picard `CollectQualityYieldMetrics I=$CRAM R=$REF` vs `samtools view --reference $REF $CRAM > /dev/null` | substantiates the CRAM read speed-ups. |
 | `bam-to-cram-fast` | Picard `SamFormatConverter I=$BAM O=...cram R=$REF [--CRAM_PROFILE FAST]`. samtools: `samtools view -C --output-fmt-option version=3.0`. | apples-to-apples 4.3 (CRAM 3.0) vs 5.0 (FAST profile, ≈ 3.0 codec choices). |
 | `bam-to-cram-normal` | same with `--CRAM_PROFILE NORMAL`. samtools: `--output-fmt-option version=3.1`. Skipped for `picard-4.3*` (4.3 cannot write 3.1). | the user-default 3.1 path. |
 
 ### Variants
 
-Variants are Picard fat jars dropped into `$PICARD_DIR` (default `/tmp/picard-bench`). The basename of each jar is the variant name. Naming convention encodes the deflater configuration:
+Variants are Picard fat jars dropped into `$PICARD_DIR` (default `/tmp/picard-bench`). The basename of each jar is the variant name. The suffix encodes which DEFLATE implementation is exercised — pick the suffix to match the deflater you want to measure, **not** Picard's "default" behavior:
 
-| Suffix | Picard CLI flags | JVM props | Effective Deflater (htsjdk 4.3) | Effective Deflater (htsjdk 5.0) |
+| Suffix | Meaning | Picard CLI flags | JVM props | Notes |
 |---|---|---|---|---|
-| `-default` | (none) | (none) | IntelDeflater on x86, JDK zlib on aarch64 | IntelDeflater on x86, **JDK zlib** on aarch64 |
-| `-jdk` | `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` | (none) | JDK zlib | **jlibdeflate** |
-| `-zlib` | `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` | `-Dsamjdk.use_libdeflate=false` | JDK zlib | JDK zlib (forced) |
+| `-zlib` | JDK built-in `java.util.zip.Deflater` | `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` | `-Dsamjdk.use_libdeflate=false` (only matters in 5.0) | The plain-Java reference path. Available on every htsjdk version and every architecture. |
+| `-libdef` | jlibdeflate (libdeflate via JNI) | `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` | (none) | htsjdk's default in 5.0; only meaningful for `picard-5.0-*`. The flags bypass Picard's `IntelDeflaterFactory` so htsjdk picks its own default (libdeflate). |
+| `-intel` | Intel GKL `IntelDeflater` / `IntelInflater` | (none -- Picard's `IntelDeflaterFactory` engages by default) | (none) | x86-only. On aarch64 the native fails to load and Picard's factory falls back to JDK zlib **via a Picard wrapper** that's noticeably slower than the direct `-zlib` path -- so `-intel` on aarch64 is not equivalent to `-zlib`. Skip on aarch64 unless you specifically want to measure that wrapper overhead. |
 
-> ⚠️ **Picard's `IntelDeflaterFactory` is what registers a default Deflater with htsjdk** — and when its native fails to load (e.g. on aarch64) it explicitly falls back to **JDK zlib**, NOT to htsjdk's default. So the `-default` variant on aarch64 measures JDK zlib through Picard's fallback, **not** jlibdeflate. To engage jlibdeflate via Picard you must pass `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` (the `-jdk` variant) — those flags bypass `IntelDeflaterFactory` entirely and let htsjdk choose its default (libdeflate in 5.0). Confirm via the htsjdk log line: `INFO  DeflaterFactory  libdeflate is available; using libdeflate for DEFLATE compression.`
+> ⚠️ **Picard's `IntelDeflaterFactory` is what registers a default Deflater with htsjdk.** When its native fails to load it explicitly falls back to **JDK zlib**, NOT to htsjdk's default. So Picard "out of the box" on aarch64 with htsjdk 5.0 will run JDK zlib via Picard's wrapper, **not** jlibdeflate. To engage jlibdeflate (or to measure JDK zlib without the wrapper overhead), use the `-libdef` or `-zlib` variants.
 
-> ⚠️ **IntelDeflater is x86-only.** On aarch64 (Apple Silicon, Graviton) the Intel native `libgkl_compression` fails to load and Picard's `IntelDeflaterFactory` falls back to JDK zlib (see above). On aarch64 the `-default` and `-zlib` variants therefore measure the same thing (JDK zlib), and only `-jdk` engages jlibdeflate.
+> ⚠️ **Confirm libdeflate is engaged** via the htsjdk log line `INFO  DeflaterFactory  libdeflate is available; using libdeflate for DEFLATE compression.` It only prints when `-libdef` is the variant in use.
 
 samtools is used as a fifth variant for the cross-implementation comparison rows.
 
 ### Suggested variants for AWS
 
-**x86** (5 picard variants + samtools): `picard-4.3-default`, `picard-4.3-jdk`, `picard-5.0-default`, `picard-5.0-jdk`, `picard-5.0-zlib`, `samtools`. Five distinct deflater paths: IntelDeflater (4.3 / 5.0), JDK zlib (4.3 -jdk / 5.0 -zlib), jlibdeflate (5.0 -jdk).
+**x86** (5 picard variants + samtools on CRAM tests): `picard-4.3-zlib`, `picard-4.3-intel`, `picard-5.0-zlib`, `picard-5.0-libdef`, `picard-5.0-intel`, `samtools`. Covers all three real deflater paths (zlib / libdef / intel) on both htsjdk versions.
 
-**Graviton (aarch64)** (3 picard variants + samtools): `picard-4.3-default` (≡ -zlib here, JDK zlib via Picard fallback), `picard-5.0-default` (also JDK zlib via fallback), `picard-5.0-jdk` (jlibdeflate), `samtools`. Three distinct deflater paths: JDK zlib, jlibdeflate, htslib.
+**Graviton (aarch64)** (4 picard variants + samtools on CRAM tests): `picard-4.3-zlib`, `picard-5.0-zlib`, `picard-5.0-libdef`, `samtools`. Skip the `-intel` variants on aarch64 -- the Intel native isn't available, and the only thing they measure is the cost of Picard's wrapper around JDK zlib, which is a Picard-internal artifact rather than an htsjdk perf characteristic.
 
 ## Methodology
 
