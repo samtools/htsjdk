@@ -181,10 +181,15 @@ build_cmd() {
         # + decoding, which is what we're benchmarking against Picard.
         cmd_args=(sh -c "samtools view '$BAM' > /dev/null")
       else
-        local m="$OUT_DIR/$variant.metrics.txt" h="$OUT_DIR/$variant.metrics.pdf"
+        # CollectQualityYieldMetrics is a single-pass-over-records tool that
+        # does not plot (no R/PDF render), so the cost is mostly Picard JVM
+        # startup + htsjdk decode + per-record stats. CollectInsertSizeMetrics
+        # adds ~12s of R-driven PDF rendering, which inflates the comparison
+        # against samtools dramatically.
+        local m="$OUT_DIR/$variant.cqm.txt"
         cmd_args=(java)
         [[ -n "$props" ]] && cmd_args+=("$props")
-        cmd_args+=(-jar "$jar" CollectInsertSizeMetrics "I=$BAM" "O=$m" "H=$h")
+        cmd_args+=(-jar "$jar" CollectQualityYieldMetrics "I=$BAM" "O=$m")
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;
@@ -203,10 +208,10 @@ build_cmd() {
       if [[ -z "$jar" ]]; then
         cmd_args=(sh -c "samtools view --reference '$REFERENCE' '$CRAM' > /dev/null")
       else
-        local m="$OUT_DIR/$variant.cram.metrics.txt" h="$OUT_DIR/$variant.cram.metrics.pdf"
+        local m="$OUT_DIR/$variant.cram.cqm.txt"
         cmd_args=(java)
         [[ -n "$props" ]] && cmd_args+=("$props")
-        cmd_args+=(-jar "$jar" CollectInsertSizeMetrics "I=$CRAM" "O=$m" "H=$h" "R=$REFERENCE")
+        cmd_args+=(-jar "$jar" CollectQualityYieldMetrics "I=$CRAM" "O=$m" "R=$REFERENCE")
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;

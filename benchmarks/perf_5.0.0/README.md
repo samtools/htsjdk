@@ -10,9 +10,9 @@ For each combination of *variant* × *test* we record wall-clock time and (for w
 
 | Test | Driver | Why it's here |
 |---|---|---|
-| `bam-read` | Picard `CollectInsertSizeMetrics I=$BAM` (samtools: `samtools view -c $BAM` as a read-only proxy) | end-to-end realistic, read-heavy. Substantiates the "BAM read is faster in 5.0" claim. |
+| `bam-read` | Picard `CollectQualityYieldMetrics I=$BAM` (samtools: `samtools view '$BAM' > /dev/null`) | end-to-end realistic, read-heavy. Substantiates the "BAM read is faster in 5.0" claim. CQM (not CIM) is used so we don't pay R-driven PDF-render overhead, which would otherwise inflate the comparison against samtools by ~10s. |
 | `bam-write` | Picard `SamFormatConverter I=$BAM O=...bam` (samtools: `samtools view -b -o ... $BAM`) | exercises the BAM compression path. Substantiates the jlibdeflate-vs-zlib-vs-IntelDeflater story. |
-| `cram-read` | Picard `CollectInsertSizeMetrics I=$CRAM R=$REF` (samtools: `samtools view -c --reference ...`) | substantiates the CRAM read speed-ups. |
+| `cram-read` | Picard `CollectQualityYieldMetrics I=$CRAM R=$REF` (samtools: `samtools view --reference $REF $CRAM > /dev/null`) | substantiates the CRAM read speed-ups. |
 | `bam-to-cram-fast` | Picard `SamFormatConverter I=$BAM O=...cram R=$REF [--CRAM_PROFILE FAST]`. samtools: `samtools view -C --output-fmt-option version=3.0`. | apples-to-apples 4.3 (CRAM 3.0) vs 5.0 (FAST profile, ≈ 3.0 codec choices). |
 | `bam-to-cram-normal` | same with `--CRAM_PROFILE NORMAL`. samtools: `--output-fmt-option version=3.1`. Skipped for `picard-4.3*` (4.3 cannot write 3.1). | the user-default 3.1 path. |
 
