@@ -96,7 +96,6 @@ Broadly speaking the majority of the code is covered under the MIT license with 
 
 * Much of the CRAM code is under the Apache License, Version 2
 * Core `tribble` code (underlying VCF reading/writing amongst other things) is under LGPL
-* Code supporting the reading/writing of SRA format is uncopyrighted & public domain
 
 ### Java Minimum Version Support Policy
 

@@ -27,7 +27,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.sra.SRAAccession;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import java.io.File;
@@ -382,8 +381,6 @@ public abstract class SamReaderFactory {
                                 validationStringency,
                                 this.samRecordFactory);
                     }
-                } else if (type == InputResource.Type.SRA_ACCESSION) {
-                    primitiveSamReader = new SRAFileReader(data.asSRAAccession());
                 } else {
                     InputStream bufferedStream = IOUtil.maybeBufferInputStream(
                             data.asUnbufferedInputStream(),
@@ -467,11 +464,6 @@ public abstract class SamReaderFactory {
                             primitiveSamReader =
                                     new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
                         }
-                    } else if (sourceFile != null && isSra(sourceFile)) {
-                        if (bufferedStream != null) {
-                            bufferedStream.close();
-                        }
-                        primitiveSamReader = new SRAFileReader(new SRAAccession(sourceFile.getPath()));
                     } else {
                         if (indexDefined) {
                             bufferedStream.close();
@@ -493,19 +485,6 @@ public abstract class SamReaderFactory {
                 return reader;
             } catch (final IOException | URISyntaxException e) {
                 throw new RuntimeIOException(e);
-            }
-        }
-
-        /** Attempts to detect whether the file is an SRA accessioned file. If SRA support is not available, returns false. */
-        private boolean isSra(final File sourceFile) {
-            try {
-                // if SRA fails to initialize (the most common reason is a failure to find/load native libraries),
-                // it will throw a subclass of java.lang.Error and here we only catch subclasses of java.lang.Exception
-                //
-                // Note: SRA initialization errors should not be ignored, but rather shown to user
-                return SRAAccession.isValid(sourceFile.getPath());
-            } catch (final Exception e) {
-                return false;
             }
         }
 
@@ -542,11 +521,6 @@ public abstract class SamReaderFactory {
             }
 
             @Override
-            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
-                underlyingReader.enableFileSource(reader, true);
-            }
-
-            @Override
             void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableFileSource(reader, true);
             }
@@ -572,11 +546,6 @@ public abstract class SamReaderFactory {
 
             @Override
             void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
-                underlyingReader.enableIndexCaching(true);
-            }
-
-            @Override
-            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableIndexCaching(true);
             }
 
@@ -610,11 +579,6 @@ public abstract class SamReaderFactory {
             }
 
             @Override
-            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
-                underlyingReader.enableIndexMemoryMapping(false);
-            }
-
-            @Override
             void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
             }
@@ -637,11 +601,6 @@ public abstract class SamReaderFactory {
 
             @Override
             void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
-                logDebugIgnoringOption(reader, this);
-            }
-
-            @Override
-            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
             }
 
@@ -672,11 +631,6 @@ public abstract class SamReaderFactory {
             }
 
             @Override
-            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
-                logDebugIgnoringOption(reader, this);
-            }
-
-            @Override
             void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableCrcChecking(true);
             }
@@ -693,8 +647,6 @@ public abstract class SamReaderFactory {
                 applyTo((SAMTextReader) underlyingReader, reader);
             } else if (underlyingReader instanceof CRAMFileReader) {
                 applyTo((CRAMFileReader) underlyingReader, reader);
-            } else if (underlyingReader instanceof SRAFileReader) {
-                applyTo((SRAFileReader) underlyingReader, reader);
             } else if (underlyingReader instanceof HtsgetBAMFileReader) {
                 applyTo((HtsgetBAMFileReader) underlyingReader, reader);
             } else {
@@ -716,8 +668,6 @@ public abstract class SamReaderFactory {
         abstract void applyTo(final SAMTextReader underlyingReader, final SamReader reader);
 
         abstract void applyTo(final CRAMFileReader underlyingReader, final SamReader reader);
-
-        abstract void applyTo(final SRAFileReader underlyingReader, final SamReader reader);
 
         abstract void applyTo(final HtsgetBAMFileReader underlyingReader, final SamReader reader);
     }
