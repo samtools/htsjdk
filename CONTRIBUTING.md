@@ -1,5 +1,38 @@
 # Contributing to HTSJDK
 
+## Code Style
+
+HTSJDK uses [Palantir Java Format](https://github.com/palantir/palantir-java-format)
+(applied via the [Spotless](https://github.com/diffplug/spotless) Gradle plugin)
+to enforce a single, mechanical code style across the codebase. There are no
+formatting knobs to configure -- the formatter is the style guide.
+
+Formatting is applied automatically as part of `compileJava`: every build
+runs `spotlessJavaApply`, which rewrites any unformatted source in place
+before compiling. In normal use you shouldn't need to invoke the formatter
+yourself -- just build, and your code is formatted. If you want to format
+without compiling, run:
+
+```bash
+./gradlew spotlessApply
+```
+
+CI runs `./gradlew spotlessCheck` (verify-only, no mutation) so a PR with
+unformatted code still fails CI -- the local auto-format is a convenience,
+not the enforcement boundary.
+
+### Git blame and the bulk-format commit
+
+The codebase was reformatted in a single mechanical commit. To keep `git blame`
+useful (so you see the author who actually wrote each line, not the reformat
+commit), the repository ships a `.git-blame-ignore-revs` file. GitHub honors
+it automatically in the web UI; for `git blame` on the command line, opt in
+once per clone:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
 ## Building
 
 HTSJDK uses Gradle (via the Gradle wrapper). To build:
