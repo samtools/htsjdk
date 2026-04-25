@@ -87,6 +87,7 @@ public class VariantContextTestProvider extends HtsjdkTest {
     private static VCFHeader syntheticHeader;
     final static List<VariantContextTestData> TEST_DATAs = new ArrayList<>();
     private static VariantContext ROOT;
+    private static volatile boolean initialized = false;
 
     private final static List<File> testSourceVCFs = new ArrayList<>();
     static {
@@ -183,10 +184,14 @@ public class VariantContextTestProvider extends HtsjdkTest {
         TEST_DATAs.add(new VariantContextTestData(syntheticHeader, builder));
     }
 
-    public static void initializeTests() throws IOException {
+    public static synchronized void initializeTests() throws IOException {
+        if (initialized) {
+            return;
+        }
         createSyntheticHeader();
         makeSyntheticTests();
         makeEmpiricalTests();
+        initialized = true;
     }
 
     private static void makeEmpiricalTests() throws IOException {

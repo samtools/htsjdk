@@ -73,6 +73,9 @@ public final class CramRecordReader {
     private final SliceBlocksReadStreams sliceBlocksReadStreams;
     protected final ValidationStringency validationStringency;
 
+    /** Pre-resolved tag key info, indexed by [tagIdList][position within that list]. */
+    private final TagKeyCache.TagKeyInfo[][] resolvedTagKeys;
+
     /**
      * Initialize a Cram Record Reader
      *
@@ -135,6 +138,18 @@ public final class CramRecordReader {
                                 DataSeriesType.BYTE_ARRAY,
                                 mapEntry.getValue(),
                                 sliceBlocksReadStreams)));
+
+        // Pre-resolve cached tag key info for each dictionary entry to avoid per-record lookups
+        final TagKeyCache tagKeyCache = compressionHeader.getTagKeyCache();
+        final byte[][][] dictionary = compressionHeader.getTagIDDictionary();
+        resolvedTagKeys = new TagKeyCache.TagKeyInfo[dictionary.length][];
+        for (int i = 0; i < dictionary.length; i++) {
+            final byte[][] ids = dictionary[i];
+            resolvedTagKeys[i] = new TagKeyCache.TagKeyInfo[ids.length];
+            for (int j = 0; j < ids.length; j++) {
+                resolvedTagKeys[i][j] = tagKeyCache.get(ReadTag.name3BytesToInt(ids[j]));
+            }
+        }
     }
 
     /**
@@ -210,14 +225,14 @@ public final class CramRecordReader {
         }
 
         List<ReadTag> readTags = null;
-        final Integer tagIdList = tagIdListCodec.readData();
-        final byte[][] ids = compressionHeader.getTagIDDictionary()[tagIdList];
-        if (ids.length > 0) {
-            readTags = new ArrayList<>(ids.length);
-            for (int i = 0; i < ids.length; i++) {
-                final int id = ReadTag.name3BytesToInt(ids[i]);
-                final DataSeriesReader<byte[]> dataSeriesReader = tagValueCodecs.get(id);
-                final ReadTag tag = new ReadTag(id, dataSeriesReader.readData(), validationStringency);
+        final int tagIdList = tagIdListCodec.readData();
+        final TagKeyCache.TagKeyInfo[] cachedKeys = resolvedTagKeys[tagIdList];
+        if (cachedKeys.length > 0) {
+            readTags = new ArrayList<>(cachedKeys.length);
+            for (int i = 0; i < cachedKeys.length; i++) {
+                final TagKeyCache.TagKeyInfo cached = cachedKeys[i];
+                final DataSeriesReader<byte[]> dataSeriesReader = tagValueCodecs.get(cached.keyType3BytesAsInt);
+                final ReadTag tag = new ReadTag(cached, dataSeriesReader.readData(), validationStringency);
                 readTags.add(tag);
             }
         }

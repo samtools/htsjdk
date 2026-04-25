@@ -105,6 +105,168 @@ public class LTF8 {
     }
 
     /**
+     * Reads an unsigned LTF8 long from a {@link CRAMByteReader}. Equivalent to the InputStream version
+     * but avoids synchronized method call overhead.
+     *
+     * @param reader the reader to read from
+     * @return the decoded value
+     */
+    public static long readUnsignedLTF8(final CRAMByteReader reader) {
+        final int b1 = reader.read();
+        if (b1 == -1)
+            throw new RuntimeEOFException();
+
+        if ((b1 & 128) == 0)
+            return b1;
+
+        if ((b1 & 64) == 0)
+            return ((b1 & 127) << 8) | reader.read();
+
+        if ((b1 & 32) == 0)
+            return ((b1 & 63) << 16) | reader.read() << 8 | reader.read();
+
+        if ((b1 & 16) == 0) {
+            long result = ((long) (b1 & 31) << 24);
+            result |= reader.read() << 16;
+            result |= reader.read() << 8;
+            result |= reader.read();
+            return result;
+        }
+
+        if ((b1 & 8) == 0) {
+            long value = ((long) (b1 & 15) << 32);
+            value |= (0xFF & ((long) reader.read())) << 24;
+            value |= reader.read() << 16;
+            value |= reader.read() << 8;
+            value |= reader.read();
+            return value;
+        }
+
+        if ((b1 & 4) == 0) {
+            long result = ((long) (b1 & 7) << 40);
+            result |= (0xFF & ((long) reader.read())) << 32;
+            result |= (0xFF & ((long) reader.read())) << 24;
+            result |= reader.read() << 16;
+            result |= reader.read() << 8;
+            result |= reader.read();
+            return result;
+        }
+
+        if ((b1 & 2) == 0) {
+            long result = ((long) (b1 & 3) << 48);
+            result |= (0xFF & ((long) reader.read())) << 40;
+            result |= (0xFF & ((long) reader.read())) << 32;
+            result |= (0xFF & ((long) reader.read())) << 24;
+            result |= reader.read() << 16;
+            result |= reader.read() << 8;
+            result |= reader.read();
+            return result;
+        }
+
+        if ((b1 & 1) == 0) {
+            long result = (0xFF & ((long) reader.read())) << 48;
+            result |= (0xFF & ((long) reader.read())) << 40;
+            result |= (0xFF & ((long) reader.read())) << 32;
+            result |= (0xFF & ((long) reader.read())) << 24;
+            result |= reader.read() << 16;
+            result |= reader.read() << 8;
+            result |= reader.read();
+            return result;
+        }
+
+        long result = (0xFF & ((long) reader.read())) << 56;
+        result |= (0xFF & ((long) reader.read())) << 48;
+        result |= (0xFF & ((long) reader.read())) << 40;
+        result |= (0xFF & ((long) reader.read())) << 32;
+        result |= (0xFF & ((long) reader.read())) << 24;
+        result |= reader.read() << 16;
+        result |= reader.read() << 8;
+        result |= reader.read();
+        return result;
+    }
+
+    /**
+     * Writes an unsigned LTF8 long to a {@link CRAMByteWriter}. Equivalent to the OutputStream version
+     * but avoids synchronized method call overhead.
+     *
+     * @param value the value to write
+     * @param writer the writer to write to
+     * @return number of bits written
+     */
+    public static int writeUnsignedLTF8(final long value, final CRAMByteWriter writer) {
+        if ((value >>> 7) == 0) {
+            writer.write((int) value);
+            return 8;
+        }
+        if ((value >>> 14) == 0) {
+            writer.write((int) ((value >> 8) | 0x80));
+            writer.write((int) (value & 0xFF));
+            return 16;
+        }
+        if ((value >>> 21) == 0) {
+            writer.write((int) ((value >> 16) | 0xC0));
+            writer.write((int) ((value >> 8) & 0xFF));
+            writer.write((int) (value & 0xFF));
+            return 24;
+        }
+        if ((value >>> 28) == 0) {
+            writer.write((int) ((value >> 24) | 0xE0));
+            writer.write((int) ((value >> 16) & 0xFF));
+            writer.write((int) ((value >> 8) & 0xFF));
+            writer.write((int) (value & 0xFF));
+            return 32;
+        }
+        if ((value >>> 35) == 0) {
+            writer.write((int) ((value >> 32) | 0xF0));
+            writer.write((int) ((value >> 24) & 0xFF));
+            writer.write((int) ((value >> 16) & 0xFF));
+            writer.write((int) ((value >> 8) & 0xFF));
+            writer.write((int) (value & 0xFF));
+            return 40;
+        }
+        if ((value >>> 42) == 0) {
+            writer.write((int) ((value >> 40) | 0xF8));
+            writer.write((int) ((value >> 32) & 0xFF));
+            writer.write((int) ((value >> 24) & 0xFF));
+            writer.write((int) ((value >> 16) & 0xFF));
+            writer.write((int) ((value >> 8) & 0xFF));
+            writer.write((int) (value & 0xFF));
+            return 48;
+        }
+        if ((value >>> 49) == 0) {
+            writer.write((int) ((value >> 48) | 0xFC));
+            writer.write((int) ((value >> 40) & 0xFF));
+            writer.write((int) ((value >> 32) & 0xFF));
+            writer.write((int) ((value >> 24) & 0xFF));
+            writer.write((int) ((value >> 16) & 0xFF));
+            writer.write((int) ((value >> 8) & 0xFF));
+            writer.write((int) (value & 0xFF));
+            return 56;
+        }
+        if ((value >>> 56) == 0) {
+            writer.write(0xFE);
+            writer.write((int) ((value >> 48) & 0xFF));
+            writer.write((int) ((value >> 40) & 0xFF));
+            writer.write((int) ((value >> 32) & 0xFF));
+            writer.write((int) ((value >> 24) & 0xFF));
+            writer.write((int) ((value >> 16) & 0xFF));
+            writer.write((int) ((value >> 8) & 0xFF));
+            writer.write((int) (value & 0xFF));
+            return 64;
+        }
+        writer.write(0xFF);
+        writer.write((int) ((value >> 56) & 0xFF));
+        writer.write((int) ((value >> 48) & 0xFF));
+        writer.write((int) ((value >> 40) & 0xFF));
+        writer.write((int) ((value >> 32) & 0xFF));
+        writer.write((int) ((value >> 24) & 0xFF));
+        writer.write((int) ((value >> 16) & 0xFF));
+        writer.write((int) ((value >> 8) & 0xFF));
+        writer.write((int) (value & 0xFF));
+        return 72;
+    }
+
+    /**
      * Writes an unsigned long value to the output stream. The sign bit is interpreted just as other bits in the value.
      *
      * @param value the value to be written

@@ -40,7 +40,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
         byte[] roundTrippedReferenceBlockContent = new byte[embeddedRefBlockContent.length];
         Assert.assertEquals(
                 sliceBlocksReadStream
-                        .getExternalInputStream(embeddedRefBlockContentID)
+                        .getExternalReader(embeddedRefBlockContentID)
                         .read(roundTrippedReferenceBlockContent, 0, roundTrippedReferenceBlockContent.length),
                 embeddedRefBlockContent.length);
         Assert.assertEquals(
@@ -51,7 +51,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
         for (final DataSeries dataSeries : DataSeries.values()) {
             byte[] roundTrippedContent = dataSeries.getCanonicalName().getBytes();
             sliceBlocksReadStream
-                    .getExternalInputStream(dataSeries.getExternalBlockContentId())
+                    .getExternalReader(dataSeries.getExternalBlockContentId())
                     .read(roundTrippedContent, 0, roundTrippedContent.length);
             Assert.assertEquals(roundTrippedContent.length, dataSeries.getCanonicalName().length());
             Assert.assertEquals( new String(roundTrippedContent), expectedExternalContentStrings.get(dataSeries.getExternalBlockContentId()));

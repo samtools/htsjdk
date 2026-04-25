@@ -41,6 +41,8 @@ import java.util.*;
  * Class for handling the read features for a {@link CRAMCompressionRecord}.
  */
 public class CRAMRecordReadFeatures {
+    private static final byte[] BAM_READ_BASE_LOOKUP = SequenceUtil.getBamReadBaseLookup();
+
     final List<ReadFeature> readFeatures;
 
     /**
@@ -129,6 +131,7 @@ public class CRAMRecordReadFeatures {
         }
     }
 
+    /** Return the list of read features for this record. */
     public final List<ReadFeature> getReadFeaturesList() { return readFeatures; }
 
     private void addSoftClip(
@@ -213,6 +216,13 @@ public class CRAMRecordReadFeatures {
         }
     }
 
+    /**
+     * Compute the alignment end position from the read features, alignment start, and read length.
+     *
+     * @param alignmentStart 1-based alignment start position
+     * @param readLength length of the read in bases
+     * @return 1-based alignment end position
+     */
     public int getAlignmentEnd(int alignmentStart, int readLength) {
         int alignmentSpan = readLength;
         if (readFeatures != null) {
@@ -244,9 +254,10 @@ public class CRAMRecordReadFeatures {
     }
 
     /**
-     * Get a Cigar fo this set of read features.
-     * @param readLength
-     * @return
+     * Build a {@link Cigar} from these read features and the given read length.
+     *
+     * @param readLength the length of the read in bases
+     * @return the reconstructed CIGAR
      */
     public Cigar getCigarForReadFeatures(final int readLength) {
         if (readFeatures == null) {
@@ -501,6 +512,342 @@ public class CRAMRecordReadFeatures {
         return pos >= array.length ?
                 outOfBoundsValue :
                 array[pos];
+    }
+
+    /**
+     * Result of the fused single-pass decode: read bases, CIGAR, and optionally MD string + NM count.
+     */
+    public static final class DecodeResult {
+        public final byte[] readBases;
+        public final Cigar cigar;
+        public final String mdString;  // null if not computed
+        public final int nmCount;      // -1 if not computed
+
+        DecodeResult(final byte[] readBases, final Cigar cigar, final String mdString, final int nmCount) {
+            this.readBases = readBases;
+            this.cigar = cigar;
+            this.mdString = mdString;
+            this.nmCount = nmCount;
+        }
+    }
+
+    /**
+     * Fused single-pass decode: restore read bases from the reference + read features, build the CIGAR,
+     * and optionally compute the MD string and NM edit distance, all in a single iteration through the
+     * features list. This replaces the previous 3-4 pass approach (restoreReadBases + getCigarForReadFeatures
+     * + calculateMdAndNm + toBamReadBasesInPlace).
+     *
+     * <p>Base normalization (upper-casing, replacing invalid bases with N) is done inline as bases are
+     * written, eliminating the need for a separate {@code toBamReadBasesInPlace} pass.
+     *
+     * @param readFeatures list of read features (may be null for pure reference matches)
+     * @param isUnknownBases true if the CF_UNKNOWN_BASES flag is set
+     * @param readAlignmentStart 1-based alignment start
+     * @param readLength read length
+     * @param cramReferenceRegion reference region covering this read's span
+     * @param substitutionMatrix substitution matrix for base resolution
+     * @param computeMdNm whether to compute MD string and NM count
+     * @return DecodeResult containing bases, CIGAR, and optionally MD/NM
+     */
+    public static DecodeResult restoreBasesAndTags(
+            final List<ReadFeature> readFeatures,
+            final boolean isUnknownBases,
+            final int readAlignmentStart,
+            final int readLength,
+            final CRAMReferenceRegion cramReferenceRegion,
+            final SubstitutionMatrix substitutionMatrix,
+            final boolean computeMdNm) {
+
+        if (readLength == 0) {
+            final Cigar cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
+            return new DecodeResult(SAMRecord.NULL_SEQUENCE, cigar, null, -1);
+        }
+
+        // When isUnknownBases (CF_UNKNOWN_BASES / seq '*'), we still need to process read features
+        // to reconstruct the CIGAR (e.g. soft clips stored in SC data series), but skip all base
+        // restoration, reference lookups, and MD/NM computation.
+        final byte[] bases = isUnknownBases ? null : new byte[readLength];
+        final int alignmentStart = readAlignmentStart - 1; // 0-based
+        final int refOffset = isUnknownBases ? 0 : cramReferenceRegion.getRegionStart();
+        final byte[] refBases = isUnknownBases ? null : cramReferenceRegion.getCurrentReferenceBases();
+        final boolean doBasesAndMdNm = !isUnknownBases;
+
+        // MD/NM state — mdActive tracks whether we're still within the reference boundary.
+        // Once we exceed the reference, we stop MD/NM computation (matching calculateMdAndNm's break behavior).
+        int nmCount = 0;
+        final boolean actuallyComputeMdNm = computeMdNm && doBasesAndMdNm;
+        final StringBuilder mdString = actuallyComputeMdNm ? new StringBuilder(readLength) : null;
+        int mdMatchRun = 0;
+        boolean mdActive = actuallyComputeMdNm;
+
+        // No features: pure reference match (fast path)
+        if (readFeatures == null || readFeatures.isEmpty()) {
+            if (isUnknownBases) {
+                final Cigar cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
+                return new DecodeResult(SAMRecord.NULL_SEQUENCE, cigar, null, -1);
+            }
+            final int srcStart = alignmentStart - refOffset;
+            final int copyLen = Math.min(readLength, Math.max(0, refBases.length - srcStart));
+            if (copyLen < readLength) {
+                Arrays.fill(bases, (byte) 'N');
+                if (copyLen > 0) System.arraycopy(refBases, srcStart, bases, 0, copyLen);
+            } else {
+                System.arraycopy(refBases, srcStart, bases, 0, readLength);
+            }
+
+            // Normalize bases and compute MD/NM — only within reference boundary
+            for (int i = 0; i < readLength; i++) {
+                final byte rawRef = bases[i];
+                bases[i] = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
+                if (computeMdNm && i < copyLen) {
+                    if (SequenceUtil.basesEqual(bases[i], rawRef) || bases[i] == 0) {
+                        mdMatchRun++;
+                    } else {
+                        mdString.append(mdMatchRun);
+                        mdString.append((char) (rawRef & 0xFF));
+                        mdMatchRun = 0;
+                        nmCount++;
+                    }
+                }
+            }
+
+            if (mdActive) mdString.append(mdMatchRun);
+            final Cigar cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
+            return new DecodeResult(bases, cigar,
+                    computeMdNm ? mdString.toString() : null,
+                    computeMdNm ? nmCount : -1);
+        }
+
+        // CIGAR building state
+        final List<CigarElement> cigarElements = new ArrayList<>();
+        CigarOperator lastCigOp = CigarOperator.MATCH_OR_MISMATCH;
+        int lastCigLen = 0;
+        int lastCigPos = 1;
+
+        // Position tracking (1-based read position, 0-based ref offset from alignment start)
+        int posInRead = 1;
+        int posInSeq = 0;
+
+        for (final ReadFeature feature : readFeatures) {
+            final int featurePos = feature.getPosition();
+
+            // Fill gap from reference (advance positions; fill bases only when not unknownBases)
+            if (doBasesAndMdNm) {
+                while (posInRead < featurePos) {
+                    final int rp = alignmentStart + posInSeq - refOffset;
+                    if (rp >= refBases.length) mdActive = false;
+                    final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                    final byte nb = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
+                    bases[posInRead - 1] = nb;
+                    if (mdActive) {
+                        if (SequenceUtil.basesEqual(nb, rawRef) || nb == 0) { mdMatchRun++; }
+                        else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    }
+                    posInRead++;
+                    posInSeq++;
+                }
+            } else {
+                final int gap = featurePos - posInRead;
+                posInSeq += gap;
+                posInRead = featurePos;
+            }
+
+            // Deactivate MD/NM if the current reference position is beyond the reference boundary,
+            // flushing any accumulated match run first
+            if (mdActive && (alignmentStart + posInSeq - refOffset) >= refBases.length) {
+                mdString.append(mdMatchRun);
+                mdMatchRun = 0;
+                mdActive = false;
+            }
+
+            // CIGAR gap
+            final int gap = featurePos - (lastCigPos + lastCigLen);
+            if (gap > 0) {
+                if (lastCigOp != CigarOperator.MATCH_OR_MISMATCH) {
+                    cigarElements.add(new CigarElement(lastCigLen, lastCigOp));
+                    lastCigPos += lastCigLen;
+                    lastCigLen = gap;
+                } else {
+                    lastCigLen += gap;
+                }
+                lastCigOp = CigarOperator.MATCH_OR_MISMATCH;
+            }
+
+            CigarOperator featureCigOp;
+            int featureCigLen;
+
+            switch (feature.getOperator()) {
+                case Substitution.operator: {
+                    if (doBasesAndMdNm) {
+                        final int rp = alignmentStart + posInSeq - refOffset;
+                        final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                        final byte normRef = Utils.normalizeBase(rawRef);
+                        bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[
+                                substitutionMatrix.base(normRef, ((Substitution) feature).getCode()) & 0x7F];
+                        if (mdActive) { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                    }
+                    posInRead++;
+                    posInSeq++;
+                    featureCigOp = CigarOperator.MATCH_OR_MISMATCH;
+                    featureCigLen = 1;
+                    break;
+                }
+                case ReadBase.operator: {
+                    if (doBasesAndMdNm) {
+                        final byte readBase = BAM_READ_BASE_LOOKUP[((ReadBase) feature).getBase() & 0x7F];
+                        bases[posInRead - 1] = readBase;
+                        if (mdActive) {
+                            final int rp = alignmentStart + posInSeq - refOffset;
+                            final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                            if (SequenceUtil.basesEqual(readBase, rawRef)) { mdMatchRun++; }
+                            else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                        }
+                    }
+                    posInRead++;
+                    posInSeq++;
+                    featureCigOp = CigarOperator.MATCH_OR_MISMATCH;
+                    featureCigLen = 1;
+                    break;
+                }
+                case Bases.operator: {
+                    final byte[] fb = ((Bases) feature).getBases();
+                    if (doBasesAndMdNm) {
+                        for (int i = 0; i < fb.length; i++) {
+                            bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[fb[i] & 0x7F];
+                            if (mdActive) {
+                                final int rp = alignmentStart + posInSeq + i - refOffset;
+                                final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                                if (SequenceUtil.basesEqual(bases[posInRead - 1 + i], rawRef)) { mdMatchRun++; }
+                                else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                            }
+                        }
+                    }
+                    posInRead += fb.length;
+                    posInSeq += fb.length;
+                    continue; // Bases are within M region, no CIGAR update
+                }
+                case Insertion.operator: {
+                    final byte[] seq = ((Insertion) feature).getSequence();
+                    if (doBasesAndMdNm) {
+                        for (int i = 0; i < seq.length; i++) bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
+                        if (mdActive) nmCount += seq.length;
+                    }
+                    posInRead += seq.length;
+                    featureCigOp = CigarOperator.INSERTION;
+                    featureCigLen = seq.length;
+                    break;
+                }
+                case InsertBase.operator: {
+                    if (doBasesAndMdNm) {
+                        bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[((InsertBase) feature).getBase() & 0x7F];
+                        if (mdActive) nmCount++;
+                    }
+                    posInRead++;
+                    featureCigOp = CigarOperator.INSERTION;
+                    featureCigLen = 1;
+                    break;
+                }
+                case SoftClip.operator: {
+                    final byte[] seq = ((SoftClip) feature).getSequence();
+                    if (doBasesAndMdNm) {
+                        for (int i = 0; i < seq.length; i++) bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
+                    }
+                    posInRead += seq.length;
+                    featureCigOp = CigarOperator.SOFT_CLIP;
+                    featureCigLen = seq.length;
+                    break;
+                }
+                case Deletion.operator: {
+                    final int delLen = ((Deletion) feature).getLength();
+                    if (mdActive) {
+                        mdString.append(mdMatchRun);
+                        mdMatchRun = 0;
+                        mdString.append('^');
+                        for (int i = 0; i < delLen; i++) {
+                            final int rp = alignmentStart + posInSeq + i - refOffset;
+                            final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
+                            mdString.append((char) (rawRef & 0xFF));
+                        }
+                        nmCount += delLen;
+                    }
+                    posInSeq += delLen;
+                    featureCigOp = CigarOperator.DELETION;
+                    featureCigLen = delLen;
+                    break;
+                }
+                case RefSkip.operator:
+                    posInSeq += ((RefSkip) feature).getLength();
+                    featureCigOp = CigarOperator.SKIPPED_REGION;
+                    featureCigLen = ((RefSkip) feature).getLength();
+                    break;
+                case HardClip.operator:
+                    featureCigOp = CigarOperator.HARD_CLIP;
+                    featureCigLen = ((HardClip) feature).getLength();
+                    break;
+                case Padding.operator:
+                    featureCigOp = CigarOperator.PADDING;
+                    featureCigLen = ((Padding) feature).getLength();
+                    break;
+                case Scores.operator:
+                case BaseQualityScore.operator:
+                    continue;
+                default:
+                    throw new CRAMException(String.format("Unrecognized read feature code: %c", feature.getOperator()));
+            }
+
+            // Update CIGAR
+            if (lastCigOp != featureCigOp) {
+                if (lastCigLen > 0) cigarElements.add(new CigarElement(lastCigLen, lastCigOp));
+                lastCigOp = featureCigOp;
+                lastCigLen = featureCigLen;
+                lastCigPos = feature.getPosition();
+            } else {
+                lastCigLen += featureCigLen;
+            }
+            if (!featureCigOp.consumesReadBases()) lastCigPos -= featureCigLen;
+        }
+
+        // Fill trailing reference bases (skip when unknownBases -- just advance positions)
+        if (doBasesAndMdNm) {
+            while (posInRead <= readLength) {
+                final int rp = alignmentStart + posInSeq - refOffset;
+                if (rp >= refBases.length) {
+                    if (mdActive) { mdString.append(mdMatchRun); mdMatchRun = 0; mdActive = false; }
+                    while (posInRead <= readLength) { bases[posInRead - 1] = 'N'; posInRead++; }
+                    break;
+                }
+                final byte rawRef = refBases[rp];
+                bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
+                if (mdActive) {
+                    if (SequenceUtil.basesEqual(bases[posInRead - 1], rawRef) || bases[posInRead - 1] == 0) { mdMatchRun++; }
+                    else { mdString.append(mdMatchRun); mdString.append((char)(rawRef & 0xFF)); mdMatchRun = 0; nmCount++; }
+                }
+                posInRead++;
+                posInSeq++;
+            }
+        } else {
+            posInRead = readLength + 1;
+        }
+
+        // Finalize CIGAR
+        if (lastCigOp != CigarOperator.M) {
+            if (lastCigLen > 0) cigarElements.add(new CigarElement(lastCigLen, lastCigOp));
+            if (readLength >= lastCigPos + lastCigLen) {
+                cigarElements.add(new CigarElement(readLength - (lastCigLen + lastCigPos) + 1, CigarOperator.M));
+            }
+        } else if (readLength > lastCigPos - 1) {
+            cigarElements.add(new CigarElement(readLength - lastCigPos + 1, CigarOperator.M));
+        }
+
+        final Cigar cigar = cigarElements.isEmpty()
+                ? new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)))
+                : new Cigar(cigarElements);
+
+        if (mdActive) mdString.append(mdMatchRun);
+
+        return new DecodeResult(isUnknownBases ? SAMRecord.NULL_SEQUENCE : bases, cigar,
+                actuallyComputeMdNm ? mdString.toString() : null,
+                actuallyComputeMdNm ? nmCount : -1);
     }
 
     @Override

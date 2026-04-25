@@ -34,73 +34,75 @@ import java.util.stream.Stream;
  */
 public enum DataSeries {
 
-    // in rough encoding/decoding order, by group
+    // Content IDs match htslib's cram_DS_ID enum (cram_structs.h) for easier cross-implementation
+    // debugging. These IDs are written into each container's compression header encoding map and
+    // are only used for newly written files — existing files encode their own ID mapping.
 
     // Main
 
-    BF_BitFlags                         (DataSeriesType.INT,        "BF",  1),
-    CF_CompressionBitFlags              (DataSeriesType.INT,        "CF",  2),
+    BF_BitFlags                         (DataSeriesType.INT,        "BF", 15),
+    CF_CompressionBitFlags              (DataSeriesType.INT,        "CF", 16),
 
     // Positional
 
-    RI_RefId                            (DataSeriesType.INT,        "RI",  3),
-    RL_ReadLength                       (DataSeriesType.INT,        "RL",  4),
-    AP_AlignmentPositionOffset          (DataSeriesType.INT,        "AP",  5),
-    RG_ReadGroup                        (DataSeriesType.INT,        "RG",  6),
+    RI_RefId                            (DataSeriesType.INT,        "RI", 33),
+    RL_ReadLength                       (DataSeriesType.INT,        "RL", 25),
+    AP_AlignmentPositionOffset          (DataSeriesType.INT,        "AP", 17),
+    RG_ReadGroup                        (DataSeriesType.INT,        "RG", 18),
 
     // Read Name
 
-    RN_ReadName                         (DataSeriesType.BYTE_ARRAY, "RN",  7),
+    RN_ReadName                         (DataSeriesType.BYTE_ARRAY, "RN", 11),
 
     // Mate Record
 
-    NF_RecordsToNextFragment            (DataSeriesType.INT,        "NF",  8),
-    MF_MateBitFlags                     (DataSeriesType.INT,        "MF",  9),
-    NS_NextFragmentReferenceSequenceID  (DataSeriesType.INT,        "NS", 10),
-    NP_NextFragmentAlignmentStart       (DataSeriesType.INT,        "NP", 11),
-    TS_InsertSize                       (DataSeriesType.INT,        "TS", 12),
+    NF_RecordsToNextFragment            (DataSeriesType.INT,        "NF", 24),
+    MF_MateBitFlags                     (DataSeriesType.INT,        "MF", 21),
+    NS_NextFragmentReferenceSequenceID  (DataSeriesType.INT,        "NS", 20),
+    NP_NextFragmentAlignmentStart       (DataSeriesType.INT,        "NP", 23),
+    TS_InsertSize                       (DataSeriesType.INT,        "TS", 22),
 
     // Auxiliary Tags
 
-    TL_TagIdList                        (DataSeriesType.INT,        "TL", 13),
+    TL_TagIdList                        (DataSeriesType.INT,        "TL", 32),
 
     // Retained for backward compatibility on CRAM read. See https://github.com/samtools/hts-specs/issues/598
     // https://github.com/samtools/htsjdk/issues/1571
 
-    TC_TagCount                         (DataSeriesType.INT,        "TC", 14),
-    TN_TagNameAndType                   (DataSeriesType.INT,        "TN", 15),
+    TC_TagCount                         (DataSeriesType.INT,        "TC", 44),
+    TN_TagNameAndType                   (DataSeriesType.INT,        "TN", 39),
 
     // Mapped Reads
 
-    MQ_MappingQualityScore              (DataSeriesType.INT,        "MQ", 16),
+    MQ_MappingQualityScore              (DataSeriesType.INT,        "MQ", 19),
 
     // Read Feature Records
 
-    FN_NumberOfReadFeatures             (DataSeriesType.INT,        "FN", 17),
-    FP_FeaturePosition                  (DataSeriesType.INT,        "FP", 18),
-    FC_FeatureCode                      (DataSeriesType.BYTE,       "FC", 19),
+    FN_NumberOfReadFeatures             (DataSeriesType.INT,        "FN", 26),
+    FP_FeaturePosition                  (DataSeriesType.INT,        "FP", 28),
+    FC_FeatureCode                      (DataSeriesType.BYTE,       "FC", 27),
 
     // Read Feature Codes
 
-    BB_Bases                            (DataSeriesType.BYTE_ARRAY, "BB", 20),
-    QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 21),
-    BA_Base                             (DataSeriesType.BYTE,       "BA", 22),
+    BB_Bases                            (DataSeriesType.BYTE_ARRAY, "BB", 37),
+    QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 38),
+    BA_Base                             (DataSeriesType.BYTE,       "BA", 30),
     // NOTE: the CramRecordReader and CramRecordWriter split the QS_QualityScore into two separate
     // DataSeriesReader/Writer(s), one uses the params described here (BYTE) and one uses BYTE_ARRAY
-    QS_QualityScore                     (DataSeriesType.BYTE,       "QS", 23),
-    BS_BaseSubstitutionCode             (DataSeriesType.BYTE,       "BS", 24),
-    IN_Insertion                        (DataSeriesType.BYTE_ARRAY, "IN", 25),
-    DL_DeletionLength                   (DataSeriesType.INT,        "DL", 26),
-    RS_RefSkip                          (DataSeriesType.INT,        "RS", 27),
-    SC_SoftClip                         (DataSeriesType.BYTE_ARRAY, "SC", 28),
-    PD_padding                          (DataSeriesType.INT,        "PD", 29),
-    HC_HardClip                         (DataSeriesType.INT,        "HC", 30),
+    QS_QualityScore                     (DataSeriesType.BYTE,       "QS", 12),
+    BS_BaseSubstitutionCode             (DataSeriesType.BYTE,       "BS", 31),
+    IN_Insertion                        (DataSeriesType.BYTE_ARRAY, "IN", 13),
+    DL_DeletionLength                   (DataSeriesType.INT,        "DL", 29),
+    RS_RefSkip                          (DataSeriesType.INT,        "RS", 34),
+    SC_SoftClip                         (DataSeriesType.BYTE_ARRAY, "SC", 14),
+    PD_padding                          (DataSeriesType.INT,        "PD", 35),
+    HC_HardClip                         (DataSeriesType.INT,        "HC", 36),
 
-    // For Testing Only
+    // For Testing Only — IDs match htslib's DS_TM=45, DS_TV=46
 
     // NOTE: these are not listed in the spec
-    TM_TestMark                         (DataSeriesType.INT,        "TM", 31),
-    TV_TestMark                         (DataSeriesType.INT,        "TV", 32);
+    TM_TestMark                         (DataSeriesType.INT,        "TM", 45),
+    TV_TestMark                         (DataSeriesType.INT,        "TV", 46);
 
     private final DataSeriesType type;
     private final String canonicalName;

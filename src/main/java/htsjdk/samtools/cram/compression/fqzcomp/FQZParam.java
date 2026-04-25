@@ -2,6 +2,22 @@ package htsjdk.samtools.cram.compression.fqzcomp;
 
 import java.nio.ByteBuffer;
 
+/**
+ * A single parameter block for the FQZComp quality score codec. Defines the context model used
+ * to compress quality scores, including the number of context bits allocated to quality history,
+ * position within read, running delta, and selector. Also holds optional lookup tables (qtab, ptab,
+ * dtab) and quality maps for remapping sparse quality value alphabets.
+ *
+ * <p>The 16-bit context for each quality score is assembled from:
+ * <ul>
+ *   <li>{@code qbits} bits of quality history at bit position {@code qloc}</li>
+ *   <li>Position context from {@code ptab[]} at bit position {@code ploc}</li>
+ *   <li>Delta context from {@code dtab[]} at bit position {@code dloc}</li>
+ *   <li>Selector bits at bit position {@code sloc}</li>
+ * </ul>
+ *
+ * @see FQZParams
+ */
 public class FQZParam {
     private static final int DEDUP_FLAG_MASK = 0x02;
     private static final int FIXED_LEN_FLAG_MASK = 0x04;
@@ -160,7 +176,7 @@ public class FQZParam {
 
     private void cacheParameterFlags(int parameterFlags) {
         this.doDedup = (parameterFlags & DEDUP_FLAG_MASK) != 0;
-        setFixedLen(parameterFlags & FIXED_LEN_FLAG_MASK);  //TODO: f'd up - is this a flag or an int ?
+        setFixedLen(parameterFlags & FIXED_LEN_FLAG_MASK);
         this.doSel = (parameterFlags & SEL_FLAG_MASK) != 0;
         this.doQmap = (parameterFlags & QMAP_FLAG_MASK) != 0;
         this.doPos = (parameterFlags & PTAB_FLAG_MASK) != 0;

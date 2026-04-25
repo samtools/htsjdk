@@ -48,6 +48,13 @@ public class ReadTag implements Comparable<ReadTag> {
     private short code;
     private byte index;
 
+    /**
+     * Construct a ReadTag from a 3-byte tag ID and raw value bytes.
+     *
+     * @param id the tag ID packed as an int (2 bytes tag name + 1 byte type)
+     * @param dataAsByteArray the raw tag value bytes
+     * @param validationStringency validation stringency for parsing
+     */
     public ReadTag(final int id, final byte[] dataAsByteArray, ValidationStringency validationStringency) {
         this.type = (char) (0xFF & id);
         key = new String(new char[]{(char) ((id >> 16) & 0xFF), (char) ((id >> 8) & 0xFF)});
@@ -57,6 +64,22 @@ public class ReadTag implements Comparable<ReadTag> {
         keyType3BytesAsInt = id;
 
         code = SAMTag.makeBinaryTag(this.key);
+    }
+
+    /**
+     * Construct a ReadTag using pre-cached key metadata to avoid repeated String allocation.
+     *
+     * @param cached pre-computed key metadata from the {@link TagKeyCache}
+     * @param dataAsByteArray the raw tag value bytes
+     * @param validationStringency validation stringency for parsing
+     */
+    public ReadTag(final TagKeyCache.TagKeyInfo cached, final byte[] dataAsByteArray, ValidationStringency validationStringency) {
+        this.type = cached.type;
+        this.key = cached.key;
+        this.keyType3Bytes = cached.keyType3Bytes;
+        this.keyType3BytesAsInt = cached.keyType3BytesAsInt;
+        this.code = cached.code;
+        this.value = restoreValueFromByteArray(type, dataAsByteArray, validationStringency);
     }
 
     private ReadTag(final String key, final char type, final Object value) {
@@ -83,7 +106,12 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTag.makeBinaryTag(this.key);
     }
 
-    // two bytes are tag name and one byte is type
+    /**
+     * Pack a 3-byte tag ID (2 bytes name + 1 byte type) into an int.
+     *
+     * @param name byte array of length 3 (tag name char 1, char 2, type char)
+     * @return the packed int representation
+     */
     public static int name3BytesToInt(final byte[] name) {
         int value = 0xFF & name[0];
         value <<= 8;
@@ -94,6 +122,13 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
+    /**
+     * Pack a 2-character tag name and a type character into a 3-byte int.
+     *
+     * @param name two-character tag name (e.g. "NM")
+     * @param type single-character type code (e.g. 'i', 'Z')
+     * @return the packed int representation
+     */
     public static int nameType3BytesToInt(final String name, final char type) {
         int value = 0xFF & name.charAt(0);
         value <<= 8;
@@ -104,28 +139,46 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
-    // two bytes are tag name and one byte is type
+    /**
+     * Unpack a 3-byte tag ID int into a String. If {@code withColon} is false, returns a
+     * 3-character string like "NMi"; if true, returns a 4-character string like "NM:i".
+     *
+     * @param value the packed int
+     * @param withColon if true, insert ':' between the 2-char name and the type char
+     * @return unpacked tag ID string
+     */
+    public static String intToNameType(final int value, final boolean withColon) {
+        final byte b3 = (byte) (0xFF & value);
+        final byte b2 = (byte) (0xFF & (value >> 8));
+        final byte b1 = (byte) (0xFF & (value >> 16));
+
+        return withColon
+                ? new String(new byte[]{b1, b2, ':', b3})
+                : new String(new byte[]{b1, b2, b3});
+    }
+
+    /** Shorthand for {@link #intToNameType(int, boolean) intToNameType(value, false)}. */
     public static String intToNameType3Bytes(final int value) {
-        final byte b3 = (byte) (0xFF & value);
-        final byte b2 = (byte) (0xFF & (value >> 8));
-        final byte b1 = (byte) (0xFF & (value >> 16));
-
-        return new String(new byte[]{b1, b2, b3});
+        return intToNameType(value, false);
     }
 
-    //TODO: consolidate this with the method above, and add some tests
+    /** Shorthand for {@link #intToNameType(int, boolean) intToNameType(value, true)}. */
     public static String intToNameType4Bytes(final int value) {
-        final byte b3 = (byte) (0xFF & value);
-        final byte b2 = (byte) (0xFF & (value >> 8));
-        final byte b1 = (byte) (0xFF & (value >> 16));
-
-        return new String(new byte[]{b1, b2, ':', b3});
+        return intToNameType(value, true);
     }
 
+    /** Create a {@link SAMTagAndValue} from this ReadTag's key and value. */
     public SAMTagAndValue createSAMTag() {
         return new SAMTagAndValue(key, value);
     }
 
+    /**
+     * Create a ReadTag from a 4-character "XX:T" key-and-type string and a value.
+     *
+     * @param keyAndType 4-character string in "XX:T" format (e.g. "NM:i")
+     * @param value the tag value
+     * @return a new ReadTag
+     */
     public static ReadTag deriveTypeFromKeyAndType(final String keyAndType, final Object value) {
         if (keyAndType.length() != 4)
             throw new RuntimeException("Tag key and type must be 4 char long: " + keyAndType);
@@ -133,6 +186,13 @@ public class ReadTag implements Comparable<ReadTag> {
         return new ReadTag(keyAndType.substring(0, 2), keyAndType.charAt(3), value);
     }
 
+    /**
+     * Create a ReadTag by inferring the CRAM type code from the Java type of the value.
+     *
+     * @param key two-character tag name (e.g. "NM")
+     * @param value the tag value (String, Character, Number, or array)
+     * @return a new ReadTag
+     */
     public static ReadTag deriveTypeFromValue(final String key, final Object value) {
         if (key.length() != 2)
             throw new RuntimeException("Tag key must be 2 char long: " + key);
@@ -161,6 +221,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return keyAndType;
     }
 
+    /** Serialize this tag's value to a byte array using CRAM/BAM binary encoding. */
     public byte[] getValueAsByteArray() {
         return writeSingleValue((byte) type, value, false);
     }
@@ -253,6 +314,14 @@ public class ReadTag implements Comparable<ReadTag> {
 
     private static final Charset charset = Charset.forName("US-ASCII");
 
+    /**
+     * Serialize a single tag value to a byte array in BAM binary format.
+     *
+     * @param tagType the BAM type code (e.g. 'i', 'Z', 'B')
+     * @param value the value to serialize
+     * @param isUnsignedArray if true and the value is an array, use unsigned array sub-type codes
+     * @return the serialized bytes
+     */
     public static byte[] writeSingleValue(final byte tagType, final Object value,
                                           final boolean isUnsignedArray) {
         final ByteBuffer buffer = bufferLocal.get();
@@ -348,6 +417,14 @@ public class ReadTag implements Comparable<ReadTag> {
                     + value.getClass());
     }
 
+    /**
+     * Read a single tag value from a ByteBuffer in BAM binary format.
+     *
+     * @param tagType the BAM type code (e.g. 'i', 'Z', 'B')
+     * @param byteBuffer little-endian ByteBuffer positioned at the start of the value
+     * @param validationStringency validation stringency for error handling
+     * @return the deserialized value as the appropriate Java type
+     */
     public static Object readSingleValue(final byte tagType,
                                          final ByteBuffer byteBuffer, ValidationStringency validationStringency) {
         switch (tagType) {

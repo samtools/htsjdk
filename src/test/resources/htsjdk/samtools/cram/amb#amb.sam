@@ -1,57 +1,57 @@
 @HD	VN:1.4	GO:none	SO:coordinate
-@SQ	SN:iupac	LN:31	M5:f88a72084e90c68cc7aa569bbf257e70
+@SQ	SN:iupac	LN:31	M5:f88a72084e90c68cc7aa569bbf257e70	UR:/mnt/temp/amb_tests/amb.fa
 @RG	ID:ID	SM:foo
-read_A	0	iupac	1	86	30M	*	0	0	AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA	******************************
-read_B	0	iupac	1	86	30M	*	0	0	BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB	******************************
-read_C	0	iupac	1	86	30M	*	0	0	CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC	******************************
-read_D	0	iupac	1	86	30M	*	0	0	DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD	******************************
-read_E	0	iupac	1	86	30M	*	0	0	EEEEEEEEEEEEEEEEEEEEEEEEEEEEEE	******************************
-read_F	0	iupac	1	86	30M	*	0	0	FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF	******************************
-read_G	0	iupac	1	86	30M	*	0	0	GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG	******************************
-read_H	0	iupac	1	86	30M	*	0	0	HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH	******************************
-read_I	0	iupac	1	86	30M	*	0	0	IIIIIIIIIIIIIIIIIIIIIIIIIIIIII	******************************
-read_J	0	iupac	1	86	30M	*	0	0	JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ	******************************
-read_K	0	iupac	1	86	30M	*	0	0	KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK	******************************
-read_L	0	iupac	1	86	30M	*	0	0	LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL	******************************
-read_M	0	iupac	1	86	30M	*	0	0	MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM	******************************
-read_N	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************
-read_O	0	iupac	1	86	30M	*	0	0	OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO	******************************
-read_P	0	iupac	1	86	30M	*	0	0	PPPPPPPPPPPPPPPPPPPPPPPPPPPPPP	******************************
-read_Q	0	iupac	1	86	30M	*	0	0	QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ	******************************
-read_R	0	iupac	1	86	30M	*	0	0	RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR	******************************
-read_S	0	iupac	1	86	30M	*	0	0	SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS	******************************
-read_T	0	iupac	1	86	30M	*	0	0	TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT	******************************
-read_U	0	iupac	1	86	30M	*	0	0	UUUUUUUUUUUUUUUUUUUUUUUUUUUUUU	******************************
-read_V	0	iupac	1	86	30M	*	0	0	VVVVVVVVVVVVVVVVVVVVVVVVVVVVVV	******************************
-read_W	0	iupac	1	86	30M	*	0	0	WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW	******************************
-read_X	0	iupac	1	86	30M	*	0	0	XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX	******************************
-read_Y	0	iupac	1	86	30M	*	0	0	YYYYYYYYYYYYYYYYYYYYYYYYYYYYYY	******************************
-read_Z	0	iupac	1	86	30M	*	0	0	ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ	******************************
-read_a	0	iupac	1	86	30M	*	0	0	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	******************************
-read_b	0	iupac	1	86	30M	*	0	0	bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb	******************************
-read_c	0	iupac	1	86	30M	*	0	0	cccccccccccccccccccccccccccccc	******************************
-read_d	0	iupac	1	86	30M	*	0	0	dddddddddddddddddddddddddddddd	******************************
-read_e	0	iupac	1	86	30M	*	0	0	eeeeeeeeeeeeeeeeeeeeeeeeeeeeee	******************************
-read_f	0	iupac	1	86	30M	*	0	0	ffffffffffffffffffffffffffffff	******************************
-read_g	0	iupac	1	86	30M	*	0	0	gggggggggggggggggggggggggggggg	******************************
-read_h	0	iupac	1	86	30M	*	0	0	hhhhhhhhhhhhhhhhhhhhhhhhhhhhhh	******************************
-read_i	0	iupac	1	86	30M	*	0	0	iiiiiiiiiiiiiiiiiiiiiiiiiiiiii	******************************
-read_j	0	iupac	1	86	30M	*	0	0	jjjjjjjjjjjjjjjjjjjjjjjjjjjjjj	******************************
-read_k	0	iupac	1	86	30M	*	0	0	kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk	******************************
-read_l	0	iupac	1	86	30M	*	0	0	llllllllllllllllllllllllllllll	******************************
-read_m	0	iupac	1	86	30M	*	0	0	mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm	******************************
-read_n	0	iupac	1	86	30M	*	0	0	nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn	******************************
-read_o	0	iupac	1	86	30M	*	0	0	oooooooooooooooooooooooooooooo	******************************
-read_p	0	iupac	1	86	30M	*	0	0	pppppppppppppppppppppppppppppp	******************************
-read_q	0	iupac	1	86	30M	*	0	0	qqqqqqqqqqqqqqqqqqqqqqqqqqqqqq	******************************
-read_r	0	iupac	1	86	30M	*	0	0	rrrrrrrrrrrrrrrrrrrrrrrrrrrrrr	******************************
-read_s	0	iupac	1	86	30M	*	0	0	ssssssssssssssssssssssssssssss	******************************
-read_t	0	iupac	1	86	30M	*	0	0	tttttttttttttttttttttttttttttt	******************************
-read_u	0	iupac	1	86	30M	*	0	0	uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu	******************************
-read_v	0	iupac	1	86	30M	*	0	0	vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv	******************************
-read_w	0	iupac	1	86	30M	*	0	0	wwwwwwwwwwwwwwwwwwwwwwwwwwwwww	******************************
-read_x	0	iupac	1	86	30M	*	0	0	xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx	******************************
-read_y	0	iupac	1	86	30M	*	0	0	yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy	******************************
-read_z	0	iupac	1	86	30M	*	0	0	zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz	******************************
-read_dot	0	iupac	1	86	30M	*	0	0	..............................	******************************
-read_equals	0	iupac	1	86	30M	*	0	0	==============================	******************************
+read_A	0	iupac	1	86	30M	*	0	0	AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA	******************************	MD:Z:0.2B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_B	0	iupac	1	86	30M	*	0	0	BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB	******************************	MD:Z:0.0A0A2C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_C	0	iupac	1	86	30M	*	0	0	CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC	******************************	MD:Z:0.0A0A0B0B2D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_D	0	iupac	1	86	30M	*	0	0	DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD	******************************	MD:Z:0.0A0A0B0B0C0C2G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_E	4	iupac	1	0	*	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************
+read_F	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_G	0	iupac	1	86	30M	*	0	0	GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG	******************************	MD:Z:0.0A0A0B0B0C0C0D0D2H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_H	0	iupac	1	86	30M	*	0	0	HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G2K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_I	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_J	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_K	0	iupac	1	86	30M	*	0	0	KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H2M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_L	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_M	0	iupac	1	86	30M	*	0	0	MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K2N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_N	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_O	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_P	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_Q	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_R	0	iupac	1	86	30M	*	0	0	RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N2S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_S	0	iupac	1	86	30M	*	0	0	SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R2T0T0V0V0W0W0Y0	NM:i:28
+read_T	0	iupac	1	86	30M	*	0	0	TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S2V0V0W0W0Y0	NM:i:28
+read_U	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_V	0	iupac	1	86	30M	*	0	0	VVVVVVVVVVVVVVVVVVVVVVVVVVVVVV	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T2W0W0Y0	NM:i:28
+read_W	0	iupac	1	86	30M	*	0	0	WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V2Y0	NM:i:28
+read_X	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_Y	0	iupac	1	86	30M	*	0	0	YYYYYYYYYYYYYYYYYYYYYYYYYYYYYY	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W1	NM:i:29
+read_Z	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_a	0	iupac	1	86	30M	*	0	0	AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA	******************************	MD:Z:0.2B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_b	0	iupac	1	86	30M	*	0	0	BBBBBBBBBBBBBBBBBBBBBBBBBBBBBB	******************************	MD:Z:0.0A0A2C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_c	0	iupac	1	86	30M	*	0	0	CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC	******************************	MD:Z:0.0A0A0B0B2D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_d	0	iupac	1	86	30M	*	0	0	DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD	******************************	MD:Z:0.0A0A0B0B0C0C2G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_e	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_f	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_g	0	iupac	1	86	30M	*	0	0	GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG	******************************	MD:Z:0.0A0A0B0B0C0C0D0D2H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_h	0	iupac	1	86	30M	*	0	0	HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G2K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_i	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_j	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_k	0	iupac	1	86	30M	*	0	0	KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H2M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_l	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_m	0	iupac	1	86	30M	*	0	0	MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K2N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_n	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_o	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_p	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_q	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_r	0	iupac	1	86	30M	*	0	0	RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N2S0S0T0T0V0V0W0W0Y0	NM:i:28
+read_s	0	iupac	1	86	30M	*	0	0	SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R2T0T0V0V0W0W0Y0	NM:i:28
+read_t	0	iupac	1	86	30M	*	0	0	TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S2V0V0W0W0Y0	NM:i:28
+read_u	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_v	0	iupac	1	86	30M	*	0	0	VVVVVVVVVVVVVVVVVVVVVVVVVVVVVV	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T2W0W0Y0	NM:i:28
+read_w	0	iupac	1	86	30M	*	0	0	WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V2Y0	NM:i:28
+read_x	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_y	0	iupac	1	86	30M	*	0	0	YYYYYYYYYYYYYYYYYYYYYYYYYYYYYY	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W1	NM:i:29
+read_z	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_dot	0	iupac	1	86	30M	*	0	0	NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30
+read_equals	0	iupac	1	86	30M	*	0	0	==============================	******************************	MD:Z:0.0A0A0B0B0C0C0D0D0G0G0H0H0K0K0M0M0N0N0R0R0S0S0T0T0V0V0W0W0Y0	NM:i:30

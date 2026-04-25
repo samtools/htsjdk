@@ -2,6 +2,11 @@ package htsjdk.samtools.cram.compression.fqzcomp;
 
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 
+/**
+ * Mutable state tracked during FQZComp encoding and decoding. Updated per quality score as the
+ * context model evolves, and reset at each record boundary. Tracks quality context history,
+ * position within read, running delta, and per-record metadata (lengths, reversal flags).
+ */
 public class FQZState {
     private int qualityContext;     // Qual-only sub-context
     private int previousQuality;    // Previous quality value

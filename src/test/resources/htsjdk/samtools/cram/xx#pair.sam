@@ -1,7 +1,7 @@
-@SQ	SN:xx	LN:20
-a1	99	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********
-b1	99	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********
-c1	99	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********
-a1	147	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********
-b1	147	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********
-c1	147	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********
+@SQ	SN:xx	LN:20	M5:bbf4de6d8497a119dda6e074521643dc	UR:/home/vadim/bin/htslib/test/xx.fa
+a1	99	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********	MD:Z:10	NM:i:0
+b1	99	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********	MD:Z:10	NM:i:0
+c1	99	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********	MD:Z:10	NM:i:0
+a1	147	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********	MD:Z:10	NM:i:0
+b1	147	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********	MD:Z:10	NM:i:0
+c1	147	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********	MD:Z:10	NM:i:0

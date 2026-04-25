@@ -374,7 +374,11 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         try {
             seekableStream.seek(0);
             iterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
-            seekableStream.seek(startOfLastLinearBin >>> 16);
+            // When startOfLastLinearBin is -1, there are no mapped reads and the entire file is
+            // unmapped. In that case, iterate from the beginning (already at position 0).
+            if (startOfLastLinearBin != -1) {
+                seekableStream.seek(startOfLastLinearBin >>> 16);
+            }
             boolean atAlignments;
             do {
                 atAlignments = iterator.advanceToAlignmentInContainer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);

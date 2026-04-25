@@ -179,7 +179,7 @@ public class CRAMReferenceRegion {
                     (zeroBasedStart + requestedFragmentLength));
         }
         regionStart = zeroBasedStart;
-        regionLength = referenceBases.length;
+        regionLength = Math.min(requestedFragmentLength, referenceBases.length);
     }
 
     /**

@@ -17,8 +17,8 @@ public class ByteArrayLenCodecTest extends HtsjdkTest {
         byte[] writtenCore;
         byte[] writtenExternal;
         try (final ByteArrayOutputStream coreOS = new ByteArrayOutputStream();
-             final BitOutputStream coreBitOS = new DefaultBitOutputStream(coreOS);
-             final ByteArrayOutputStream externalOS = new ByteArrayOutputStream()) {
+             final BitOutputStream coreBitOS = new DefaultBitOutputStream(coreOS)) {
+            final CRAMByteWriter externalOS = new CRAMByteWriter();
 
             // arbitrary choice here: any Integer, byte[] codec pair will do
 
@@ -30,14 +30,12 @@ public class ByteArrayLenCodecTest extends HtsjdkTest {
 
             coreBitOS.flush();
             writtenCore = coreOS.toByteArray();
-
-            externalOS.flush();
             writtenExternal = externalOS.toByteArray();
         }
 
         try (final ByteArrayInputStream coreIS = new ByteArrayInputStream(writtenCore);
-             final BitInputStream coreBitIS = new DefaultBitInputStream(coreIS);
-             final ByteArrayInputStream externalIS = new ByteArrayInputStream(writtenExternal)) {
+             final BitInputStream coreBitIS = new DefaultBitInputStream(coreIS)) {
+            final CRAMByteReader externalIS = new CRAMByteReader(writtenExternal);
 
             final CRAMCodec<Integer> lenReadCodec = new BetaIntegerCodec(coreBitIS, null, 0, 8);
             final CRAMCodec<byte[]> valReadCodec = new ExternalByteArrayCodec(externalIS, null);

@@ -3,6 +3,7 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -34,6 +35,18 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
             builder.addPair(Integer.toString(i), i % 2, posInRef += 1, posInRef += 3);
         }
         list.addAll(builder.getRecords());
+
+        // Add NM/MD tags to match what CRAM decode will regenerate
+        final ReferenceSource refSource = createReferenceSource();
+        for (final SAMRecord rec : list) {
+            if (!rec.getReadUnmappedFlag() && rec.getReferenceIndex() >= 0) {
+                final byte[] refBases = refSource.getReferenceBases(
+                        rec.getHeader().getSequence(rec.getReferenceIndex()), false);
+                if (refBases != null) {
+                    SequenceUtil.calculateMdAndNmTags(rec, refBases, true, true);
+                }
+            }
+        }
 
         Collections.sort(list, new SAMRecordCoordinateComparator());
 
