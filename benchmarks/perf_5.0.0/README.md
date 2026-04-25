@@ -12,7 +12,7 @@ For each combination of *variant* × *test* we record wall-clock time and (for w
 |---|---|---|
 | `bam-read` | Picard `CollectQualityYieldMetrics I=$BAM`. **samtools is intentionally skipped** -- there's no like-for-like samtools equivalent of CQM, so any cross-tool comparison would be apples-to-oranges. | end-to-end realistic, read-heavy. Substantiates the "BAM read is faster in 5.0" claim. CQM (not CIM) is used so we don't pay R-driven PDF-render overhead. |
 | `bam-write` | Picard `SamFormatConverter I=$BAM O=...bam`. **samtools is intentionally skipped** -- same reasoning as bam-read. | exercises the BAM compression path. Substantiates the jlibdeflate-vs-zlib-vs-IntelDeflater story. |
-| `cram-read` | Picard `CollectQualityYieldMetrics I=$CRAM R=$REF` vs `samtools view --reference $REF $CRAM > /dev/null` | substantiates the CRAM read speed-ups. |
+| `cram-to-bam` | Picard `SamFormatConverter I=$CRAM O=...bam R=$REF COMPRESSION_LEVEL=1` vs `samtools view -b -1 --reference $REF -o ...bam $CRAM` | substantiates the CRAM read speed-ups. CRAM→BAM (rather than CRAM→/dev/null or stats-computation) is chosen so Picard and samtools do exactly the same scope of work; BAM compression level 1 keeps the BAM-write contribution to a tiny constant on both sides so the comparison is dominated by CRAM decode. |
 | `bam-to-cram-fast` | Picard `SamFormatConverter I=$BAM O=...cram R=$REF [--CRAM_PROFILE FAST]`. samtools: `samtools view -C --output-fmt-option version=3.0`. | apples-to-apples 4.3 (CRAM 3.0) vs 5.0 (FAST profile, ≈ 3.0 codec choices). |
 | `bam-to-cram-normal` | same with `--CRAM_PROFILE NORMAL`. samtools: `--output-fmt-option version=3.1`. Skipped for `picard-4.3*` (4.3 cannot write 3.1). | the user-default 3.1 path. |
 
@@ -91,9 +91,13 @@ pixi run ./run.sh \
 
 ## AWS pivot
 
-1. Provision two otherwise-identical instances: one Graviton (`c8g.4xlarge` or similar), one x86 (`c7i.4xlarge` or similar). Same vCPU count, same memory, same EBS class, same generation.
+1. Provision two otherwise-identical instances: one Graviton, one x86. Same vCPU count, same memory, same generation. Suggested:
+   - **`m7i.xlarge`** (x86) + **`m8g.xlarge`** (Graviton): 4 vCPU, 16 GB RAM each. Picard/htsjdk tests are mostly single-threaded so 4 vCPU is plenty; 16 GB gives `-Xmx4g` JVM heap with comfortable OS-side headroom for page cache.
+   - **`m7id.xlarge`** / **`m8gd.xlarge`** if you want local NVMe for stable I/O perf -- same vCPU/RAM, ~$0.05/hr more, ships with ~250 GB / ~440 GB local SSD respectively. Stage inputs to that volume rather than EBS.
 2. Install pixi, clone htsjdk, `cd benchmarks/perf_5.0.0`, `pixi install`.
 3. Copy the WGS BAM + CRAM + reference from S3 onto the instance's local NVMe (`/local/...`) — don't run benchmarks against EBS or S3-FUSE.
+   - **Decompress the reference FASTA** to `.fa` + `.fa.fai` rather than using the bgzipped `.fa.gz` + `.fa.gz.fai` + `.fa.gz.gzi` form. CRAM tests fetch reference bases by region and we don't want bgzipped-FASTA random-access overhead conflated with CRAM decode timing. `pixi run samtools faidx <ref>.fa` rebuilds the `.fai`.
+   - **Storage estimate.** Inputs ~25 GB (12 GB BAM + ~5 GB CRAM + ~3 GB unzipped reference + indices). The harness deletes per-cell outputs after recording their size, so the working set stays at "inputs + 1 output" ≈ 50 GB. **100 GB gp3 EBS is comfortable** if you don't use the `d` instance variant; instance NVMe is more than enough on its own.
 4. Drop fat jars into `/tmp/picard-bench` (cross-built x86 → x86, aarch64 → aarch64; same jar will work on both since Picard is pure Java but native deflater libs differ).
 5. Same `run.sh` invocation as the smoke test, with the AWS-side input paths and the per-platform variant set (see "Suggested variants for AWS").
 6. Commit `results-graviton.md` and `results-x86.md` (and `out/results.tsv` if we want auditability) back to this directory.

@@ -44,7 +44,7 @@ gawk -F'\t' '
     if ("samtools" in variants) vlist[++n_v] = "samtools"
 
     # Stable test ordering: preferred first, then any others as encountered.
-    split("bam-read bam-write cram-read bam-to-cram-fast bam-to-cram-normal", preferred, " ")
+    split("bam-read bam-write cram-to-bam bam-to-cram-fast bam-to-cram-normal", preferred, " ")
     n_t = 0
     for (i = 1; i <= length(preferred); i++) if (preferred[i] in tests) tlist[++n_t] = preferred[i]
     for (t in tests) {

@@ -47,7 +47,7 @@ PICARD_DIR="/tmp/picard-bench"
 OUT_DIR="./out"
 ITERATIONS=3
 VARIANTS=""
-TESTS="bam-read,bam-write,cram-read,bam-to-cram-fast,bam-to-cram-normal"
+TESTS="bam-read,bam-write,cram-to-bam,bam-to-cram-fast,bam-to-cram-normal"
 BAM=""
 CRAM=""
 REFERENCE=""
@@ -163,7 +163,16 @@ run_timed() {
   fi
 
   local out_b=0
-  [[ -n "$cmd_outfile" && -f "$cmd_outfile" ]] && out_b=$(file_size "$cmd_outfile")
+  if [[ -n "$cmd_outfile" && -f "$cmd_outfile" ]]; then
+    out_b=$(file_size "$cmd_outfile")
+    # Delete the per-cell output file once we've recorded its size; the size
+    # is deterministic across iterations (same input, same encoder), so we
+    # only need to retain it through the timing measurement. Keeping every
+    # output for every variant/test/iteration would balloon disk usage on
+    # the production input by ~10x; on the 12 GB WGS BAM it's the difference
+    # between a ~50 GB and a ~300 GB working set.
+    rm -f "$cmd_outfile"
+  fi
 
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$variant" "$test" "$iter" "$wall_s" "$rss_b" "$out_b" >>"$RESULTS"
 }
@@ -213,14 +222,18 @@ build_cmd() {
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;
-    cram-read)
+    cram-to-bam)
+      # Apples-to-apples CRAM read benchmark: decode CRAM and re-encode as BAM
+      # at compression level 1 (fastest). The BAM-side compression is the same
+      # tiny constant on both Picard and samtools, so the bulk of the timing
+      # is the CRAM decode path. Both tools do exactly the same scope of work.
+      cmd_outfile="$OUT_DIR/$variant.from-cram.bam"
       if [[ -z "$jar" ]]; then
-        cmd_args=(sh -c "samtools view --reference '$REFERENCE' '$CRAM' > /dev/null")
+        cmd_args=(samtools view -b -1 --reference "$REFERENCE" -o "$cmd_outfile" "$CRAM")
       else
-        local m="$OUT_DIR/$variant.cram.cqm.txt"
         cmd_args=(java)
         [[ -n "$props" ]] && cmd_args+=("$props")
-        cmd_args+=(-jar "$jar" CollectQualityYieldMetrics "I=$CRAM" "O=$m" "R=$REFERENCE")
+        cmd_args+=(-jar "$jar" SamFormatConverter "I=$CRAM" "O=$cmd_outfile" "R=$REFERENCE" COMPRESSION_LEVEL=1)
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;
