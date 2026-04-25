@@ -169,7 +169,6 @@ public class BAMRemoteFileTest extends HtsjdkTest {
         assertTrue(records1.size() > 0);
         assertEquals(records1.size(), records2.size());
         for (int i = 0; i < records1.size(); i++) {
-            //System.out.println(records1.get(i).format());
             assertEquals(records1.get(i).getSAMString(), records2.get(i).getSAMString());
         }
     }

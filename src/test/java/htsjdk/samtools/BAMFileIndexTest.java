@@ -418,9 +418,6 @@ public class BAMFileIndexTest extends HtsjdkTest {
                 record2 = iter2.next();
                 count2++;
             }
-            // System.out.println("Iteration:");
-            // System.out.println(" Record1 = " + ((record1 == null) ? "null" : record1.format()));
-            // System.out.println(" Record2 = " + ((record2 == null) ? "null" : record2.format()));
             if (record1 == null && record2 == null) {
                 break;
             }
