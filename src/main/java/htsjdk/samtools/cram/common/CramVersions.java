@@ -17,7 +17,7 @@ public final class CramVersions {
     /**
      * The default CRAM version when creating a new CRAM output file or stream.
      */
-    public static final CRAMVersion DEFAULT_CRAM_VERSION = CRAM_v3;
+    public static final CRAMVersion DEFAULT_CRAM_VERSION = CRAM_v3_1;
 
     /**
      * Return true if {@code candidateVersion} is a supported CRAM version.
