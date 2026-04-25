@@ -25,6 +25,7 @@ package htsjdk.samtools.util.zip;
 
 import com.fulcrumgenomics.jlibdeflate.LibdeflateDecompressor;
 
+import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -64,6 +65,29 @@ class LibdeflateInflater extends Inflater {
         this.inputBuf = input;
         this.inputOff = off;
         this.inputLen = len;
+    }
+
+    @Override
+    public void setInput(final ByteBuffer input) {
+        final int len = input.remaining();
+        if (input.hasArray()) {
+            setInput(input.array(), input.arrayOffset() + input.position(), len);
+            input.position(input.limit());
+        } else {
+            final byte[] bytes = new byte[len];
+            input.get(bytes);
+            setInput(bytes, 0, len);
+        }
+    }
+
+    @Override
+    public int inflate(final ByteBuffer output) throws DataFormatException {
+        if (!output.hasArray()) {
+            throw new UnsupportedOperationException("LibdeflateInflater requires a heap-backed ByteBuffer for output");
+        }
+        final int n = inflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
+        output.position(output.position() + n);
+        return n;
     }
 
     @Override

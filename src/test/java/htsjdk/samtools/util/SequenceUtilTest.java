@@ -653,4 +653,121 @@ public class SequenceUtilTest extends HtsjdkTest {
         final Random random = new Random(42);
         Assert.assertEquals(SequenceUtil.getRandomBases(random, 100), "GAGACTCGGATCCCCGCTTTTACCGTCTAAGCACTCAAGCTGGAGATTACCATACTTAGGCTCATGTAGCCACCCGCGCTCGTAAATTCTCGACATTCCG".getBytes());
     }
+
+    // --- Tests for calculateMdAndNm (the focused, SAMRecord-independent method) ---
+
+    @DataProvider(name = "calculateMdAndNmTestCases")
+    Object[][] calculateMdAndNmTestCases() {
+        return new Object[][]{
+                // description, cigar, readBases, refBases, refOffset, alignmentStart, expectedMD, expectedNM
+                {"perfect match 10M",
+                        "10M", "ACGTACGTAC", "ACGTACGTAC", 0, 1, "10", 0},
+
+                {"single mismatch at end",
+                        "5M", "ACGTG", "ACGTA", 0, 1, "4A0", 1},
+
+                {"mismatch at start",
+                        "5M", "TCGTA", "ACGTA", 0, 1, "0A4", 1},
+
+                {"mismatch in middle",
+                        "5M", "ACTGA", "ACGGA", 0, 1, "2G2", 1},
+
+                {"two mismatches at ends",
+                        "5M", "TCGTG", "ACGTA", 0, 1, "0A3A0", 2},
+
+                {"3bp deletion",
+                        "3M3D3M", "ACGXYZ".replace("XYZ", "TAC"), "ACGNNNTAC", 0, 1, "3^NNN3", 3},
+
+                {"2bp insertion",
+                        "3M2I3M", "ACGXXTAC", "ACGTAC", 0, 1, "6", 2},
+
+                {"soft clip at start",
+                        "2S3M", "XXACG", "ACG", 0, 1, "3", 0},
+
+                {"soft clip at end",
+                        "3M2S", "ACGXX", "ACG", 0, 1, "3", 0},
+
+                {"alignment starts at position 5 (1-based), ref covers full contig",
+                        "5M", "ACGTA", "NNNNACGTA", 0, 5, "5", 0},
+
+                {"ref slice with non-zero offset",
+                        "5M", "ACGTA", "ACGTA", 4, 5, "5", 0},
+
+                {"ref slice with offset and mismatch",
+                        "5M", "ACGTG", "ACGTA", 100, 101, "4A0", 1},
+
+                {"deletion with ref offset",
+                        "3M2D3M", "ACGTAC", "ACGNNTAC", 10, 11, "3^NN3", 2},
+
+                {"skip region (N in cigar)",
+                        "3M100N3M", "ACGTAC", buildRef(106, "ACG", 0, "TAC", 103), 0, 1, "6", 0},
+
+                {"case insensitive matching",
+                        "5M", "acgta", "ACGTA", 0, 1, "5", 0},
+        };
+    }
+
+    @Test(dataProvider = "calculateMdAndNmTestCases")
+    void testCalculateMdAndNm(final String description, final String cigarStr, final String readBasesStr,
+                              final String refBasesStr, final int refOffset, final int alignmentStart,
+                              final String expectedMD, final int expectedNM) {
+        final Cigar cigar = TextCigarCodec.decode(cigarStr);
+        final Tuple<String, Integer> result = SequenceUtil.calculateMdAndNm(
+                cigar.getCigarElements(),
+                readBasesStr.getBytes(),
+                refBasesStr.getBytes(),
+                refOffset,
+                alignmentStart);
+
+        Assert.assertEquals(result.a, expectedMD,
+                description + ": MD mismatch");
+        Assert.assertEquals(result.b.intValue(), expectedNM,
+                description + ": NM mismatch");
+    }
+
+    @Test
+    void testCalculateMdAndNmMatchesLegacyMethod() {
+        // Verify the new method produces identical results to the legacy SAMRecord-based method
+        final byte[] ref = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT".getBytes();
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", ref.length));
+
+        final SAMRecord record = new SAMRecord(header);
+        record.setReferenceName("chr1");
+        record.setAlignmentStart(5);
+        record.setCigarString("10M2I5M3D5M");
+        // Read: 10 matching + 2 inserted + 5 matching + 3 deleted + 5 matching
+        final byte[] readBases = new byte[22]; // 10+2+5+5
+        System.arraycopy(ref, 4, readBases, 0, 10);     // 10M
+        readBases[10] = 'A'; readBases[11] = 'C';       // 2I
+        System.arraycopy(ref, 14, readBases, 12, 5);     // 5M
+        System.arraycopy(ref, 22, readBases, 17, 5);     // 5M (after 3D)
+        record.setReadBases(readBases);
+
+        // Use legacy method
+        SequenceUtil.calculateMdAndNmTags(record, ref, true, true);
+        final String legacyMD = record.getStringAttribute(SAMTag.MD);
+        final int legacyNM = record.getIntegerAttribute(SAMTag.NM);
+
+        // Use new method
+        final Tuple<String, Integer> result = SequenceUtil.calculateMdAndNm(
+                record.getCigar().getCigarElements(),
+                readBases,
+                ref,
+                0,
+                5);
+
+        Assert.assertEquals(result.a, legacyMD, "MD should match legacy method");
+        Assert.assertEquals(result.b.intValue(), legacyNM, "NM should match legacy method");
+    }
+
+    /** Build a reference string of the given length, placing sequences at specified offsets. */
+    private static String buildRef(final int length, final String seq1, final int offset1,
+                                   final String seq2, final int offset2) {
+        final char[] ref = new char[length];
+        java.util.Arrays.fill(ref, 'N');
+        seq1.getChars(0, seq1.length(), ref, offset1);
+        seq2.getChars(0, seq2.length(), ref, offset2);
+        return new String(ref);
+    }
 }

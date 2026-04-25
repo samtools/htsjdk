@@ -5,12 +5,12 @@ import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.rans.RANSDecode;
 import htsjdk.samtools.cram.compression.rans.RANSEncode;
 import htsjdk.samtools.cram.compression.rans.RANSParams;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Params;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import org.apache.commons.compress.utils.IOUtils;
 import org.testng.Assert;
 import org.testng.SkipException;
@@ -87,7 +87,9 @@ public class RANSInteropTest extends HtsjdkTest {
                 RANSNx16Params.PACK_FLAG_MASK,
                 RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
                 RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
-                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
+                RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK,
+                RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
         final List<Object[]> testCases = new ArrayList<>();
         // opportunistically gets ALL the raw test files in the interop directory, including ones intended to test
         // the other codecs; from the rans perspective they're just a stream of bits
@@ -162,15 +164,10 @@ public class RANSInteropTest extends HtsjdkTest {
                             CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream))
                     );
 
-            // Stripe Flag is not implemented in RANSNx16 Encoder.
-            // The encoder throws CRAMException if Stripe Flag is used.
-            if (params instanceof RANSNx16Params && ((RANSNx16Params) params).isStripe()) {
-                Assert.assertThrows(CRAMException.class, () -> ransEncode.compress(uncompressedInteropBytes, params));
-            } else {
-                final ByteBuffer compressedHtsjdkBytes = ransEncode.compress(uncompressedInteropBytes, params);
-                uncompressedInteropBytes.rewind();
-                Assert.assertEquals(ransDecode.uncompress(compressedHtsjdkBytes), uncompressedInteropBytes);
-            }
+            final byte[] inputBytes = new byte[uncompressedInteropBytes.remaining()];
+            uncompressedInteropBytes.get(inputBytes);
+            final byte[] compressedHtsjdkBytes = ransEncode.compress(inputBytes, params);
+            Assert.assertEquals(ByteBuffer.wrap(ransDecode.uncompress(compressedHtsjdkBytes)), ByteBuffer.wrap(inputBytes));
         }
     }
 
@@ -191,10 +188,10 @@ public class RANSInteropTest extends HtsjdkTest {
                 uncompressedInteropPath.toString().endsWith("u32" + CRAMInteropTestUtils.GZIP_SUFFIX) ?
                     ByteBuffer.wrap(IOUtils.toByteArray(uncompressedInteropStream)) :
                     ByteBuffer.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-            final ByteBuffer preCompressedInteropBytes = CompressionUtils.wrap(IOUtils.toByteArray(preCompressedInteropStream));
+            final byte[] preCompressedInteropBytes = IOUtils.toByteArray(preCompressedInteropStream);
 
             // Use htsjdk to uncompress the precompressed file from hts-spec repo
-            final ByteBuffer uncompressedHtsjdkBytes = ransDecode.uncompress(preCompressedInteropBytes);
+            final ByteBuffer uncompressedHtsjdkBytes = ByteBuffer.wrap(ransDecode.uncompress(preCompressedInteropBytes));
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);

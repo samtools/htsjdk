@@ -144,6 +144,9 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
             record.setReadBases(bases);
             record.setBaseQualities(scores);
 
+            // Set NM/MD to match what CRAM decode will regenerate
+            SequenceUtil.calculateMdAndNmTags(record, refBasesFromUCSource, true, true);
+
             // write a valid CRAM with a valid reference source:
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
             try (final CRAMFileWriter writer = new CRAMFileWriter(baos, referenceSourceUpperCased, samFileHeader, "test")) {

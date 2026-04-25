@@ -1,51 +1,78 @@
 package htsjdk.samtools.cram.compression.rans;
 
-import java.nio.ByteBuffer;
-
+/**
+ * Abstract base class for rANS decoders (both 4x8 and Nx16). Holds the shared decoding
+ * state: per-context frequency tables, reverse-lookup tables, and decoding symbols.
+ *
+ * <p>State is allocated once at construction and reused across calls. Between calls,
+ * only the rows that were actually used in the previous decode are reset, avoiding
+ * the O(65536) full reset that would otherwise be required.
+ */
 public abstract class RANSDecode {
-    private ArithmeticDecoder[] D;
-    private RANSDecodingSymbol[][] decodingSymbols;
+    private final int[][] frequencies;
+    private final byte[][] reverseLookup;
+    private final RANSDecodingSymbol[][] decodingSymbols;
+    private final boolean[] usedRows;
+    private int usedRowCount;
 
-    // GETTERS
-    protected ArithmeticDecoder[] getD() {
-        return D;
+    protected RANSDecode() {
+        frequencies = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
+        reverseLookup = new byte[Constants.NUMBER_OF_SYMBOLS][Constants.TOTAL_FREQ];
+        decodingSymbols = new RANSDecodingSymbol[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                decodingSymbols[i][j] = new RANSDecodingSymbol();
+            }
+        }
+        usedRows = new boolean[Constants.NUMBER_OF_SYMBOLS];
     }
 
-    protected RANSDecodingSymbol[][] getDecodingSymbols() {
+    protected final int[][] getFrequencies() {
+        return frequencies;
+    }
+
+    protected final byte[][] getReverseLookup() {
+        return reverseLookup;
+    }
+
+    protected final RANSDecodingSymbol[][] getDecodingSymbols() {
         return decodingSymbols;
     }
 
-    // This method assumes that inBuffer is already rewound.
-    // It uncompresses the data in the inBuffer, leaving it consumed.
-    // Returns a rewound ByteBuffer containing the uncompressed data.
-    public abstract ByteBuffer uncompress(final ByteBuffer inBuffer);
+    /**
+     * Uncompress a rANS-encoded byte stream.
+     *
+     * @param input the compressed byte stream (format-specific header + encoded data)
+     * @return the uncompressed data
+     */
+    public abstract byte[] uncompress(final byte[] input);
 
-    // Lazy initialization of working memory for the decoder
-    protected void initializeRANSDecoder() {
-        if (D == null) {
-            D = new ArithmeticDecoder[Constants.NUMBER_OF_SYMBOLS];
-            for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-                D[i] = new ArithmeticDecoder();
-            }
-        } else {
-            for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-                D[i].reset();
-            }
-        }
-        if (decodingSymbols == null) {
-            decodingSymbols = new RANSDecodingSymbol[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-            for (int i = 0; i < decodingSymbols.length; i++) {
-                for (int j = 0; j < decodingSymbols[i].length; j++) {
-                    decodingSymbols[i][j] = new RANSDecodingSymbol();
-                }
-            }
-        } else {
-            for (int i = 0; i < decodingSymbols.length; i++) {
-                for (int j = 0; j < decodingSymbols[i].length; j++) {
-                    decodingSymbols[i][j].set(0, 0);
-                }
-            }
+    /**
+     * Mark a context row as used. Called by subclass readFrequencyTable methods when
+     * populating a row. Enables selective reset on the next {@link #resetDecoderState} call.
+     */
+    protected final void markRowUsed(final int row) {
+        if (!usedRows[row]) {
+            usedRows[row] = true;
+            usedRowCount++;
         }
     }
 
+    /**
+     * Reset only the decoder rows that were used in the previous decode operation.
+     * Called at the start of each uncompress to prepare for new data.
+     */
+    protected final void resetDecoderState() {
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS && usedRowCount > 0; i++) {
+            if (usedRows[i]) {
+                java.util.Arrays.fill(frequencies[i], 0);
+                for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+                    decodingSymbols[i][j].set(0, 0);
+                }
+                usedRows[i] = false;
+                usedRowCount--;
+            }
+        }
+        usedRowCount = 0;
+    }
 }

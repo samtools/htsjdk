@@ -115,7 +115,11 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
                     compressorCache,
                     getSAMFileHeader());
             samRecordIterator = samRecords.iterator();
-            return BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER;
+            // A container may match the query but produce no records (e.g. a container with
+            // only a compression header and no slices). Skip to the next container in that case.
+            return samRecords.isEmpty()
+                    ? BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION
+                    : BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER;
         } else {
             return BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION;
         }

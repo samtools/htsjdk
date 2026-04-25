@@ -51,6 +51,7 @@ public final class SliceFactory {
 
     private long sliceRecordCounter;
     private final int maxRecordsPerSlice;
+    private final long maxBasesPerSlice;
     private final int minimumSingleReferenceSliceThreshold;
     private final boolean coordinateSorted;
 
@@ -71,6 +72,7 @@ public final class SliceFactory {
         this.cramReferenceRegion = new CRAMReferenceRegion(cramReferenceSource, samFileHeader.getSequenceDictionary());
         minimumSingleReferenceSliceThreshold = encodingStrategy.getMinimumSingleReferenceSliceSize();
         maxRecordsPerSlice = this.encodingStrategy.getReadsPerSlice();
+        maxBasesPerSlice = this.encodingStrategy.getBasesPerSlice();
         this.coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
         this.sliceRecordCounter = globalRecordCounter;
         cramRecordSliceEntries = new ArrayList<>(this.encodingStrategy.getSlicesPerContainer());
@@ -174,7 +176,12 @@ public final class SliceFactory {
 
     /**
      * Decide if the current records should be flushed based on the current reference context, the reference context
-     * for the next record to be written, and the number of records seen so far.
+     * for the next record to be written, the number of records seen so far, and the accumulated number of bases.
+     *
+     * A slice is considered "full" when either {@link CRAMEncodingStrategy#getReadsPerSlice} records or
+     * {@link CRAMEncodingStrategy#getBasesPerSlice} bases have been accumulated -- whichever happens first.
+     * This matches htslib behaviour and prevents pathologically large slices for long-read data
+     * (PacBio HiFi, ONT) where 100K records could otherwise buffer >1 GB of quality scores.
      *
      * Slices with the Multiple Reference flag (-2) set as the sequence ID in the header may contain reads mapped to
      * multiple external references, including unmapped reads (placed on these references or unplaced), but multiple
@@ -188,13 +195,17 @@ public final class SliceFactory {
      * reference-differencing. This latter scenario is recommended for unsorted or non-coordinate-sorted data.
      *
      * @param nextReferenceIndex reference index of the next record to be emitted
+     * @param numberOfSAMRecords number of SAM records accumulated so far for the current slice
+     * @param numberOfBases total bases accumulated so far for the current slice
      * @return ReferenceContext.UNINITIALIZED_REFERENCE_ID if a current slice should be flushed and
      * subsequent records should go into a new slice; otherwise the updated reference context.
      */
     public int getUpdatedReferenceContext(
             final int currentReferenceContext,
             final int nextReferenceIndex,
-            final int numberOfSAMRecords) {
+            final int numberOfSAMRecords,
+            final long numberOfBases) {
+        final boolean sliceFull = numberOfSAMRecords >= maxRecordsPerSlice || numberOfBases >= maxBasesPerSlice;
         switch (currentReferenceContext) {
             // uninitialized can go to: unmapped or mapped
             case ReferenceContext.UNINITIALIZED_REFERENCE_ID:
@@ -207,9 +218,9 @@ public final class SliceFactory {
             case ReferenceContext.UNMAPPED_UNPLACED_ID:
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still unmapped...
-                    return numberOfSAMRecords < maxRecordsPerSlice ?
-                            ReferenceContext.UNMAPPED_UNPLACED_ID :
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID;
+                    return sliceFull ?
+                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
+                            ReferenceContext.UNMAPPED_UNPLACED_ID;
                 } else if (coordinateSorted) {
                     // coordinate sorted, and we're going from unmapped to mapped ??
                     throw new CRAMException("Invalid coord-sorted input - unmapped records must be last");
@@ -218,7 +229,7 @@ public final class SliceFactory {
                     // record into the same slice with the unmapped ones, since there is no index query
                     // concern since we're not coord sorted anyway (though there is no reference compression
                     // happening in this container).
-                    return numberOfSAMRecords >= maxRecordsPerSlice ?
+                    return sliceFull ?
                             ReferenceContext.UNINITIALIZED_REFERENCE_ID :
                             ReferenceContext.MULTIPLE_REFERENCE_ID;
                 }
@@ -233,7 +244,7 @@ public final class SliceFactory {
                             ReferenceContext.UNINITIALIZED_REFERENCE_ID; // emit a small mutli-ref
                 } else {
                     // multi-ref, not coord sorted
-                    return numberOfSAMRecords >= maxRecordsPerSlice ?
+                    return sliceFull ?
                             ReferenceContext.UNINITIALIZED_REFERENCE_ID :
                             ReferenceContext.MULTIPLE_REFERENCE_ID;
                 }
@@ -243,7 +254,7 @@ public final class SliceFactory {
                 // (currentReferenceContext is an actual reference index, not a sentinel).
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still on the same reference contig
-                    return numberOfSAMRecords >= maxRecordsPerSlice ?
+                    return sliceFull ?
                             ReferenceContext.UNINITIALIZED_REFERENCE_ID :
                             nextReferenceIndex;
                 } else {

@@ -2,6 +2,12 @@ package htsjdk.samtools.cram.compression.fqzcomp;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Global flags byte for the FQZComp codec, read from the first byte after the version number
+ * in the FQZComp parameter header. Controls whether multiple parameter blocks are present,
+ * whether a selector table maps records to parameter blocks, and whether quality scores
+ * should be reversed for reverse-complemented reads.
+ */
 public class FQZGlobalFlags {
     public static final int MULTI_PARAM_FLAG_MASK = 0x01;
     public static final int SELECTOR_TABLE_FLAG_MASK = 0x02;

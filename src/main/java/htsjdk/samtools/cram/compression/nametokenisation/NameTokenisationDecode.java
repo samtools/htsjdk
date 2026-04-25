@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.compression.nametokenisation;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -22,6 +23,9 @@ public class NameTokenisationDecode {
 
     public static final int DEFAULT_POSITION_ALLOCATION = 30;
 
+    // Reusable rANS decoder — avoids allocating 1MB+ of arrays per token stream
+    private final RANSNx16Decode sharedRansDecoder = new RANSNx16Decode();
+
     /**
      * Uncompress the compressed name data in the input buffer. Return is a byte[] containing the read names,
      * each separated by the byte value specified by nameSeparator, including a terminating separator.
@@ -35,7 +39,7 @@ public class NameTokenisationDecode {
 
         final int numNames = inBuffer.getInt() & 0xFFFFFFFF;
         final int useArith = inBuffer.get() & 0xFF;
-        final TokenStreams tokenStreams = new TokenStreams(inBuffer, useArith, numNames);
+        final TokenStreams tokenStreams = new TokenStreams(inBuffer, useArith, numNames, sharedRansDecoder);
 
         // two-dimensional array of previously decoded tokens, indexed as (nameIndex, tokenPosition - 1); note
         // that unlike the TYPE stream in TokenStreams, where token position 1 is located at index 1 because of

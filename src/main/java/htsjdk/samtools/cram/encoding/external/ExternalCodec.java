@@ -1,28 +1,30 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import htsjdk.samtools.cram.io.CRAMByteReader;
+import htsjdk.samtools.cram.io.CRAMByteWriter;
 
 /**
- * Superclass of Codecs which operate on External Block byte streams
- * Contrast with {@link htsjdk.samtools.cram.encoding.core.CoreCodec} for Core Block bit streams
+ * Superclass of Codecs which operate on External Block byte streams.
+ * Uses unsynchronized {@link CRAMByteReader}/{@link CRAMByteWriter} instead of
+ * ByteArrayInputStream/ByteArrayOutputStream for performance.
+ *
+ * <p>Contrast with {@link htsjdk.samtools.cram.encoding.core.CoreCodec} for Core Block bit streams.
  *
  * @param <T> data series type to be read or written
  */
 abstract class ExternalCodec<T> implements CRAMCodec<T> {
-    protected final ByteArrayInputStream inputStream;
-    protected final ByteArrayOutputStream outputStream;
+    protected final CRAMByteReader inputReader;
+    protected final CRAMByteWriter outputWriter;
 
     /**
-     * Create new ExternalCodec with associated input and output byte streams
+     * Create new ExternalCodec with associated input and output byte streams.
      *
-     * @param inputStream byte stream for reading input
-     * @param outputStream byte stream for writing output
+     * @param inputReader reader for decoding input (may be null if only writing)
+     * @param outputWriter writer for encoding output (may be null if only reading)
      */
-    ExternalCodec(final ByteArrayInputStream inputStream, final ByteArrayOutputStream outputStream) {
-        this.inputStream = inputStream;
-        this.outputStream = outputStream;
+    ExternalCodec(final CRAMByteReader inputReader, final CRAMByteWriter outputWriter) {
+        this.inputReader = inputReader;
+        this.outputWriter = outputWriter;
     }
 }

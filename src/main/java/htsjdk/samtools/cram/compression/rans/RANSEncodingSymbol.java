@@ -24,21 +24,37 @@
  */
 package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.utils.ValidationUtils;
-
-import java.nio.ByteBuffer;
-
+/**
+ * Encoding state for a single symbol in the rANS codec. Fields are package-private to allow
+ * the encode loops in {@link RANSNx16Encode} and {@link RANS4x8Encode} to inline the
+ * renormalization and state-update arithmetic directly, avoiding method call overhead
+ * in the hot inner loop.
+ */
 public final class RANSEncodingSymbol {
-    private long xMax;       // (Exclusive) upper bound of pre-normalization interval
-    private int rcpFreq;    // Fixed-point reciprocal frequency
-    private int bias;       // Bias
-    private int cmplFreq;   // Complement of frequency: (1 << scaleBits) - freq
-    private int rcpShift;   // Reciprocal shift
+    /** (Exclusive) upper bound of pre-normalization interval. */
+    long xMax;
+    /** Fixed-point reciprocal frequency for integer division. */
+    int rcpFreq;
+    /** Bias term for the encoding formula. */
+    int bias;
+    /** Complement of frequency: (1 &lt;&lt; scaleBits) - freq. */
+    int cmplFreq;
+    /** Reciprocal shift (includes the +32 adjustment). */
+    int rcpShift;
 
+    /** Reset all encoding parameters to zero. */
     public void reset() {
         xMax = rcpFreq = bias = cmplFreq = rcpShift = 0;
     }
 
+    /**
+     * Initialize encoding parameters for a symbol given its position in the frequency table.
+     * Computes the reciprocal frequency and bias needed for fast integer division during encoding.
+     *
+     * @param start cumulative frequency of all preceding symbols
+     * @param freq frequency of this symbol (must be &gt; 0)
+     * @param scaleBits log2 of the total frequency sum
+     */
     public void set(final int start, final int freq, final int scaleBits) {
 
         // Rans4x8: xMax = ((Constants.RANS_BYTE_L_4x8 >> scaleBits) << 8) * freq = (1<< 31-scaleBits) * freq
@@ -67,54 +83,43 @@ public final class RANSEncodingSymbol {
         rcpShift += 32; // Avoid the extra >>32 in RansEncPutSymbol
     }
 
-    public long putSymbol4x8(final long r, final ByteBuffer byteBuffer) {
-        ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
-
-        // re-normalize
+    /**
+     * byte[] variant for Nx16 encoding — writes backwards (decrementing posHolder[0]).
+     * Renormalization bytes are written so the final memory layout is little-endian
+     * (LSB at lower address), matching htslib's RansEncPutSymbol output format.
+     */
+    public long putSymbolNx16(final long r, final byte[] out, final int[] posHolder) {
         long retSymbol = r;
+        int pos = posHolder[0];
         if (retSymbol >= xMax) {
-            byteBuffer.put((byte) (retSymbol & 0xFF));
-            retSymbol >>= 8;
+            // Write 2-byte LE renorm word: MSB at higher addr (written first), LSB at lower addr (written second)
+            out[--pos] = (byte) ((retSymbol >> 8) & 0xFF);
+            out[--pos] = (byte) (retSymbol & 0xFF);
+            retSymbol >>= 16;
             if (retSymbol >= xMax) {
-                byteBuffer.put((byte) (retSymbol & 0xFF));
-                retSymbol >>= 8;
+                out[--pos] = (byte) ((retSymbol >> 8) & 0xFF);
+                out[--pos] = (byte) (retSymbol & 0xFF);
+                retSymbol >>= 16;
             }
         }
-
-        // x = C(s,x)
-        // NOTE: written this way so we get a 32-bit "multiply high" when
-        // available. If you're on a 64-bit platform with cheap multiplies
-        // (e.g. x64), just bake the +32 into rcp_shift.
-        // int q = (int) (((uint64_t)x * sym.rcp_freq) >> 32) >> sym.rcp_shift;
-
-        // The extra >>32 has already been added to RansEncSymbolInit
+        posHolder[0] = pos;
         final long q = ((retSymbol * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
         return retSymbol + bias + q * cmplFreq;
     }
 
-    public long putSymbolNx16(final long r, final ByteBuffer byteBuffer) {
-        ValidationUtils.validateArg(xMax != 0, "can't encode symbol with freq=0");
-
-        // re-normalize
+    /** byte[] variant for 4x8 encoding — writes backwards, decrementing posHolder[0]. */
+    public long putSymbol4x8(final long r, final byte[] out, final int[] posHolder) {
         long retSymbol = r;
+        int pos = posHolder[0];
         if (retSymbol >= xMax) {
-            byteBuffer.put((byte) ((retSymbol>>8) & 0xFF)); // extra line - 1 more byte
-            byteBuffer.put((byte) (retSymbol & 0xFF));
-            retSymbol >>=16;
+            out[--pos] = (byte) (retSymbol & 0xFF);
+            retSymbol >>= 8;
             if (retSymbol >= xMax) {
-                byteBuffer.put((byte) ((retSymbol>>8) & 0xFF)); // extra line - 1 more byte
-                byteBuffer.put((byte) (retSymbol & 0xFF));
-                retSymbol >>=16;
+                out[--pos] = (byte) (retSymbol & 0xFF);
+                retSymbol >>= 8;
             }
         }
-
-        // x = C(s,x)
-        // NOTE: written this way so we get a 32-bit "multiply high" when
-        // available. If you're on a 64-bit platform with cheap multiplies
-        // (e.g. x64), just bake the +32 into rcp_shift.
-        // int q = (int) (((uint64_t)x * sym.rcp_freq) >> 32) >> sym.rcp_shift;
-
-        // The extra >>32 has already been added to RansEncSymbolInit
+        posHolder[0] = pos;
         final long q = ((retSymbol * (0xFFFFFFFFL & rcpFreq)) >> rcpShift);
         return retSymbol + bias + q * cmplFreq;
     }

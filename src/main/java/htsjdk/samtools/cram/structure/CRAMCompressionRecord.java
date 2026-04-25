@@ -25,6 +25,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.*;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -72,7 +73,7 @@ public class CRAMCompressionRecord {
     private final CRAMRecordReadFeatures readFeatures;
     private final int mappingQuality;
     private final int readGroupID;
-    private final List<ReadTag> tags;
+    private List<ReadTag> tags;
     private final long sequentialIndex; // 1 based sequential index of this record in the cram stream
 
     private int bamFlags;
@@ -83,6 +84,7 @@ public class CRAMCompressionRecord {
     // the contents hasher doesn't handle nulls
     private byte[] readBases;
     private byte[] qualityScores;
+    private Cigar cachedCigar; // populated by restoreBasesAndTags, used by toSAMRecord
     private MutableInt tagIdsIndex = new MutableInt(0);
 
     //mate info
@@ -200,13 +202,45 @@ public class CRAMCompressionRecord {
                 NO_READGROUP_ID :
                 readGroupMap.get(readGroup.getId());
 
-        if (samRecord.getAttributes().size() > 0) {
-            tags = new ArrayList();
-            for (final SAMRecord.SAMTagAndValue tagAndValue : samRecord.getAttributes()) {
-                // Skip read group, since read group have a dedicated data series
-                if (!SAMTag.RG.name().equals(tagAndValue.tag)) {
-                    tags.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
+        // Tag handling: NM:i and MD:Z are stripped for mapped reads (matching htslib default)
+        // and regenerated from read features + reference during decode. If the stored NM/MD
+        // values don't match what would be recomputed (non-standard values), they are kept verbatim.
+        // RG is also skipped since read groups have a dedicated data series.
+        boolean stripNM = !samRecord.getReadUnmappedFlag() && !encodingStrategy.getStoreNM();
+        boolean stripMD = !samRecord.getReadUnmappedFlag() && !encodingStrategy.getStoreMD();
+
+        // Validate that stored NM/MD match recomputed values; keep non-standard values verbatim
+        if ((stripNM || stripMD) && referenceBases != null &&
+                samRecord.getCigar() != null && !samRecord.getCigar().isEmpty() &&
+                samRecord.getReadBases() != null && samRecord.getReadBases().length > 0) {
+            final htsjdk.samtools.util.Tuple<String, Integer> computed =
+                    htsjdk.samtools.util.SequenceUtil.calculateMdAndNm(
+                            samRecord.getCigar().getCigarElements(),
+                            samRecord.getReadBases(),
+                            referenceBases,
+                            0,
+                            samRecord.getAlignmentStart());
+            if (stripNM && samRecord.getAttribute(SAMTag.NM) != null) {
+                final int storedNM = ((Number) samRecord.getAttribute(SAMTag.NM)).intValue();
+                if (storedNM != computed.b) {
+                    stripNM = false;
                 }
+            }
+            if (stripMD && samRecord.getAttribute(SAMTag.MD) != null) {
+                final Object mdValue = samRecord.getAttribute(SAMTag.MD);
+                if (!(mdValue instanceof String) || !computed.a.equals(mdValue)) {
+                    stripMD = false;
+                }
+            }
+        }
+
+        if (!samRecord.getAttributes().isEmpty()) {
+            tags = new ArrayList<>(samRecord.getAttributes().size());
+            for (final SAMRecord.SAMTagAndValue tagAndValue : samRecord.getAttributes()) {
+                if (SAMTag.RG.name().equals(tagAndValue.tag)) continue;
+                if (stripNM && SAMTag.NM.name().equals(tagAndValue.tag)) continue;
+                if (stripMD && SAMTag.MD.name().equals(tagAndValue.tag)) continue;
+                tags.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
             }
         } else {
             tags = null;
@@ -313,7 +347,7 @@ public class CRAMCompressionRecord {
         if (isSegmentUnmapped()) {
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         } else {
-            samRecord.setCigar(readFeatures.getCigarForReadFeatures(readLength));
+            samRecord.setCigar(cachedCigar != null ? cachedCigar : readFeatures.getCigarForReadFeatures(readLength));
         }
 
         if (samRecord.getReadPairedFlag()) {
@@ -346,8 +380,19 @@ public class CRAMCompressionRecord {
         return samRecord;
     }
 
-    //TODO: how to resolve readnames when we don’t save them for supplementary / secondary reads that don’t
-    //appear near their primaries and don’t have a primary linking to them?
+    /**
+     * Assign a synthetic read name based on the sequential index if no name was decoded.
+     * Propagates the name to linked next/previous segments.
+     *
+     * <p>Note: supplementary and secondary reads are always DETACHED (never mate-linked), so they
+     * have no nextSegment/previousSegment and name propagation won’t help them. This is only safe
+     * because htsjdk always sets preserveReadNames=true when encoding (see
+     * {@link htsjdk.samtools.cram.build.CompressionHeaderFactory#createCompressionHeader}). If lossy
+     * read name mode were ever implemented, supplementary/secondary reads in different slices from
+     * their primaries would receive synthetic names that don’t match. htslib avoids this by forcing
+     * name preservation whenever SA tags are present and when not all template reads are in the
+     * same slice.</p>
+     */
     public void assignReadName() {
         if (readName == null) {
             readName = Long.toString(getSequentialIndex());
@@ -431,27 +476,38 @@ public class CRAMCompressionRecord {
     }
 
     /**
-     * The method is similar in semantics to
-     * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
-     * computeInsertSize} but operates on CRAM native records instead of
-     * SAMRecord objects.
+     * Compute the insert size (TLEN) for a mate pair using the htslib/samtools convention:
+     * the absolute value is the number of bases from the leftmost mapped base to the rightmost
+     * mapped base across both mates. The sign is positive for the leftmost read (by alignment
+     * start), negative for the rightmost, with ties broken by the first-of-pair flag.
+     *
+     * <p>This matches htslib's TLEN computation in cram_encode.c / cram_decode.c, ensuring
+     * that linked mate pairs produce identical TLEN values regardless of which CRAM implementation
+     * performs the decoding.
+     *
+     * <p>Note: this differs from {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)}
+     * which uses 5'-to-5' distance. This method is used only for CRAM mate linking and restoration.
      *
      * @param firstEnd  first mate of the pair
      * @param secondEnd second mate of the pair
-     * @return template length
+     * @return template length for firstEnd (negate for secondEnd)
      */
-    private static int computeInsertSize(final CRAMCompressionRecord firstEnd, final CRAMCompressionRecord secondEnd) {
+    static int computeInsertSize(final CRAMCompressionRecord firstEnd, final CRAMCompressionRecord secondEnd) {
         if (firstEnd.isSegmentUnmapped() ||
                 secondEnd.isSegmentUnmapped()||
                 firstEnd.referenceIndex != secondEnd.referenceIndex) {
             return 0;
         }
 
-        final int firstEnd5PrimePosition = firstEnd.isNegativeStrand() ? firstEnd.getAlignmentEnd() : firstEnd.alignmentStart;
-        final int secondEnd5PrimePosition = secondEnd.isNegativeStrand() ? secondEnd.getAlignmentEnd() : secondEnd.alignmentStart;
+        final int aleft = Math.min(firstEnd.alignmentStart, secondEnd.alignmentStart);
+        final int aright = Math.max(firstEnd.getAlignmentEnd(), secondEnd.getAlignmentEnd());
+        final int magnitude = aright - aleft + 1;
 
-        final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
-        return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
+        // Positive for leftmost read, negative for rightmost; tie-break by first-of-pair flag.
+        if (firstEnd.alignmentStart < secondEnd.alignmentStart) return magnitude;
+        if (firstEnd.alignmentStart > secondEnd.alignmentStart) return -magnitude;
+        if (firstEnd.isFirstSegment()) return magnitude;
+        return -magnitude;
     }
 
     /**
@@ -477,9 +533,79 @@ public class CRAMCompressionRecord {
         }
     }
 
+    /**
+     * Fused single-pass method: restore read bases from the reference + read features, build the
+     * CIGAR, and compute NM/MD tags, all in one iteration through the features. Replaces the
+     * previous separate calls to {@code restoreReadBases} + {@code restoreNmAndMd}.
+     *
+     * <p>The CIGAR is cached on this record for use by {@link #toSAMRecord()}.
+     */
+    void restoreBasesAndTags(final CRAMReferenceRegion cramReferenceRegion,
+                             final SubstitutionMatrix substitutionMatrix) {
+        // Handle the cF internal tag from htslib's embed_ref=2 mode
+        boolean suppressMD = false;
+        boolean suppressNM = false;
+        if (tags != null) {
+            for (int i = tags.size() - 1; i >= 0; i--) {
+                if ("cF".equals(tags.get(i).getKey())) {
+                    final int cf = ((Number) tags.get(i).getValue()).intValue();
+                    suppressMD = (cf & 1) != 0;
+                    suppressNM = (cf & 2) != 0;
+                    tags.remove(i);
+                    break;
+                }
+            }
+        }
+
+        // Determine if MD/NM computation is needed
+        boolean hasNM = false;
+        boolean hasMD = false;
+        if (tags != null) {
+            for (final ReadTag tag : tags) {
+                if ("NM".equals(tag.getKey())) hasNM = true;
+                if ("MD".equals(tag.getKey())) hasMD = true;
+            }
+        }
+        final boolean needMD = !hasMD && !suppressMD;
+        final boolean needNM = !hasNM && !suppressNM;
+
+        final boolean computeMdNm = (needMD || needNM) &&
+                readLength > 0 &&
+                readFeatures != null &&
+                cramReferenceRegion.getCurrentReferenceBases() != null;
+
+        final CRAMRecordReadFeatures.DecodeResult result = CRAMRecordReadFeatures.restoreBasesAndTags(
+                readFeatures == null ? Collections.emptyList() : readFeatures.getReadFeaturesList(),
+                isUnknownBases(),
+                alignmentStart,
+                readLength,
+                cramReferenceRegion,
+                substitutionMatrix,
+                computeMdNm);
+
+        this.readBases = result.readBases;
+        this.cachedCigar = result.cigar;
+
+        if (computeMdNm) {
+            if (tags == null) {
+                tags = new ArrayList<>(2);
+            }
+            if (needMD && result.mdString != null) {
+                tags.add(ReadTag.deriveTypeFromValue("MD", result.mdString));
+            }
+            if (needNM && result.nmCount >= 0) {
+                tags.add(ReadTag.deriveTypeFromValue("NM", result.nmCount));
+            }
+        }
+    }
+
     //////////////////////////////////////
     // Start Mate code
     //////////////////////////////////////
+    /**
+     * Restore mate information by walking the linked list of segments starting from this record,
+     * setting mate fields on each segment pair, and computing template length.
+     */
     public void restoreMateInfo() {
         if (getNextSegment() == null) {
             return;
@@ -499,10 +625,16 @@ public class CRAMCompressionRecord {
         last.templateSize = -templateLength;
     }
 
+    /** Mark this record as detached — mate info stored explicitly via MF, NS, NP, TS data series. */
     public void setToDetachedState() {
         setDetached(true);
         setHasMateDownStream(false);
         recordsToNextFragment = -1;
+    }
+
+    /** Set the NF (records-to-next-fragment) offset for attached mate pairs. */
+    void setRecordsToNextFragment(final int recordsToNextFragment) {
+        this.recordsToNextFragment = recordsToNextFragment;
     }
 
     private void setNextMate(final CRAMCompressionRecord next) {
@@ -588,7 +720,9 @@ public class CRAMCompressionRecord {
     public int getMateAlignmentStart() { return mateAlignmentStart; }
 
     public void setTagIdsIndex(MutableInt tagIdsIndex) {
-        //TODO: why is this value deliberately shared across records
+        // The MutableInt is intentionally shared by reference across all records with the same tag
+        // combination. CompressionHeaderFactory.buildTagIdsFromCRAMRecords() groups records by their
+        // tag set and assigns a shared MutableInt to each group for counting and dictionary indexing.
         this.tagIdsIndex = tagIdsIndex;
     }
 
@@ -624,6 +758,7 @@ public class CRAMCompressionRecord {
         this.previousSegment = previousSegment;
     }
 
+    /** Return true if this record has the secondary alignment BAM flag set. */
     public boolean isSecondaryAlignment() {
         return (bamFlags & SAMFlag.SECONDARY_ALIGNMENT.intValue()) != 0;
     }
@@ -634,34 +769,43 @@ public class CRAMCompressionRecord {
                 bamFlags & ~SAMFlag.SECONDARY_ALIGNMENT.intValue();
     }
 
+    /** Return true if this record's CRAM flags indicate a downstream mate in the same slice. */
     public boolean isHasMateDownStream() {
         return isHasMateDownStream(cramFlags);
     }
 
+    /** Test the has-mate-downstream bit in the given CRAM flags value. */
     public static boolean isHasMateDownStream(final int cramFlags) {
         return (cramFlags & CF_HAS_MATE_DOWNSTREAM) != 0;
     }
 
+    /** Return true if this record stores mate information explicitly (detached state). */
     public boolean isDetached() {
         return isDetached(cramFlags);
     }
 
+    /** Test the detached bit in the given CRAM flags value. */
     public static boolean isDetached(final int cramFlags) { return (cramFlags & CF_DETACHED) != 0; }
 
+    /** Return true if quality scores are preserved as a full array for this record. */
     public boolean isForcePreserveQualityScores() {
         return isForcePreserveQualityScores(cramFlags);
     }
 
+    /** Test the quality-scores-preserved-as-array bit in the given CRAM flags value. */
     public static boolean isForcePreserveQualityScores(final int cramFlags) {return (cramFlags & CF_QS_PRESERVED_AS_ARRAY) != 0; }
 
+    /** Return true if the original sequence was unknown (SEQ="*"). */
     public boolean isUnknownBases() {
         return isUnknownBases(cramFlags);
     }
 
+    /** Test the unknown-bases bit in the given CRAM flags value. */
     public static boolean isUnknownBases(final int cramFlags) {
         return (cramFlags & CF_UNKNOWN_BASES) != 0;
     }
 
+    /** Return true if this record has the read-paired BAM flag set. */
     public boolean isReadPaired() {
         return (bamFlags & SAMFlag.READ_PAIRED.intValue()) != 0;
     }
@@ -682,12 +826,14 @@ public class CRAMCompressionRecord {
         return isSegmentUnmapped(bamFlags);
     }
 
+    /** Test the segment-unmapped bit in the given BAM flags value. */
     public static boolean isSegmentUnmapped(final int bamFlags) { return (bamFlags & SAMFlag.READ_UNMAPPED.intValue()) != 0; }
 
     private void setSegmentUnmapped(final boolean segmentUnmapped) {
         bamFlags = segmentUnmapped ? bamFlags | SAMFlag.READ_UNMAPPED.intValue() : bamFlags & ~SAMFlag.READ_UNMAPPED.intValue();
     }
 
+    /** Return true if this record is the first segment in the template. */
     public boolean isFirstSegment() {
         return (bamFlags & SAMFlag.FIRST_OF_PAIR.intValue()) != 0;
     }
@@ -696,6 +842,7 @@ public class CRAMCompressionRecord {
         bamFlags = firstSegment ? bamFlags | SAMFlag.FIRST_OF_PAIR.intValue() : bamFlags & ~SAMFlag.FIRST_OF_PAIR.intValue();
     }
 
+    /** Return true if this record is the last segment in the template. */
     public boolean isLastSegment() {
         return (bamFlags & SAMFlag.SECOND_OF_PAIR.intValue()) != 0;
     }
@@ -770,10 +917,12 @@ public class CRAMCompressionRecord {
                 bamFlags & ~SAMFlag.MATE_REVERSE_STRAND.intValue();
     }
 
-    private void setHasMateDownStream(final boolean hasMateDownStream) {
+    /** Set or clear the has-mate-downstream CRAM flag. */
+    void setHasMateDownStream(final boolean hasMateDownStream) {
         cramFlags = hasMateDownStream ? cramFlags | CF_HAS_MATE_DOWNSTREAM : cramFlags & ~CF_HAS_MATE_DOWNSTREAM;
     }
 
+    /** Set or clear the detached CRAM flag (mate info stored explicitly). */
     public void setDetached(final boolean detached) {
         cramFlags = detached ? cramFlags | CF_DETACHED : cramFlags & ~CF_DETACHED;
     }
@@ -782,7 +931,8 @@ public class CRAMCompressionRecord {
         cramFlags = unknownBases ? cramFlags | CF_UNKNOWN_BASES : cramFlags & ~CF_UNKNOWN_BASES;
     }
 
-    private boolean isSupplementary() {
+    /** Return true if this record has the supplementary alignment BAM flag set. */
+    boolean isSupplementary() {
         return (bamFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue()) != 0;
     }
 

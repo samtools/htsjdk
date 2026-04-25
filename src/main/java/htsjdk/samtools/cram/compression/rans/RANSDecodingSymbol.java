@@ -24,62 +24,43 @@
  */
 package htsjdk.samtools.cram.compression.rans;
 
-import java.nio.ByteBuffer;
+/**
+ * Holds the start and frequency for a single symbol in the rANS decoding table.
+ * The reverse-lookup table mapping cumulative frequency to symbol is held separately
+ * in the decoder's {@code reverseLookup} arrays.
+ *
+ * <p>Decoding a symbol is a two-step process:
+ * <ol>
+ *   <li>{@link #advanceSymbolStep} — updates the rANS state using the symbol's range</li>
+ *   <li>{@link Utils#RANSDecodeRenormalizeNx16} or {@link Utils#RANSDecodeRenormalize4x8}
+ *       — renormalizes by reading bytes from the compressed stream</li>
+ * </ol>
+ */
+public final class RANSDecodingSymbol {
+    int start;
+    int freq;
 
-final public class RANSDecodingSymbol {
-    int start;  // Start of range.
-    int freq;   // Symbol frequency.
-
+    /**
+     * Set the decoding parameters for this symbol.
+     *
+     * @param start the cumulative frequency of all preceding symbols
+     * @param freq the frequency of this symbol
+     */
     public void set(final int start, final int freq) {
-        // This method gets called a LOT so this validation is too expensive to leave in.
-        //ValidationUtils.validateArg(start <= (1 << 16), "invalid RANSDecodingSymbol start");
-        //ValidationUtils.validateArg(freq <= (1 << 16) - start, "invalid RANSDecodingSymbol frequency");
         this.start = start;
         this.freq = freq;
     }
 
-    // Advances in the bit stream by "popping" a single symbol with range start
-    // "start" and frequency "freq". All frequencies are assumed to sum to
-    // "1 << scale_bits".
-    // No renormalization or output happens.
+    /**
+     * Advance the rANS state by one decoded symbol. Does not renormalize — the caller
+     * must call the appropriate {@code Utils.RANSDecodeRenormalize*} method after this.
+     *
+     * @param r the current rANS state
+     * @param scaleBits the frequency scale (log2 of total frequency sum)
+     * @return the updated rANS state (before renormalization)
+     */
     public long advanceSymbolStep(final long r, final int scaleBits) {
-        final int mask = ((1 << scaleBits) - 1);
-
-        // s, x = D(x)
+        final int mask = (1 << scaleBits) - 1;
         return freq * (r >> scaleBits) + (r & mask) - start;
     }
-
-    // Advances in the bit stream by "popping" a single symbol with range start
-    // "start" and frequency "freq". All frequencies are assumed to sum to
-    // "1 << scale_bits".
-    public long advanceSymbol4x8(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
-        final int mask = (1 << scaleBits) - 1;
-
-        // s, x = D(x)
-        long ret = freq * (rIn >> scaleBits) + (rIn & mask) - start;
-
-        // re-normalize
-        if (ret < Constants.RANS_4x8_LOWER_BOUND) {
-            do {
-                final int b = 0xFF & byteBuffer.get();
-                ret = (ret << 8) | b;
-            } while (ret < Constants.RANS_4x8_LOWER_BOUND);
-        }
-        return ret;
-    }
-
-    public long advanceSymbolNx16(final long rIn, final ByteBuffer byteBuffer, final int scaleBits) {
-        final int mask = (1 << scaleBits) - 1;
-
-        // s, x = D(x)
-        long ret = freq * (rIn >> scaleBits) + (rIn & mask) - start;
-
-        // re-normalize
-        if (ret < (Constants.RANS_Nx16_LOWER_BOUND)){
-            final int i = (0xFF & byteBuffer.get()) | ((0xFF & byteBuffer.get()) << 8);
-            ret = (ret << 16) + i;
-        }
-        return ret;
-    }
-
 }

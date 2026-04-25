@@ -41,7 +41,7 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
                             dataSeries.getCanonicalName();
                 expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
                 sliceBlocksWriteStreams
-                        .getExternalOutputStream(dataSeries.getExternalBlockContentId())
+                        .getExternalWriter(dataSeries.getExternalBlockContentId())
                         .write(uncompressedContent.getBytes());
             }
         }

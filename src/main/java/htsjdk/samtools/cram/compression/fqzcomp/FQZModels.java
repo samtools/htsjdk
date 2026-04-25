@@ -2,6 +2,14 @@ package htsjdk.samtools.cram.compression.fqzcomp;
 
 import htsjdk.samtools.cram.compression.range.ByteModel;
 
+/**
+ * Adaptive arithmetic coding models used by FQZComp for encoding and decoding quality scores.
+ * Contains 65,536 quality models (one per possible 16-bit context), plus models for record
+ * length, reverse-complement flag, duplicate flag, and parameter selector.
+ *
+ * @see ByteModel
+ * @see FQZParams
+ */
 public class FQZModels {
 
     private final ByteModel[] quality; // Primary model for quality values

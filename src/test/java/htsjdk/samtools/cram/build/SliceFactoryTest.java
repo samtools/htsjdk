@@ -134,7 +134,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 0L);
         sliceFactory.createNewSliceEntry(0, CRAMStructureTestHelper.createSAMRecordsMapped(10, 0));
         Assert.assertEquals(
-                sliceFactory.getUpdatedReferenceContext(0, 1, 1),
+                sliceFactory.getUpdatedReferenceContext(0, 1, 1, 0),
                 ReferenceContext.UNINITIALIZED_REFERENCE_ID
         );
     }
@@ -151,7 +151,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 0L);
         Assert.assertEquals(
-                sliceFactory.getUpdatedReferenceContext(currentReferenceContext, nextReferenceContext, nRecordsSeen),
+                sliceFactory.getUpdatedReferenceContext(currentReferenceContext, nextReferenceContext, nRecordsSeen, 0),
                 expectedUpdatedReferenceContext
         );
     }
@@ -185,7 +185,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 CRAMStructureTestHelper.REFERENCE_SOURCE,
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
                 0L);
-        sliceFactory.getUpdatedReferenceContext(currentReferenceContext, nextReferenceContext, nRecordsSeen);
+        sliceFactory.getUpdatedReferenceContext(currentReferenceContext, nextReferenceContext, nRecordsSeen, 0);
     }
 
     @DataProvider(name="emitSliceQuerynameSortedPositive")
@@ -236,7 +236,7 @@ public class SliceFactoryTest  extends HtsjdkTest {
                 querySortedSAMFileHeader,
                 0L);
         Assert.assertEquals(
-                sliceFactory.getUpdatedReferenceContext(currentReferenceContext, nextReferenceContext, nRecordsSeen),
+                sliceFactory.getUpdatedReferenceContext(currentReferenceContext, nextReferenceContext, nRecordsSeen, 0),
                 expectedUpdatedReferenceContext
         );
     }
