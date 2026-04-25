@@ -30,16 +30,26 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * javascript based read filter
+ * JavaScript-based {@link SamRecordFilter}.
  *
+ * <p>The user-supplied script is evaluated against each {@link SAMRecord} with the following
+ * variables in scope:
  *
- * The script puts the following variables in the script context:
+ * <ul>
+ *   <li>{@code record} - the {@link SAMRecord} being evaluated</li>
+ *   <li>{@code header} - the {@link SAMFileHeader} associated with the reader</li>
+ * </ul>
  *
- * - 'record' a SamRecord (
- * https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/
- * SAMRecord.java ) - 'header' (
- * https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/
- * SAMFileHeader.java )
+ * <p>Example: keep only records with mapping quality >= 30:
+ * <pre>{@code
+ *     new JavascriptSamRecordFilter("record.getMappingQuality() >= 30;", header)
+ * }</pre>
+ *
+ * <p><b>Runtime requirement:</b> as of htsjdk 5.0.0, htsjdk does not ship a JavaScript engine as
+ * a runtime dependency. To use this class, add a JSR-223-compatible JavaScript engine
+ * (e.g. {@code org.openjdk.nashorn:nashorn-core}) to your runtime classpath. If no engine is
+ * available, the constructor throws a {@link htsjdk.samtools.util.RuntimeScriptException} whose
+ * message lists the dependency coordinates.
  *
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
