@@ -12,9 +12,50 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ## 5.0.0
 
-Adds **CRAM 3.1 write support** to htsjdk.  This is the culmination of the read-side codec work
-in 4.2.0 and the reader wiring in 4.3.0: htsjdk can now produce CRAM 3.1 files that are
-interoperable with samtools/htslib.
+Major release.  
+
+### Headlines: 
+
+- **CRAM 3.1 write support** (the culmination of the read-side codec
+work in 4.2.0 and the reader wiring in 4.3.0 — htsjdk can now produce CRAM 3.1 files that are
+interoperable with samtools/htslib), 
+- **Major speed-ups in CRAM reading speed**, with reading efficiency only 20-30% slower than the C implementation in htslib/samtools
+- **slimmed-down runtime dependency tree** (SRA support
+removed, Nashorn moved to an opt-in dependency, several stale or misleading dependency
+declarations cleaned up)
+- **faster BAM [de]compression** via [jlibdeflate](https://github.com/fulcrumgenomics/jlibdeflate)
+- **enforced automatic code formatting** via Palantir Java Format enforced on every build
+- **fixed unit tests** to accurately report pass/fail stats when run via gradle, and massively reduce unit test runtime
+
+### ⚠️ Breaking changes
+
+Consumers should review these before upgrading.
+
+- **SRA support removed.**  All `htsjdk.samtools.sra.*` types, `SRAFileReader`, `SRAIterator`,
+  `SRAIndex`, `SamInputResource.of(SRAAccession)`, `SamReader.Type.SRA_TYPE`, and the
+  `InputResource.Type.SRA_ACCESSION` enum value have been deleted.  The
+  `gov.nih.nlm.ncbi:ngs-java` dependency (and the `samjdk.sra_libraries_download` system
+  property) are gone.  Consumers needing SRA access must use NCBI's tooling or a different
+  library (#1774).
+- **Nashorn is no longer a transitive runtime dependency.**  The `JavascriptSamRecordFilter`
+  and `JavascriptVariantFilter` classes still exist but htsjdk no longer ships
+  `org.openjdk.nashorn:nashorn-core` (or its 5 ASM transitives) on consumers' runtime
+  classpath.  Consumers who use the JavaScript filter classes must add
+  `org.openjdk.nashorn:nashorn-core:15.7` (or another JSR-223 `"js"` engine) to their own
+  runtime classpath; the no-engine error message names the artifact and prints both Gradle
+  and Maven coordinates (#1775).
+- **`SAMRecord.toString()` now returns the full SAM-format string** for the record (all 11
+  mandatory SAM fields plus tags), replacing the previous minimal summary.  The previous
+  output was usually insufficient to debug failures in `println()` calls or test-assertion
+  messages; the new output is the same line you would see in a SAM file.  Anything that
+  parses or asserts against the exact old format will need updating (#1762).
+- **CRAM slice headers no longer include the optional content digest tags** (BD/SD/B5/S5/B1/S1).
+  Matches htslib/samtools behavior.  Block-level CRC32 (required since CRAM 3.0) still
+  provides data integrity.  Technically a wire-format change but with zero known practical
+  impact, since no known tools consume these tags.
+- **Default CRAM version for writing is now 3.1** (was 3.0).  CRAM 3.0 readers will not be
+  able to read newly-produced files; pass an explicit version to the writer if you need 3.0
+  output.
 
 ### CRAM 3.1 Write Support
 
@@ -25,9 +66,25 @@ interoperable with samtools/htslib.
 - Strip NM/MD tags on CRAM encode and regenerate on decode, matching htslib behavior
 - Implement attached (same-slice) mate pair resolution
 - Align DataSeries content IDs with htslib for cross-implementation debugging
-- Remove content digest tags (BD/SD/B5/S5/B1/S1) from CRAM slice headers, matching htslib/samtools behavior. These are optional per the spec and were expensive to compute. Block-level CRC32 (required by CRAM 3.0+) provides data integrity. This is technically a breaking change but has zero practical impact since no known tools consume these tags.
-- Default CRAM version for writing is now 3.1 (was 3.0)
+- Remove content digest tags (BD/SD/B5/S5/B1/S1) from CRAM slice headers, matching htslib/samtools behavior (see Breaking changes)
+- Default CRAM version for writing is now 3.1 (was 3.0; see Breaking changes)
 - Add `CramConverter` command-line tool for testing and benchmarking CRAM write profiles
+- Add cross-implementation CRAM validation pipeline (`validation/`) for round-tripping against samtools/htslib
+- Add bases-per-slice threshold to bound slice memory when writing long reads
+- Refine `CompressionHeader` map serialization
+- Resolve a pile of in-tree `TODO`s in CRAM structure classes
+
+### CRAM correctness and cross-implementation fixes
+
+These fixes apply to both reading and writing CRAM and substantially improve interoperability with samtools/htslib.
+
+- Fix CRAM `TLEN` computation to match htslib (cross-tool comparisons of the same input now produce matching `TLEN` values)
+- Fix `CIGAR` reconstruction when the sequence is `*` (`CF_UNKNOWN_BASES`)
+- Fix `=`/`X` `CIGAR` op comparison in cross-implementation tests
+- Fix CRAM archive header overflow on large containers
+- Fix crash when reading a CRAM container with no slices
+- Fix unmapped-read query in the hts-specs compliance harness
+- Document the supplementary/secondary read-name resolution limitation in the writer
 
 ### Codec and Compression Optimizations
 
@@ -38,17 +95,48 @@ interoperable with samtools/htslib.
 
 ### Performance
 
-- Replace `ByteArrayInputStream`/`ByteArrayOutputStream` with unsynchronized `CRAMByteReader`/`CRAMByteWriter` to eliminate synchronization overhead
-- Fuse read base restoration, CIGAR building, and NM/MD computation into a single pass during decode
+- Integrate [jlibdeflate](https://github.com/fulcrumgenomics/jlibdeflate) for native libdeflate-backed DEFLATE compression and decompression. Used by default; falls back to the JDK Deflater/Inflater if the native library cannot be loaded (#1768)
+- A few targeted optimizations to the BAM decoding path yielding ~6-7% improvement in BAM read performance (#1764)
+- Optimize CRAM write performance: ~15% faster encoding via codec-level tuning and reduced per-record allocation
+- Replace `ByteArrayInputStream`/`ByteArrayOutputStream` with unsynchronized `CRAMByteReader`/`CRAMByteWriter` to eliminate synchronization overhead in CRAM
+- Fuse read base restoration, CIGAR building, and NM/MD computation into a single pass during CRAM decode
 - Cache tag key metadata to eliminate per-record `String` allocation during CRAM decode
 - Pool `RANSNx16Decode` instances in the Name Tokeniser
 - Optimize BAM nibble-to-ASCII base decoding with a bulk lookup table
 
+### Bug fixes
+
+- Fix LTF8 9-byte write bug: wrong bit shift (`>> 28` instead of `>> 24`) corrupted the high byte of large CRAM offsets (#1765)
+- Fix `SamLocusIterator` so that read position is not incorrectly offset (#1758)
+- Fix asymmetric `SamPairUtil.getPairOrientation` on dovetail pairs (#1771)
+- Catch `UnsatisfiedLinkError` when loading the snappy native library so failure to load it does not abort downstream consumers (#1753)
+
+### Build, tooling, and dependency clean-up
+
+- **Code formatting:** apply [Palantir Java Format](https://github.com/palantir/palantir-java-format) to the entire codebase and enforce it on every build via [Spotless](https://github.com/diffplug/spotless).  `compileJava` auto-formats source in place; CI separately runs `spotlessCheck` as the enforcement boundary.  See `CONTRIBUTING.md` for details, including the `.git-blame-ignore-revs` opt-in for the bulk-format commit (#1761)
+- **Maven Central publishing migrated** from the legacy OSSRH endpoint to the new [Sonatype Central Portal](https://central.sonatype.com), via the [NMCP Gradle plugin](https://github.com/GradleUp/nmcp).  Consumer-visible groupId/artifactId/version coordinates are unchanged (#1769)
+- **Snapshot versioning** now embeds the short commit hash (e.g. `5.0.0-23c681a-SNAPSHOT`) so each snapshot is a distinct, pinnable artifact rather than a moving Maven SNAPSHOT (#1772)
+- **Test runner** now correctly reports failures rather than silently skipping them when a `@DataProvider` throws (#1759)
+- **Existing API deprecations** cleaned up across `htsjdk.samtools` and `htsjdk.variant` (#1767)
+- **`commons-logging` direct declaration removed.**  htsjdk does not use commons-logging itself; the version pin is now expressed as a Gradle dependency constraint and only kicks in transitively when JEXL pulls it
+- **Nashorn moved to `compileOnly`** — see Breaking changes
+- **`gov.nih.nlm.ncbi:ngs-java` removed** — see Breaking changes (SRA support)
+
+### Compatibility
+
+- Compiled and tested against JDK 17 (CI default), 21, and 24.  CI continues to build only on 17.  htsjdk's published minimum remains Java 17 (set in 4.0.0)
+
 ### Testing and Infrastructure
 
+- Add hts-specs CRAM 3.0 / 3.1 decode-compliance tests, plus FQZComp round-trip tests using hts-specs quality data
+- Add CRAI index query correctness tests and codec round-trip property tests
 - Split CRAM 3.1 fidelity tests into per-profile classes for parallel execution
+- Speed up BCF2 and SeekableStream integration tests; cache test data in CRAM index test classes
+- Reduce `CRAMFileBAIIndexTest` from 4 to 2 slice-size variants, sampling every 200th
+- Downsample the CEUTrio test CRAM from ~654K to ~150K records (47 MB → 11 MB)
 - Reduce memory pressure in unit tests to eliminate OOM failures
 - Fix thread-safety bug in `VariantContextTestProvider` causing non-deterministic test counts
+- Bulk up the JavaScript filter test suites: replace 4 checked-in `.js` fixtures with 46 small inline-script tests covering all three constructors, return-type semantics, bindings, and error paths (#1775)
 
 ---
 
