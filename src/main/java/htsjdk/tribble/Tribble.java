@@ -25,8 +25,6 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.tribble.util.TabixUtils;
-
 import java.io.File;
 import java.nio.file.Path;
 
@@ -34,13 +32,13 @@ import java.nio.file.Path;
  * Common, tribble wide constants and static functions
  */
 public class Tribble {
-    private Tribble() { } // can't be instantiated
+    private Tribble() {} // can't be instantiated
 
     /**
      * @deprecated since June 2019 Use {@link FileExtensions#TRIBBLE_INDEX} instead.
      */
     @Deprecated
-    public final static String STANDARD_INDEX_EXTENSION = FileExtensions.TRIBBLE_INDEX;
+    public static final String STANDARD_INDEX_EXTENSION = FileExtensions.TRIBBLE_INDEX;
 
     /**
      * Return the name of the index file for the provided {@code filename}

@@ -1,6 +1,5 @@
 package htsjdk.samtools.util.htsget;
 
-
 import org.json.JSONObject;
 
 /**

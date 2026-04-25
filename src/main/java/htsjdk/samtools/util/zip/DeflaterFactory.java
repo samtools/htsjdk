@@ -26,7 +26,6 @@ package htsjdk.samtools.util.zip;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.Log;
-
 import java.util.zip.Deflater;
 
 /**
@@ -44,7 +43,7 @@ public class DeflaterFactory {
     private static volatile Boolean libdeflateAvailable;
 
     public DeflaterFactory() {
-        //Note: made explicit constructor to make searching for references easier
+        // Note: made explicit constructor to make searching for references easier
     }
 
     /**
@@ -76,7 +75,7 @@ public class DeflaterFactory {
         try {
             final LibdeflateDeflater deflater = new LibdeflateDeflater(1, true);
             try {
-                deflater.setInput(new byte[]{0}, 0, 1);
+                deflater.setInput(new byte[] {0}, 0, 1);
                 deflater.finish();
                 deflater.deflate(new byte[16], 0, 16);
             } finally {

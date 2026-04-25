@@ -124,7 +124,7 @@ public enum SAMTag {
         if (tag.length() != 2) {
             throw new IllegalArgumentException("String tag does not have length() == 2: " + tag);
         }
-        return (short)(tag.charAt(1) << 8 | tag.charAt(0));
+        return (short) (tag.charAt(1) << 8 | tag.charAt(0));
     }
 
     /**
@@ -137,8 +137,8 @@ public enum SAMTag {
         String ret = stringTags[tag];
         if (ret == null) {
             final byte[] stringConversionBuf = new byte[2];
-            stringConversionBuf[0] = (byte)(tag & 0xff);
-            stringConversionBuf[1] = (byte)((tag >> 8) & 0xff);
+            stringConversionBuf[0] = (byte) (tag & 0xff);
+            stringConversionBuf[1] = (byte) ((tag >> 8) & 0xff);
             ret = StringUtil.bytesToString(stringConversionBuf);
             stringTags[tag] = ret;
         }
@@ -151,7 +151,7 @@ public enum SAMTag {
      *
      * @return the binary representation of this tag name
      */
-    public short getBinaryTag(){
+    public short getBinaryTag() {
         return this.shortValue;
     }
 }

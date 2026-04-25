@@ -25,7 +25,6 @@ package htsjdk.tribble.index;
 
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -115,7 +114,7 @@ public interface Index {
     /**
      * @return get the list of properties for this index.  Returns null if no properties.
      */
-    public Map<String,String> getProperties();
+    public Map<String, String> getProperties();
 
     /**
      * Returns true if this and obj are 'effectively' equivalent indices.  Ignores the

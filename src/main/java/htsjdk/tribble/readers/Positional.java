@@ -24,13 +24,12 @@
 package htsjdk.tribble.readers;
 
 import htsjdk.samtools.util.LocationAware;
-
 import java.io.IOException;
 
 /**
  * Minimal interface for an object at support getting the current position in the stream / writer / file, as well as a handful of other
  * reader-like features.
- * 
+ *
  * @author depristo
  */
 public interface Positional extends LocationAware {

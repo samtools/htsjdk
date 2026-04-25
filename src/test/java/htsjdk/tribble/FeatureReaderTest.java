@@ -10,23 +10,21 @@ import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.ParsingUtils;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-
-
 public class FeatureReaderTest extends HtsjdkTest {
-    private final static File asciiBedFile = new File(TestUtils.DATA_DIR + "test.bed");
+    private static final File asciiBedFile = new File(TestUtils.DATA_DIR + "test.bed");
     private File binaryBedFile;
-    private final static File tabixBedFile = new File(TestUtils.DATA_DIR + "test.tabix.bed.gz");
+    private static final File tabixBedFile = new File(TestUtils.DATA_DIR + "test.tabix.bed.gz");
 
     @BeforeClass
     public void setup() throws IOException {
@@ -42,17 +40,21 @@ public class FeatureReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "indexProvider")
     public Object[][] createData1() {
-        return new Object[][]{
-                {asciiBedFile, IndexFactory.IndexType.LINEAR, new BEDCodec()},
-                {asciiBedFile, IndexFactory.IndexType.INTERVAL_TREE, new BEDCodec()},
-                {tabixBedFile, IndexFactory.IndexType.TABIX, new BEDCodec()},
-                {binaryBedFile, IndexFactory.IndexType.LINEAR, new ExampleBinaryCodec()},
-                {binaryBedFile, IndexFactory.IndexType.INTERVAL_TREE, new ExampleBinaryCodec()},
+        return new Object[][] {
+            {asciiBedFile, IndexFactory.IndexType.LINEAR, new BEDCodec()},
+            {asciiBedFile, IndexFactory.IndexType.INTERVAL_TREE, new BEDCodec()},
+            {tabixBedFile, IndexFactory.IndexType.TABIX, new BEDCodec()},
+            {binaryBedFile, IndexFactory.IndexType.LINEAR, new ExampleBinaryCodec()},
+            {binaryBedFile, IndexFactory.IndexType.INTERVAL_TREE, new ExampleBinaryCodec()},
         };
     }
 
     @Test(dataProvider = "indexProvider")
-    public void testBedQuery(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Feature, LocationAware> codec) throws IOException {
+    public void testBedQuery(
+            final File featureFile,
+            final IndexFactory.IndexType indexType,
+            final FeatureCodec<Feature, LocationAware> codec)
+            throws IOException {
         final AbstractFeatureReader<Feature, ?> reader = getReader(featureFile, indexType, codec);
 
         // Query
@@ -77,7 +79,11 @@ public class FeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "indexProvider")
-    public void testLargeNumberOfQueries(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Feature, LocationAware> codec) throws IOException {
+    public void testLargeNumberOfQueries(
+            final File featureFile,
+            final IndexFactory.IndexType indexType,
+            final FeatureCodec<Feature, LocationAware> codec)
+            throws IOException {
         final AbstractFeatureReader<Feature, LocationAware> reader = getReader(featureFile, indexType, codec);
         for (int i = 0; i < 2000; i++) {
             for (final int start : Arrays.asList(500, 200, 201, 600, 100000)) {
@@ -97,7 +103,13 @@ public class FeatureReaderTest extends HtsjdkTest {
         reader.close();
     }
 
-    private void testQuery(final AbstractFeatureReader<Feature, ?> reader, final String chr, final int start, final int stop, final int expectedNumRecords) throws IOException {
+    private void testQuery(
+            final AbstractFeatureReader<Feature, ?> reader,
+            final String chr,
+            final int start,
+            final int stop,
+            final int expectedNumRecords)
+            throws IOException {
         final Iterator<Feature> iter = reader.query(chr, start, stop);
         int count = 0;
         while (iter.hasNext()) {
@@ -109,23 +121,32 @@ public class FeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "indexProvider")
-    public void testBedNames(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Feature, LocationAware> codec) throws IOException {
+    public void testBedNames(
+            final File featureFile,
+            final IndexFactory.IndexType indexType,
+            final FeatureCodec<Feature, LocationAware> codec)
+            throws IOException {
         final AbstractFeatureReader<Feature, ?> reader = getReader(featureFile, indexType, codec);
         final String[] expectedSequences = {"chr1", "chr2"};
 
         final List<String> seqNames = reader.getSequenceNames();
-        Assert.assertEquals(seqNames.size(), expectedSequences.length,
-                "Expected sequences " + ParsingUtils.join(",", expectedSequences) + " but saw " + ParsingUtils.join(",", seqNames));
+        Assert.assertEquals(
+                seqNames.size(),
+                expectedSequences.length,
+                "Expected sequences " + ParsingUtils.join(",", expectedSequences) + " but saw "
+                        + ParsingUtils.join(",", seqNames));
 
         for (final String s : expectedSequences) {
             Assert.assertTrue(seqNames.contains(s));
         }
     }
 
-    private static <FEATURE extends Feature, SOURCE extends LocationAware> AbstractFeatureReader<FEATURE, SOURCE> getReader(final File featureFile,
-                                                                                                                            final IndexFactory.IndexType indexType,
-                                                                                                                            final FeatureCodec<FEATURE, SOURCE> codec)
-            throws IOException {
+    private static <FEATURE extends Feature, SOURCE extends LocationAware>
+            AbstractFeatureReader<FEATURE, SOURCE> getReader(
+                    final File featureFile,
+                    final IndexFactory.IndexType indexType,
+                    final FeatureCodec<FEATURE, SOURCE> codec)
+                    throws IOException {
         if (indexType.canCreate()) {
             // for types we can create make a new index each time
             final File idxFile = Tribble.indexFile(featureFile);
@@ -147,14 +168,15 @@ public class FeatureReaderTest extends HtsjdkTest {
     public void testReadingBeyondIntSizedBlock() throws IOException {
         final Block block = new Block(0, ((long) Integer.MAX_VALUE) * 2);
         final SeekableFileStream stream = new SeekableFileStream(new File("/dev/zero"));
-        final TribbleIndexedFeatureReader.BlockStreamWrapper blockStreamWrapper = new TribbleIndexedFeatureReader.BlockStreamWrapper(stream, block);
+        final TribbleIndexedFeatureReader.BlockStreamWrapper blockStreamWrapper =
+                new TribbleIndexedFeatureReader.BlockStreamWrapper(stream, block);
         final int chunkSize = 100000; // 10 Mb
         final int chunksToRead = (int) Math.ceil(block.getSize() / (chunkSize * 1.0));
 
         final byte[] bytes = new byte[chunkSize];
         long totalRead = 0;
         for (int chunk = 0; chunk < chunksToRead; chunk++) {
-            //System.out.println("Reading chunk " + chunk + " of " + chunkSize + " total read " + totalRead);
+            // System.out.println("Reading chunk " + chunk + " of " + chunkSize + " total read " + totalRead);
             final int nRead = blockStreamWrapper.read(bytes);
             Assert.assertTrue(nRead != -1, "Prematurely got EOF after " + totalRead + " bytes");
             totalRead += nRead;
@@ -162,8 +184,8 @@ public class FeatureReaderTest extends HtsjdkTest {
 
         // /dev/zero doesn't advance file stream on Linux, so reading never terminates
         // Therefore, we only require a minimum number of bytes
-        Assert.assertTrue(totalRead >= block.getSize(), "Failed to read all bytes from a block with size > 2B = " + block.getSize());
-
+        Assert.assertTrue(
+                totalRead >= block.getSize(),
+                "Failed to read all bytes from a block with size > 2B = " + block.getSize());
     }
 }
-

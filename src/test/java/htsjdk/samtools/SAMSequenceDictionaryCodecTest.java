@@ -24,20 +24,19 @@
 
 package htsjdk.samtools;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.TestUtil;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.BufferedWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Random;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com>
@@ -52,7 +51,7 @@ public class SAMSequenceDictionaryCodecTest extends HtsjdkTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        String[] seqs = new String[]{"chr1", "chr2", "chr12", "chr16", "chrX"};
+        String[] seqs = new String[] {"chr1", "chr2", "chr12", "chr16", "chrX"};
         dictionary = new SAMSequenceDictionary();
         for (String seq : seqs) {
             dictionary.addSequence(new SAMSequenceRecord(seq, random.nextInt(10_000_000)));

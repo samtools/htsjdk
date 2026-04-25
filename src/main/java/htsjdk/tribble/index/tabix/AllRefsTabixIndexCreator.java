@@ -32,7 +32,6 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,8 +52,7 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
     // defines the location of the end of the previous feature in the output file.
     private TabixFeature previousFeature = null;
 
-    public AllRefsTabixIndexCreator(final SAMSequenceDictionary sequenceDictionary,
-                                    final TabixFormat formatSpec) {
+    public AllRefsTabixIndexCreator(final SAMSequenceDictionary sequenceDictionary, final TabixFormat formatSpec) {
         ValidationUtils.nonNull(sequenceDictionary);
         this.sequenceDictionary = sequenceDictionary;
         this.formatSpec = formatSpec.clone();
@@ -76,14 +74,16 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
                 advance = true;
             }
             if (referenceIndex != currentReferenceIndex && referenceIndex != currentReferenceIndex + 1) {
-                throw new IllegalArgumentException("Sequence " + feature + " added out of order" + (" currentReferenceIndex: " + currentReferenceIndex + ", referenceIndex:" + referenceIndex));
+                throw new IllegalArgumentException("Sequence " + feature + " added out of order"
+                        + (" currentReferenceIndex: " + currentReferenceIndex + ", referenceIndex:" + referenceIndex));
             }
         }
-        final TabixFeature thisFeature = new TabixFeature(referenceIndex, feature.getStart(), feature.getEnd(), filePosition);
+        final TabixFeature thisFeature =
+                new TabixFeature(referenceIndex, feature.getStart(), feature.getEnd(), filePosition);
         if (previousFeature != null) {
             if (previousFeature.compareTo(thisFeature) > 0) {
-                throw new IllegalArgumentException(String.format("Features added out of order: previous (%s) > next (%s)",
-                        previousFeature, thisFeature));
+                throw new IllegalArgumentException(String.format(
+                        "Features added out of order: previous (%s) > next (%s)", previousFeature, thisFeature));
             }
             finalizeFeature(filePosition);
         }
@@ -96,7 +96,8 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
     private void finalizeFeature(final long featureEndPosition) {
         previousFeature.featureEndFilePosition = featureEndPosition;
         if (previousFeature.featureStartFilePosition >= previousFeature.featureEndFilePosition) {
-            throw new IllegalArgumentException(String.format("Feature start position %d >= feature end position %d",
+            throw new IllegalArgumentException(String.format(
+                    "Feature start position %d >= feature end position %d",
                     previousFeature.featureStartFilePosition, previousFeature.featureEndFilePosition));
         }
         indexBuilder.processFeature(previousFeature);
@@ -129,10 +130,11 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
         // but truncate the sequence dictionary before its end if there are sequences in the sequence dictionary without
         // any features.
         final BinningIndexContent[] indices = indexContents.toArray(new BinningIndexContent[sequenceDictionary.size()]);
-        List<String> sequenceNames = sequenceDictionary.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList());
+        List<String> sequenceNames = sequenceDictionary.getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .collect(Collectors.toList());
         return new TabixIndex(formatSpec, sequenceNames, indices);
     }
-
 
     private static class TabixFeature implements BinningIndexBuilder.FeatureToBeIndexed, Comparable<TabixFeature> {
         private final int referenceIndex;
@@ -142,7 +144,8 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
         // Position after this feature in the file.
         private long featureEndFilePosition = -1;
 
-        private TabixFeature(final int referenceIndex, final int start, final int end, final long featureStartFilePosition) {
+        private TabixFeature(
+                final int referenceIndex, final int start, final int end, final long featureStartFilePosition) {
             this.referenceIndex = referenceIndex;
             this.start = start;
             this.end = end;
@@ -185,13 +188,12 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
 
         @Override
         public String toString() {
-            return "TabixFeature{" +
-                    "referenceIndex=" + referenceIndex +
-                    ", start=" + start +
-                    ", end=" + end +
-                    ", featureStartFilePosition=" + featureStartFilePosition +
-                    ", featureEndFilePosition=" + featureEndFilePosition +
-                    '}';
+            return "TabixFeature{" + "referenceIndex="
+                    + referenceIndex + ", start="
+                    + start + ", end="
+                    + end + ", featureStartFilePosition="
+                    + featureStartFilePosition + ", featureEndFilePosition="
+                    + featureEndFilePosition + '}';
         }
     }
 }

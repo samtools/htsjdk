@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
@@ -48,8 +48,9 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     /**
      * static constant value for an empty GenotypesContext.  Useful since so many VariantContexts have no genotypes
      */
-    public final static GenotypesContext NO_GENOTYPES =
-            new GenotypesContext(new ArrayList<Genotype>(0), new HashMap<String, Integer>(0), Collections.<String>emptyList()).immutable();
+    public static final GenotypesContext NO_GENOTYPES = new GenotypesContext(
+                    new ArrayList<Genotype>(0), new HashMap<String, Integer>(0), Collections.<String>emptyList())
+            .immutable();
 
     /**
      *sampleNamesInOrder a list of sample names, one for each genotype in genotypes, sorted in alphabetical order
@@ -93,8 +94,8 @@ public class GenotypesContext implements List<Genotype>, Serializable {
         // by the time that's called we'll already have serialized the superclass
         // data in GenotypesContext, and we need to make sure that we decode any lazy
         // data BEFORE serializing the fields in GenotypesContext.
-        if ( getClass() == LazyGenotypesContext.class ) {
-            ((LazyGenotypesContext)this).decode();
+        if (getClass() == LazyGenotypesContext.class) {
+            ((LazyGenotypesContext) this).decode();
         }
 
         out.defaultWriteObject();
@@ -139,9 +140,10 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * @param sampleNamesInOrder a list of sample names, one for each genotype in genotypes, sorted in alphabetical
      * order.
      */
-    protected GenotypesContext(final ArrayList<Genotype> genotypes,
-                             final Map<String, Integer> sampleNameToOffset,
-                             final List<String> sampleNamesInOrder) {
+    protected GenotypesContext(
+            final ArrayList<Genotype> genotypes,
+            final Map<String, Integer> sampleNameToOffset,
+            final List<String> sampleNamesInOrder) {
         this.notToBeDirectlyAccessedGenotypes = genotypes;
         this.sampleNameToOffset = sampleNameToOffset;
         this.sampleNamesInOrder = sampleNamesInOrder;
@@ -181,9 +183,10 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * order.
      * @return an mutable GenotypeContext containing genotypes with already present lookup data
      */
-    public static final GenotypesContext create(final ArrayList<Genotype> genotypes,
-                                                final Map<String, Integer> sampleNameToOffset,
-                                                final List<String> sampleNamesInOrder) {
+    public static final GenotypesContext create(
+            final ArrayList<Genotype> genotypes,
+            final Map<String, Integer> sampleNameToOffset,
+            final List<String> sampleNamesInOrder) {
         return new GenotypesContext(genotypes, sampleNameToOffset, sampleNamesInOrder);
     }
 
@@ -240,12 +243,13 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     public boolean isMutable() {
-        return ! immutable;
+        return !immutable;
     }
 
-    public final void checkImmutability() throws  UnsupportedOperationException {
-        if ( immutable )
-            throw new UnsupportedOperationException("GenotypeMap is currently immutable, but a mutator method was invoked on it");
+    public final void checkImmutability() throws UnsupportedOperationException {
+        if (immutable)
+            throw new UnsupportedOperationException(
+                    "GenotypeMap is currently immutable, but a mutator method was invoked on it");
     }
 
     // ---------------------------------------------------------------------------
@@ -263,10 +267,10 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     protected void ensureSampleOrdering() {
-        if ( sampleNamesInOrder == null ) {
+        if (sampleNamesInOrder == null) {
             sampleNamesInOrder = new ArrayList<String>(size());
 
-            for ( int i = 0; i < size(); i++ ) {
+            for (int i = 0; i < size(); i++) {
                 sampleNamesInOrder.add(getGenotypes().get(i).getSampleName());
             }
             Collections.sort(sampleNamesInOrder);
@@ -274,10 +278,10 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     protected void ensureSampleNameMap() {
-        if ( sampleNameToOffset == null ) {
+        if (sampleNameToOffset == null) {
             sampleNameToOffset = new HashMap<String, Integer>(size());
 
-            for ( int i = 0; i < size(); i++ ) {
+            for (int i = 0; i < size(); i++) {
                 sampleNameToOffset.put(getGenotypes().get(i).getSampleName(), i);
             }
         }
@@ -290,8 +294,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     // ---------------------------------------------------------------------------
 
     public boolean isLazyWithData() {
-        return this instanceof LazyGenotypesContext &&
-                ((LazyGenotypesContext)this).getUnparsedGenotypeData() != null;
+        return this instanceof LazyGenotypesContext && ((LazyGenotypesContext) this).getUnparsedGenotypeData() != null;
     }
 
     // ---------------------------------------------------------------------------
@@ -352,7 +355,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
         checkImmutability();
         invalidateSampleOrdering();
 
-        if ( sampleNameToOffset != null ) {
+        if (sampleNameToOffset != null) {
             // update the name map by adding entries
             sampleNameToOffset.put(genotype.getSampleName(), size());
         }
@@ -379,10 +382,10 @@ public class GenotypesContext implements List<Genotype>, Serializable {
         checkImmutability();
         invalidateSampleOrdering();
 
-        if ( sampleNameToOffset != null ) {
+        if (sampleNameToOffset != null) {
             // update the name map by adding entries
             int pos = size();
-            for ( final Genotype g : genotypes ) {
+            for (final Genotype g : genotypes) {
                 sampleNameToOffset.put(g.getSampleName(), pos++);
             }
         }
@@ -406,8 +409,8 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     private boolean containsAny(final Collection<? extends Genotype> genotypes) {
-        for ( final Genotype g : genotypes ) {
-            if ( contains(g) ) return true;
+        for (final Genotype g : genotypes) {
+            if (contains(g)) return true;
         }
         return false;
     }
@@ -424,16 +427,16 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * @return
      */
     public int getMaxPloidy(final int defaultPloidy) {
-        if ( defaultPloidy < 0 ) throw new IllegalArgumentException("defaultPloidy must be greater than or equal to 0");
+        if (defaultPloidy < 0) throw new IllegalArgumentException("defaultPloidy must be greater than or equal to 0");
 
-        if ( maxPloidy == -1 ) {
+        if (maxPloidy == -1) {
             maxPloidy = 0; // necessary in the case where there are no genotypes
-            for ( final Genotype g : getGenotypes() ) {
+            for (final Genotype g : getGenotypes()) {
                 maxPloidy = Math.max(g.getPloidy(), maxPloidy);
             }
 
             // everything is no called so we return the default ploidy
-            if ( maxPloidy == 0 ) maxPloidy = defaultPloidy;
+            if (maxPloidy == 0) maxPloidy = defaultPloidy;
         }
 
         return maxPloidy;
@@ -474,14 +477,14 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     public ListIterator<Genotype> listIterator() {
         // todo -- must be immutable
         throw new UnsupportedOperationException();
-//        return genotypes.listIterator();
+        //        return genotypes.listIterator();
     }
 
     @Override
     public ListIterator<Genotype> listIterator(final int i) {
         // todo -- must be immutable
         throw new UnsupportedOperationException();
-//        return genotypes.listIterator(i);
+        //        return genotypes.listIterator(i);
     }
 
     /**
@@ -545,7 +548,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
         final Genotype prev = getGenotypes().set(i, genotype);
 
         invalidateSampleOrdering();
-        if ( sampleNameToOffset != null ) {
+        if (sampleNameToOffset != null) {
             // update the name map by removing the old entry and replacing it with the new one
             sampleNameToOffset.remove(prev.getSampleName());
             sampleNameToOffset.put(genotype.getSampleName(), i);
@@ -570,10 +573,8 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     public Genotype replace(final Genotype genotype) {
         checkImmutability();
         Integer offset = getSampleI(genotype.getSampleName());
-        if ( offset == null )
-            return null;
-        else
-            return set(offset, genotype);
+        if (offset == null) return null;
+        else return set(offset, genotype);
     }
 
     @Override
@@ -672,17 +673,15 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * @param samples
      * @return
      */
-    public GenotypesContext subsetToSamples( final Set<String> samples ) {
+    public GenotypesContext subsetToSamples(final Set<String> samples) {
         final int nSamples = samples.size();
 
-        if ( nSamples == 0 )
-            return NO_GENOTYPES;
+        if (nSamples == 0) return NO_GENOTYPES;
         else { // nGenotypes < nSamples
             final GenotypesContext subset = create(samples.size());
-            for ( final String sample : samples ) {
+            for (final String sample : samples) {
                 final Genotype g = get(sample);
-                if ( g != null )
-                    subset.add(g);
+                if (g != null) subset.add(g);
             }
             return subset;
         }
@@ -691,8 +690,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     @Override
     public String toString() {
         final List<String> gS = new ArrayList<String>();
-        for ( final Genotype g : this.iterateInSampleNameOrder() )
-            gS.add(g.toString());
+        for (final Genotype g : this.iterateInSampleNameOrder()) gS.add(g.toString());
         return "[" + join(",", gS) + "]";
     }
 
@@ -704,11 +702,11 @@ public class GenotypesContext implements List<Genotype>, Serializable {
             final Iterator<T> iter = objects.iterator();
             final T first = iter.next();
 
-            if ( ! iter.hasNext() ) // fast path for singleton collections
-                return first.toString();
+            if (!iter.hasNext()) // fast path for singleton collections
+            return first.toString();
             else { // full path for 2+ collection that actually need a join
                 final StringBuilder ret = new StringBuilder(first.toString());
-                while(iter.hasNext()) {
+                while (iter.hasNext()) {
                     ret.append(separator);
                     ret.append(iter.next().toString());
                 }

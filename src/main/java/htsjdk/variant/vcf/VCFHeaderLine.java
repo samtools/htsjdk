@@ -1,35 +1,33 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
-
 import java.io.Serializable;
 import java.util.Map;
-
 
 /**
  * @author ebanks
@@ -56,12 +54,10 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param value   the value for this header line
      */
     public VCFHeaderLine(String key, String value) {
-        if ( key == null )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot be null");
-        if ( key.contains("<") || key.contains(">") )
+        if (key == null) throw new IllegalArgumentException("VCFHeaderLine: key cannot be null");
+        if (key.contains("<") || key.contains(">"))
             throw new IllegalArgumentException("VCFHeaderLine: key cannot contain angle brackets");
-        if ( key.contains("=") )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot contain an equals sign");
+        if (key.contains("=")) throw new IllegalArgumentException("VCFHeaderLine: key cannot contain an equals sign");
         mKey = key;
         mValue = value;
     }
@@ -108,16 +104,17 @@ public class VCFHeaderLine implements Comparable, Serializable {
 
     @Override
     public boolean equals(final Object o) {
-        if ( this == o ) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() ) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         final VCFHeaderLine that = (VCFHeaderLine) o;
-        return mKey.equals(that.mKey) &&                                             // key not nullable
-               (mValue != null ? mValue.equals(that.mValue) : that.mValue == null);  // value is nullable
+        return mKey.equals(that.mKey)
+                && // key not nullable
+                (mValue != null ? mValue.equals(that.mValue) : that.mValue == null); // value is nullable
     }
 
     @Override
@@ -137,7 +134,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @return true if the line is a VCF meta data line, or false if it is not
      */
     public static boolean isHeaderLine(String line) {
-        return line != null && !line.isEmpty() && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
+        return line != null && !line.isEmpty() && VCFHeader.HEADER_INDICATOR.equals(line.substring(0, 1));
     }
 
     /**
@@ -149,19 +146,25 @@ public class VCFHeaderLine implements Comparable, Serializable {
         StringBuilder builder = new StringBuilder();
         builder.append('<');
         boolean start = true;
-        for (Map.Entry<String,?> entry : keyValues.entrySet()) {
+        for (Map.Entry<String, ?> entry : keyValues.entrySet()) {
             if (start) start = false;
             else builder.append(',');
 
-            if ( entry.getValue() == null ) throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
+            if (entry.getValue() == null)
+                throw new TribbleException.InternalCodecException(
+                        "Header problem: unbound value at " + entry + " from " + keyValues);
 
             builder.append(entry.getKey());
             builder.append('=');
-            builder.append(entry.getValue().toString().contains(",") ||
-                           entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ||
-                           entry.getKey().equals("Source") || // As per VCFv4.2, Source and Version should be surrounded by double quotes
-                           entry.getKey().equals("Version") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
+            builder.append(
+                    entry.getValue().toString().contains(",")
+                                    || entry.getValue().toString().contains(" ")
+                                    || entry.getKey().equals("Description")
+                                    || entry.getKey().equals("Source")
+                                    || // As per VCFv4.2, Source and Version should be surrounded by double quotes
+                                    entry.getKey().equals("Version")
+                            ? "\"" + escapeQuotes(entry.getValue().toString()) + "\""
+                            : entry.getValue());
         }
         builder.append('>');
         return builder.toString();

@@ -61,20 +61,19 @@ public class CloserUtil {
         for (Object o : objs) {
             if (o instanceof Closeable) {
                 try {
-                    ((Closeable)o).close();
-                }
-                catch (IOException ioe) {
-                    // Do nothing 
+                    ((Closeable) o).close();
+                } catch (IOException ioe) {
+                    // Do nothing
                 }
             } else if (o instanceof CloseableIterator) {
-                ((CloseableIterator)o).close();
-            }
-            else {
+                ((CloseableIterator) o).close();
+            } else {
                 try {
                     java.lang.reflect.Method m = o.getClass().getMethod("close");
                     m.invoke(o);
+                } catch (Exception e) {
+                    /** Ignore */
                 }
-                catch (Exception e) { /** Ignore */ }
             }
         }
     }

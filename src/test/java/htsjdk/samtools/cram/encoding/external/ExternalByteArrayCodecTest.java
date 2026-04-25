@@ -5,10 +5,9 @@ import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.io.CRAMByteReader;
 import htsjdk.samtools.cram.io.CRAMByteWriter;
 import htsjdk.samtools.cram.io.IOTestCases;
+import java.io.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.io.*;
 
 public class ExternalByteArrayCodecTest extends HtsjdkTest {
 

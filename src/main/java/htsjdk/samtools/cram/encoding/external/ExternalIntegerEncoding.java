@@ -41,10 +41,15 @@ public final class ExternalIntegerEncoding extends ExternalEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
-        final CRAMByteReader reader = sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getExternalReader(externalBlockContentId);
-        final CRAMByteWriter writer = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalWriter(externalBlockContentId);
+    public CRAMCodec<Integer> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        final CRAMByteReader reader = sliceBlocksReadStreams == null
+                ? null
+                : sliceBlocksReadStreams.getExternalReader(externalBlockContentId);
+        final CRAMByteWriter writer = sliceBlocksWriteStreams == null
+                ? null
+                : sliceBlocksWriteStreams.getExternalWriter(externalBlockContentId);
         return new ExternalIntegerCodec(reader, writer);
     }
-
 }

@@ -57,7 +57,7 @@ public class BAMStartingAtIteratorFilter implements BAMIteratorFilter {
         if (alignmentStart > mRegionStart) {
             // If scanned beyond target region, end iteration
             return FilteringIteratorState.STOP_ITERATION;
-        } else  if (alignmentStart == mRegionStart) {
+        } else if (alignmentStart == mRegionStart) {
             return FilteringIteratorState.MATCHES_FILTER;
         } else {
             return FilteringIteratorState.CONTINUE_ITERATION;

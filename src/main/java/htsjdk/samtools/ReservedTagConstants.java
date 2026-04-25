@@ -28,7 +28,7 @@ package htsjdk.samtools;
  */
 public class ReservedTagConstants {
     public static final String READ_GROUP_ID = SAMTag.RG.name(); // Specified in the SAM spec doc
-    public static final String PROGRAM_GROUP_ID =  SAMTag.PG.name(); // Specified in the SAM spec doc
+    public static final String PROGRAM_GROUP_ID = SAMTag.PG.name(); // Specified in the SAM spec doc
 
     /** Present and set to 1 if a read is a noise read. */
     public static final String XN = "XN";
@@ -66,5 +66,4 @@ public class ReservedTagConstants {
 
     /** The original cigar before indel cleaning, or 454 cafie and homopolymer correction */
     public static final String OC = "OC";
-
 }

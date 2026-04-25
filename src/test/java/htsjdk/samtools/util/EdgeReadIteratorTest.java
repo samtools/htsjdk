@@ -23,10 +23,9 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.*;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
 
+import htsjdk.samtools.*;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -34,8 +33,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.testng.Assert.assertEquals;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests check that for each alignment block of processed reads, iterator returns a <code>EdgingRecordAndOffset</code>
@@ -58,7 +57,6 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
                 assertEquals(0, li.getRecordAndOffsets().size());
             }
         }
-
     }
 
     /**
@@ -110,12 +108,26 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         while (sli.hasNext()) {
             AbstractLocusInfo<EdgingRecordAndOffset> info = sli.next();
             int pos = info.getPosition();
-            if (pos == startPosition || pos == startPosition + 6 || pos == startPosition + 12 || pos == startPosition + 16) {
-                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndOffsets().get(0).getType());
-                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndOffsets().get(1).getType());
-            } else if (pos == startPosition + 3 || pos == startPosition + 9 || pos == startPosition + 15 || pos == startPosition + 34) {
-                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndOffsets().get(0).getType());
-                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndOffsets().get(1).getType());
+            if (pos == startPosition
+                    || pos == startPosition + 6
+                    || pos == startPosition + 12
+                    || pos == startPosition + 16) {
+                assertEquals(
+                        EdgingRecordAndOffset.Type.BEGIN,
+                        info.getRecordAndOffsets().get(0).getType());
+                assertEquals(
+                        EdgingRecordAndOffset.Type.BEGIN,
+                        info.getRecordAndOffsets().get(1).getType());
+            } else if (pos == startPosition + 3
+                    || pos == startPosition + 9
+                    || pos == startPosition + 15
+                    || pos == startPosition + 34) {
+                assertEquals(
+                        EdgingRecordAndOffset.Type.END,
+                        info.getRecordAndOffsets().get(0).getType());
+                assertEquals(
+                        EdgingRecordAndOffset.Type.END,
+                        info.getRecordAndOffsets().get(1).getType());
             }
         }
     }
@@ -147,14 +159,14 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         // First 18 bases are from the first read
         expectedDepths[0] = 1;
         expectedReferencePositions[0] = 1;
-        expectedReadOffsets[0] = new int[]{0};
+        expectedReadOffsets[0] = new int[] {0};
 
         for (i = 1; i < 18; ++i) {
             fillEmptyLocus(expectedReferencePositions, expectedDepths, expectedReadOffsets, i);
         }
         expectedDepths[i] = 1;
         expectedReferencePositions[i] = 19;
-        expectedReadOffsets[i++] = new int[]{0};
+        expectedReadOffsets[i++] = new int[] {0};
 
         for (; i < 28; ++i) {
             fillEmptyLocus(expectedReferencePositions, expectedDepths, expectedReadOffsets, i);
@@ -163,7 +175,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         // Gap of 10, then 13 bases from the first read
         expectedDepths[i] = 1;
         expectedReferencePositions[i] = 29;
-        expectedReadOffsets[i++] = new int[]{18};
+        expectedReadOffsets[i++] = new int[] {18};
 
         for (; i < 40; ++i) {
             fillEmptyLocus(expectedReferencePositions, expectedDepths, expectedReadOffsets, i);
@@ -171,7 +183,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         expectedDepths[i] = 1;
         expectedReferencePositions[i] = 41;
-        expectedReadOffsets[i++] = new int[]{0};
+        expectedReadOffsets[i++] = new int[] {0};
 
         for (; i < 46; ++i) {
             fillEmptyLocus(expectedReferencePositions, expectedDepths, expectedReadOffsets, i);
@@ -179,7 +191,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         expectedDepths[i] = 1;
         expectedReferencePositions[i] = 47;
-        expectedReadOffsets[i++] = new int[]{18};
+        expectedReadOffsets[i++] = new int[] {18};
 
         // Last 5 bases of first read overlap first 5 bases of second read
         for (; i < 76; ++i) {
@@ -188,7 +200,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         expectedDepths[i] = 1;
         expectedReferencePositions[i] = 77;
-        expectedReadOffsets[i++] = new int[]{0};
+        expectedReadOffsets[i++] = new int[] {0};
 
         // Last 31 bases of 2nd read
 
@@ -250,12 +262,11 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
      */
     @Test
     public void testNotIntersectingInterval() {
-        SamReader samReader = createSamFileReader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n"));
+        SamReader samReader =
+                createSamFileReader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n"));
 
-        IntervalList intervals = createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n" +
-                "chrM\t50\t60\t+\ttest");
+        IntervalList intervals =
+                createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n" + "chrM\t50\t60\t+\ttest");
         EdgeReadIterator iterator = new EdgeReadIterator(samReader, intervals);
         int locusPosition = 50;
         while (iterator.hasNext()) {
@@ -272,11 +283,10 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
      */
     @Test
     public void testIntersectingInterval() {
-        SamReader samReader = createSamFileReader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n"));
-        IntervalList intervals = createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n" +
-                "chrM\t5\t15\t+\ttest");
+        SamReader samReader =
+                createSamFileReader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n"));
+        IntervalList intervals =
+                createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n" + "chrM\t5\t15\t+\ttest");
         EdgeReadIterator iterator = new EdgeReadIterator(samReader, intervals);
         int locusPosition = 5;
         while (iterator.hasNext()) {
@@ -302,16 +312,14 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
     public void testIntersectingAndNotInterval() {
 
         final SAMRecordSetBuilder builder = getRecordBuilder();
-        builder.setHeader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n"));
+        builder.setHeader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n"));
         // add records up to coverage for the test in that position
         final int startPosition = 40;
         // Were it not for the gap, these two reads would not overlap
         builder.addFrag("record2", 0, startPosition, true, false, "36M", null, 10);
 
-        IntervalList intervals = createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n" +
-                "chrM\t40\t80\t+\ttest");
+        IntervalList intervals =
+                createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n" + "chrM\t40\t80\t+\ttest");
 
         EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         int locusPosition = 40;
@@ -340,7 +348,8 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
     @Test
     public void testNoGapsInLocusAccumulator() {
-        final SamReader reader = SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/util/sliver.sam"));
+        final SamReader reader =
+                SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/util/sliver.sam"));
         final EdgeReadIterator iterator = new EdgeReadIterator(reader, null);
 
         AbstractLocusInfo<EdgingRecordAndOffset> previous = null;
@@ -363,20 +372,18 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
     public void testIntersectingIntervalWithComplicatedCigar() {
 
         final SAMRecordSetBuilder builder = getRecordBuilder();
-        builder.setHeader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n"));
+        builder.setHeader(createSamFileHeader("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n"));
         // add records up to coverage for the test in that position
         final int startPosition = 1;
         // Were it not for the gap, these two reads would not overlap
         builder.addFrag("record", 0, startPosition, true, false, "10M3D26M", null, 10);
 
-        IntervalList intervals = createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chrM\tLN:100\n" +
-                "chrM\t5\t20\t+\ttest");
+        IntervalList intervals =
+                createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chrM\tLN:100\n" + "chrM\t5\t20\t+\ttest");
 
         EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         int locusPosition = 5;
-        int[] expectedLength = new int[]{6, 7};
+        int[] expectedLength = new int[] {6, 7};
         int i = 0;
         while (iterator.hasNext()) {
             AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
@@ -407,11 +414,10 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
      */
     @Test
     public void testMultipleIntervals() {
-        String samHeaderString = "@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:chr1\tLN:100\n" +
-                "@SQ\tSN:chr2\tLN:100\n" +
-                "@SQ\tSN:chr3\tLN:100\n" +
-                "@SQ\tSN:chr4\tLN:100\n";
+        String samHeaderString = "@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:chr1\tLN:100\n"
+                + "@SQ\tSN:chr2\tLN:100\n"
+                + "@SQ\tSN:chr3\tLN:100\n"
+                + "@SQ\tSN:chr4\tLN:100\n";
 
         final SAMRecordSetBuilder builder = getRecordBuilder();
         builder.setHeader(createSamFileHeader(samHeaderString));
@@ -421,37 +427,48 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         builder.addFrag("endOutsideChr2", 1, 65, false, false, "10M10D10M", null, 10);
         builder.addFrag("spanningThreeIntervalsChr4", 3, 1, false, false, "100M", null, 10);
 
-        IntervalList intervals = createIntervalList(samHeaderString +
-                "chr1\t1\t100\t+\ttest\n" +
-                "chr2\t20\t70\t+\ttest\n" +
-                "chr4\t20\t30\t+\ttest\n" +
-                "chr4\t40\t50\t+\ttest\n" +
-                "chr4\t60\t70\t+\ttest\n");
+        IntervalList intervals = createIntervalList(samHeaderString + "chr1\t1\t100\t+\ttest\n"
+                + "chr2\t20\t70\t+\ttest\n"
+                + "chr4\t20\t30\t+\ttest\n"
+                + "chr4\t40\t50\t+\ttest\n"
+                + "chr4\t60\t70\t+\ttest\n");
 
         // These are the covered intervals that we expect to be covered
         final Interval[] intervalsCovered = {
-                new Interval("chr1", 10, 19), // fullyContainedInChr1: first alignment block
-                new Interval("chr1", 30, 39), // fullyContainedInChr1: second alignment block
-                new Interval("chr2", 20, 24), // startOutsideChr2: first alignment block
-                new Interval("chr2", 35, 44), // startOutsideChr2: second alignment block
-                new Interval("chr2", 65, 70), // endOutsideChr2: first alignment block (second isn't covered at all)
-                new Interval("chr4", 20, 30), // spanningThreeIntervalsChr4: first interval
-                new Interval("chr4", 40, 50), // spanningThreeIntervalsChr4: second interval
-                new Interval("chr4", 60, 70), // spanningThreeIntervalsChr4: third interval
+            new Interval("chr1", 10, 19), // fullyContainedInChr1: first alignment block
+            new Interval("chr1", 30, 39), // fullyContainedInChr1: second alignment block
+            new Interval("chr2", 20, 24), // startOutsideChr2: first alignment block
+            new Interval("chr2", 35, 44), // startOutsideChr2: second alignment block
+            new Interval("chr2", 65, 70), // endOutsideChr2: first alignment block (second isn't covered at all)
+            new Interval("chr4", 20, 30), // spanningThreeIntervalsChr4: first interval
+            new Interval("chr4", 40, 50), // spanningThreeIntervalsChr4: second interval
+            new Interval("chr4", 60, 70), // spanningThreeIntervalsChr4: third interval
         };
 
         EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         AbstractLocusInfo<EdgingRecordAndOffset> currentLocusInfo = iterator.next();
         for (final Interval interval : intervalsCovered) {
-            // Continue iterating over the LocusInfos if there is no RecordAndOffsets (size == 0) or it isn't a BEGIN record.
-            while(currentLocusInfo.getRecordAndOffsets().size() < 1 || currentLocusInfo.getRecordAndOffsets().get(0).getType() != EdgingRecordAndOffset.Type.BEGIN) {
+            // Continue iterating over the LocusInfos if there is no RecordAndOffsets (size == 0) or it isn't a BEGIN
+            // record.
+            while (currentLocusInfo.getRecordAndOffsets().size() < 1
+                    || currentLocusInfo.getRecordAndOffsets().get(0).getType() != EdgingRecordAndOffset.Type.BEGIN) {
                 currentLocusInfo = iterator.next();
             }
-            EdgingRecordAndOffset currentEdgingRecordAndOffset = currentLocusInfo.getRecordAndOffsets().get(0);
+            EdgingRecordAndOffset currentEdgingRecordAndOffset =
+                    currentLocusInfo.getRecordAndOffsets().get(0);
 
-            assertEquals(currentLocusInfo.getContig(), interval.getContig(), "Read: " + currentEdgingRecordAndOffset.getReadName());
-            assertEquals(currentLocusInfo.getPosition(), interval.getStart(), "Read: " + currentEdgingRecordAndOffset.getReadName());
-            assertEquals(currentLocusInfo.getPosition() + currentEdgingRecordAndOffset.getLength() - 1, interval.getEnd(), "Read: " + currentEdgingRecordAndOffset.getReadName());
+            assertEquals(
+                    currentLocusInfo.getContig(),
+                    interval.getContig(),
+                    "Read: " + currentEdgingRecordAndOffset.getReadName());
+            assertEquals(
+                    currentLocusInfo.getPosition(),
+                    interval.getStart(),
+                    "Read: " + currentEdgingRecordAndOffset.getReadName());
+            assertEquals(
+                    currentLocusInfo.getPosition() + currentEdgingRecordAndOffset.getLength() - 1,
+                    interval.getEnd(),
+                    "Read: " + currentEdgingRecordAndOffset.getReadName());
 
             currentLocusInfo = iterator.next();
         }
@@ -462,14 +479,13 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
      */
     @Test
     public void testIntervalCompletelyContainsRead() {
-        String samHeaderString = "@HD\tSO:coordinate\tVN:1.0\n" +
-                "@SQ\tSN:Z_AlphabeticallyOutOfOrderContig\tLN:100\n" +
-                "@SQ\tSN:chr1\tLN:100\n" +
-                "@SQ\tSN:chr2\tLN:100\n" +
-                "@SQ\tSN:chr3\tLN:100\n" +
-                "@SQ\tSN:chr4\tLN:100\n" +
-                "@SQ\tSN:chr5\tLN:100\n" +
-                "@SQ\tSN:chr6\tLN:100\n";
+        String samHeaderString = "@HD\tSO:coordinate\tVN:1.0\n" + "@SQ\tSN:Z_AlphabeticallyOutOfOrderContig\tLN:100\n"
+                + "@SQ\tSN:chr1\tLN:100\n"
+                + "@SQ\tSN:chr2\tLN:100\n"
+                + "@SQ\tSN:chr3\tLN:100\n"
+                + "@SQ\tSN:chr4\tLN:100\n"
+                + "@SQ\tSN:chr5\tLN:100\n"
+                + "@SQ\tSN:chr6\tLN:100\n";
 
         final SAMRecordSetBuilder builder = getRecordBuilder();
         builder.setHeader(createSamFileHeader(samHeaderString));
@@ -480,34 +496,31 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         builder.addFrag("containedInChr5", 5, 2, false, false, "10M", null, 10);
         builder.addFrag("notContainedInChr6", 6, 1, false, false, "10M", null, 10);
 
-        IntervalList intervals = createIntervalList(samHeaderString +
-                "chr1\t1\t50\t+\ttest\n" +
-                "chr2\t1\t50\t+\ttest\n" +
-                "chr3\t1\t50\t+\ttest\n" +
-                "chr4\t1\t50\t+\ttest\n" +
-                "chr5\t1\t50\t+\ttest\n");
+        IntervalList intervals = createIntervalList(samHeaderString + "chr1\t1\t50\t+\ttest\n"
+                + "chr2\t1\t50\t+\ttest\n"
+                + "chr3\t1\t50\t+\ttest\n"
+                + "chr4\t1\t50\t+\ttest\n"
+                + "chr5\t1\t50\t+\ttest\n");
 
-        final boolean[] expectedResults = {
-                true,
-                false,
-                true,
-                true,
-                false
-        };
+        final boolean[] expectedResults = {true, false, true, true, false};
 
         EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         int i = 0;
         for (final SAMRecord record : builder.getRecords()) {
-            assertEquals(iterator.advanceCurrentIntervalAndCheckIfIntervalContainsRead(record), expectedResults[i], "Read: " + record.getReadName());
+            assertEquals(
+                    iterator.advanceCurrentIntervalAndCheckIfIntervalContainsRead(record),
+                    expectedResults[i],
+                    "Read: " + record.getReadName());
             i += 1;
         }
         assertEquals(i, expectedResults.length); // Make sure we checked all reads
     }
 
-    private void fillEmptyLocus(int[] expectedReferencePositions, int[] expectedDepths, int[][] expectedReadOffsets, int i) {
+    private void fillEmptyLocus(
+            int[] expectedReferencePositions, int[] expectedDepths, int[][] expectedReadOffsets, int i) {
         expectedReferencePositions[i] = i + 1;
         expectedDepths[i] = 0;
-        expectedReadOffsets[i] = new int[]{};
+        expectedReadOffsets[i] = new int[] {};
     }
 
     private SamReader createSamFileReader() {

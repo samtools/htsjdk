@@ -19,7 +19,8 @@ package htsjdk.samtools.cram.build;
 
 public final class Utils {
 
-    private Utils() {};
+    private Utils() {}
+    ;
 
     /**
      * CRAM operates with upper case bases, so both read and ref bases should be

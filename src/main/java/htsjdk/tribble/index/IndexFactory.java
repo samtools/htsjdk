@@ -47,7 +47,6 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.File;
@@ -79,10 +78,21 @@ public class IndexFactory {
      * an enum that contains all of the information about the index types, and how to create them
      */
     public enum IndexType {
-        LINEAR(AbstractIndex.MAGIC_NUMBER, LinearIndex.INDEX_TYPE, true, LinearIndex::new, LinearIndexCreator.DEFAULT_BIN_WIDTH),
-        INTERVAL_TREE(AbstractIndex.MAGIC_NUMBER, IntervalTreeIndex.INDEX_TYPE, true, IntervalTreeIndex::new, IntervalIndexCreator.DEFAULT_FEATURE_COUNT),
-        // Tabix index initialization requires additional information, so generic construction won't work, thus indexCreatorClass is null.
-        TABIX(TabixIndex.MAGIC_NUMBER, null, false, TabixIndex::new, -1) ;
+        LINEAR(
+                AbstractIndex.MAGIC_NUMBER,
+                LinearIndex.INDEX_TYPE,
+                true,
+                LinearIndex::new,
+                LinearIndexCreator.DEFAULT_BIN_WIDTH),
+        INTERVAL_TREE(
+                AbstractIndex.MAGIC_NUMBER,
+                IntervalTreeIndex.INDEX_TYPE,
+                true,
+                IntervalTreeIndex::new,
+                IntervalIndexCreator.DEFAULT_FEATURE_COUNT),
+        // Tabix index initialization requires additional information, so generic construction won't work, thus
+        // indexCreatorClass is null.
+        TABIX(TabixIndex.MAGIC_NUMBER, null, false, TabixIndex::new, -1);
 
         private final int magicNumber;
         private final Integer tribbleIndexType;
@@ -102,7 +112,12 @@ public class IndexFactory {
             Index apply(InputStream t) throws IOException;
         }
 
-        IndexType(final int magicNumber, final Integer tribbleIndexType, final boolean canCreate, final IndexFromStreamFunction createFromInputStream, final int defaultBinSize) {
+        IndexType(
+                final int magicNumber,
+                final Integer tribbleIndexType,
+                final boolean canCreate,
+                final IndexFromStreamFunction createFromInputStream,
+                final int defaultBinSize) {
             this.magicNumber = magicNumber;
             this.tribbleIndexType = tribbleIndexType;
             this.canCreate = canCreate;
@@ -122,7 +137,9 @@ public class IndexFactory {
             }
         }
 
-        public int getMagicNumber() { return magicNumber; }
+        public int getMagicNumber() {
+            return magicNumber;
+        }
 
         /**
          *
@@ -145,8 +162,8 @@ public class IndexFactory {
                 is.reset();
 
                 for (final IndexType indexType : IndexType.values()) {
-                    if (indexType.magicNumber == magicNumber &&
-                            (indexType.tribbleIndexType == null || indexType.tribbleIndexType == type)) {
+                    if (indexType.magicNumber == magicNumber
+                            && (indexType.tribbleIndexType == null || indexType.tribbleIndexType == type)) {
                         return indexType;
                     }
                 }
@@ -158,7 +175,6 @@ public class IndexFactory {
                     String.format("Unknown index type.  magic number: 0x%x; type %d", magicNumber, type));
         }
     }
-
 
     /**
      * Load in index from the specified file.   The type of index (LinearIndex or IntervalTreeIndex) is determined
@@ -178,7 +194,8 @@ public class IndexFactory {
      * @param indexWrapper a wrapper to apply to the raw byte stream of the index file, only applied to uri's loaded as
      *                     {@link java.nio.file.Path}
      */
-    public static Index loadIndex(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
+    public static Index loadIndex(
+            final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
         try {
             return loadIndex(indexFile, indexFileInputStream(indexFile, indexWrapper));
         } catch (final IOException ex) {
@@ -194,10 +211,11 @@ public class IndexFactory {
      */
     public static Index loadIndex(final String source, final InputStream inputStream) {
         // Must be buffered, because getIndexType uses mark and reset
-        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, Defaults.NON_ZERO_BUFFER_SIZE)) {
+        try (BufferedInputStream bufferedInputStream =
+                new BufferedInputStream(inputStream, Defaults.NON_ZERO_BUFFER_SIZE)) {
             return createIndex(bufferedInputStream);
         } catch (final EOFException ex) {
-                throw new TribbleException.CorruptedIndexFile("Index file is corrupted", source, ex);
+            throw new TribbleException.CorruptedIndexFile("Index file is corrupted", source, ex);
         } catch (final IOException ex) {
             throw new TribbleException.UnableToReadIndexFile("Failed to read index file", source, ex);
         }
@@ -207,15 +225,15 @@ public class IndexFactory {
         return IndexType.getIndexType(bufferedInputStream).createIndex(bufferedInputStream);
     }
 
-    private static InputStream indexFileInputStream(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+    private static InputStream indexFileInputStream(
+            final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper)
+            throws IOException {
         final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile, indexWrapper);
         if (indexFile.endsWith(".gz")) {
             return new GZIPInputStream(inputStreamInitial);
-        }
-        else if (indexFile.endsWith(FileExtensions.TABIX_INDEX)) {
+        } else if (indexFile.endsWith(FileExtensions.TABIX_INDEX)) {
             return new BlockCompressedInputStream(inputStreamInitial);
-        }
-        else {
+        } else {
             return inputStreamInitial;
         }
     }
@@ -226,11 +244,9 @@ public class IndexFactory {
      * @param inputFile the input file to load features from
      * @param codec     the codec to use for decoding records
      */
-    public static  <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
-        return createLinearIndex(
-                IOUtil.toPath(inputFile),
-                codec,
-                LinearIndexCreator.DEFAULT_BIN_WIDTH);
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
+        return createLinearIndex(IOUtil.toPath(inputFile), codec, LinearIndexCreator.DEFAULT_BIN_WIDTH);
     }
 
     /**
@@ -239,8 +255,8 @@ public class IndexFactory {
      * @param inputPath the input file to load features from
      * @param codec     the codec to use for decoding records
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(final Path inputPath,
-                                                                                            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE>  codec) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(
+            final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createLinearIndex(inputPath, codec, LinearIndexCreator.DEFAULT_BIN_WIDTH);
     }
 
@@ -251,9 +267,8 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param binSize   the bin size
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(final File inputFile,
-                                                                                            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                            final int binSize) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final int binSize) {
         return createLinearIndex(IOUtil.toPath(inputFile), codec, binSize);
     }
 
@@ -264,12 +279,11 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param binSize   the bin size
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(final Path inputPath,
-                                                                                            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                            final int binSize) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(
+            final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final int binSize) {
         ValidationUtils.nonNull(inputPath, "input path must be non-null");
         final LinearIndexCreator indexCreator = new LinearIndexCreator(inputPath, binSize);
-        return (LinearIndex)createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
+        return (LinearIndex) createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
     }
 
     /**
@@ -278,8 +292,8 @@ public class IndexFactory {
      * @param inputFile the file containing the features
      * @param codec to decode the features
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final File inputFile,
-                                                                                                    final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createIntervalIndex(IOUtil.toPath(inputFile), codec, IntervalIndexCreator.DEFAULT_FEATURE_COUNT);
     }
 
@@ -289,11 +303,10 @@ public class IndexFactory {
      * @param inputPath the file containing the features
      * @param codec to decode the features
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final Path inputPath,
-                                                                                                    final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(
+            final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createIntervalIndex(inputPath, codec, IntervalIndexCreator.DEFAULT_FEATURE_COUNT);
     }
-
 
     /**
      * a helper method for creating an interval-tree index
@@ -302,9 +315,8 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param featuresPerInterval
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final File inputFile,
-                                                                                                    final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                                    final int featuresPerInterval) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final int featuresPerInterval) {
         return createIntervalIndex(IOUtil.toPath(inputFile), codec, featuresPerInterval);
     }
 
@@ -315,12 +327,11 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param featuresPerInterval
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final Path inputPath,
-                                                                                                    final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                                    final int featuresPerInterval) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(
+            final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final int featuresPerInterval) {
         ValidationUtils.nonNull(inputPath, "input path must be non-null");
         final IntervalIndexCreator indexCreator = new IntervalIndexCreator(inputPath, featuresPerInterval);
-        return (IntervalTreeIndex)createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
+        return (IntervalTreeIndex) createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
     }
 
     /**
@@ -329,7 +340,8 @@ public class IndexFactory {
      * @param inputFile the input file to load features from
      * @param codec     the codec to use for decoding records
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createDynamicIndex(IOUtil.toPath(inputFile), codec, IndexBalanceApproach.FOR_SEEK_TIME);
     }
 
@@ -339,10 +351,10 @@ public class IndexFactory {
      * @param inputPath the input path to load features from
      * @param codec     the codec to use for decoding records
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(
+            final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createDynamicIndex(inputPath, codec, IndexBalanceApproach.FOR_SEEK_TIME);
     }
-
 
     /**
      * Create a index of the specified type with default binning parameters
@@ -351,9 +363,8 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param type      the type of index to create
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
-                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                final IndexType type) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final IndexType type) {
         return createIndex(IOUtil.toPath(inputFile), codec, type, null);
     }
 
@@ -364,9 +375,8 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param type      the type of index to create
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final Path inputhPath,
-                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                final IndexType type) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(
+            final Path inputhPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final IndexType type) {
         return createIndex(inputhPath, codec, type, null);
     }
 
@@ -378,10 +388,11 @@ public class IndexFactory {
      * @param type      the type of index to create
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
-                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                final IndexType type,
-                                                                                final SAMSequenceDictionary sequenceDictionary) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(
+            final File inputFile,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final IndexType type,
+            final SAMSequenceDictionary sequenceDictionary) {
         return createIndex(IOUtil.toPath(inputFile), codec, type, sequenceDictionary);
     }
 
@@ -393,15 +404,20 @@ public class IndexFactory {
      * @param type      the type of index to create
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final Path inputPath,
-                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                final IndexType type,
-                                                                                final SAMSequenceDictionary sequenceDictionary) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(
+            final Path inputPath,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final IndexType type,
+            final SAMSequenceDictionary sequenceDictionary) {
         switch (type) {
-            case INTERVAL_TREE: return createIntervalIndex(inputPath, codec);
-            case LINEAR:        return createLinearIndex(inputPath, codec);
-            case TABIX:         return createTabixIndex(inputPath, codec, sequenceDictionary);
-            default: throw new IllegalArgumentException("Unrecognized IndexType " + type);
+            case INTERVAL_TREE:
+                return createIntervalIndex(inputPath, codec);
+            case LINEAR:
+                return createLinearIndex(inputPath, codec);
+            case TABIX:
+                return createTabixIndex(inputPath, codec, sequenceDictionary);
+            default:
+                throw new IllegalArgumentException("Unrecognized IndexType " + type);
         }
     }
 
@@ -424,9 +440,8 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param iba       the index balancing approach
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(final File inputFile,
-                                                                                       final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                       final IndexBalanceApproach iba) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(
+            final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final IndexBalanceApproach iba) {
         return createDynamicIndex(IOUtil.toPath(inputFile), codec, iba);
     }
 
@@ -437,9 +452,8 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param iba       the index balancing approach
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(final Path inputPath,
-                                                                                       final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                       final IndexBalanceApproach iba) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(
+            final Path inputPath, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec, final IndexBalanceApproach iba) {
         ValidationUtils.nonNull(inputPath, "input path must be non-null");
         // get a list of index creators
         final DynamicIndexCreator indexCreator = new DynamicIndexCreator(inputPath, iba);
@@ -453,10 +467,11 @@ public class IndexFactory {
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for index creation.  Features
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
-                                                                                          final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                          final TabixFormat tabixFormat,
-                                                                                          final SAMSequenceDictionary sequenceDictionary) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(
+            final File inputFile,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final TabixFormat tabixFormat,
+            final SAMSequenceDictionary sequenceDictionary) {
         return createTabixIndex(IOUtil.toPath(inputFile), codec, tabixFormat, sequenceDictionary);
     }
 
@@ -467,13 +482,14 @@ public class IndexFactory {
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for index creation.  Features
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final Path inputPath,
-                                                                                          final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                          final TabixFormat tabixFormat,
-                                                                                          final SAMSequenceDictionary sequenceDictionary) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(
+            final Path inputPath,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final TabixFormat tabixFormat,
+            final SAMSequenceDictionary sequenceDictionary) {
         ValidationUtils.nonNull(inputPath, "input path must be non-null");
         final TabixIndexCreator indexCreator = new TabixIndexCreator(sequenceDictionary, tabixFormat);
-        return (TabixIndex)createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
+        return (TabixIndex) createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
     }
 
     /**
@@ -483,9 +499,10 @@ public class IndexFactory {
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      *
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
-                                                                                          final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                          final SAMSequenceDictionary sequenceDictionary) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(
+            final File inputFile,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final SAMSequenceDictionary sequenceDictionary) {
         return createTabixIndex(IOUtil.toPath(inputFile), codec, codec.getTabixFormat(), sequenceDictionary);
     }
 
@@ -496,9 +513,10 @@ public class IndexFactory {
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      *
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final Path inputPath,
-                                                                                          final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
-                                                                                          final SAMSequenceDictionary sequenceDictionary) {
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(
+            final Path inputPath,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final SAMSequenceDictionary sequenceDictionary) {
         return createTabixIndex(inputPath, codec, codec.getTabixFormat(), sequenceDictionary);
     }
 
@@ -511,17 +529,17 @@ public class IndexFactory {
             currentFeature = iterator.next();
 
             checkSorted(inputPath, lastFeature, currentFeature);
-            //should only visit chromosomes once
+            // should only visit chromosomes once
             final String curChr = currentFeature.getContig();
             final String lastChr = lastFeature != null ? lastFeature.getContig() : null;
-            if(!curChr.equals(lastChr)){
-                if(visitedChromos.containsKey(curChr)){
+            if (!curChr.equals(lastChr)) {
+                if (visitedChromos.containsKey(curChr)) {
                     String msg = "Input file must have contiguous chromosomes.";
                     msg += " Saw feature " + featToString(visitedChromos.get(curChr));
                     msg += " followed later by " + featToString(lastFeature);
                     msg += " and then " + featToString(currentFeature);
                     throw new TribbleException.MalformedFeatureFile(msg, inputPath.toString());
-                }else{
+                } else {
                     visitedChromos.put(curChr, currentFeature);
                 }
             }
@@ -537,18 +555,22 @@ public class IndexFactory {
         return creator.finalizeIndex(finalPosition);
     }
 
-    private static String featToString(final Feature feature){
+    private static String featToString(final Feature feature) {
         return feature.getContig() + ":" + feature.getStart() + "-" + feature.getEnd();
     }
 
-    private static void checkSorted(final Path inputPath, final Feature lastFeature, final Feature currentFeature){
+    private static void checkSorted(final Path inputPath, final Feature lastFeature, final Feature currentFeature) {
         // if the last currentFeature is after the current currentFeature, exception out
-        if (lastFeature != null && currentFeature.getStart() < lastFeature.getStart() && lastFeature.getContig().equals(currentFeature.getContig()))
-            throw new TribbleException.MalformedFeatureFile("Input file is not sorted by start position. \n" +
-                    "We saw a record with a start of " + currentFeature.getContig() + ":" + currentFeature.getStart() +
-                    " after a record with a start of " + lastFeature.getContig() + ":" + lastFeature.getStart(), inputPath.toString());
+        if (lastFeature != null
+                && currentFeature.getStart() < lastFeature.getStart()
+                && lastFeature.getContig().equals(currentFeature.getContig()))
+            throw new TribbleException.MalformedFeatureFile(
+                    "Input file is not sorted by start position. \n" + "We saw a record with a start of "
+                            + currentFeature.getContig() + ":" + currentFeature.getStart()
+                            + " after a record with a start of "
+                            + lastFeature.getContig() + ":" + lastFeature.getStart(),
+                    inputPath.toString());
     }
-
 
     /**
      * Iterator for reading features from a file, given a {@code FeatureCodec}.
@@ -583,13 +605,15 @@ public class IndexFactory {
             ValidationUtils.nonNull(inputPath, "FeatureIterator input path cannot be null");
             this.codec = codec;
 
-            // We must call getPathToDataFile here to work with codecs that store their configuration and data separately
+            // We must call getPathToDataFile here to work with codecs that store their configuration and data
+            // separately
             final String filePath = codec.getPathToDataFile(inputPath.toUri().toString());
 
             try {
                 this.inputPath = IOUtil.getPath(filePath);
             } catch (final IOException e) {
-                throw new TribbleException("Failed while constructing a FeatureIterator due to a problem converting String to Path", e);
+                throw new TribbleException(
+                        "Failed while constructing a FeatureIterator due to a problem converting String to Path", e);
             }
 
             try {
@@ -615,8 +639,7 @@ public class IndexFactory {
                 return new PositionalBufferedStream(fileStream);
             } catch (final IOException e) {
                 throw new TribbleException.FeatureFileDoesntExist(
-                        "Unable to open the input file, most likely the file doesn't exist.",
-                        inputPath.toString());
+                        "Unable to open the input file, most likely the file doesn't exist.", inputPath.toString());
             }
         }
 
@@ -624,16 +647,17 @@ public class IndexFactory {
             // test that this is in fact a valid block compressed file
             try {
                 if (!IOUtil.isBlockCompressed(inputPath, true)) {
-                    throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
-                            inputPath.toString());
+                    throw new TribbleException.MalformedFeatureFile(
+                            "Input file is not in valid block compressed format.", inputPath.toString());
                 }
 
                 final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
-                final SeekableStream seekableStream = ssf.getStreamFor(inputPath.toUri().toString());
+                final SeekableStream seekableStream =
+                        ssf.getStreamFor(inputPath.toUri().toString());
                 return new BlockCompressedInputStream(seekableStream);
             } catch (final FileNotFoundException e) {
-                throw new TribbleException.FeatureFileDoesntExist("Unable to open the input file, most likely the file doesn't exist.",
-                        inputPath.toString());
+                throw new TribbleException.FeatureFileDoesntExist(
+                        "Unable to open the input file, most likely the file doesn't exist.", inputPath.toString());
             } catch (final IOException e) {
                 throw new TribbleException.MalformedFeatureFile("Error initializing stream", inputPath.toString(), e);
             }
@@ -658,7 +682,6 @@ public class IndexFactory {
         public void remove() {
             throw new UnsupportedOperationException("We cannot remove");
         }
-
 
         /**
          * @return the file position from the underlying reader
@@ -689,7 +712,8 @@ public class IndexFactory {
                     nextFeature = codec.decodeLoc(source);
                 }
             } catch (final IOException e) {
-                throw new TribbleException.MalformedFeatureFile("Unable to read a line from the file", inputPath.toString(), e);
+                throw new TribbleException.MalformedFeatureFile(
+                        "Unable to read a line from the file", inputPath.toString(), e);
             }
         }
     }

@@ -1,42 +1,41 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.PositionalOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.DynamicIndexCreator;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.IndexFactory;
-import htsjdk.samtools.util.PositionalOutputStream;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,7 +54,8 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     private LocationAware locationSource = null;
     private IndexCreator indexer = null;
 
-    private IndexingVariantContextWriter(final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict) {
+    private IndexingVariantContextWriter(
+            final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict) {
         this.name = name;
         this.location = location;
         this.outputStream = output;
@@ -73,8 +73,12 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param refDict   the reference dictionary
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      */
-    protected IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict,
-                                           final boolean enableOnTheFlyIndexing) {
+    protected IndexingVariantContextWriter(
+            final String name,
+            final File location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing) {
         this(name, IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing);
     }
 
@@ -87,11 +91,15 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param refDict   the reference dictionary
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      */
-    protected IndexingVariantContextWriter(final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
-        final boolean enableOnTheFlyIndexing) {
+    protected IndexingVariantContextWriter(
+            final String name,
+            final Path location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing) {
         this(name, location, output, refDict);
 
-        if ( enableOnTheFlyIndexing ) {
+        if (enableOnTheFlyIndexing) {
             initIndexingWriter(new DynamicIndexCreator(location, IndexFactory.IndexBalanceApproach.FOR_SEEK_TIME));
         }
     }
@@ -106,8 +114,13 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      * @param idxCreator    the custom index creator.  NOTE: must be initialized
      */
-    protected IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict,
-                                           final boolean enableOnTheFlyIndexing, final IndexCreator idxCreator) {
+    protected IndexingVariantContextWriter(
+            final String name,
+            final File location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing,
+            final IndexCreator idxCreator) {
         this(name, IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing, idxCreator);
     }
 
@@ -121,11 +134,16 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      * @param idxCreator    the custom index creator.  NOTE: must be initialized
      */
-    protected IndexingVariantContextWriter(final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
-        final boolean enableOnTheFlyIndexing, final IndexCreator idxCreator) {
+    protected IndexingVariantContextWriter(
+            final String name,
+            final Path location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing,
+            final IndexCreator idxCreator) {
         this(name, location, output, refDict);
 
-        if ( enableOnTheFlyIndexing ) {
+        if (enableOnTheFlyIndexing) {
             // TODO: Handle non-Tribble IndexCreators
             initIndexingWriter(idxCreator);
         }
@@ -134,23 +152,23 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     private void initIndexingWriter(final IndexCreator idxCreator) {
         indexer = idxCreator;
         if (outputStream instanceof LocationAware) {
-            locationSource = (LocationAware)outputStream;
+            locationSource = (LocationAware) outputStream;
         } else {
             final PositionalOutputStream positionalOutputStream = new PositionalOutputStream(outputStream);
             locationSource = positionalOutputStream;
             outputStream = positionalOutputStream;
         }
     }
-    
-    /** return true is the underlying stream is a PrintStream and 
-     * its checkError returned true. Used to stop linux pipelines 
+
+    /** return true is the underlying stream is a PrintStream and
+     * its checkError returned true. Used to stop linux pipelines
      */
     @Override
     public boolean checkError() {
-        return (getOutputStream() instanceof PrintStream) && 
-                PrintStream.class.cast(getOutputStream()).checkError();
+        return (getOutputStream() instanceof PrintStream)
+                && PrintStream.class.cast(getOutputStream()).checkError();
     }
-    
+
     public OutputStream getOutputStream() {
         return outputStream;
     }
@@ -178,7 +196,6 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
                 index.writeBasedOnFeaturePath(location);
             }
 
-
         } catch (final IOException e) {
             throw new RuntimeIOException("Unable to close index for " + getStreamName(), e);
         }
@@ -199,8 +216,7 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     @Override
     public void add(final VariantContext vc) {
         // if we are doing on the fly indexing, add the record ***before*** we write any bytes
-        if ( indexer != null )
-            indexer.addFeature(vc, locationSource.getPosition());
+        if (indexer != null) indexer.addFeature(vc, locationSource.getPosition());
     }
 
     /**
@@ -222,6 +238,8 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @return
      */
     protected static final String writerName(final Path location, final OutputStream stream) {
-        return location == null ? stream == null ? DEFAULT_READER_NAME : stream.toString() : location.toAbsolutePath().toUri().toString();
+        return location == null
+                ? stream == null ? DEFAULT_READER_NAME : stream.toString()
+                : location.toAbsolutePath().toUri().toString();
     }
 }

@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.io.CRAMByteWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,14 +49,18 @@ public class SliceBlocksWriteStreams {
     /**
      * @return the {@link BitOutputStream} for the core block
      */
-    public BitOutputStream getCoreOutputStream() { return coreBlockBitOutputStream; }
+    public BitOutputStream getCoreOutputStream() {
+        return coreBlockBitOutputStream;
+    }
 
     /**
      * Get the {@link CRAMByteWriter} corresponding to the requested content ID.
      * @param contentID ID of content being requested
      * @return CRAMByteWriter for the content ID
      */
-    public CRAMByteWriter getExternalWriter(final Integer contentID) { return externalWriters.get(contentID); }
+    public CRAMByteWriter getExternalWriter(final Integer contentID) {
+        return externalWriters.get(contentID);
+    }
 
     /**
      * Compress and write each stream to a corresponding Block.
@@ -73,11 +76,12 @@ public class SliceBlocksWriteStreams {
             if (contentId.equals(Block.NO_CONTENT_ID)) {
                 throw new CRAMException("A valid content ID is required.  Given: " + contentId);
             }
-            externalBlocks.add(compressionHeader.getEncodingMap().createCompressedBlockForWriter(contextModel, contentId, writer));
-         });
+            externalBlocks.add(
+                    compressionHeader.getEncodingMap().createCompressedBlockForWriter(contextModel, contentId, writer));
+        });
 
         return new SliceBlocks(coreBlock, externalBlocks);
-     }
+    }
 
     private void closeCoreStream() {
         try {

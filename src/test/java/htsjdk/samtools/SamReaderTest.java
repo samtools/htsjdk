@@ -26,14 +26,13 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.PeekableIterator;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SamReaderTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
@@ -41,20 +40,17 @@ public class SamReaderTest extends HtsjdkTest {
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void variousFormatReaderTest(final String inputFile) throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
-        try(final SamReader reader = SamReaderFactory.makeDefault().open(input)) {
+        try (final SamReader reader = SamReaderFactory.makeDefault().open(input)) {
             for (final SAMRecord rec : reader) {
-                //just scan through the lines
+                // just scan through the lines
             }
         }
     }
 
     @DataProvider(name = "variousFormatReaderTestCases")
     public Object[][] variousFormatReaderTestCases() {
-        final Object[][] scenarios = new Object[][]{
-                {"block_compressed.sam.gz"},
-                {"uncompressed.sam"},
-                {"compressed.sam.gz"},
-                {"compressed.bam"},
+        final Object[][] scenarios = new Object[][] {
+            {"block_compressed.sam.gz"}, {"uncompressed.sam"}, {"compressed.sam.gz"}, {"compressed.bam"},
         };
         return scenarios;
     }
@@ -62,26 +58,28 @@ public class SamReaderTest extends HtsjdkTest {
     // tests for CRAM indexing
 
     @Test(dataProvider = "SmallCRAMTest")
-    public void CRAMIndexTest(final String inputFile, final String referenceFile, QueryInterval queryInterval, String expectedReadName) throws IOException {
+    public void CRAMIndexTest(
+            final String inputFile, final String referenceFile, QueryInterval queryInterval, String expectedReadName)
+            throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final File reference = new File(TEST_DATA_DIR, referenceFile);
-        try(final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
+        try (final SamReader reader =
+                SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
             Assert.assertTrue(reader.hasIndex());
 
-            final CloseableIterator<SAMRecord> iterator = reader.query(new QueryInterval[]{queryInterval}, false);
+            final CloseableIterator<SAMRecord> iterator = reader.query(new QueryInterval[] {queryInterval}, false);
             Assert.assertTrue(iterator.hasNext());
             SAMRecord r1 = iterator.next();
             Assert.assertEquals(r1.getReadName(), expectedReadName);
-
         }
     }
 
     @DataProvider(name = "SmallCRAMTest")
     public Object[][] CRAMIndexTestData() {
-        final Object[][] testFiles = new Object[][]{
-                {"cram/test.cram", "cram/auxf.fa", new QueryInterval(0, 12, 13), "Jim"},
-                {"cram_with_bai_index.cram", "hg19mini.fasta", new QueryInterval(3, 700, 0), "k"},
-                {"cram_with_crai_index.cram", "hg19mini.fasta", new QueryInterval(2, 350, 0), "i"},
+        final Object[][] testFiles = new Object[][] {
+            {"cram/test.cram", "cram/auxf.fa", new QueryInterval(0, 12, 13), "Jim"},
+            {"cram_with_bai_index.cram", "hg19mini.fasta", new QueryInterval(3, 700, 0), "k"},
+            {"cram_with_crai_index.cram", "hg19mini.fasta", new QueryInterval(2, 350, 0), "i"},
         };
         return testFiles;
     }
@@ -90,15 +88,16 @@ public class SamReaderTest extends HtsjdkTest {
     public void CRAMNoIndexTest(final String inputFile, final String referenceFile) throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final File reference = new File(TEST_DATA_DIR, referenceFile);
-        try(final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
+        try (final SamReader reader =
+                SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
             Assert.assertFalse(reader.hasIndex());
         }
     }
 
     @DataProvider(name = "NoIndexCRAMTest")
     public Object[][] CRAMNoIndexTestData() {
-        final Object[][] testFiles = new Object[][]{
-                {"cram/test2.cram", "cram/auxf.fa"},
+        final Object[][] testFiles = new Object[][] {
+            {"cram/test2.cram", "cram/auxf.fa"},
         };
         return testFiles;
     }
@@ -115,11 +114,35 @@ public class SamReaderTest extends HtsjdkTest {
         }
 
         @Override
-        public BAMRecord createBAMRecord(final SAMFileHeader header, final int referenceSequenceIndex, final int alignmentStart, final short readNameLength, final short mappingQuality, final int indexingBin, final int cigarLen, final int flags, final int readLen, final int mateReferenceSequenceIndex, final int mateAlignmentStart, final int insertSize, final byte[] variableLengthBlock) {
+        public BAMRecord createBAMRecord(
+                final SAMFileHeader header,
+                final int referenceSequenceIndex,
+                final int alignmentStart,
+                final short readNameLength,
+                final short mappingQuality,
+                final int indexingBin,
+                final int cigarLen,
+                final int flags,
+                final int readLen,
+                final int mateReferenceSequenceIndex,
+                final int mateAlignmentStart,
+                final int insertSize,
+                final byte[] variableLengthBlock) {
             ++bamRecordsCreated;
-            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality,
-                                         indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex,
-                                         mateAlignmentStart, insertSize, variableLengthBlock);
+            return super.createBAMRecord(
+                    header,
+                    referenceSequenceIndex,
+                    alignmentStart,
+                    readNameLength,
+                    mappingQuality,
+                    indexingBin,
+                    cigarLen,
+                    flags,
+                    readLen,
+                    mateReferenceSequenceIndex,
+                    mateAlignmentStart,
+                    insertSize,
+                    variableLengthBlock);
         }
     }
 
@@ -128,7 +151,8 @@ public class SamReaderTest extends HtsjdkTest {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SAMRecordFactoryTester factory = new SAMRecordFactoryTester();
         int i = 0;
-        try(final SamReader reader = SamReaderFactory.makeDefault().samRecordFactory(factory).open(input)){
+        try (final SamReader reader =
+                SamReaderFactory.makeDefault().samRecordFactory(factory).open(input)) {
             for (final SAMRecord rec : reader) {
                 ++i;
             }
@@ -143,19 +167,19 @@ public class SamReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "cramTestCases", expectedExceptions = IllegalArgumentException.class)
-    public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile) throws IOException {
+    public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile)
+            throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
-        try(final SamReader reader = SamReaderFactory.makeDefault().open(input)) {
-            for (final SAMRecord rec : reader) {
-            }
+        try (final SamReader reader = SamReaderFactory.makeDefault().open(input)) {
+            for (final SAMRecord rec : reader) {}
         }
     }
 
     @DataProvider(name = "cramTestCases")
     public Object[][] cramTestPositiveCases() {
-        final Object[][] scenarios = new Object[][]{
-                {"cram_with_bai_index.cram", "hg19mini.fasta"},
-                {"cram_with_crai_index.cram", "hg19mini.fasta"},
+        final Object[][] scenarios = new Object[][] {
+            {"cram_with_bai_index.cram", "hg19mini.fasta"},
+            {"cram_with_crai_index.cram", "hg19mini.fasta"},
         };
         return scenarios;
     }
@@ -164,9 +188,9 @@ public class SamReaderTest extends HtsjdkTest {
     public void testIterateCRAMWithIndex(final String inputFile, final String referenceFile) throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final File reference = new File(TEST_DATA_DIR, referenceFile);
-        try(final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
-            for (final SAMRecord rec : reader) {
-            }
+        try (final SamReader reader =
+                SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
+            for (final SAMRecord rec : reader) {}
         }
     }
 
@@ -178,7 +202,7 @@ public class SamReaderTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "hasValidFileExtensionTestData")
-    public Object[][]testHasValidFileExtensionTestData() {
+    public Object[][] testHasValidFileExtensionTestData() {
         final Set<SamReader.Type> setOfKnownFileTypes = new HashSet<>();
         setOfKnownFileTypes.add(SamReader.Type.BAM_TYPE);
         setOfKnownFileTypes.add(SamReader.Type.SAM_TYPE);
@@ -188,28 +212,28 @@ public class SamReaderTest extends HtsjdkTest {
         final List<Object[]> list = new ArrayList<>();
         for (final SamReader.Type fileType : setOfKnownFileTypes) {
             // positive expectations:
-            list.add(new Object[]{fileType, "test." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "/path/to/test." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "/path/to/." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "\\path\\to\\." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "../." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "../test." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "./test." + fileType.fileExtension(), true});
-            list.add(new Object[]{fileType, "./." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "test." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "/path/to/test." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "/path/to/." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "\\path\\to\\." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "../." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "../test." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "./test." + fileType.fileExtension(), true});
+            list.add(new Object[] {fileType, "./." + fileType.fileExtension(), true});
 
             // negative expectations:
-            list.add(new Object[]{fileType, null, false});
-            list.add(new Object[]{fileType, fileType.fileExtension(), false});
-            list.add(new Object[]{fileType, "test" + fileType.fileExtension(), false});
-            list.add(new Object[]{fileType, "test." + fileType.fileExtension() + ".", false});
-            list.add(new Object[]{fileType, "test" + fileType.fileExtension().toUpperCase(), false});
-            list.add(new Object[]{fileType, "test." + fileType.fileExtension() + ".png", false});
-            list.add(new Object[]{fileType, "/dev/null", false});
+            list.add(new Object[] {fileType, null, false});
+            list.add(new Object[] {fileType, fileType.fileExtension(), false});
+            list.add(new Object[] {fileType, "test" + fileType.fileExtension(), false});
+            list.add(new Object[] {fileType, "test." + fileType.fileExtension() + ".", false});
+            list.add(new Object[] {fileType, "test" + fileType.fileExtension().toUpperCase(), false});
+            list.add(new Object[] {fileType, "test." + fileType.fileExtension() + ".png", false});
+            list.add(new Object[] {fileType, "/dev/null", false});
 
             for (final SamReader.Type anotherFileType : setOfKnownFileTypes) {
                 if (anotherFileType != fileType) {
-                    list.add(new Object[]{fileType, "test." + anotherFileType.fileExtension(), false});
+                    list.add(new Object[] {fileType, "test." + anotherFileType.fileExtension(), false});
                 }
             }
         }
@@ -218,33 +242,35 @@ public class SamReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "hasValidFileExtensionTestData")
-    public void testHasValidFileExtension(final SamReader.Type type, final String fileName, final boolean expectValidFileExtension) {
+    public void testHasValidFileExtension(
+            final SamReader.Type type, final String fileName, final boolean expectValidFileExtension) {
         Assert.assertEquals(type.hasValidFileExtension(fileName), expectValidFileExtension);
     }
+
     @Test
     public void testAssertingIteratorUsesLenientOrdering() {
         // The coordinate comparator's strict sort sorts lower mapping qualities first,
         // so this list is not sorted with respect to that comparator, but it is sorted with respect to the more lenient
         // file order comparator which only checks the position.
-        final List<SAMRecord> looselySorted = Arrays.asList(createRecord(1, 10),
-                                                            createRecord(1, 1),
-                                                            createRecord(2, 1));
+        final List<SAMRecord> looselySorted =
+                Arrays.asList(createRecord(1, 10), createRecord(1, 1), createRecord(2, 1));
 
         final SAMRecordCoordinateComparator coordinateComparator = new SAMRecordCoordinateComparator();
 
-        //sanity check that this really sorts differently with the file order comparator vs the full ordering coordinate order comparator
+        // sanity check that this really sorts differently with the file order comparator vs the full ordering
+        // coordinate order comparator
         final List<SAMRecord> sortedWithFileOrderComparator = looselySorted.stream()
                 .sorted(coordinateComparator::fileOrderCompare)
                 .collect(Collectors.toList());
         Assert.assertEquals(sortedWithFileOrderComparator, looselySorted);
 
-        final List<SAMRecord> sortedWithFullOrderComparator = looselySorted.stream()
-                .sorted(coordinateComparator)
-                .collect(Collectors.toList());
+        final List<SAMRecord> sortedWithFullOrderComparator =
+                looselySorted.stream().sorted(coordinateComparator).collect(Collectors.toList());
 
         Assert.assertNotEquals(sortedWithFullOrderComparator, looselySorted);
 
-        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(new PeekableIterator<>(looselySorted.iterator()));
+        final SamReader.AssertingIterator iter =
+                new SamReader.AssertingIterator(new PeekableIterator<>(looselySorted.iterator()));
         iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
         int count = 0;
 
@@ -258,7 +284,8 @@ public class SamReaderTest extends HtsjdkTest {
     @Test(expectedExceptions = IllegalStateException.class)
     public void testAssertingIteratorCorrectlyFailsWhenOutOfOrder() {
         final List<SAMRecord> unsorted = Arrays.asList(createRecord(10, 1), createRecord(1, 1));
-        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(new PeekableIterator<>(unsorted.iterator()));
+        final SamReader.AssertingIterator iter =
+                new SamReader.AssertingIterator(new PeekableIterator<>(unsorted.iterator()));
         iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
 
         while (iter.hasNext()) {

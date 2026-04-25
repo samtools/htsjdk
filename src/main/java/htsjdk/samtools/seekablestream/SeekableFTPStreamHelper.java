@@ -21,7 +21,6 @@ package htsjdk.samtools.seekablestream;
 import htsjdk.samtools.util.ftp.FTPClient;
 import htsjdk.samtools.util.ftp.FTPReply;
 import htsjdk.samtools.util.ftp.FTPUtils;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,10 +49,9 @@ public class SeekableFTPStreamHelper {
 
         ftp.binary();
         FTPReply reply = ftp.size(path);
-        if(reply.isSuccess()) {
+        if (reply.isSuccess()) {
             contentLength = Long.parseLong(reply.getReplyString());
         }
-
     }
 
     public void seek(long position) {
@@ -71,7 +69,6 @@ public class SeekableFTPStreamHelper {
     public long length() {
         return contentLength;
     }
-
 
     public long skip(long n) throws IOException {
         long bytesToSkip = n;
@@ -102,7 +99,7 @@ public class SeekableFTPStreamHelper {
             FTPReply reply = ftp.pasv();
 
             // If we are positioned at or beyond the EOF return -1
-            if(contentLength >= 0 && position >= contentLength) {
+            if (contentLength >= 0 && position >= contentLength) {
                 return -1;
             }
 
@@ -142,14 +139,12 @@ public class SeekableFTPStreamHelper {
         }
     }
 
-
     private void reconnect() throws IOException {
         if (ftp != null) {
             ftp.disconnect();
         }
         ftp = FTPUtils.connect(host, userInfo, userPasswordInput);
     }
-
 
     public void close() throws IOException {
         if (ftp != null) {
@@ -158,9 +153,7 @@ public class SeekableFTPStreamHelper {
         }
     }
 
-
     public int read() throws IOException {
         throw new UnsupportedOperationException("read() is not supported on SeekableHTTPStream.  Must read in blocks.");
     }
-
 }

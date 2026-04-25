@@ -6,7 +6,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +21,7 @@ import java.util.zip.GZIPInputStream;
 public enum SamIndexes {
     BAI(FileExtensions.BAI_INDEX, "BAI\1".getBytes()),
     // CRAI is gzipped text, so it's magic is same as {@link java.util.zip.GZIPInputStream.GZIP_MAGIC}
-    CRAI(FileExtensions.CRAM_INDEX, new byte[]{(byte) 0x1f, (byte) 0x8b}),
+    CRAI(FileExtensions.CRAM_INDEX, new byte[] {(byte) 0x1f, (byte) 0x8b}),
     CSI(FileExtensions.CSI, "CSI\1".getBytes());
 
     public final String fileNameSuffix;
@@ -33,11 +32,13 @@ public enum SamIndexes {
         this.magic = magic;
     }
 
-    public static InputStream openIndexFileAsBaiOrNull(final File file, final SAMSequenceDictionary dictionary) throws IOException {
+    public static InputStream openIndexFileAsBaiOrNull(final File file, final SAMSequenceDictionary dictionary)
+            throws IOException {
         return openIndexUrlAsBaiOrNull(file.toURI().toURL(), dictionary);
     }
 
-    public static InputStream openIndexUrlAsBaiOrNull(final URL url, final SAMSequenceDictionary dictionary) throws IOException {
+    public static InputStream openIndexUrlAsBaiOrNull(final URL url, final SAMSequenceDictionary dictionary)
+            throws IOException {
         if (url.getFile().toLowerCase().endsWith(BAI.fileNameSuffix.toLowerCase())) {
             return url.openStream();
         }
@@ -51,7 +52,8 @@ public enum SamIndexes {
         return null;
     }
 
-    public static InputStream asBaiStreamOrNull(final InputStream inputStream, final SAMSequenceDictionary dictionary) throws IOException {
+    public static InputStream asBaiStreamOrNull(final InputStream inputStream, final SAMSequenceDictionary dictionary)
+            throws IOException {
         final BufferedInputStream bis = new BufferedInputStream(inputStream);
         bis.mark(BAI.magic.length);
         if (doesStreamStartWith(bis, BAI.magic)) {
@@ -80,7 +82,8 @@ public enum SamIndexes {
         return null;
     }
 
-    public static SeekableStream asBaiSeekableStreamOrNull(final SeekableStream inputStream, final SAMSequenceDictionary dictionary) throws IOException {
+    public static SeekableStream asBaiSeekableStreamOrNull(
+            final SeekableStream inputStream, final SAMSequenceDictionary dictionary) throws IOException {
         final SeekableBufferedStream bis = new SeekableBufferedStream(inputStream);
         bis.seek(0);
         if (doesStreamStartWith(bis, BAI.magic)) {

@@ -58,8 +58,7 @@ public final class Deletion implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Deletion deletion = (Deletion) o;
-        return position == deletion.position &&
-                length == deletion.length;
+        return position == deletion.position && length == deletion.length;
     }
 
     @Override

@@ -85,13 +85,11 @@ public class HTTPHelper implements URLHelper {
         }
     }
 
-
     @Override
     public InputStream openInputStream() throws IOException {
         HttpURLConnection connection = openConnection();
         return new WrapperInputStream(connection, connection.getInputStream());
     }
-
 
     /**
      * Open an InputStream to stream a slice (range) of the resource.  The host server must support
@@ -160,6 +158,4 @@ public class HTTPHelper implements URLHelper {
             connection.disconnect();
         }
     }
-
-
 }

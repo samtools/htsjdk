@@ -25,7 +25,6 @@ package htsjdk.samtools.util.zip;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.BlockGunzipper;
-
 import java.util.zip.Inflater;
 
 /**
@@ -39,7 +38,7 @@ import java.util.zip.Inflater;
 public class InflaterFactory {
 
     public InflaterFactory() {
-        //Note: made explicit constructor to make searching for references easier
+        // Note: made explicit constructor to make searching for references easier
     }
 
     /**

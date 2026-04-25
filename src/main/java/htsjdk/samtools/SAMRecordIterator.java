@@ -48,5 +48,4 @@ public interface SAMRecordIterator extends CloseableIterator<SAMRecord> {
      * @return  This SAMRecordIterator
      */
     public SAMRecordIterator assertSorted(SAMFileHeader.SortOrder sortOrder);
-    
 }

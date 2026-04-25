@@ -1,13 +1,6 @@
 package htsjdk.samtools.cram.compression.rans;
 
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.CompressionUtils;
-import htsjdk.samtools.cram.compression.rans.Constants;
-import htsjdk.samtools.cram.compression.rans.RANSDecode;
-import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
-import htsjdk.samtools.cram.compression.rans.RANSParams;
-import htsjdk.samtools.cram.compression.rans.Utils;
-
 import java.util.Arrays;
 
 /**
@@ -145,7 +138,10 @@ public class RANS4x8Decode extends RANSDecode {
             rans2 = Utils.RANSDecodeRenormalize4x8(rans2, in, inPos);
             rans7 = Utils.RANSDecodeRenormalize4x8(rans7, in, inPos);
 
-            l0 = c0; l1 = c1; l2 = c2; l7 = c7;
+            l0 = c0;
+            l1 = c1;
+            l2 = c2;
+            l7 = c7;
         }
 
         // Remainder

@@ -25,7 +25,6 @@ package htsjdk.tribble.example;
 
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
-
 import java.io.File;
 
 /**
@@ -38,8 +37,7 @@ public class IndicesAreEqual {
      * @param args 2 parameters, the paths of the two index files to compare
      */
     public static void main(String[] args) {
-        if ( args.length != 2 )
-            printUsage();
+        if (args.length != 2) printUsage();
         else {
             Index index1 = loadIndex(args[0]);
             Index index2 = loadIndex(args[1]);
@@ -64,7 +62,7 @@ public class IndicesAreEqual {
      * @return an index instance
      */
     public static Index loadIndex(String filename) {
-        //System.err.println("Loading index from disk for index file -> " + filename);
+        // System.err.println("Loading index from disk for index file -> " + filename);
         File file = new File(filename);
         if (file.canRead()) {
             return IndexFactory.loadIndex(file.getAbsolutePath());

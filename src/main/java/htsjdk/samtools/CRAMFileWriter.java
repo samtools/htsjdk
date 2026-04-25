@@ -19,7 +19,6 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.Log;
-
 import java.io.OutputStream;
 
 public class CRAMFileWriter extends SAMFileWriterImpl {
@@ -44,8 +43,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             final OutputStream outputStream,
             final CRAMReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
-            final String fileName)
-    {
+            final String fileName) {
         this(outputStream, null, referenceSource, samFileHeader, fileName); // defaults to presorted == true
     }
 
@@ -66,8 +64,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             final OutputStream indexOS,
             final CRAMReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
-            final String fileName)
-    {
+            final String fileName) {
         this(outputStream, indexOS, true, referenceSource, samFileHeader, fileName); // defaults to presorted==true
     }
 
@@ -83,24 +80,29 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      *
      * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
      */
-    public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
-                          final CRAMReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName) {
-        this( new CRAMEncodingStrategy(), outputStream, indexOS, presorted, referenceSource, samFileHeader, fileName);
+    public CRAMFileWriter(
+            final OutputStream outputStream,
+            final OutputStream indexOS,
+            final boolean presorted,
+            final CRAMReferenceSource referenceSource,
+            final SAMFileHeader samFileHeader,
+            final String fileName) {
+        this(new CRAMEncodingStrategy(), outputStream, indexOS, presorted, referenceSource, samFileHeader, fileName);
     }
 
     /**
-      * Create a CRAMFileWriter and optional index on output streams.
-      *
-      * @param encodingStrategy encoding strategy to use when writing
-      * @param outputStream where to write the output. Can not be null.
-      * @param indexOS where to write the output index. Can be null if no index is required.
-      * @param presorted if true records written to this writer must already be sorted in the order specified by the header
-      * @param referenceSource reference source
-      * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
-      * @param fileName used for display in error message display
-      *
-      * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
-      */
+     * Create a CRAMFileWriter and optional index on output streams.
+     *
+     * @param encodingStrategy encoding strategy to use when writing
+     * @param outputStream where to write the output. Can not be null.
+     * @param indexOS where to write the output index. Can be null if no index is required.
+     * @param presorted if true records written to this writer must already be sorted in the order specified by the header
+     * @param referenceSource reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
+     * @param fileName used for display in error message display
+     *
+     * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
+     */
     public CRAMFileWriter(
             final CRAMEncodingStrategy encodingStrategy,
             final OutputStream outputStream,
@@ -142,7 +144,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeHeader(final String textHeader) {
-        writeHeader(new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(textHeader),fileName != null ? fileName : null));
+        writeHeader(new SAMTextHeaderCodec()
+                .decode(BufferedLineReader.fromString(textHeader), fileName != null ? fileName : null));
     }
 
     @Override
@@ -164,5 +167,4 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     protected String getFilename() {
         return fileName;
     }
-
 }

@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -39,13 +38,14 @@ public class CRAMContainerStreamWriter {
             final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
             final String outputIdentifier) {
-        this(recordOutputStream,
+        this(
+                recordOutputStream,
                 source,
                 samFileHeader,
                 outputIdentifier,
-                indexOutputStream == null ?
-                        null :
-                        new CRAMBAIIndexer(indexOutputStream, samFileHeader)); // default to BAI index
+                indexOutputStream == null
+                        ? null
+                        : new CRAMBAIIndexer(indexOutputStream, samFileHeader)); // default to BAI index
     }
 
     /**
@@ -111,7 +111,8 @@ public class CRAMContainerStreamWriter {
     public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
         final CramHeader cramHeader = new CramHeader(cramVersion, outputStreamIdentifier);
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
-        streamOffset += Container.writeSAMFileHeaderContainer(cramHeader.getCRAMVersion(), requestedSAMFileHeader, outputStream);
+        streamOffset += Container.writeSAMFileHeaderContainer(
+                cramHeader.getCRAMVersion(), requestedSAMFileHeader, outputStream);
     }
 
     /**
@@ -150,8 +151,7 @@ public class CRAMContainerStreamWriter {
         if (cramIndexer != null) {
             // using silent validation here because the reads have been through validation already or
             // they have been generated somehow through the htsjdk
-            cramIndexer.processContainer(container,  ValidationStringency.SILENT);
+            cramIndexer.processContainer(container, ValidationStringency.SILENT);
         }
     }
-
 }

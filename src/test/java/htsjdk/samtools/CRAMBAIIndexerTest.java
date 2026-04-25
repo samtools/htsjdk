@@ -8,12 +8,11 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 // TODO: add tests with half-placed records
 // TODO: add tests with multi-ref once thats enabled
@@ -34,10 +33,12 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
-                new CRAMEncodingStrategy(), CRAMStructureTestHelper.REFERENCE_SOURCE);
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
         final Container container = CRAMStructureTestHelper.createContainer(
                 containerFactory,
-                CRAMStructureTestHelper.createSAMRecordsMapped(10, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),0);
+                CRAMStructureTestHelper.createSAMRecordsMapped(10, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                0);
 
         prepareContainerForIndexing(container);
 
@@ -54,10 +55,9 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         Assert.assertEquals(index.getNoCoordinateCount().longValue(), 0);
     }
 
-    //TODO: creating a multi-ref container (even with a single multi-ref slice) is disabled
+    // TODO: creating a multi-ref container (even with a single multi-ref slice) is disabled
     // since index queries don't work correctly
-    @Test(expectedExceptions = SAMException.class,
-            enabled = false)
+    @Test(expectedExceptions = SAMException.class, enabled = false)
     public void testMultiReferenceContainer() throws IOException {
         final int MAPPED_COUNT = 20;
 
@@ -69,18 +69,13 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
                 new CRAMEncodingStrategy(),
                 CRAMStructureTestHelper.REFERENCE_SOURCE);
 
-        final List<SAMRecord> samRecords =
-                CRAMStructureTestHelper.createSAMRecordsMapped(
-                        MAPPED_COUNT / 2,
-                        CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        final List<SAMRecord> samRecords = CRAMStructureTestHelper.createSAMRecordsMapped(
+                MAPPED_COUNT / 2, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
         samRecords.addAll(CRAMStructureTestHelper.createSAMRecordsMapped(
-                MAPPED_COUNT / 2,
-                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE));
-        final Container container = CRAMStructureTestHelper.createContainer(
-                containerFactory,
-                samRecords,0);
+                MAPPED_COUNT / 2, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE));
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, samRecords, 0);
 
-        //validate that the container has the expected reference context
+        // validate that the container has the expected reference context
         Assert.assertEquals(
                 container.getAlignmentContext().getReferenceContext(),
                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
@@ -100,14 +95,12 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
-                new CRAMEncodingStrategy(), CRAMStructureTestHelper.REFERENCE_SOURCE);
-        final List<SAMRecord> samRecords =
-                CRAMStructureTestHelper.createSAMRecordsUnmapped(UNMAPPED_COUNT);
-        final Container container = CRAMStructureTestHelper.createContainer(
-                containerFactory,
-                samRecords,0);
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
+        final List<SAMRecord> samRecords = CRAMStructureTestHelper.createSAMRecordsUnmapped(UNMAPPED_COUNT);
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, samRecords, 0);
 
-//                ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+        //                ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
         prepareContainerForIndexing(container);
         final byte[] indexBytes = executeCRAMBAIIndexer(container, ValidationStringency.SILENT);
         Assert.assertEquals(container.getSlices().size(), 1);
@@ -123,13 +116,12 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final ContainerFactory containerFactory = new ContainerFactory(
                 CRAMStructureTestHelper.SAM_FILE_HEADER,
-                new CRAMEncodingStrategy(), CRAMStructureTestHelper.REFERENCE_SOURCE);
-        final List<SAMRecord> samRecords =
-                CRAMStructureTestHelper.createSAMRecordsMapped(MAPPED_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
-        final Container container = CRAMStructureTestHelper.createContainer(
-                containerFactory,
-                samRecords, 99);
- //                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                new CRAMEncodingStrategy(),
+                CRAMStructureTestHelper.REFERENCE_SOURCE);
+        final List<SAMRecord> samRecords = CRAMStructureTestHelper.createSAMRecordsMapped(
+                MAPPED_COUNT, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        final Container container = CRAMStructureTestHelper.createContainer(containerFactory, samRecords, 99);
+        //                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
         // in order to actually index a container/slice, it needs to have been serialized, since thats what does
         // the landmark/offset calculations, so try to index a container that has not been serialized
         executeCRAMBAIIndexer(container, ValidationStringency.STRICT);
@@ -146,7 +138,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final int expectedUnmappedPlaced = 2;
 
         try (final ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
-             final ByteArrayOutputStream indexStream = new ByteArrayOutputStream()) {
+                final ByteArrayOutputStream indexStream = new ByteArrayOutputStream()) {
             final CRAMContainerStreamWriter cramContainerStreamWriter = new CRAMContainerStreamWriter(
                     contentStream,
                     CRAMStructureTestHelper.REFERENCE_SOURCE,
@@ -185,17 +177,17 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
             indexer.processContainer(container, validationStringency);
             indexer.finish();
             indexBytes = indexBAOS.toByteArray();
-        }
-        catch (final IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
         return indexBytes;
     }
 
-    private void assertIndexMetadata(final AbstractBAMFileIndex index,
-                                     final int referenceSequence,
-                                     final int mappedReadsCount,
-                                     final int unmappedPlacedReadsCount) {
+    private void assertIndexMetadata(
+            final AbstractBAMFileIndex index,
+            final int referenceSequence,
+            final int mappedReadsCount,
+            final int unmappedPlacedReadsCount) {
         final BAMIndexMetaData meta = index.getMetaData(referenceSequence);
         Assert.assertEquals(meta.getAlignedRecordCount(), mappedReadsCount);
         Assert.assertEquals(meta.getUnalignedRecordCount(), unmappedPlacedReadsCount);

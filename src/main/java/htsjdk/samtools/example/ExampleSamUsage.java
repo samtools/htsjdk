@@ -32,7 +32,6 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableStream;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -53,43 +52,42 @@ public class ExampleSamUsage {
         /**
          * With different reader options
          */
-        final SamReader readerFromConfiguredFactory =
-                SamReaderFactory.make()
-                        .enable(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX)
-                        .validationStringency(ValidationStringency.SILENT)
-                        .samRecordFactory(DefaultSAMRecordFactory.getInstance())
-                        .open(new File("/my.bam"));
+        final SamReader readerFromConfiguredFactory = SamReaderFactory.make()
+                .enable(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX)
+                .validationStringency(ValidationStringency.SILENT)
+                .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+                .open(new File("/my.bam"));
 
         /**
-         * With a more complicated source 
+         * With a more complicated source
          */
-        final SamReader complicatedReader =
-                SamReaderFactory.makeDefault()
-                        .open(
-                                SamInputResource.of(new URL("http://broadinstitute.org/my.bam")).index(myIndexSeekableStream())
-                        );
+        final SamReader complicatedReader = SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(new URL("http://broadinstitute.org/my.bam"))
+                        .index(myIndexSeekableStream()));
 
         /**
          * Broken down
          */
-        final SamReaderFactory factory =
-                SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS).validationStringency(ValidationStringency.LENIENT);
+        final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS)
+                .validationStringency(ValidationStringency.LENIENT);
 
-        final SamInputResource resource = SamInputResource.of(new File("/my.bam")).index(new URL("http://broadinstitute.org/my.bam.bai"));
+        final SamInputResource resource =
+                SamInputResource.of(new File("/my.bam")).index(new URL("http://broadinstitute.org/my.bam.bai"));
 
         final SamReader myReader = factory.open(resource);
 
         for (final SAMRecord samRecord : myReader) {
             System.err.print(samRecord);
         }
-
     }
 
     /**
      * Read a SAM or BAM file, convert each read name to upper case, and write a new
      * SAM or BAM file.
      */
-    public void convertReadNamesToUpperCase(final File inputSamOrBamFile, final File outputSamOrBamFile) throws IOException {
+    public void convertReadNamesToUpperCase(final File inputSamOrBamFile, final File outputSamOrBamFile)
+            throws IOException {
 
         final SamReader reader = SamReaderFactory.makeDefault().open(inputSamOrBamFile);
 
@@ -103,8 +101,8 @@ public class ExampleSamUsage {
         // can be written to the output file directly rather than being written to a temporary file
         // and sorted after all records have been sent to outputSam.
 
-        final SAMFileWriter outputSam = new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(),
-                true, outputSamOrBamFile);
+        final SAMFileWriter outputSam =
+                new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(), true, outputSamOrBamFile);
 
         for (final SAMRecord samRecord : reader) {
             // Convert read name to upper case.

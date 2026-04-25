@@ -2,7 +2,6 @@ package htsjdk.beta.codecs.reads.cram;
 
 import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
-
 import java.util.Optional;
 
 /**
@@ -32,8 +31,8 @@ public class CRAMDecoderOptions {
     public CRAMDecoderOptions setReferenceSource(final CRAMReferenceSource referenceSource) {
         if (referencePath != null) {
             throw new IllegalStateException(String.format(
-                        "Reference source and reference path are mutually exclusive. Reference path already has value %s.",
-                        referencePath.getRawInputString()));
+                    "Reference source and reference path are mutually exclusive. Reference path already has value %s.",
+                    referencePath.getRawInputString()));
         }
         this.referencePath = null;
         this.referenceSource = referenceSource;
@@ -67,5 +66,4 @@ public class CRAMDecoderOptions {
         this.referencePath = referencePath;
         return this;
     }
-
 }

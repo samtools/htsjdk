@@ -1,8 +1,8 @@
 package htsjdk.beta.codecs.variants.vcf.vcfv4_1;
 
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 
 /**
@@ -24,5 +24,4 @@ public class VCFDecoderV4_1 extends VCFDecoder {
     public HtsVersion getVersion() {
         return VCFCodecV4_1.VCF_V41_VERSION;
     }
-
 }

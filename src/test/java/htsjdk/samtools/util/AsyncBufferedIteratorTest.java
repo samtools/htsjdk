@@ -32,36 +32,44 @@ public class AsyncBufferedIteratorTest extends HtsjdkTest {
         private int[] results;
         private volatile int offset = 0;
         public volatile boolean isClosed = false;
+
         public TestCloseableIterator(int[] results) {
             this.results = results;
         }
+
         @Override
         public void close() {
             isClosed = true;
         }
+
         @Override
         public boolean hasNext() {
             return offset < results.length;
         }
+
         @Override
         public Integer next() {
             return results[offset++];
         }
+
         public int consumed() {
             return offset;
         }
     }
+
     @Test
     public void testWrapUnderlying() {
-        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(new TestCloseableIterator(new int[] { 0, 1, 2, 3}), 1, 1);
+        AsyncBufferedIterator<Integer> abi =
+                new AsyncBufferedIterator<Integer>(new TestCloseableIterator(new int[] {0, 1, 2, 3}), 1, 1);
         for (int i = 0; i < 4; i++) {
-            Assert.assertEquals(i, (int)abi.next());
+            Assert.assertEquals(i, (int) abi.next());
         }
         abi.close();
     }
+
     @Test
     public void testClose() {
-        TestCloseableIterator tci = new TestCloseableIterator(new int[] { 0, 1, 2, 3});
+        TestCloseableIterator tci = new TestCloseableIterator(new int[] {0, 1, 2, 3});
         AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(tci, 1, 1);
         abi.close();
         Assert.assertTrue(tci.isClosed);
@@ -71,31 +79,33 @@ public class AsyncBufferedIteratorTest extends HtsjdkTest {
      */
     @Test
     public void testBackgroundBlocks() throws InterruptedException {
-        TestCloseableIterator it = new TestCloseableIterator(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+        TestCloseableIterator it = new TestCloseableIterator(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
         AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 3, 2, "testBackgroundBlocks");
         Assert.assertNotNull(getThreadWithName("testBackgroundBlocks"));
         // how do we write this test and not be subject to race conditions?
         // should have read 9 records: 2*3 in the buffers, and another 3 read but
         // blocking waiting to be added
         for (int i = 0; i < 64; i++) {
-        	if (it.consumed() >= 9) {
-        		break;
-        	}
-        	Thread.sleep(1);
+            if (it.consumed() >= 9) {
+                break;
+            }
+            Thread.sleep(1);
         }
         Assert.assertEquals(it.consumed(), 9);
         abi.close();
     }
+
     @Test
     public void testBackgroundThreadCompletes() throws InterruptedException {
-        TestCloseableIterator it = new TestCloseableIterator(new int[] { 0, 1, 2, 3, 4, 5 });
-        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 3, 2, "testBackgroundThreadCompletes");
+        TestCloseableIterator it = new TestCloseableIterator(new int[] {0, 1, 2, 3, 4, 5});
+        AsyncBufferedIterator<Integer> abi =
+                new AsyncBufferedIterator<Integer>(it, 3, 2, "testBackgroundThreadCompletes");
         Assert.assertNotNull(getThreadWithName("testBackgroundThreadCompletes"));
         // both buffers should be full
         // clear out one buffer so the background thread can write the end of stream indicator
         // and complete
         abi.next();
-        
+
         // how do we write this test and not be subject to a race condition
         // since we're waiting for a background thread we have no access?
         Thread t;
@@ -108,11 +118,12 @@ public class AsyncBufferedIteratorTest extends HtsjdkTest {
         Assert.assertTrue(t == null || !t.isAlive());
         abi.close();
     }
+
     private static Thread getThreadWithName(String name) {
         Thread[] allthreads = new Thread[Thread.activeCount() + 16];
         int threadCount = Thread.enumerate(allthreads);
         for (int i = 0; i < threadCount; i++) {
-            String threadName = allthreads[i].getName(); 
+            String threadName = allthreads[i].getName();
             if (name.equals(threadName)) {
                 return allthreads[i];
             }

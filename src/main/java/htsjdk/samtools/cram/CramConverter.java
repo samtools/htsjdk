@@ -3,7 +3,6 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.structure.CRAMCompressionProfile;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
-
 import java.io.File;
 import java.nio.file.Path;
 
@@ -19,7 +18,8 @@ import java.nio.file.Path;
  */
 public class CramConverter {
 
-    private static final String USAGE = String.join("\n",
+    private static final String USAGE = String.join(
+            "\n",
             "Usage: CramConverter <input> [output] [options]",
             "",
             "Convert between SAM, BAM, and CRAM formats.",
@@ -48,8 +48,7 @@ public class CramConverter {
             "  CramConverter input.cram output.bam --reference ref.fasta",
             "",
             "  # Convert BAM to CRAM with fast profile (writes CRAM 3.0):",
-            "  CramConverter input.bam output.cram --reference ref.fasta --profile fast"
-    );
+            "  CramConverter input.bam output.cram --reference ref.fasta --profile fast");
 
     /**
      * Entry point. Parses command-line arguments and performs the conversion.
@@ -115,15 +114,16 @@ public class CramConverter {
         final CRAMEncodingStrategy strategy = profile.toStrategy();
 
         if (outputPath != null) {
-            System.err.printf("Converting %s -> %s (profile=%s, version=%s)%n",
+            System.err.printf(
+                    "Converting %s -> %s (profile=%s, version=%s)%n",
                     inputPath, outputPath, profile.name().toLowerCase(), strategy.getCramVersion());
         } else {
             System.err.printf("Reading %s (no output)%n", inputPath);
         }
 
         // Read input
-        final SamReaderFactory readerFactory = SamReaderFactory.makeDefault()
-                .validationStringency(ValidationStringency.SILENT);
+        final SamReaderFactory readerFactory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
         if (refPath != null) {
             readerFactory.referenceSequence(refPath);
         }
@@ -136,12 +136,11 @@ public class CramConverter {
 
             if (outputPath != null) {
                 // Read and write
-                final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory()
-                        .setCRAMEncodingStrategy(strategy);
+                final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory().setCRAMEncodingStrategy(strategy);
 
-                try (final SAMFileWriter writer = outputIsCram ?
-                        writerFactory.makeCRAMWriter(header, true, new File(outputPath).toPath(), refPath) :
-                        writerFactory.makeWriter(header, true, new File(outputPath).toPath(), refPath)) {
+                try (final SAMFileWriter writer = outputIsCram
+                        ? writerFactory.makeCRAMWriter(header, true, new File(outputPath).toPath(), refPath)
+                        : writerFactory.makeWriter(header, true, new File(outputPath).toPath(), refPath)) {
 
                     for (final SAMRecord record : reader) {
                         writer.addAlignment(record);
@@ -170,12 +169,15 @@ public class CramConverter {
 
         if (outputPath != null) {
             final long outputSize = new File(outputPath).length();
-            System.err.printf("Done. %,d records in %.1fs. Input: %,d bytes, Output: %,d bytes (%.1f%%)%n",
-                    count, elapsed / 1000.0, inputSize, outputSize,
+            System.err.printf(
+                    "Done. %,d records in %.1fs. Input: %,d bytes, Output: %,d bytes (%.1f%%)%n",
+                    count,
+                    elapsed / 1000.0,
+                    inputSize,
+                    outputSize,
                     inputSize > 0 ? (100.0 * outputSize / inputSize) : 0);
         } else {
-            System.err.printf("Done. %,d records in %.1fs. Input: %,d bytes%n",
-                    count, elapsed / 1000.0, inputSize);
+            System.err.printf("Done. %,d records in %.1fs. Input: %,d bytes%n", count, elapsed / 1000.0, inputSize);
         }
     }
 

@@ -23,7 +23,6 @@ package htsjdk.samtools;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 import java.io.Serializable;
 import java.util.Comparator;
 
@@ -33,36 +32,36 @@ import java.util.Comparator;
  * record) sort behind those that have values.
  */
 public class SAMHeaderRecordComparator<T extends AbstractSAMHeaderRecord> implements Comparator<T>, Serializable {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private final String[] attributes;
+    private final String[] attributes;
 
-	public SAMHeaderRecordComparator(final String... attributes) {
-		this.attributes = attributes;
-	}
+    public SAMHeaderRecordComparator(final String... attributes) {
+        this.attributes = attributes;
+    }
 
-	@Override
-	public int compare(final T left, final T right) {
-		for (final String attribute : attributes) {
-			final String leftValue = left.getAttribute(attribute);
-			final String rightValue = right.getAttribute(attribute);
+    @Override
+    public int compare(final T left, final T right) {
+        for (final String attribute : attributes) {
+            final String leftValue = left.getAttribute(attribute);
+            final String rightValue = right.getAttribute(attribute);
 
-			if (leftValue == null) {
-				// Fastest comparison possible; two empty values are
-				// equivalent, so move along to the next attribute
-				if (rightValue == null) continue;
+            if (leftValue == null) {
+                // Fastest comparison possible; two empty values are
+                // equivalent, so move along to the next attribute
+                if (rightValue == null) continue;
 
-					// Otherwise left < right, since right has a value
-				else return -1;
-			}
+                // Otherwise left < right, since right has a value
+                else return -1;
+            }
 
-			// left is not null; if right is, left > right
-			if (rightValue == null) return 1;
+            // left is not null; if right is, left > right
+            if (rightValue == null) return 1;
 
-			final int compare = leftValue.compareTo(rightValue);
-			if (compare != 0) return compare;
-		}
+            final int compare = leftValue.compareTo(rightValue);
+            if (compare != 0) return compare;
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 }

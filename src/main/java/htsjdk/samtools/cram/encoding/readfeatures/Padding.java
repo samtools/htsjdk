@@ -58,8 +58,7 @@ public class Padding implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Padding padding = (Padding) o;
-        return position == padding.position &&
-                length == padding.length;
+        return position == padding.position && length == padding.length;
     }
 
     @Override

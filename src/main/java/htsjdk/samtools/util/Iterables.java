@@ -8,9 +8,7 @@ import java.util.List;
  * @author mccowan
  */
 public class Iterables {
-    private Iterables() {
-        
-    }
+    private Iterables() {}
 
     public static <T> List<T> slurp(final Iterator<T> iterator) {
         final List<T> ts = new ArrayList<T>();

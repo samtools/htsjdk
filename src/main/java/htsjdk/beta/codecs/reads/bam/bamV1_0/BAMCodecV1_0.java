@@ -3,17 +3,16 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 import htsjdk.beta.codecs.reads.bam.BAMCodec;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
 import htsjdk.beta.codecs.reads.bam.BAMEncoder;
+import htsjdk.beta.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.SignatureStream;
-import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 
 /**
@@ -28,7 +27,9 @@ public class BAMCodecV1_0 extends BAMCodec {
     }
 
     @Override
-    public int getSignatureProbeLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
+    public int getSignatureProbeLength() {
+        return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE;
+    }
 
     @Override
     public int getSignatureLength() {
@@ -62,5 +63,4 @@ public class BAMCodecV1_0 extends BAMCodec {
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new HtsjdkUnsupportedOperationException("Upgrade not yet implemented");
     }
-
 }

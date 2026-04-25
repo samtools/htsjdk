@@ -16,7 +16,7 @@ import java.util.function.Function;
  */
 public class SeekablePathStream extends SeekableStream {
 
-    private final static Log LOG = Log.getInstance(SeekablePathStream.class);
+    private static final Log LOG = Log.getInstance(SeekablePathStream.class);
 
     /**
      * Collection of all open instances.  SeekablePathStream objects are usually open and kept open for the
@@ -33,9 +33,10 @@ public class SeekablePathStream extends SeekableStream {
         this(path, null);
     }
 
-    public SeekablePathStream(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+    public SeekablePathStream(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+            throws IOException {
         this.path = path;
-        if (null==wrapper) {
+        if (null == wrapper) {
             this.sbc = Files.newByteChannel(path);
         } else {
             this.sbc = wrapper.apply(Files.newByteChannel(path));
@@ -85,11 +86,11 @@ public class SeekablePathStream extends SeekableStream {
         while (n < length) {
             final int count = sbc.read(buf);
             if (count < 0) {
-              if (n > 0) {
-                return n;
-              } else {
-                return count;
-              }
+                if (n > 0) {
+                    return n;
+                } else {
+                    return count;
+                }
             }
             n += count;
         }
@@ -107,7 +108,6 @@ public class SeekablePathStream extends SeekableStream {
     public String getSource() {
         return path.toAbsolutePath().toString();
     }
-
 
     @Override
     public void close() throws IOException {

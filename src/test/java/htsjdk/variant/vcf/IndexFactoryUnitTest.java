@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
@@ -37,13 +37,12 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * tests out the various functions in the index factory class
@@ -67,13 +66,14 @@ public class IndexFactoryUnitTest extends VariantBaseTest {
     @Test
     public void testOnTheFlyIndexing1() throws IOException {
         final Index indexFromInputFile = IndexFactory.createDynamicIndex(inputFile, new VCFCodec());
-        if ( outputFileIndex.exists() ) {
+        if (outputFileIndex.exists()) {
             System.err.println("Deleting " + outputFileIndex);
             outputFileIndex.delete();
         }
 
-        for ( int maxRecords : Arrays.asList(0, 1, 10, 100, 1000, -1)) {
-            final AbstractFeatureReader source = AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), indexFromInputFile);
+        for (int maxRecords : Arrays.asList(0, 1, 10, 100, 1000, -1)) {
+            final AbstractFeatureReader source = AbstractFeatureReader.getFeatureReader(
+                    inputFile.getAbsolutePath(), new VCFCodec(), indexFromInputFile);
 
             int counter = 0;
             VariantContextWriter writer = new VariantContextWriterBuilder()
@@ -81,9 +81,9 @@ public class IndexFactoryUnitTest extends VariantBaseTest {
                     .setReferenceDictionary(dict)
                     .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER))
                     .build();
-            writer.writeHeader((VCFHeader)source.getHeader());
+            writer.writeHeader((VCFHeader) source.getHeader());
             CloseableTribbleIterator<VariantContext> it = source.iterator();
-            while (it.hasNext() && (counter++ < maxRecords || maxRecords == -1) ) {
+            while (it.hasNext() && (counter++ < maxRecords || maxRecords == -1)) {
                 VariantContext vc = it.next();
                 writer.add(vc);
             }
@@ -91,7 +91,7 @@ public class IndexFactoryUnitTest extends VariantBaseTest {
 
             // test that the input index is the same as the one created from the identical input file
             // test that the dynamic index is the same as the output index, which is equal to the input index
-            //WalkerTest.assertOnDiskIndexEqualToNewlyCreatedIndex(outputFileIndex, "unittest", outputFile);
+            // WalkerTest.assertOnDiskIndexEqualToNewlyCreatedIndex(outputFileIndex, "unittest", outputFile);
         }
     }
 }

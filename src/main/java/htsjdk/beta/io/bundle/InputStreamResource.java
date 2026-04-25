@@ -2,7 +2,6 @@ package htsjdk.beta.io.bundle;
 
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,9 +12,9 @@ import java.util.Optional;
  */
 public class InputStreamResource extends BundleResourceBase {
     private static final long serialVersionUID = 1L;
-    private static final int MINIMUM_STREAM_BUFFER_SIZE = 64*1024;
-    private final InputStream rawInputStream;           // the stream as provided by the caller
-    private BufferedInputStream bufferedInputStream;    // buffered stream wrapper to compensate for signature probing
+    private static final int MINIMUM_STREAM_BUFFER_SIZE = 64 * 1024;
+    private final InputStream rawInputStream; // the stream as provided by the caller
+    private BufferedInputStream bufferedInputStream; // buffered stream wrapper to compensate for signature probing
 
     /**
      * Create a {@link BundleResource} backed by an InputStream.
@@ -44,10 +43,7 @@ public class InputStreamResource extends BundleResourceBase {
      * @param format The format for this resource. May not be null or 0-length.
      */
     public InputStreamResource(
-            final InputStream inputStream,
-            final String displayName,
-            final String contentType,
-            final String format) {
+            final InputStream inputStream, final String displayName, final String contentType, final String format) {
         super(displayName, contentType, format);
         ValidationUtils.nonNull(inputStream, "input stream");
         this.rawInputStream = inputStream;
@@ -76,14 +72,14 @@ public class InputStreamResource extends BundleResourceBase {
             // is ultimately consumed once signature probing is complete, it will be consumed from the
             // beginning.
             bufferedInputStream = new BufferedInputStream(
-                    rawInputStream,
-                    Integer.max(signatureProbeLength, MINIMUM_STREAM_BUFFER_SIZE));
+                    rawInputStream, Integer.max(signatureProbeLength, MINIMUM_STREAM_BUFFER_SIZE));
             bufferedInputStream.mark(signatureProbeLength);
             bufferedInputStream.read(signaturePrefix);
             bufferedInputStream.reset();
         } catch (final IOException e) {
             throw new HtsjdkIOException(
-                    String.format("Error during signature probing on %s with prefix size %d",
+                    String.format(
+                            "Error during signature probing on %s with prefix size %d",
                             this.getDisplayName(), signatureProbeLength),
                     e);
         }
@@ -91,7 +87,9 @@ public class InputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public boolean hasInputType() { return true; }
+    public boolean hasInputType() {
+        return true;
+    }
 
     @Override
     public boolean equals(Object o) {

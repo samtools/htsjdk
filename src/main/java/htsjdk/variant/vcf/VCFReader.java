@@ -24,10 +24,10 @@
 
 package htsjdk.variant.vcf;
 
-import java.io.Closeable;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.variant.variantcontext.VariantContext;
+import java.io.Closeable;
 
 /**
  * Interface for reading VCF/BCF files.
@@ -38,7 +38,7 @@ public interface VCFReader extends Closeable, Iterable<VariantContext> {
      * Returns the VCFHeader associated with this VCFReader.
      */
     public VCFHeader getHeader();
-    
+
     /**
      * Queries for records overlapping the region specified.
      * Note that this method requires VCF files with an associated index.  If no index exists a TribbleException will be thrown.
@@ -49,7 +49,7 @@ public interface VCFReader extends Closeable, Iterable<VariantContext> {
      * @return non-null iterator over VariantContexts
      */
     public CloseableIterator<VariantContext> query(final String chrom, final int start, final int end);
-    
+
     /**
      * Queries for records overlapping the {@link Locatable} specified.
      * Note that this method requires VCF files with an associated index.  If no index exists a TribbleException will be thrown.
@@ -70,5 +70,4 @@ public interface VCFReader extends Closeable, Iterable<VariantContext> {
 
     @Override
     public CloseableIterator<VariantContext> iterator();
-
 }

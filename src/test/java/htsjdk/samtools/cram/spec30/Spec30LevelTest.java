@@ -1,10 +1,9 @@
 package htsjdk.samtools.cram.spec30;
 
 import htsjdk.samtools.SAMRecord;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.List;
+import org.testng.annotations.Test;
 
 /**
  * Tests compression level variants from the hts-specs 3.0 test suite.

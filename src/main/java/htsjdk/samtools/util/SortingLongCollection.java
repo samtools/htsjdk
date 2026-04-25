@@ -27,9 +27,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -76,7 +73,6 @@ public class SortingLongCollection {
     private final int maxValuesInRam;
     private int numValuesInRam = 0;
     private long[] ramValues;
-
 
     /**
      * Set to true when done adding and ready to iterate
@@ -157,8 +153,8 @@ public class SortingLongCollection {
             spillToDisk();
         }
 
-        this.priorityQueue = new PriorityQueue<PeekFileValueIterator>(files.size(),
-                new PeekFileValueIteratorComparator());
+        this.priorityQueue =
+                new PriorityQueue<PeekFileValueIterator>(files.size(), new PeekFileValueIteratorComparator());
         for (final Path f : files) {
             final FileValueIterator it = new FileValueIterator(f);
             if (it.hasNext()) {
@@ -211,7 +207,6 @@ public class SortingLongCollection {
 
         IOUtil.deletePaths(this.files);
     }
-
 
     /**
      * Call only after doneAddingStartIteration() has been called.
@@ -298,7 +293,6 @@ public class SortingLongCollection {
             CloserUtil.close(is);
         }
     }
-
 
     /**
      * Add peek() functionality to FileValueIterator

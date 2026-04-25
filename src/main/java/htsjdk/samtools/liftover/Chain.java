@@ -28,14 +28,12 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.OverlapDetector;
-
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
-
 
 /**
  * Holds a single chain from a UCSC chain file.  Chain file format is described here: http://genome.ucsc.edu/goldenPath/help/chain.html
@@ -77,6 +75,7 @@ class Chain {
     final int fromChainStart;
     /** End of range covered in "from" sequence. */
     final int fromChainEnd;
+
     final String toSequenceName;
     /** Overall size of the "to" sequence. */
     final int toSequenceSize;
@@ -88,14 +87,24 @@ class Chain {
     final int toChainEnd;
     /** ID of chain in file.  */
     final int id;
+
     private final List<ContinuousBlock> blockList = new ArrayList<ContinuousBlock>();
 
     /**
      * Construct a Chain from the parsed header fields.
      */
-    private Chain(final double score, final String fromSequenceName, final int fromSequenceSize, final int fromChainStart, final int fromChainEnd,
-          final String toSequenceName, final int toSequenceSize, final boolean toOppositeStrand,
-          final int toChainStart, final int toChainEnd, final int id) {
+    private Chain(
+            final double score,
+            final String fromSequenceName,
+            final int fromSequenceSize,
+            final int fromChainStart,
+            final int fromChainEnd,
+            final String toSequenceName,
+            final int toSequenceSize,
+            final boolean toOppositeStrand,
+            final int toChainStart,
+            final int toChainEnd,
+            final int id) {
         // Convert  to one-based, inclusive for Interval.
         interval = new Interval(fromSequenceName, fromChainStart + 1, fromChainEnd);
         this.score = score;
@@ -105,7 +114,7 @@ class Chain {
         this.toSequenceSize = toSequenceSize;
         this.toChainStart = toChainStart;
         // not used
-        //this.score = score;
+        // this.score = score;
         this.fromChainEnd = fromChainEnd;
         this.fromSequenceName = fromSequenceName;
         this.fromSequenceSize = fromSequenceSize;
@@ -113,16 +122,15 @@ class Chain {
         this.id = id;
     }
 
-
     /**
      * Holds a range that continuously lines up between target and query genome builds.
      * Indices are 0-based, half-open.
      */
     static class ContinuousBlock {
-        final int fromStart;	  /* Start of range covered in "from". */
-        final int toStart;		  /* Range covered in "to". */
-        final int blockLength;    /* length of continuous block of that maps btw from and to */
-        //int score;	 	 	  /* Score of block. */
+        final int fromStart; /* Start of range covered in "from". */
+        final int toStart; /* Range covered in "to". */
+        final int blockLength; /* length of continuous block of that maps btw from and to */
+        // int score;	 	 	  /* Score of block. */
 
         private ContinuousBlock(final int fromStart, final int toStart, final int blockLength) {
             this.fromStart = fromStart;
@@ -186,12 +194,22 @@ class Chain {
     }
 
     void write(final PrintWriter writer) {
-        writer.printf("chain\t%f\t%s\t%d\t+\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d\n",
-                score, fromSequenceName, fromSequenceSize, fromChainStart, fromChainEnd,
-                toSequenceName, toSequenceSize, (toOppositeStrand ? "-": "+"), toChainStart, toChainEnd, id);
+        writer.printf(
+                "chain\t%f\t%s\t%d\t+\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d\n",
+                score,
+                fromSequenceName,
+                fromSequenceSize,
+                fromChainStart,
+                fromChainEnd,
+                toSequenceName,
+                toSequenceSize,
+                (toOppositeStrand ? "-" : "+"),
+                toChainStart,
+                toChainEnd,
+                id);
         for (int i = 0; i < blockList.size() - 1; ++i) {
             final ContinuousBlock thisBlock = blockList.get(i);
-            final ContinuousBlock nextBlock = blockList.get(i+1);
+            final ContinuousBlock nextBlock = blockList.get(i + 1);
 
             final int fromGap = nextBlock.fromStart - thisBlock.getFromEnd();
             final int toGap = nextBlock.toStart - thisBlock.getToEnd();
@@ -215,10 +233,12 @@ class Chain {
         validatePositive("from length", fromLength);
         int toLength = toChainEnd - toChainStart;
         validatePositive("to length", toLength);
-        if (fromLength > fromSequenceSize) throw new SAMException("From chain length (" + fromLength +
-                ") < from sequence length (" + fromSequenceSize + ") for chain " + id);
-        if (toLength > toSequenceSize) throw new SAMException("To chain length (" + toLength +
-                ") < to sequence length (" + toSequenceSize + ") for chain " + id);
+        if (fromLength > fromSequenceSize)
+            throw new SAMException("From chain length (" + fromLength + ") < from sequence length (" + fromSequenceSize
+                    + ") for chain " + id);
+        if (toLength > toSequenceSize)
+            throw new SAMException(
+                    "To chain length (" + toLength + ") < to sequence length (" + toSequenceSize + ") for chain " + id);
         if (fromSequenceName.isEmpty()) throw new SAMException("Chain " + id + "has empty from sequence name.");
         if (toSequenceName.isEmpty()) throw new SAMException("Chain " + id + "has empty to sequence name.");
         if (blockList.isEmpty()) throw new SAMException("Chain " + id + " has empty block list.");
@@ -238,12 +258,14 @@ class Chain {
         }
         for (int i = 1; i < blockList.size(); ++i) {
             final ContinuousBlock thisBlock = blockList.get(i);
-            final ContinuousBlock prevBlock = blockList.get(i-1);
+            final ContinuousBlock prevBlock = blockList.get(i - 1);
             if (thisBlock.fromStart < prevBlock.getFromEnd()) {
-                throw new SAMException("Continuous block " + i + " from starts before previous block ends for chain " + id);
+                throw new SAMException(
+                        "Continuous block " + i + " from starts before previous block ends for chain " + id);
             }
             if (thisBlock.toStart < prevBlock.getToEnd()) {
-                throw new SAMException("Continuous block " + i + " to starts before previous block ends for chain " + id);
+                throw new SAMException(
+                        "Continuous block " + i + " to starts before previous block ends for chain " + id);
             }
         }
     }
@@ -277,8 +299,9 @@ class Chain {
         if (toOppositeStrand != chain.toOppositeStrand) return false;
         if (toSequenceSize != chain.toSequenceSize) return false;
         if (blockList != null ? !blockList.equals(chain.blockList) : chain.blockList != null) return false;
-        if (fromSequenceName != null ? !fromSequenceName.equals(chain.fromSequenceName) : chain.fromSequenceName != null)
-            return false;
+        if (fromSequenceName != null
+                ? !fromSequenceName.equals(chain.fromSequenceName)
+                : chain.fromSequenceName != null) return false;
         if (interval != null ? !interval.equals(chain.interval) : chain.interval != null) return false;
         if (toSequenceName != null ? !toSequenceName.equals(chain.toSequenceName) : chain.toSequenceName != null)
             return false;
@@ -314,7 +337,7 @@ class Chain {
      */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
         IOUtil.assertFileIsReadable(chainFile);
-        try(final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile))){
+        try (final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile))) {
             return loadChains(reader, chainFile.toString());
         }
     }
@@ -385,8 +408,18 @@ class Chain {
         } catch (NumberFormatException e) {
             throwChainFileParseException("Invalid field", sourceName, reader.getLineNumber());
         }
-        final Chain chain = new Chain(score, fromSequenceName, fromSequenceSize, fromChainStart, fromChainEnd, toSequenceName, toSequenceSize, toNegativeStrand, toChainStart,
-                toChainEnd, id);
+        final Chain chain = new Chain(
+                score,
+                fromSequenceName,
+                fromSequenceSize,
+                fromChainStart,
+                fromChainEnd,
+                toSequenceName,
+                toSequenceSize,
+                toNegativeStrand,
+                toChainStart,
+                toChainEnd,
+                id);
         int toBlockStart = chain.toChainStart;
         int fromBlockStart = chain.fromChainStart;
         boolean sawLastLine = false;
@@ -394,18 +427,21 @@ class Chain {
             line = reader.readLine();
             if (line == null || line.equals("")) {
                 if (!sawLastLine) {
-                    throwChainFileParseException("Reached end of chain without seeing terminal block", sourceName, reader.getLineNumber());
+                    throwChainFileParseException(
+                            "Reached end of chain without seeing terminal block", sourceName, reader.getLineNumber());
                 }
                 break;
             }
             if (sawLastLine) {
-                throwChainFileParseException("Terminal block seen before end of chain", sourceName, reader.getLineNumber());
+                throwChainFileParseException(
+                        "Terminal block seen before end of chain", sourceName, reader.getLineNumber());
             }
             String[] blockFields = SPLITTER.split(line);
             if (blockFields.length == 1) {
                 sawLastLine = true;
             } else if (blockFields.length != 3) {
-                throwChainFileParseException("Block line has unexpected number of fields", sourceName, reader.getLineNumber());
+                throwChainFileParseException(
+                        "Block line has unexpected number of fields", sourceName, reader.getLineNumber());
             }
             int size = Integer.parseInt(blockFields[0]);
             chain.addBlock(fromBlockStart, toBlockStart, size);
@@ -413,13 +449,13 @@ class Chain {
                 fromBlockStart += Integer.parseInt(blockFields[1]) + size;
                 toBlockStart += Integer.parseInt(blockFields[2]) + size;
             }
-
         }
         chain.validate();
         return chain;
     }
 
-    private static void throwChainFileParseException(final String message, final String sourceName, final int lineNumber) {
+    private static void throwChainFileParseException(
+            final String message, final String sourceName, final int lineNumber) {
         throw new SAMException(message + " in chain file " + sourceName + " at line " + lineNumber);
     }
 }

@@ -26,12 +26,11 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 
 public class SAMTextReaderTest extends HtsjdkTest {
     private static final String ARRAY_TAG = "xa";
@@ -54,25 +53,25 @@ public class SAMTextReaderTest extends HtsjdkTest {
         final float floatValue = 1.2345f;
         final String stringTag = "XS";
         final String stringValue = "Hi,Mom!";
-        final String samExample = "@HD\tVN:" + fileFormatVersion + "\t" + charTag + ":" + charValue + "\n" +
-                "@SQ\tSN:" + sequence + "\tAS:HG18\tLN:" + sequenceLength + "\t" + intTag + ":" + intValue + "\n" +
-                "@RG\tID:L1\tPU:SC_1_10\tLB:SC_1\tSM:NA12891" + "\t" + floatTag + ":" + floatValue + "\n" +
-                "@RG\tID:L2\tPU:SC_2_12\tLB:SC_2\tSM:NA12891\n" +
-                "@PG\tID:0\tVN:1.0\tCL:yo baby\t" + stringTag + ":" + stringValue + "\n" +
-                "@PG\tID:2\tVN:1.1\tCL:whassup? ? ? ?\n" +
-                "read_28833_29006_6945\t99\tchr20\t28833\t20\t10M1D25M\t=\t28993\t195\t" +
-                seq1.toLowerCase() + "\t" + qual1 + "\t" +
-                "MF:i:130\tNm:i:1\tH0:i:0\tH1:i:0\tRG:Z:L1\n" +
-                "read_28701_28881_323b\t147\tchr20\t28834\t30\t35M\t=\t28701\t-168\t" +
-                seq2 + "\t" + qual2 + "\t" +
-                "MF:i:18\tNm:i:0\tH0:i:1\tH1:i:0\tRG:Z:L2\n";
+        final String samExample = "@HD\tVN:" + fileFormatVersion + "\t" + charTag + ":" + charValue + "\n" + "@SQ\tSN:"
+                + sequence + "\tAS:HG18\tLN:" + sequenceLength + "\t" + intTag + ":" + intValue + "\n"
+                + "@RG\tID:L1\tPU:SC_1_10\tLB:SC_1\tSM:NA12891"
+                + "\t" + floatTag + ":" + floatValue + "\n" + "@RG\tID:L2\tPU:SC_2_12\tLB:SC_2\tSM:NA12891\n"
+                + "@PG\tID:0\tVN:1.0\tCL:yo baby\t"
+                + stringTag + ":" + stringValue + "\n" + "@PG\tID:2\tVN:1.1\tCL:whassup? ? ? ?\n"
+                + "read_28833_29006_6945\t99\tchr20\t28833\t20\t10M1D25M\t=\t28993\t195\t"
+                + seq1.toLowerCase()
+                + "\t" + qual1 + "\t" + "MF:i:130\tNm:i:1\tH0:i:0\tH1:i:0\tRG:Z:L1\n"
+                + "read_28701_28881_323b\t147\tchr20\t28834\t30\t35M\t=\t28701\t-168\t"
+                + seq2
+                + "\t" + qual2 + "\t" + "MF:i:18\tNm:i:0\tH0:i:1\tH1:i:0\tRG:Z:L2\n";
 
-        final String[] samResults =
-                {"read_28833_29006_6945\t99\tchr20\t28833\t20\t10M1D25M\t=\t28993\t195\t" + seq1 + "\t" + qual1 +
-                        "\tH0:i:0\tH1:i:0\tMF:i:130\tRG:Z:L1\tNm:i:1",
-                        "read_28701_28881_323b\t147\tchr20\t28834\t30\t35M\t=\t28701\t-168\t" + seq2 + "\t" + qual2 +
-                                "\tH0:i:1\tH1:i:0\tMF:i:18\tRG:Z:L2\tNm:i:0"
-                };
+        final String[] samResults = {
+            "read_28833_29006_6945\t99\tchr20\t28833\t20\t10M1D25M\t=\t28993\t195\t" + seq1 + "\t" + qual1
+                    + "\tH0:i:0\tH1:i:0\tMF:i:130\tRG:Z:L1\tNm:i:1",
+            "read_28701_28881_323b\t147\tchr20\t28834\t30\t35M\t=\t28701\t-168\t" + seq2 + "\t" + qual2
+                    + "\tH0:i:1\tH1:i:0\tMF:i:18\tRG:Z:L2\tNm:i:0"
+        };
 
         final SamReader samReader = createSamFileReader(samExample);
         final SAMFileHeader fileHeader = samReader.getFileHeader();
@@ -128,29 +127,29 @@ public class SAMTextReaderTest extends HtsjdkTest {
         rec.setAttribute(SAMTag.CQ, valueWithColons);
         // Write the record as SAM Text
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
-        final SAMFileWriter textWriter = new SAMFileWriterFactory().makeSAMWriter(samBuilder.getHeader(),
-                true, os);
+        final SAMFileWriter textWriter = new SAMFileWriterFactory().makeSAMWriter(samBuilder.getHeader(), true, os);
         textWriter.addAlignment(rec);
         textWriter.close();
 
-        final SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(os.toByteArray())));
+        final SamReader reader =
+                SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(os.toByteArray())));
         final SAMRecord recFromText = reader.iterator().next();
         Assert.assertEquals(recFromText.getAttribute(SAMTag.CQ), valueWithColons);
         CloserUtil.close(reader);
     }
 
     @DataProvider
-    public Object[][] getRecordsWithArrays(){
+    public Object[][] getRecordsWithArrays() {
         final String recordBase = "Read\t4\tchr1\t1\t0\t*\t*\t0\t0\tG\t%\t";
-        return new Object[][]{
-                {recordBase + ARRAY_TAG + ":B:i", new int[0]},
-                {recordBase + ARRAY_TAG + ":B:i,", new int[0]},
-                {recordBase + ARRAY_TAG + ":B:i,1,2,3,", new int[]{1,2,3}},
+        return new Object[][] {
+            {recordBase + ARRAY_TAG + ":B:i", new int[0]},
+            {recordBase + ARRAY_TAG + ":B:i,", new int[0]},
+            {recordBase + ARRAY_TAG + ":B:i,1,2,3,", new int[] {1, 2, 3}},
         };
     }
 
     @Test(dataProvider = "getRecordsWithArrays")
-    public void testSamRecordCanHandleArrays(String samRecord, Object array){
+    public void testSamRecordCanHandleArrays(String samRecord, Object array) {
         final SAMLineParser samLineParser = new SAMLineParser(new SAMFileHeader());
         final SAMRecord record = samLineParser.parseLine(samRecord);
         Assert.assertEquals(record.getAttribute(ARRAY_TAG), array);

@@ -3,13 +3,10 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
-import htsjdk.samtools.cram.io.CountingInputStream;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
@@ -32,8 +29,7 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
             try (final InputStream is = new ByteArrayInputStream(roundTrippedBytes)) {
                 final CompressionHeaderEncodingMap roundTippedEncodingMap = new CompressionHeaderEncodingMap(is);
                 assertExpectedHTSJDKGeneratedEncodings(
-                        roundTippedEncodingMap,
-                        StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK);
+                        roundTippedEncodingMap, StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK);
             }
         }
     }
@@ -49,7 +45,8 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
         final CompressionHeader compressionHeader = new CompressionHeader();
         final CompressionHeaderEncodingMap encodingMap = compressionHeader.getEncodingMap();
         for (final DataSeries dataSeries : StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK) {
-            encodingMap.putExternalEncoding(dataSeries, new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel()));
+            encodingMap.putExternalEncoding(
+                    dataSeries, new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel()));
         }
 
         // serialize and then resurrect the encoding map
@@ -58,29 +55,32 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
             final byte[] roundTrippedBytes = baos.toByteArray();
             try (final InputStream is = new ByteArrayInputStream(roundTrippedBytes)) {
                 final CompressionHeaderEncodingMap roundTippedEncodingMap = new CompressionHeaderEncodingMap(is);
-                assertExpectedHTSJDKGeneratedEncodings(roundTippedEncodingMap, CompressionHeaderEncodingMap.DATASERIES_NOT_READ_BY_HTSJDK);
+                assertExpectedHTSJDKGeneratedEncodings(
+                        roundTippedEncodingMap, CompressionHeaderEncodingMap.DATASERIES_NOT_READ_BY_HTSJDK);
             }
         }
     }
 
     @Test(description = "make sure that obsolete dataseries, TC and TN are ignored on CRAM read")
-    public void testIgnoreObsoleteDataseriesOnRead() throws IOException{
+    public void testIgnoreObsoleteDataseriesOnRead() throws IOException {
 
         // 1301_slice_aux.cram has legacy dataseries TC, TN present in it.
         // TC, TN are now removed and are no longer written by htsjdk
         // This file is used to test if CRAM reader can ignore these dataseries.
         // 1301_slice_aux.cram is taken from hts-specs repo. It uses reference files, ce.fa and ce.fa.fai.
-        // 1301_slice_aux.cram file: https://github.com/samtools/hts-specs/blob/master/test/cram/3.0/passed/1301_slice_aux.cram
+        // 1301_slice_aux.cram file:
+        // https://github.com/samtools/hts-specs/blob/master/test/cram/3.0/passed/1301_slice_aux.cram
         // Reference files: https://github.com/samtools/hts-specs/tree/master/test/cram
         final File sourceFile = new File(TEST_DATA_DIR, "1301_slice_aux.cram");
 
         // iterate through the CRAM file
         try (final InputStream cramInputStream = new BufferedInputStream(new FileInputStream(sourceFile));
-             final CramContainerIterator containerIterator = new CramContainerIterator(cramInputStream)) {
-            while(containerIterator.hasNext()) {
+                final CramContainerIterator containerIterator = new CramContainerIterator(cramInputStream)) {
+            while (containerIterator.hasNext()) {
 
                 // read the container and its CompressionHeader
-                final Container container = containerIterator.next();;
+                final Container container = containerIterator.next();
+                ;
                 final CompressionHeader compressionHeader = container.getCompressionHeader();
 
                 // get the CompressionHeaderEncodingMap
@@ -88,7 +88,8 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
 
                 // make sure obsolete DataSeries TC, TN are not present in the CompressionHeaderEncodingMap
                 for (final DataSeries dataseries : CompressionHeaderEncodingMap.DATASERIES_NOT_READ_BY_HTSJDK) {
-                    Assert.assertNull(encodingMap.getEncodingDescriptorForDataSeries(dataseries),
+                    Assert.assertNull(
+                            encodingMap.getEncodingDescriptorForDataSeries(dataseries),
                             "Unexpected encoding key found: " + dataseries.getCanonicalName());
                 }
             }
@@ -96,19 +97,22 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
     }
 
     private void assertExpectedHTSJDKGeneratedEncodings(
-            final CompressionHeaderEncodingMap encodingMap,
-            final Set<DataSeries> expectedMissingDataSeries) {
+            final CompressionHeaderEncodingMap encodingMap, final Set<DataSeries> expectedMissingDataSeries) {
         for (final DataSeries dataSeries : DataSeries.values()) {
             // skip test marks and data series that are unused when writing:
             if (expectedMissingDataSeries.contains(dataSeries)) {
-                Assert.assertNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
+                Assert.assertNull(
+                        encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
                         "Unexpected encoding key found: " + dataSeries.name());
             } else {
-                Assert.assertNotNull(encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
+                Assert.assertNotNull(
+                        encodingMap.getEncodingDescriptorForDataSeries(dataSeries),
                         "Encoding key not found: " + dataSeries.name());
-                Assert.assertFalse(encodingMap.getEncodingDescriptorForDataSeries(dataSeries).getEncodingID() == EncodingID.NULL);
+                Assert.assertFalse(encodingMap
+                                .getEncodingDescriptorForDataSeries(dataSeries)
+                                .getEncodingID()
+                        == EncodingID.NULL);
             }
         }
     }
-
 }

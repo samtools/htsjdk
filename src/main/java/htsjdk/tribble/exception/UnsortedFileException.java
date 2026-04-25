@@ -40,6 +40,5 @@ public class UnsortedFileException extends RuntimeException {
         super(message);
     }
 
-    public UnsortedFileException() {
-    }
+    public UnsortedFileException() {}
 }

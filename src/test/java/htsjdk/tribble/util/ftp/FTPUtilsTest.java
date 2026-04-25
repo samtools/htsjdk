@@ -1,21 +1,20 @@
 package htsjdk.tribble.util.ftp;
 
-import htsjdk.HtsjdkTest;
-import htsjdk.samtools.util.ftp.FTPUtils;
-import org.testng.annotations.Test;
-
-import java.net.URL;
-
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.ftp.FTPUtils;
+import java.net.URL;
+import org.testng.annotations.Test;
+
 /**
-* @author Jim Robinson
-* @since 10/4/11
-*/
+ * @author Jim Robinson
+ * @since 10/4/11
+ */
 public class FTPUtilsTest extends HtsjdkTest {
 
-    @Test(groups ="ftp")
+    @Test(groups = "ftp")
     public void testResourceAvailable() throws Exception {
 
         URL goodUrl = new URL("ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt");
@@ -26,7 +25,5 @@ public class FTPUtilsTest extends HtsjdkTest {
 
         URL nonExistentServer = new URL("ftp://noSuchServer/pub/igv/TEST/doesntExist");
         assertFalse(FTPUtils.resourceAvailable(nonExistentServer));
-
-
     }
 }

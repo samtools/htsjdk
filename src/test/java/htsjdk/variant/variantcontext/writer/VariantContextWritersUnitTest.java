@@ -1,33 +1,31 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
-
 // the imports for unit testing.
-
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.FileExtensions;
@@ -37,17 +35,15 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class VariantContextWritersUnitTest extends VariantBaseTest {
     private SAMSequenceDictionary dictionary;
@@ -61,9 +57,9 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
     @DataProvider(name = "VariantContextTest_SingleContexts")
     public Object[][] SiteVCsTest() {
         List<Object[]> tests = new ArrayList<Object[]>();
-        for ( VariantContextTestProvider.VariantContextTestData testData : VariantContextTestProvider.generateSiteTests() )
-            tests.add(new Object[]{testData});
-        return tests.toArray(new Object[][]{});
+        for (VariantContextTestProvider.VariantContextTestData testData :
+                VariantContextTestProvider.generateSiteTests()) tests.add(new Object[] {testData});
+        return tests.toArray(new Object[][] {});
     }
 
     // --------------------------------------------------------------------------------
@@ -73,12 +69,14 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
     // --------------------------------------------------------------------------------
 
     @Test(dataProvider = "VariantContextTest_SingleContexts")
-    public void testBCF2WriterReader(final VariantContextTestProvider.VariantContextTestData testData) throws IOException {
+    public void testBCF2WriterReader(final VariantContextTestProvider.VariantContextTestData testData)
+            throws IOException {
         VariantContextTestProvider.testReaderWriter(new BCFIOTester(), testData);
     }
 
     @Test(dataProvider = "VariantContextTest_SingleContexts")
-    public void testBCF2WriterReaderMissingGenotypes(final VariantContextTestProvider.VariantContextTestData testData) throws IOException {
+    public void testBCF2WriterReaderMissingGenotypes(final VariantContextTestProvider.VariantContextTestData testData)
+            throws IOException {
         VariantContextTestProvider.testReaderWriterWithMissingGenotypes(new BCFIOTester(), testData);
     }
 
@@ -116,12 +114,14 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
     // --------------------------------------------------------------------------------
 
     @Test(enabled = true, dataProvider = "VariantContextTest_SingleContexts")
-    public void testVCF4WriterReader(final VariantContextTestProvider.VariantContextTestData testData) throws IOException {
+    public void testVCF4WriterReader(final VariantContextTestProvider.VariantContextTestData testData)
+            throws IOException {
         VariantContextTestProvider.testReaderWriter(new VCFIOTester(), testData);
     }
 
     @Test(enabled = true, dataProvider = "VariantContextTest_SingleContexts")
-    public void testVCF4WriterReaderMissingGenotypes(final VariantContextTestProvider.VariantContextTestData testData) throws IOException {
+    public void testVCF4WriterReaderMissingGenotypes(final VariantContextTestProvider.VariantContextTestData testData)
+            throws IOException {
         VariantContextTestProvider.testReaderWriterWithMissingGenotypes(new VCFIOTester(), testData);
     }
 
@@ -135,7 +135,7 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
         public List<VariantContext> postprocess(final VCFHeader header, final List<VariantContext> vcsAfterIO) {
             final List<VariantContext> fullyDecoded = new ArrayList<VariantContext>(vcsAfterIO.size());
 
-            for ( final VariantContext withStrings : vcsAfterIO )
+            for (final VariantContext withStrings : vcsAfterIO)
                 fullyDecoded.add(withStrings.fullyDecode(header, false));
 
             return fullyDecoded;

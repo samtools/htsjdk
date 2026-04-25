@@ -24,7 +24,6 @@ import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.TribbleIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex.ChrIndex;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -77,8 +76,7 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
         // if we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
         if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getContig())) {
             // if we're creating a new chrIndex (not the first), make sure to dump the intervals to the old chrIndex
-            if (!chrList.isEmpty())
-                addIntervalsToLastChr(filePosition);
+            if (!chrList.isEmpty()) addIntervalsToLastChr(filePosition);
 
             // create a new chr index for the current contig
             chrList.add(new ChrIndex(feature.getContig()));
@@ -90,13 +88,16 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
             final MutableInterval i = new MutableInterval();
             i.setStart(feature.getStart());
             i.setStartFilePosition(filePosition);
-            if(!intervals.isEmpty()) intervals.get(intervals.size()-1).setEndFilePosition(filePosition);
+            if (!intervals.isEmpty()) intervals.get(intervals.size() - 1).setEndFilePosition(filePosition);
             featureCount = 0; // reset the feature count
             intervals.add(i);
         }
-        
+
         // make sure we update the ending position of the bin
-        intervals.get(intervals.size()-1).setStop(Math.max(feature.getEnd(),intervals.get(intervals.size()-1).getStop()));
+        intervals
+                .get(intervals.size() - 1)
+                .setStop(Math.max(
+                        feature.getEnd(), intervals.get(intervals.size() - 1).getStop()));
         featureCount++;
     }
 
@@ -106,7 +107,7 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
      */
     private void addIntervalsToLastChr(final long currentPos) {
         for (int x = 0; x < intervals.size(); x++) {
-            if (x == intervals.size()-1) intervals.get(x).setEndFilePosition(currentPos);
+            if (x == intervals.size() - 1) intervals.get(x).setEndFilePosition(currentPos);
             chrList.getLast().insert(intervals.get(x).toInterval());
         }
     }
@@ -139,7 +140,7 @@ class MutableInterval {
 
     // the start, the stop, and the start position
     private int start;
-    private int stop;                                                                                                                                               
+    private int stop;
     private long startFilePosition;
     private long endFilePosition;
 
@@ -162,7 +163,7 @@ class MutableInterval {
     }
 
     public Interval toInterval() {
-        return new Interval(start,stop,new Block(startFilePosition, endFilePosition - startFilePosition));
+        return new Interval(start, stop, new Block(startFilePosition, endFilePosition - startFilePosition));
     }
 
     public int getStop() {

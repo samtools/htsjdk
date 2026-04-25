@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.PeekableIterator;
-
 import java.util.Comparator;
 
 /**
@@ -33,7 +32,8 @@ import java.util.Comparator;
  * The comparison is performed by comparing the next record in the iterator to the next
  * record in another iterator and returning the ordering between those SAM records.
  */
-class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements Comparable<ComparableSamRecordIterator> {
+class ComparableSamRecordIterator extends PeekableIterator<SAMRecord>
+        implements Comparable<ComparableSamRecordIterator> {
     private final Comparator<SAMRecord> comparator;
     private final SamReader reader;
 
@@ -44,7 +44,8 @@ class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements
      * @param iterator   the wrapped iterator.
      * @param comparator the Comparator to use to provide ordering fo SAMRecords
      */
-    public ComparableSamRecordIterator(final SamReader sam, final CloseableIterator<SAMRecord> iterator, final Comparator<SAMRecord> comparator) {
+    public ComparableSamRecordIterator(
+            final SamReader sam, final CloseableIterator<SAMRecord> iterator, final Comparator<SAMRecord> comparator) {
         super(iterator);
         this.reader = sam;
         this.comparator = comparator;
@@ -66,8 +67,8 @@ class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements
     @Override
     public int compareTo(final ComparableSamRecordIterator that) {
         if (this.comparator.getClass() != that.comparator.getClass()) {
-            throw new IllegalStateException("Attempt to compare two ComparableSAMRecordIterators that " +
-                    "have different orderings internally");
+            throw new IllegalStateException("Attempt to compare two ComparableSAMRecordIterators that "
+                    + "have different orderings internally");
         }
 
         final SAMRecord record = this.peek();
@@ -85,6 +86,7 @@ class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements
 
     @Override
     public int hashCode() {
-        throw new UnsupportedOperationException("ComparableSamRecordIterator should not be hashed because it can change value");
+        throw new UnsupportedOperationException(
+                "ComparableSamRecordIterator should not be hashed because it can change value");
     }
 }

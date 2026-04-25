@@ -31,7 +31,7 @@ final class HuffmanLeaf<T> extends HuffmanTree<T> {
      * @param symbol
      * @param frequency
      */
-    public HuffmanLeaf(final T symbol, final int frequency ) {
+    public HuffmanLeaf(final T symbol, final int frequency) {
         super(frequency);
         this.symbol = symbol;
     }
@@ -40,5 +40,4 @@ final class HuffmanLeaf<T> extends HuffmanTree<T> {
     public void getCodeWords(int codeWord, int codeWordLength, final Map<T, HuffmanBitCode<T>> symbolsToCodes) {
         symbolsToCodes.put(symbol, new HuffmanBitCode(symbol, codeWord, codeWordLength));
     }
-
 }

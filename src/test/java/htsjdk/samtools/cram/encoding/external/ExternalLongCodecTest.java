@@ -5,12 +5,11 @@ import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.io.CRAMByteReader;
 import htsjdk.samtools.cram.io.CRAMByteWriter;
 import htsjdk.samtools.cram.io.IOTestCases;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class ExternalLongCodecTest extends HtsjdkTest {
 

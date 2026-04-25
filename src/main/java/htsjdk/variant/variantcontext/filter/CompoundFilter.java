@@ -25,7 +25,6 @@
 package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.ArrayList;
 
 /**

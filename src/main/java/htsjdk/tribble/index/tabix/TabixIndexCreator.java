@@ -30,7 +30,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,13 +55,11 @@ public class TabixIndexCreator implements IndexCreator {
     // defines the location of the end of the previous feature in the output file.
     private TabixFeature previousFeature = null;
 
-
     /**
      * @param sequenceDictionary is not required, but if present all features added must refer to sequences in the
      *                           dictionary.  It is used to optimize the memory needed to build the index.
      */
-    public TabixIndexCreator(final SAMSequenceDictionary sequenceDictionary,
-                             final TabixFormat formatSpec) {
+    public TabixIndexCreator(final SAMSequenceDictionary sequenceDictionary, final TabixFormat formatSpec) {
         this.sequenceDictionary = sequenceDictionary;
         this.formatSpec = formatSpec.clone();
     }
@@ -83,11 +80,12 @@ public class TabixIndexCreator implements IndexCreator {
                 throw new IllegalArgumentException("Sequence " + feature + " added out sequence of order");
             }
         }
-        final TabixFeature thisFeature = new TabixFeature(referenceIndex, feature.getStart(), feature.getEnd(), filePosition);
+        final TabixFeature thisFeature =
+                new TabixFeature(referenceIndex, feature.getStart(), feature.getEnd(), filePosition);
         if (previousFeature != null) {
             if (previousFeature.compareTo(thisFeature) > 0) {
-                throw new IllegalArgumentException(String.format("Features added out of order: previous (%s) > next (%s)",
-                        previousFeature, thisFeature));
+                throw new IllegalArgumentException(String.format(
+                        "Features added out of order: previous (%s) > next (%s)", previousFeature, thisFeature));
             }
             finalizeFeature(filePosition);
         }
@@ -100,7 +98,8 @@ public class TabixIndexCreator implements IndexCreator {
     private void finalizeFeature(final long featureEndPosition) {
         previousFeature.featureEndFilePosition = featureEndPosition;
         if (previousFeature.featureStartFilePosition >= previousFeature.featureEndFilePosition) {
-            throw new IllegalArgumentException(String.format("Feature start position %d >= feature end position %d",
+            throw new IllegalArgumentException(String.format(
+                    "Feature start position %d >= feature end position %d",
                     previousFeature.featureStartFilePosition, previousFeature.featureEndFilePosition));
         }
         indexBuilder.processFeature(previousFeature);
@@ -138,7 +137,6 @@ public class TabixIndexCreator implements IndexCreator {
         return new TabixIndex(formatSpec, sequenceNames, indices);
     }
 
-
     private static class TabixFeature implements BinningIndexBuilder.FeatureToBeIndexed, Comparable<TabixFeature> {
         private final int referenceIndex;
         private final int start;
@@ -147,7 +145,8 @@ public class TabixIndexCreator implements IndexCreator {
         // Position after this feature in the file.
         private long featureEndFilePosition = -1;
 
-        private TabixFeature(final int referenceIndex, final int start, final int end, final long featureStartFilePosition) {
+        private TabixFeature(
+                final int referenceIndex, final int start, final int end, final long featureStartFilePosition) {
             this.referenceIndex = referenceIndex;
             this.start = start;
             this.end = end;
@@ -190,13 +189,12 @@ public class TabixIndexCreator implements IndexCreator {
 
         @Override
         public String toString() {
-            return "TabixFeature{" +
-                    "referenceIndex=" + referenceIndex +
-                    ", start=" + start +
-                    ", end=" + end +
-                    ", featureStartFilePosition=" + featureStartFilePosition +
-                    ", featureEndFilePosition=" + featureEndFilePosition +
-                    '}';
+            return "TabixFeature{" + "referenceIndex="
+                    + referenceIndex + ", start="
+                    + start + ", end="
+                    + end + ", featureStartFilePosition="
+                    + featureStartFilePosition + ", featureEndFilePosition="
+                    + featureEndFilePosition + '}';
         }
     }
 }

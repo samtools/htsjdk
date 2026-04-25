@@ -57,8 +57,11 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
         if (this.isClosed.get()) throw new RuntimeIOException("Attempt to add record to closed writer.");
 
         checkAndRethrow();
-        try { this.queue.put(item); }
-        catch (final InterruptedException ie) { throw new RuntimeException("Interrupted queueing item for writing.", ie); }
+        try {
+            this.queue.put(item);
+        } catch (final InterruptedException ie) {
+            throw new RuntimeException("Interrupted queueing item for writing.", ie);
+        }
         checkAndRethrow();
     }
 
@@ -72,15 +75,15 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
 
         if (!this.isClosed.getAndSet(true)) {
             try {
-            	this.writer.join();
+                this.writer.join();
             } catch (final InterruptedException ie) {
-            	throw new RuntimeException("Interrupted waiting on writer thread.", ie);
-        	}
+                throw new RuntimeException("Interrupted waiting on writer thread.", ie);
+            }
 
-            //The queue should be empty but if it's not, we'll drain it here to protect against any lost data.
-            //There's no need to timeout on poll because poll is called only when queue is not empty and
+            // The queue should be empty but if it's not, we'll drain it here to protect against any lost data.
+            // There's no need to timeout on poll because poll is called only when queue is not empty and
             // at this point the writer thread is definitely dead and noone is removing items from the queue.
-            //The item pulled will never be null (same reasoning).
+            // The item pulled will never be null (same reasoning).
             while (!this.queue.isEmpty()) {
                 final T item = queue.poll();
                 synchronouslyWrite(item);
@@ -113,21 +116,20 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
         @Override
         public void run() {
             try {
-                //The order of the two conditions is important, see https://github.com/samtools/htsjdk/issues/564
-                //because we want to make sure that emptiness status of the queue does not change after we have evaluated isClosed
-                //as it is now (isClosed checked before queue.isEmpty),
-                //the two operations are effectively atomic if isClosed returns true
+                // The order of the two conditions is important, see https://github.com/samtools/htsjdk/issues/564
+                // because we want to make sure that emptiness status of the queue does not change after we have
+                // evaluated isClosed
+                // as it is now (isClosed checked before queue.isEmpty),
+                // the two operations are effectively atomic if isClosed returns true
                 while (!isClosed.get() || !queue.isEmpty()) {
                     try {
                         final T item = queue.poll(50, TimeUnit.MILLISECONDS);
                         if (item != null) synchronouslyWrite(item);
-                    }
-                    catch (final InterruptedException ie) {
+                    } catch (final InterruptedException ie) {
                         /* Do Nothing */
                     }
                 }
-            }
-            catch (final Throwable t) {
+            } catch (final Throwable t) {
                 ex.compareAndSet(null, t);
                 // In case a writer was blocking on a full queue before ex has been set, clear the queue
                 // so that the writer will no longer be blocked so that it can see the exception.

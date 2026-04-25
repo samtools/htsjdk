@@ -13,5 +13,4 @@ public interface URLHelperFactory {
      * @return a {@link URLHelper} object for the given URL
      */
     URLHelper getHelper(URL url);
-
 }

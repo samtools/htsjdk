@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -19,7 +18,8 @@ public final class CramSpanContainerIterator extends CramContainerIterator {
     private Iterator<Boundary> containerBoundaries;
     private Boundary currentBoundary;
 
-    private CramSpanContainerIterator(final SeekableStream seekableStream, final long[] coordinates) throws IOException {
+    private CramSpanContainerIterator(final SeekableStream seekableStream, final long[] coordinates)
+            throws IOException {
         super(seekableStream);
         this.seekableStream = seekableStream;
         final List<Boundary> boundaries = new ArrayList<>();
@@ -31,7 +31,8 @@ public final class CramSpanContainerIterator extends CramContainerIterator {
         currentBoundary = containerBoundaries.next();
     }
 
-    public static CramSpanContainerIterator fromFileSpan(final SeekableStream seekableStream, final long[] coordinates) {
+    public static CramSpanContainerIterator fromFileSpan(
+            final SeekableStream seekableStream, final long[] coordinates) {
         try {
             seekableStream.seek(0);
             return new CramSpanContainerIterator(seekableStream, coordinates);

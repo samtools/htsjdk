@@ -4,7 +4,6 @@ import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +41,7 @@ public class IOUtils {
      * @param toConvert Path to convert to GATKPath
      * @return a Path, or null if the input was null.
      */
-    public static HtsPath toHtsPath(Path toConvert){
+    public static HtsPath toHtsPath(Path toConvert) {
         return null == toConvert ? null : new HtsPath(toConvert.toUri().toString());
     }
 
@@ -55,17 +54,15 @@ public class IOUtils {
     public static String getStringFromPath(final IOPath ioPath) {
         try {
             final StringWriter stringWriter = new StringWriter();
-            //TODO: the UTF-8 encoding of these should be codified somewhere else...
-            Files.lines(ioPath.toPath(), StandardCharsets.UTF_8).forEach(
-                    line -> {
-                        stringWriter.write(line);
-                        stringWriter.append("\n");
-                    });
+            // TODO: the UTF-8 encoding of these should be codified somewhere else...
+            Files.lines(ioPath.toPath(), StandardCharsets.UTF_8).forEach(line -> {
+                stringWriter.write(line);
+                stringWriter.append("\n");
+            });
             return stringWriter.toString();
         } catch (final IOException e) {
             throw new HtsjdkIOException(
-                    String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()),
-                    e);
+                    String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
         }
     }
 
@@ -77,21 +74,21 @@ public class IOUtils {
      * @param gzipOutput if true, gzip output
      */
     public static void writeStringToPath(final IOPath ioPath, final String contents, final boolean gzipOutput) {
-         if (gzipOutput) {
-             try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream());
-                  final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(bos, ioPath.toPath())) {
-                 bcos.write(contents.getBytes());
-             } catch (final IOException e) {
-                 throw new HtsjdkIOException(
-                         String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
-             }
-         } else {
-             try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream())) {
-                 bos.write(contents.getBytes());
-             } catch (final IOException e) {
-                 throw new HtsjdkIOException(
-                         String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
-             }
-         }
+        if (gzipOutput) {
+            try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream());
+                    final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(bos, ioPath.toPath())) {
+                bcos.write(contents.getBytes());
+            } catch (final IOException e) {
+                throw new HtsjdkIOException(
+                        String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
+            }
+        } else {
+            try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream())) {
+                bos.write(contents.getBytes());
+            } catch (final IOException e) {
+                throw new HtsjdkIOException(
+                        String.format("Failed to load reads bundle json from: %s", ioPath.getRawInputString()), e);
+            }
+        }
     }
 }

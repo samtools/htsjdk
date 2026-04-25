@@ -9,6 +9,7 @@ import htsjdk.beta.plugin.HtsContentType;
 public interface ReadsCodec extends HtsCodec<ReadsDecoderOptions, ReadsEncoderOptions> {
 
     @Override
-    default HtsContentType getContentType() { return HtsContentType.ALIGNED_READS; }
-
+    default HtsContentType getContentType() {
+        return HtsContentType.ALIGNED_READS;
+    }
 }

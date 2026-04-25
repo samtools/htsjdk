@@ -45,8 +45,8 @@ public class ByteModel {
     public void reset() {
         totalFrequency = maxSymbol + 1;
         for (int i = 0; i <= maxSymbol; i++) {
-            data[i * 2] = 1;       // frequency
-            data[i * 2 + 1] = i;   // symbol
+            data[i * 2] = 1; // frequency
+            data[i * 2 + 1] = i; // symbol
         }
     }
 
@@ -57,11 +57,11 @@ public class ByteModel {
      * @param rangeCoder the range coder state (must have been started with {@link RangeCoder#rangeDecodeStart})
      * @return the decoded symbol value
      */
-    public int modelDecode(final ByteBuffer inBuffer, final RangeCoder rangeCoder){
+    public int modelDecode(final ByteBuffer inBuffer, final RangeCoder rangeCoder) {
         final int freq = rangeCoder.rangeGetFrequency(totalFrequency);
         int cumulativeFrequency = 0;
         int x = 0;
-        while (cumulativeFrequency + data[x * 2] <= freq){
+        while (cumulativeFrequency + data[x * 2] <= freq) {
             cumulativeFrequency += data[x * 2];
             x++;
         }
@@ -72,28 +72,28 @@ public class ByteModel {
         // update model frequencies
         data[x * 2] += Constants.STEP;
         totalFrequency += Constants.STEP;
-        if (totalFrequency > Constants.MAX_FREQ){
+        if (totalFrequency > Constants.MAX_FREQ) {
             modelRenormalize();
         }
 
         // keep symbols approximately frequency sorted
         final int symbol = data[x * 2 + 1];
-        if (x > 0 && data[x * 2] > data[(x - 1) * 2]){
+        if (x > 0 && data[x * 2] > data[(x - 1) * 2]) {
             // Swap frequency and symbol pairs
             final int tmpFreq = data[x * 2];
-            final int tmpSym  = data[x * 2 + 1];
-            data[x * 2]     = data[(x - 1) * 2];
+            final int tmpSym = data[x * 2 + 1];
+            data[x * 2] = data[(x - 1) * 2];
             data[x * 2 + 1] = data[(x - 1) * 2 + 1];
-            data[(x - 1) * 2]     = tmpFreq;
+            data[(x - 1) * 2] = tmpFreq;
             data[(x - 1) * 2 + 1] = tmpSym;
         }
         return symbol;
     }
 
     /** Halve all frequencies (avoiding zeros) when total frequency exceeds {@link Constants#MAX_FREQ}. */
-    public void modelRenormalize(){
+    public void modelRenormalize() {
         totalFrequency = 0;
-        for (int i = 0; i <= maxSymbol; i++){
+        for (int i = 0; i <= maxSymbol; i++) {
             data[i * 2] -= data[i * 2] >> 1;
             totalFrequency += data[i * 2];
         }
@@ -106,7 +106,7 @@ public class ByteModel {
      * @param rangeCoder the range coder state (must have output set via {@link RangeCoder#setOutput})
      * @param symbol the symbol value to encode (must be in range 0 to maxSymbol)
      */
-    public void modelEncode(final RangeCoder rangeCoder, final int symbol){
+    public void modelEncode(final RangeCoder rangeCoder, final int symbol) {
         int cumulativeFrequency = 0;
         int i = 0;
         while (data[i * 2 + 1] != symbol) {
@@ -120,20 +120,19 @@ public class ByteModel {
         // Update Model
         data[i * 2] += Constants.STEP;
         totalFrequency += Constants.STEP;
-        if (totalFrequency > Constants.MAX_FREQ){
+        if (totalFrequency > Constants.MAX_FREQ) {
             modelRenormalize();
         }
 
         // Keep symbols approximately frequency sorted (ascending order)
-        if (i > 0 && data[i * 2] > data[(i - 1) * 2]){
+        if (i > 0 && data[i * 2] > data[(i - 1) * 2]) {
             // swap frequency and symbol pairs
             final int tmpFreq = data[i * 2];
-            final int tmpSym  = data[i * 2 + 1];
-            data[i * 2]     = data[(i - 1) * 2];
+            final int tmpSym = data[i * 2 + 1];
+            data[i * 2] = data[(i - 1) * 2];
             data[i * 2 + 1] = data[(i - 1) * 2 + 1];
-            data[(i - 1) * 2]     = tmpFreq;
+            data[(i - 1) * 2] = tmpFreq;
             data[(i - 1) * 2 + 1] = tmpSym;
         }
     }
-
 }

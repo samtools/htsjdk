@@ -62,8 +62,7 @@ public final class Bases implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Bases bases1 = (Bases) o;
-        return position == bases1.position &&
-                Arrays.equals(bases, bases1.bases);
+        return position == bases1.position && Arrays.equals(bases, bases1.bases);
     }
 
     @Override

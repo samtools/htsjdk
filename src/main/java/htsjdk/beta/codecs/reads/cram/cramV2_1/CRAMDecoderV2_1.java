@@ -1,9 +1,9 @@
 package htsjdk.beta.codecs.reads.cram.cramV2_1;
 
 import htsjdk.beta.codecs.reads.cram.CRAMDecoder;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 
 /**
@@ -27,5 +27,4 @@ public class CRAMDecoderV2_1 extends CRAMDecoder {
     public HtsVersion getVersion() {
         return CRAMCodecV2_1.VERSION_2_1;
     }
-
 }

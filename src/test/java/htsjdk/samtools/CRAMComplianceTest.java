@@ -1,8 +1,8 @@
 package htsjdk.samtools;
 
-import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -10,21 +10,17 @@ import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CompressionHeaderEncodingMap;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.DataSeries;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
-
 import htsjdk.samtools.util.SequenceUtil;
+import java.io.*;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by vadim on 28/04/2015.
@@ -42,23 +38,23 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "partialVerification")
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
-                {"auxf#values"},    // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-                {"c1#noseq"},       // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-                {"c1#unknown"},     // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-                {"ce#5b"},          // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-                {"ce#1000"},        // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-                {"ce#tag_depadded"},// reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-                {"ce#tag_padded"},  // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-                {"ce#unmap"},       // unmapped reads with non-zero MAPQ value that is not restored
-                                    // https://github.com/samtools/htsjdk/issues/714
-                {"xx#minimal"},     // cigar string "5H0M5H" is restored as "10H"
-                                    // https://github.com/samtools/htsjdk/issues/713
-                {"xx#repeated"},    // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-                {"xx#tlen"},        // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-                {"xx#tlen2"},       // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-                {"xx#triplet"},     // the version 2.1 variant of this file has a bad insertSize, which is
-                                    // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
-                {"md#1"},           // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
+            {"auxf#values"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
+            {"c1#noseq"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
+            {"c1#unknown"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
+            {"ce#5b"}, // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
+            {"ce#1000"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+            {"ce#tag_depadded"}, // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
+            {"ce#tag_padded"}, // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
+            {"ce#unmap"}, // unmapped reads with non-zero MAPQ value that is not restored
+            // https://github.com/samtools/htsjdk/issues/714
+            {"xx#minimal"}, // cigar string "5H0M5H" is restored as "10H"
+            // https://github.com/samtools/htsjdk/issues/713
+            {"xx#repeated"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+            {"xx#tlen"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+            {"xx#tlen2"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
+            {"xx#triplet"}, // the version 2.1 variant of this file has a bad insertSize, which is
+            // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
+            {"md#1"}, // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
     }
 
@@ -72,27 +68,27 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "fullVerification")
     public Object[][] getFullVerificationData() {
         return new Object[][] {
-                // TODO: this file has reads that are mapped beyond the bounds of the reference length that
-                // is specified in the embedded sequence dictionary.
-                {"c1#bounds"},
-                {"c1#clip"},
-                {"c1#pad1"},
-                {"c1#pad2"},
-                {"c1#pad3"},
-                {"c2#pad"},
-                {"ce#1"},
-                {"ce#2"},
-                {"ce#5"},
-                {"ce#large_seq"},
-                {"ce#supp"},
-                {"ce#unmap1"},
-                {"ce#unmap2"},
-                {"xx#blank"},
-                {"xx#large_aux2"},
-                {"xx#large_aux"},
-                {"xx#pair"},
-                {"xx#rg"},
-                {"xx#unsorted"},
+            // TODO: this file has reads that are mapped beyond the bounds of the reference length that
+            // is specified in the embedded sequence dictionary.
+            {"c1#bounds"},
+            {"c1#clip"},
+            {"c1#pad1"},
+            {"c1#pad2"},
+            {"c1#pad3"},
+            {"c2#pad"},
+            {"ce#1"},
+            {"ce#2"},
+            {"ce#5"},
+            {"ce#large_seq"},
+            {"ce#supp"},
+            {"ce#unmap1"},
+            {"ce#unmap2"},
+            {"xx#blank"},
+            {"xx#large_aux2"},
+            {"xx#large_aux"},
+            {"xx#pair"},
+            {"xx#rg"},
+            {"xx#unsorted"},
         };
     }
 
@@ -120,13 +116,13 @@ public class CRAMComplianceTest extends HtsjdkTest {
     // during the round-trip process.
     @DataProvider(name = "ambiguityCodeVerification")
     public Object[][] getAmbiguityCodeVerificationData() {
-        return new Object[][]{
-                // This test case has no 2.1 cram file because the test case had one read that had the unmapped
-                // flag set, along with a (non-zero and non-255) mapping quality value. Since a mapping quality
-                // on an unmapped read does not not roundtrip through CRAM (see
-                // https://github.com/samtools/htsjdk/issues/714), and we don't have an easy way to create a
-                // repaired 2.1 cram, the 2.1 file has just been removed from the repo.
-                {"amb#amb"}
+        return new Object[][] {
+            // This test case has no 2.1 cram file because the test case had one read that had the unmapped
+            // flag set, along with a (non-zero and non-255) mapping quality value. Since a mapping quality
+            // on an unmapped read does not not roundtrip through CRAM (see
+            // https://github.com/samtools/htsjdk/issues/714), and we don't have an easy way to create a
+            // repaired 2.1 cram, the 2.1 file has just been removed from the repo.
+            {"amb#amb"}
         };
     }
 
@@ -139,7 +135,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
         testCRAMThroughBAMRoundTrip(t.cramFile_30, t.refFile);
     }
 
-    private void roundTripTolerateAmbiguityCodeConversion(final File inputFile, final File referenceFile) throws IOException {
+    private void roundTripTolerateAmbiguityCodeConversion(final File inputFile, final File referenceFile)
+            throws IOException {
         final List<SAMRecord> originalSAMRecords = getSAMRecordsFromFile(inputFile, referenceFile);
         // roundtrip the SAM records through a temporary CRAM
         final File tempCRAMFile = File.createTempFile("testAmbiguousBasesBAMThroughCRAMRoundTrip", FileExtensions.CRAM);
@@ -166,9 +163,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
         }
     }
 
-    private void doComplianceTest(
-            final String name,
-            final TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction) throws IOException {
+    private void doComplianceTest(final String name, final TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction)
+            throws IOException {
         final TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 
         // 1) Read from SAM/BAM Round Trip through CRAM
@@ -186,7 +182,11 @@ public class CRAMComplianceTest extends HtsjdkTest {
         cramFileWriter.close();
 
         // read them back from the stream and compare to original sam via assertSameRecords
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream) null, source, ValidationStringency.SILENT);
+        CRAMFileReader cramFileReader = new CRAMFileReader(
+                new ByteArrayInputStream(baos.toByteArray()),
+                (SeekableStream) null,
+                source,
+                ValidationStringency.SILENT);
         SAMRecordIterator cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
@@ -197,7 +197,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
         // Read from v2.1 CRAM round trip through cram
-        cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), (SeekableStream) null, source, ValidationStringency.SILENT);
+        cramFileReader = new CRAMFileReader(
+                new FileInputStream(t.cramFile_21), (SeekableStream) null, source, ValidationStringency.SILENT);
         cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
@@ -208,7 +209,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
         // Read from v3.0 CRAM round trip through cram
-        cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), (SeekableStream) null, source, ValidationStringency.SILENT);
+        cramFileReader = new CRAMFileReader(
+                new FileInputStream(t.cramFile_30), (SeekableStream) null, source, ValidationStringency.SILENT);
         cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
@@ -246,18 +248,26 @@ public class CRAMComplianceTest extends HtsjdkTest {
         final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
         return new Object[][] {
-                // Test cram file created with samtools using a *reference* that contains ambiguity codes
-                // 'R' and 'M', a single no call '.', and some lower case bases.
-                {new File(TEST_DATA_DIR, "samtoolsSliceMD5WithAmbiguityCodesTest.cram"),
-                        new File(TEST_DATA_DIR, "ambiguityCodes.fasta")},
-                {new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")},
-                {new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.1-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")},
-                {new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                        new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")},
-                {new File(TEST_DATA_DIR, "test.cram"), new File(TEST_DATA_DIR, "auxf.fa")},
-                {new File(TEST_DATA_DIR, "test2.cram"), new File(TEST_DATA_DIR, "auxf.fa")},
+            // Test cram file created with samtools using a *reference* that contains ambiguity codes
+            // 'R' and 'M', a single no call '.', and some lower case bases.
+            {
+                new File(TEST_DATA_DIR, "samtoolsSliceMD5WithAmbiguityCodesTest.cram"),
+                new File(TEST_DATA_DIR, "ambiguityCodes.fasta")
+            },
+            {
+                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
+                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")
+            },
+            {
+                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.1-unMapped.cram"),
+                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")
+            },
+            {
+                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")
+            },
+            {new File(TEST_DATA_DIR, "test.cram"), new File(TEST_DATA_DIR, "auxf.fa")},
+            {new File(TEST_DATA_DIR, "test2.cram"), new File(TEST_DATA_DIR, "auxf.fa")},
         };
     }
 
@@ -302,24 +312,28 @@ public class CRAMComplianceTest extends HtsjdkTest {
         Assert.assertEquals(i, originalCRAMRecords.size());
     }
 
-    @DataProvider(name="roundTripTest")
+    @DataProvider(name = "roundTripTest")
     public Object[][] roundTripTestData() {
         return new Object[][] {
-                // This file is a reduced version of the CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam and human_g1k_v37.20.21.fasta
-                // files used in GATK4 tests. The first 8000 records from chr20 were extracted; from those around 80 placed but
-                // unmapped reads that contained cigar elements were removed, along with one read who's mate was on chr21.
-                // Finally all read positions were remapped to the subsetted reference file, which contains only the ~9000 bases
-                // used by the reduced read set.
-                { "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam", "human_g1k_v37.20.subset.fasta" },
+            // This file is a reduced version of the CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam and
+            // human_g1k_v37.20.21.fasta
+            // files used in GATK4 tests. The first 8000 records from chr20 were extracted; from those around 80 placed
+            // but
+            // unmapped reads that contained cigar elements were removed, along with one read who's mate was on chr21.
+            // Finally all read positions were remapped to the subsetted reference file, which contains only the ~9000
+            // bases
+            // used by the reduced read set.
+            {"CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam", "human_g1k_v37.20.subset.fasta"},
 
-                // Test that we round-trip read group ids, since these are treated specially and not round-tripped as
-                // through the general tag facility, but instead have a dedicated data series and read group.
-                { "c1WithRG.bam", "c1.fa"}
+            // Test that we round-trip read group ids, since these are treated specially and not round-tripped as
+            // through the general tag facility, but instead have a dedicated data series and read group.
+            {"c1WithRG.bam", "c1.fa"}
         };
     }
 
     @Test(dataProvider = "roundTripTest")
-    public void testBAMThroughCRAMRoundTrip(final String testFileName, final String referenceFileName) throws IOException {
+    public void testBAMThroughCRAMRoundTrip(final String testFileName, final String referenceFileName)
+            throws IOException {
         final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
         final File originalBAMInputFile = new File(TEST_DATA_DIR, testFileName);
@@ -375,7 +389,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
 
         // TC, TN are now removed and are no longer written by htsjdk.
         // 1301_slice_aux.cram is taken from hts-specs repo. It uses reference files, ce.fa and ce.fa.fai.
-        // 1301_slice_aux.cram file: https://github.com/samtools/hts-specs/blob/master/test/cram/3.0/passed/1301_slice_aux.cram
+        // 1301_slice_aux.cram file:
+        // https://github.com/samtools/hts-specs/blob/master/test/cram/3.0/passed/1301_slice_aux.cram
         final File sourceFile = new File(TEST_DATA_DIR, "1301_slice_aux.cram");
         final File referenceFile = new File(TEST_DATA_DIR, "ce.fa");
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
@@ -383,8 +398,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
         tempOutCRAM.deleteOnExit();
         CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
         try (final InputStream cramInputStream = new BufferedInputStream(new FileInputStream(tempOutCRAM));
-            final CramContainerIterator containerIterator = new CramContainerIterator(cramInputStream)) {
-            while(containerIterator.hasNext()) {
+                final CramContainerIterator containerIterator = new CramContainerIterator(cramInputStream)) {
+            while (containerIterator.hasNext()) {
 
                 // read the container and its CompressionHeader
                 final Container container = containerIterator.next();
@@ -393,9 +408,10 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 // get the CompressionHeaderEncodingMap
                 final CompressionHeaderEncodingMap encodingMap = compressionHeader.getEncodingMap();
 
-                //make sure obsolete DataSeries TC, TN are not present in the CompressionHeaderEncodingMap
+                // make sure obsolete DataSeries TC, TN are not present in the CompressionHeaderEncodingMap
                 for (final DataSeries dataseries : CompressionHeaderEncodingMap.DATASERIES_NOT_READ_BY_HTSJDK) {
-                    Assert.assertNull(encodingMap.getEncodingDescriptorForDataSeries(dataseries),
+                    Assert.assertNull(
+                            encodingMap.getEncodingDescriptorForDataSeries(dataseries),
                             "Unexpected encoding key found: " + dataseries.getCanonicalName());
                 }
             }
@@ -405,7 +421,8 @@ public class CRAMComplianceTest extends HtsjdkTest {
     private SAMFileHeader getFileHeader(final File sourceFile, final File referenceFile) throws IOException {
         try (final SamReader reader = SamReaderFactory.make()
                 .validationStringency(ValidationStringency.SILENT)
-                .referenceSequence(referenceFile).open(sourceFile)) {
+                .referenceSequence(referenceFile)
+                .open(sourceFile)) {
             return reader.getFileHeader();
         }
     }
@@ -417,9 +434,9 @@ public class CRAMComplianceTest extends HtsjdkTest {
     private List<SAMRecord> getSAMRecordsFromPath(final Path sourcePath, final File referenceFile) throws IOException {
         List<SAMRecord> recs = new ArrayList<>();
         try (SamReader reader = SamReaderFactory.make()
-            .validationStringency(ValidationStringency.SILENT)
-            .referenceSequence(referenceFile).open(sourcePath))
-        {
+                .validationStringency(ValidationStringency.SILENT)
+                .referenceSequence(referenceFile)
+                .open(sourcePath)) {
             for (SAMRecord rec : reader) {
                 recs.add(rec);
             }
@@ -427,7 +444,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         return recs;
     }
 
-    private void writeRecordsToFile (
+    private void writeRecordsToFile(
             final List<SAMRecord> recs,
             final File targetFile,
             final File referenceFile,
@@ -436,29 +453,28 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // NOTE: even when the input is coord-sorted, using assumePresorted=false will cause some
         // tests to fail since it can change the order of some unmapped reads - AFAICT this is allowed
         // by the spec since the order is arbitrary for unmapped
-        try (final SAMFileWriter writer = new SAMFileWriterFactory()
-                .makeWriter(samHeader, true, targetFile, referenceFile)) {
-            for (SAMRecord rec : recs) {
-                 writer.addAlignment(rec);
-            }
-        }
-    }
-
-    private void writeRecordsToPath (
-        final List<SAMRecord> recs,
-        final Path targetPath,
-        final File referenceFile,
-        final SAMFileHeader samHeader) {
-
-        // NOTE: even when the input is coord-sorted, using assumePresorted=false will cause some
-        // tests to fail since it can change the order of some unmapped reads - this is allowed
-        // by the spec since the order is arbitrary for unmapped.
-        try (final SAMFileWriter writer = new SAMFileWriterFactory()
-            .makeWriter(samHeader, true, targetPath, referenceFile.toPath())) {
+        try (final SAMFileWriter writer =
+                new SAMFileWriterFactory().makeWriter(samHeader, true, targetFile, referenceFile)) {
             for (SAMRecord rec : recs) {
                 writer.addAlignment(rec);
             }
         }
     }
 
+    private void writeRecordsToPath(
+            final List<SAMRecord> recs,
+            final Path targetPath,
+            final File referenceFile,
+            final SAMFileHeader samHeader) {
+
+        // NOTE: even when the input is coord-sorted, using assumePresorted=false will cause some
+        // tests to fail since it can change the order of some unmapped reads - this is allowed
+        // by the spec since the order is arbitrary for unmapped.
+        try (final SAMFileWriter writer =
+                new SAMFileWriterFactory().makeWriter(samHeader, true, targetPath, referenceFile.toPath())) {
+            for (SAMRecord rec : recs) {
+                writer.addAlignment(rec);
+            }
+        }
+    }
 }

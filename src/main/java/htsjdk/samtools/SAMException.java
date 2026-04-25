@@ -27,8 +27,7 @@ package htsjdk.samtools;
  * @author alecw@broadinstitute.org
  */
 public class SAMException extends RuntimeException {
-    public SAMException() {
-    }
+    public SAMException() {}
 
     public SAMException(final String s) {
         super(s);

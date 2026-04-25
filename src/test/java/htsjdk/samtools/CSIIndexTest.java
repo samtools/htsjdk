@@ -1,17 +1,16 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class CSIIndexTest extends HtsjdkTest {
 
@@ -33,7 +32,8 @@ public class CSIIndexTest extends HtsjdkTest {
     private Bin bin9 = new Bin(1, 135853);
     private Bin bin10 = new Bin(1, 163);
 
-    // The CSI index is a generalization of the bai index which introduces these as parameters instead of hard coding them.
+    // The CSI index is a generalization of the bai index which introduces these as parameters instead of hard coding
+    // them.
     // These are equivalent parameter values for CSI that are baked into the bai calculations.
     // CSI calculations with these values should match the bai calculations exactly.
     public static final int BAI_EQUIVALENT_MIN_SHIFT = 14;
@@ -51,7 +51,6 @@ public class CSIIndexTest extends HtsjdkTest {
         }
         ubai = new DiskBasedBAMFileIndex(new File(TEST_DATA_DIR, "uncompressed_index.bam.bai"), null);
     }
-
 
     @Test
     public void testGetNumIndexLevels() {
@@ -79,21 +78,20 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getTestFirstBinInLevelData() {
-        return new Object[][]{
-                {csi, 0, 0},
-                {csi, 1, 1},
-                {csi, 2, 9},
-                {csi, 3, 73},
-                {csi, 4, 585},
-                {csi, 5, 4681},
-
-                {ucsi, 0, 0},
-                {ucsi, 1, 1},
-                {ucsi, 2, 9},
-                {ucsi, 3, 73},
-                {ucsi, 4, 585},
-                {ucsi, 5, 4681},
-                {ucsi, 6, 37449}
+        return new Object[][] {
+            {csi, 0, 0},
+            {csi, 1, 1},
+            {csi, 2, 9},
+            {csi, 3, 73},
+            {csi, 4, 585},
+            {csi, 5, 4681},
+            {ucsi, 0, 0},
+            {ucsi, 1, 1},
+            {ucsi, 2, 9},
+            {ucsi, 3, 73},
+            {ucsi, 4, 585},
+            {ucsi, 5, 4681},
+            {ucsi, 6, 37449}
         };
     }
 
@@ -114,21 +112,20 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getTestLevelSizeData() {
-        return new Object[][]{
-                {csi, 0, 1},
-                {csi, 1, 8},
-                {csi, 2, 64},
-                {csi, 3, 512},
-                {csi, 4, 4096},
-                {csi, 5, 32768},
-
-                {ucsi, 0, 1},
-                {ucsi, 1, 8},
-                {ucsi, 2, 64},
-                {ucsi, 3, 512},
-                {ucsi, 4, 4096},
-                {ucsi, 5, 32768},
-                {ucsi, 6, 262144}
+        return new Object[][] {
+            {csi, 0, 1},
+            {csi, 1, 8},
+            {csi, 2, 64},
+            {csi, 3, 512},
+            {csi, 4, 4096},
+            {csi, 5, 32768},
+            {ucsi, 0, 1},
+            {ucsi, 1, 8},
+            {ucsi, 2, 64},
+            {ucsi, 3, 512},
+            {ucsi, 4, 4096},
+            {ucsi, 5, 32768},
+            {ucsi, 6, 262144}
         };
     }
 
@@ -159,14 +156,14 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getTestParentBinData() {
-        return new Object[][]{
-                {4681, 585},
-                {4688, 585},
-                {4689, 586},
-                {585, 73},
-                {592, 73},
-                {593, 74},
-                {0, 0}
+        return new Object[][] {
+            {4681, 585},
+            {4688, 585},
+            {4689, 586},
+            {585, 73},
+            {592, 73},
+            {593, 74},
+            {0, 0}
         };
     }
 
@@ -182,17 +179,18 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getTestRegionToBinMatchesBaiData() {
-        return new Object[][]{
-                //start, end
-                {12653, 1876491},
-                {1048576, 1146880},
-                {536870912, 1073741824},
+        return new Object[][] {
+            // start, end
+            {12653, 1876491},
+            {1048576, 1146880},
+            {536870912, 1073741824},
         };
     }
 
     @Test(dataProvider = "getTestRegionToBinMatchesBaiData")
     public void testRegionToBinMatchesBai(int start, int end) {
-        final int csiComputation = GenomicIndexUtil.regionToBin(start, end, BAI_EQUIVALENT_MIN_SHIFT, BAI_EQUIVALENT_BIN_DEPTH);
+        final int csiComputation =
+                GenomicIndexUtil.regionToBin(start, end, BAI_EQUIVALENT_MIN_SHIFT, BAI_EQUIVALENT_BIN_DEPTH);
         final int baiComputation = GenomicIndexUtil.regionToBin(start, end);
         Assert.assertEquals(csiComputation, baiComputation);
     }
@@ -207,26 +205,25 @@ public class CSIIndexTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] getDataForTestGetLevelForBin(){
-        return new Object[][]{
-                {csi, bin1, 0},
-                {csi, bin2, 1},
-                {csi, bin3, 0},
-                {csi, bin4, 1},
-                {csi, bin5, 2},
-                {csi, bin6, 4},
-                {csi, bin7, 3},
-                {csi, bin8, 5},
-
-                {ucsi, bin1, 0},
-                {ucsi, bin2, 1},
-                {ucsi, bin3, 0},
-                {ucsi, bin4, 1},
-                {ucsi, bin5, 2},
-                {ucsi, bin6, 4},
-                {ucsi, bin7, 3},
-                {ucsi, bin8, 5},
-                {ucsi, bin9, 6}
+    public Object[][] getDataForTestGetLevelForBin() {
+        return new Object[][] {
+            {csi, bin1, 0},
+            {csi, bin2, 1},
+            {csi, bin3, 0},
+            {csi, bin4, 1},
+            {csi, bin5, 2},
+            {csi, bin6, 4},
+            {csi, bin7, 3},
+            {csi, bin8, 5},
+            {ucsi, bin1, 0},
+            {ucsi, bin2, 1},
+            {ucsi, bin3, 0},
+            {ucsi, bin4, 1},
+            {ucsi, bin5, 2},
+            {ucsi, bin6, 4},
+            {ucsi, bin7, 3},
+            {ucsi, bin8, 5},
+            {ucsi, bin9, 6}
         };
     }
 
@@ -263,25 +260,24 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] testDataForGetFirstLocusInBin() {
-        return new Object[][]{
-                {csi, bin1, 1},
-                {csi, bin2, 1},
-                {csi, bin3, 1},
-                {csi, bin4, 1},
-                {csi, bin5, 1},
-                {csi, bin6, (1 << 17) + 1},
-                {csi, bin7, (1 << 20) * 7 + 1},
-                {csi, bin8, (1 << 14) * 8 + 1},
-
-                {ucsi, bin1, 1},
-                {ucsi, bin2, 1},
-                {ucsi, bin3, 1},
-                {ucsi, bin4, 1},
-                {ucsi, bin5, 1},
-                {ucsi, bin6, (1 << 18) + 1},
-                {ucsi, bin7, (1 << 21) * 7 + 1},
-                {ucsi, bin8, (1 << 15) * 8 + 1},
-                {ucsi, bin9, (1 << 12) * 98404 + 1},
+        return new Object[][] {
+            {csi, bin1, 1},
+            {csi, bin2, 1},
+            {csi, bin3, 1},
+            {csi, bin4, 1},
+            {csi, bin5, 1},
+            {csi, bin6, (1 << 17) + 1},
+            {csi, bin7, (1 << 20) * 7 + 1},
+            {csi, bin8, (1 << 14) * 8 + 1},
+            {ucsi, bin1, 1},
+            {ucsi, bin2, 1},
+            {ucsi, bin3, 1},
+            {ucsi, bin4, 1},
+            {ucsi, bin5, 1},
+            {ucsi, bin6, (1 << 18) + 1},
+            {ucsi, bin7, (1 << 21) * 7 + 1},
+            {ucsi, bin8, (1 << 15) * 8 + 1},
+            {ucsi, bin9, (1 << 12) * 98404 + 1},
         };
     }
 
@@ -290,28 +286,26 @@ public class CSIIndexTest extends HtsjdkTest {
         Assert.assertEquals(index.getFirstLocusInBin(bin), expected);
     }
 
-
     @DataProvider
     public Object[][] getDataForTestGetLastLocusInBin() {
-        return new Object[][]{
-                {csi, bin1, 1 << 29},
-                {csi, bin2, 1 << 26},
-                {csi, bin3, 1 << 29},
-                {csi, bin4, 1 << 26},
-                {csi, bin5, 1 << 23},
-                {csi, bin6, (1 << 17) * 2},
-                {csi, bin7, (1 << 20) * 8},
-                {csi, bin8, (1 << 14) * 9},
-
-                {ucsi, bin1, 1 << 30},
-                {ucsi, bin2, 1 << 27},
-                {ucsi, bin3, 1 << 30},
-                {ucsi, bin4, 1 << 27},
-                {ucsi, bin5, 1 << 24},
-                {ucsi, bin6, (1 << 18) * 2},
-                {ucsi, bin7, (1 << 21) * 8},
-                {ucsi, bin8, (1 << 15) * 9},
-                {ucsi, bin9, (1 << 12) * 98405},
+        return new Object[][] {
+            {csi, bin1, 1 << 29},
+            {csi, bin2, 1 << 26},
+            {csi, bin3, 1 << 29},
+            {csi, bin4, 1 << 26},
+            {csi, bin5, 1 << 23},
+            {csi, bin6, (1 << 17) * 2},
+            {csi, bin7, (1 << 20) * 8},
+            {csi, bin8, (1 << 14) * 9},
+            {ucsi, bin1, 1 << 30},
+            {ucsi, bin2, 1 << 27},
+            {ucsi, bin3, 1 << 30},
+            {ucsi, bin4, 1 << 27},
+            {ucsi, bin5, 1 << 24},
+            {ucsi, bin6, (1 << 18) * 2},
+            {ucsi, bin7, (1 << 21) * 8},
+            {ucsi, bin8, (1 << 15) * 9},
+            {ucsi, bin9, (1 << 12) * 98405},
         };
     }
 
@@ -320,44 +314,64 @@ public class CSIIndexTest extends HtsjdkTest {
         Assert.assertEquals(index.getLastLocusInBin(bin), expected);
     }
 
-
     @DataProvider
     public Object[][] getTestRegionToBinsMatchesBaiData() {
-        return new Object[][]{
-                //start, end
-                {12653, 1876491},
-                {1048576, 1146880},
-                {536870912, 1073741824},
-                {939520000, 939529000},
-                {1, 2},
-                {1_000, 1_001},
-                {1_000, 10_001},
-                {1_000, 100_001},
-                {1_000, 1_000_001},
-                {10_000, 10_0001},
-                {1, 10_000_000},
-                {939529000, 939529001},
-                {558419286, 558424804},
+        return new Object[][] {
+            // start, end
+            {12653, 1876491},
+            {1048576, 1146880},
+            {536870912, 1073741824},
+            {939520000, 939529000},
+            {1, 2},
+            {1_000, 1_001},
+            {1_000, 10_001},
+            {1_000, 100_001},
+            {1_000, 1_000_001},
+            {10_000, 10_0001},
+            {1, 10_000_000},
+            {939529000, 939529001},
+            {558419286, 558424804},
         };
     }
 
     @Test(dataProvider = "getTestRegionToBinsMatchesBaiData")
     public void testRegionToBinsMatchesBai(int start, int end) {
-        final BitSet csiComputation = GenomicIndexUtil.regionToBins(start, end, BAI_EQUIVALENT_MIN_SHIFT, BAI_EQUIVALENT_BIN_DEPTH);
+        final BitSet csiComputation =
+                GenomicIndexUtil.regionToBins(start, end, BAI_EQUIVALENT_MIN_SHIFT, BAI_EQUIVALENT_BIN_DEPTH);
         final BitSet baiComputation = GenomicIndexUtil.regionToBins(start, end);
         Assert.assertEquals(csiComputation, baiComputation);
     }
 
     @DataProvider
     public Object[][] getTestRegionToBinsData() {
-        return new Object[][]{
-                //start, end, minShift, binDepth, expectedBins
-                {(1 << 12) * 98403 + 4094, (1 << 12) * 98404 + 1, 12, 7, Arrays.asList(0, 4, 33, 265, 2122, bin9.getBinNumber() - 1, bin9.getBinNumber(), ucsi.getParentBinNumber(bin9.getBinNumber()))},
-                {939520000, 939529000, 12, 7, Arrays.asList(0, 7, 8, 64, 65, 520, 521, 4168, 4169, 33352, 33353, 266823, 266824, 266825, 266826)},
-                // This case tests https://github.com/samtools/htsjdk/issues/1047.
-                // This combination of minShift and binDepth result in a maxPos larger than maxInt which caused
-                // an overflow error.
-                {558419286, 558424804, 14, 7, Arrays.asList(0, 2, 17, 139, 1117, 8941, 71532)}
+        return new Object[][] {
+            // start, end, minShift, binDepth, expectedBins
+            {
+                (1 << 12) * 98403 + 4094,
+                (1 << 12) * 98404 + 1,
+                12,
+                7,
+                Arrays.asList(
+                        0,
+                        4,
+                        33,
+                        265,
+                        2122,
+                        bin9.getBinNumber() - 1,
+                        bin9.getBinNumber(),
+                        ucsi.getParentBinNumber(bin9.getBinNumber()))
+            },
+            {
+                939520000,
+                939529000,
+                12,
+                7,
+                Arrays.asList(0, 7, 8, 64, 65, 520, 521, 4168, 4169, 33352, 33353, 266823, 266824, 266825, 266826)
+            },
+            // This case tests https://github.com/samtools/htsjdk/issues/1047.
+            // This combination of minShift and binDepth result in a maxPos larger than maxInt which caused
+            // an overflow error.
+            {558419286, 558424804, 14, 7, Arrays.asList(0, 2, 17, 139, 1117, 8941, 71532)}
         };
     }
 
@@ -384,12 +398,12 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getDataForTestLongReferenceQuery() {
-        return new Object[][]{
-                //counts generated using samtools view
-                //chrom , start, end, expected number of reads
-                {"chr1H", 558419286, 558424804, 131},
-                {"chr1H", 558414281, 558414323, 102},
-                {"chr1H", 558414281, 558424804, 3015}
+        return new Object[][] {
+            // counts generated using samtools view
+            // chrom , start, end, expected number of reads
+            {"chr1H", 558419286, 558424804, 131},
+            {"chr1H", 558414281, 558414323, 102},
+            {"chr1H", 558414281, 558424804, 3015}
         };
     }
 

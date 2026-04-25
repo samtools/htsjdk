@@ -1,14 +1,9 @@
 package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +11,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Tests for Range codecs.
@@ -35,32 +33,35 @@ public class RangeTest extends HtsjdkTest {
     private final RangeDecode rangeDecoder = new RangeDecode();
 
     // Shared test data — allocated once and referenced (not copied) by all DataProvider rows.
-    private final TestDataEnvelope EMPTY = new TestDataEnvelope(new byte[]{});
+    private final TestDataEnvelope EMPTY = new TestDataEnvelope(new byte[] {});
     private final TestDataEnvelope[] testData = {
-            new TestDataEnvelope(new byte[] {0}),
-            new TestDataEnvelope(new byte[] {0, 1}),
-            new TestDataEnvelope(new byte[] {0, 1, 2}),
-            new TestDataEnvelope(new byte[] {0, 1, 2, 3}),
-            new TestDataEnvelope(new byte[1000]),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 1, 0.01)),
+        new TestDataEnvelope(new byte[] {0}),
+        new TestDataEnvelope(new byte[] {0, 1}),
+        new TestDataEnvelope(new byte[] {0, 1, 2}),
+        new TestDataEnvelope(new byte[] {0, 1, 2, 3}),
+        new TestDataEnvelope(new byte[1000]),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 1, 0.01)),
     };
-    private final TestDataEnvelope tinyData  = new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1));
+    private final TestDataEnvelope tinyData = new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1));
     private final TestDataEnvelope smallData = new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01));
-    private final TestDataEnvelope largeData = new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01));
+    private final TestDataEnvelope largeData =
+            new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01));
 
     private static class TestDataEnvelope {
         public final byte[] testArray;
+
         public TestDataEnvelope(final byte[] testdata) {
             this.testArray = testdata;
         }
+
         public String toString() {
             return String.format("Array of size %d", testArray.length);
         }
@@ -81,49 +82,49 @@ public class RangeTest extends HtsjdkTest {
             RangeParams.EXT_FLAG_MASK,
             RangeParams.EXT_FLAG_MASK | RangeParams.PACK_FLAG_MASK,
             RangeParams.STRIPE_FLAG_MASK,
-            RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK
-    );
+            RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK);
 
-    @DataProvider(name="rangeCodecs")
+    @DataProvider(name = "rangeCodecs")
     public Object[][] getRangeCodecs() {
         final List<Object[]> testCases = new ArrayList<>();
         for (final int formatFlag : RANGE_FORMAT_FLAGS) {
-            testCases.add(new Object[]{rangeEncoder, rangeDecoder, new RangeParams(formatFlag)});
+            testCases.add(new Object[] {rangeEncoder, rangeDecoder, new RangeParams(formatFlag)});
         }
-        return testCases.toArray(new Object[][]{});
+        return testCases.toArray(new Object[][] {});
     }
 
     private Object[][] getTestDataRows() {
         final Object[][] rows = new Object[testData.length][];
         for (int i = 0; i < testData.length; i++) {
-            rows[i] = new Object[]{ testData[i] };
+            rows[i] = new Object[] {testData[i]};
         }
         return rows;
     }
 
-    @DataProvider(name="allRangeCodecsAndData")
+    @DataProvider(name = "allRangeCodecsAndData")
     public Object[][] getAllRangeCodecsAndData() {
         return Stream.concat(
                         Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), getTestDataRows())),
-                        Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), new Object[][]{{ EMPTY }})))
+                        Arrays.stream(TestNGUtils.cartesianProduct(getRangeCodecs(), new Object[][] {{EMPTY}})))
                 .toArray(Object[][]::new);
     }
 
-    @DataProvider(name="allRangeCodecsAndDataForTinySmallLarge")
+    @DataProvider(name = "allRangeCodecsAndDataForTinySmallLarge")
     public Object[][] allRangeCodecsAndDataForTinySmallLarge() {
         final Object[][] tslData = {
-                { tinyData,  1, 100 },
-                { smallData, 4, 1000 },
-                { largeData, 100 * 1000 + 3 - 4, 100 * 1000 + 3 },
+            {tinyData, 1, 100},
+            {smallData, 4, 1000},
+            {largeData, 100 * 1000 + 3 - 4, 100 * 1000 + 3},
         };
         return TestNGUtils.cartesianProduct(getRangeCodecs(), tslData);
     }
 
     @Test(dataProvider = "allRangeCodecsAndData")
-    public void testRoundTrip(final RangeEncode rangeEncode,
-                              final RangeDecode rangeDecode,
-                              final RangeParams rangeParams,
-                              final TestDataEnvelope td) {
+    public void testRoundTrip(
+            final RangeEncode rangeEncode,
+            final RangeDecode rangeDecode,
+            final RangeParams rangeParams,
+            final TestDataEnvelope td) {
         rangeRoundTrip(rangeEncode, rangeDecode, rangeParams, CompressionUtils.wrap(td.testArray));
     }
 
@@ -134,7 +135,7 @@ public class RangeTest extends HtsjdkTest {
             final RangeParams rangeParams,
             final TestDataEnvelope td,
             final Integer lowerLimit,
-            final Integer upperLimit){
+            final Integer upperLimit) {
         final ByteBuffer in = CompressionUtils.wrap(td.testArray);
         for (int size = lowerLimit; size < upperLimit; size++) {
             in.position(0);

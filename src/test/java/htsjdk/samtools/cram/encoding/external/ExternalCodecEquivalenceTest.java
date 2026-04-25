@@ -5,14 +5,11 @@ import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.io.CRAMByteReader;
 import htsjdk.samtools.cram.io.CRAMByteWriter;
 import htsjdk.samtools.cram.io.IOTestCases;
-import htsjdk.samtools.util.RuntimeIOException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Motivation for this test: we were incorrectly encoding a few CRAM record
@@ -42,12 +39,12 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     @Test(dataProvider = "testPositiveByteLists", dataProviderClass = IOTestCases.class)
     public void byteEquivalenceTest(final List<Byte> values) {
-        codecPairTest(values, this::externalByteCodecWrite,     this::externalIntegerCodecRead);
-        codecPairTest(values, this::externalByteCodecWrite,     this::externalLongCodecRead);
-        codecPairTest(values, this::externalIntegerCodecWrite,  this::externalByteCodecRead);
-        codecPairTest(values, this::externalIntegerCodecWrite,  this::externalLongCodecRead);
-        codecPairTest(values, this::externalLongCodecWrite,     this::externalByteCodecRead);
-        codecPairTest(values, this::externalLongCodecWrite,     this::externalIntegerCodecRead);
+        codecPairTest(values, this::externalByteCodecWrite, this::externalIntegerCodecRead);
+        codecPairTest(values, this::externalByteCodecWrite, this::externalLongCodecRead);
+        codecPairTest(values, this::externalIntegerCodecWrite, this::externalByteCodecRead);
+        codecPairTest(values, this::externalIntegerCodecWrite, this::externalLongCodecRead);
+        codecPairTest(values, this::externalLongCodecWrite, this::externalByteCodecRead);
+        codecPairTest(values, this::externalLongCodecWrite, this::externalIntegerCodecRead);
     }
 
     // if all values are 0 <= v <= 0x0F FF FF FF (high bit 28)
@@ -56,18 +53,16 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
 
     @Test(dataProvider = "testUint28Lists", dataProviderClass = IOTestCases.class)
     public void intEquivalenceTest(final List<Integer> values) {
-        codecPairTest(values, this::externalIntegerCodecWrite,  this::externalLongCodecRead);
-        codecPairTest(values, this::externalLongCodecWrite,     this::externalIntegerCodecRead);
+        codecPairTest(values, this::externalIntegerCodecWrite, this::externalLongCodecRead);
+        codecPairTest(values, this::externalLongCodecWrite, this::externalIntegerCodecRead);
     }
 
-    private <T extends Number> void codecPairTest(final List<T> values, CodecTestWriter<T> writer, CodecTestReader reader) {
+    private <T extends Number> void codecPairTest(
+            final List<T> values, CodecTestWriter<T> writer, CodecTestReader reader) {
         byte[] written = writer.write(values);
         final List<Long> read = reader.read(written, values.size());
 
-        final List<Long> expected = values
-                .stream()
-                .map(Number::longValue)
-                .collect(Collectors.toList());
+        final List<Long> expected = values.stream().map(Number::longValue).collect(Collectors.toList());
 
         Assert.assertEquals(read, expected);
     }
@@ -100,7 +95,6 @@ public class ExternalCodecEquivalenceTest extends HtsjdkTest {
         }
         return os.toByteArray();
     }
-
 
     private <T extends Number> byte[] externalLongCodecWrite(List<T> values) {
         final CRAMByteWriter os = new CRAMByteWriter();

@@ -30,7 +30,6 @@ import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -63,23 +62,35 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
     private final List<Histogram<HKEY>> histograms = new ArrayList<>();
 
     /** Adds a header to the collection of metrics. */
-    public void addHeader(Header h) { this.headers.add(h); }
-
-    /** Returns the list of headers. */
-    public List<Header> getHeaders() { return Collections.unmodifiableList(this.headers); }
-
-    /** Adds a bean to the collection of metrics. */
-    public void addMetric(final BEAN bean) { this.metrics.add(bean); }
-
-    /** Add multiple metric beans at once. */
-    public void addAllMetrics(final Iterable<BEAN> beanz) {
-        for (final BEAN bean : beanz) { this.addMetric(bean); }
+    public void addHeader(Header h) {
+        this.headers.add(h);
     }
 
     /** Returns the list of headers. */
-    public List<BEAN> getMetrics() { return Collections.unmodifiableList(this.metrics); }
+    public List<Header> getHeaders() {
+        return Collections.unmodifiableList(this.headers);
+    }
 
-    public Set<String> getMetricsColumnLabels() { return Collections.unmodifiableSet(this.columnLabels); }
+    /** Adds a bean to the collection of metrics. */
+    public void addMetric(final BEAN bean) {
+        this.metrics.add(bean);
+    }
+
+    /** Add multiple metric beans at once. */
+    public void addAllMetrics(final Iterable<BEAN> beanz) {
+        for (final BEAN bean : beanz) {
+            this.addMetric(bean);
+        }
+    }
+
+    /** Returns the list of headers. */
+    public List<BEAN> getMetrics() {
+        return Collections.unmodifiableList(this.metrics);
+    }
+
+    public Set<String> getMetricsColumnLabels() {
+        return Collections.unmodifiableSet(this.columnLabels);
+    }
 
     /** Returns the histogram contained in the metrics file if any. */
     public Histogram<HKEY> getHistogram() {
@@ -91,8 +102,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
     public void setHistogram(final Histogram<HKEY> histogram) {
         if (this.histograms.isEmpty()) {
             if (histogram != null) this.histograms.add(histogram);
-        }
-        else {
+        } else {
             this.histograms.set(0, histogram);
         }
     }
@@ -102,17 +112,16 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         this.histograms.add(histogram);
     }
 
-    //** Returns an unmodifiable version of the histogram list */
+    // ** Returns an unmodifiable version of the histogram list */
     public List<Histogram<HKEY>> getAllHistograms() {
         return Collections.unmodifiableList(histograms);
     }
 
     /** Returns the number of histograms added to the metrics file. */
-    public int getNumHistograms() 
-    {
-    	return this.histograms.size();
+    public int getNumHistograms() {
+        return this.histograms.size();
     }
-    
+
     /** Returns the list of headers with the specified type. */
     public List<Header> getHeaders(final Class<? extends Header> type) {
         List<Header> tmp = new ArrayList<Header>();
@@ -158,8 +167,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
             printHistogram(out, formatter);
             out.newLine();
             out.flush();
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             throw new SAMException("Could not write metrics file.", ioe);
         }
     }
@@ -192,33 +200,30 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         final int fieldCount = fields.length;
 
         // Write out the column headers
-        for (int i=0; i<fieldCount; ++i) {
+        for (int i = 0; i < fieldCount; ++i) {
             out.append(fields[i].getName());
             if (i < fieldCount - 1) {
                 out.append(MetricsFile.SEPARATOR);
-            }
-            else {
+            } else {
                 out.newLine();
             }
         }
 
         // Write out each of the data rows
         for (final BEAN bean : this.metrics) {
-            for (int i=0; i<fieldCount; ++i) {
+            for (int i = 0; i < fieldCount; ++i) {
                 try {
                     final Object value = fields[i].get(bean);
                     out.append(StringUtil.assertCharactersNotInString(formatter.format(value), '\t', '\n'));
 
                     if (i < fieldCount - 1) {
                         out.append(MetricsFile.SEPARATOR);
-                    }
-                    else {
+                    } else {
                         out.newLine();
                     }
-                }
-                catch (IllegalAccessException iae) {
-                    throw new SAMException("Could not read property " + fields[i].getName()
-                            + " from class of type " + bean.getClass());
+                } catch (IllegalAccessException iae) {
+                    throw new SAMException("Could not read property " + fields[i].getName() + " from class of type "
+                            + bean.getClass());
                 }
             }
         }
@@ -238,17 +243,26 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         }
 
         // Build a combined key set.  Assume comparator is the same for all Histograms
-        final java.util.Set<HKEY> keys = new TreeSet<HKEY>(nonEmptyHistograms.get(0).comparator());
+        final java.util.Set<HKEY> keys =
+                new TreeSet<HKEY>(nonEmptyHistograms.get(0).comparator());
         for (final Histogram<HKEY> histo : nonEmptyHistograms) {
             if (histo != null) keys.addAll(histo.keySet());
         }
 
         // Add a header for the histogram key type
-        out.append(HISTO_HEADER + nonEmptyHistograms.get(0).keySet().iterator().next().getClass().getName());
+        out.append(HISTO_HEADER
+                + nonEmptyHistograms
+                        .get(0)
+                        .keySet()
+                        .iterator()
+                        .next()
+                        .getClass()
+                        .getName());
         out.newLine();
 
         // Output a header row
-        out.append(StringUtil.assertCharactersNotInString(nonEmptyHistograms.get(0).getBinLabel(), '\t', '\n'));
+        out.append(
+                StringUtil.assertCharactersNotInString(nonEmptyHistograms.get(0).getBinLabel(), '\t', '\n'));
         for (final Histogram<HKEY> histo : nonEmptyHistograms) {
             out.append(SEPARATOR);
             out.append(StringUtil.assertCharactersNotInString(histo.getValueLabel(), '\t', '\n'));
@@ -292,48 +306,43 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                 line = line.trim();
                 if ("".equals(line)) {
                     // Do nothing! Nothing to be done!
-                }
-                else if (line.startsWith(METRIC_HEADER) || line.startsWith(HISTO_HEADER)) {
+                } else if (line.startsWith(METRIC_HEADER) || line.startsWith(HISTO_HEADER)) {
                     // A line that starts with "## METRICS CLASS" heralds the start of the actual
                     // data. Bounce our butts out of header parsing without reading the next line.
                     // This isn't in the while loop's conditional because we want to trim() first.
                     break;
-                }
-                else if (line.startsWith(MAJOR_HEADER_PREFIX)) {
+                } else if (line.startsWith(MAJOR_HEADER_PREFIX)) {
                     if (header != null) {
                         throw new IllegalStateException("Consecutive header class lines encountered.");
                     }
-                    
-                    final String className = line.substring(MAJOR_HEADER_PREFIX.length()).trim();
+
+                    final String className =
+                            line.substring(MAJOR_HEADER_PREFIX.length()).trim();
                     try {
                         header = (Header) loadClass(className, true).newInstance();
-                    }
-                    catch (final Exception e) {
+                    } catch (final Exception e) {
                         throw new SAMException("Error load and/or instantiating an instance of " + className, e);
                     }
-                }
-                else if (line.startsWith(MINOR_HEADER_PREFIX)) {
+                } else if (line.startsWith(MINOR_HEADER_PREFIX)) {
                     if (header == null) {
                         throw new IllegalStateException("Header class must precede header value:" + line);
                     }
                     header.parse(line.substring(MINOR_HEADER_PREFIX.length()));
                     this.headers.add(header);
                     header = null;
-                }
-                else {
+                } else {
                     throw new SAMException("Illegal state. Found following string in metrics file header: " + line);
                 }
             }
 
             // Read space between headers and metrics, if any
-            while (line != null && ! line.trim().startsWith(MAJOR_HEADER_PREFIX)) {
+            while (line != null && !line.trim().startsWith(MAJOR_HEADER_PREFIX)) {
                 line = in.readLine();
             }
 
-
             if (line != null) {
                 line = line.trim();
-            
+
                 // Then read the metrics if there are any
                 if (line.startsWith(METRIC_HEADER)) {
                     // Get the metric class from the header
@@ -341,8 +350,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                     Class<?> type = null;
                     try {
                         type = loadClass(className, true);
-                    }
-                    catch (final ClassNotFoundException cnfe) {
+                    } catch (final ClassNotFoundException cnfe) {
                         throw new SAMException("Could not locate class with name " + className, cnfe);
                     }
 
@@ -350,13 +358,12 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                     final String[] fieldNames = in.readLine().split(SEPARATOR);
                     Collections.addAll(columnLabels, fieldNames);
                     final Field[] fields = new Field[fieldNames.length];
-                    for (int i=0; i<fieldNames.length; ++i) {
+                    for (int i = 0; i < fieldNames.length; ++i) {
                         try {
                             fields[i] = type.getField(fieldNames[i]);
-                        }
-                        catch (final Exception e) {
-                            throw new SAMException("Could not get field with name " + fieldNames[i] +
-                                " from class " + type.getName());
+                        } catch (final Exception e) {
+                            throw new SAMException(
+                                    "Could not get field with name " + fieldNames[i] + " from class " + type.getName());
                         }
                     }
 
@@ -364,24 +371,29 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                     while ((line = in.readLine()) != null) {
                         if ("".equals(line.trim())) {
                             break;
-                        }
-                        else {
+                        } else {
                             final String[] values = line.split(SEPARATOR, -1);
                             BEAN bean = null;
 
-                            try { bean = (BEAN) type.newInstance(); }
-                            catch (final Exception e) { throw new SAMException("Error instantiating a " + type.getName(), e); }
+                            try {
+                                bean = (BEAN) type.newInstance();
+                            } catch (final Exception e) {
+                                throw new SAMException("Error instantiating a " + type.getName(), e);
+                            }
 
-                            for (int i=0; i<fields.length; ++i) {
+                            for (int i = 0; i < fields.length; ++i) {
                                 Object value = null;
                                 if (values[i] != null && !values[i].isEmpty()) {
                                     value = formatter.parseObject(values[i], fields[i].getType());
                                 }
 
-                                try { fields[i].set(bean, value); }
-                                catch (final Exception e) {
-                                    throw new SAMException("Error setting field " + fields[i].getName() +
-                                            " on class of type " + type.getName(), e);
+                                try {
+                                    fields[i].set(bean, value);
+                                } catch (final Exception e) {
+                                    throw new SAMException(
+                                            "Error setting field " + fields[i].getName() + " on class of type "
+                                                    + type.getName(),
+                                            e);
                                 }
                             }
 
@@ -392,7 +404,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
             }
 
             // Read away any blank lines between metrics and histograms
-            while (line != null && ! line.trim().startsWith(MAJOR_HEADER_PREFIX)) {
+            while (line != null && !line.trim().startsWith(MAJOR_HEADER_PREFIX)) {
                 line = in.readLine();
             }
 
@@ -405,12 +417,15 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                     final String keyClassName = line.split(SEPARATOR)[1].trim();
                     Class<?> keyClass = null;
 
-                    try { keyClass = loadClass(keyClassName, true); }
-                    catch (final ClassNotFoundException cnfe) { throw new SAMException("Could not load class with name " + keyClassName); }
+                    try {
+                        keyClass = loadClass(keyClassName, true);
+                    } catch (final ClassNotFoundException cnfe) {
+                        throw new SAMException("Could not load class with name " + keyClassName);
+                    }
 
                     // Read the next line with the bin and value labels
                     final String[] labels = in.readLine().split(SEPARATOR);
-                    for (int i=1; i<labels.length; ++i) {
+                    for (int i = 1; i < labels.length; ++i) {
                         this.histograms.add(new Histogram<HKEY>(labels[0], labels[i]));
                     }
 
@@ -419,18 +434,16 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                         final String[] fields = line.trim().split(SEPARATOR);
                         final HKEY key = (HKEY) formatter.parseObject(fields[0], keyClass);
 
-                        for (int i=1; i<fields.length; ++i) {
+                        for (int i = 1; i < fields.length; ++i) {
                             final double value = formatter.parseDouble(fields[i]);
-                            this.histograms.get(i-1).increment(key, value);
+                            this.histograms.get(i - 1).increment(key, value);
                         }
                     }
                 }
             }
-        }
-        catch (final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new SAMException("Could not read metrics from reader.", ioe);
-        }
-        finally{
+        } finally {
             CloserUtil.close(in);
         }
     }
@@ -439,39 +452,42 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
     private Class<?> loadClass(final String className, final boolean tryOtherPackages) throws ClassNotFoundException {
         // List of alternative packages to check in case classes moved around
         final String[] packages = new String[] {
-                "edu.mit.broad.picard.genotype.concordance",
-                "edu.mit.broad.picard.genotype.fingerprint",
-                "edu.mit.broad.picard.ic",
-                "edu.mit.broad.picard.illumina",
-                "edu.mit.broad.picard.jumping",
-                "edu.mit.broad.picard.quality",
-                "edu.mit.broad.picard.samplevalidation",
-                "htsjdk.samtools.analysis",
-                "htsjdk.samtools.analysis.directed",
-                "htsjdk.samtools.sam",
-                "htsjdk.samtools.metrics",
-                "picard.sam",
-                "picard.metrics",
-                "picard.illumina",
-                "picard.analysis",
-                "picard.analysis.directed",
-                "picard.vcf"
+            "edu.mit.broad.picard.genotype.concordance",
+            "edu.mit.broad.picard.genotype.fingerprint",
+            "edu.mit.broad.picard.ic",
+            "edu.mit.broad.picard.illumina",
+            "edu.mit.broad.picard.jumping",
+            "edu.mit.broad.picard.quality",
+            "edu.mit.broad.picard.samplevalidation",
+            "htsjdk.samtools.analysis",
+            "htsjdk.samtools.analysis.directed",
+            "htsjdk.samtools.sam",
+            "htsjdk.samtools.metrics",
+            "picard.sam",
+            "picard.metrics",
+            "picard.illumina",
+            "picard.analysis",
+            "picard.analysis.directed",
+            "picard.vcf"
         };
 
-        try { return Class.forName(className); }
-        catch (ClassNotFoundException cnfe) {
+        try {
+            return Class.forName(className);
+        } catch (ClassNotFoundException cnfe) {
             if (tryOtherPackages) {
                 for (final String p : packages) {
                     try {
                         return loadClass(p + className.substring(className.lastIndexOf('.')), false);
+                    } catch (ClassNotFoundException cnf2) {
+                        /* do nothing */
                     }
-                    catch (ClassNotFoundException cnf2) {/* do nothing */}
                     // If it ws an inner class, try and see if it's a stand-alone class now
                     if (className.indexOf('$') > -1) {
                         try {
                             return loadClass(p + "." + className.substring(className.lastIndexOf('$') + 1), false);
+                        } catch (ClassNotFoundException cnf2) {
+                            /* do nothing */
                         }
-                        catch (ClassNotFoundException cnf2) {/* do nothing */}
                     }
                 }
             }
@@ -562,7 +578,6 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         } catch (FileNotFoundException e) {
             throw new SAMException(e.getMessage(), e);
         }
-
     }
 
     /**

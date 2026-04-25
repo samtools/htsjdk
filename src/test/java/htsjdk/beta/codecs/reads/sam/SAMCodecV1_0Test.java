@@ -2,11 +2,11 @@ package htsjdk.beta.codecs.reads.sam;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.sam.samV1_0.SAMCodecV1_0;
-import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.io.bundle.InputStreamResource;
+import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsFormats;
@@ -15,11 +15,10 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import java.util.Collections;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.Collections;
 
 public class SAMCodecV1_0Test extends HtsjdkTest {
     final IOPath TEST_DIR = new HtsPath("src/test/resources/htsjdk/samtools/");
@@ -28,7 +27,8 @@ public class SAMCodecV1_0Test extends HtsjdkTest {
     public void testSAMDecoder() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "coordinate_sorted.sam");
 
-        try (final ReadsDecoder samDecoder = HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
+        try (final ReadsDecoder samDecoder =
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(samDecoder);
             Assert.assertEquals(samDecoder.getFileFormat(), ReadsFormats.SAM);
             Assert.assertEquals(samDecoder.getVersion(), SAMCodecV1_0.VERSION_1);
@@ -45,50 +45,54 @@ public class SAMCodecV1_0Test extends HtsjdkTest {
     @Test
     public void testSAMEncoder() {
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".sam");
-        try (final SAMEncoder samEncoder = (SAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
+        try (final SAMEncoder samEncoder =
+                (SAMEncoder) HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(samEncoder);
             Assert.assertEquals(samEncoder.getFileFormat(), ReadsFormats.SAM);
         }
     }
 
-    @DataProvider(name="inputBundles")
+    @DataProvider(name = "inputBundles")
     private Object[][] getInputVariations() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "coordinate_sorted.sam");
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".sam");
 
         return new Object[][] {
-                {
-                        new Bundle(BundleResourceType.CT_ALIGNED_READS, Collections.singletonList(
-                                new IOPathResource(inputPath, BundleResourceType.CT_ALIGNED_READS)
-                        )),
-                        outputPath
-                },
-                {
-                        new Bundle(BundleResourceType.CT_ALIGNED_READS, Collections.singletonList(
-                                new InputStreamResource(
-                                        inputPath.getInputStream(),
-                                        "test sam stream",
-                                        BundleResourceType.CT_ALIGNED_READS)
-                        )),
-                        outputPath
-                },
+            {
+                new Bundle(
+                        BundleResourceType.CT_ALIGNED_READS,
+                        Collections.singletonList(new IOPathResource(inputPath, BundleResourceType.CT_ALIGNED_READS))),
+                outputPath
+            },
+            {
+                new Bundle(
+                        BundleResourceType.CT_ALIGNED_READS,
+                        Collections.singletonList(new InputStreamResource(
+                                inputPath.getInputStream(), "test sam stream", BundleResourceType.CT_ALIGNED_READS))),
+                outputPath
+            },
         };
     }
 
-    @Test(dataProvider="inputB" +
-            "undles")
+    @Test(dataProvider = "inputB" + "undles")
     public void testRoundTripSAM(final Bundle inputBundle, final IOPath outputPath) {
         roundTripFromBundle(inputBundle, outputPath);
     }
 
     private void roundTripFromBundle(final Bundle inputBundle, final IOPath outputPath) {
-        try (final ReadsDecoder samDecoder = HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputBundle);
-             final ReadsEncoder samEncoder = HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
+        try (final ReadsDecoder samDecoder =
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputBundle);
+                final ReadsEncoder samEncoder =
+                        HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
 
             Assert.assertNotNull(samDecoder);
             Assert.assertEquals(samDecoder.getFileFormat(), ReadsFormats.SAM);
-            Assert.assertTrue(samDecoder.getDisplayName().contains(
-                    inputBundle.get(BundleResourceType.CT_ALIGNED_READS).get().getDisplayName()));
+            Assert.assertTrue(samDecoder
+                    .getDisplayName()
+                    .contains(inputBundle
+                            .get(BundleResourceType.CT_ALIGNED_READS)
+                            .get()
+                            .getDisplayName()));
 
             Assert.assertNotNull(samEncoder);
             Assert.assertEquals(samEncoder.getFileFormat(), ReadsFormats.SAM);
@@ -104,5 +108,4 @@ public class SAMCodecV1_0Test extends HtsjdkTest {
             }
         }
     }
-
 }

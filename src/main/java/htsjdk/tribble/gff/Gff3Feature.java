@@ -2,7 +2,6 @@ package htsjdk.tribble.gff;
 
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,7 +21,6 @@ public interface Gff3Feature extends Feature {
 
     boolean isTopLevelFeature();
 
-
     default String getSource() {
         return getBaseData().getSource();
     }
@@ -40,26 +38,27 @@ public interface Gff3Feature extends Feature {
         return getBaseData().getPhase();
     }
 
-    default String getType() {return getBaseData().getType();}
+    default String getType() {
+        return getBaseData().getType();
+    }
 
     @Override
     default String getContig() {
         return getBaseData().getContig();
     }
 
-     @Override
+    @Override
     default int getStart() {
         return getBaseData().getStart();
     }
 
-
     default List<String> getAttribute(final String key) {
         return getBaseData().getAttribute(key);
     }
-    
+
     /**
      * Returns <tt>true</tt> if this record contains an attribute for the specified key.
-     * 
+     *
      * @param key key whose presence in this map is to be tested
      * @return <tt>true</tt> if this map contains an attribute for the specified key
      */
@@ -68,28 +67,38 @@ public interface Gff3Feature extends Feature {
     }
 
     /**
-     * Most attributes in a GFF file are present just one time in a line, e.g. : <tt>gene_biotype</tt>,  <tt>gene_name</tt>, etc ...  
+     * Most attributes in a GFF file are present just one time in a line, e.g. : <tt>gene_biotype</tt>,  <tt>gene_name</tt>, etc ...
      * This function returns an <tt>Optional.empty</tt> if the <tt>key</tt> is not present,
      *  an <tt>Optional.of(value)</tt> if there is only one value associated to the <tt>key</tt>,
      *  or it throws an <tt>IllegalArgumentException</tt> if there is more than one value.
-     * 
+     *
      * @param key key whose presence in the attributes is to be tested
      * @return <tt>Optional&lt;String&gt;</tt> if this map contains zero or one attribute for the specified key
      * @throws IllegalArgumentException if there is more than one value.
      */
     default Optional<String> getUniqueAttribute(final String key) {
-       return getBaseData().getUniqueAttribute(key);
+        return getBaseData().getUniqueAttribute(key);
     }
-    
-    default Map<String, List<String>> getAttributes() { return getBaseData().getAttributes();}
 
-    default String getID() { return getBaseData().getId();}
+    default Map<String, List<String>> getAttributes() {
+        return getBaseData().getAttributes();
+    }
 
-    default String getName() { return getBaseData().getName();}
+    default String getID() {
+        return getBaseData().getId();
+    }
 
-    default List<String> getAliases() { return getBaseData().getAliases();}
+    default String getName() {
+        return getBaseData().getName();
+    }
 
-    default double getScore() { return getBaseData().getScore();}
+    default List<String> getAliases() {
+        return getBaseData().getAliases();
+    }
+
+    default double getScore() {
+        return getBaseData().getScore();
+    }
 
     /**
      * Get BaseData object which contains all the basic information of the feature

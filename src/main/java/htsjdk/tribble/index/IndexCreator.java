@@ -31,7 +31,7 @@ import htsjdk.tribble.Feature;
  * An interface for creating indexes
  *
  * @author jrobinso
- */                                                                           
+ */
 public interface IndexCreator {
     /**
      * Add a feature to the index
@@ -51,7 +51,5 @@ public interface IndexCreator {
      * Set the sequence dictionary for the index. Default implementation does nothing.
      * @param dict the dictionary to add to the index.
      */
-    public default void setIndexSequenceDictionary(final SAMSequenceDictionary dict) { }
+    public default void setIndexSequenceDictionary(final SAMSequenceDictionary dict) {}
 }
-
-

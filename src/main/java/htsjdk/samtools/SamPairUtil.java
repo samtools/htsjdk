@@ -26,7 +26,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.PeekableIterator;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,14 +51,11 @@ public class SamPairUtil {
      *
      * PairOrientation only makes sense for a pair of reads that are both mapped to the same contig/chromosome
      */
-    public static enum PairOrientation
-    {
-        FR,     // ( 5' --F-->       <--R-- 5'  )  - aka. innie
-        RF,     // (   <--R-- 5'   5' --F-->    )  - aka. outie
+    public static enum PairOrientation {
+        FR, // ( 5' --F-->       <--R-- 5'  )  - aka. innie
+        RF, // (   <--R-- 5'   5' --F-->    )  - aka. outie
         TANDEM // ( 5' --F-->   5' --F-->  or  (  <--R-- 5'   <--R-- 5'  )
-
     }
-
 
     /**
      * Computes the pair orientation of the given SAMRecord.
@@ -82,29 +78,29 @@ public class SamPairUtil {
      * that need symmetric orientation on such pairs should ensure the MC tag
      * is set on at least the forward-strand record.
      */
-    public static PairOrientation getPairOrientation(final SAMRecord record)
-    {
+    public static PairOrientation getPairOrientation(final SAMRecord record) {
         final boolean readIsOnReverseStrand = record.getReadNegativeStrandFlag();
 
-        if(record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
-            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() +
-                    ". This method only works for SAMRecords that are paired reads with both reads aligned.");
+        if (record.getReadUnmappedFlag() || !record.getReadPairedFlag() || record.getMateUnmappedFlag()) {
+            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName()
+                    + ". This method only works for SAMRecords that are paired reads with both reads aligned.");
         }
 
         if (!record.getReferenceIndex().equals(record.getMateReferenceIndex())) {
-            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName() +
-                    ". This method only works for SAMRecords that are paired reads with both reads aligned to the" +
-                    " same reference. Found difference references:" + record.getReferenceName() + " and " +
-                    record.getMateReferenceName() + ".");
+            throw new IllegalArgumentException("Invalid SAMRecord: " + record.getReadName()
+                    + ". This method only works for SAMRecords that are paired reads with both reads aligned to the"
+                    + " same reference. Found difference references:"
+                    + record.getReferenceName() + " and " + record.getMateReferenceName()
+                    + ".");
         }
 
-        if(readIsOnReverseStrand == record.getMateNegativeStrandFlag() )  {
+        if (readIsOnReverseStrand == record.getMateNegativeStrandFlag()) {
             return PairOrientation.TANDEM;
         }
 
-        final long positiveStrandFivePrimePos = ( readIsOnReverseStrand
-                ?  record.getMateAlignmentStart()  //mate's 5' position  ( x---> )
-                :  record.getAlignmentStart() );   //read's 5' position  ( x---> )
+        final long positiveStrandFivePrimePos = (readIsOnReverseStrand
+                ? record.getMateAlignmentStart() // mate's 5' position  ( x---> )
+                : record.getAlignmentStart()); // read's 5' position  ( x---> )
 
         final long negativeStrandFivePrimePos;
         if (readIsOnReverseStrand) {
@@ -119,7 +115,8 @@ public class SamPairUtil {
             // SAMUtils.getMateAlignmentEnd.
             final Cigar mateCigar = SAMUtils.getMateCigar(record);
             if (mateCigar != null) {
-                negativeStrandFivePrimePos = CoordMath.getEnd(record.getMateAlignmentStart(), mateCigar.getReferenceLength());
+                negativeStrandFivePrimePos =
+                        CoordMath.getEnd(record.getMateAlignmentStart(), mateCigar.getReferenceLength());
             } else {
                 // Fallback: derive the mate's 5' position from TLEN under
                 // htsjdk's convention (see computeInsertSize), where TLEN
@@ -131,20 +128,17 @@ public class SamPairUtil {
                 // convention (e.g., bwa on a dovetail pair); callers that
                 // need symmetric results in that situation must provide the
                 // MC tag.
-                negativeStrandFivePrimePos = CoordMath.getEnd(record.getAlignmentStart(), record.getInferredInsertSize());
+                negativeStrandFivePrimePos =
+                        CoordMath.getEnd(record.getAlignmentStart(), record.getInferredInsertSize());
             }
         }
 
-        return ( positiveStrandFivePrimePos <= negativeStrandFivePrimePos
-                ? PairOrientation.FR
-                : PairOrientation.RF );
+        return (positiveStrandFivePrimePos <= negativeStrandFivePrimePos ? PairOrientation.FR : PairOrientation.RF);
     }
 
-
-
     // TODO: KT and TF say this is more complicated than what I have here
-    public static boolean isProperPair(final SAMRecord firstEnd, final SAMRecord secondEnd,
-                                       final List<PairOrientation> expectedOrientations) {
+    public static boolean isProperPair(
+            final SAMRecord firstEnd, final SAMRecord secondEnd, final List<PairOrientation> expectedOrientations) {
         // are both records mapped?
         if (firstEnd.getReadUnmappedFlag() || secondEnd.getReadUnmappedFlag()) {
             return false;
@@ -167,27 +161,20 @@ public class SamPairUtil {
         // Validate paired reads arrive as first of pair, then second of pair
 
         if (firstOfPair == null) {
-            throw new SAMException(
-                    "First record does not exist - cannot perform mate assertion!");
+            throw new SAMException("First record does not exist - cannot perform mate assertion!");
         } else if (secondOfPair == null) {
-            throw new SAMException(
-                    firstOfPair.toString() + " is missing its mate");
+            throw new SAMException(firstOfPair.toString() + " is missing its mate");
         } else if (!firstOfPair.getReadPairedFlag()) {
-            throw new SAMException(
-                    "First record is not marked as paired: " + firstOfPair.toString());
+            throw new SAMException("First record is not marked as paired: " + firstOfPair.toString());
         } else if (!secondOfPair.getReadPairedFlag()) {
-            throw new SAMException(
-                    "Second record is not marked as paired: " + secondOfPair.toString());
+            throw new SAMException("Second record is not marked as paired: " + secondOfPair.toString());
         } else if (!firstOfPair.getFirstOfPairFlag()) {
-            throw new SAMException(
-                    "First record is not marked as first of pair: " + firstOfPair.toString());
+            throw new SAMException("First record is not marked as first of pair: " + firstOfPair.toString());
         } else if (!secondOfPair.getSecondOfPairFlag()) {
-            throw new SAMException(
-                    "Second record is not marked as second of pair: " + secondOfPair.toString());
+            throw new SAMException("Second record is not marked as second of pair: " + secondOfPair.toString());
         } else if (!firstOfPair.getReadName().equals(secondOfPair.getReadName())) {
-            throw new SAMException(
-                    "First [" + firstOfPair.getReadName() + "] and Second [" +
-                            secondOfPair.getReadName() + "] readnames do not match!");
+            throw new SAMException("First [" + firstOfPair.getReadName() + "] and Second [" + secondOfPair.getReadName()
+                    + "] readnames do not match!");
         }
     }
 
@@ -200,15 +187,14 @@ public class SamPairUtil {
      * @return the secondOfPair SAMRecord
      * @throws SAMException when the secondOfPair mate cannot be obtained due to assertion failures
      */
-    public static SAMRecord obtainAssertedMate(final Iterator<SAMRecord> samRecordIterator,
-                                               final SAMRecord firstOfPair) {
+    public static SAMRecord obtainAssertedMate(
+            final Iterator<SAMRecord> samRecordIterator, final SAMRecord firstOfPair) {
         if (samRecordIterator.hasNext()) {
             final SAMRecord secondOfPair = samRecordIterator.next();
             assertMate(firstOfPair, secondOfPair);
             return secondOfPair;
         } else {
-            throw new SAMException(
-                    "Second record does not exist: " + firstOfPair.getReadName());
+            throw new SAMException("Second record does not exist: " + firstOfPair.getReadName());
         }
     }
 
@@ -226,8 +212,10 @@ public class SamPairUtil {
             return 0;
         }
 
-        final int firstEnd5PrimePosition = firstEnd.getReadNegativeStrandFlag()? firstEnd.getAlignmentEnd(): firstEnd.getAlignmentStart();
-        final int secondEnd5PrimePosition = secondEnd.getReadNegativeStrandFlag()? secondEnd.getAlignmentEnd(): secondEnd.getAlignmentStart();
+        final int firstEnd5PrimePosition =
+                firstEnd.getReadNegativeStrandFlag() ? firstEnd.getAlignmentEnd() : firstEnd.getAlignmentStart();
+        final int secondEnd5PrimePosition =
+                secondEnd.getReadNegativeStrandFlag() ? secondEnd.getAlignmentEnd() : secondEnd.getAlignmentStart();
 
         final int adjustment = (secondEnd5PrimePosition >= firstEnd5PrimePosition) ? +1 : -1;
         return secondEnd5PrimePosition - firstEnd5PrimePosition + adjustment;
@@ -266,8 +254,7 @@ public class SamPairUtil {
             if (setMateCigar) {
                 rec1.setAttribute(SAMTag.MC, rec2.getCigarString());
                 rec2.setAttribute(SAMTag.MC, rec1.getCigarString());
-            }
-            else {
+            } else {
                 rec1.setAttribute(SAMTag.MC, null);
                 rec2.setAttribute(SAMTag.MC, null);
             }
@@ -296,7 +283,7 @@ public class SamPairUtil {
         }
         // And if only one is mapped copy it's coordinate information to the mate
         else {
-            final SAMRecord mapped   = rec1.getReadUnmappedFlag() ? rec2 : rec1;
+            final SAMRecord mapped = rec1.getReadUnmappedFlag() ? rec2 : rec1;
             final SAMRecord unmapped = rec1.getReadUnmappedFlag() ? rec1 : rec2;
             unmapped.setReferenceIndex(mapped.getReferenceIndex());
             unmapped.setAlignmentStart(mapped.getAlignmentStart());
@@ -334,7 +321,8 @@ public class SamPairUtil {
      * @deprecated use {@link #setMateInfo(SAMRecord, SAMRecord, boolean)} instead
      */
     @Deprecated
-    public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header, final boolean setMateCigar) {
+    public static void setMateInfo(
+            final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header, final boolean setMateCigar) {
         setMateInfo(rec1, rec2, setMateCigar);
     }
 
@@ -357,9 +345,8 @@ public class SamPairUtil {
      * @param matePrimary the primary alignment of the the mate pair of the supplemental
      * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
      */
-    public static void setMateInformationOnSupplementalAlignment( final SAMRecord supplemental,
-                                                                  final SAMRecord matePrimary,
-                                                                  final boolean setMateCigar) {
+    public static void setMateInformationOnSupplementalAlignment(
+            final SAMRecord supplemental, final SAMRecord matePrimary, final boolean setMateCigar) {
         supplemental.setMateReferenceIndex(matePrimary.getReferenceIndex());
         supplemental.setMateAlignmentStart(matePrimary.getAlignmentStart());
         supplemental.setMateNegativeStrandFlag(matePrimary.getReadNegativeStrandFlag());
@@ -367,8 +354,7 @@ public class SamPairUtil {
         supplemental.setInferredInsertSize(-matePrimary.getInferredInsertSize());
         if (setMateCigar && !matePrimary.getReadUnmappedFlag()) {
             supplemental.setAttribute(SAMTag.MC, matePrimary.getCigarString());
-        }
-        else {
+        } else {
             supplemental.setAttribute(SAMTag.MC, null);
         }
         supplemental.setAttribute(SAMTag.MQ, matePrimary.getMappingQuality());
@@ -380,8 +366,8 @@ public class SamPairUtil {
      * @param supplemental a supplemental alignment for the mate pair of the primary supplied
      * @param matePrimary the primary alignment of the the mate pair of the supplemental
      */
-    public static void setMateInformationOnSupplementalAlignment( final SAMRecord supplemental,
-                                                                  final SAMRecord matePrimary) {
+    public static void setMateInformationOnSupplementalAlignment(
+            final SAMRecord supplemental, final SAMRecord matePrimary) {
         setMateInformationOnSupplementalAlignment(supplemental, matePrimary, false);
     }
 
@@ -390,9 +376,11 @@ public class SamPairUtil {
      * @deprecated use {@link #setProperPairAndMateInfo(SAMRecord, SAMRecord, List)} instead
      */
     @Deprecated
-    public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
-                                                final SAMFileHeader header,
-                                                final List<PairOrientation> expectedOrientations) {
+    public static void setProperPairAndMateInfo(
+            final SAMRecord rec1,
+            final SAMRecord rec2,
+            final SAMFileHeader header,
+            final List<PairOrientation> expectedOrientations) {
         setProperPairAndMateInfo(rec1, rec2, expectedOrientations);
     }
 
@@ -401,33 +389,38 @@ public class SamPairUtil {
      * @deprecated use {@link #setProperPairAndMateInfo(SAMRecord, SAMRecord, List, boolean)}
      */
     @Deprecated
-    public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
-                                                final SAMFileHeader header,
-                                                final List<PairOrientation> expectedOrientations,
-                                                final boolean addMateCigar) {
+    public static void setProperPairAndMateInfo(
+            final SAMRecord rec1,
+            final SAMRecord rec2,
+            final SAMFileHeader header,
+            final List<PairOrientation> expectedOrientations,
+            final boolean addMateCigar) {
         setProperPairAndMateInfo(rec1, rec2, expectedOrientations, addMateCigar);
     }
 
     /**
      * This method will clear any mate cigar already present.
      */
-    public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
-                                                final List<PairOrientation> expectedOrientations) {
+    public static void setProperPairAndMateInfo(
+            final SAMRecord rec1, final SAMRecord rec2, final List<PairOrientation> expectedOrientations) {
         setProperPairAndMateInfo(rec1, rec2, expectedOrientations, false);
     }
 
     /**
      * @param addMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
      */
-    public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
-                                                final List<PairOrientation> expectedOrientations,
-                                                final boolean addMateCigar) {
+    public static void setProperPairAndMateInfo(
+            final SAMRecord rec1,
+            final SAMRecord rec2,
+            final List<PairOrientation> expectedOrientations,
+            final boolean addMateCigar) {
         setMateInfo(rec1, rec2, addMateCigar);
         setProperPairFlags(rec1, rec2, expectedOrientations);
     }
 
-    public static void setProperPairFlags(final SAMRecord rec1, final SAMRecord rec2, final List<PairOrientation> expectedOrientations) {
-        final boolean properPair =  (!rec1.getReadUnmappedFlag() && !rec2.getReadUnmappedFlag())
+    public static void setProperPairFlags(
+            final SAMRecord rec1, final SAMRecord rec2, final List<PairOrientation> expectedOrientations) {
+        final boolean properPair = (!rec1.getReadUnmappedFlag() && !rec2.getReadUnmappedFlag())
                 ? isProperPair(rec1, rec2, expectedOrientations)
                 : false;
         rec1.setProperPairFlag(properPair);
@@ -466,7 +459,8 @@ public class SamPairUtil {
          * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
          * @param ignoreMissingMates set this to true if we are to ignore missing mates, otherwise an exception will be thrown when a missing mate is encountered
          */
-        public SetMateInfoIterator(final Iterator<SAMRecord> iterator, final boolean setMateCigar, final boolean ignoreMissingMates) {
+        public SetMateInfoIterator(
+                final Iterator<SAMRecord> iterator, final boolean setMateCigar, final boolean ignoreMissingMates) {
             super(iterator);
             this.setMateCigar = setMateCigar;
             this.ignoreMissingMates = ignoreMissingMates;
@@ -475,7 +469,9 @@ public class SamPairUtil {
         /**
          * @return the current number of mate cigars added.  This could be more than the number of records returned.
          */
-        public long getNumMateCigarsAdded() { return this.numMateCigarsAdded; }
+        public long getNumMateCigarsAdded() {
+            return this.numMateCigarsAdded;
+        }
 
         @Override
         public boolean hasNext() {
@@ -491,9 +487,9 @@ public class SamPairUtil {
             if (!records.isEmpty()) return;
 
             /*
-              Get all records with the same name, and then identify the canonical first and second end to which we
-              want to set mate info.
-             */
+             Get all records with the same name, and then identify the canonical first and second end to which we
+             want to set mate info.
+            */
             SAMRecord firstPrimaryRecord = null, secondPrimaryRecord = null;
             final SAMRecord first = super.peek(); // peek so we consider it in the following loop
             boolean containsSupplementalRecord = false;
@@ -504,12 +500,16 @@ public class SamPairUtil {
                     if (!record.isSecondaryOrSupplementary()) {
                         if (record.getFirstOfPairFlag()) {
                             if (null != firstPrimaryRecord) {
-                                throw new SAMException("Found two records that are paired, not supplementary, and first of the pair: " + record.getReadName());
+                                throw new SAMException(
+                                        "Found two records that are paired, not supplementary, and first of the pair: "
+                                                + record.getReadName());
                             }
                             firstPrimaryRecord = record;
                         } else if (record.getSecondOfPairFlag()) {
                             if (null != secondPrimaryRecord) {
-                                throw new SAMException("Found two records that are paired, not supplementary, and second of the pair: " + record.getReadName());
+                                throw new SAMException(
+                                        "Found two records that are paired, not supplementary, and second of the pair: "
+                                                + record.getReadName());
                             }
                             secondPrimaryRecord = record;
                         }
@@ -519,7 +519,6 @@ public class SamPairUtil {
                 records.add(record);
             }
             // TODO: should we check that we do not have a mix of paired and fragment reads?
-
 
             // we must find both records to update the mate info
             if (null != firstPrimaryRecord && null != secondPrimaryRecord) {
@@ -532,9 +531,11 @@ public class SamPairUtil {
                     for (final SAMRecord record : records) {
                         if (record.getReadPairedFlag() && record.getSupplementaryAlignmentFlag()) {
                             if (record.getFirstOfPairFlag()) {
-                                SamPairUtil.setMateInformationOnSupplementalAlignment(record, secondPrimaryRecord, this.setMateCigar);
+                                SamPairUtil.setMateInformationOnSupplementalAlignment(
+                                        record, secondPrimaryRecord, this.setMateCigar);
                             } else {
-                                SamPairUtil.setMateInformationOnSupplementalAlignment(record, firstPrimaryRecord, this.setMateCigar);
+                                SamPairUtil.setMateInformationOnSupplementalAlignment(
+                                        record, firstPrimaryRecord, this.setMateCigar);
                             }
                             this.numMateCigarsAdded++;
                         }

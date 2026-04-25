@@ -37,15 +37,15 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     @DataProvider
     public Object[][] chars() {
         return new Object[][] {
-                {'M', CigarOperator.M},
-                {'I', CigarOperator.I},
-                {'D', CigarOperator.D},
-                {'N', CigarOperator.N},
-                {'S', CigarOperator.S},
-                {'H', CigarOperator.H},
-                {'P', CigarOperator.P},
-                {'=', CigarOperator.EQ},
-                {'X', CigarOperator.X}
+            {'M', CigarOperator.M},
+            {'I', CigarOperator.I},
+            {'D', CigarOperator.D},
+            {'N', CigarOperator.N},
+            {'S', CigarOperator.S},
+            {'H', CigarOperator.H},
+            {'P', CigarOperator.P},
+            {'=', CigarOperator.EQ},
+            {'X', CigarOperator.X}
         };
     }
 
@@ -61,9 +61,7 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] illegalChars() {
-        return new Object[][] {
-                {'A'}, {'E'}, {'O'}, {'U'}
-        };
+        return new Object[][] {{'A'}, {'E'}, {'O'}, {'U'}};
     }
 
     @Test(dataProvider = "illegalChars", expectedExceptions = IllegalArgumentException.class)
@@ -74,15 +72,15 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     @DataProvider
     public Object[][] binary() {
         return new Object[][] {
-                {0, CigarOperator.M},
-                {1, CigarOperator.I},
-                {2, CigarOperator.D},
-                {3, CigarOperator.N},
-                {4, CigarOperator.S},
-                {5, CigarOperator.H},
-                {6, CigarOperator.P},
-                {7, CigarOperator.EQ},
-                {8, CigarOperator.X}
+            {0, CigarOperator.M},
+            {1, CigarOperator.I},
+            {2, CigarOperator.D},
+            {3, CigarOperator.N},
+            {4, CigarOperator.S},
+            {5, CigarOperator.H},
+            {6, CigarOperator.P},
+            {7, CigarOperator.EQ},
+            {8, CigarOperator.X}
         };
     }
 
@@ -98,9 +96,7 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] illegalBinary() {
-        return new Object[][] {
-                {-1}, {9}, {10}
-        };
+        return new Object[][] {{-1}, {9}, {10}};
     }
 
     @Test(dataProvider = "illegalBinary", expectedExceptions = IllegalArgumentException.class)
@@ -111,23 +107,28 @@ public class CigarOperatorUnitTest extends HtsjdkTest {
     @DataProvider
     public Object[][] opStatus() {
         return new Object[][] {
-                // op, isClipping, isIndel, isSkip, isAlignment, isPadding
-                {CigarOperator.M, false, false, false, true, false},
-                {CigarOperator.I, false, true, false, false, false},
-                {CigarOperator.D, false, true, false, false, false},
-                {CigarOperator.N, false, false, true, false, false},
-                {CigarOperator.S, true, false, false, false, false},
-                {CigarOperator.H, true, false, false, false, false},
-                {CigarOperator.P, false, false, false, false, true},
-                {CigarOperator.EQ, false, false, false, true, false},
-                {CigarOperator.X, false, false, false, true, false}
+            // op, isClipping, isIndel, isSkip, isAlignment, isPadding
+            {CigarOperator.M, false, false, false, true, false},
+            {CigarOperator.I, false, true, false, false, false},
+            {CigarOperator.D, false, true, false, false, false},
+            {CigarOperator.N, false, false, true, false, false},
+            {CigarOperator.S, true, false, false, false, false},
+            {CigarOperator.H, true, false, false, false, false},
+            {CigarOperator.P, false, false, false, false, true},
+            {CigarOperator.EQ, false, false, false, true, false},
+            {CigarOperator.X, false, false, false, true, false}
         };
     }
 
     @Test(dataProvider = "opStatus")
-    public void testIsSetOfOperations(final CigarOperator op, final boolean isClipping,
-            final boolean isIndel,final boolean isSkip, final boolean isAlignment,
-            final boolean isPadding) throws Exception {
+    public void testIsSetOfOperations(
+            final CigarOperator op,
+            final boolean isClipping,
+            final boolean isIndel,
+            final boolean isSkip,
+            final boolean isAlignment,
+            final boolean isPadding)
+            throws Exception {
         Assert.assertEquals(op.isClipping(), isClipping);
         Assert.assertEquals(op.isIndel(), isIndel);
         Assert.assertEquals(op.isIndelOrSkippedRegion(), isIndel || isSkip);

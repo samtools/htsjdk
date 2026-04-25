@@ -7,7 +7,8 @@ package htsjdk.samtools.util;
  *
  * @author farjoun
  */
-public class ComparableTuple<A extends Comparable<A>, B extends Comparable<B>> extends Tuple<A, B> implements Comparable<ComparableTuple<A, B>> {
+public class ComparableTuple<A extends Comparable<A>, B extends Comparable<B>> extends Tuple<A, B>
+        implements Comparable<ComparableTuple<A, B>> {
 
     public ComparableTuple(final A a, final B b) {
         super(a, b);

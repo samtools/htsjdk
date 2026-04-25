@@ -25,26 +25,24 @@ package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.variant.vcf.VCFFileReader;
-
+import java.io.File;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 /**
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
-
 public class JavascriptVariantFilterTest extends HtsjdkTest {
     final File testDir = new File("src/test/resources/htsjdk/variant");
 
     @DataProvider
     public Object[][] jsData() {
         return new Object[][] {
-                { "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf", "variantFilter01.js",61 },
-                { "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf", "variantFilter02.js",38 }, };
+            {"ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf", "variantFilter01.js", 61},
+            {"ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf", "variantFilter02.js", 38},
+        };
     }
 
     @Test(dataProvider = "jsData")
@@ -56,7 +54,7 @@ public class JavascriptVariantFilterTest extends HtsjdkTest {
         try {
             filter = new JavascriptVariantFilter(jsInput, vcfReader.getFileHeader());
         } catch (IOException err) {
-            Assert.fail("cannot read script "+jsInput, err);
+            Assert.fail("cannot read script " + jsInput, err);
             vcfReader.close();
             return;
         }

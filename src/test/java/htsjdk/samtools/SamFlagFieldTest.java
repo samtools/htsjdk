@@ -2,7 +2,6 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -133,19 +132,19 @@ public class SamFlagFieldTest extends HtsjdkTest {
 
         Assert.assertEquals(SamFlagField.STRING.format(337), "mrMFp1s");
     }
-    
+
     @Test(expectedExceptions = SAMFormatException.class)
-    public void testIllegalStringFlagCharacter(){
+    public void testIllegalStringFlagCharacter() {
         SamFlagField.STRING.parse("HELLO WORLD");
     }
 
     @Test(expectedExceptions = SAMFormatException.class)
-    public void testIllegalHexadecimalFlagCharacter(){
+    public void testIllegalHexadecimalFlagCharacter() {
         SamFlagField.HEXADECIMAL.parse("HELLO WORLD");
     }
 
     @Test(expectedExceptions = SAMFormatException.class)
-    public void testIllegalStringFlagCharacterExclamation(){
+    public void testIllegalStringFlagCharacterExclamation() {
         SamFlagField.STRING.parse("pmMr!F1s");
     }
 }

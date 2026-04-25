@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -50,14 +49,14 @@ import java.nio.file.Path;
  */
 public class BinaryCodec implements Closeable {
 
-    //Outstream to write to
+    // Outstream to write to
     private OutputStream outputStream;
-    //If a file or filename was given it will be stored here.  Used for error reporting.
+    // If a file or filename was given it will be stored here.  Used for error reporting.
     private String outputFileName;
 
-    //Input stream to read from
+    // Input stream to read from
     private InputStream inputStream;
-    //If a file or filename was give to read from it will be stored here.  Used for error reporting.
+    // If a file or filename was give to read from it will be stored here.  Used for error reporting.
     private String inputFileName;
 
     /*
@@ -83,7 +82,7 @@ public class BinaryCodec implements Closeable {
 
     public static final long MAX_UBYTE = (Byte.MAX_VALUE * 2) + 1;
     public static final long MAX_USHORT = (Short.MAX_VALUE * 2) + 1;
-    public static final long MAX_UINT = ((long)Integer.MAX_VALUE * 2) + 1;
+    public static final long MAX_UINT = ((long) Integer.MAX_VALUE * 2) + 1;
 
     // We never serialize more than this much at a time (except for Strings)
     private static final int MAX_BYTE_BUFFER = 8;
@@ -177,14 +176,13 @@ public class BinaryCodec implements Closeable {
     // Writing methods                              //
     //////////////////////////////////////////////////
 
-
     /**
      * Write whatever has been put into the byte buffer
      * @param numBytes -- how much to write.  Note that in case of writing an unsigned value,
      * more bytes were put into the ByteBuffer than will get written out.
      */
     private void writeByteBuffer(final int numBytes) {
-        assert(numBytes <= byteBuffer.limit());
+        assert (numBytes <= byteBuffer.limit());
         writeBytes(byteBuffer.array(), 0, numBytes);
     }
 
@@ -200,7 +198,7 @@ public class BinaryCodec implements Closeable {
     }
 
     public void writeByte(final int b) {
-        writeByte((byte)b);
+        writeByte((byte) b);
     }
 
     /**
@@ -209,7 +207,7 @@ public class BinaryCodec implements Closeable {
      * @param bytes value to write
      */
     public void writeBytes(final byte[] bytes) {
-        writeBytes(bytes,  0, bytes.length);
+        writeBytes(bytes, 0, bytes.length);
     }
 
     public void writeBytes(final byte[] bytes, final int startOffset, final int numBytes) {
@@ -256,7 +254,6 @@ public class BinaryCodec implements Closeable {
         writeByteBuffer(8);
     }
 
-
     /**
      * Write a 16-bit short to output stream
      */
@@ -284,7 +281,7 @@ public class BinaryCodec implements Closeable {
      */
     public void writeBoolean(final boolean value) {
         byteBuffer.clear();
-        byteBuffer.put(value ? (byte)1 : (byte)0);
+        byteBuffer.put(value ? (byte) 1 : (byte) 0);
         writeByteBuffer(1);
     }
 
@@ -302,13 +299,11 @@ public class BinaryCodec implements Closeable {
             writeInt(lengthToWrite);
         }
 
-        //Actually writes the string to a buffer
+        // Actually writes the string to a buffer
         writeString(value);
 
         if (appendNull) writeBytes(NULL_BYTE);
-
     }
-
 
     /**
      * Write a string to the buffer as ASCII bytes
@@ -436,7 +431,7 @@ public class BinaryCodec implements Closeable {
             if (ret == -1) {
                 throw new RuntimeEOFException(constructErrorMessage("Premature EOF"));
             }
-            return (byte)ret;
+            return (byte) ret;
         } catch (IOException e) {
             throw new RuntimeIOException(constructErrorMessage("Read error"), e);
         }
@@ -471,7 +466,6 @@ public class BinaryCodec implements Closeable {
             buffer = scratchBuffer;
         } else {
             buffer = new byte[length];
-
         }
         readBytes(buffer, 0, length);
 
@@ -503,7 +497,7 @@ public class BinaryCodec implements Closeable {
     }
 
     private void readByteBuffer(final int numBytes) {
-        assert(numBytes <= byteBuffer.capacity());
+        assert (numBytes <= byteBuffer.capacity());
         readBytes(byteBuffer.array(), 0, numBytes);
         byteBuffer.limit(byteBuffer.capacity());
         byteBuffer.position(numBytes);
@@ -536,7 +530,7 @@ public class BinaryCodec implements Closeable {
      *
      * @return long
      */
-    public long readLong()  {
+    public long readLong() {
         readByteBuffer(8);
         byteBuffer.flip();
         return byteBuffer.getLong();
@@ -565,7 +559,7 @@ public class BinaryCodec implements Closeable {
      * @return boolean
      */
     public boolean readBoolean() {
-        return (((int)readByte()) == 1);
+        return (((int) readByte()) == 1);
     }
 
     /**
@@ -574,7 +568,7 @@ public class BinaryCodec implements Closeable {
      */
     public short readUByte() {
         readByteBuffer(1);
-        byteBuffer.put((byte)0);
+        byteBuffer.put((byte) 0);
         byteBuffer.flip();
         return byteBuffer.getShort();
     }
@@ -585,7 +579,7 @@ public class BinaryCodec implements Closeable {
      */
     public int readUShort() {
         readByteBuffer(2);
-        byteBuffer.putShort((short)0);
+        byteBuffer.putShort((short) 0);
         byteBuffer.flip();
         return byteBuffer.getInt();
     }
@@ -612,7 +606,7 @@ public class BinaryCodec implements Closeable {
                 // or else cause an exception to be thrown.
                 this.outputStream.flush();
                 if (this.outputStream instanceof FileOutputStream) {
-                    FileOutputStream fos = (FileOutputStream)this.outputStream;
+                    FileOutputStream fos = (FileOutputStream) this.outputStream;
                     try {
                         fos.getFD().sync();
                     } catch (SyncFailedException e) {
@@ -622,8 +616,7 @@ public class BinaryCodec implements Closeable {
                     }
                 }
                 this.outputStream.close();
-            }
-            else this.inputStream.close();
+            } else this.inputStream.close();
         } catch (IOException e) {
             throw new RuntimeIOException(e.getMessage(), e);
         }
@@ -631,12 +624,11 @@ public class BinaryCodec implements Closeable {
 
     private String constructErrorMessage(final String msg) {
         final StringBuilder sb = new StringBuilder(msg);
-        sb.append("; BinaryCodec in ")
-                .append(isWriting? "write": "read").append("mode; ");
-        final String filename = isWriting? outputFileName: inputFileName;
+        sb.append("; BinaryCodec in ").append(isWriting ? "write" : "read").append("mode; ");
+        final String filename = isWriting ? outputFileName : inputFileName;
         if (filename != null) {
             sb.append("file: ").append(filename);
-        } else  {
+        } else {
             sb.append("streamed file (filename not available)");
         }
         return sb.toString();
@@ -645,7 +637,6 @@ public class BinaryCodec implements Closeable {
     //////////////////////////////////////////////////
     // Some getters                                 //
     //////////////////////////////////////////////////
-
 
     public String getInputFileName() {
         return inputFileName;
@@ -683,6 +674,5 @@ public class BinaryCodec implements Closeable {
     public void setOutputStream(final OutputStream os) {
         isWriting = true;
         this.outputStream = os;
-
     }
 }

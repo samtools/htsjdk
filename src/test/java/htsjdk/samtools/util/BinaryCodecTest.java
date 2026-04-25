@@ -24,31 +24,29 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.io.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.*;
-
-
 /*
-  * The Broad Institute
-  * SOFTWARE COPYRIGHT NOTICE AGREEMENT
-  * This software and its documentation are copyright Jan 9, 2009 by the
-  * Broad Institute/Massachusetts Institute of Technology. All rights are reserved.
-  *
-  * This software is supplied without any warranty or guaranteed support whatsoever. Neither
-  * the Broad Institute nor MIT can be responsible for its use, misuse, or functionality.
-  */
+ * The Broad Institute
+ * SOFTWARE COPYRIGHT NOTICE AGREEMENT
+ * This software and its documentation are copyright Jan 9, 2009 by the
+ * Broad Institute/Massachusetts Institute of Technology. All rights are reserved.
+ *
+ * This software is supplied without any warranty or guaranteed support whatsoever. Neither
+ * the Broad Institute nor MIT can be responsible for its use, misuse, or functionality.
+ */
 
 public class BinaryCodecTest extends HtsjdkTest {
-	public final static String TEST_BASENAME = "htsjdk-BinaryCodecTest";
+    public static final String TEST_BASENAME = "htsjdk-BinaryCodecTest";
 
     @Test
     public void testReadAndWrite() throws IOException {
         final byte[] value = new byte[2];
         value[0] = 1;
         value[1] = 2;
-        //Writing to file
+        // Writing to file
         final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
         outputFile.deleteOnExit();
         final OutputStream stream = new FileOutputStream(outputFile);
@@ -56,7 +54,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeBytes(value);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final byte[] valuesTwo = new byte[2];
         valuesTwo[0] = 1;
         valuesTwo[1] = 2;
@@ -74,7 +72,7 @@ public class BinaryCodecTest extends HtsjdkTest {
     public void testReadAndWriteString() throws IOException {
         final String value = "Test String to Write";
 
-        //Writing to file
+        // Writing to file
         final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
         outputFile.deleteOnExit();
         final OutputStream stream = new FileOutputStream(outputFile);
@@ -82,7 +80,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeString(value, true, false);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final InputStream instream = new FileInputStream(outputFile);
         final BinaryCodec readCodec = new BinaryCodec(instream);
         final int stringLength = readCodec.readInt();
@@ -96,7 +94,7 @@ public class BinaryCodecTest extends HtsjdkTest {
     public void testReadAndWriteInt() throws IOException {
         final int value = 42;
 
-        //Writing to file
+        // Writing to file
         final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
         outputFile.deleteOnExit();
         final OutputStream stream = new FileOutputStream(outputFile);
@@ -104,7 +102,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeInt(value);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final InputStream instream = new FileInputStream(outputFile);
         final BinaryCodec readCodec = new BinaryCodec(instream);
         Assert.assertEquals(value, readCodec.readInt());
@@ -122,7 +120,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeDouble(value);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final InputStream instream = new FileInputStream(outputFile);
         final BinaryCodec readCodec = new BinaryCodec(instream);
         Assert.assertEquals(value, readCodec.readDouble());
@@ -140,16 +138,15 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeLong(value);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final InputStream instream = new FileInputStream(outputFile);
         final BinaryCodec readCodec = new BinaryCodec(instream);
         Assert.assertEquals(value, readCodec.readLong());
         readCodec.close();
-
     }
 
     @Test
-    public void testReadAndWriteFloat()  throws IOException{
+    public void testReadAndWriteFloat() throws IOException {
         final float value = 42.5F;
 
         final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
@@ -159,7 +156,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeFloat(value);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final InputStream instream = new FileInputStream(outputFile);
         final BinaryCodec readCodec = new BinaryCodec(instream);
         Assert.assertEquals(value, readCodec.readFloat());
@@ -167,7 +164,7 @@ public class BinaryCodecTest extends HtsjdkTest {
     }
 
     @Test
-    public void testReadAndWriteBoolean()  throws IOException{
+    public void testReadAndWriteBoolean() throws IOException {
 
         boolean values[] = {true, false};
 
@@ -179,7 +176,7 @@ public class BinaryCodecTest extends HtsjdkTest {
             codec.writeBoolean(value);
             codec.close();
 
-            //Reading from file
+            // Reading from file
             final InputStream instream = new FileInputStream(outputFile);
             final BinaryCodec readCodec = new BinaryCodec(instream);
             Assert.assertEquals(value, readCodec.readBoolean());
@@ -188,7 +185,7 @@ public class BinaryCodecTest extends HtsjdkTest {
     }
 
     @Test
-    public void testReadAndWriteMutlitpleData()  throws IOException{
+    public void testReadAndWriteMutlitpleData() throws IOException {
         final float fValue = 42.5F;
         final String sValue = "TestString";
 
@@ -200,7 +197,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         codec.writeString(sValue, true, false);
         codec.close();
 
-        //Reading from file
+        // Reading from file
         final InputStream instream = new FileInputStream(outputFile);
         final BinaryCodec readCodec = new BinaryCodec(instream);
         Assert.assertEquals(fValue, readCodec.readFloat());
@@ -210,7 +207,7 @@ public class BinaryCodecTest extends HtsjdkTest {
     }
 
     @Test
-    public void readPastEndOfFile() throws IOException{
+    public void readPastEndOfFile() throws IOException {
         final long startTime = System.currentTimeMillis();
         int i = 0;
 
@@ -218,7 +215,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         outputFile.deleteOnExit();
         final OutputStream stream = new FileOutputStream(outputFile);
         final BinaryCodec codec = new BinaryCodec(stream);
-        while (i<100){
+        while (i < 100) {
             codec.writeInt(i);
             i++;
         }
@@ -230,11 +227,11 @@ public class BinaryCodecTest extends HtsjdkTest {
         System.out.println((System.currentTimeMillis() - startTime) + "ms to write");
         int z = 0;
         boolean reachedStatement = false;
-        while (z<1000) {
+        while (z < 1000) {
             try {
                 Assert.assertEquals(z, readCodec.readInt());
             } catch (Exception e) {
-               Assert.assertEquals(RuntimeEOFException.class, e.getClass());
+                Assert.assertEquals(RuntimeEOFException.class, e.getClass());
                 reachedStatement = true;
             }
             z++;
@@ -245,7 +242,7 @@ public class BinaryCodecTest extends HtsjdkTest {
     }
 
     @Test
-    public void timeTest() throws IOException{
+    public void timeTest() throws IOException {
         final long startTime = System.currentTimeMillis();
         int i = 0;
 
@@ -253,7 +250,7 @@ public class BinaryCodecTest extends HtsjdkTest {
         outputFile.deleteOnExit();
         final OutputStream stream = new FileOutputStream(outputFile);
         final BinaryCodec codec = new BinaryCodec(stream);
-        while (i<100){
+        while (i < 100) {
             codec.writeInt(i);
             i++;
         }
@@ -265,11 +262,11 @@ public class BinaryCodecTest extends HtsjdkTest {
         System.out.println((System.currentTimeMillis() - startTime) + "ms to write");
         int z = 0;
         boolean reachedStatement = false;
-        while (z<1000) {
+        while (z < 1000) {
             try {
                 Assert.assertEquals(z, readCodec.readInt());
             } catch (Exception e) {
-               Assert.assertEquals(RuntimeEOFException.class, e.getClass());
+                Assert.assertEquals(RuntimeEOFException.class, e.getClass());
                 reachedStatement = true;
             }
             z++;

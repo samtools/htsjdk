@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble;
 
-
 /**
  * An interface for features provided via an interval file, e.g. bed or interval_list.
  * Provides a common interface for accessing the name column for both of these file types.

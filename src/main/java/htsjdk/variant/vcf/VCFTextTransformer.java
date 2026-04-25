@@ -1,7 +1,6 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
-
 import java.util.List;
 
 /**
@@ -27,5 +26,4 @@ public interface VCFTextTransformer {
      * @throws TribbleException if the the encoding is uninterpretable
      */
     List<String> decodeText(final List<String> rawParts);
-
 }

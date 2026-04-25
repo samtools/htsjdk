@@ -40,9 +40,15 @@ public final class ExternalByteEncoding extends ExternalEncoding<Byte> {
     }
 
     @Override
-    public CRAMCodec<Byte> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
-        final CRAMByteReader reader = sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getExternalReader(externalBlockContentId);
-        final CRAMByteWriter writer = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalWriter(externalBlockContentId);
+    public CRAMCodec<Byte> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        final CRAMByteReader reader = sliceBlocksReadStreams == null
+                ? null
+                : sliceBlocksReadStreams.getExternalReader(externalBlockContentId);
+        final CRAMByteWriter writer = sliceBlocksWriteStreams == null
+                ? null
+                : sliceBlocksWriteStreams.getExternalWriter(externalBlockContentId);
         return new ExternalByteCodec(reader, writer);
     }
 }

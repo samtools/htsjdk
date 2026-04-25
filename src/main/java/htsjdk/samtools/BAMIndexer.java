@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.file.Path;
@@ -88,7 +87,8 @@ public class BAMIndexer {
      *                                  if false, leave uninitialized values as -1, which is required when merging index files
      *                                  (see {@link BAMIndexMerger})
      */
-    public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
+    public BAMIndexer(
+            final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
         this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), fillInUninitializedValues);
     }
 
@@ -98,13 +98,16 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file.
      * @param  createWrite a lambda that, given an Integer numReferences value, will create a BinaryBAMIndexWriter
      *                     with that value and an appropriate output.
-      */
-    private BAMIndexer(final SAMFileHeader fileHeader, Function<Integer, BinaryBAMIndexWriter> createWriter, final boolean fillInUninitializedValues) {
+     */
+    private BAMIndexer(
+            final SAMFileHeader fileHeader,
+            Function<Integer, BinaryBAMIndexWriter> createWriter,
+            final boolean fillInUninitializedValues) {
         if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             if (fileHeader.getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
-                log.warn("For indexing, the BAM file is required to be coordinate sorted. Attempting to index \"unsorted\" BAM file.");
-            }
-            else {
+                log.warn(
+                        "For indexing, the BAM file is required to be coordinate sorted. Attempting to index \"unsorted\" BAM file.");
+            } else {
                 throw new SAMException("Indexing requires a coordinate-sorted input BAM.");
             }
         }
@@ -163,7 +166,7 @@ public class BAMIndexer {
      * @param output     BAM Index (.bai) file (or bai.txt file when text)
      * @param textOutput Whether to create text output or binary
      */
-    static public void createAndWriteIndex(final File input, final File output, final boolean textOutput) {
+    public static void createAndWriteIndex(final File input, final File output, final boolean textOutput) {
 
         // content is from an existing bai file.
 
@@ -231,8 +234,8 @@ public class BAMIndexer {
             // various checks
             final int reference = rec.getReferenceIndex();
             if (reference != currentReference) {
-                throw new SAMException("Unexpected reference " + reference +
-                        " when constructing index for " + currentReference + " for record " + rec);
+                throw new SAMException("Unexpected reference " + reference + " when constructing index for "
+                        + currentReference + " for record " + rec);
             }
 
             binningIndexBuilder.processFeature(new BinningIndexBuilder.FeatureToBeIndexed() {
@@ -247,18 +250,20 @@ public class BAMIndexer {
                 }
 
                 @Override
-                public Integer getIndexingBin() { return rec.computeIndexingBin(); }
+                public Integer getIndexingBin() {
+                    return rec.computeIndexingBin();
+                }
 
                 @Override
                 public Chunk getChunk() {
                     final SAMFileSource source = rec.getFileSource();
                     if (source == null) {
-                        throw new SAMException("No source (virtual file offsets); needed for indexing on BAM Record " + rec);
+                        throw new SAMException(
+                                "No source (virtual file offsets); needed for indexing on BAM Record " + rec);
                     }
                     return ((BAMFileSpan) source.getFilePointer()).getSingleChunk();
                 }
             });
-
         }
 
         /**
@@ -270,14 +275,17 @@ public class BAMIndexer {
         public BAMIndexContent processReference(final int reference) {
 
             if (reference != currentReference) {
-                throw new SAMException("Unexpected reference " + reference + " when constructing index for " + currentReference);
+                throw new SAMException(
+                        "Unexpected reference " + reference + " when constructing index for " + currentReference);
             }
 
             final BinningIndexContent indexContent = binningIndexBuilder.generateIndexContent();
             if (indexContent == null) return null;
-            return new BAMIndexContent(indexContent.getReferenceSequence(), indexContent.getBins(),
-                    indexStats, indexContent.getLinearIndex());
-
+            return new BAMIndexContent(
+                    indexContent.getReferenceSequence(),
+                    indexContent.getBins(),
+                    indexStats,
+                    indexContent.getLinearIndex());
         }
 
         /**
@@ -295,8 +303,10 @@ public class BAMIndexer {
             // I'm not crazy about recycling this object, but that is the way it was originally written and
             // it helps keep track of no-coordinate read count (which shouldn't be stored in this class anyway).
             indexStats.newReference();
-            binningIndexBuilder = new BinningIndexBuilder(currentReference,
-                    sequenceDictionary.getSequence(currentReference).getSequenceLength(), fillInUninitializedValues);
+            binningIndexBuilder = new BinningIndexBuilder(
+                    currentReference,
+                    sequenceDictionary.getSequence(currentReference).getSequenceLength(),
+                    fillInUninitializedValues);
         }
     }
 

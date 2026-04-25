@@ -34,7 +34,8 @@ import htsjdk.samtools.SAMSequenceRecord;
  * exception.
  */
 public class CRAMLazyReferenceSource implements CRAMReferenceSource {
-    private static final String NO_REF_MESSAGE = "A reference must be supplied that includes the reference sequence for %s.";
+    private static final String NO_REF_MESSAGE =
+            "A reference must be supplied that includes the reference sequence for %s.";
 
     @Override
     public byte[] getReferenceBases(final SAMSequenceRecord sequenceRecord, final boolean tryNameVariants) {
@@ -43,10 +44,7 @@ public class CRAMLazyReferenceSource implements CRAMReferenceSource {
 
     @Override
     public byte[] getReferenceBasesByRegion(
-            final SAMSequenceRecord sequenceRecord,
-            final int zeroBasedStart,
-            final int requestedRegionLength) {
+            final SAMSequenceRecord sequenceRecord, final int zeroBasedStart, final int requestedRegionLength) {
         throw new IllegalArgumentException(String.format(NO_REF_MESSAGE, sequenceRecord.getSequenceName()));
     }
-
 }

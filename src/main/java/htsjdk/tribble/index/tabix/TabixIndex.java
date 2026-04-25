@@ -30,8 +30,6 @@ import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
@@ -39,8 +37,6 @@ import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-import htsjdk.tribble.util.TabixUtils;
-
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +72,8 @@ public class TabixIndex implements Index {
      * @param sequenceNames Sequences in the file being indexed, in the order they appear in the file.
      * @param indices       One for each element of sequenceNames
      */
-    public TabixIndex(final TabixFormat formatSpec, final List<String> sequenceNames, final BinningIndexContent[] indices) {
+    public TabixIndex(
+            final TabixFormat formatSpec, final List<String> sequenceNames, final BinningIndexContent[] indices) {
         if (sequenceNames.size() != indices.length) {
             throw new IllegalArgumentException("sequenceNames.size() != indices.length");
         }
@@ -162,8 +159,8 @@ public class TabixIndex implements Index {
         } else {
             final List<Block> ret = new ArrayList<>(chunks.size());
             chunks.stream()
-                  .map(chunk -> new Block(chunk.getChunkStart(), chunk.getChunkEnd() - chunk.getChunkStart()))
-                  .forEach(ret::add);
+                    .map(chunk -> new Block(chunk.getChunkStart(), chunk.getChunkEnd() - chunk.getChunkStart()))
+                    .forEach(ret::add);
             return ret;
         }
     }
@@ -201,7 +198,6 @@ public class TabixIndex implements Index {
         if (!formatSpec.equals(that.formatSpec)) return false;
         if (!Arrays.equals(indices, that.indices)) return false;
         return sequenceNames.equals(that.sequenceNames);
-
     }
 
     public TabixFormat getFormatSpec() {
@@ -219,7 +215,8 @@ public class TabixIndex implements Index {
      */
     @Override
     public void write(final Path tabixPath) throws IOException {
-        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), (Path)null))) {
+        try (final LittleEndianOutputStream los = new LittleEndianOutputStream(
+                new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), (Path) null))) {
             write(los);
         }
     }
@@ -265,7 +262,8 @@ public class TabixIndex implements Index {
         }
     }
 
-    private void writeSequence(final BinningIndexContent indexContent, final LittleEndianOutputStream los) throws IOException {
+    private void writeSequence(final BinningIndexContent indexContent, final LittleEndianOutputStream los)
+            throws IOException {
         if (indexContent == null) {
             los.writeInt(0);
         } else {
@@ -278,7 +276,8 @@ public class TabixIndex implements Index {
         }
     }
 
-    private void writeLinearIndex(final LinearIndex linearIndex, final LittleEndianOutputStream los) throws IOException {
+    private void writeLinearIndex(final LinearIndex linearIndex, final LittleEndianOutputStream los)
+            throws IOException {
         if (linearIndex.getIndexStart() != 0) {
             // This could be handled by writing zeroes, but it is not expected so just fail.
             throw new IllegalArgumentException("Non-zero linear index start");
@@ -305,7 +304,8 @@ public class TabixIndex implements Index {
      * @param referenceSequenceIndex Merely for setting in the returned object, not for seeking into the file.
      * @param dis                    This method assumes that the current position is at the start of the reference.
      */
-    private BinningIndexContent loadSequence(final int referenceSequenceIndex, final LittleEndianInputStream dis) throws IOException {
+    private BinningIndexContent loadSequence(final int referenceSequenceIndex, final LittleEndianInputStream dis)
+            throws IOException {
         final int numBins = dis.readInt();
         if (numBins == 0) return null;
         int nonNullBins = 0;
@@ -330,11 +330,14 @@ public class TabixIndex implements Index {
             }
         }
         final LinearIndex linearIndex = loadLinearIndex(referenceSequenceIndex, dis);
-        return new BinningIndexContent(referenceSequenceIndex,
-                new BinningIndexContent.BinList(bins.toArray(new Bin[bins.size()]), nonNullBins), linearIndex);
+        return new BinningIndexContent(
+                referenceSequenceIndex,
+                new BinningIndexContent.BinList(bins.toArray(new Bin[bins.size()]), nonNullBins),
+                linearIndex);
     }
 
-    private LinearIndex loadLinearIndex(final int referenceSequenceIndex, final LittleEndianInputStream dis) throws IOException {
+    private LinearIndex loadLinearIndex(final int referenceSequenceIndex, final LittleEndianInputStream dis)
+            throws IOException {
         final int numElements = dis.readInt();
         final long[] elements = new long[numElements];
         for (int i = 0; i < numElements; ++i) {

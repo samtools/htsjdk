@@ -2,8 +2,9 @@ package htsjdk.samtools.cram.compression.rans;
 
 public interface RANSParams {
 
-     enum ORDER {
-        ZERO, ONE;
+    enum ORDER {
+        ZERO,
+        ONE;
 
         public static ORDER fromInt(final int orderValue) {
             try {
@@ -17,5 +18,4 @@ public interface RANSParams {
     int getFormatFlags();
 
     ORDER getOrder();
-
 }

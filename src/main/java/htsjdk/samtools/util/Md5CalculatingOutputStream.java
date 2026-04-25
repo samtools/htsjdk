@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -60,8 +59,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
         try {
             md5 = MessageDigest.getInstance("MD5");
             md5.reset();
-        }
-        catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
     }
@@ -72,7 +70,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        md5.update((byte)b);
+        md5.update((byte) b);
         os.write(b);
     }
 
@@ -82,7 +80,6 @@ public class Md5CalculatingOutputStream extends OutputStream {
         os.write(b);
     }
 
-
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
         md5.update(b, off, len);
@@ -90,15 +87,16 @@ public class Md5CalculatingOutputStream extends OutputStream {
     }
 
     public String md5() {
-        if(hash == null) {
-            throw new SAMException("Attempting to access md5 digest before the entire file is written!  Call close first.");
+        if (hash == null) {
+            throw new SAMException(
+                    "Attempting to access md5 digest before the entire file is written!  Call close first.");
         }
 
         return hash;
     }
 
     private String makeHash() {
-        if(hash == null) {
+        if (hash == null) {
             hash = new BigInteger(1, md5.digest()).toString(16);
             if (hash.length() != 32) {
                 final String zeros = "00000000000000000000000000000000";
@@ -115,7 +113,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
         os.close();
         makeHash();
 
-        if(digestFile != null) {
+        if (digestFile != null) {
             BufferedWriter writer = Files.newBufferedWriter(digestFile);
             writer.write(hash);
             writer.close();
@@ -124,6 +122,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
 
     // Pass-through method
     @Override
-    public void flush() throws IOException { os.flush(); }
-
+    public void flush() throws IOException {
+        os.flush();
+    }
 }

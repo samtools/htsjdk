@@ -29,8 +29,7 @@ import htsjdk.samtools.SAMException;
  * Thrown by various IO classes to indicate IOException without having to clutter the API with throws clauses
  */
 public class RuntimeIOException extends SAMException {
-    public RuntimeIOException() {
-    }
+    public RuntimeIOException() {}
 
     public RuntimeIOException(final String s) {
         super(s);

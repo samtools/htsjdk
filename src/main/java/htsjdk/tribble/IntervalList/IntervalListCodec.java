@@ -40,7 +40,6 @@ import htsjdk.tribble.readers.LineIterator;
  *
  * Also contains the parsing code for the non-tribble parsing of IntervalLists
  */
-
 public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
 
     private final Log log = Log.getInstance(IntervalListCodec.class);
@@ -70,8 +69,7 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
         // Make sure we have the right number of fields
         final String[] fields = line.split("\t");
         if (fields.length != 5) {
-            throw new TribbleException("Invalid interval record contains " +
-                    fields.length + " fields: " + line);
+            throw new TribbleException("Invalid interval record contains " + fields.length + " fields: " + line);
         }
 
         // Then parse them out
@@ -84,22 +82,21 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
         final int start = format.parseInt(fields[START_POS]);
         final int end = format.parseInt(fields[END_POS]);
         if (start < 1) {
-            throw new IllegalArgumentException("Coordinate less than 1: start value of " + start +
-                    " is less than 1 and thus illegal");
+            throw new IllegalArgumentException(
+                    "Coordinate less than 1: start value of " + start + " is less than 1 and thus illegal");
         }
 
         if (start > end + 1) {
-            throw new IllegalArgumentException("Start value of " + start +
-                    " is greater than end + 1 for end of value: " + end +
-                    ". I'm afraid I cannot let you do that.");
+            throw new IllegalArgumentException("Start value of " + start + " is greater than end + 1 for end of value: "
+                    + end + ". I'm afraid I cannot let you do that.");
         }
 
         Strand strand = Strand.decode(fields[STRAND_POS]);
-        if (strand==Strand.NONE)  throw new IllegalArgumentException("Invalid strand field: " + fields[STRAND_POS]);
+        if (strand == Strand.NONE) throw new IllegalArgumentException("Invalid strand field: " + fields[STRAND_POS]);
 
         final String name = fields[NAME_POS];
 
-        final Interval interval = new Interval(seq, start, end, strand==Strand.NEGATIVE, name);
+        final Interval interval = new Interval(seq, start, end, strand == Strand.NEGATIVE, name);
         final SAMSequenceRecord sequence = dict.getSequence(seq);
         if (sequence == null) {
             log.warn("Ignoring interval for unknown reference: " + interval);
@@ -107,7 +104,8 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
         } else {
             final int sequenceLength = sequence.getSequenceLength();
             if (sequenceLength > 0 && sequenceLength < end) {
-                throw new IllegalArgumentException("interval with end: " + end + " extends beyond end of sequence with length: " + sequenceLength);
+                throw new IllegalArgumentException(
+                        "interval with end: " + end + " extends beyond end of sequence with length: " + sequenceLength);
             }
             return interval;
         }
@@ -130,37 +128,39 @@ public class IntervalListCodec extends AsciiFeatureCodec<Interval> {
         return parseIntervalString(line, dictionary);
     }
 
-
     @Override
     public Object readActualHeader(LineIterator lineIterator) {
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
-        final SAMFileHeader header = headerCodec.decode(new LineReader() {
-            int lineNo = 0;
-            @Override
-            public String readLine() {
-                lineNo++;
-                return lineIterator.next();
-            }
-            @Override
-            public int getLineNumber() {
-                return lineNo;
-            }
-            @Override
-            public int peek() {
-                return lineIterator.hasNext() ?
-                        lineIterator.peek().charAt(0) :
-                        LineReader.EOF_VALUE;
-            }
-            @Override
-            public void close() { }
-        }, "IntervalListCodec");
+        final SAMFileHeader header = headerCodec.decode(
+                new LineReader() {
+                    int lineNo = 0;
+
+                    @Override
+                    public String readLine() {
+                        lineNo++;
+                        return lineIterator.next();
+                    }
+
+                    @Override
+                    public int getLineNumber() {
+                        return lineNo;
+                    }
+
+                    @Override
+                    public int peek() {
+                        return lineIterator.hasNext() ? lineIterator.peek().charAt(0) : LineReader.EOF_VALUE;
+                    }
+
+                    @Override
+                    public void close() {}
+                },
+                "IntervalListCodec");
         dictionary = header.getSequenceDictionary();
         return header;
     }
 
     @Override
     public boolean canDecode(final String s) {
-        return s.endsWith(FileExtensions.INTERVAL_LIST) ||
-               s.endsWith(FileExtensions.COMPRESSED_INTERVAL_LIST);
+        return s.endsWith(FileExtensions.INTERVAL_LIST) || s.endsWith(FileExtensions.COMPRESSED_INTERVAL_LIST);
     }
 }

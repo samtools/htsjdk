@@ -30,5 +30,4 @@ enum SERIES {
     abstract byte[] getBytes(SAMRecord record);
 
     abstract byte[] getBytes(CRAMCompressionRecord record);
-
 }

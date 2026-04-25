@@ -1,12 +1,11 @@
 package htsjdk.samtools;
 
+import static org.testng.Assert.assertEquals;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
-import org.testng.annotations.Test;
-
 import java.io.File;
-
-import static org.testng.Assert.assertEquals;
+import org.testng.annotations.Test;
 
 /**
  * Test the fix of a bug reported by s-andrews in which the use of an arithmetic rather than a logical right shift in BinaryCigarCodec.binaryCigarToCigarElement()
@@ -17,14 +16,18 @@ public class BAMCigarOverflowTest extends HtsjdkTest {
 
     @Test
     public void testCigarOverflow() throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.LENIENT).open(new File(TEST_DATA_DIR, "BAMCigarOverflowTest/CigarOverflowTest.bam"));
+        final SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.LENIENT)
+                .open(new File(TEST_DATA_DIR, "BAMCigarOverflowTest/CigarOverflowTest.bam"));
 
-        //Load the single read from the BAM file.
+        // Load the single read from the BAM file.
         final SAMRecord testBAMRecord = reader.iterator().next();
         CloserUtil.close(reader);
 
-        //The BAM file that exposed the bug triggered a SAM validation error because the bin field of the BAM record did not equal the computed value. Here we test for this error.
-        //Cast to int to avoid an ambiguity in the assertEquals() call between assertEquals(int,int) and assertEquals(Object,Object).
+        // The BAM file that exposed the bug triggered a SAM validation error because the bin field of the BAM record
+        // did not equal the computed value. Here we test for this error.
+        // Cast to int to avoid an ambiguity in the assertEquals() call between assertEquals(int,int) and
+        // assertEquals(Object,Object).
         assertEquals(testBAMRecord.computeIndexingBin(), 0);
     }
 }

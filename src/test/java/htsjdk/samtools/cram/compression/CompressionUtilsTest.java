@@ -7,12 +7,11 @@ import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
+import java.nio.ByteBuffer;
+import java.util.Random;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.nio.ByteBuffer;
-import java.util.Random;
 
 /**
  * Tests for the STRIPE helper methods in CompressionUtils and end-to-end STRIPE round-trip tests.
@@ -25,7 +24,7 @@ public class CompressionUtilsTest extends HtsjdkTest {
     public void testBuildStripeUncompressedSizesEvenlyDivisible() {
         // 12 bytes / 4 streams = 3 each
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(12);
-        Assert.assertEquals(sizes, new int[]{3, 3, 3, 3});
+        Assert.assertEquals(sizes, new int[] {3, 3, 3, 3});
     }
 
     @Test
@@ -33,28 +32,28 @@ public class CompressionUtilsTest extends HtsjdkTest {
         // 13 bytes / 4 streams = 3+1, 3, 3, 3 (first stream gets extra byte)
         // Ported from noodles test_build_uncompressed_sizes (with N=4 instead of N=3)
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(13);
-        Assert.assertEquals(sizes, new int[]{4, 3, 3, 3});
+        Assert.assertEquals(sizes, new int[] {4, 3, 3, 3});
     }
 
     @Test
     public void testBuildStripeUncompressedSizesRemainder2() {
         // 14 bytes / 4 streams = 4, 4, 3, 3
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(14);
-        Assert.assertEquals(sizes, new int[]{4, 4, 3, 3});
+        Assert.assertEquals(sizes, new int[] {4, 4, 3, 3});
     }
 
     @Test
     public void testBuildStripeUncompressedSizesRemainder3() {
         // 15 bytes / 4 streams = 4, 4, 4, 3
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(15);
-        Assert.assertEquals(sizes, new int[]{4, 4, 4, 3});
+        Assert.assertEquals(sizes, new int[] {4, 4, 4, 3});
     }
 
     @Test
     public void testBuildStripeUncompressedSizesSmall() {
         // 1 byte = only first stream gets it
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(1);
-        Assert.assertEquals(sizes, new int[]{1, 0, 0, 0});
+        Assert.assertEquals(sizes, new int[] {1, 0, 0, 0});
     }
 
     @Test
@@ -98,26 +97,26 @@ public class CompressionUtilsTest extends HtsjdkTest {
     @Test
     public void testBuildStripeUncompressedSizesZero() {
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(0);
-        Assert.assertEquals(sizes, new int[]{0, 0, 0, 0});
+        Assert.assertEquals(sizes, new int[] {0, 0, 0, 0});
     }
 
     @Test
     public void testBuildStripeUncompressedSizesTwoBytes() {
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(2);
-        Assert.assertEquals(sizes, new int[]{1, 1, 0, 0});
+        Assert.assertEquals(sizes, new int[] {1, 1, 0, 0});
     }
 
     @Test
     public void testBuildStripeUncompressedSizesThreeBytes() {
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(3);
-        Assert.assertEquals(sizes, new int[]{1, 1, 1, 0});
+        Assert.assertEquals(sizes, new int[] {1, 1, 1, 0});
     }
 
     @Test
     public void testBuildStripeUncompressedSizesFourBytes() {
         // Exactly 4 bytes = 1 per stream
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(4);
-        Assert.assertEquals(sizes, new int[]{1, 1, 1, 1});
+        Assert.assertEquals(sizes, new int[] {1, 1, 1, 1});
     }
 
     // --- End-to-end STRIPE round-trip tests for Range and rANS Nx16 codecs ---
@@ -131,14 +130,14 @@ public class CompressionUtilsTest extends HtsjdkTest {
         final byte[] allSame = new byte[256];
         java.util.Arrays.fill(allSame, (byte) 42);
 
-        return new Object[][]{
-                {"single byte",       new byte[]{0x42}},
-                {"two bytes",         new byte[]{0x01, 0x02}},
-                {"three bytes",       new byte[]{0x01, 0x02, 0x03}},
-                {"four bytes",        new byte[]{0x01, 0x02, 0x03, 0x04}},
-                {"five bytes",        new byte[]{0x01, 0x02, 0x03, 0x04, 0x05}},
-                {"all same bytes",    allSame},
-                {"large random",      large},
+        return new Object[][] {
+            {"single byte", new byte[] {0x42}},
+            {"two bytes", new byte[] {0x01, 0x02}},
+            {"three bytes", new byte[] {0x01, 0x02, 0x03}},
+            {"four bytes", new byte[] {0x01, 0x02, 0x03, 0x04}},
+            {"five bytes", new byte[] {0x01, 0x02, 0x03, 0x04, 0x05}},
+            {"all same bytes", allSame},
+            {"large random", large},
         };
     }
 
@@ -158,8 +157,8 @@ public class CompressionUtilsTest extends HtsjdkTest {
         final RangeEncode encoder = new RangeEncode();
         final RangeDecode decoder = new RangeDecode();
         final ByteBuffer input = CompressionUtils.wrap(data);
-        final ByteBuffer compressed = encoder.compress(input,
-                new RangeParams(RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK));
+        final ByteBuffer compressed =
+                encoder.compress(input, new RangeParams(RangeParams.STRIPE_FLAG_MASK | RangeParams.ORDER_FLAG_MASK));
         final ByteBuffer decompressed = decoder.uncompress(compressed);
         input.rewind();
         Assert.assertEquals(decompressed, input, "Range STRIPE+ORDER1 round-trip failed for: " + description);
@@ -178,8 +177,8 @@ public class CompressionUtilsTest extends HtsjdkTest {
     public void testRansNx16StripeOrder1RoundTrip(final String description, final byte[] data) {
         final RANSNx16Encode encoder = new RANSNx16Encode();
         final RANSNx16Decode decoder = new RANSNx16Decode();
-        final byte[] compressed = encoder.compress(data,
-                new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK));
+        final byte[] compressed = encoder.compress(
+                data, new RANSNx16Params(RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK));
         final byte[] decompressed = decoder.uncompress(compressed);
         Assert.assertEquals(decompressed, data, "rANS Nx16 STRIPE+ORDER1 round-trip failed for: " + description);
     }

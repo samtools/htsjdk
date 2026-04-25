@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 package htsjdk.samtools.filter;
+
 import htsjdk.samtools.SAMRecord;
 
 /**

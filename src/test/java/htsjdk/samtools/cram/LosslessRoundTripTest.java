@@ -5,13 +5,11 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Round-trip tests that write SAMRecords through the CRAM encode/decode pipeline and verify
@@ -66,8 +64,13 @@ public class LosslessRoundTripTest extends HtsjdkTest {
     }
 
     /** Creates a mapped SAMRecord with the given CIGAR, filling bases from the reference or with provided bases. */
-    private SAMRecord createRecord(final SAMFileHeader header, final String name, final int alignmentStart,
-                                   final String cigarString, final byte[] readBases, final byte[] qualities) {
+    private SAMRecord createRecord(
+            final SAMFileHeader header,
+            final String name,
+            final int alignmentStart,
+            final String cigarString,
+            final byte[] readBases,
+            final byte[] qualities) {
         final SAMRecord record = new SAMRecord(header);
         record.setReadName(name);
         record.setAlignmentStart(alignmentStart);
@@ -84,8 +87,12 @@ public class LosslessRoundTripTest extends HtsjdkTest {
     }
 
     /** Creates a mapped SAMRecord with no quality scores (SAM '*'). */
-    private SAMRecord createRecordNoQuals(final SAMFileHeader header, final String name, final int alignmentStart,
-                                          final String cigarString, final byte[] readBases) {
+    private SAMRecord createRecordNoQuals(
+            final SAMFileHeader header,
+            final String name,
+            final int alignmentStart,
+            final String cigarString,
+            final byte[] readBases) {
         return createRecord(header, name, alignmentStart, cigarString, readBases, SAMRecord.NULL_QUALS);
     }
 
@@ -141,9 +148,10 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 5M2I5M: 5 ref-matching bases, 2 inserted bases, 5 more ref-matching bases
         final byte[] bases = new byte[12];
-        System.arraycopy(REF_BASES, 0, bases, 0, 5);          // pos 1-5 match ref
-        bases[5] = 'G'; bases[6] = 'G';                        // 2 inserted bases
-        System.arraycopy(REF_BASES, 5, bases, 7, 5);           // pos 6-10 match ref
+        System.arraycopy(REF_BASES, 0, bases, 0, 5); // pos 1-5 match ref
+        bases[5] = 'G';
+        bases[6] = 'G'; // 2 inserted bases
+        System.arraycopy(REF_BASES, 5, bases, 7, 5); // pos 6-10 match ref
         final SAMRecord rec = createRecord(header, "ins", 1, "5M2I5M", bases, quals(12));
         assertRoundTrip("singleInsertion", rec);
     }
@@ -153,8 +161,8 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 5M3D5M: 5 ref-matching bases, 3 deleted ref bases, 5 more ref-matching (from pos 9)
         final byte[] bases = new byte[10];
-        System.arraycopy(REF_BASES, 0, bases, 0, 5);          // pos 1-5 match ref
-        System.arraycopy(REF_BASES, 8, bases, 5, 5);          // pos 9-13 match ref (after 3bp deletion)
+        System.arraycopy(REF_BASES, 0, bases, 0, 5); // pos 1-5 match ref
+        System.arraycopy(REF_BASES, 8, bases, 5, 5); // pos 9-13 match ref (after 3bp deletion)
         final SAMRecord rec = createRecord(header, "del", 1, "5M3D5M", bases, quals(10));
         assertRoundTrip("singleDeletion", rec);
     }
@@ -164,8 +172,10 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 3S7M: 3 soft-clipped bases + 7 matching bases starting at alignment pos 1
         final byte[] bases = new byte[10];
-        bases[0] = 'T'; bases[1] = 'T'; bases[2] = 'T';       // soft-clipped (arbitrary)
-        System.arraycopy(REF_BASES, 0, bases, 3, 7);           // pos 1-7 match ref
+        bases[0] = 'T';
+        bases[1] = 'T';
+        bases[2] = 'T'; // soft-clipped (arbitrary)
+        System.arraycopy(REF_BASES, 0, bases, 3, 7); // pos 1-7 match ref
         final SAMRecord rec = createRecord(header, "sClipStart", 1, "3S7M", bases, quals(10));
         assertRoundTrip("softClipAtStart", rec);
     }
@@ -175,8 +185,10 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 7M3S: 7 matching bases + 3 soft-clipped
         final byte[] bases = new byte[10];
-        System.arraycopy(REF_BASES, 0, bases, 0, 7);           // pos 1-7 match ref
-        bases[7] = 'T'; bases[8] = 'T'; bases[9] = 'T';       // soft-clipped
+        System.arraycopy(REF_BASES, 0, bases, 0, 7); // pos 1-7 match ref
+        bases[7] = 'T';
+        bases[8] = 'T';
+        bases[9] = 'T'; // soft-clipped
         final SAMRecord rec = createRecord(header, "sClipEnd", 1, "7M3S", bases, quals(10));
         assertRoundTrip("softClipAtEnd", rec);
     }
@@ -186,9 +198,11 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 2S6M2S
         final byte[] bases = new byte[10];
-        bases[0] = 'T'; bases[1] = 'T';                        // leading soft-clip
-        System.arraycopy(REF_BASES, 0, bases, 2, 6);           // pos 1-6 match ref
-        bases[8] = 'T'; bases[9] = 'T';                        // trailing soft-clip
+        bases[0] = 'T';
+        bases[1] = 'T'; // leading soft-clip
+        System.arraycopy(REF_BASES, 0, bases, 2, 6); // pos 1-6 match ref
+        bases[8] = 'T';
+        bases[9] = 'T'; // trailing soft-clip
         final SAMRecord rec = createRecord(header, "sClipBoth", 1, "2S6M2S", bases, quals(10));
         assertRoundTrip("softClipsBothEnds", rec);
     }
@@ -216,9 +230,10 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 5M2D2I5M: position tracking edge case — deletion advances ref, insertion advances read
         final byte[] bases = new byte[12];
-        System.arraycopy(REF_BASES, 0, bases, 0, 5);           // pos 1-5 match ref
-        bases[5] = 'G'; bases[6] = 'G';                        // 2 inserted bases
-        System.arraycopy(REF_BASES, 7, bases, 7, 5);           // pos 8-12 match ref (after 2bp deletion)
+        System.arraycopy(REF_BASES, 0, bases, 0, 5); // pos 1-5 match ref
+        bases[5] = 'G';
+        bases[6] = 'G'; // 2 inserted bases
+        System.arraycopy(REF_BASES, 7, bases, 7, 5); // pos 8-12 match ref (after 2bp deletion)
         final SAMRecord rec = createRecord(header, "delIns", 1, "5M2D2I5M", bases, quals(12));
         assertRoundTrip("deletionThenInsertion", rec);
     }
@@ -228,9 +243,10 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 5M2I2D5M
         final byte[] bases = new byte[12];
-        System.arraycopy(REF_BASES, 0, bases, 0, 5);           // pos 1-5 match ref
-        bases[5] = 'G'; bases[6] = 'G';                        // 2 inserted bases
-        System.arraycopy(REF_BASES, 7, bases, 7, 5);           // pos 8-12 match ref (after 2bp deletion)
+        System.arraycopy(REF_BASES, 0, bases, 0, 5); // pos 1-5 match ref
+        bases[5] = 'G';
+        bases[6] = 'G'; // 2 inserted bases
+        System.arraycopy(REF_BASES, 7, bases, 7, 5); // pos 8-12 match ref (after 2bp deletion)
         final SAMRecord rec = createRecord(header, "insDel", 1, "5M2I2D5M", bases, quals(12));
         assertRoundTrip("insertionThenDeletion", rec);
     }
@@ -241,16 +257,16 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         // 3M1I3M2D3M1I2M: read bases = 3+1+3+3+1+2 = 13, ref consumed = 3+3+2(del)+3+2 = 13
         final byte[] bases = new byte[13];
         int readPos = 0;
-        System.arraycopy(REF_BASES, 0, bases, readPos, 3);     // 3M from ref pos 1
+        System.arraycopy(REF_BASES, 0, bases, readPos, 3); // 3M from ref pos 1
         readPos += 3;
-        bases[readPos++] = 'G';                                  // 1I
-        System.arraycopy(REF_BASES, 3, bases, readPos, 3);     // 3M from ref pos 4
+        bases[readPos++] = 'G'; // 1I
+        System.arraycopy(REF_BASES, 3, bases, readPos, 3); // 3M from ref pos 4
         readPos += 3;
         // 2D skips ref pos 7-8
-        System.arraycopy(REF_BASES, 8, bases, readPos, 3);     // 3M from ref pos 9
+        System.arraycopy(REF_BASES, 8, bases, readPos, 3); // 3M from ref pos 9
         readPos += 3;
-        bases[readPos++] = 'G';                                  // 1I
-        System.arraycopy(REF_BASES, 11, bases, readPos, 2);    // 2M from ref pos 12
+        bases[readPos++] = 'G'; // 1I
+        System.arraycopy(REF_BASES, 11, bases, readPos, 2); // 2M from ref pos 12
         final SAMRecord rec = createRecord(header, "multiIndel", 1, "3M1I3M2D3M1I2M", bases, quals(13));
         assertRoundTrip("multipleInsertionsAndDeletions", rec);
     }
@@ -260,9 +276,13 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 2H3S5M3S2H: hard clips don't consume read bases, soft clips do
         final byte[] bases = new byte[11];
-        bases[0] = 'T'; bases[1] = 'T'; bases[2] = 'T';       // 3S
-        System.arraycopy(REF_BASES, 0, bases, 3, 5);           // 5M from ref pos 1
-        bases[8] = 'T'; bases[9] = 'T'; bases[10] = 'T';      // 3S
+        bases[0] = 'T';
+        bases[1] = 'T';
+        bases[2] = 'T'; // 3S
+        System.arraycopy(REF_BASES, 0, bases, 3, 5); // 5M from ref pos 1
+        bases[8] = 'T';
+        bases[9] = 'T';
+        bases[10] = 'T'; // 3S
         final SAMRecord rec = createRecord(header, "hardSoft", 1, "2H3S5M3S2H", bases, quals(11));
         assertRoundTrip("softAndHardClipsCombined", rec);
     }
@@ -272,8 +292,8 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 5M100N5M: spliced alignment skipping 100 ref bases
         final byte[] bases = new byte[10];
-        System.arraycopy(REF_BASES, 0, bases, 0, 5);           // pos 1-5 match ref
-        System.arraycopy(REF_BASES, 105, bases, 5, 5);         // pos 106-110 match ref
+        System.arraycopy(REF_BASES, 0, bases, 0, 5); // pos 1-5 match ref
+        System.arraycopy(REF_BASES, 105, bases, 5, 5); // pos 106-110 match ref
         final SAMRecord rec = createRecord(header, "splice", 1, "5M100N5M", bases, quals(10));
         assertRoundTrip("refSkipSplicedAlignment", rec);
     }
@@ -285,8 +305,8 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 10M with first and last bases mismatched
         final byte[] bases = refBases(1, 10);
-        bases[0] = SequenceUtil.complement(bases[0]);           // mismatch at start
-        bases[9] = SequenceUtil.complement(bases[9]);           // mismatch at end
+        bases[0] = SequenceUtil.complement(bases[0]); // mismatch at start
+        bases[9] = SequenceUtil.complement(bases[9]); // mismatch at end
         final SAMRecord rec = createRecord(header, "boundaryMis", 1, "10M", bases, quals(10));
         assertRoundTrip("mismatchesAtReadBoundaries", rec);
     }
@@ -296,8 +316,8 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMFileHeader header = buildHeader();
         // 3M2D3M: verify deletion produces ^XY in MD string
         final byte[] bases = new byte[6];
-        System.arraycopy(REF_BASES, 0, bases, 0, 3);           // pos 1-3 match ref
-        System.arraycopy(REF_BASES, 5, bases, 3, 3);           // pos 6-8 match ref
+        System.arraycopy(REF_BASES, 0, bases, 0, 3); // pos 1-3 match ref
+        System.arraycopy(REF_BASES, 5, bases, 3, 3); // pos 6-8 match ref
         final SAMRecord rec = createRecord(header, "delMd", 1, "3M2D3M", bases, quals(6));
         // Verify MD was set and contains deletion marker
         final String md = rec.getStringAttribute("MD");
@@ -312,11 +332,11 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         // 2M1X2M1D3M: 2 matches, 1 mismatch, 2 matches, 1bp deletion, 3 matches
         // CIGARs with X aren't standard for CRAM encoding — use M and set mismatched bases
         final byte[] bases = new byte[8];
-        System.arraycopy(REF_BASES, 0, bases, 0, 2);           // pos 1-2 match
-        bases[2] = SequenceUtil.complement(REF_BASES[2]);       // pos 3 mismatch
-        System.arraycopy(REF_BASES, 3, bases, 3, 2);           // pos 4-5 match
+        System.arraycopy(REF_BASES, 0, bases, 0, 2); // pos 1-2 match
+        bases[2] = SequenceUtil.complement(REF_BASES[2]); // pos 3 mismatch
+        System.arraycopy(REF_BASES, 3, bases, 3, 2); // pos 4-5 match
         // 1D skips ref pos 6
-        System.arraycopy(REF_BASES, 6, bases, 5, 3);           // pos 7-9 match
+        System.arraycopy(REF_BASES, 6, bases, 5, 3); // pos 7-9 match
         final SAMRecord rec = createRecord(header, "mixedMd", 1, "5M1D3M", bases, quals(8));
         assertRoundTrip("mixedMatchesMismatchesDeletion", rec);
     }
@@ -348,7 +368,7 @@ public class LosslessRoundTripTest extends HtsjdkTest {
     public void testReadNearEndOfReference() throws IOException {
         final SAMFileHeader header = buildHeader();
         // Align a 10bp read at the very end of the 200bp reference
-        final int start = REF_LENGTH - 9;  // positions 191-200
+        final int start = REF_LENGTH - 9; // positions 191-200
         final SAMRecord rec = createRecord(header, "refEnd", start, "10M", refBases(start, 10), quals(10));
         assertRoundTrip("readNearEndOfReference", rec);
     }
@@ -361,15 +381,15 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         // bases as mismatches to N.  Since these values don't match what SequenceUtil.calculateMdAndNm
         // would produce (it stops at the reference boundary), they'll be kept verbatim through
         // the CRAM strip-and-regenerate logic.
-        final int start = REF_LENGTH - 2;  // position 198
+        final int start = REF_LENGTH - 2; // position 198
         final int readLen = 6;
-        final int refOverlap = REF_LENGTH - start + 1;  // 3 bases overlap the reference
-        final int pastRef = readLen - refOverlap;         // 3 bases past the end
+        final int refOverlap = REF_LENGTH - start + 1; // 3 bases overlap the reference
+        final int pastRef = readLen - refOverlap; // 3 bases past the end
 
         final byte[] bases = new byte[readLen];
         System.arraycopy(REF_BASES, start - 1, bases, 0, refOverlap);
         for (int i = refOverlap; i < readLen; i++) {
-            bases[i] = 'A';  // arbitrary non-N bases past end
+            bases[i] = 'A'; // arbitrary non-N bases past end
         }
 
         final SAMRecord rec = new SAMRecord(header);
@@ -420,15 +440,16 @@ public class LosslessRoundTripTest extends HtsjdkTest {
     public void testMultipleDiverseRecords() throws IOException {
         final SAMFileHeader header = buildHeader();
         final SAMRecord[] records = {
-            createRecord(header, "multi1", 1,  "10M",    refBases(1, 10),  quals(10)),
+            createRecord(header, "multi1", 1, "10M", refBases(1, 10), quals(10)),
             createRecord(header, "multi2", 20, "5M2I5M", buildInsertionBases(20, 5, "GG", 5), quals(12)),
-            createRecord(header, "multi3", 50, "3S7M",   buildSoftClipStartBases(50, 3, 7), quals(10)),
+            createRecord(header, "multi3", 50, "3S7M", buildSoftClipStartBases(50, 3, 7), quals(10)),
         };
         assertRoundTrip("multipleDiverseRecords", records);
     }
 
     /** Helper: builds read bases for an insertion in the middle of ref-matching flanks. */
-    private byte[] buildInsertionBases(final int start1Based, final int leftMatch, final String inserted, final int rightMatch) {
+    private byte[] buildInsertionBases(
+            final int start1Based, final int leftMatch, final String inserted, final int rightMatch) {
         final byte[] ins = inserted.getBytes();
         final byte[] bases = new byte[leftMatch + ins.length + rightMatch];
         System.arraycopy(REF_BASES, start1Based - 1, bases, 0, leftMatch);
@@ -514,14 +535,20 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         final SAMRecord withQualsMismatch = createRecord(header, "qualsMis", 26, "5M", mismatchBases(26, 5), quals(5));
 
         // 5. No qualities, insertion (Insertion feature, no quality-carrying features)
-        final SAMRecord noQualsInsertion = createRecordNoQuals(header, "noQualsIns", 31, "5M2I5M",
-                buildInsertionBases(31, 5, "GG", 5));
+        final SAMRecord noQualsInsertion =
+                createRecordNoQuals(header, "noQualsIns", 31, "5M2I5M", buildInsertionBases(31, 5, "GG", 5));
 
         // 6. No qualities, soft clip + matches
-        final SAMRecord noQualsSoftClip = createRecordNoQuals(header, "noQualsSC", 41, "3S7M",
-                buildSoftClipStartBases(41, 3, 7));
+        final SAMRecord noQualsSoftClip =
+                createRecordNoQuals(header, "noQualsSC", 41, "3S7M", buildSoftClipStartBases(41, 3, 7));
 
-        assertRoundTrip("mixedQualityPresence",
-                withQualsMatch, noQualsMatch, noQualsMismatch, withQualsMismatch, noQualsInsertion, noQualsSoftClip);
+        assertRoundTrip(
+                "mixedQualityPresence",
+                withQualsMatch,
+                noQualsMatch,
+                noQualsMismatch,
+                withQualsMismatch,
+                noQualsInsertion,
+                noQualsSoftClip);
     }
 }

@@ -35,9 +35,8 @@ final class GammaIntegerCodec extends CoreCodec<Integer> {
      * @param offset the common value to be added to all values before storage.
      *               Setting this to (-MIN) will ensure all stored values will be in the range (0 .. MAX - MIN)
      */
-    public GammaIntegerCodec(final BitInputStream coreBlockInputStream,
-                      final BitOutputStream coreBlockOutputStream,
-                      final int offset) {
+    public GammaIntegerCodec(
+            final BitInputStream coreBlockInputStream, final BitOutputStream coreBlockOutputStream, final int offset) {
         super(coreBlockInputStream, coreBlockOutputStream);
 
         this.offset = offset;
@@ -60,14 +59,13 @@ final class GammaIntegerCodec extends CoreCodec<Integer> {
     @Override
     public final void write(final Integer value) {
         if (value + offset < 1) {
-            final String msg = String.format("Gamma codec handles only positive values.  Value %d + Offset %d <= 0",
-                    value, offset);
+            final String msg = String.format(
+                    "Gamma codec handles only positive values.  Value %d + Offset %d <= 0", value, offset);
             throw new IllegalArgumentException(msg);
         }
 
         final long newValue = value + offset;
         final int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
-
 
         if (betaCodeLength > 1) {
             coreBlockOutputStream.write(0L, betaCodeLength - 1);

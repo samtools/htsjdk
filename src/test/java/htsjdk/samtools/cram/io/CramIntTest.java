@@ -1,15 +1,14 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class CramIntTest extends HtsjdkTest {
     private byte[] streamWritten(final List<Integer> ints) throws IOException {

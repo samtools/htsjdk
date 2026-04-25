@@ -14,10 +14,6 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,6 +26,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * A collection of tests for CRAM BAI index write/read that use BAMFileIndexTest/index_test.bam file as the
@@ -48,35 +47,36 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     private static final ConcurrentMap<Integer, byte[]> baiBytesCache = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Integer, File> cramFileCache = new ConcurrentHashMap<>();
 
-    private final static String TEST_QUERY_ALIGNMENT_CONTIG = "chrM";
-    private final static int TEST_QUERY_ALIGNMENT_START = 1519;
+    private static final String TEST_QUERY_ALIGNMENT_CONTIG = "chrM";
+    private static final int TEST_QUERY_ALIGNMENT_START = 1519;
 
     // Established by prepare method/@BeforeTest
     // Make a fake reference derived from the sequence dictionary in our input
-    //TODO: Note that these tests are REALLY slow because the reference sequences in the dictionary
+    // TODO: Note that these tests are REALLY slow because the reference sequences in the dictionary
     // in the test file are large (250 mega-bases), and upper-casing them each time they're retrieved is slowwwwww
-    private static final ReferenceSource referenceSource = new ReferenceSource(
-            new FakeReferenceSequenceFile(
-                    SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()));
+    private static final ReferenceSource referenceSource =
+            new ReferenceSource(new FakeReferenceSequenceFile(SamReaderFactory.makeDefault()
+                    .getFileHeader(BAM_FILE)
+                    .getSequenceDictionary()
+                    .getSequences()));
 
-    @DataProvider(name="filesWithContainerAndSlicePartitioningVariations")
+    @DataProvider(name = "filesWithContainerAndSlicePartitioningVariations")
     public Object[][] getFilesWithContainerAndSlicePartitioningVariations() throws IOException {
         return new Object[][] {
-                // Smallest and largest reads/slice to exercise different container/slice boundaries.
-                // Intermediate values (150, 200) removed since CRAMIndexPermutationsTests covers
-                // 12 strategy permutations with a different BAM.
-                { getCachedCRAMFile(100) },
-                { getCachedCRAMFile(300) },
+            // Smallest and largest reads/slice to exercise different container/slice boundaries.
+            // Intermediate values (150, 200) removed since CRAMIndexPermutationsTests covers
+            // 12 strategy permutations with a different BAM.
+            {getCachedCRAMFile(100)}, {getCachedCRAMFile(300)},
         };
     }
 
-    @DataProvider(name="bytesWithContainerAndSlicePartitioningVariations")
+    @DataProvider(name = "bytesWithContainerAndSlicePartitioningVariations")
     public Iterator<Object[]> getBytesWithContainerAndSlicePartitioningVariations() {
         return Stream.of(100, 300)
                 .map(size -> {
                     final byte[] cram = getCachedCRAMBytes(size);
                     final byte[] bai = getCachedBAIBytes(cram, size);
-                    return new Object[]{ cram, bai };
+                    return new Object[] {cram, bai};
                 })
                 .iterator();
     }
@@ -86,13 +86,10 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     @Test(dataProvider = "filesWithContainerAndSlicePartitioningVariations")
     public void testConstructors(final File cramFile) throws IOException {
         final File baiFile = getBAIFileForCRAMFile(cramFile);
-        try (final CRAMFileReader reader = new CRAMFileReader(
-                cramFile,
-                baiFile,
-                referenceSource,
-                ValidationStringency.SILENT)) {
+        try (final CRAMFileReader reader =
+                new CRAMFileReader(cramFile, baiFile, referenceSource, ValidationStringency.SILENT)) {
             try (final CloseableIterator<SAMRecord> iterator =
-                         reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START)) {
+                    reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START)) {
                 Assert.assertTrue(iterator.hasNext());
                 final SAMRecord record = iterator.next();
                 Assert.assertEquals(record.getReferenceName(), TEST_QUERY_ALIGNMENT_CONTIG);
@@ -101,12 +98,9 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         }
 
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(cramFile),
-                baiFile,
-                referenceSource,
-                ValidationStringency.SILENT)) {
+                new SeekableFileStream(cramFile), baiFile, referenceSource, ValidationStringency.SILENT)) {
             try (final CloseableIterator<SAMRecord> iterator =
-                         reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START)) {
+                    reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START)) {
                 Assert.assertTrue(iterator.hasNext());
                 final SAMRecord record = iterator.next();
                 Assert.assertEquals(record.getReferenceName(), TEST_QUERY_ALIGNMENT_CONTIG);
@@ -117,10 +111,10 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         try (final CRAMFileReader reader = new CRAMFileReader(
                 new SeekableFileStream(cramFile),
                 new SeekableFileStream(baiFile),
-                referenceSource, ValidationStringency.SILENT)) {
-            try (final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(
-                    TEST_QUERY_ALIGNMENT_CONTIG,
-                    TEST_QUERY_ALIGNMENT_START)) {
+                referenceSource,
+                ValidationStringency.SILENT)) {
+            try (final CloseableIterator<SAMRecord> iterator =
+                    reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START)) {
                 Assert.assertTrue(iterator.hasNext());
                 final SAMRecord record = iterator.next();
                 Assert.assertEquals(record.getReferenceName(), TEST_QUERY_ALIGNMENT_CONTIG);
@@ -129,26 +123,26 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         }
 
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(cramFile),
-                (File)null,
-                referenceSource,
-                ValidationStringency.SILENT)) {
-            Assert.expectThrows(SAMException.class,
-                    () ->reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START));
+                new SeekableFileStream(cramFile), (File) null, referenceSource, ValidationStringency.SILENT)) {
+            Assert.expectThrows(
+                    SAMException.class,
+                    () -> reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START));
         }
 
-        try (final CRAMFileReader reader  = new CRAMFileReader(
+        try (final CRAMFileReader reader = new CRAMFileReader(
                 new SeekableFileStream(cramFile),
-                (SeekableFileStream)null,
+                (SeekableFileStream) null,
                 referenceSource,
                 ValidationStringency.SILENT)) {
-            Assert.expectThrows(SAMException.class,
+            Assert.expectThrows(
+                    SAMException.class,
                     () -> reader.queryAlignmentStart(TEST_QUERY_ALIGNMENT_CONTIG, TEST_QUERY_ALIGNMENT_START));
         }
     }
 
     @Test(dataProvider = "bytesWithContainerAndSlicePartitioningVariations")
-    public void testCompareMappedReadsQueryAlignmentStart(final byte[] cramBytes, final byte[] baiBytes) throws IOException {
+    public void testCompareMappedReadsQueryAlignmentStart(final byte[] cramBytes, final byte[] baiBytes)
+            throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE)) {
             final SAMRecordIterator samRecordIterator = samReader.iterator();
             try (final CRAMFileReader cramFileReader = new CRAMFileReader(
@@ -168,12 +162,10 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
                     }
                     final String s1 = samRecord.getSAMString();
 
-                    //TODO: closing this iterator after each query causes the test to fail after the first
+                    // TODO: closing this iterator after each query causes the test to fail after the first
                     // iteration the underlying reader stream is closed as well
-                    CloseableIterator<SAMRecord> cramIterator =
-                                 cramFileReader.queryAlignmentStart(
-                                         samRecord.getReferenceName(),
-                                         samRecord.getAlignmentStart());
+                    CloseableIterator<SAMRecord> cramIterator = cramFileReader.queryAlignmentStart(
+                            samRecord.getReferenceName(), samRecord.getAlignmentStart());
                     Assert.assertTrue(cramIterator.hasNext(), counter + ": " + s1);
                     final SAMRecord cramRecord = cramIterator.next();
                     final String s2 = cramRecord.getSAMString();
@@ -184,7 +176,8 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
                                     cramRecord.getAlignmentStart(),
                                     cramRecord.getAlignmentEnd(),
                                     samRecord.getAlignmentStart(),
-                                    samRecord.getAlignmentEnd()), s1 + s2);
+                                    samRecord.getAlignmentEnd()),
+                            s1 + s2);
                 }
                 Assert.assertEquals(counter, NUMBER_OF_MAPPED_READS);
             }
@@ -196,7 +189,8 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         try (final CRAMFileReader cramFileReader = new CRAMFileReader(
                 new ByteArraySeekableStream(cramBytes),
                 new ByteArraySeekableStream(baiBytes),
-                referenceSource, ValidationStringency.SILENT)) {
+                referenceSource,
+                ValidationStringency.SILENT)) {
             final SAMFileSpan allContainerFileSpans = cramFileReader.getFilePointerSpanningReads();
             try (final CloseableIterator<SAMRecord> cramIterator = cramFileReader.getIterator(allContainerFileSpans)) {
                 int counter = 0;
@@ -244,7 +238,8 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
                     boolean matchFound = false;
                     while (iterator.hasNext()) {
                         final SAMRecord record = iterator.next();
-                        if (record.getReferenceIndex() == baiEntry.getReferenceContext().getReferenceContextID()) {
+                        if (record.getReferenceIndex()
+                                == baiEntry.getReferenceContext().getReferenceContextID()) {
                             final boolean overlaps = CoordMath.overlaps(
                                     record.getAlignmentStart(),
                                     record.getAlignmentEnd(),
@@ -265,31 +260,34 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
 
     @Test(dataProvider = "bytesWithContainerAndSlicePartitioningVariations")
     public void testQueryInterval(final byte[] cramBytes, final byte[] baiBytes) throws IOException {
-        final QueryInterval[] query = new QueryInterval[]{
-                new QueryInterval(0, TEST_QUERY_ALIGNMENT_START, TEST_QUERY_ALIGNMENT_START + 1),
-                new QueryInterval(1, 470535, 470536)};
+        final QueryInterval[] query = new QueryInterval[] {
+            new QueryInterval(0, TEST_QUERY_ALIGNMENT_START, TEST_QUERY_ALIGNMENT_START + 1),
+            new QueryInterval(1, 470535, 470536)
+        };
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new ByteArraySeekableStream(cramBytes),
-                new ByteArraySeekableStream(baiBytes),
-                referenceSource, ValidationStringency.SILENT);
-             final CloseableIterator<SAMRecord> iterator = reader.query(query, false)) {
-                Assert.assertTrue(iterator.hasNext());
-                final SAMRecord r1 = iterator.next();
-                Assert.assertEquals(r1.getReadName(), "3968040");
-                Assert.assertTrue(iterator.hasNext());
-                final SAMRecord r2 = iterator.next();
-                Assert.assertEquals(r2.getReadName(), "140419");
-                Assert.assertFalse(iterator.hasNext());
+                        new ByteArraySeekableStream(cramBytes),
+                        new ByteArraySeekableStream(baiBytes),
+                        referenceSource,
+                        ValidationStringency.SILENT);
+                final CloseableIterator<SAMRecord> iterator = reader.query(query, false)) {
+            Assert.assertTrue(iterator.hasNext());
+            final SAMRecord r1 = iterator.next();
+            Assert.assertEquals(r1.getReadName(), "3968040");
+            Assert.assertTrue(iterator.hasNext());
+            final SAMRecord r2 = iterator.next();
+            Assert.assertEquals(r2.getReadName(), "140419");
+            Assert.assertFalse(iterator.hasNext());
         }
     }
 
     @Test(dataProvider = "bytesWithContainerAndSlicePartitioningVariations")
     public void testCompareUnmappedReads(final byte[] cramBytes, final byte[] baiBytes) throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-             final CRAMFileReader reader = new CRAMFileReader(
-                new ByteArraySeekableStream(cramBytes),
-                new ByteArraySeekableStream(baiBytes),
-                     referenceSource, ValidationStringency.SILENT)) {
+                final CRAMFileReader reader = new CRAMFileReader(
+                        new ByteArraySeekableStream(cramBytes),
+                        new ByteArraySeekableStream(baiBytes),
+                        referenceSource,
+                        ValidationStringency.SILENT)) {
             int counter = 0;
 
             SAMRecordIterator unmappedSamIterator = samReader.queryUnmapped();
@@ -311,7 +309,9 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     private static byte[] getCachedCRAMBytes(final int readsPerSlice) {
         return cramBytesCache.computeIfAbsent(readsPerSlice, size -> {
             try {
-                return getCRAMBytesForBAMFile(BAM_FILE, referenceSource,
+                return getCRAMBytesForBAMFile(
+                        BAM_FILE,
+                        referenceSource,
                         new CRAMEncodingStrategy()
                                 .setMinimumSingleReferenceSliceSize(size)
                                 .setReadsPerSlice(size));
@@ -324,7 +324,9 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     private static File getCachedCRAMFile(final int readsPerSlice) {
         return cramFileCache.computeIfAbsent(readsPerSlice, size -> {
             try {
-                return getCRAMFileForBAMFile(BAM_FILE, referenceSource,
+                return getCRAMFileForBAMFile(
+                        BAM_FILE,
+                        referenceSource,
                         new CRAMEncodingStrategy()
                                 .setMinimumSingleReferenceSliceSize(size)
                                 .setReadsPerSlice(size));
@@ -347,16 +349,18 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     private static byte[] getBAIBytesForCRAMBytes(final byte[] cramBytes) throws IOException {
         final File indexFile = Files.createTempFile("cramBytes", ".bai").toFile();
         indexFile.deleteOnExit();
-        CRAMBAIIndexer.createIndex(new ByteArraySeekableStream(cramBytes), indexFile, null, ValidationStringency.STRICT);
+        CRAMBAIIndexer.createIndex(
+                new ByteArraySeekableStream(cramBytes), indexFile, null, ValidationStringency.STRICT);
         return bytesFromFile(indexFile);
     }
 
     private static File getCRAMFileForBAMFile(
             final File bamFile,
             final CRAMReferenceSource referenceSource,
-            final CRAMEncodingStrategy cramEncodingStrategy) throws IOException {
-        final byte [] cramBytes = getCRAMBytesForBAMFile(bamFile, referenceSource, cramEncodingStrategy);
-        final File cramFile = File.createTempFile(bamFile.getName(), ".cram") ;
+            final CRAMEncodingStrategy cramEncodingStrategy)
+            throws IOException {
+        final byte[] cramBytes = getCRAMBytesForBAMFile(bamFile, referenceSource, cramEncodingStrategy);
+        final File cramFile = File.createTempFile(bamFile.getName(), ".cram");
         cramFile.deleteOnExit();
         try (final FileOutputStream fos = new FileOutputStream(cramFile)) {
             fos.write(cramBytes);
@@ -372,7 +376,7 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
         return baiIndexFile;
     }
 
-    //TODO: these are duplicated in CRAMFileCRAIIndexTest
+    // TODO: these are duplicated in CRAMFileCRAIIndexTest
     private static byte[] bytesFromFile(final File file) throws IOException {
         try (final FileInputStream fis = new FileInputStream(file)) {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -382,20 +386,13 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
     }
 
     private static byte[] getCRAMBytesForBAMFile(
-            final File bamFile,
-            final CRAMReferenceSource source,
-            final CRAMEncodingStrategy encodingStrategy) throws IOException {
+            final File bamFile, final CRAMReferenceSource source, final CRAMEncodingStrategy encodingStrategy)
+            throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
-             final SAMRecordIterator samIterator = samReader.iterator();
-             final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                final SAMRecordIterator samIterator = samReader.iterator();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             try (final CRAMFileWriter cramWriter = new CRAMFileWriter(
-                    encodingStrategy,
-                    baos,
-                    null,
-                    true,
-                    source,
-                    samReader.getFileHeader(),
-                    bamFile.getName())) {
+                    encodingStrategy, baos, null, true, source, samReader.getFileHeader(), bamFile.getName())) {
                 while (samIterator.hasNext()) {
                     SAMRecord record = samIterator.next();
                     cramWriter.addAlignment(record);
@@ -404,5 +401,4 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
             return baos.toByteArray();
         }
     }
-
 }

@@ -44,7 +44,7 @@ public class SecondaryAlignmentSkippingIterator {
     }
 
     public SAMRecord getCurrent() {
-        assert(hasCurrent());
+        assert (hasCurrent());
         return it.peek();
     }
 

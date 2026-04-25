@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
@@ -36,7 +36,6 @@ import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -51,19 +50,19 @@ import java.nio.file.Path;
  */
 class VCFWriter extends IndexingVariantContextWriter {
 
-    private static final String VERSION_LINE =
-            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
+    private static final String VERSION_LINE = VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString()
+            + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
 
-	// Initialized when the header is written to the output stream
-	private VCFEncoder vcfEncoder = null;
+    // Initialized when the header is written to the output stream
+    private VCFEncoder vcfEncoder = null;
 
-	// the VCF header we're storing
-	protected VCFHeader mHeader = null;
+    // the VCF header we're storing
+    protected VCFHeader mHeader = null;
 
-	private final boolean allowMissingFieldsInHeader;
+    private final boolean allowMissingFieldsInHeader;
 
-	// should we write genotypes or just sites?
-	private final boolean doNotWriteGenotypes;
+    // should we write genotypes or just sites?
+    private final boolean doNotWriteGenotypes;
 
     // should we always output a complete format record, even if we could drop trailing fields?
     private final boolean writeFullFormatField;
@@ -84,36 +83,67 @@ class VCFWriter extends IndexingVariantContextWriter {
     /* Wrapping in a {@link BufferedWriter} avoids frequent conversions with individual writes to OutputStreamWriter. */
     private final Writer writer = new BufferedWriter(new OutputStreamWriter(lineBuffer, VCFEncoder.VCF_CHARSET));
 
-    public VCFWriter(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
-                     final boolean enableOnTheFlyIndexing,
-                     final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
-                     final boolean writeFullFormatField) {
-        this(IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing, doNotWriteGenotypes,
-            allowMissingFieldsInHeader,writeFullFormatField);
+    public VCFWriter(
+            final File location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing,
+            final boolean doNotWriteGenotypes,
+            final boolean allowMissingFieldsInHeader,
+            final boolean writeFullFormatField) {
+        this(
+                IOUtil.toPath(location),
+                output,
+                refDict,
+                enableOnTheFlyIndexing,
+                doNotWriteGenotypes,
+                allowMissingFieldsInHeader,
+                writeFullFormatField);
     }
 
-    public VCFWriter(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
-        final boolean enableOnTheFlyIndexing,
-        final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
-        final boolean writeFullFormatField) {
+    public VCFWriter(
+            final Path location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing,
+            final boolean doNotWriteGenotypes,
+            final boolean allowMissingFieldsInHeader,
+            final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
     }
 
-    public VCFWriter(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
-                     final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
-                     final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
-                     final boolean writeFullFormatField) {
-        this(IOUtil.toPath(location), output, refDict, indexCreator, enableOnTheFlyIndexing,
-            doNotWriteGenotypes, allowMissingFieldsInHeader, writeFullFormatField);
+    public VCFWriter(
+            final File location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final IndexCreator indexCreator,
+            final boolean enableOnTheFlyIndexing,
+            final boolean doNotWriteGenotypes,
+            final boolean allowMissingFieldsInHeader,
+            final boolean writeFullFormatField) {
+        this(
+                IOUtil.toPath(location),
+                output,
+                refDict,
+                indexCreator,
+                enableOnTheFlyIndexing,
+                doNotWriteGenotypes,
+                allowMissingFieldsInHeader,
+                writeFullFormatField);
     }
 
-    public VCFWriter(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
-        final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
-        final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
-        final boolean writeFullFormatField) {
+    public VCFWriter(
+            final Path location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final IndexCreator indexCreator,
+            final boolean enableOnTheFlyIndexing,
+            final boolean doNotWriteGenotypes,
+            final boolean allowMissingFieldsInHeader,
+            final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing, indexCreator);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
@@ -158,7 +188,7 @@ class VCFWriter extends IndexingVariantContextWriter {
             writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
             writeAndResetBuffer();
             outputHasBeenWritten = true;
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             throw new RuntimeIOException("Couldn't write file " + getStreamName(), e);
         }
     }
@@ -167,10 +197,8 @@ class VCFWriter extends IndexingVariantContextWriter {
         return VERSION_LINE;
     }
 
-    public static VCFHeader writeHeader(VCFHeader header,
-                                        final Writer writer,
-                                        final String versionLine,
-                                        final String streamNameForError) {
+    public static VCFHeader writeHeader(
+            VCFHeader header, final Writer writer, final String versionLine, final String streamNameForError) {
 
         try {
             rejectVCFV43Headers(header);
@@ -178,9 +206,8 @@ class VCFWriter extends IndexingVariantContextWriter {
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
 
-            for (final VCFHeaderLine line : header.getMetaDataInSortedOrder() ) {
-                if ( VCFHeaderVersion.isFormatString(line.getKey()) )
-                    continue;
+            for (final VCFHeaderLine line : header.getMetaDataInSortedOrder()) {
+                if (VCFHeaderVersion.isFormatString(line.getKey())) continue;
 
                 writer.write(VCFHeader.METADATA_INDICATOR);
                 writer.write(line.toString());
@@ -190,27 +217,24 @@ class VCFWriter extends IndexingVariantContextWriter {
             // write out the column line
             writer.write(VCFHeader.HEADER_INDICATOR);
             boolean isFirst = true;
-            for (final VCFHeader.HEADER_FIELDS field : header.getHeaderFields() ) {
-                if ( isFirst )
-                    isFirst = false; // don't write out a field separator
-                else
-                    writer.write(VCFConstants.FIELD_SEPARATOR);
+            for (final VCFHeader.HEADER_FIELDS field : header.getHeaderFields()) {
+                if (isFirst) isFirst = false; // don't write out a field separator
+                else writer.write(VCFConstants.FIELD_SEPARATOR);
                 writer.write(field.toString());
             }
 
-            if ( header.hasGenotypingData() ) {
+            if (header.hasGenotypingData()) {
                 writer.write(VCFConstants.FIELD_SEPARATOR);
                 writer.write("FORMAT");
-                for (final String sample : header.getGenotypeSamples() ) {
+                for (final String sample : header.getGenotypeSamples()) {
                     writer.write(VCFConstants.FIELD_SEPARATOR);
                     writer.write(sample);
                 }
             }
 
             writer.write("\n");
-            writer.flush();  // necessary so that writing to an output stream will work
-        }
-        catch (IOException e) {
+            writer.flush(); // necessary so that writing to an output stream will work
+        } catch (IOException e) {
             throw new RuntimeIOException("IOException writing the VCF header to " + streamNameForError, e);
         }
 
@@ -241,11 +265,13 @@ class VCFWriter extends IndexingVariantContextWriter {
         try {
             super.add(context);
             if (this.mHeader == null) {
-                throw new IllegalStateException("Unable to write the VCF: header is missing, " +
-                                                   "try to call writeHeader or setHeader first.");
+                throw new IllegalStateException(
+                        "Unable to write the VCF: header is missing, " + "try to call writeHeader or setHeader first.");
             }
             if (this.doNotWriteGenotypes) {
-                this.vcfEncoder.write(this.writer, new VariantContextBuilder(context).noGenotypes().make());
+                this.vcfEncoder.write(
+                        this.writer,
+                        new VariantContextBuilder(context).noGenotypes().make());
             } else {
                 this.vcfEncoder.write(this.writer, context);
             }
@@ -263,7 +289,8 @@ class VCFWriter extends IndexingVariantContextWriter {
         rejectVCFV43Headers(header);
 
         if (outputHasBeenWritten) {
-            throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
+            throw new IllegalStateException(
+                    "The header cannot be modified after the header or variants have been written to the output stream.");
         }
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
@@ -271,9 +298,10 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     // writing vcf v4.3 is not implemented
     private static void rejectVCFV43Headers(final VCFHeader targetHeader) {
-        if (targetHeader.getVCFHeaderVersion() != null && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            throw new IllegalArgumentException(String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
+        if (targetHeader.getVCFHeaderVersion() != null
+                && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            throw new IllegalArgumentException(
+                    String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
         }
-
     }
 }

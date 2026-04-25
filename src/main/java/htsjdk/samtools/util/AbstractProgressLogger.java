@@ -1,7 +1,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMRecord;
-
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
@@ -11,7 +10,7 @@ import java.text.NumberFormat;
  *
  * Concrete subclasses must provide the logger
  */
-abstract public class AbstractProgressLogger implements ProgressLoggerInterface {
+public abstract class AbstractProgressLogger implements ProgressLoggerInterface {
     private final int n;
     private final String verb;
     private final String noun;
@@ -25,7 +24,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private int lastPos = 0;
     private String lastReadName = null;
     private long countNonIncreasing = 0;
-    final static private long PRINT_READ_NAME_THRESHOLD = 1000;
+    private static final long PRINT_READ_NAME_THRESHOLD = 1000;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -48,7 +47,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      *
      * @param message a message to be logged by the logger (recommended output level is INFO or the equivalent)
      */
-    abstract protected void log(String ... message);
+    protected abstract void log(String... message);
 
     private synchronized void record() {
         final long now = System.currentTimeMillis();
@@ -56,8 +55,8 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         this.lastStartTime = now;
 
         final long seconds = (now - startTime) / 1000;
-        final String elapsed   = formatElapseTime(seconds);
-        final String period    = pad(fmt.format(lastPeriodSeconds), 4);
+        final String elapsed = formatElapseTime(seconds);
+        final String period = pad(fmt.format(lastPeriodSeconds), 4);
         final String processed = pad(fmt.format(this.processed), 13);
 
         final String readInfo;
@@ -74,8 +73,19 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
 
         final long n = (this.processed % this.n == 0) ? this.n : this.processed % this.n;
 
-        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(n),
-                ": ", period, "s.  Last read position: ", readInfo, rnInfo);
+        log(
+                this.verb,
+                " ",
+                processed,
+                " " + noun + ".  Elapsed time: ",
+                elapsed,
+                "s.  Time for last ",
+                fmt.format(n),
+                ": ",
+                period,
+                "s.  Last read position: ",
+                readInfo,
+                rnInfo);
     }
 
     /**
@@ -86,8 +96,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         if (processed % this.n != 0) {
             record();
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -140,10 +149,14 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     /** Returns the count of records processed. */
-    public synchronized long getCount() { return this.processed; }
+    public synchronized long getCount() {
+        return this.processed;
+    }
 
     /** Returns the number of seconds since progress tracking began. */
-    public long getElapsedSeconds() { return (System.currentTimeMillis() - this.startTime) / 1000; }
+    public long getElapsedSeconds() {
+        return (System.currentTimeMillis() - this.startTime) / 1000;
+    }
 
     /** Resets the start time to now and the number of records to zero. */
     public synchronized void reset() {

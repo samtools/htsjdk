@@ -1,18 +1,17 @@
 package htsjdk.tribble.readers;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.TestUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * User: jacob
@@ -33,17 +32,17 @@ public class AsciiLineReaderTest extends HtsjdkTest {
         int expectedNumber = 20;
         String nextLine = "";
 
-        while((nextLine = reader.readLine()) != null && actualLines < (expectedNumber + 5)){
+        while ((nextLine = reader.readLine()) != null && actualLines < (expectedNumber + 5)) {
             actualLines++;
-            //This particular test file has no empty lines
+            // This particular test file has no empty lines
             assertTrue(nextLine.length() > 0);
         }
 
         assertEquals(expectedNumber, actualLines);
-
     }
 
-    @Test public void voidTestLineEndingLength() throws Exception {
+    @Test
+    public void voidTestLineEndingLength() throws Exception {
         final String input = "Hello\nThis\rIs A Silly Test\r\nSo There";
         final InputStream is = new ByteArrayInputStream(input.getBytes());
         final AsciiLineReader in = AsciiLineReader.from(is);
@@ -59,7 +58,8 @@ public class AsciiLineReaderTest extends HtsjdkTest {
         Assert.assertEquals(in.getLineTerminatorLength(), 0);
     }
 
-    @Test public void voidTestLineEndingLengthAtEof() throws Exception {
+    @Test
+    public void voidTestLineEndingLengthAtEof() throws Exception {
         final String input = "Hello\nWorld\r\n";
         final InputStream is = new ByteArrayInputStream(input.getBytes());
         final AsciiLineReader in = AsciiLineReader.from(is);
@@ -73,17 +73,19 @@ public class AsciiLineReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "fromStream")
     public Object[][] getFromStreamData() {
-        return new Object[][]{
-                { new BlockCompressedInputStream(new ByteArrayInputStream(new byte[10])), BlockCompressedAsciiLineReader.class },
-                { new PositionalBufferedStream(new ByteArrayInputStream(new byte[10])), AsciiLineReader.class },
-                { new ByteArrayInputStream(new byte[10]), AsciiLineReader.class }
+        return new Object[][] {
+            {
+                new BlockCompressedInputStream(new ByteArrayInputStream(new byte[10])),
+                BlockCompressedAsciiLineReader.class
+            },
+            {new PositionalBufferedStream(new ByteArrayInputStream(new byte[10])), AsciiLineReader.class},
+            {new ByteArrayInputStream(new byte[10]), AsciiLineReader.class}
         };
     }
 
-    @Test(dataProvider="fromStream")
+    @Test(dataProvider = "fromStream")
     public void testFromStream(final InputStream inStream, final Class expectedClass) {
         AsciiLineReader alr = AsciiLineReader.from(inStream);
         Assert.assertEquals(alr.getClass(), expectedClass);
     }
-
 }

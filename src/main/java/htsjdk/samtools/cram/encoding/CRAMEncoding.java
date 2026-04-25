@@ -18,8 +18,8 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.structure.DataSeriesType;
-import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingDescriptor;
+import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
@@ -69,7 +69,8 @@ public abstract class CRAMEncoding<T> {
      * @param sliceBlocksWriteStreams the core block bit stream a {@link htsjdk.samtools.cram.encoding.core.CoreCodec} will write to
      * @return a newly instantiated codec
      */
-    public abstract CRAMCodec<T> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams);
+    public abstract CRAMCodec<T> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams);
 
     /**
      * Convenience initializer method for read codecs

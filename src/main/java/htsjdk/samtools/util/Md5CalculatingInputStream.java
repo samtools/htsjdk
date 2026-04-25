@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -59,8 +58,7 @@ public class Md5CalculatingInputStream extends InputStream {
         try {
             md5 = MessageDigest.getInstance("MD5");
             md5.reset();
-        }
-        catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
     }
@@ -68,7 +66,7 @@ public class Md5CalculatingInputStream extends InputStream {
     @Override
     public int read() throws IOException {
         int result = is.read();
-        if (result != -1) md5.update((byte)result);
+        if (result != -1) md5.update((byte) result);
         return result;
     }
 
@@ -79,7 +77,6 @@ public class Md5CalculatingInputStream extends InputStream {
         return result;
     }
 
-
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         int result = is.read(b, off, len);
@@ -88,14 +85,15 @@ public class Md5CalculatingInputStream extends InputStream {
     }
 
     public String md5() {
-        if(hash == null) {
-            throw new SAMException("Attempting to access md5 digest before the entire file is read!  Call close first.");
+        if (hash == null) {
+            throw new SAMException(
+                    "Attempting to access md5 digest before the entire file is read!  Call close first.");
         }
         return hash;
     }
 
     private String makeHash() {
-        if(hash == null) {
+        if (hash == null) {
             hash = new BigInteger(1, md5.digest()).toString(16);
             if (hash.length() != 32) {
                 final String zeros = "00000000000000000000000000000000";
@@ -112,7 +110,7 @@ public class Md5CalculatingInputStream extends InputStream {
         is.close();
         makeHash();
 
-        if(digestFile != null) {
+        if (digestFile != null) {
             BufferedWriter writer = new BufferedWriter(new FileWriter(digestFile));
             writer.write(hash);
             writer.close();
@@ -121,15 +119,20 @@ public class Md5CalculatingInputStream extends InputStream {
 
     // Methods not supported or overridden because they would not result in a valid hash
     @Override
-    public boolean markSupported() { return false; }
+    public boolean markSupported() {
+        return false;
+    }
+
     @Override
-    public void	mark(int readlimit) {
+    public void mark(int readlimit) {
         throw new UnsupportedOperationException("mark() is not supported by the MD5CalculatingInputStream");
     }
+
     @Override
-    public void	reset() throws IOException {
+    public void reset() throws IOException {
         throw new UnsupportedOperationException("reset() is not supported by the MD5CalculatingInputStream");
     }
+
     @Override
     public long skip(long n) throws IOException {
         throw new UnsupportedOperationException("skip() is not supported by the MD5CalculatingInputStream");
@@ -137,6 +140,7 @@ public class Md5CalculatingInputStream extends InputStream {
 
     // Methods delegated to the wrapped InputStream
     @Override
-    public int available() throws IOException { return is.available(); }
-
+    public int available() throws IOException {
+        return is.available();
+    }
 }

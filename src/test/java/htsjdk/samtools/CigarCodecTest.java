@@ -24,13 +24,11 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
-
 public class CigarCodecTest extends HtsjdkTest {
-
 
     @Test
     public void testDefault() {
@@ -53,16 +51,26 @@ public class CigarCodecTest extends HtsjdkTest {
 
         int getBinaryOp() {
             switch (op) {
-                case 'M': return 0;
-                case 'I': return 1;
-                case 'D': return 2;
-                case 'N': return 3;
-                case 'S': return 4;
-                case 'H': return 5;
-                case 'P': return 6;
-                case '=': return 7;
-                case 'X' : return 8;
-                default: Assert.assertTrue(false);
+                case 'M':
+                    return 0;
+                case 'I':
+                    return 1;
+                case 'D':
+                    return 2;
+                case 'N':
+                    return 3;
+                case 'S':
+                    return 4;
+                case 'H':
+                    return 5;
+                case 'P':
+                    return 6;
+                case '=':
+                    return 7;
+                case 'X':
+                    return 8;
+                default:
+                    Assert.assertTrue(false);
             }
             return -1;
         }
@@ -88,15 +96,15 @@ public class CigarCodecTest extends HtsjdkTest {
     @Test
     public void testSimple() {
         final Cigarette[] cigarettes = {
-                new Cigarette(100, 'M'),
-                new Cigarette(200, 'I'),
-                new Cigarette(50, 'D'),
-                new Cigarette(21, 'N'),
-                new Cigarette(12, 'S'),
-                new Cigarette(99, 'H'),
-                new Cigarette(20, 'P'),
-                new Cigarette(2, '='),
-                new Cigarette(2, 'X')
+            new Cigarette(100, 'M'),
+            new Cigarette(200, 'I'),
+            new Cigarette(50, 'D'),
+            new Cigarette(21, 'N'),
+            new Cigarette(12, 'S'),
+            new Cigarette(99, 'H'),
+            new Cigarette(20, 'P'),
+            new Cigarette(2, '='),
+            new Cigarette(2, 'X')
         };
         final String textCigar = makeTextCigar(cigarettes);
         final int[] binaryCigar = makeBinaryCigar(cigarettes);

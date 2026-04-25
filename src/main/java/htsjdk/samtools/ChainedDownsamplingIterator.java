@@ -56,16 +56,16 @@ class ChainedDownsamplingIterator extends HighAccuracyDownsamplingIterator {
      * Uses an assumed number of reads tested as this is often not known until after the fact.
      */
     private static double adjustProportion(final double p) {
-        final double ciAdjustment99_9 = 3.3 * Math.sqrt(p/MIN_ACCURATE_INPUT_READS);
+        final double ciAdjustment99_9 = 3.3 * Math.sqrt(p / MIN_ACCURATE_INPUT_READS);
         return Math.min(1, p + ciAdjustment99_9);
     }
-
 
     /**
      * Resets statistics before reading from the underlying iterator.
      */
     @Override
-    protected void readFromUnderlyingIterator(final List<SAMRecord> recs, final Set<String> names, final int templatesToRead) {
+    protected void readFromUnderlyingIterator(
+            final List<SAMRecord> recs, final Set<String> names, final int templatesToRead) {
         // Reset the stats on the underlying iterator
         ((ConstantMemoryDownsamplingIterator) getUnderlyingIterator()).resetStatistics();
 
@@ -79,7 +79,7 @@ class ChainedDownsamplingIterator extends HighAccuracyDownsamplingIterator {
         final ConstantMemoryDownsamplingIterator iter = (ConstantMemoryDownsamplingIterator) getUnderlyingIterator();
         final double priorProportion = iter.getAcceptedFraction();
         final double p = Math.max(0, Math.min(1, overallProportion / priorProportion));
-        final int retval =  super.calculateTemplatesToKeep(templatesRead, p);
+        final int retval = super.calculateTemplatesToKeep(templatesRead, p);
 
         // Record all the discarded records to keep the overall statistics accurate, but do it after
         // the call to super() so it doesn't affect the proportion calculation.

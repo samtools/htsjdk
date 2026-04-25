@@ -1,16 +1,12 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests for {@link TrialCompressor} that verifies it correctly tries multiple codecs
@@ -37,8 +33,10 @@ public class TrialCompressorTest extends HtsjdkTest {
         final byte[] ransResult = ransOrder0.compress(data, null);
 
         final int minSize = Math.min(gzipResult.length, ransResult.length);
-        Assert.assertTrue(trialResult.length <= minSize,
-                String.format("Trial compressor should pick smallest: trial=%d, gzip=%d, rans=%d",
+        Assert.assertTrue(
+                trialResult.length <= minSize,
+                String.format(
+                        "Trial compressor should pick smallest: trial=%d, gzip=%d, rans=%d",
                         trialResult.length, gzipResult.length, ransResult.length));
     }
 
@@ -108,7 +106,7 @@ public class TrialCompressorTest extends HtsjdkTest {
      */
     @Test
     public void testGetMethodMatchesCompressedDataThroughoutLifecycle() {
-        final ExternalCompressor gzip  = ExternalCompressor.getCompressorForMethod(BlockCompressionMethod.GZIP,  5);
+        final ExternalCompressor gzip = ExternalCompressor.getCompressorForMethod(BlockCompressionMethod.GZIP, 5);
         final ExternalCompressor bzip2 = ExternalCompressor.getCompressorForMethod(BlockCompressionMethod.BZIP2, -1);
 
         final TrialCompressor trial = new TrialCompressor(List.of(gzip, bzip2));
@@ -126,8 +124,11 @@ public class TrialCompressorTest extends HtsjdkTest {
             // Verify the declared method can actually decompress the data just produced.
             final ExternalCompressor decoder = method == BlockCompressionMethod.GZIP ? gzip : bzip2;
             final byte[] decompressed = decoder.uncompress(compressed);
-            Assert.assertEquals(decompressed, data,
-                    String.format("Block %d: getMethod() returned %s but data could not be decompressed with it", i, method));
+            Assert.assertEquals(
+                    decompressed,
+                    data,
+                    String.format(
+                            "Block %d: getMethod() returned %s but data could not be decompressed with it", i, method));
         }
     }
 
@@ -158,8 +159,8 @@ public class TrialCompressorTest extends HtsjdkTest {
         new Random(42).nextBytes(randomBlock);
         final byte[] gzipFriendly = new byte[10_000];
         for (int off = 0; off < gzipFriendly.length; off += randomBlock.length) {
-            System.arraycopy(randomBlock, 0, gzipFriendly, off,
-                    Math.min(randomBlock.length, gzipFriendly.length - off));
+            System.arraycopy(
+                    randomBlock, 0, gzipFriendly, off, Math.min(randomBlock.length, gzipFriendly.length - off));
         }
         // Sanity check that GZIP actually wins on this data
         Assert.assertTrue(
@@ -186,21 +187,22 @@ public class TrialCompressorTest extends HtsjdkTest {
         for (int i = 0; i < 8; i++) {
             trial.compress(gzipFriendly, null);
         }
-        Assert.assertEquals(trial.getMethod(), BlockCompressionMethod.GZIP,
-                "GZIP should win on high-entropy data");
+        Assert.assertEquals(trial.getMethod(), BlockCompressionMethod.GZIP, "GZIP should win on high-entropy data");
 
         // Phase 2: rANS-friendly data → 3 re-trial + 5 production = 8 blocks → rANS should win
         for (int i = 0; i < 8; i++) {
             trial.compress(ransFriendly, null);
         }
-        Assert.assertEquals(trial.getMethod(), BlockCompressionMethod.RANSNx16,
-                "rANS should win on skewed data after re-trial");
+        Assert.assertEquals(
+                trial.getMethod(), BlockCompressionMethod.RANSNx16, "rANS should win on skewed data after re-trial");
 
         // Phase 3: back to GZIP-friendly → should switch back
         for (int i = 0; i < 8; i++) {
             trial.compress(gzipFriendly, null);
         }
-        Assert.assertEquals(trial.getMethod(), BlockCompressionMethod.GZIP,
+        Assert.assertEquals(
+                trial.getMethod(),
+                BlockCompressionMethod.GZIP,
                 "GZIP should win again after switching back to high-entropy data");
     }
 

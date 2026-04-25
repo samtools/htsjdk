@@ -3,36 +3,34 @@ package htsjdk.beta.io.bundle;
 import htsjdk.HtsjdkTest;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import org.json.JSONObject;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import org.json.JSONObject;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class BundleJSONTest extends HtsjdkTest {
 
-    final IOPathResource CUSTOM_RESOURCE =
-            new IOPathResource(new HtsPath("file://myreads.CUSTOM"),"CUSTOM");
+    final IOPathResource CUSTOM_RESOURCE = new IOPathResource(new HtsPath("file://myreads.CUSTOM"), "CUSTOM");
 
     @DataProvider(name = "singleBundleTestCases")
     public Object[][] getSingleBundleTestCases() {
-        return new Object[][]{
-                // NOTE that these JSON strings contain the resources in the same order as they're serialized by
-                // mjson so that we can validate conversions in both directions.
-                //
-                // The strings need to contain path strings that are full URIs, since that's what the JSON
-                // serializer for bundles uses when serializing IOPaths as JSON.
+        return new Object[][] {
+            // NOTE that these JSON strings contain the resources in the same order as they're serialized by
+            // mjson so that we can validate conversions in both directions.
+            //
+            // The strings need to contain path strings that are full URIs, since that's what the JSON
+            // serializer for bundles uses when serializing IOPaths as JSON.
 
-                // json string, primary key, corresponding array of resources
+            // json string, primary key, corresponding array of resources
 
-                {
-                    """
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -41,15 +39,16 @@ public class BundleJSONTest extends HtsjdkTest {
                         "primary":"%s",
                         "%s":{"path":"%s","format":"BAM"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM
-                    ),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(BundleResourceTestData.readsWithFormat)
-                },
-                {
-                    """
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(BundleResourceTestData.readsWithFormat)
+            },
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -58,14 +57,15 @@ public class BundleJSONTest extends HtsjdkTest {
                         "primary":"%s",
                         "%s":{"path":"%s"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(BundleResourceTestData.readsNoFormat)
-                },
-                {
-                    """
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(BundleResourceTestData.readsNoFormat)
+            },
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -75,17 +75,19 @@ public class BundleJSONTest extends HtsjdkTest {
                         "%s":{"path":"%s","format":"%s"},
                         "%s":{"path":"%s","format":"%s"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_READS_INDEX, getURIStringFromIOPath(BundleResourceTestData.indexWithFormat), BundleResourceType.FMT_READS_INDEX_BAI,
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(
-                            BundleResourceTestData.readsWithFormat,
-                            BundleResourceTestData.indexWithFormat)
-                },
-                {
-                    """
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_READS_INDEX,
+                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat),
+                                BundleResourceType.FMT_READS_INDEX_BAI,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(BundleResourceTestData.readsWithFormat, BundleResourceTestData.indexWithFormat)
+            },
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -95,17 +97,18 @@ public class BundleJSONTest extends HtsjdkTest {
                         "%s":{"path":"%s","format":"%s"},
                         "%s":{"path":"%s"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_READS_INDEX, getURIStringFromIOPath(BundleResourceTestData.indexWithFormat), BundleResourceType.FMT_READS_INDEX_BAI,
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(
-                            BundleResourceTestData.readsNoFormat,
-                            BundleResourceTestData.indexWithFormat)
-                },
-                {
-                    """
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_READS_INDEX,
+                                getURIStringFromIOPath(BundleResourceTestData.indexWithFormat),
+                                BundleResourceType.FMT_READS_INDEX_BAI,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(BundleResourceTestData.readsNoFormat, BundleResourceTestData.indexWithFormat)
+            },
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -115,18 +118,19 @@ public class BundleJSONTest extends HtsjdkTest {
                         "%s":{"path":"%s"},
                         "%s":{"path":"%s","format":"%s"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_READS_INDEX, getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(
-                            BundleResourceTestData.readsWithFormat,
-                            BundleResourceTestData.indexNoFormat)
-                },
-                {
-                    """
-                    {   
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_READS_INDEX,
+                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(BundleResourceTestData.readsWithFormat, BundleResourceTestData.indexNoFormat)
+            },
+            {
+                """
+                    {
                         "schema":{
                             "schemaName":"htsbundle",
                             "schemaVersion":"%s",
@@ -135,36 +139,34 @@ public class BundleJSONTest extends HtsjdkTest {
                         "%s":{"path":"%s"},
                         "%s":{"path":"%s"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_READS_INDEX, getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(
-                            BundleResourceTestData.readsNoFormat,
-                            BundleResourceTestData.indexNoFormat)
-                },
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_READS_INDEX,
+                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(BundleResourceTestData.readsNoFormat, BundleResourceTestData.indexNoFormat)
+            },
 
-                // bundle with a single resource that has a custom content type
-                {
-                    """
-                    {   
+            // bundle with a single resource that has a custom content type
+            {
+                """
+                    {
                         "schema":{
                             "schemaName":"htsbundle",
                             "schemaVersion":"%s",
                         },
                         "primary":"CUSTOM",
                         "CUSTOM":{"path":"%s"}
-                    }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            getURIStringFromIOPath(CUSTOM_RESOURCE)),
-                    "CUSTOM",
-                    Arrays.asList(CUSTOM_RESOURCE)
-                },
+                    }""".formatted(BundleJSON.JSON_SCHEMA_VERSION, getURIStringFromIOPath(CUSTOM_RESOURCE)),
+                "CUSTOM",
+                Arrays.asList(CUSTOM_RESOURCE)
+            },
 
-                // three resources, one of which is a custom content type
-                {
-                    """
+            // three resources, one of which is a custom content type
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -175,22 +177,23 @@ public class BundleJSONTest extends HtsjdkTest {
                         "%s":{"path":"%s"},
                         "CUSTOM":{"path":"%s"}
                     }""".formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS,
-                            BundleResourceType.CT_READS_INDEX, getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
-                            BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
-                            getURIStringFromIOPath(CUSTOM_RESOURCE)),
-                    BundleResourceType.CT_ALIGNED_READS,
-                    Arrays.asList(
-                            BundleResourceTestData.readsNoFormat,
-                            BundleResourceTestData.indexNoFormat,
-                            CUSTOM_RESOURCE)
-                },
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_READS_INDEX,
+                                getURIStringFromIOPath(BundleResourceTestData.indexNoFormat),
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
+                                getURIStringFromIOPath(CUSTOM_RESOURCE)),
+                BundleResourceType.CT_ALIGNED_READS,
+                Arrays.asList(
+                        BundleResourceTestData.readsNoFormat, BundleResourceTestData.indexNoFormat, CUSTOM_RESOURCE)
+            },
         };
     }
 
     @Test(dataProvider = "singleBundleTestCases")
-    public void testRoundTripJSONSingle(final String jsonString, final String primaryKey, final List<BundleResource> resources) {
+    public void testRoundTripJSONSingle(
+            final String jsonString, final String primaryKey, final List<BundleResource> resources) {
         final Bundle bundleFromResources = new Bundle(primaryKey, resources);
         final String actualJSONString = BundleJSON.toJSON(bundleFromResources);
         Assert.assertEquals(actualJSONString, new JSONObject(jsonString).toString(1));
@@ -209,21 +212,23 @@ public class BundleJSONTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "singleBundleTestCases")
-    public void testFromJSONValidWithPathOverride(final String jsonString, final String primaryKey, final List<BundleResource> expectedResources) {
+    public void testFromJSONValidWithPathOverride(
+            final String jsonString, final String primaryKey, final List<BundleResource> expectedResources) {
         final Bundle bundleFromJSON = BundleJSON.toBundle(jsonString, BundleResourceTestData.CustomHtsPath::new);
         Assert.assertNotNull(bundleFromJSON);
         Assert.assertEquals(bundleFromJSON.getPrimaryContentType(), primaryKey);
         expectedResources.forEach(expectedResource -> {
             final Optional<BundleResource> jsonResource = bundleFromJSON.get(expectedResource.getContentType());
             Assert.assertTrue(jsonResource.isPresent());
-            //NOTE: we don't test the individual resources for equality here, since the expected resources
+            // NOTE: we don't test the individual resources for equality here, since the expected resources
             // don't have a custom path type, so a resource equality test would fail because the HtsPath
             // equality test would fail. Instead, we just verify that the classes resulting from JSON serialization
             // use our custom HtsPath-derived class.
             final IOPathResource ioPathResource = ((IOPathResource) jsonResource.get());
             Assert.assertTrue(ioPathResource.getIOPath().isPresent());
             final IOPath ioPath = ioPathResource.getIOPath().get();
-            Assert.assertEquals(ioPath.getClass().getSimpleName(), BundleResourceTestData.CustomHtsPath.class.getSimpleName());
+            Assert.assertEquals(
+                    ioPath.getClass().getSimpleName(), BundleResourceTestData.CustomHtsPath.class.getSimpleName());
             // typecast just to make sure
             final BundleResourceTestData.CustomHtsPath subClass = (BundleResourceTestData.CustomHtsPath) ioPath;
         });
@@ -233,9 +238,7 @@ public class BundleJSONTest extends HtsjdkTest {
     // can provide an individual bundle to any client that expects a collection of bundles.
     @Test(dataProvider = "singleBundleTestCases")
     public void testAcceptSingleBundleJSONAsCollection(
-            final String jsonString,
-            final String primaryKey,
-            final List<BundleResource> resources) {
+            final String jsonString, final String primaryKey, final List<BundleResource> resources) {
         final List<Bundle> expectedBundleCollection = Arrays.asList(new Bundle(primaryKey, resources));
         final List<Bundle> actualBundleCollection = BundleJSON.toBundleList(jsonString);
         Assert.assertEquals(actualBundleCollection, expectedBundleCollection);
@@ -244,7 +247,7 @@ public class BundleJSONTest extends HtsjdkTest {
     // make sure single rejects collection with > 1
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRejectMultipleBundlesAsSingleBundle() {
-       final String multipleBundles = """
+        final String multipleBundles = """
           [{
                "schema":{
                     "schemaName":"htsbundle",
@@ -261,79 +264,68 @@ public class BundleJSONTest extends HtsjdkTest {
               "primary":"%s",
               "%s":{"path":"%s"}
           }]""".formatted(
-               BundleJSON.JSON_SCHEMA_VERSION,
-               BundleResourceType.CT_ALIGNED_READS,
-               BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM,
-               BundleJSON.JSON_SCHEMA_VERSION,
-               BundleResourceType.CT_ALIGNED_READS,
-               BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)
-       );
+                        BundleJSON.JSON_SCHEMA_VERSION,
+                        BundleResourceType.CT_ALIGNED_READS,
+                        BundleResourceType.CT_ALIGNED_READS,
+                        getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                        BundleResourceType.FMT_READS_BAM,
+                        BundleJSON.JSON_SCHEMA_VERSION,
+                        BundleResourceType.CT_ALIGNED_READS,
+                        BundleResourceType.CT_ALIGNED_READS,
+                        getURIStringFromIOPath(BundleResourceTestData.readsNoFormat));
         BundleJSON.toBundle(multipleBundles);
     }
 
-
     @DataProvider(name = "invalidBundleJSON")
     public Object[][] getInvalidBundleJSON() {
-        return new Object[][]{
-                {null, "cannot be null"},
-                {"", "The string is empty"},
+        return new Object[][] {
+            {null, "cannot be null"},
+            {"", "The string is empty"},
 
-                // missing schema entirely
-                {"{}", "[\"schema\"] not found"},
+            // missing schema entirely
+            {"{}", "[\"schema\"] not found"},
 
-                // missing schema name
-                {
-                    """
+            // missing schema name
+            {"""
                     {
                         "schema":{
                             "schemaVersion":"%s",
                         }
                     }
-                    """.formatted(BundleJSON.JSON_SCHEMA_VERSION),
-                    "missing the required property schemaName"
-                },
+                    """.formatted(BundleJSON.JSON_SCHEMA_VERSION), "missing the required property schemaName"},
 
-                // incorrect schema name
-                {
-                    """
+            // incorrect schema name
+            {"""
                     {
                         "schema":{
                             "schemaName":"bogusname",
                             "schemaVersion":"%s",
                         }
                     }
-                    """.formatted(BundleJSON.JSON_SCHEMA_VERSION),
-                    "Expected bundle schema name"
-                },
+                    """.formatted(BundleJSON.JSON_SCHEMA_VERSION), "Expected bundle schema name"},
 
-                // missing schema version
-                {
-                    """
+            // missing schema version
+            {"""
                     {
                         "schema":{
                             "schemaName":"htsbundle",
                         }
                     }
-                    """,
-                    "missing the required property schemaVersion"
-                },
+                    """, "missing the required property schemaVersion"},
 
-                // incorrect schema version
-                {
-                    """
+            // incorrect schema version
+            {"""
                     {
                         "schema":{
                             "schemaName":"htsbundle",
                             "schemaVersion":"99.99.99",
                         }
                     }
-                    """,
-                    "Expected bundle schema version"
-                },
+                    """, "Expected bundle schema version"},
 
-                // missing primary property
-                {
-                    """
+            // missing primary property
+            {
+                """
                         {
                             "schema":{
                                 "schemaName":"htsbundle",
@@ -342,13 +334,15 @@ public class BundleJSONTest extends HtsjdkTest {
                             "%s":{"path":"myreads.bam","format":"%s"}
                         }
                    """.formatted(
-                           BundleJSON.JSON_SCHEMA_VERSION, BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_BAM),
-                   "missing the required property primary"
-                },
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.FMT_READS_BAM),
+                "missing the required property primary"
+            },
 
-                // primary property is present, but the resource it specifies is not in the bundle
-                {
-                    """
+            // primary property is present, but the resource it specifies is not in the bundle
+            {
+                """
                     {
                         "schema":{
                             "schemaName":"htsbundle",
@@ -358,14 +352,15 @@ public class BundleJSONTest extends HtsjdkTest {
                         "primary":"MISSING_RESOURCE"
                     }
                     """.formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_BAM),
-                    "not present in the bundle's resources"
-                },
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.FMT_READS_BAM),
+                "not present in the bundle's resources"
+            },
 
-                // syntax error (missing quote before schemaName)
-                {
-                    """
+            // syntax error (missing quote before schemaName)
+            {
+                """
                     {
                         "schema":{
                             schemaName":"htsbundle",
@@ -375,22 +370,23 @@ public class BundleJSONTest extends HtsjdkTest {
                         "primary":"%s"
                     }
                     """.formatted(
-                            BundleJSON.JSON_SCHEMA_VERSION,
-                            BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_BAM,
-                            BundleResourceType.CT_ALIGNED_READS),
-                    "Expected a ':' after a key at 36 [character 19 line 3]"
-                },
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.FMT_READS_BAM,
+                                BundleResourceType.CT_ALIGNED_READS),
+                "Expected a ':' after a key at 36 [character 19 line 3]"
+            },
 
-                // missing enclosing {} -> UnsupportedOperationException (no text message)
-                {
-                    """
+            // missing enclosing {} -> UnsupportedOperationException (no text message)
+            {
+                """
                     "schema":{
                         "schemaName":"htsbundle",
                         "schemaVersion":"%s",
                     }
                     """.formatted(BundleJSON.JSON_SCHEMA_VERSION),
-                    "A JSONObject text must begin with '{' at 1 [character 2 line 1]",
-                },
+                "A JSONObject text must begin with '{' at 1 [character 2 line 1]",
+            },
         };
     }
 
@@ -419,7 +415,7 @@ public class BundleJSONTest extends HtsjdkTest {
     public void testRejectNonIOPathToJSON() throws IOException {
         try (final InputStream is = new ByteArrayInputStream(new byte[0])) {
             final Bundle bundle = new BundleBuilder()
-                    .addPrimary(new InputStreamResource(is,"displayName","contentType"))
+                    .addPrimary(new InputStreamResource(is, "displayName", "contentType"))
                     .build();
             // can't serialize a resource that isn't backed by an IOPath
             BundleJSON.toJSON(bundle);
@@ -432,8 +428,7 @@ public class BundleJSONTest extends HtsjdkTest {
     // make sure that a bundle collection that contains one bundle can also be deserialized as a single bundle
     @Test
     public void testJAcceptSONCollectionWithOneBundleAsSingleBundle() {
-        final String jsonCollectionWithOneBundle =
-                """
+        final String jsonCollectionWithOneBundle = """
                 [{
                     "schema":{
                         "schemaName":"htsbundle",
@@ -444,7 +439,9 @@ public class BundleJSONTest extends HtsjdkTest {
                 }]""".formatted(
                         BundleJSON.JSON_SCHEMA_VERSION,
                         BundleResourceType.CT_ALIGNED_READS,
-                        BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM);
+                        BundleResourceType.CT_ALIGNED_READS,
+                        getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                        BundleResourceType.FMT_READS_BAM);
 
         // create a bundle collection from the JSON, make sure it has a valid Bundle
         final Bundle bundleFromJSON = BundleJSON.toBundle(jsonCollectionWithOneBundle);
@@ -456,17 +453,17 @@ public class BundleJSONTest extends HtsjdkTest {
     @DataProvider(name = "bundleCollectionTestCases")
     public Object[][] getBundleCollectionTestCases() {
 
-        return new Object[][]{
-                // NOTE that these JSON strings contain the resources in the same order as they're serialized by
-                // mjson so that we can validate conversions in both directions.
-                //
-                // The strings need to contain path strings that are full URIs, since that's what the JSON
-                // serializer for bundles uses when serializing IOPaths as JSON.
+        return new Object[][] {
+            // NOTE that these JSON strings contain the resources in the same order as they're serialized by
+            // mjson so that we can validate conversions in both directions.
+            //
+            // The strings need to contain path strings that are full URIs, since that's what the JSON
+            // serializer for bundles uses when serializing IOPaths as JSON.
 
-                // json string, corresponding array of bundles
-                {
-                        // 1 bundle
-                        """
+            // json string, corresponding array of bundles
+            {
+                // 1 bundle
+                """
                         [{
                             "schema":{
                                 "schemaName":"htsbundle",
@@ -477,41 +474,15 @@ public class BundleJSONTest extends HtsjdkTest {
                         }]""".formatted(
                                 BundleJSON.JSON_SCHEMA_VERSION,
                                 BundleResourceType.CT_ALIGNED_READS,
-                                BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM),
-                        Arrays.asList(new Bundle( BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
-                },
-                {
-                        // 2 bundles
-                        """
-                        [{
-                            "schema":{
-                                "schemaName":"htsbundle",
-                                "schemaVersion":"%s",
-                            },
-                            "primary":"%s",
-                            "%s":{"path":"%s","format":"%s"}
-                        },
-                        {
-                            "schema":{
-                                "schemaName":"htsbundle",
-                                "schemaVersion":"%s",
-                            },
-                            "primary":"%s",
-                            "%s":{"path":"%s"}
-                        }]""".formatted(
-                                BundleJSON.JSON_SCHEMA_VERSION,
                                 BundleResourceType.CT_ALIGNED_READS,
-                                BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM,
-                                BundleJSON.JSON_SCHEMA_VERSION,
-                                BundleResourceType.CT_ALIGNED_READS,
-                                BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
-                        Arrays.asList(
-                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)),
-                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsNoFormat)))
-                },
-                {
-                        // 3 bundles
-                        """
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM),
+                Arrays.asList(new Bundle(
+                        BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
+            },
+            {
+                // 2 bundles
+                """
                         [{
                             "schema":{
                                 "schemaName":"htsbundle",
@@ -527,6 +498,42 @@ public class BundleJSONTest extends HtsjdkTest {
                             },
                             "primary":"%s",
                             "%s":{"path":"%s"}
+                        }]""".formatted(
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM,
+                                BundleJSON.JSON_SCHEMA_VERSION,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat)),
+                Arrays.asList(
+                        new Bundle(
+                                BundleResourceType.CT_ALIGNED_READS,
+                                Arrays.asList(BundleResourceTestData.readsWithFormat)),
+                        new Bundle(
+                                BundleResourceType.CT_ALIGNED_READS,
+                                Arrays.asList(BundleResourceTestData.readsNoFormat)))
+            },
+            {
+                // 3 bundles
+                """
+                        [{
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
+                            "primary":"%s",
+                            "%s":{"path":"%s","format":"%s"}
+                        },
+                        {
+                            "schema":{
+                                "schemaName":"htsbundle",
+                                "schemaVersion":"%s",
+                            },
+                            "primary":"%s",
+                            "%s":{"path":"%s"}
                         },
                         {
                             "schema":{
@@ -538,25 +545,34 @@ public class BundleJSONTest extends HtsjdkTest {
                         }]""".formatted(
                                 BundleJSON.JSON_SCHEMA_VERSION,
                                 BundleResourceType.CT_ALIGNED_READS,
-                                BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM,
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM,
                                 BundleJSON.JSON_SCHEMA_VERSION,
                                 BundleResourceType.CT_ALIGNED_READS,
-                                BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsNoFormat),
                                 BundleJSON.JSON_SCHEMA_VERSION,
                                 BundleResourceType.CT_ALIGNED_READS,
-                                BundleResourceType.CT_ALIGNED_READS, getURIStringFromIOPath(BundleResourceTestData.readsWithFormat), BundleResourceType.FMT_READS_BAM),
-                        Arrays.asList(
-                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)),
-                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsNoFormat)),
-                                new Bundle(BundleResourceType.CT_ALIGNED_READS, Arrays.asList(BundleResourceTestData.readsWithFormat)))
-                }
+                                BundleResourceType.CT_ALIGNED_READS,
+                                getURIStringFromIOPath(BundleResourceTestData.readsWithFormat),
+                                BundleResourceType.FMT_READS_BAM),
+                Arrays.asList(
+                        new Bundle(
+                                BundleResourceType.CT_ALIGNED_READS,
+                                Arrays.asList(BundleResourceTestData.readsWithFormat)),
+                        new Bundle(
+                                BundleResourceType.CT_ALIGNED_READS,
+                                Arrays.asList(BundleResourceTestData.readsNoFormat)),
+                        new Bundle(
+                                BundleResourceType.CT_ALIGNED_READS,
+                                Arrays.asList(BundleResourceTestData.readsWithFormat)))
+            }
         };
     }
 
     @Test(dataProvider = "bundleCollectionTestCases")
-    public void testRoundTripJSONCollection(
-            final String jsonString,
-            final List<Bundle> bundles) {
+    public void testRoundTripJSONCollection(final String jsonString, final List<Bundle> bundles) {
         // create a bundle collection from the input JSON, make sure if equals the test collection
         final List<Bundle> bundlesFromJSON = BundleJSON.toBundleList(jsonString);
         Assert.assertEquals(bundlesFromJSON, bundles);
@@ -581,5 +597,4 @@ public class BundleJSONTest extends HtsjdkTest {
     private String getURIStringFromIOPath(final IOPathResource resource) {
         return resource.getIOPath().get().getURIString();
     }
-
 }

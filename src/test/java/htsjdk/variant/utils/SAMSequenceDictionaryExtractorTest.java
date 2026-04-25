@@ -26,13 +26,11 @@ package htsjdk.variant.utils;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.SequenceUtil;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-import org.testng.Assert;
-
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * @author farjoun on 4/9/14.
@@ -42,17 +40,17 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
 
     @DataProvider(name = "testExtractDictionaries")
     public Object[][] dictionaries() {
-        return new Object[][]{
-                new Object[]{"test1_comp.interval_list", "test1.dict"},
-                new Object[]{"test1.vcf", "test1.dict"},
-                new Object[]{"test1.dict", "test1.dict"},
-                new Object[]{"empty.interval_list", "test1.dict"},
-                new Object[]{"Homo_sapiens_assembly18.trimmed.fasta", "Homo_sapiens_assembly18.trimmed.dict"},
-                new Object[]{"test2_comp.interval_list", "Homo_sapiens_assembly18.trimmed.dict"},
-                new Object[]{"test5_comp.interval_list.gz", "test1.dict"},
-                new Object[]{"ScreenSamReads.100.input.sam", "test3_comp.interval_list"},
-                new Object[]{"ScreenSamReads.100.input.sam", "test4_comp.interval_list"},
-                new Object[]{"toy.cram", "toy.dict"}
+        return new Object[][] {
+            new Object[] {"test1_comp.interval_list", "test1.dict"},
+            new Object[] {"test1.vcf", "test1.dict"},
+            new Object[] {"test1.dict", "test1.dict"},
+            new Object[] {"empty.interval_list", "test1.dict"},
+            new Object[] {"Homo_sapiens_assembly18.trimmed.fasta", "Homo_sapiens_assembly18.trimmed.dict"},
+            new Object[] {"test2_comp.interval_list", "Homo_sapiens_assembly18.trimmed.dict"},
+            new Object[] {"test5_comp.interval_list.gz", "test1.dict"},
+            new Object[] {"ScreenSamReads.100.input.sam", "test3_comp.interval_list"},
+            new Object[] {"ScreenSamReads.100.input.sam", "test4_comp.interval_list"},
+            new Object[] {"toy.cram", "toy.dict"}
         };
     }
 
@@ -63,8 +61,7 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
         final SAMSequenceDictionary dict1 = SAMSequenceDictionaryExtractor.extractDictionary(dictSourceFile);
         final SAMSequenceDictionary dict2 = SAMSequenceDictionaryExtractor.extractDictionary(dictExpectedFile);
 
-        Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1,
-                dict2));
+        Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1, dict2));
         Assert.assertTrue(dict1.md5().equals(dict2.md5()));
     }
 }

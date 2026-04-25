@@ -4,12 +4,11 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
 
@@ -24,8 +23,7 @@ public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
         final long expectedFinalLineOffset = populateMultiBlockCompressedFile(multiBlockFile);
 
         try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(multiBlockFile);
-            final BlockCompressedAsciiLineReader asciiLineReader = new BlockCompressedAsciiLineReader(bcis))
-        {
+                final BlockCompressedAsciiLineReader asciiLineReader = new BlockCompressedAsciiLineReader(bcis)) {
             String line = null;
             long actualFinalLineOffset = -1;
 
@@ -50,7 +48,7 @@ public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
         populateMultiBlockCompressedFile(multiBlockFile);
 
         try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(multiBlockFile);
-             final BlockCompressedAsciiLineReader asciiLineReader = new BlockCompressedAsciiLineReader(bcis)) {
+                final BlockCompressedAsciiLineReader asciiLineReader = new BlockCompressedAsciiLineReader(bcis)) {
             asciiLineReader.readLine(new PositionalBufferedStream(new ByteArrayInputStream(new byte[1100])));
         }
     }

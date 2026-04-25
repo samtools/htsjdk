@@ -1,8 +1,8 @@
 package htsjdk.beta.codecs.variants.vcf;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.annotations.InternalAPI;
 
 /**
  * Utilities for VCF codec implementations.
@@ -38,8 +38,7 @@ public class VariantsCodecUtils {
         if (!bundleContainsIndex(inputBundle)) {
             throw new IllegalArgumentException(String.format(
                     "To make index queries, an index resource must be provided in the resource bundle: %s",
-                    inputBundle
-            ));
+                    inputBundle));
         }
     }
 }

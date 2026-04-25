@@ -28,12 +28,11 @@ import htsjdk.samtools.ReservedTagConstants;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CloseableIterator;
+import java.util.Arrays;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Tests for the TagFilter class
@@ -50,11 +49,14 @@ public class TagFilterTest extends HtsjdkTest {
      * @param matchPairs                Whether or not to have matching values for tag the test is testing for
      *
      */
-
-    @Test(dataProvider="testData")
-    public void testTagFilter(final String testModule, final int commonValuesIndex, final boolean firstReadExpectedResult,
-                               final boolean pairedExpectedResult, final Boolean includeReads,
-                               final boolean matchPairs) {
+    @Test(dataProvider = "testData")
+    public void testTagFilter(
+            final String testModule,
+            final int commonValuesIndex,
+            final boolean firstReadExpectedResult,
+            final boolean pairedExpectedResult,
+            final Boolean includeReads,
+            final boolean matchPairs) {
 
         final String testName = (String) commonTestValues[commonValuesIndex][0];
         final String tag = (String) commonTestValues[commonValuesIndex][1];
@@ -75,7 +77,7 @@ public class TagFilterTest extends HtsjdkTest {
         final SAMRecord record2 = iterator.next();
         if (matchPairs && testValue != null) {
             record2.setAttribute(tag, testValue);
-        } else if (!matchPairs){
+        } else if (!matchPairs) {
             record2.setAttribute(tag, 0);
         }
         // Test paired reads
@@ -85,43 +87,40 @@ public class TagFilterTest extends HtsjdkTest {
     /**
      * Data for various sequences which may or may not match the filter.
      */
-
-    private final Object[][] commonTestValues =
-            new Object[][]{
-                    {"Paired Read Matching Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1},
-                    {"Paired Read Matching Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1},
-                    {"Paired Read Matching Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2},
-                    {"Paired Read Matching Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null}
-            };
+    private final Object[][] commonTestValues = new Object[][] {
+        {"Paired Read Matching Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1},
+        {"Paired Read Matching Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1, 2, 3), 1},
+        {"Paired Read Matching Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2},
+        {"Paired Read Matching Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null}
+    };
 
     @DataProvider(name = "testData")
-    private Object[][] getTestData()
-    {
-        return new Object[][]{
-                {"dataDefaultMatchingPairedFilter", 0, true, true, null, true},
-                {"dataDefaultMatchingPairedFilter", 1, true, true, null, true},
-                {"dataDefaultMatchingPairedFilter", 2, false, false,  null, true},
-                {"dataDefaultMatchingPairedFilter",3, false, false, null, true},
-                {"dataDefaultNonMatchingPairedFilter", 0, true, false, null, false},
-                {"dataDefaultNonMatchingPairedFilter", 1, true, false, null, false},
-                {"dataDefaultNonMatchingPairedFilter", 2, false, false, null, false},
-                {"dataDefaultNonMatchingPairedFilter", 3, false, false, null, false},
-                {"dataExcludeMatchingPairedFilter", 0, true, true, false, true},
-                {"dataExcludeMatchingPairedFilter", 1, true, true, false, true},
-                {"dataExcludeMatchingPairedFilter", 2, false, false,  false, true},
-                {"dataExcludeMatchingPairedFilter", 3, false, false, false, true},
-                {"dataExcludeNonMatchingPairedFilter", 0, true, false, false, false},
-                {"dataExcludeNonMatchingPairedFilter", 1, true, false, false, false},
-                {"dataExcludeNonMatchingPairedFilter", 2, false, false, false, false},
-                {"dataExcludeNonMatchingPairedFilter", 3, false, false, false, false},
-                {"dataIncludeNonMatchingPairedFilter", 0, false, false, true, false},
-                {"dataIncludeNonMatchingPairedFilter", 1, false, false, true, false},
-                {"dataIncludeNonMatchingPairedFilter", 2, true, true, true, false},
-                {"dataIncludeNonMatchingPairedFilter", 3, true, true, true, false},
-                {"dataIncludeMatchingPairedFilter", 0, false, false, true, true},
-                {"dataIncludeMatchingPairedFilter", 1, false, false, true, true},
-                {"dataIncludeMatchingPairedFilter", 2, true, true, true, true},
-                {"dataIncludeMatchingPairedFilter", 3, true, true, true, true}
+    private Object[][] getTestData() {
+        return new Object[][] {
+            {"dataDefaultMatchingPairedFilter", 0, true, true, null, true},
+            {"dataDefaultMatchingPairedFilter", 1, true, true, null, true},
+            {"dataDefaultMatchingPairedFilter", 2, false, false, null, true},
+            {"dataDefaultMatchingPairedFilter", 3, false, false, null, true},
+            {"dataDefaultNonMatchingPairedFilter", 0, true, false, null, false},
+            {"dataDefaultNonMatchingPairedFilter", 1, true, false, null, false},
+            {"dataDefaultNonMatchingPairedFilter", 2, false, false, null, false},
+            {"dataDefaultNonMatchingPairedFilter", 3, false, false, null, false},
+            {"dataExcludeMatchingPairedFilter", 0, true, true, false, true},
+            {"dataExcludeMatchingPairedFilter", 1, true, true, false, true},
+            {"dataExcludeMatchingPairedFilter", 2, false, false, false, true},
+            {"dataExcludeMatchingPairedFilter", 3, false, false, false, true},
+            {"dataExcludeNonMatchingPairedFilter", 0, true, false, false, false},
+            {"dataExcludeNonMatchingPairedFilter", 1, true, false, false, false},
+            {"dataExcludeNonMatchingPairedFilter", 2, false, false, false, false},
+            {"dataExcludeNonMatchingPairedFilter", 3, false, false, false, false},
+            {"dataIncludeNonMatchingPairedFilter", 0, false, false, true, false},
+            {"dataIncludeNonMatchingPairedFilter", 1, false, false, true, false},
+            {"dataIncludeNonMatchingPairedFilter", 2, true, true, true, false},
+            {"dataIncludeNonMatchingPairedFilter", 3, true, true, true, false},
+            {"dataIncludeMatchingPairedFilter", 0, false, false, true, true},
+            {"dataIncludeMatchingPairedFilter", 1, false, false, true, true},
+            {"dataIncludeMatchingPairedFilter", 2, true, true, true, true},
+            {"dataIncludeMatchingPairedFilter", 3, true, true, true, true}
         };
     }
 }

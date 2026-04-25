@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,11 +32,10 @@ import java.util.Set;
  * Base class for the various concrete records in a SAM header, providing uniform
  * access to the attributes.
  */
-
 public abstract class AbstractSAMHeaderRecord implements Serializable {
     public static final long serialVersionUID = 1L;
 
-    private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
+    private final Map<String, String> mAttributes = new LinkedHashMap<String, String>();
 
     public String getAttribute(final String key) {
         return mAttributes.get(key);
@@ -53,7 +51,7 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
      */
     @Deprecated
     public void setAttribute(final String key, final Object value) {
-        setAttribute(key, value == null? null: value.toString());
+        setAttribute(key, value == null ? null : value.toString());
     }
 
     /**
@@ -83,10 +81,9 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     /**
      * Returns the Set of attributes.
      */
-    public Set<Map.Entry<String,String>> getAttributes() {
+    public Set<Map.Entry<String, String>> getAttributes() {
         return mAttributes.entrySet();
     }
-
 
     /**
      * Returns the ID tag (or equivalent) for this header record. The
@@ -118,7 +115,8 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     abstract Set<String> getStandardTags();
 
     /** Simple to String that outputs the concrete class name and the set of attributes stored. */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return getClass().getSimpleName() + this.mAttributes.toString();
     }
 
@@ -126,5 +124,5 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
      * Returns the record in the SAM line-based text format.  Fields are
      * separated by '\t' characters. The String is NOT terminated by '\n'.
      */
-    abstract public String getSAMString();
+    public abstract String getSAMString();
 }

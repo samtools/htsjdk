@@ -2,7 +2,6 @@ package htsjdk.samtools.util.htsget;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.*;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,7 +12,6 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 /**
  * Builder for an htsget GET request that allows opening a connection
  * using the request after validating that it is properly formed.
@@ -21,7 +19,7 @@ import java.util.stream.Collectors;
  * This class currently supports version 1.2.0 of the spec as defined in https://samtools.github.io/hts-specs/htsget.html
  */
 public class HtsgetRequest {
-    private final static Log log = Log.getInstance(HtsgetRequest.class);
+    private static final Log log = Log.getInstance(HtsgetRequest.class);
     public static final Interval UNMAPPED_UNPLACED_INTERVAL = new Interval("*", 1, Integer.MAX_VALUE);
     protected static final String PROTOCOL_VERSION = "vnd.ga4gh.htsget.v1.2.0";
     protected static final String ACCEPT_TYPE = "application/" + PROTOCOL_VERSION + "+json";
@@ -162,31 +160,35 @@ public class HtsgetRequest {
      * Validates that the user query obeys htsget spec
      */
     public void validateRequest() {
-        if (this.dataClass != null && this.dataClass == HtsgetClass.header && (
-            this.interval != null ||
-                !this.fields.isEmpty() ||
-                !this.tags.isEmpty() ||
-                !this.notags.isEmpty())) {
-            throw new IllegalArgumentException("Invalid request: no query parameters except `format` may be specified when class=header");
+        if (this.dataClass != null
+                && this.dataClass == HtsgetClass.header
+                && (this.interval != null
+                        || !this.fields.isEmpty()
+                        || !this.tags.isEmpty()
+                        || !this.notags.isEmpty())) {
+            throw new IllegalArgumentException(
+                    "Invalid request: no query parameters except `format` may be specified when class=header");
         }
 
         if (this.format != null) {
             final String path = this.endpoint.getPath();
-            if ((path.endsWith(FileExtensions.BAM) || path.endsWith(FileExtensions.CRAM)) && (
-                this.format != HtsgetFormat.BAM && this.format != HtsgetFormat.CRAM)) {
-                throw new IllegalArgumentException("Specified reads format: " + this.format + " is incompatible with id's file extension " + path);
+            if ((path.endsWith(FileExtensions.BAM) || path.endsWith(FileExtensions.CRAM))
+                    && (this.format != HtsgetFormat.BAM && this.format != HtsgetFormat.CRAM)) {
+                throw new IllegalArgumentException(
+                        "Specified reads format: " + this.format + " is incompatible with id's file extension " + path);
             }
-            if (FileExtensions.VCF_LIST.stream().anyMatch(path::endsWith) && (
-                this.format != HtsgetFormat.VCF && this.format != HtsgetFormat.BCF)) {
-                throw new IllegalArgumentException("Specified variant format: " + this.format + " is incompatible with id's file extension " + path);
+            if (FileExtensions.VCF_LIST.stream().anyMatch(path::endsWith)
+                    && (this.format != HtsgetFormat.VCF && this.format != HtsgetFormat.BCF)) {
+                throw new IllegalArgumentException("Specified variant format: " + this.format
+                        + " is incompatible with id's file extension " + path);
             }
         }
 
-        final String intersections = this.tags.stream()
-            .filter(getNoTags()::contains)
-            .collect(Collectors.joining(", "));
+        final String intersections =
+                this.tags.stream().filter(getNoTags()::contains).collect(Collectors.joining(", "));
         if (!intersections.isEmpty()) {
-            throw new IllegalArgumentException("Invalid request: tags and notags overlap in the following fields: " + intersections);
+            throw new IllegalArgumentException(
+                    "Invalid request: tags and notags overlap in the following fields: " + intersections);
         }
     }
 
@@ -216,8 +218,8 @@ public class HtsgetRequest {
         }
         if (!this.fields.isEmpty()) {
             queryParams.put(
-                "fields",
-                this.fields.stream().map(HtsgetRequestField::toString).collect(Collectors.joining(",")));
+                    "fields",
+                    this.fields.stream().map(HtsgetRequestField::toString).collect(Collectors.joining(",")));
         }
         if (!this.tags.isEmpty()) {
             queryParams.put("tags", String.join(",", this.tags));
@@ -227,17 +229,21 @@ public class HtsgetRequest {
         }
         try {
             final String queryString = queryParams.entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .collect(Collectors.joining("&"));
+                    .map(e -> e.getKey() + "=" + e.getValue())
+                    .collect(Collectors.joining("&"));
 
             final String updatedQuery = this.endpoint.getQuery() == null
-                ? (queryString.isEmpty() ? null : queryString)
-                : this.endpoint.getQuery() + "&" + queryString;
+                    ? (queryString.isEmpty() ? null : queryString)
+                    : this.endpoint.getQuery() + "&" + queryString;
 
-            return new URI(this.endpoint.getScheme(),
-                this.endpoint.getUserInfo(), this.endpoint.getHost(), this.endpoint.getPort(),
-                this.endpoint.getPath(), updatedQuery,
-                this.endpoint.getFragment());
+            return new URI(
+                    this.endpoint.getScheme(),
+                    this.endpoint.getUserInfo(),
+                    this.endpoint.getHost(),
+                    this.endpoint.getPort(),
+                    this.endpoint.getPath(),
+                    updatedQuery,
+                    this.endpoint.getFragment());
         } catch (final URISyntaxException e) {
             throw new IllegalArgumentException("Could not create URI for request", e);
         }
@@ -268,11 +274,11 @@ public class HtsgetRequest {
             final InputStream is = conn.getInputStream();
             final int statusCode = conn.getResponseCode();
             final String respContentType = conn.getContentType();
-            if (respContentType != null &&
-                !respContentType.isEmpty() &&
-                !respContentType.contains(HtsgetRequest.PROTOCOL_VERSION)) {
-                log.warn("Supported htsget protocol version: " + HtsgetRequest.PROTOCOL_VERSION +
-                    "may not be compatible with received content type: " + respContentType);
+            if (respContentType != null
+                    && !respContentType.isEmpty()
+                    && !respContentType.contains(HtsgetRequest.PROTOCOL_VERSION)) {
+                log.warn("Supported htsget protocol version: " + HtsgetRequest.PROTOCOL_VERSION
+                        + "may not be compatible with received content type: " + respContentType);
             }
 
             final BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -286,9 +292,9 @@ public class HtsgetRequest {
             if (400 <= statusCode && statusCode < 500) {
                 final HtsgetErrorResponse err = HtsgetErrorResponse.parse(json);
                 throw new IllegalArgumentException(
-                    "Invalid request, received error code: " + statusCode +
-                        ", error type: " + err.getError() +
-                        ", message: " + err.getMessage());
+                        "Invalid request, received error code: " + statusCode + ", error type: "
+                                + err.getError() + ", message: "
+                                + err.getMessage());
             } else if (statusCode == 200) {
                 return HtsgetResponse.parse(json);
             } else {

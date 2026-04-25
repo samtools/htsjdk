@@ -1,9 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -17,7 +15,7 @@ class MemoryMappedFileBuffer implements IndexFileBuffer {
     private MappedByteBuffer mFileBuffer;
 
     MemoryMappedFileBuffer(final File file) {
-        try(final FileChannel fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ);) {
+        try (final FileChannel fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ); ) {
             mFileBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0L, fileChannel.size());
             mFileBuffer.order(ByteOrder.LITTLE_ENDIAN);
         } catch (final IOException exc) {

@@ -13,7 +13,7 @@ import java.nio.file.Path;
  */
 public class SamFiles {
 
-    private final static Log LOG = Log.getInstance(SamFiles.class);
+    private static final Log LOG = Log.getInstance(SamFiles.class);
 
     /**
      * Finds the index file associated with the provided SAM file.  The index file must exist and be reachable to be found.
@@ -35,7 +35,7 @@ public class SamFiles {
      * @return The index for the provided SAM, or null if one was not found.
      */
     public static Path findIndex(final Path samPath) {
-        final Path indexPath = lookForIndex(samPath); //try to find the index
+        final Path indexPath = lookForIndex(samPath); // try to find the index
         if (indexPath == null) {
             return unsymlinkAndLookForIndex(samPath);
         } else {
@@ -51,7 +51,7 @@ public class SamFiles {
         try {
             final Path canonicalSamPath = samPath.toRealPath(); // resolve symbolic links
             final Path canonicalIndexPath = lookForIndex(canonicalSamPath);
-            if ( canonicalIndexPath != null) {
+            if (canonicalIndexPath != null) {
                 LOG.warn("The index file " + canonicalIndexPath.toAbsolutePath()
                         + " was found by resolving the canonical path of a symlink: "
                         + samPath.toAbsolutePath() + " -> " + samPath.toRealPath());
@@ -62,12 +62,14 @@ public class SamFiles {
         }
     }
 
-    private static Path lookForIndex(final Path samPath) {// If input is foo.bam, look for foo.bai or foo.csi
+    private static Path lookForIndex(final Path samPath) { // If input is foo.bam, look for foo.bai or foo.csi
         Path indexPath;
         final String fileName = samPath.getFileName().toString(); // works for all path types (e.g. HDFS)
         if (fileName.endsWith(FileExtensions.BAM)) {
-            final String bai = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.BAI_INDEX;
-            final String csi = fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.CSI;
+            final String bai =
+                    fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.BAI_INDEX;
+            final String csi =
+                    fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.CSI;
             indexPath = samPath.resolveSibling(bai);
             if (Files.isRegularFile(indexPath)) { // works for all path types (e.g. HDFS)
                 return indexPath;
@@ -78,9 +80,9 @@ public class SamFiles {
                 }
             }
 
-
         } else if (fileName.endsWith(FileExtensions.CRAM)) {
-            final String crai = fileName.substring(0, fileName.length() - FileExtensions.CRAM.length()) + FileExtensions.CRAM_INDEX;
+            final String crai =
+                    fileName.substring(0, fileName.length() - FileExtensions.CRAM.length()) + FileExtensions.CRAM_INDEX;
             indexPath = samPath.resolveSibling(crai);
             if (Files.isRegularFile(indexPath)) {
                 return indexPath;

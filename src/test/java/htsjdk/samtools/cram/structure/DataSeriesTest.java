@@ -2,12 +2,11 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
+import java.util.HashSet;
+import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.HashSet;
-import java.util.Set;
 
 public class DataSeriesTest extends HtsjdkTest {
     @Test()
@@ -21,13 +20,7 @@ public class DataSeriesTest extends HtsjdkTest {
 
     @DataProvider(name = "twoCharsNegative")
     public static Object[][] twoCharsNegative() {
-        return new Object[][] {
-                {"AA"},
-                {"ZZ"},
-                {"no good"},
-                {""},
-                {"BBBBBBBB"}
-        };
+        return new Object[][] {{"AA"}, {"ZZ"}, {"no good"}, {""}, {"BBBBBBBB"}};
     }
 
     @Test(dataProvider = "twoCharsNegative", expectedExceptions = CRAMException.class)

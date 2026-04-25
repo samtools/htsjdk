@@ -34,7 +34,7 @@ public class MutableFeature implements Feature {
     public int end;
 
     public MutableFeature(final Feature feature) {
-        this(feature.getContig(),feature.getStart(),feature.getEnd());
+        this(feature.getContig(), feature.getStart(), feature.getEnd());
     }
 
     public MutableFeature(final String contig, final int start, final int end) {

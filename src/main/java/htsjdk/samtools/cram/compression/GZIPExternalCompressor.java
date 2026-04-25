@@ -29,7 +29,6 @@ import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.GzipCodec;
 import htsjdk.utils.ValidationUtils;
-
 import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 
@@ -47,14 +46,17 @@ public final class GZIPExternalCompressor extends ExternalCompressor {
 
     public GZIPExternalCompressor(final int compressionLevel, final int deflateStrategy) {
         super(BlockCompressionMethod.GZIP);
-        ValidationUtils.validateArg(compressionLevel >= Deflater.NO_COMPRESSION && compressionLevel <= Deflater.BEST_COMPRESSION,
+        ValidationUtils.validateArg(
+                compressionLevel >= Deflater.NO_COMPRESSION && compressionLevel <= Deflater.BEST_COMPRESSION,
                 String.format("Invalid compression level (%d) requested for CRAM GZIP compression", compressionLevel));
         this.writeCompressionLevel = compressionLevel;
         this.codec = new GzipCodec(compressionLevel, deflateStrategy);
     }
 
     /** @return the gzip compression level used by this compressor's compress method */
-    public int getWriteCompressionLevel() { return writeCompressionLevel; }
+    public int getWriteCompressionLevel() {
+        return writeCompressionLevel;
+    }
 
     @Override
     public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {

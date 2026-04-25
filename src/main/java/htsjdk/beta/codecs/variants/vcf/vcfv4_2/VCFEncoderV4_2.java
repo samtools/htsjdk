@@ -17,12 +17,11 @@ public class VCFEncoderV4_2 extends VCFEncoder {
      * @param variantsEncoderOptions the {@link VariantsEncoderOptions} to use
      */
     public VCFEncoderV4_2(final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
-        super(outputBundle,variantsEncoderOptions);
+        super(outputBundle, variantsEncoderOptions);
     }
 
     @Override
     public HtsVersion getVersion() {
         return VCFCodecV4_2.VCF_V42_VERSION;
     }
-
 }

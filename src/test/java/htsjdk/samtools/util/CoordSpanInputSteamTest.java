@@ -2,10 +2,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -13,19 +9,20 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Created by vadim on 25/03/2015.
  */
 public class CoordSpanInputSteamTest extends HtsjdkTest {
 
-
     @Test
     public void test_first_3_bytes() throws IOException {
         byte[] data = new byte[1024 * 1024];
         new Random(TestUtil.RANDOM_SEED).nextBytes(data);
 
-        long[] coords = new long[]{0, 1, 1, 2, 2, 3};
+        long[] coords = new long[] {0, 1, 1, 2, 2, 3};
 
         CoordSpanInputSteam csis = new CoordSpanInputSteam(new ByteArraySeekableStream(data), coords);
 
@@ -41,7 +38,7 @@ public class CoordSpanInputSteamTest extends HtsjdkTest {
         byte[] data = new byte[1024 * 1024];
         new Random(TestUtil.RANDOM_SEED).nextBytes(data);
 
-        long[] coords = new long[]{0, 100, 10, 20, 100, 200, data.length - 1, Long.MAX_VALUE};
+        long[] coords = new long[] {0, 100, 10, 20, 100, 200, data.length - 1, Long.MAX_VALUE};
 
         CoordSpanInputSteam csis = new CoordSpanInputSteam(new ByteArraySeekableStream(data), coords);
 
@@ -52,7 +49,8 @@ public class CoordSpanInputSteamTest extends HtsjdkTest {
                     Assert.assertEquals(read, -1);
                     break;
                 } else
-                    Assert.assertEquals(read, 0xFF & data[c], String.format("At %d: read=%d, data=%d\n", c, read, data[c]));
+                    Assert.assertEquals(
+                            read, 0xFF & data[c], String.format("At %d: read=%d, data=%d\n", c, read, data[c]));
             }
         }
     }
@@ -62,7 +60,7 @@ public class CoordSpanInputSteamTest extends HtsjdkTest {
         byte[] data = new byte[1024 * 1024];
         new Random(TestUtil.RANDOM_SEED).nextBytes(data);
 
-        long[] coords = new long[]{0, 100, 10, 20, 100, 200, data.length - 1, Long.MAX_VALUE};
+        long[] coords = new long[] {0, 100, 10, 20, 100, 200, data.length - 1, Long.MAX_VALUE};
 
         CoordSpanInputSteam csis = new CoordSpanInputSteam(new ByteArraySeekableStream(data), coords);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

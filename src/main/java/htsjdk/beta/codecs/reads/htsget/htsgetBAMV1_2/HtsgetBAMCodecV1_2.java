@@ -2,15 +2,14 @@ package htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2;
 
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMCodec;
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMDecoder;
-import htsjdk.beta.plugin.HtsEncoder;
-import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
+import htsjdk.beta.plugin.HtsEncoder;
+import htsjdk.beta.plugin.HtsRecord;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
-
+import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
+import htsjdk.io.IOPath;
 import java.util.Optional;
 
 /**
@@ -19,8 +18,7 @@ import java.util.Optional;
 public class HtsgetBAMCodecV1_2 extends HtsgetBAMCodec {
 
     @Override
-    public HtsgetBAMDecoder getDecoder(final Bundle inputBundle,
-                                       final ReadsDecoderOptions decodeOptions) {
+    public HtsgetBAMDecoder getDecoder(final Bundle inputBundle, final ReadsDecoderOptions decodeOptions) {
         final BundleResource readsResource = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS);
         final Optional<IOPath> inputPath = readsResource.getIOPath();
         if (!inputPath.isPresent()) {
@@ -33,5 +31,4 @@ public class HtsgetBAMCodecV1_2 extends HtsgetBAMCodec {
     public HtsEncoder<?, ? extends HtsRecord> getEncoder(Bundle outputBundle, ReadsEncoderOptions encodeOptions) {
         throw new IllegalArgumentException("Htsget is read only - no Htsget BAM encoder component is available.");
     }
-
 }

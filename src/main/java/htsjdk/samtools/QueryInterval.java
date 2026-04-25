@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +17,6 @@ public class QueryInterval implements Comparable<QueryInterval> {
     /** 1-based, inclusive.  If <= 0, implies that the interval goes to the end of the reference sequence */
     public final int end;
 
-
     public QueryInterval(final int referenceIndex, final int start, final int end) {
         if (referenceIndex < 0) {
             throw new IllegalArgumentException("Invalid reference index " + referenceIndex);
@@ -27,7 +25,6 @@ public class QueryInterval implements Comparable<QueryInterval> {
         this.start = start;
         this.end = end;
     }
-
 
     @Override
     public int compareTo(final QueryInterval other) {
@@ -78,7 +75,6 @@ public class QueryInterval implements Comparable<QueryInterval> {
         final List<QueryInterval> unique = new ArrayList<QueryInterval>();
         QueryInterval previous = inputIntervals[0];
 
-
         for (int i = 1; i < inputIntervals.length; ++i) {
             final QueryInterval next = inputIntervals[i];
             if (previous.endsAtStartOf(next) || previous.overlaps(next)) {
@@ -102,16 +98,19 @@ public class QueryInterval implements Comparable<QueryInterval> {
     public static void assertIntervalsOptimized(final QueryInterval[] intervals) {
         if (intervals.length == 0) return;
         for (int i = 1; i < intervals.length; ++i) {
-            final QueryInterval prev = intervals[i-1];
+            final QueryInterval prev = intervals[i - 1];
             final QueryInterval thisInterval = intervals[i];
             if (prev.compareTo(thisInterval) >= 0) {
-                throw new IllegalArgumentException(String.format("List of intervals is not sorted: %s >= %s", prev, thisInterval));
+                throw new IllegalArgumentException(
+                        String.format("List of intervals is not sorted: %s >= %s", prev, thisInterval));
             }
             if (prev.overlaps(thisInterval)) {
-                throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s intersects %s", prev, thisInterval));
+                throw new IllegalArgumentException(
+                        String.format("List of intervals is not optimized: %s intersects %s", prev, thisInterval));
             }
             if (prev.endsAtStartOf(thisInterval)) {
-                throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s abuts %s", prev, thisInterval));
+                throw new IllegalArgumentException(
+                        String.format("List of intervals is not optimized: %s abuts %s", prev, thisInterval));
             }
         }
     }

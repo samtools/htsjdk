@@ -3,15 +3,14 @@ package htsjdk.samtools.util.htsget;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Builder for an htsget POST request that allows opening a connection
@@ -30,7 +29,6 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
      * @param endpoint the full URI including both server path and the ID of the htsget resource,
      *                 without the filtering parameters defined in the htsget spec such as start or referenceName
      */
-
     public HtsgetPOSTRequest(final URI endpoint) {
         super(endpoint);
         this.intervals = new ArrayList<>();
@@ -145,11 +143,10 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
         }
         if (!this.fields.isEmpty()) {
             postBody.put(
-                "fields",
-                new JSONArray(this.getFields().stream()
-                    .map(HtsgetRequestField::toString)
-                    .toArray())
-            );
+                    "fields",
+                    new JSONArray(this.getFields().stream()
+                            .map(HtsgetRequestField::toString)
+                            .toArray()));
         }
         if (!this.tags.isEmpty()) {
             postBody.put("tags", new JSONArray(this.getTags().toArray()));
@@ -158,25 +155,27 @@ public class HtsgetPOSTRequest extends HtsgetRequest {
             postBody.put("notags", new JSONArray(this.getNoTags().toArray()));
         }
         if (!this.intervals.isEmpty()) {
-            postBody.put("regions", new JSONArray(
-                this.intervals.stream()
-                    .map(interval -> {
-                        final JSONObject intervalJson = new JSONObject();
-                        if (interval != null && interval.getContig() != null) {
-                            intervalJson.put("referenceName", interval.getContig());
-                            // Do not insert start and end for unmapped reads or if we are requesting the entire contig
-                            if (!interval.getContig().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
-                                // getStart() - 1 is necessary as GA4GH standards use 0-based coordinates while Locatables are 1-based
-                                intervalJson.put("start", interval.getStart() - 1);
-                                if (interval.getEnd() != Integer.MAX_VALUE && interval.getEnd() != -1) {
-                                    intervalJson.put("end", interval.getEnd());
+            postBody.put(
+                    "regions",
+                    new JSONArray(this.intervals.stream()
+                            .map(interval -> {
+                                final JSONObject intervalJson = new JSONObject();
+                                if (interval != null && interval.getContig() != null) {
+                                    intervalJson.put("referenceName", interval.getContig());
+                                    // Do not insert start and end for unmapped reads or if we are requesting the entire
+                                    // contig
+                                    if (!interval.getContig().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
+                                        // getStart() - 1 is necessary as GA4GH standards use 0-based coordinates while
+                                        // Locatables are 1-based
+                                        intervalJson.put("start", interval.getStart() - 1);
+                                        if (interval.getEnd() != Integer.MAX_VALUE && interval.getEnd() != -1) {
+                                            intervalJson.put("end", interval.getEnd());
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        return intervalJson;
-                    })
-                    .toArray()
-            ));
+                                return intervalJson;
+                            })
+                            .toArray()));
         }
         return postBody;
     }

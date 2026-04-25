@@ -24,14 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,22 +33,36 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SortingCollectionTest extends HtsjdkTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
     protected File tmpDir() {
-        return new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), getClass().getSimpleName());
+        return new File(
+                System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"),
+                getClass().getSimpleName());
     }
-    
-    @BeforeMethod void setup() { resetTmpDir(); }
-    @AfterMethod void tearDown() { resetTmpDir(); }
+
+    @BeforeMethod
+    void setup() {
+        resetTmpDir();
+    }
+
+    @AfterMethod
+    void tearDown() {
+        resetTmpDir();
+    }
 
     /** Deletes and re-creates the temporary directory. */
     void resetTmpDir() {
         System.err.println("Resetting tmpdir");
         IOUtil.deleteDirectoryTree(tmpDir());
-        if (!tmpDir().mkdirs()) throw new IllegalStateException("Could not create tmpdir: " + tmpDir().getAbsolutePath());
-
+        if (!tmpDir().mkdirs())
+            throw new IllegalStateException("Could not create tmpdir: " + tmpDir().getAbsolutePath());
     }
 
     protected boolean tmpDirIsEmpty() {
@@ -66,14 +72,14 @@ public class SortingCollectionTest extends HtsjdkTest {
     @DataProvider(name = "test1")
     public Object[][] createTestData() {
         return new Object[][] {
-                {"empty", 0, 100},
-                {"singleton", 1, 100},
-                {"less than threshold", 100, 200},
-                {"threshold minus 1", 99, 100},
-                {"greater than threshold", 550, 100},
-                {"threshold multiple", 600, 100},
-                {"threshold multiple plus one", 101, 100},
-                {"exactly threshold", 100, 100},
+            {"empty", 0, 100},
+            {"singleton", 1, 100},
+            {"less than threshold", 100, 200},
+            {"threshold minus 1", 99, 100},
+            {"greater than threshold", 550, 100},
+            {"threshold multiple", 600, 100},
+            {"threshold multiple plus one", 101, 100},
+            {"exactly threshold", 100, 100},
         };
     }
 
@@ -98,7 +104,7 @@ public class SortingCollectionTest extends HtsjdkTest {
         sortingCollection.setDestructiveIteration(false);
         assertIteratorEqualsList(strings, sortingCollection.iterator());
         assertIteratorEqualsList(strings, sortingCollection.iterator());
-        
+
         sortingCollection.cleanup();
         Assert.assertEquals(tmpDir().list().length, 0);
     }
@@ -106,9 +112,7 @@ public class SortingCollectionTest extends HtsjdkTest {
     @Test
     public void spillToDiskTest() {
         final SortingCollection<String> sortingCollection = makeSortingCollection(10);
-        final String[] strings = new String[] {
-                "1", "2", "3"
-        };
+        final String[] strings = new String[] {"1", "2", "3"};
 
         for (String str : strings) {
             sortingCollection.add(str);
@@ -134,7 +138,8 @@ public class SortingCollectionTest extends HtsjdkTest {
     }
 
     private SortingCollection<String> makeSortingCollection(final int maxRecordsInRam) {
-        return SortingCollection.newInstance(String.class, new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
+        return SortingCollection.newInstance(
+                String.class, new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
     }
 
     /**

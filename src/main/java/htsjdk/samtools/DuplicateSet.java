@@ -28,9 +28,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Stores a set of records that are duplicates of each other.  The first records in the list of records is 
- * considered the representative of the duplicate, and typically does not have it's duplicate flag set.  
- * The records' duplicate flag will be set appropriately as records are added.  This behavior can be 
+ * Stores a set of records that are duplicates of each other.  The first records in the list of records is
+ * considered the representative of the duplicate, and typically does not have it's duplicate flag set.
+ * The records' duplicate flag will be set appropriately as records are added.  This behavior can be
  * turned off.
  *
  * At this time, this set does not track optical duplicates.
@@ -88,8 +88,7 @@ public class DuplicateSet {
             if (0 < this.comparator.compare(this.representative, record)) {
                 this.representative = record;
             }
-        }
-        else {
+        } else {
             this.representative = record;
         }
 
@@ -108,7 +107,9 @@ public class DuplicateSet {
             if (setDuplicateFlag) {
                 // reset duplicate flags
                 for (final SAMRecord record : records) {
-                    if (!record.getReadUnmappedFlag() && !record.isSecondaryOrSupplementary() && !record.getReadName().equals(representative.getReadName())) {
+                    if (!record.getReadUnmappedFlag()
+                            && !record.isSecondaryOrSupplementary()
+                            && !record.getReadName().equals(representative.getReadName())) {
                         record.setDuplicateReadFlag(true);
                     }
                 }
@@ -116,8 +117,8 @@ public class DuplicateSet {
             }
 
             if (!records.get(0).equals(this.representative)) {
-                throw new SAMException("BUG: the representative was not the first record after sorting."
-                + "\nFIRST: " + records.get(0).getSAMString() + "\nSECOND: " + this.representative.getSAMString());
+                throw new SAMException("BUG: the representative was not the first record after sorting." + "\nFIRST: "
+                        + records.get(0).getSAMString() + "\nSECOND: " + this.representative.getSAMString());
             }
         }
         needsSorting = false; // this could be in the if above if you think hard about it
@@ -180,5 +181,7 @@ public class DuplicateSet {
     /**
      * Controls if we should update the duplicate flag of the records in this set.
      */
-    public void setDuplicateFlag(final boolean setDuplicateFlag) { this.setDuplicateFlag = setDuplicateFlag; }
+    public void setDuplicateFlag(final boolean setDuplicateFlag) {
+        this.setDuplicateFlag = setDuplicateFlag;
+    }
 }

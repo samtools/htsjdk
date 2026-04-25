@@ -34,11 +34,11 @@ import java.nio.charset.StandardCharsets;
  * Types of alleles:
  *</p>
  *<pre>
- Ref: a t C g a // C is the reference base
- : a t G g a // C base is a G in some individuals
- : a t - g a // C base is deleted w.r.t. the reference
- : a t CAg a // A base is inserted w.r.t. the reference sequence
- </pre>
+ * Ref: a t C g a // C is the reference base
+ * : a t G g a // C base is a G in some individuals
+ * : a t - g a // C base is deleted w.r.t. the reference
+ * : a t CAg a // A base is inserted w.r.t. the reference sequence
+ * </pre>
  *<p> In these cases, where are the alleles?</p>
  *<ul>
  * <li>SNP polymorphism of C/G  -&gt; { C , G } -&gt; C is the reference allele</li>
@@ -49,10 +49,10 @@ import java.nio.charset.StandardCharsets;
  * Suppose I see a the following in the population:
  *</p>
  *<pre>
- Ref: a t C g a // C is the reference base
- : a t G g a // C base is a G in some individuals
- : a t - g a // C base is deleted w.r.t. the reference
- </pre>
+ * Ref: a t C g a // C is the reference base
+ * : a t G g a // C base is a G in some individuals
+ * : a t - g a // C base is deleted w.r.t. the reference
+ * </pre>
  * <p>
  * How do I represent this?  There are three segregating alleles:
  * </p>
@@ -65,13 +65,13 @@ import java.nio.charset.StandardCharsets;
  *</blockquote>
  *<p>
  * Now suppose I have this more complex example:
- </p>
- <pre>
- Ref: a t C g a // C is the reference base
- : a t - g a
- : a t - - a
- : a t CAg a
- </pre>
+ * </p>
+ * <pre>
+ * Ref: a t C g a // C is the reference base
+ * : a t - g a
+ * : a t - - a
+ * : a t CAg a
+ * </pre>
  * <p>
  * There are actually four segregating alleles:
  * </p>
@@ -93,11 +93,11 @@ import java.nio.charset.StandardCharsets;
  * Allele object itself.  So there's an idea of an A/C polymorphism independent of it's surrounding context.
  *
  * Given list of alleles it's possible to determine the "type" of the variation
- </p>
- <pre>
- A / C @ loc =&gt; SNP
- - / A =&gt; INDEL
- </pre>
+ * </p>
+ * <pre>
+ * A / C @ loc =&gt; SNP
+ * - / A =&gt; INDEL
+ * </pre>
  * <p>
  * If you know where allele is the reference, you can determine whether the variant is an insertion or deletion.
  * </p>
@@ -118,13 +118,12 @@ public interface Allele extends Comparable<Allele>, Serializable {
     /** A generic static SPAN_DEL allele for use */
     String SPAN_DEL_STRING = "*";
     /** Non ref allele representations */
-
     char SINGLE_BREAKEND_INDICATOR = '.';
+
     char BREAKEND_EXTENDING_RIGHT = '[';
     char BREAKEND_EXTENDING_LEFT = ']';
     char SYMBOLIC_ALLELE_START = '<';
     char SYMBOLIC_ALLELE_END = '>';
-
 
     String NON_REF_STRING = "<NON_REF>";
     String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
@@ -168,24 +167,38 @@ public interface Allele extends Comparable<Allele>, Serializable {
      * @throws IllegalArgumentException if bases contains illegal characters or is otherwise malformated
      */
     static Allele create(byte[] bases, boolean isRef) {
-        if ( bases == null )
-            throw new IllegalArgumentException("create: the Allele base string cannot be null; use new Allele() or new Allele(\"\") to create a Null allele");
+        if (bases == null)
+            throw new IllegalArgumentException(
+                    "create: the Allele base string cannot be null; use new Allele() or new Allele(\"\") to create a Null allele");
 
-        if ( bases.length == 1 ) {
+        if (bases.length == 1) {
             // optimization to return a static constant Allele for each single base object
             switch (bases[0]) {
                 case '.':
-                    if ( isRef ) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
+                    if (isRef) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
                     return NO_CALL;
                 case '*':
-                    if ( isRef ) throw new IllegalArgumentException("Cannot tag a spanning deletions allele as the reference allele");
+                    if (isRef)
+                        throw new IllegalArgumentException(
+                                "Cannot tag a spanning deletions allele as the reference allele");
                     return SPAN_DEL;
-                case 'A': case 'a' : return isRef ? REF_A : ALT_A;
-                case 'C': case 'c' : return isRef ? REF_C : ALT_C;
-                case 'G': case 'g' : return isRef ? REF_G : ALT_G;
-                case 'T': case 't' : return isRef ? REF_T : ALT_T;
-                case 'N': case 'n' : return isRef ? REF_N : ALT_N;
-                default: throw new IllegalArgumentException("Illegal base [" + (char)bases[0] + "] seen in the allele");
+                case 'A':
+                case 'a':
+                    return isRef ? REF_A : ALT_A;
+                case 'C':
+                case 'c':
+                    return isRef ? REF_C : ALT_C;
+                case 'G':
+                case 'g':
+                    return isRef ? REF_G : ALT_G;
+                case 'T':
+                case 't':
+                    return isRef ? REF_T : ALT_T;
+                case 'N':
+                case 'n':
+                    return isRef ? REF_N : ALT_N;
+                default:
+                    throw new IllegalArgumentException("Illegal base [" + (char) bases[0] + "] seen in the allele");
             }
         } else {
             return new SimpleAllele(bases.clone(), isRef);
@@ -193,16 +206,15 @@ public interface Allele extends Comparable<Allele>, Serializable {
     }
 
     static Allele create(byte base, boolean isRef) {
-        return create( new byte[]{ base }, isRef);
+        return create(new byte[] {base}, isRef);
     }
 
     static Allele create(byte base) {
-        return create( base, false );
+        return create(base, false);
     }
 
     static Allele extend(Allele left, byte[] right) {
-        if (left.isSymbolic())
-            throw new IllegalArgumentException("Cannot extend a symbolic allele");
+        if (left.isSymbolic()) throw new IllegalArgumentException("Cannot extend a symbolic allele");
         byte[] bases = new byte[left.length() + right.length];
         System.arraycopy(left.getBases(), 0, bases, 0, left.length());
         System.arraycopy(right, 0, bases, left.length(), right.length);
@@ -243,12 +255,12 @@ public interface Allele extends Comparable<Allele>, Serializable {
      */
     @Deprecated
     static boolean wouldBeSymbolicAllele(byte[] bases) {
-    	if ( bases.length <= 1 )
-            return false;
+        if (bases.length <= 1) return false;
         else {
-            return bases[0] == Allele.SYMBOLIC_ALLELE_START || bases[bases.length - 1] == Allele.SYMBOLIC_ALLELE_END ||
-                    wouldBeBreakpoint(bases) ||
-                    wouldBeSingleBreakend(bases);
+            return bases[0] == Allele.SYMBOLIC_ALLELE_START
+                    || bases[bases.length - 1] == Allele.SYMBOLIC_ALLELE_END
+                    || wouldBeBreakpoint(bases)
+                    || wouldBeSingleBreakend(bases);
         }
     }
 
@@ -275,10 +287,10 @@ public interface Allele extends Comparable<Allele>, Serializable {
      */
     @Deprecated
     static boolean wouldBeSingleBreakend(byte[] bases) {
-        if ( bases.length <= 1 )
-            return false;
+        if (bases.length <= 1) return false;
         else {
-            return bases[0] == Allele.SINGLE_BREAKEND_INDICATOR || bases[bases.length - 1] == Allele.SINGLE_BREAKEND_INDICATOR;
+            return bases[0] == Allele.SINGLE_BREAKEND_INDICATOR
+                    || bases[bases.length - 1] == Allele.SINGLE_BREAKEND_INDICATOR;
         }
     }
 
@@ -314,18 +326,24 @@ public interface Allele extends Comparable<Allele>, Serializable {
      * @return true if the bases represent the well formatted allele
      */
     static boolean acceptableAlleleBases(byte[] bases, boolean isReferenceAllele) {
-        if ( wouldBeNullAllele(bases) )
-            return false;
+        if (wouldBeNullAllele(bases)) return false;
 
-        if ( wouldBeNoCallAllele(bases) || wouldBeSymbolicAllele(bases) )
-            return true;
+        if (wouldBeNoCallAllele(bases) || wouldBeSymbolicAllele(bases)) return true;
 
-        if ( wouldBeStarAllele(bases) )
-            return !isReferenceAllele;
+        if (wouldBeStarAllele(bases)) return !isReferenceAllele;
 
-        for (byte base :  bases ) {
+        for (byte base : bases) {
             switch (base) {
-                case 'A': case 'C': case 'G': case 'T':  case 'a': case 'c': case 'g': case 't': case 'N' : case 'n' :
+                case 'A':
+                case 'C':
+                case 'G':
+                case 'T':
+                case 'a':
+                case 'c':
+                case 'g':
+                case 't':
+                case 'N':
+                case 'n':
                     break;
                 default:
                     return false;
@@ -368,7 +386,7 @@ public interface Allele extends Comparable<Allele>, Serializable {
      * (in which case the returned allele will be non-Ref).
      *
      * This method is efficient because it can skip the validation of the bases (since the original allele was already validated)
-
+     *
      *
      * @param allele  the allele from which to copy the bases
      * @param ignoreRefState  should we ignore the reference state of the input allele and use the default ref state?
@@ -378,10 +396,8 @@ public interface Allele extends Comparable<Allele>, Serializable {
     }
 
     static boolean oneIsPrefixOfOther(final Allele a1, final Allele a2) {
-        if ( a2.length() >= a1.length() )
-            return a1.isPrefixOf(a2);
-        else
-            return a2.isPrefixOf(a1);
+        if (a2.length() >= a1.length()) return a1.isPrefixOf(a2);
+        else return a2.isPrefixOf(a1);
     }
 
     boolean isPrefixOf(final Allele other);

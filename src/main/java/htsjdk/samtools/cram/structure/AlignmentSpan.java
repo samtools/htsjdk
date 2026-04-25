@@ -74,12 +74,9 @@ public class AlignmentSpan {
         int span;
         if (a.getAlignmentStart() == b.getAlignmentStart()) {
             span = Math.max(a.getAlignmentSpan(), b.getAlignmentSpan());
-        }
-        else {
-            span = Math.max(
-                    a.getAlignmentStart() + a.getAlignmentSpan(),
-                    b.getAlignmentStart() + b.getAlignmentSpan()
-            ) - start;
+        } else {
+            span = Math.max(a.getAlignmentStart() + a.getAlignmentSpan(), b.getAlignmentStart() + b.getAlignmentSpan())
+                    - start;
         }
 
         final int mappedCount = a.mappedCount + b.mappedCount;
@@ -108,7 +105,9 @@ public class AlignmentSpan {
     }
 
     // unmapped unplaced only, overlaps with getUnmappedCount (which includes unmapped placed and unplaced)
-    public int getUnmappedUnplacedCount() { return unmappedUnplacedCount; }
+    public int getUnmappedUnplacedCount() {
+        return unmappedUnplacedCount;
+    }
 
     @Override
     public boolean equals(Object o) {

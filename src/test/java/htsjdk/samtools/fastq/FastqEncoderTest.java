@@ -62,18 +62,34 @@ public class FastqEncoderTest extends HtsjdkTest {
     public void testAsSAMRecord() throws Exception {
         // create a random record
         final SAMRecord samRecord = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "10M", null, 2);
-        FastqRecord fastqRecord = new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), "", samRecord.getBaseQualities());
+        FastqRecord fastqRecord =
+                new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), "", samRecord.getBaseQualities());
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
-        fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.FIRST_OF_PAIR, samRecord.getReadBases(), "", samRecord.getBaseQualities());
+        fastqRecord = new FastqRecord(
+                samRecord.getReadName() + FastqConstants.FIRST_OF_PAIR,
+                samRecord.getReadBases(),
+                "",
+                samRecord.getBaseQualities());
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
-        fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), "", samRecord.getBaseQualities());
+        fastqRecord = new FastqRecord(
+                samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR,
+                samRecord.getReadBases(),
+                "",
+                samRecord.getBaseQualities());
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
-        fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), "Quality header comment", samRecord.getBaseQualities());
+        fastqRecord = new FastqRecord(
+                samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR,
+                samRecord.getReadBases(),
+                "Quality header comment",
+                samRecord.getBaseQualities());
         // default method does not include the comment header
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
         // test with qualityHeaderToComment=true populates the CO tag
         samRecord.setAttribute(SAMTag.CO, fastqRecord.getBaseQualityHeader());
-        testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_TO_COMMENT_TAG), samRecord);
+        testConvertedSAMRecord(
+                FastqEncoder.asSAMRecord(
+                        fastqRecord, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_TO_COMMENT_TAG),
+                samRecord);
     }
 
     @Test
@@ -83,12 +99,13 @@ public class FastqEncoderTest extends HtsjdkTest {
         final int fi = 1;
         final String customTag = "ct";
         final char ct = 'a';
-        final String tags = String.format("%s:Z:%s\t%s:Z:%s\t%s:i:%d\t%s:A:%c",
-                SAMTag.BC, bc, SAMTag.RG, rg, SAMTag.FI, fi, customTag, ct
-        );
+        final String tags = String.format(
+                "%s:Z:%s\t%s:Z:%s\t%s:i:%d\t%s:A:%c", SAMTag.BC, bc, SAMTag.RG, rg, SAMTag.FI, fi, customTag, ct);
         final SAMRecord samRecord = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "10M", null, 2);
-        final FastqRecord record = new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), tags, samRecord.getBaseQualities());
-        final SAMRecord converted = FastqEncoder.asSAMRecord(record, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_PARSE_SAM_TAGS);
+        final FastqRecord record =
+                new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), tags, samRecord.getBaseQualities());
+        final SAMRecord converted =
+                FastqEncoder.asSAMRecord(record, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_PARSE_SAM_TAGS);
         testConvertedSAMRecord(converted, samRecord);
         Assert.assertEquals(converted.getAttribute(SAMTag.BC), bc);
         Assert.assertEquals(converted.getAttribute(SAMTag.RG), rg);

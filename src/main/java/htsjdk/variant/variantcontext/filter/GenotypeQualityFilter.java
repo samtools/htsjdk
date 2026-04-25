@@ -34,8 +34,8 @@ import htsjdk.variant.variantcontext.VariantContext;
  */
 public class GenotypeQualityFilter implements VariantContextFilter {
 
-    final private String sample;
-    final private int gqThreshold;
+    private final String sample;
+    private final int gqThreshold;
 
     /**
      * Constructor for a filter that will keep VC for which the
@@ -45,7 +45,7 @@ public class GenotypeQualityFilter implements VariantContextFilter {
      * @param gqThreshold the smallest value of GQ that this filter will pass
      * @param sample the name of the sample in the variant context whose genotype should be examined.
      */
-    public GenotypeQualityFilter(final int gqThreshold, final String sample ) {
+    public GenotypeQualityFilter(final int gqThreshold, final String sample) {
         this.sample = sample;
         this.gqThreshold = gqThreshold;
     }
@@ -55,7 +55,7 @@ public class GenotypeQualityFilter implements VariantContextFilter {
      * @param gqThreshold the smallest value of GQ that this filter will pass
      */
     public GenotypeQualityFilter(final int gqThreshold) {
-        this(  gqThreshold, null);
+        this(gqThreshold, null);
     }
 
     /**
@@ -69,9 +69,10 @@ public class GenotypeQualityFilter implements VariantContextFilter {
         final Genotype gt = (sample == null) ? variantContext.getGenotype(0) : variantContext.getGenotype(sample);
 
         if (gt == null) {
-            throw new IllegalArgumentException((sample == null) ?
-                    "Cannot find any genotypes in VariantContext: " + variantContext :
-                    "Cannot find sample requested: " + sample);
+            throw new IllegalArgumentException(
+                    (sample == null)
+                            ? "Cannot find any genotypes in VariantContext: " + variantContext
+                            : "Cannot find sample requested: " + sample);
         }
 
         return gt.getGQ() >= gqThreshold;

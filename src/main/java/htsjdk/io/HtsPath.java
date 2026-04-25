@@ -1,7 +1,6 @@
 package htsjdk.io;
 
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -71,10 +70,10 @@ public class HtsPath implements IOPath, Serializable {
     private static final long serialVersionUID = 1L;
     private static final String HIERARCHICAL_SCHEME_SEPARATOR = "://";
 
-    private final String    rawInputString;     // raw input string provided by th user; may or may not have a scheme
-    private final URI       uri;                // working URI; always has a scheme ("file" if not otherwise specified)
+    private final String rawInputString; // raw input string provided by th user; may or may not have a scheme
+    private final URI uri; // working URI; always has a scheme ("file" if not otherwise specified)
     private transient String pathFailureReason; // cache the reason for "toPath" conversion failure
-    private transient Path  cachedPath;         // cache the Path associated with this URI if its "Path-able"
+    private transient Path cachedPath; // cache the Path associated with this URI if its "Path-able"
 
     /**
      * Create an HtsPath from a raw input path string.
@@ -117,12 +116,14 @@ public class HtsPath implements IOPath, Serializable {
      * Return the raw input string provided to the constructor.
      */
     @Override
-    public String getRawInputString() { return rawInputString; }
+    public String getRawInputString() {
+        return rawInputString;
+    }
 
     @Override
     public boolean hasFileSystemProvider() {
         // try to find a provider; assume that our URI always has a scheme
-        for (FileSystemProvider provider: FileSystemProvider.installedProviders()) {
+        for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
             if (provider.getScheme().equalsIgnoreCase(uri.getScheme())) {
                 return true;
             }
@@ -134,10 +135,10 @@ public class HtsPath implements IOPath, Serializable {
     public boolean isPath() {
         try {
             return getCachedPath() != null || toPath() != null;
-        } catch (ProviderNotFoundException |
-                FileSystemNotFoundException |
-                IllegalArgumentException |
-                AssertionError e) {
+        } catch (ProviderNotFoundException
+                | FileSystemNotFoundException
+                | IllegalArgumentException
+                | AssertionError e) {
             // jimfs throws an AssertionError that wraps a URISyntaxException when trying to create path where
             // the scheme-specific part is missing or incorrect
             pathFailureReason = e.getMessage();
@@ -192,7 +193,10 @@ public class HtsPath implements IOPath, Serializable {
             return Files.newInputStream(resourcePath);
         } catch (IOException e) {
             throw new RuntimeException(
-                    String.format("Could not create open input stream for %s (as URI %s)", getRawInputString(), getURIString()), e);
+                    String.format(
+                            "Could not create open input stream for %s (as URI %s)",
+                            getRawInputString(), getURIString()),
+                    e);
         }
     }
 
@@ -206,12 +210,17 @@ public class HtsPath implements IOPath, Serializable {
         try {
             return Files.newOutputStream(resourcePath);
         } catch (IOException e) {
-            throw new RuntimeException(String.format("Could not open output stream for %s (as URI %s)", getRawInputString(), getURIString()), e);
+            throw new RuntimeException(
+                    String.format(
+                            "Could not open output stream for %s (as URI %s)", getRawInputString(), getURIString()),
+                    e);
         }
     }
 
     // get the cached path associated with this URI if its already been created
-    protected Path getCachedPath() { return cachedPath; }
+    protected Path getCachedPath() {
+        return cachedPath;
+    }
 
     protected void setCachedPath(Path path) {
         this.cachedPath = path;
@@ -251,8 +260,8 @@ public class HtsPath implements IOPath, Serializable {
                 tempURI = getCachedPath().toUri();
             }
         } catch (URISyntaxException uriException) {
-            //check that the uri wasn't a badly encoded absolute uri of some sort
-            //if you don't do this it will be treated as a badly formed file:// url
+            // check that the uri wasn't a badly encoded absolute uri of some sort
+            // if you don't do this it will be treated as a badly formed file:// url
             assertNoProblematicScheme(pathString, uriException);
 
             // the input string isn't a valid URI; assume its a local (non-URI) file reference, and
@@ -265,9 +274,7 @@ public class HtsPath implements IOPath, Serializable {
                 // the user intended to provide a local file reference or a URI, so preserve both
                 final String errorMessage = String.format(
                         "%s can't be interpreted as a local file (%s) or as a URI (%s).",
-                        pathString,
-                        pathException.getMessage(),
-                        uriException.getMessage());
+                        pathString, pathException.getMessage(), uriException.getMessage());
                 throw new IllegalArgumentException(errorMessage, pathException);
             }
         }
@@ -292,28 +299,30 @@ public class HtsPath implements IOPath, Serializable {
      * @param pathString the path being examined
      * @param cause the original failure reason
      */
-    static void assertNoProblematicScheme(String pathString, URISyntaxException cause){
-        if(pathString.equals(HIERARCHICAL_SCHEME_SEPARATOR)){
+    static void assertNoProblematicScheme(String pathString, URISyntaxException cause) {
+        if (pathString.equals(HIERARCHICAL_SCHEME_SEPARATOR)) {
             throw new IllegalArgumentException(HIERARCHICAL_SCHEME_SEPARATOR + " is not a valid path.", cause);
         }
 
         final String[] split = pathString.split(HIERARCHICAL_SCHEME_SEPARATOR, -1);
         final String scheme = split[0];
 
-        if(split.length == 2 && pathString.endsWith(HIERARCHICAL_SCHEME_SEPARATOR)) {
-            throw new IllegalArgumentException("A path consisting of only a scheme is not allowed: " + pathString, cause);
+        if (split.length == 2 && pathString.endsWith(HIERARCHICAL_SCHEME_SEPARATOR)) {
+            throw new IllegalArgumentException(
+                    "A path consisting of only a scheme is not allowed: " + pathString, cause);
         }
 
-        if(split.length > 1){
-            if(scheme == null || scheme.isEmpty()){
-                throw new IllegalArgumentException("Malformed path " + pathString + " includes an empty scheme.", cause);
+        if (split.length > 1) {
+            if (scheme == null || scheme.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Malformed path " + pathString + " includes an empty scheme.", cause);
             }
-            if(!scheme.equals("file")){
-                throw new IllegalArgumentException("Malformed path " + pathString + " includes a scheme: " + scheme + ":// but was an invalid URI." +
-                        "\nCheck that it is fully encoded.", cause);
+            if (!scheme.equals("file")) {
+                throw new IllegalArgumentException(
+                        "Malformed path " + pathString + " includes a scheme: " + scheme + ":// but was an invalid URI."
+                                + "\nCheck that it is fully encoded.",
+                        cause);
             }
         }
-
     }
-    
 }

@@ -6,18 +6,17 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.structure.*;
+import java.util.ArrayList;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class CramRecordWriterReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "coordSortedTrueFalse")
     private Object[][] tf() {
-        return new Object[][] { {true}, {false}};
+        return new Object[][] {{true}, {false}};
     }
 
     @Test(dataProvider = "coordSortedTrueFalse")
@@ -26,11 +25,12 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         // (since we're not doing full substitution matrix/reference compression
         final List<CRAMCompressionRecord> unmappedRecords = getUnmappedRecords();
 
-        final CompressionHeader header = new CompressionHeaderFactory(
-                new CRAMEncodingStrategy()).createCompressionHeader(unmappedRecords, coordinateSorted);
+        final CompressionHeader header = new CompressionHeaderFactory(new CRAMEncodingStrategy())
+                .createCompressionHeader(unmappedRecords, coordinateSorted);
 
         final Slice slice = new Slice(unmappedRecords, header, 0L, 0L);
-        final List<CRAMCompressionRecord> roundTripRecords = slice.deserializeCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
+        final List<CRAMCompressionRecord> roundTripRecords =
+                slice.deserializeCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
 
         Assert.assertEquals(roundTripRecords, unmappedRecords);
     }
@@ -124,7 +124,5 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
                 -1));
 
         return cramCompressionRecords;
-
     }
-
 }

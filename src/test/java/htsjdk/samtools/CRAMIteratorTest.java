@@ -3,18 +3,15 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.io.File;
-
 
 /**
  * This test serves for verifying CRAMIterator records validation using strict validation strategy
  *
  * @author Anton_Mazur@epam.com, EPAM Systems, Inc.
  **/
-
 public class CRAMIteratorTest extends HtsjdkTest {
 
     @Test(description = "This test checks that records validation is deferred until they are retrieved")

@@ -10,21 +10,18 @@ public class IOPathUtilsTest extends HtsjdkTest {
 
     @DataProvider(name = "replaceExtensionTestData")
     public Object[][] getReplaceExtensionTestData() {
-        return new Object[][]{
-                {"file:///somepath/a.vcf", ".idx", "file:///somepath/a.idx"},
-                {"file:///somepath/a.vcf", "idx", "file:///somepath/a.idx"},
-                {"file:///a.vcf/a.vcf", ".idx", "file:///a.vcf/a.idx"},
-                {"file:///a.vcf/a.vcf", "idx", "file:///a.vcf/a.idx"},
-                {"file:///somepath/a.vcf.gz", ".tbi", "file:///somepath/a.vcf.tbi"},
-                {"file:///somepath/a.vcf.gz", "tbi", "file:///somepath/a.vcf.tbi"},
+        return new Object[][] {
+            {"file:///somepath/a.vcf", ".idx", "file:///somepath/a.idx"},
+            {"file:///somepath/a.vcf", "idx", "file:///somepath/a.idx"},
+            {"file:///a.vcf/a.vcf", ".idx", "file:///a.vcf/a.idx"},
+            {"file:///a.vcf/a.vcf", "idx", "file:///a.vcf/a.idx"},
+            {"file:///somepath/a.vcf.gz", ".tbi", "file:///somepath/a.vcf.tbi"},
+            {"file:///somepath/a.vcf.gz", "tbi", "file:///somepath/a.vcf.tbi"},
         };
     }
 
     @Test(dataProvider = "replaceExtensionTestData")
-    public void testReplaceExtension(
-            final String basePath,
-            final String extension,
-            final String resolvedPath) {
+    public void testReplaceExtension(final String basePath, final String extension, final String resolvedPath) {
         Assert.assertEquals(
                 IOPathUtils.replaceExtension(new HtsPath(basePath), extension, HtsPath::new),
                 new HtsPath(resolvedPath));
@@ -43,24 +40,19 @@ public class IOPathUtilsTest extends HtsjdkTest {
 
     @DataProvider(name = "appendExtensionTestData")
     public Object[][] getAppendExtensionTestData() {
-        return new Object[][]{
-                {"file:///somepath/a.vcf", ".idx", "file:///somepath/a.vcf.idx"},
-                {"file:///somepath/a.vcf", "idx", "file:///somepath/a.vcf.idx"},
-                {"file:///a.vcf/a.vcf", ".idx", "file:///a.vcf/a.vcf.idx"},
-                {"file:///a.vcf/a.vcf", "idx", "file:///a.vcf/a.vcf.idx"},
-                {"file:///somepath/a.vcf.gz", ".tbi", "file:///somepath/a.vcf.gz.tbi"},
-                {"file:///somepath/a.vcf.gz", "tbi", "file:///somepath/a.vcf.gz.tbi"},
+        return new Object[][] {
+            {"file:///somepath/a.vcf", ".idx", "file:///somepath/a.vcf.idx"},
+            {"file:///somepath/a.vcf", "idx", "file:///somepath/a.vcf.idx"},
+            {"file:///a.vcf/a.vcf", ".idx", "file:///a.vcf/a.vcf.idx"},
+            {"file:///a.vcf/a.vcf", "idx", "file:///a.vcf/a.vcf.idx"},
+            {"file:///somepath/a.vcf.gz", ".tbi", "file:///somepath/a.vcf.gz.tbi"},
+            {"file:///somepath/a.vcf.gz", "tbi", "file:///somepath/a.vcf.gz.tbi"},
         };
     }
 
     @Test(dataProvider = "appendExtensionTestData")
-    public void testAppendExtension(
-            final String basePath,
-            final String extension,
-            final String resolvedPath) {
+    public void testAppendExtension(final String basePath, final String extension, final String resolvedPath) {
         Assert.assertEquals(
-                IOPathUtils.appendExtension(new HtsPath(basePath), extension, HtsPath::new),
-                new HtsPath(resolvedPath));
+                IOPathUtils.appendExtension(new HtsPath(basePath), extension, HtsPath::new), new HtsPath(resolvedPath));
     }
-
 }

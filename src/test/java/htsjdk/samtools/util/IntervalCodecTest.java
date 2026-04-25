@@ -26,11 +26,10 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import java.io.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.io.*;
 
 public class IntervalCodecTest extends HtsjdkTest {
 
@@ -45,7 +44,7 @@ public class IntervalCodecTest extends HtsjdkTest {
     }
 
     @Test
-    public void testEndToEnd() throws IOException  {
+    public void testEndToEnd() throws IOException {
         final File tempFile = File.createTempFile("IntervalCodecTest.", ".interval_list");
         tempFile.deleteOnExit();
 
@@ -79,9 +78,6 @@ public class IntervalCodecTest extends HtsjdkTest {
             }
         }
 
-        Assert.assertEquals(
-                actualList.getIntervals(),
-                expectedList.getIntervals()
-        );
+        Assert.assertEquals(actualList.getIntervals(), expectedList.getIntervals());
     }
 }

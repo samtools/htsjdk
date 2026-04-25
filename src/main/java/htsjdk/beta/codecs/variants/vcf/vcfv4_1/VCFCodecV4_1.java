@@ -4,8 +4,8 @@ import htsjdk.beta.codecs.variants.vcf.VCFCodec;
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
 import htsjdk.beta.codecs.variants.vcf.VCFEncoder;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.utils.ValidationUtils;
@@ -14,12 +14,14 @@ import htsjdk.utils.ValidationUtils;
  * VCF V4.1 codec.
  */
 public class VCFCodecV4_1 extends VCFCodec {
-    public static final HtsVersion VCF_V41_VERSION = new HtsVersion(4,1,0);
+    public static final HtsVersion VCF_V41_VERSION = new HtsVersion(4, 1, 0);
 
     private static final String VCF_V41_MAGIC = "##fileformat=VCFv4.1";
 
     @Override
-    public HtsVersion getVersion() { return VCF_V41_VERSION; }
+    public HtsVersion getVersion() {
+        return VCF_V41_VERSION;
+    }
 
     @Override
     public VCFDecoder getDecoder(final Bundle inputBundle, final VariantsDecoderOptions decoderOptions) {
@@ -43,6 +45,7 @@ public class VCFCodecV4_1 extends VCFCodec {
     }
 
     @Override
-    protected String getSignatureString() { return VCF_V41_MAGIC; }
-
+    protected String getSignatureString() {
+        return VCF_V41_MAGIC;
+    }
 }

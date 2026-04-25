@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,7 +73,7 @@ public final class GenotypeBuilder {
     private String filters = null;
     private int initialAttributeMapSize = 5;
 
-    private final static Map<String, Object> NO_ATTRIBUTES =
+    private static final Map<String, Object> NO_ATTRIBUTES =
             Collections.unmodifiableMap(new HashMap<String, Object>(0));
 
     // -----------------------------------------------------------------
@@ -87,15 +86,12 @@ public final class GenotypeBuilder {
         return new GenotypeBuilder(sampleName, alleles).make();
     }
 
-    public static Genotype create(final String sampleName,
-                                        final List<Allele> alleles,
-                                        final Map<String, Object> attributes) {
+    public static Genotype create(
+            final String sampleName, final List<Allele> alleles, final Map<String, Object> attributes) {
         return new GenotypeBuilder(sampleName, alleles).attributes(attributes).make();
     }
 
-    protected static Genotype create(final String sampleName,
-                                           final List<Allele> alleles,
-                                           final double[] gls) {
+    protected static Genotype create(final String sampleName, final List<Allele> alleles, final double[] gls) {
         return new GenotypeBuilder(sampleName, alleles).PL(gls).make();
     }
 
@@ -108,10 +104,16 @@ public final class GenotypeBuilder {
      */
     public static Genotype createMissing(final String sampleName, final int ploidy) {
         final GenotypeBuilder builder = new GenotypeBuilder(sampleName);
-        switch ( ploidy ) {
-            case 1:  builder.alleles(HAPLOID_NO_CALL); break;
-            case 2:  builder.alleles(DIPLOID_NO_CALL); break;
-            default: builder.alleles(Collections.nCopies(ploidy, Allele.NO_CALL)); break;
+        switch (ploidy) {
+            case 1:
+                builder.alleles(HAPLOID_NO_CALL);
+                break;
+            case 2:
+                builder.alleles(DIPLOID_NO_CALL);
+                break;
+            default:
+                builder.alleles(Collections.nCopies(ploidy, Allele.NO_CALL));
+                break;
         }
         return builder.make();
     }
@@ -173,7 +175,7 @@ public final class GenotypeBuilder {
      * make more Genotypes.
      */
     public final void reset(final boolean keepSampleName) {
-        if ( ! keepSampleName ) sampleName = null;
+        if (!keepSampleName) sampleName = null;
         alleles = Collections.emptyList();
         isPhased = false;
         GQ = -1;
@@ -235,10 +237,8 @@ public final class GenotypeBuilder {
      * @return
      */
     public GenotypeBuilder alleles(final List<Allele> alleles) {
-        if ( alleles == null )
-            this.alleles = Collections.emptyList();
-        else
-            this.alleles = alleles;
+        if (alleles == null) this.alleles = Collections.emptyList();
+        else this.alleles = alleles;
         return this;
     }
 
@@ -263,35 +263,45 @@ public final class GenotypeBuilder {
      * @return
      */
     public GenotypeBuilder log10PError(final double pLog10Error) {
-        if ( pLog10Error == CommonInfo.NO_LOG10_PERROR )
-            return noGQ();
-        else
-            return GQ((int)Math.round(pLog10Error * -10));
+        if (pLog10Error == CommonInfo.NO_LOG10_PERROR) return noGQ();
+        else return GQ((int) Math.round(pLog10Error * -10));
     }
 
     /**
      * This genotype has no GQ value
      * @return
      */
-    public GenotypeBuilder noGQ() { GQ = -1; return this; }
+    public GenotypeBuilder noGQ() {
+        GQ = -1;
+        return this;
+    }
 
     /**
      * This genotype has no AD value
      * @return
      */
-    public GenotypeBuilder noAD() { AD = null; return this; }
+    public GenotypeBuilder noAD() {
+        AD = null;
+        return this;
+    }
 
     /**
      * This genotype has no DP value
      * @return
      */
-    public GenotypeBuilder noDP() { DP = -1; return this; }
+    public GenotypeBuilder noDP() {
+        DP = -1;
+        return this;
+    }
 
     /**
      * This genotype has no PL value
      * @return
      */
-    public GenotypeBuilder noPL() { PL = null; return this; }
+    public GenotypeBuilder noPL() {
+        PL = null;
+        return this;
+    }
 
     /**
      * This genotype has this DP value
@@ -336,8 +346,7 @@ public final class GenotypeBuilder {
      * @return
      */
     public GenotypeBuilder attributes(final Map<String, Object> attributes) {
-        for ( Map.Entry<String, Object> pair : attributes.entrySet() )
-            attribute(pair.getKey(), pair.getValue());
+        for (Map.Entry<String, Object> pair : attributes.entrySet()) attribute(pair.getKey(), pair.getValue());
         return this;
     }
 
@@ -358,8 +367,7 @@ public final class GenotypeBuilder {
      * @return
      */
     public GenotypeBuilder attribute(final String key, final Object value) {
-        if ( extendedAttributes == null )
-            extendedAttributes = new HashMap<String, Object>(initialAttributeMapSize);
+        if (extendedAttributes == null) extendedAttributes = new HashMap<String, Object>(initialAttributeMapSize);
         extendedAttributes.put(key, value);
         return this;
     }
@@ -373,12 +381,9 @@ public final class GenotypeBuilder {
      * @return this builder
      */
     public GenotypeBuilder filters(final List<String> filters) {
-        if ( filters.isEmpty() )
-            return filter(null);
-        else if ( filters.size() == 1 )
-            return filter(filters.get(0));
-        else
-            return filter(ParsingUtils.join(";", ParsingUtils.sortList(filters)));
+        if (filters.isEmpty()) return filter(null);
+        else if (filters.size() == 1) return filter(filters.get(0));
+        else return filter(ParsingUtils.join(";", ParsingUtils.sortList(filters)));
     }
 
     /**
@@ -386,7 +391,7 @@ public final class GenotypeBuilder {
      * @param filters
      * @return
      */
-    public GenotypeBuilder filters(final String ... filters) {
+    public GenotypeBuilder filters(final String... filters) {
         return filters(Arrays.asList(filters));
     }
 

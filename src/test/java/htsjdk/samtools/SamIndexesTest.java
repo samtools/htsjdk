@@ -7,10 +7,6 @@ import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -19,6 +15,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.zip.GZIPOutputStream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SamIndexesTest extends HtsjdkTest {
 
@@ -30,12 +29,12 @@ public class SamIndexesTest extends HtsjdkTest {
         fos.write(SamIndexes.BAI.magic);
         fos.close();
 
-
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write(SamIndexes.BAI.magic);
         baos.close();
 
-        final InputStream inputStream = SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), null);
+        final InputStream inputStream =
+                SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), null);
         for (final byte b : SamIndexes.BAI.magic) {
             Assert.assertEquals(inputStream.read(), 0xFF & b);
         }
@@ -49,17 +48,16 @@ public class SamIndexesTest extends HtsjdkTest {
         fos.write(SamIndexes.CSI.magic);
         fos.close();
 
-
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write(SamIndexes.CSI.magic);
         baos.close();
 
-        final InputStream inputStream = SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), null);
+        final InputStream inputStream =
+                SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), null);
         for (final byte b : SamIndexes.CSI.magic) {
             Assert.assertEquals(inputStream.read(), 0xFF & b);
         }
     }
-
 
     @Test(expectedExceptions = NullPointerException.class)
     public void testCraiRequiresDictionary() throws IOException {
@@ -78,7 +76,8 @@ public class SamIndexesTest extends HtsjdkTest {
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
-        final InputStream inputStream = SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), dictionary);
+        final InputStream inputStream =
+                SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), dictionary);
         for (final byte b : SamIndexes.BAI.magic) {
             Assert.assertEquals(inputStream.read(), 0xFF & b);
         }
@@ -98,13 +97,16 @@ public class SamIndexesTest extends HtsjdkTest {
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
 
-        final InputStream baiStream = SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), dictionary);
+        final InputStream baiStream =
+                SamIndexes.asBaiStreamOrNull(new ByteArrayInputStream(baos.toByteArray()), dictionary);
         Assert.assertNotNull(baiStream);
 
         baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
-        final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final CachingBAMFileIndex bamIndex =
+                new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -132,7 +134,8 @@ public class SamIndexesTest extends HtsjdkTest {
         Assert.assertNotNull(baiStream);
 
         final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(baiStream, dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -177,13 +180,16 @@ public class SamIndexesTest extends HtsjdkTest {
         indexer.finish();
         fos.close();
 
-        final InputStream baiStream = SamIndexes.openIndexUrlAsBaiOrNull(file.toURI().toURL(), dictionary);
+        final InputStream baiStream =
+                SamIndexes.openIndexUrlAsBaiOrNull(file.toURI().toURL(), dictionary);
         Assert.assertNotNull(baiStream);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
-        final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final CachingBAMFileIndex bamIndex =
+                new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -193,17 +199,19 @@ public class SamIndexesTest extends HtsjdkTest {
 
     @DataProvider(name = "getSAMIndexTypeFromStreamTests")
     public Object[][] getSAMIndexTypeFromStreamTests() {
-        return new Object[][]{
-                { new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), SamIndexes.BAI },
-                { new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), SamIndexes.CSI },
-                { new File("src/test/resources/htsjdk/samtools/cram/cramQueryWithCRAI.cram.crai"), SamIndexes.CRAI},
+        return new Object[][] {
+            {new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), SamIndexes.BAI},
+            {new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), SamIndexes.CSI},
+            {new File("src/test/resources/htsjdk/samtools/cram/cramQueryWithCRAI.cram.crai"), SamIndexes.CRAI},
         };
     }
 
     @Test(dataProvider = "getSAMIndexTypeFromStreamTests")
-    public void testGetSAMIndexTypeFromStream(final File indexFile, final SamIndexes expectedIndexType) throws IOException {
-        try (final SeekableStream seekableStream = SeekableStreamFactory.getInstance().getStreamFor(indexFile.getPath())) {
-            Assert.assertEquals(SamIndexes.getSAMIndexTypeFromStream(seekableStream),expectedIndexType);
+    public void testGetSAMIndexTypeFromStream(final File indexFile, final SamIndexes expectedIndexType)
+            throws IOException {
+        try (final SeekableStream seekableStream =
+                SeekableStreamFactory.getInstance().getStreamFor(indexFile.getPath())) {
+            Assert.assertEquals(SamIndexes.getSAMIndexTypeFromStream(seekableStream), expectedIndexType);
             Assert.assertEquals(seekableStream.position(), 0);
         }
     }

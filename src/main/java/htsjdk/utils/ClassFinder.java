@@ -25,7 +25,6 @@ package htsjdk.utils;
  */
 
 import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -35,12 +34,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
 
 /**
  * Utility class that can scan for classes in the classpath and find all the ones
@@ -94,8 +91,7 @@ public class ClassFinder {
 
         try {
             urls = loader.getResources(packageName);
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             log.warn("Could not read package: " + packageName, ioe);
             return;
         }
@@ -119,16 +115,14 @@ public class ClassFinder {
                     continue;
                 }
 
-                //Log.info("Looking for classes in location: " + urlPath);
+                // Log.info("Looking for classes in location: " + urlPath);
                 final File file = new File(urlPath);
-                if ( file.isDirectory() ) {
+                if (file.isDirectory()) {
                     scanDir(file, packageName);
-                }
-                else {
+                } else {
                     scanJar(file, packageName);
                 }
-            }
-            catch (IOException ioe) {
+            } catch (IOException ioe) {
                 log.warn("could not read entries", ioe);
             }
         }
@@ -142,7 +136,7 @@ public class ClassFinder {
     protected void scanJar(final File file, final String packagePath) throws IOException {
         final ZipFile zip = new ZipFile(file);
         final Enumeration<? extends ZipEntry> entries = zip.entries();
-        while ( entries.hasMoreElements() ) {
+        while (entries.hasMoreElements()) {
             final ZipEntry entry = entries.nextElement();
             final String name = entry.getName();
             if (name.startsWith(packagePath)) {
@@ -157,12 +151,11 @@ public class ClassFinder {
      * @param path the package path acculmulated so far (e.g. edu/mit/broad)
      */
     protected void scanDir(final File file, final String path) {
-        for ( final File child: file.listFiles() ) {
-            final String newPath = (path==null ? child.getName() : path + '/' + child.getName() );
-            if ( child.isDirectory() ) {
+        for (final File child : file.listFiles()) {
+            final String newPath = (path == null ? child.getName() : path + '/' + child.getName());
+            if (child.isDirectory()) {
                 scanDir(child, newPath);
-            }
-            else {
+            } else {
                 handleItem(newPath);
             }
         }
@@ -182,8 +175,7 @@ public class ClassFinder {
                 if (parentType.isAssignableFrom(type)) {
                     this.classes.add(type);
                 }
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 log.debug("could not load class: " + classname, t);
             }
         }
@@ -194,16 +186,13 @@ public class ClassFinder {
         return this.classes;
     }
 
-
     /**
      * Fetches the set of classes discovered so far, subsetted down to concrete (non-abstract/interface) classes only
      *
      * @return subset of classes discovered so far including only concrete (non-abstract/interface) classes
      */
     public Set<Class<?>> getConcreteClasses() {
-        return getClasses().stream()
-                .filter(ClassFinder::isConcrete)
-                .collect(Collectors.toSet());
+        return getClasses().stream().filter(ClassFinder::isConcrete).collect(Collectors.toSet());
     }
 
     /**
@@ -212,7 +201,7 @@ public class ClassFinder {
      * @param clazz class to check
      * @return true if the class is neither abstract nor an interface, otherwise false
      */
-    public static boolean isConcrete( final Class<?> clazz ) {
-        return ! Modifier.isAbstract(clazz.getModifiers()) && ! Modifier.isInterface(clazz.getModifiers());
+    public static boolean isConcrete(final Class<?> clazz) {
+        return !Modifier.isAbstract(clazz.getModifiers()) && !Modifier.isInterface(clazz.getModifiers());
     }
 }

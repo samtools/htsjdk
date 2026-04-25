@@ -2,7 +2,6 @@ package htsjdk.beta.plugin;
 
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
-
 import java.io.Closeable;
 
 /**
@@ -56,5 +55,4 @@ public interface HtsEncoder<H extends HtsHeader, R extends HtsRecord> extends Cl
      */
     @Override
     void close();
-
 }

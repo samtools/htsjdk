@@ -18,9 +18,7 @@ abstract class AbstractSerialDigest<T> {
     void add(final byte[] data) {
         resetAndUpdate(data);
         final T updateValue = getValue();
-        if (value == null)
-            value = updateValue;
-        else
-            value = combine.combine(value, updateValue);
+        if (value == null) value = updateValue;
+        else value = combine.combine(value, updateValue);
     }
 }

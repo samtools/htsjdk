@@ -27,10 +27,6 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.testutil.streams.OneByteAtATimeChannel;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +36,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * @author alecw@broadinstitute.org
@@ -51,37 +50,41 @@ public class BlockCompressedTerminatorTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getFiles() throws IOException {
-        return new Object[][]{
-                {getValidCompressedFile(), BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK},
-                {NO_TERMINATOR, BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK},
-                {DEFECTIVE, BlockCompressedInputStream.FileTermination.DEFECTIVE}
+        return new Object[][] {
+            {getValidCompressedFile(), BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK},
+            {NO_TERMINATOR, BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK},
+            {DEFECTIVE, BlockCompressedInputStream.FileTermination.DEFECTIVE}
         };
     }
 
-    @Test( dataProvider = "getFiles")
-    public void testCheckTerminationForFiles(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+    @Test(dataProvider = "getFiles")
+    public void testCheckTerminationForFiles(File compressedFile, BlockCompressedInputStream.FileTermination expected)
+            throws IOException {
         Assert.assertEquals(BlockCompressedInputStream.checkTermination(compressedFile), expected);
     }
 
-    @Test( dataProvider = "getFiles")
-    public void testCheckTerminationForPaths(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
-        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())){
+    @Test(dataProvider = "getFiles")
+    public void testCheckTerminationForPaths(File compressedFile, BlockCompressedInputStream.FileTermination expected)
+            throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path compressedFileInJimfs = Files.copy(compressedFile.toPath(), fs.getPath("something"));
             Assert.assertEquals(BlockCompressedInputStream.checkTermination(compressedFileInJimfs), expected);
         }
     }
 
-    @Test( dataProvider = "getFiles")
-    public void testCheckTerminationForSeekableByteChannels(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
-        try(SeekableByteChannel channel = Files.newByteChannel(compressedFile.toPath())){
+    @Test(dataProvider = "getFiles")
+    public void testCheckTerminationForSeekableByteChannels(
+            File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+        try (SeekableByteChannel channel = Files.newByteChannel(compressedFile.toPath())) {
             Assert.assertEquals(BlockCompressedInputStream.checkTermination(channel), expected);
         }
     }
 
     @Test(dataProvider = "getFiles")
-    public void testChannelPositionIsRestored(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+    public void testChannelPositionIsRestored(File compressedFile, BlockCompressedInputStream.FileTermination expected)
+            throws IOException {
         final long position = 50;
-        try(SeekableByteChannel channel = Files.newByteChannel(compressedFile.toPath())){
+        try (SeekableByteChannel channel = Files.newByteChannel(compressedFile.toPath())) {
             channel.position(position);
             Assert.assertEquals(channel.position(), position);
             Assert.assertEquals(BlockCompressedInputStream.checkTermination(channel), expected);
@@ -100,7 +103,7 @@ public class BlockCompressedTerminatorTest extends HtsjdkTest {
 
     @Test
     public void testReadFullyReadsBytesCorrectly() throws IOException {
-        try(final SeekableByteChannel channel = Files.newByteChannel(DEFECTIVE.toPath())){
+        try (final SeekableByteChannel channel = Files.newByteChannel(DEFECTIVE.toPath())) {
             final ByteBuffer readBuffer = ByteBuffer.allocate(10);
             Assert.assertTrue(channel.size() > readBuffer.capacity());
             BlockCompressedInputStream.readFully(channel, readBuffer);
@@ -113,7 +116,7 @@ public class BlockCompressedTerminatorTest extends HtsjdkTest {
 
     @Test(expectedExceptions = EOFException.class)
     public void testReadFullyThrowWhenItCantReadEnough() throws IOException {
-        try(final SeekableByteChannel channel = Files.newByteChannel(DEFECTIVE.toPath())){
+        try (final SeekableByteChannel channel = Files.newByteChannel(DEFECTIVE.toPath())) {
             final ByteBuffer readBuffer = ByteBuffer.allocate(1000);
             Assert.assertTrue(channel.size() < readBuffer.capacity());
             BlockCompressedInputStream.readFully(channel, readBuffer);

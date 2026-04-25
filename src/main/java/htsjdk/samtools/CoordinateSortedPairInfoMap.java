@@ -27,7 +27,6 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileAppendStreamLRUCache;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -57,6 +56,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
      * directory where files will go
      */
     private final File workDir = IOUtil.createTempDir("CSPI.tmp").toFile();
+
     private int sequenceIndexOfMapInRam = INVALID_SEQUENCE_INDEX;
     private Map<KEY, REC> mapInRam = null;
     private final FileAppendStreamLRUCache outputStreams;
@@ -120,8 +120,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
             }
             final Integer numRecords = sizeOfMapOnDisk.remove(sequenceIndex);
             if (mapOnDisk.exists()) {
-                if (numRecords == null)
-                    throw new IllegalStateException("null numRecords for " + mapOnDisk);
+                if (numRecords == null) throw new IllegalStateException("null numRecords for " + mapOnDisk);
                 FileInputStream is = null;
                 try {
                     is = new FileInputStream(mapOnDisk);
@@ -129,8 +128,8 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
                     for (int i = 0; i < numRecords; ++i) {
                         final Map.Entry<KEY, REC> keyAndRecord = elementCodec.decode();
                         if (mapInRam.containsKey(keyAndRecord.getKey()))
-                            throw new SAMException("Value was put into PairInfoMap more than once.  " +
-                                    sequenceIndex + ": " + keyAndRecord.getKey());
+                            throw new SAMException("Value was put into PairInfoMap more than once.  " + sequenceIndex
+                                    + ": " + keyAndRecord.getKey());
                         mapInRam.put(keyAndRecord.getKey(), keyAndRecord.getValue());
                     }
                 } finally {
@@ -156,8 +155,8 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
         if (sequenceIndex == sequenceIndexOfMapInRam) {
             // Store in RAM map
             if (mapInRam.containsKey(key))
-                throw new IllegalArgumentException("Putting value into PairInfoMap that already existed. " +
-                        sequenceIndex + ": " + key);
+                throw new IllegalArgumentException(
+                        "Putting value into PairInfoMap that already existed. " + sequenceIndex + ": " + key);
             mapInRam.put(key, record);
         } else {
             // Append to file
@@ -166,7 +165,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
             elementCodec.encode(key, record);
             Integer prevCount = sizeOfMapOnDisk.get(sequenceIndex);
             if (prevCount == null) prevCount = 0;
-            sizeOfMapOnDisk.put(sequenceIndex,  prevCount + 1);
+            sizeOfMapOnDisk.put(sequenceIndex, prevCount + 1);
         }
     }
 
@@ -194,7 +193,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
      * @return number of elements stored in RAM.  Always <= size()
      */
     public int sizeInRam() {
-        return mapInRam != null? mapInRam.size(): 0;
+        return mapInRam != null ? mapInRam.size() : 0;
     }
 
     /**
@@ -216,8 +215,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
         private Iterator<Map.Entry<KEY, REC>> currentReferenceIterator = null;
 
         private MapIterator() {
-            if (sequenceIndexOfMapInRam != INVALID_SEQUENCE_INDEX)
-                referenceIndices.add(sequenceIndexOfMapInRam);
+            if (sequenceIndexOfMapInRam != INVALID_SEQUENCE_INDEX) referenceIndices.add(sequenceIndexOfMapInRam);
             referenceIndexIterator = referenceIndices.iterator();
             advanceToNextNonEmptyReferenceIndex();
         }
@@ -297,6 +295,5 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
          * a record.
          */
         Map.Entry<KEY, REC> decode();
-
     }
 }

@@ -24,7 +24,6 @@
 package htsjdk.tribble.bed;
 
 import htsjdk.tribble.annotation.Strand;
-
 import java.util.ArrayList;
 
 /**
@@ -36,7 +35,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
 
     public FullBEDFeature(String chr, int start, int end) {
         super(start, end, chr);
-
     }
 
     @Override
@@ -77,12 +75,14 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          * codon is number "1".
          */
         private int number;
+
         private int readingFrame = -1;
 
         /**
          * Coding start position.  This is the leftmost position of the coding region, not neccessarily the 5'utr end
          */
         private int codingStart;
+
         private int codingEnd;
         boolean utr = false;
 
@@ -90,11 +90,9 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
         // to either the beginning or end of the exon, depending on the strand
         private int mrnaBase = -1;
 
-
         public void setMrnaBase(int base) {
             this.mrnaBase = base;
         }
-
 
         /**
          * Constructs ...
@@ -166,7 +164,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             }
         }
 
-
         /**
          * Method description
          *
@@ -203,7 +200,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             return readingFrame;
         }
 
-
         public String getValueString(double position) {
             String msg = number > 0 ? "Exon number: " + number : "";
             return msg;
@@ -218,7 +214,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
         }
     }
 
-
     public class Exon2 {
 
         /**
@@ -226,22 +221,23 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          * codon is number "1".
          */
         private int number;
+
         private int readingFrame = -1;
 
         /**
          * Coding start position.  This is the leftmost position of the coding region, not neccessarily the 5'utr end
          */
         private int start;
+
         private int end;
         private int codingStart;
         private int codingEnd;
-        //private AminoAcidSequence aminoAcidSequence;
+        // private AminoAcidSequence aminoAcidSequence;
         boolean utr = false;
 
         // The position of the first base of this exon relative to the start of the mRNA.  This will correspond
         // to either the beginning or end of the exon, depending on the strand
         private int mrnaBase = -1;
-
 
         public Exon2(int start, int end, int codingStart, int codingDne) {
 
@@ -250,7 +246,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             this.codingStart = codingStart;
             this.codingEnd = codingDne;
         }
-
 
         public void setMrnaBase(int base) {
             this.mrnaBase = base;
@@ -331,7 +326,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             }
         }
 
-
         /**
          * Method description
          *
@@ -368,7 +362,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             return readingFrame;
         }
 
-
         /**
          * Method description
          *
@@ -382,7 +375,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             return aminoAcidSequence;
         }
         */
-
 
         /*
         public void setAminoAcidSequence(AminoAcidSequence aminoAcidSequence) {
@@ -411,7 +403,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
         }
         */
 
-
         public String getValueString(double position) {
             String msg = number > 0 ? "Exon number: " + number : "";
             int aaNumber = this.getAminoAcidNumber((int) position);
@@ -428,7 +419,5 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
         public void setNumber(int number) {
             this.number = number;
         }
-
     }
-
 }

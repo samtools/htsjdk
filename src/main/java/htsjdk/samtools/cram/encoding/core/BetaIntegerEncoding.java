@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
-
 import java.nio.ByteBuffer;
 
 public final class BetaIntegerEncoding extends CRAMEncoding<Integer> {
@@ -67,7 +66,9 @@ public final class BetaIntegerEncoding extends CRAMEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<Integer> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new BetaIntegerCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
@@ -79,5 +80,4 @@ public final class BetaIntegerEncoding extends CRAMEncoding<Integer> {
     public String toString() {
         return String.format("Offset: %d BitsPerValue: %d", offset, bitsPerValue);
     }
-
 }

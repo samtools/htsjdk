@@ -2,15 +2,15 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import java.io.File;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
-    private static final AbstractBAMFileIndex afi = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
+    private static final AbstractBAMFileIndex afi = new DiskBasedBAMFileIndex(
+            new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
 
     /**
      * @see <a href="https://github.com/samtools/htsjdk/issues/73">https://github.com/samtools/htsjdk/issues/73</a>
@@ -29,19 +29,16 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
             }
 
             @Override
-            public void seek(final long position) throws IOException {
-
-            }
+            public void seek(final long position) throws IOException {}
 
             @Override
             public int read(final byte[] buffer, final int offset, final int length) throws IOException {
-                return 2; // This is the important line; pretend we feed 2 bytes at a time, which is fewer than any downstream calls ultimately request
+                return 2; // This is the important line; pretend we feed 2 bytes at a time, which is fewer than any
+                // downstream calls ultimately request
             }
 
             @Override
-            public void close() throws IOException {
-
-            }
+            public void close() throws IOException {}
 
             @Override
             public boolean eof() throws IOException {
@@ -80,7 +77,7 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
         Assert.assertEquals(AbstractBAMFileIndex.getFirstBinInLevel(5), 4681);
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetFirstBinInLevelFail() {
         AbstractBAMFileIndex.getFirstBinInLevel(6);
     }
@@ -95,7 +92,7 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
         Assert.assertEquals(afi.getLevelSize(5), 32768);
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = SAMException.class)
     public static void testGetLevelSizeFail() {
         afi.getLevelSize(6);
     }

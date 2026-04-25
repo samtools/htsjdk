@@ -81,7 +81,7 @@ public class FQZParam {
             FQZUtils.readArray(inBuffer, qualityContextTable, numberOfSymbols);
         } else {
             for (int i = 0; i < numberOfSymbols; i++) {
-                qualityContextTable[i] = i;  // NOP
+                qualityContextTable[i] = i; // NOP
             }
         }
         if (isDoPos()) {
@@ -183,5 +183,4 @@ public class FQZParam {
         this.doDelta = (parameterFlags & DTAB_FLAG_MASK) != 0;
         this.doQtab = (parameterFlags & QTAB_FLAG_MASK) != 0;
     }
-
 }

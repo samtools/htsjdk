@@ -31,7 +31,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,7 +64,8 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         this.path = path;
         this.source = path == null ? "unknown" : path.toAbsolutePath().toString();
         // ensure lambda is serializable (by Kryo, when used with Spark)
-        this.dictionary = new Lazy<>((Supplier<SAMSequenceDictionary> & Serializable) (() -> findAndLoadSequenceDictionary(path)));
+        this.dictionary = new Lazy<>(
+                (Supplier<SAMSequenceDictionary> & Serializable) (() -> findAndLoadSequenceDictionary(path)));
     }
 
     /**
@@ -108,7 +108,8 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     }
 
     /** @deprecated use findSequenceDictionary(Path) instead. */
-    @Deprecated protected static File findSequenceDictionary(final File file) {
+    @Deprecated
+    protected static File findSequenceDictionary(final File file) {
         final Path dict = findSequenceDictionary(file.toPath());
         return dict == null ? null : dict.toFile();
     }
@@ -124,11 +125,11 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
             return dictionary;
         }
         // try without removing the file extension
-        final Path dictionaryExt = fastaPath.resolveSibling(fastaPath.getFileName().toString() + FileExtensions.DICT);
+        final Path dictionaryExt =
+                fastaPath.resolveSibling(fastaPath.getFileName().toString() + FileExtensions.DICT);
         if (Files.exists(dictionaryExt)) {
             return dictionaryExt;
-        }
-        else {
+        } else {
             return null;
         }
     }
@@ -167,18 +168,21 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
 
     /** default implementation -- override if index is supported */
     @Override
-    public boolean isIndexed() {return false;}
-
-    /** default implementation -- override if index is supported */
-    @Override
-    public ReferenceSequence getSequence( String contig ) {
-        throw new UnsupportedOperationException("Index does not appear to exist for " + getSource() + ".  samtools faidx can be used to create an index");
+    public boolean isIndexed() {
+        return false;
     }
 
     /** default implementation -- override if index is supported */
     @Override
-    public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
-        throw new UnsupportedOperationException("Index does not appear to exist for " + getSource() + ".  samtools faidx can be used to create an index");
+    public ReferenceSequence getSequence(String contig) {
+        throw new UnsupportedOperationException("Index does not appear to exist for " + getSource()
+                + ".  samtools faidx can be used to create an index");
     }
 
+    /** default implementation -- override if index is supported */
+    @Override
+    public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
+        throw new UnsupportedOperationException("Index does not appear to exist for " + getSource()
+                + ".  samtools faidx can be used to create an index");
+    }
 }

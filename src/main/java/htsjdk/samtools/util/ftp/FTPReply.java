@@ -35,17 +35,16 @@ public class FTPReply {
         String response = null;
         do {
             response = inputStream.readLine();
-        } while (response != null &&
-                !(Character.isDigit(response.charAt(0)) &&
-                        Character.isDigit(response.charAt(1)) &&
-                        Character.isDigit(response.charAt(2)) &&
-                        response.charAt(3) == ' '));
+        } while (response != null
+                && !(Character.isDigit(response.charAt(0))
+                        && Character.isDigit(response.charAt(1))
+                        && Character.isDigit(response.charAt(2))
+                        && response.charAt(3) == ' '));
         if (response == null || response.length() < 3) {
             code = -1;
         } else {
             code = Integer.parseInt(response.substring(0, 3));
             reply = response.substring(3).trim();
-
         }
     }
 
@@ -55,23 +54,19 @@ public class FTPReply {
      * with a 3 digit number and a space, (a dash instead of a space would be a
      * continuation).
      */
-
     public int getCode() throws IOException {
         return code;
     }
-
 
     /**
      * Gets server reply string from the control port after an ftp command has
      * been executed.  This consists only of the last line of the response,
      * and only the part after the response code.
      */
-    public String getReplyString()
-            throws IOException {
+    public String getReplyString() throws IOException {
 
         return reply;
     }
-
 
     public boolean isSuccess() {
         return isPositiveCompletion() || isPositiveIntermediate();
@@ -91,7 +86,6 @@ public class FTPReply {
     public boolean isPositiveCompletion() {
         return (code >= 200 && code < 300);
     }
-
 
     /**
      * Determine if a reply code is a positive intermediate response.  All

@@ -1,5 +1,6 @@
 package htsjdk.beta.codecs.reads;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
@@ -8,8 +9,6 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.annotations.InternalAPI;
-
 import java.util.Optional;
 
 /**
@@ -18,7 +17,7 @@ import java.util.Optional;
  * Utilities for use by reads encoder/decoder implementations.
  */
 @InternalAPI
-final public class ReadsCodecUtils {
+public final class ReadsCodecUtils {
 
     /**
      * InternalAPI
@@ -32,17 +31,10 @@ final public class ReadsCodecUtils {
      */
     @InternalAPI
     public static SamInputResource bundleToSamInputResource(
-            final Bundle inputBundle,
-            final ReadsDecoderOptions readsDecoderOptions) {
-        final SamInputResource samInputResource = readsToSamInputResource(
-                inputBundle,
-                BundleResourceType.CT_ALIGNED_READS,
-                readsDecoderOptions);
-        indexToSamInputResource(
-                inputBundle,
-                BundleResourceType.CT_READS_INDEX,
-                readsDecoderOptions,
-                samInputResource);
+            final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
+        final SamInputResource samInputResource =
+                readsToSamInputResource(inputBundle, BundleResourceType.CT_ALIGNED_READS, readsDecoderOptions);
+        indexToSamInputResource(inputBundle, BundleResourceType.CT_READS_INDEX, readsDecoderOptions, samInputResource);
         return samInputResource;
     }
 
@@ -56,15 +48,14 @@ final public class ReadsCodecUtils {
      */
     @InternalAPI
     public static void readsDecoderOptionsToSamReaderFactory(
-            final ReadsDecoderOptions readsDecoderOptions,
-            final SamReaderFactory samReaderFactory) {
+            final ReadsDecoderOptions readsDecoderOptions, final SamReaderFactory samReaderFactory) {
         samReaderFactory.validationStringency(readsDecoderOptions.getValidationStringency());
         samReaderFactory.setOption(SamReaderFactory.Option.EAGERLY_DECODE, readsDecoderOptions.isDecodeEagerly());
-        samReaderFactory.setOption(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES,
-                readsDecoderOptions.isFileBasedIndexCached());
+        samReaderFactory.setOption(
+                SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES, readsDecoderOptions.isFileBasedIndexCached());
         // note that this option is the revers polarity from SamReaderFactory, so negate it
-        samReaderFactory.setOption(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX,
-                !readsDecoderOptions.isMemoryMapIndexes());
+        samReaderFactory.setOption(
+                SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX, !readsDecoderOptions.isMemoryMapIndexes());
     }
 
     /**
@@ -95,8 +86,7 @@ final public class ReadsCodecUtils {
         if (!bundleContainsIndex(inputBundle)) {
             throw new IllegalArgumentException(String.format(
                     "To make index queries, an index resource must be provided in the resource bundle: %s",
-                    inputBundle
-            ));
+                    inputBundle));
         }
     }
 
@@ -121,19 +111,16 @@ final public class ReadsCodecUtils {
 
     @InternalAPI
     public static void bamDecoderOptionsToSamReaderFactory(
-            final SamReaderFactory samReaderFactory,
-            final BAMDecoderOptions bamDecoderOptions) {
+            final SamReaderFactory samReaderFactory, final BAMDecoderOptions bamDecoderOptions) {
         samReaderFactory.inflaterFactory(bamDecoderOptions.getInflaterFactory());
         samReaderFactory.setUseAsyncIo(bamDecoderOptions.isAsyncIO());
-        samReaderFactory.setOption(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS,
-                bamDecoderOptions.isValidateCRCChecksums());
+        samReaderFactory.setOption(
+                SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS, bamDecoderOptions.isValidateCRCChecksums());
     }
 
     // convert an input bundle to a SamInputResource
     private static SamInputResource readsToSamInputResource(
-            final Bundle inputBundle,
-            final String contentType,
-            final ReadsDecoderOptions readsDecoderOptions) {
+            final Bundle inputBundle, final String contentType, final ReadsDecoderOptions readsDecoderOptions) {
         final BundleResource readsInput = inputBundle.getOrThrow(contentType);
         if (!readsInput.hasInputType()) {
             throw new IllegalArgumentException(String.format(
@@ -143,8 +130,9 @@ final public class ReadsCodecUtils {
         if (readsInput.hasSeekableStream()) {
             if (readsInput.getIOPath().isPresent()) {
                 if (readsDecoderOptions.getReadsChannelTransformer().isPresent()) {
-                    //TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
-                    return SamInputResource.of(readsInput.getIOPath().get().toPath(),
+                    // TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
+                    return SamInputResource.of(
+                            readsInput.getIOPath().get().toPath(),
                             readsDecoderOptions.getReadsChannelTransformer().get());
                 } else {
                     return SamInputResource.of(readsInput.getIOPath().get().toPath());
@@ -168,8 +156,9 @@ final public class ReadsCodecUtils {
             if (indexResource.getIOPath().isPresent()) {
                 if (indexResource.getIOPath().isPresent()) {
                     if (readsDecoderOptions.getIndexChannelTransformer().isPresent()) {
-                        //TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
-                        SamInputResource.of(indexResource.getIOPath().get().toPath(),
+                        // TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
+                        SamInputResource.of(
+                                indexResource.getIOPath().get().toPath(),
                                 readsDecoderOptions.getIndexChannelTransformer().get());
                         samInputResource.index(indexResource.getIOPath().get().toPath());
                     } else if (indexResource.getSeekableStream().isPresent()) {
@@ -181,5 +170,4 @@ final public class ReadsCodecUtils {
             }
         }
     }
-
 }

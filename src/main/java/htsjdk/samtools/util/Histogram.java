@@ -24,12 +24,10 @@
 
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.SamReaderFactory;
+import static java.lang.Math.*;
 
 import java.io.Serializable;
 import java.util.*;
-
-import static java.lang.Math.*;
 
 /**
  * Class for computing and accessing histogram type data.  Stored internally in
@@ -39,7 +37,7 @@ import static java.lang.Math.*;
  */
 public final class Histogram<K extends Comparable> implements Serializable {
     private static final long serialVersionUID = 1L;
-    private String binLabel   = "BIN";
+    private String binLabel = "BIN";
     private String valueLabel = "VALUE";
     private final NavigableMap<K, Bin<K>> map;
 
@@ -81,17 +79,25 @@ public final class Histogram<K extends Comparable> implements Serializable {
         private double value = 0;
 
         /** Constructs a new bin with the given ID. */
-        private Bin(final K id) { this.id = id; }
+        private Bin(final K id) {
+            this.id = id;
+        }
 
         /** Gets the ID of this bin. */
-        public K getId() { return id; }
+        public K getId() {
+            return id;
+        }
 
         /** Gets the value in the bin. */
-        public double getValue() { return value; }
+        public double getValue() {
+            return value;
+        }
 
         /** Returns the String format for the value in the bin. */
         @Override
-        public String toString() { return String.valueOf(this.value); }
+        public String toString() {
+            return String.valueOf(this.value);
+        }
 
         /** Checks the equality of the bin by ID and value. */
         @Override
@@ -149,11 +155,21 @@ public final class Histogram<K extends Comparable> implements Serializable {
         bin.value += increment;
     }
 
-    public String getBinLabel() { return binLabel; }
-    public void setBinLabel(final String binLabel) { this.binLabel = binLabel; }
+    public String getBinLabel() {
+        return binLabel;
+    }
 
-    public String getValueLabel() { return valueLabel; }
-    public void setValueLabel(final String valueLabel) { this.valueLabel = valueLabel; }
+    public void setBinLabel(final String binLabel) {
+        this.binLabel = binLabel;
+    }
+
+    public String getValueLabel() {
+        return valueLabel;
+    }
+
+    public void setValueLabel(final String valueLabel) {
+        this.valueLabel = valueLabel;
+    }
 
     /** Checks that the labels and values in the two histograms are identical. */
     @Override
@@ -161,11 +177,11 @@ public final class Histogram<K extends Comparable> implements Serializable {
         if (o == this) {
             return true;
         }
-        return o != null &&
-                (o instanceof Histogram) &&
-                ((Histogram) o).binLabel.equals(this.binLabel) &&
-                ((Histogram) o).valueLabel.equals(this.valueLabel) &&
-                ((Histogram) o).map.equals(this.map);
+        return o != null
+                && (o instanceof Histogram)
+                && ((Histogram) o).binLabel.equals(this.binLabel)
+                && ((Histogram) o).valueLabel.equals(this.valueLabel)
+                && ((Histogram) o).map.equals(this.map);
     }
 
     @Override
@@ -185,10 +201,10 @@ public final class Histogram<K extends Comparable> implements Serializable {
     public double getMean() {
         // Could use simply getSum() / getCount(), but that would require iterating over the
         // values() set twice, which seems inefficient given how simply the computation is.
-        double product=0, totalCount=0;
+        double product = 0, totalCount = 0;
         for (final Bin<K> bin : map.values()) {
             final double idValue = bin.getIdValue();
-            final double count   = bin.getValue();
+            final double count = bin.getValue();
 
             product += idValue * count;
             totalCount += count;
@@ -236,7 +252,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
             total += localCount * pow(value - mean, 2);
         }
 
-        return Math.sqrt(total / (count-1));
+        return Math.sqrt(total / (count - 1));
     }
 
     /**
@@ -303,10 +319,10 @@ public final class Histogram<K extends Comparable> implements Serializable {
      */
     public double getStandardDeviationBinSize(final double mean) {
         double total = 0;
-        for(final Bin<K> bin : values()) {
+        for (final Bin<K> bin : values()) {
             total += Math.pow(bin.getValue() - mean, 2);
         }
-        return Math.sqrt(total / (Math.max(1,values().size()-1)));
+        return Math.sqrt(total / (Math.max(1, values().size() - 1)));
     }
 
     /**
@@ -320,12 +336,9 @@ public final class Histogram<K extends Comparable> implements Serializable {
         if (percentile <= 0) throw new IllegalArgumentException("Cannot query percentiles of 0 or below");
         if (percentile >= 1) throw new IllegalArgumentException("Cannot query percentiles of 1 or above");
 
-        values().stream()
-                .filter(b -> b.getValue() < 0)
-                .findFirst()
-                .ifPresent(b -> {
-            throw new IllegalStateException("Cannot calculate Percentile when negative counts are present " +
-                    "in histogram. Bin " + b.getId() + "=" + b.getValue());
+        values().stream().filter(b -> b.getValue() < 0).findFirst().ifPresent(b -> {
+            throw new IllegalStateException("Cannot calculate Percentile when negative counts are present "
+                    + "in histogram. Bin " + b.getId() + "=" + b.getValue());
         });
 
         final double total = getCount();
@@ -370,17 +383,16 @@ public final class Histogram<K extends Comparable> implements Serializable {
         if (count % 2 == 0) {
             midLow = count / 2;
             midHigh = midLow + 1;
-        }
-        else {
+        } else {
             midLow = Math.ceil(count / 2);
             midHigh = midLow;
         }
 
-        Double midLowValue  = null;
+        Double midLowValue = null;
         Double midHighValue = null;
         for (final Bin<K> bin : values()) {
             total += bin.getValue();
-            if (midLowValue  == null && total >= midLow)  midLowValue  = bin.getIdValue();
+            if (midLowValue == null && total >= midLow) midLowValue = bin.getIdValue();
             if (midHighValue == null && total >= midHigh) midHighValue = bin.getIdValue();
             if (midLowValue != null && midHighValue != null) break;
         }
@@ -428,7 +440,6 @@ public final class Histogram<K extends Comparable> implements Serializable {
 
         return modeBin;
     }
-
 
     /**
      * Returns the key with the lowest count.
@@ -478,20 +489,19 @@ public final class Histogram<K extends Comparable> implements Serializable {
         final Bin<K> modeBin = getModeBin();
         final double mode = modeBin.getIdValue();
         final double sizeOfModeBin = modeBin.getValue();
-        final double minimumBinSize = sizeOfModeBin/tailLimit;
+        final double minimumBinSize = sizeOfModeBin / tailLimit;
         Bin<K> lastBin = null;
 
         final List<K> binsToKeep = new ArrayList<>();
         for (Bin<K> bin : values()) {
-            double binId = ((Number)bin.getId()).doubleValue();
+            double binId = ((Number) bin.getId()).doubleValue();
 
             if (binId <= mode) {
                 binsToKeep.add(bin.getId());
-            }
-            else if ((lastBin != null && ((Number)lastBin.getId()).doubleValue() != binId - 1) || bin.getValue() < minimumBinSize) {
+            } else if ((lastBin != null && ((Number) lastBin.getId()).doubleValue() != binId - 1)
+                    || bin.getValue() < minimumBinSize) {
                 break;
-            }
-            else {
+            } else {
                 binsToKeep.add(bin.getId());
             }
             lastBin = bin;
@@ -523,7 +533,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
         final Iterator<K> it = map.descendingKeySet().iterator();
         while (it.hasNext()) {
 
-            if (((Number)it.next()).doubleValue() > width) {
+            if (((Number) it.next()).doubleValue() > width) {
                 it.remove();
             } else break;
         }
@@ -538,11 +548,12 @@ public final class Histogram<K extends Comparable> implements Serializable {
      */
     public Histogram<K> divideByHistogram(final Histogram<K> divisorHistogram) {
         final Histogram<K> output = new Histogram<K>();
-        if (!this.keySet().equals(divisorHistogram.keySet())) throw new IllegalArgumentException("Attempting to divide Histograms with non-identical bins");
-        for (final K key : this.keySet()){
+        if (!this.keySet().equals(divisorHistogram.keySet()))
+            throw new IllegalArgumentException("Attempting to divide Histograms with non-identical bins");
+        for (final K key : this.keySet()) {
             final Bin<K> dividend = this.get(key);
             final Bin<K> divisor = divisorHistogram.get(key);
-            output.increment(key, dividend.getValue()/divisor.getValue());
+            output.increment(key, dividend.getValue() / divisor.getValue());
         }
         return output;
     }
@@ -552,7 +563,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
      * @param addHistogram
      */
     public void addHistogram(final Histogram<K> addHistogram) {
-        for (final K key : addHistogram.keySet()){
+        for (final K key : addHistogram.keySet()) {
             this.increment(key, addHistogram.get(key).getValue());
         }
     }
@@ -574,7 +585,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
     /**
      * Return whether this histogram contains the given key.
      */
-    public boolean containsKey(final K key){
+    public boolean containsKey(final K key) {
         return map.containsKey(key);
     }
 }

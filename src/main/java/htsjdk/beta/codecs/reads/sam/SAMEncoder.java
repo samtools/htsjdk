@@ -32,14 +32,19 @@ public abstract class SAMEncoder implements ReadsEncoder {
     public SAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
+        this.displayName =
+                outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override
-    final public String getFileFormat() { return ReadsFormats.SAM; }
+    public final String getFileFormat() {
+        return ReadsFormats.SAM;
+    }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     /**
      * Get the output {@link Bundle} for this encoder.
@@ -58,5 +63,4 @@ public abstract class SAMEncoder implements ReadsEncoder {
     public ReadsEncoderOptions getReadsEncoderOptions() {
         return readsEncoderOptions;
     }
-
 }

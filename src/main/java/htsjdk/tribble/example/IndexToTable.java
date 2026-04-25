@@ -26,12 +26,10 @@ package htsjdk.tribble.example;
 
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-
 
 public class IndexToTable {
 
@@ -49,14 +47,13 @@ public class IndexToTable {
     public static void main(String[] args) {
 
         // check yourself before you wreck yourself - we require one arg, the input file
-        if (args.length != 2)
-            printUsage();
+        if (args.length != 2) printUsage();
 
-        //LinearIndex.enableAdaptiveIndexing = false;
+        // LinearIndex.enableAdaptiveIndexing = false;
         LinearIndex idx = (LinearIndex) IndexFactory.loadIndex(new File(args[0]).getAbsolutePath());
         try {
             idx.writeTable(new PrintStream(new FileOutputStream(new File(args[1]))));
-        } catch ( FileNotFoundException e ) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         }

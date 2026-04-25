@@ -50,8 +50,13 @@ public class InsertBase implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        return new StringBuilder().append((char) operator).append('@')
-                .append(position).append('\\').appendCodePoint(base).toString();
+        return new StringBuilder()
+                .append((char) operator)
+                .append('@')
+                .append(position)
+                .append('\\')
+                .appendCodePoint(base)
+                .toString();
     }
 
     @Override
@@ -59,8 +64,7 @@ public class InsertBase implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         InsertBase that = (InsertBase) o;
-        return position == that.position &&
-                base == that.base;
+        return position == that.position && base == that.base;
     }
 
     @Override

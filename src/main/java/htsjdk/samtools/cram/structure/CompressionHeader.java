@@ -25,7 +25,6 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -90,13 +89,14 @@ public class CompressionHeader {
     public CompressionHeader(final CRAMVersion cramVersion, final InputStream blockStream) {
         final Block compressionHeaderBlock = Block.read(cramVersion, blockStream);
         if (compressionHeaderBlock.getContentType() != BlockContentType.COMPRESSION_HEADER) {
-            throw new RuntimeIOException(
-                    String.format("Compression header block expected, found: %s",
-                            compressionHeaderBlock.getContentType().name()));
+            throw new RuntimeIOException(String.format(
+                    "Compression header block expected, found: %s",
+                    compressionHeaderBlock.getContentType().name()));
         }
 
         // get raw content since compression headers are always raw...
-        try (final ByteArrayInputStream internalStream = new ByteArrayInputStream(compressionHeaderBlock.getRawContent())) {
+        try (final ByteArrayInputStream internalStream =
+                new ByteArrayInputStream(compressionHeaderBlock.getRawContent())) {
             internalRead(internalStream);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -107,7 +107,9 @@ public class CompressionHeader {
      * Get the {@link CompressionHeaderEncodingMap} for this compression header.
      * @return {@link CompressionHeaderEncodingMap} for this {@link CompressionHeader}
      */
-    public CompressionHeaderEncodingMap getEncodingMap() { return encodingMap; }
+    public CompressionHeaderEncodingMap getEncodingMap() {
+        return encodingMap;
+    }
 
     /**
      * Write this CompressionHeader out to an internal OutputStream, wrap it in a Block, and write that
@@ -121,8 +123,7 @@ public class CompressionHeader {
             internalWrite(internalOutputStream);
             final Block block = Block.createRawCompressionHeaderBlock(internalOutputStream.toByteArray());
             block.write(cramVersion, blockStream);
-        }
-        catch (final IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -152,7 +153,7 @@ public class CompressionHeader {
         return tagIDDictionary;
     }
 
-    public  void setTagIdDictionary(final byte[][][] dictionary) {
+    public void setTagIdDictionary(final byte[][][] dictionary) {
         this.tagIDDictionary = dictionary;
         this.tagKeyCache = new TagKeyCache(dictionary);
     }
@@ -238,13 +239,10 @@ public class CompressionHeader {
 
             final int mapSize = ITF8.readUnsignedITF8(buffer);
             for (int i = 0; i < mapSize; i++) {
-                final String key = new String(new byte[]{buffer.get(), buffer.get()});
-                if (RN_readNamesIncluded.equals(key))
-                    preserveReadNames = buffer.get() == 1;
-                else if (AP_alignmentPositionIsDelta.equals(key))
-                    APDelta = buffer.get() == 1;
-                else if (RR_referenceRequired.equals(key))
-                    referenceRequired = buffer.get() == 1;
+                final String key = new String(new byte[] {buffer.get(), buffer.get()});
+                if (RN_readNamesIncluded.equals(key)) preserveReadNames = buffer.get() == 1;
+                else if (AP_alignmentPositionIsDelta.equals(key)) APDelta = buffer.get() == 1;
+                else if (RR_referenceRequired.equals(key)) referenceRequired = buffer.get() == 1;
                 else if (TD_tagIdsDictionary.equals(key)) {
                     final int size = ITF8.readUnsignedITF8(buffer);
                     final byte[] dictionaryBytes = new byte[size];
@@ -342,5 +340,4 @@ public class CompressionHeader {
             mapStream.writeTo(outputStream);
         }
     }
-
 }

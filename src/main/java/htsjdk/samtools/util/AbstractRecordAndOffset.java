@@ -31,7 +31,7 @@ import htsjdk.samtools.SAMRecord;
  * to the base and quality at the genomic position described the containing AbstractLocusInfo. One object represents
  * one base for <code>SamLocusIterator.RecordAndOffset</code> implementation or one alignment block of
  * <code>SAMRecord</code> for <code>TypedRecordAndOffset</code> implementation.
- * 
+ *
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
@@ -133,7 +133,7 @@ public class AbstractRecordAndOffset {
     public byte[] getBaseQualities() {
         return record.getBaseQualities();
     }
-    
+
     /**
      * @return the base quality according to <code>offset</code>.
      */
@@ -143,7 +143,8 @@ public class AbstractRecordAndOffset {
 
     protected void validateOffset(int offset, final byte[] array) {
         if (offset < 0 || offset >= array.length) {
-            throw new IllegalArgumentException("The requested position is not covered by this " + this.getClass().getSimpleName() + " object. "
+            throw new IllegalArgumentException("The requested position is not covered by this "
+                    + this.getClass().getSimpleName() + " object. "
                     + "\n Offset = " + offset + " Array length = " + array.length
                     + "\n Record is: " + getRecord().toString());
         }

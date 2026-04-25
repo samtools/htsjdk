@@ -25,7 +25,6 @@ import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -63,18 +62,17 @@ public abstract class AbstractIndex implements MutableIndex {
 
     // the current version of the index
     public static final int VERSION = 3;
-    public static final int MAGIC_NUMBER = 1480870228;   //  byte[]{'T', 'I', 'D', 'X'};
+    public static final int MAGIC_NUMBER = 1480870228; //  byte[]{'T', 'I', 'D', 'X'};
 
+    private static final String NO_MD5 = "";
+    private static final long NO_FILE_SIZE = -1L;
+    private static final long NO_TS = -1L;
 
-    private final static String NO_MD5 = "";
-    private final static long NO_FILE_SIZE = -1L;
-    private final static long NO_TS = -1L;
-
-    protected int version;                    // Our version value
-    protected Path indexedPath = null;         // The file we've created this index for
+    protected int version; // Our version value
+    protected Path indexedPath = null; // The file we've created this index for
     protected long indexedFileSize = NO_FILE_SIZE; // The size of the indexed file
-    protected long indexedFileTS = NO_TS;      // The timestamp
-    protected String indexedFileMD5 = NO_MD5;        // The MD5 value, generally not filled in (expensive to calc)
+    protected long indexedFileTS = NO_TS; // The timestamp
+    protected String indexedFileMD5 = NO_MD5; // The MD5 value, generally not filled in (expensive to calc)
     protected int flags;
     protected final Log logger = Log.getInstance(this.getClass());
 
@@ -201,7 +199,6 @@ public abstract class AbstractIndex implements MutableIndex {
         if (type != indexType) {
             throw new TribbleException(String.format("Unexpected index type %d", type));
         }
-
     }
 
     /**
@@ -369,7 +366,7 @@ public abstract class AbstractIndex implements MutableIndex {
     public void write(final LittleEndianOutputStream stream) throws IOException {
         writeHeader(stream);
 
-        //# of chromosomes
+        // # of chromosomes
         stream.writeInt(chrIndices.size());
         for (final ChrIndex chrIdx : chrIndices.values()) {
             chrIdx.write(stream);
@@ -378,7 +375,8 @@ public abstract class AbstractIndex implements MutableIndex {
 
     @Override
     public void write(final Path idxPath) throws IOException {
-        try(final LittleEndianOutputStream idxStream = new LittleEndianOutputStream(new BufferedOutputStream(Files.newOutputStream(idxPath)))) {
+        try (final LittleEndianOutputStream idxStream =
+                new LittleEndianOutputStream(new BufferedOutputStream(Files.newOutputStream(idxPath)))) {
             write(idxStream);
         }
     }
@@ -390,7 +388,6 @@ public abstract class AbstractIndex implements MutableIndex {
         }
         write(Tribble.indexPath(featurePath));
     }
-
 
     public void read(final LittleEndianInputStream dis) throws IOException {
         try {
@@ -406,14 +403,16 @@ public abstract class AbstractIndex implements MutableIndex {
             }
 
         } catch (final InstantiationException e) {
-            throw new TribbleException.UnableToCreateCorrectIndexType("Unable to create class " + getChrIndexClass(), e);
+            throw new TribbleException.UnableToCreateCorrectIndexType(
+                    "Unable to create class " + getChrIndexClass(), e);
         } catch (final IllegalAccessException e) {
-            throw new TribbleException.UnableToCreateCorrectIndexType("Unable to create class " + getChrIndexClass(), e);
+            throw new TribbleException.UnableToCreateCorrectIndexType(
+                    "Unable to create class " + getChrIndexClass(), e);
         } finally {
             dis.close();
         }
 
-        //printIndexInfo();
+        // printIndexInfo();
     }
 
     protected void printIndexInfo() {
@@ -443,7 +442,9 @@ public abstract class AbstractIndex implements MutableIndex {
                 stats.total += nBlocks;
 
                 if (logDetails)
-                    System.out.println(String.format("  %s => %d blocks, %d empty, %.2f", elt.getKey(), nBlocks, nEmptyBlocks, (100.0 * nEmptyBlocks) / nBlocks));
+                    System.out.println(String.format(
+                            "  %s => %d blocks, %d empty, %.2f",
+                            elt.getKey(), nBlocks, nEmptyBlocks, (100.0 * nEmptyBlocks) / nBlocks));
             }
         }
 
@@ -452,7 +453,8 @@ public abstract class AbstractIndex implements MutableIndex {
 
     protected String statsSummary() {
         final BlockStats stats = getBlockStats(false);
-        return String.format("%12d blocks (%12d empty (%.2f%%))", stats.total, stats.empty, (100.0 * stats.empty) / stats.total);
+        return String.format(
+                "%12d blocks (%12d empty (%.2f%%))", stats.total, stats.empty, (100.0 * stats.empty) / stats.total);
     }
 
     @Override

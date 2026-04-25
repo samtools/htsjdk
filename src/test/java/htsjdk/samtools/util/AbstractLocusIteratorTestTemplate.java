@@ -24,7 +24,6 @@
 
 package htsjdk.samtools.util;
 
-
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecordSetBuilder;
@@ -33,19 +32,19 @@ import htsjdk.samtools.SAMSequenceRecord;
 
 /**
  * Common template for testing classes, that extend AbstractLocusIterator.
- * 
+ *
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
- * 
+ *
  */
 public abstract class AbstractLocusIteratorTestTemplate extends HtsjdkTest {
 
     /** Coverage for tests with the same reads */
-    final static int coverage = 2;
+    static final int coverage = 2;
 
     /** the read length for the tests */
-    final static int readLength = 36;
+    static final int readLength = 36;
 
-    final static SAMFileHeader header = new SAMFileHeader();
+    static final SAMFileHeader header = new SAMFileHeader();
 
     static {
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
@@ -63,7 +62,10 @@ public abstract class AbstractLocusIteratorTestTemplate extends HtsjdkTest {
     }
 
     public abstract void testBasicIterator();
+
     public abstract void testEmitUncoveredLoci();
+
     public abstract void testSimpleGappedAlignment();
+
     public abstract void testOverlappingGappedAlignmentsWithoutIndels();
 }

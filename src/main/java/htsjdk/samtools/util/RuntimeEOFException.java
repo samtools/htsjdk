@@ -29,8 +29,7 @@ import htsjdk.samtools.SAMException;
  * Thrown by various codecs to indicate EOF without having to clutter the API with throws clauses
  */
 public class RuntimeEOFException extends SAMException {
-    public RuntimeEOFException() {
-    }
+    public RuntimeEOFException() {}
 
     public RuntimeEOFException(final String s) {
         super(s);

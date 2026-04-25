@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.vcf.VCFConstants;
-
 import java.util.HashMap;
 
 /**
@@ -58,7 +57,7 @@ public class IntGenotypeFieldAccessors {
         return intGenotypeFieldEncoders.get(field);
     }
 
-    public static abstract class Accessor {
+    public abstract static class Accessor {
         public abstract int[] getValues(final Genotype g);
 
         public final int getSize(final Genotype g) {
@@ -67,7 +66,7 @@ public class IntGenotypeFieldAccessors {
         }
     }
 
-    private static abstract class AtomicAccessor extends Accessor {
+    private abstract static class AtomicAccessor extends Accessor {
         private final int[] singleton = new int[1];
 
         @Override
@@ -80,18 +79,30 @@ public class IntGenotypeFieldAccessors {
     }
 
     public static class GQAccessor extends AtomicAccessor {
-        @Override public int getValue(final Genotype g) { return Math.min(g.getGQ(), VCFConstants.MAX_GENOTYPE_QUAL); }
+        @Override
+        public int getValue(final Genotype g) {
+            return Math.min(g.getGQ(), VCFConstants.MAX_GENOTYPE_QUAL);
+        }
     }
 
     public static class DPAccessor extends AtomicAccessor {
-        @Override public int getValue(final Genotype g) { return g.getDP(); }
+        @Override
+        public int getValue(final Genotype g) {
+            return g.getDP();
+        }
     }
 
     public static class ADAccessor extends Accessor {
-        @Override public int[] getValues(final Genotype g) { return g.getAD(); }
+        @Override
+        public int[] getValues(final Genotype g) {
+            return g.getAD();
+        }
     }
 
     public static class PLAccessor extends Accessor {
-        @Override public int[] getValues(final Genotype g) { return g.getPL(); }
+        @Override
+        public int[] getValues(final Genotype g) {
+            return g.getPL();
+        }
     }
 }

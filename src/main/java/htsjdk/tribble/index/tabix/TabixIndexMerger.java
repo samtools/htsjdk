@@ -29,7 +29,6 @@ import htsjdk.samtools.IndexMerger;
 import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -81,12 +80,13 @@ public class TabixIndexMerger extends IndexMerger<TabixIndex> {
             }
         }
         if (!index.getFormatSpec().equals(formatSpec)) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot merge tabix files with different formats, %s and %s.", index.getFormatSpec(), formatSpec));
+            throw new IllegalArgumentException(String.format(
+                    "Cannot merge tabix files with different formats, %s and %s.", index.getFormatSpec(), formatSpec));
         }
         if (!sequenceNames.equals(index.getSequenceNames())) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot merge tabix files with different sequence names, %s and %s.", index.getSequenceNames(), sequenceNames));
+            throw new IllegalArgumentException(String.format(
+                    "Cannot merge tabix files with different sequence names, %s and %s.",
+                    index.getSequenceNames(), sequenceNames));
         }
         indexes.add(index);
     }
@@ -102,23 +102,33 @@ public class TabixIndexMerger extends IndexMerger<TabixIndex> {
         final List<BinningIndexContent> mergedBinningIndexContentList = new ArrayList<>();
         for (int ref = 0; ref < sequenceNames.size(); ref++) {
             final int r = ref;
-            List<BinningIndexContent> binningIndexContentList = indexes.stream().map(index -> index.getIndices()[r]).collect(Collectors.toList());
-            final BinningIndexContent binningIndexContent = mergeBinningIndexContent(ref, binningIndexContentList, offsets);
+            List<BinningIndexContent> binningIndexContentList =
+                    indexes.stream().map(index -> index.getIndices()[r]).collect(Collectors.toList());
+            final BinningIndexContent binningIndexContent =
+                    mergeBinningIndexContent(ref, binningIndexContentList, offsets);
             mergedBinningIndexContentList.add(binningIndexContent);
         }
-        final TabixIndex tabixIndex = new TabixIndex(formatSpec, sequenceNames, mergedBinningIndexContentList.toArray(new BinningIndexContent[0]));
-        try (LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(out, (File) null))) {
+        final TabixIndex tabixIndex = new TabixIndex(
+                formatSpec, sequenceNames, mergedBinningIndexContentList.toArray(new BinningIndexContent[0]));
+        try (LittleEndianOutputStream los =
+                new LittleEndianOutputStream(new BlockCompressedOutputStream(out, (File) null))) {
             tabixIndex.write(los);
         }
     }
 
-    private static BinningIndexContent mergeBinningIndexContent(final int referenceSequence, final List<BinningIndexContent> binningIndexContentList, final long[] offsets) {
+    private static BinningIndexContent mergeBinningIndexContent(
+            final int referenceSequence,
+            final List<BinningIndexContent> binningIndexContentList,
+            final long[] offsets) {
         final List<BinningIndexContent.BinList> binLists = new ArrayList<>();
         final List<LinearIndex> linearIndexes = new ArrayList<>();
         for (BinningIndexContent binningIndexContent : binningIndexContentList) {
             binLists.add(binningIndexContent == null ? null : binningIndexContent.getBins());
             linearIndexes.add(binningIndexContent == null ? null : binningIndexContent.getLinearIndex());
         }
-        return new BinningIndexContent(referenceSequence, BAMIndexMerger.mergeBins(binLists, offsets), BAMIndexMerger.mergeLinearIndexes(referenceSequence, linearIndexes, offsets));
+        return new BinningIndexContent(
+                referenceSequence,
+                BAMIndexMerger.mergeBins(binLists, offsets),
+                BAMIndexMerger.mergeLinearIndexes(referenceSequence, linearIndexes, offsets));
     }
 }

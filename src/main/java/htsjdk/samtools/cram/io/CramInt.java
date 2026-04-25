@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -10,7 +9,6 @@ import java.nio.ByteBuffer;
 /**
  * Methods to read and write CRAM int values as given in the file format specification.
  */
-
 public class CramInt {
     /**
      * Read unsigned little-endian 4 byte integer from an {@link InputStream}.
@@ -33,8 +31,7 @@ public class CramInt {
      * @return an integer value read
      */
     public static int readInt32(final byte[] data) {
-        if (data.length != 4)
-            throw new IllegalArgumentException("Expecting a 4-byte integer. ");
+        if (data.length != 4) throw new IllegalArgumentException("Expecting a 4-byte integer. ");
         return (0xFF & data[0]) | ((0xFF & data[1]) << 8) | ((0xFF & data[2]) << 16) | ((0xFF & data[3]) << 24);
     }
 
@@ -45,10 +42,10 @@ public class CramInt {
      * @return an integer value read from the buffer
      */
     public static int readInt32(final ByteBuffer buffer) {
-        return (0xFF & buffer.get()) |
-                (0xFF & buffer.get()) << 8 |
-                (0xFF & buffer.get()) << 16 |
-                (0xFF & buffer.get()) << 24;
+        return (0xFF & buffer.get())
+                | (0xFF & buffer.get()) << 8
+                | (0xFF & buffer.get()) << 16
+                | (0xFF & buffer.get()) << 24;
     }
 
     /**

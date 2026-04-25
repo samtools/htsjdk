@@ -6,7 +6,6 @@ import htsjdk.samtools.cram.io.CRAMByteReader;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -32,15 +31,15 @@ public class SliceBlocksReadStreams {
      */
     public SliceBlocksReadStreams(final SliceBlocks sliceBlocks, final CompressorCache compressorCache) {
         ValidationUtils.nonNull(sliceBlocks.getCoreBlock(), "sliceBlocks must have been initialized");
-        ValidationUtils.validateArg(sliceBlocks.getNumberOfExternalBlocks() > 0, "sliceBlocks must have been initialized");
+        ValidationUtils.validateArg(
+                sliceBlocks.getNumberOfExternalBlocks() > 0, "sliceBlocks must have been initialized");
 
         if (sliceBlocks.getCoreBlock() == null || sliceBlocks.getNumberOfExternalBlocks() == 0) {
             throw new CRAMException("slice blocks must be initialized before being used with a reader");
         }
         // Core block still uses DefaultBitInputStream (bit-level access needed for Huffman codecs)
         coreBlockInputStream = new DefaultBitInputStream(
-                new ByteArrayInputStream(
-                        sliceBlocks.getCoreBlock().getUncompressedContent(compressorCache)));
+                new ByteArrayInputStream(sliceBlocks.getCoreBlock().getUncompressedContent(compressorCache)));
 
         final List<Integer> externalContentIDs = sliceBlocks.getExternalContentIDs();
         for (final Integer contentID : externalContentIDs) {

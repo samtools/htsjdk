@@ -5,7 +5,6 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -31,20 +30,20 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
 
     /**
      * Create a {@link BundleResource} backed by an IOPath, specifying a content type string and format string.
-
+     *
      * @param ioPath The IOPath for this resource. May not be null.
      * @param contentType The content type for this resource. May not be mull or 0-length.
      * @param format The format for this resource. May not be null or 0-length.
      */
     public IOPathResource(final IOPath ioPath, final String contentType, final String format) {
-        super(ValidationUtils.nonNull(ioPath, "ioPath").getRawInputString(),
-                contentType,
-                format);
+        super(ValidationUtils.nonNull(ioPath, "ioPath").getRawInputString(), contentType, format);
         this.ioPath = ioPath;
     }
 
     @Override
-    public Optional<IOPath> getIOPath() { return Optional.of(ioPath); }
+    public Optional<IOPath> getIOPath() {
+        return Optional.of(ioPath);
+    }
 
     /**
      * {@inheritDoc}
@@ -59,13 +58,19 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
     }
 
     @Override
-    public Optional<OutputStream> getOutputStream() { return Optional.of(ioPath.getOutputStream()); }
+    public Optional<OutputStream> getOutputStream() {
+        return Optional.of(ioPath.getOutputStream());
+    }
 
     @Override
-    public boolean hasInputType() { return true; }
+    public boolean hasInputType() {
+        return true;
+    }
 
     @Override
-    public boolean hasOutputType() { return true; }
+    public boolean hasOutputType() {
+        return true;
+    }
 
     @Override
     public boolean hasSeekableStream() {
@@ -119,5 +124,4 @@ public class IOPathResource extends BundleResourceBase implements Serializable {
         result = 31 * result + ioPath.hashCode();
         return result;
     }
-
 }

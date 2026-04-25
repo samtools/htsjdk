@@ -25,11 +25,10 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.EOFException;
 import java.io.IOException;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SeekableMemoryStreamTest extends HtsjdkTest {
 
@@ -42,7 +41,7 @@ public class SeekableMemoryStreamTest extends HtsjdkTest {
 
     @Test
     public void test_EOF() throws IOException {
-        SeekableMemoryStream stream = new SeekableMemoryStream(new byte[]{}, null);
+        SeekableMemoryStream stream = new SeekableMemoryStream(new byte[] {}, null);
         Assert.assertTrue(stream.eof());
         Assert.assertEquals(stream.read(), -1);
         Assert.assertTrue(stream.eof());
@@ -75,7 +74,8 @@ public class SeekableMemoryStreamTest extends HtsjdkTest {
         int length = data.length;
         int numberOfBytesReadSoFar = 0, maxBytesPerRead = 11;
         while (numberOfBytesReadSoFar < length) {
-            final int count = stream.read(copy, numberOfBytesReadSoFar, Math.min(maxBytesPerRead, length - numberOfBytesReadSoFar));
+            final int count = stream.read(
+                    copy, numberOfBytesReadSoFar, Math.min(maxBytesPerRead, length - numberOfBytesReadSoFar));
             if (count < 0) {
                 throw new EOFException();
             }

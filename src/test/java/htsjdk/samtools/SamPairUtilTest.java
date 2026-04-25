@@ -25,22 +25,25 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SamPairUtil.SetMateInfoIterator;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-
 public class SamPairUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "testGetPairOrientation")
-    public void testGetPairOrientation(final String testName,
-                                       final int read1Start, final int read1Length, final boolean read1Reverse,
-                                       final int read2Start, final int read2Length, final boolean read2Reverse,
-                                       final SamPairUtil.PairOrientation expectedOrientation) {
+    public void testGetPairOrientation(
+            final String testName,
+            final int read1Start,
+            final int read1Length,
+            final boolean read1Reverse,
+            final int read2Start,
+            final int read2Length,
+            final boolean read2Reverse,
+            final SamPairUtil.PairOrientation expectedOrientation) {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
         final SAMRecord rec1 = makeSamRecord(header, read1Start, read1Length, read1Reverse, true);
@@ -70,23 +73,28 @@ public class SamPairUtilTest extends HtsjdkTest {
         // R1 forward:  alignStart = 100, CIGAR = 90S10M -> 5' = 100, alignEnd = 109
         // R2 reverse:  alignStart = 91,  CIGAR = 10M90S -> 5' (alignEnd) = 100
         final SAMRecord r1 = makeSamRecord2(header, 100, false, "90S10M", true);
-        final SAMRecord r2 = makeSamRecord2(header, 91,  true,  "10M90S", false);
+        final SAMRecord r2 = makeSamRecord2(header, 91, true, "10M90S", false);
         SamPairUtil.setMateInfo(r1, r2, true);
 
         final SamPairUtil.PairOrientation fromR1 = SamPairUtil.getPairOrientation(r1);
         final SamPairUtil.PairOrientation fromR2 = SamPairUtil.getPairOrientation(r2);
-        Assert.assertEquals(fromR1, fromR2,
-                "getPairOrientation must be symmetric across a pair: " +
-                "forward read returned " + fromR1 + " but reverse read returned " + fromR2);
-        Assert.assertEquals(fromR1, SamPairUtil.PairOrientation.FR,
-                "5'-tie should resolve to FR");
+        Assert.assertEquals(
+                fromR1,
+                fromR2,
+                "getPairOrientation must be symmetric across a pair: " + "forward read returned " + fromR1
+                        + " but reverse read returned " + fromR2);
+        Assert.assertEquals(fromR1, SamPairUtil.PairOrientation.FR, "5'-tie should resolve to FR");
     }
 
-
     @Test(dataProvider = "testSetMateInfoMateCigar")
-    public void testSetMateInfoMateCigar(final String testName,
-                                         final int read1Start, final boolean read1Reverse, final String read1Cigar,
-                                         final int read2Start, final boolean read2Reverse, final String read2Cigar) {
+    public void testSetMateInfoMateCigar(
+            final String testName,
+            final int read1Start,
+            final boolean read1Reverse,
+            final String read1Cigar,
+            final int read2Start,
+            final boolean read2Reverse,
+            final String read2Cigar) {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
         final SAMRecord rec1 = makeSamRecord2(header, read1Start, read1Reverse, read1Cigar, true);
@@ -96,18 +104,30 @@ public class SamPairUtilTest extends HtsjdkTest {
         Assert.assertEquals(SAMUtils.getMateCigarString(rec2), rec1.getCigarString(), testName + " second end");
     }
 
-    private void testSetMateInfoMateCigarOnSupplementalsAddRecord(final List<SAMRecord> records, final List<String> mateCigarList, final SAMRecord record, final String mateCigar) {
+    private void testSetMateInfoMateCigarOnSupplementalsAddRecord(
+            final List<SAMRecord> records,
+            final List<String> mateCigarList,
+            final SAMRecord record,
+            final String mateCigar) {
         records.add(record);
         mateCigarList.add(mateCigar);
     }
 
     @Test(dataProvider = "testSetMateInfoMateCigarOnSupplementals")
-    public void testSetMateInfoMateCigarOnSupplementals(final String testName,
-                                                        final int read1Start, final boolean read1Reverse, final String read1Cigar,
-                                                        final int read1SupplementalStart, final boolean read1SupplementalReverse, final String read1SupplementalCigar,
-                                                        final int read2Start, final boolean read2Reverse, final String read2Cigar,
-                                                        final int read2SupplementalStart, final boolean read2SupplementalReverse, final String read2SupplementalCigar
-    ) {
+    public void testSetMateInfoMateCigarOnSupplementals(
+            final String testName,
+            final int read1Start,
+            final boolean read1Reverse,
+            final String read1Cigar,
+            final int read1SupplementalStart,
+            final boolean read1SupplementalReverse,
+            final String read1SupplementalCigar,
+            final int read2Start,
+            final boolean read2Reverse,
+            final String read2Cigar,
+            final int read2SupplementalStart,
+            final boolean read2SupplementalReverse,
+            final String read2SupplementalCigar) {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
 
@@ -115,20 +135,51 @@ public class SamPairUtilTest extends HtsjdkTest {
         final List<String> mateCigarList = new ArrayList<String>();
         final SAMRecord rec;
 
-
         int numIterations = 10;
         boolean isPaired = (0 < read1Start && 0 < read2Start);
         for (int i = 0; i < numIterations; i++) {
             final String readName = "READ" + i;
-            testSetMateInfoMateCigarOnSupplementalsAddRecord(records, mateCigarList, makeSamRecord3(header, read1Start, read1Reverse, read1Cigar, true, readName, isPaired, false), read2Cigar);
+            testSetMateInfoMateCigarOnSupplementalsAddRecord(
+                    records,
+                    mateCigarList,
+                    makeSamRecord3(header, read1Start, read1Reverse, read1Cigar, true, readName, isPaired, false),
+                    read2Cigar);
             if (0 < read1SupplementalStart) {
-                testSetMateInfoMateCigarOnSupplementalsAddRecord(records, mateCigarList, makeSamRecord3(header, read1SupplementalStart, read1SupplementalReverse, read1SupplementalCigar, true, readName, isPaired, true), read2Cigar);
+                testSetMateInfoMateCigarOnSupplementalsAddRecord(
+                        records,
+                        mateCigarList,
+                        makeSamRecord3(
+                                header,
+                                read1SupplementalStart,
+                                read1SupplementalReverse,
+                                read1SupplementalCigar,
+                                true,
+                                readName,
+                                isPaired,
+                                true),
+                        read2Cigar);
             }
             if (0 < read2Start) {
-                testSetMateInfoMateCigarOnSupplementalsAddRecord(records, mateCigarList, makeSamRecord3(header, read2Start, read2Reverse, read2Cigar, false, readName, isPaired, false), read1Cigar);
+                testSetMateInfoMateCigarOnSupplementalsAddRecord(
+                        records,
+                        mateCigarList,
+                        makeSamRecord3(header, read2Start, read2Reverse, read2Cigar, false, readName, isPaired, false),
+                        read1Cigar);
             }
             if (0 < read2SupplementalStart) {
-                testSetMateInfoMateCigarOnSupplementalsAddRecord(records, mateCigarList, makeSamRecord3(header, read2SupplementalStart, read2SupplementalReverse, read2SupplementalCigar, false, readName, isPaired, true), read1Cigar);
+                testSetMateInfoMateCigarOnSupplementalsAddRecord(
+                        records,
+                        mateCigarList,
+                        makeSamRecord3(
+                                header,
+                                read2SupplementalStart,
+                                read2SupplementalReverse,
+                                read2SupplementalCigar,
+                                false,
+                                readName,
+                                isPaired,
+                                true),
+                        read1Cigar);
             }
         }
 
@@ -153,8 +204,12 @@ public class SamPairUtilTest extends HtsjdkTest {
         iterator.close();
     }
 
-    private SAMRecord makeSamRecord(final SAMFileHeader header, final int alignmentStart, final int readLength,
-                                    final boolean reverse, final boolean firstOfPair) {
+    private SAMRecord makeSamRecord(
+            final SAMFileHeader header,
+            final int alignmentStart,
+            final int readLength,
+            final boolean reverse,
+            final boolean firstOfPair) {
         final SAMRecord rec = new SAMRecord(header);
         rec.setReferenceIndex(0);
         final StringBuilder sb = new StringBuilder();
@@ -174,13 +229,24 @@ public class SamPairUtilTest extends HtsjdkTest {
         return rec;
     }
 
-    private SAMRecord makeSamRecord2(final SAMFileHeader header, final int alignmentStart, boolean reverse,
-                                     String cigarString, final boolean firstOfPair) {
+    private SAMRecord makeSamRecord2(
+            final SAMFileHeader header,
+            final int alignmentStart,
+            boolean reverse,
+            String cigarString,
+            final boolean firstOfPair) {
         return makeSamRecord3(header, alignmentStart, reverse, cigarString, firstOfPair, null, true, false);
     }
 
-    private SAMRecord makeSamRecord3(final SAMFileHeader header, final int alignmentStart, boolean reverse,
-                                     String cigarString, final boolean firstOfPair, final String name, final boolean isPaired, final boolean isSupplemental) {
+    private SAMRecord makeSamRecord3(
+            final SAMFileHeader header,
+            final int alignmentStart,
+            boolean reverse,
+            String cigarString,
+            final boolean firstOfPair,
+            final String name,
+            final boolean isPaired,
+            final boolean isSupplemental) {
         final SAMRecord rec = new SAMRecord(header);
         final StringBuilder sb = new StringBuilder();
         final Cigar cigar = TextCigarCodec.decode(cigarString);
@@ -218,30 +284,30 @@ public class SamPairUtilTest extends HtsjdkTest {
          * @param read2Reverse
          * @param expectedOrientation
          */
-        return new Object[][]{
-                {"normal innie", 1, 100, false, 500, 100, true, SamPairUtil.PairOrientation.FR},
-                {"overlapping innie", 1, 100, false, 50, 100, true, SamPairUtil.PairOrientation.FR},
-                {"second end enclosed innie", 1, 100, false, 50, 50, true, SamPairUtil.PairOrientation.FR},
-                {"first end enclosed innie", 1, 50, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
-                {"completely overlapping innie", 1, 100, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
-                {"normal outie", 1, 100, true, 500, 100, false, SamPairUtil.PairOrientation.RF},
-                {"nojump outie", 1, 100, true, 101, 100, false, SamPairUtil.PairOrientation.RF},
-                {"forward tandem", 1, 100, true, 500, 100, true, SamPairUtil.PairOrientation.TANDEM},
-                {"reverse tandem", 1, 100, false, 500, 100, false, SamPairUtil.PairOrientation.TANDEM},
-                {"overlapping forward tandem", 1, 100, true, 50, 100, true, SamPairUtil.PairOrientation.TANDEM},
-                {"overlapping reverse tandem", 1, 100, false, 50, 100, false, SamPairUtil.PairOrientation.TANDEM},
-                {"second end enclosed forward tandem", 1, 100, true, 50, 50, true, SamPairUtil.PairOrientation.TANDEM},
-                {"second end enclosed reverse tandem", 1, 100, false, 50, 50, false, SamPairUtil.PairOrientation.TANDEM},
-                {"first end enclosed forward tandem", 1, 50, true, 1, 100, true, SamPairUtil.PairOrientation.TANDEM},
-                {"first end enclosed reverse tandem", 1, 50, false, 1, 100, false, SamPairUtil.PairOrientation.TANDEM},
-                // Dovetail pair in which the forward read's 5' end coincides
-                // exactly with the reverse read's 5' end.  getPairOrientation
-                // must return the same answer regardless of which end is
-                // inspected.  A 5'-tie is classified as FR so that the
-                // boundary between FR and RF is continuous across overlap
-                // widths (a 1 bp overlap resolves to FR just like a 2 bp
-                // overlap does).
-                {"dovetail 5' tie", 100, 100, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
+        return new Object[][] {
+            {"normal innie", 1, 100, false, 500, 100, true, SamPairUtil.PairOrientation.FR},
+            {"overlapping innie", 1, 100, false, 50, 100, true, SamPairUtil.PairOrientation.FR},
+            {"second end enclosed innie", 1, 100, false, 50, 50, true, SamPairUtil.PairOrientation.FR},
+            {"first end enclosed innie", 1, 50, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
+            {"completely overlapping innie", 1, 100, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
+            {"normal outie", 1, 100, true, 500, 100, false, SamPairUtil.PairOrientation.RF},
+            {"nojump outie", 1, 100, true, 101, 100, false, SamPairUtil.PairOrientation.RF},
+            {"forward tandem", 1, 100, true, 500, 100, true, SamPairUtil.PairOrientation.TANDEM},
+            {"reverse tandem", 1, 100, false, 500, 100, false, SamPairUtil.PairOrientation.TANDEM},
+            {"overlapping forward tandem", 1, 100, true, 50, 100, true, SamPairUtil.PairOrientation.TANDEM},
+            {"overlapping reverse tandem", 1, 100, false, 50, 100, false, SamPairUtil.PairOrientation.TANDEM},
+            {"second end enclosed forward tandem", 1, 100, true, 50, 50, true, SamPairUtil.PairOrientation.TANDEM},
+            {"second end enclosed reverse tandem", 1, 100, false, 50, 50, false, SamPairUtil.PairOrientation.TANDEM},
+            {"first end enclosed forward tandem", 1, 50, true, 1, 100, true, SamPairUtil.PairOrientation.TANDEM},
+            {"first end enclosed reverse tandem", 1, 50, false, 1, 100, false, SamPairUtil.PairOrientation.TANDEM},
+            // Dovetail pair in which the forward read's 5' end coincides
+            // exactly with the reverse read's 5' end.  getPairOrientation
+            // must return the same answer regardless of which end is
+            // inspected.  A 5'-tie is classified as FR so that the
+            // boundary between FR and RF is continuous across overlap
+            // widths (a 1 bp overlap resolves to FR just like a 2 bp
+            // overlap does).
+            {"dovetail 5' tie", 100, 100, false, 1, 100, true, SamPairUtil.PairOrientation.FR},
         };
     }
 
@@ -256,8 +322,7 @@ public class SamPairUtilTest extends HtsjdkTest {
          * @param read2Length
          * @param read2Reverse
          */
-
-        List<Object[]> tests=new ArrayList<>();
+        List<Object[]> tests = new ArrayList<>();
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
         header.addSequence(new SAMSequenceRecord("chr2", 100000000));
@@ -265,14 +330,14 @@ public class SamPairUtilTest extends HtsjdkTest {
             final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
             rec.setReadName("Unpaired");
             rec.setReadPairedFlag(false);
-            tests.add(new Object[]{rec});
+            tests.add(new Object[] {rec});
         }
         {
             final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
             rec.setReadName("Unmapped");
             rec.setReadPairedFlag(true);
             rec.setReadUnmappedFlag(true);
-            tests.add(new Object[]{rec});
+            tests.add(new Object[] {rec});
         }
         {
             final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
@@ -280,7 +345,7 @@ public class SamPairUtilTest extends HtsjdkTest {
             rec.setReadPairedFlag(true);
             rec.setReferenceIndex(0);
             rec.setMateUnmappedFlag(true);
-            tests.add(new Object[]{rec});
+            tests.add(new Object[] {rec});
         }
         {
             final SAMRecord rec = makeSamRecord(header, 50, 50, false, true);
@@ -288,7 +353,7 @@ public class SamPairUtilTest extends HtsjdkTest {
             rec.setReadPairedFlag(true);
             rec.setReferenceIndex(0);
             rec.setMateReferenceIndex(1);
-            tests.add(new Object[]{rec});
+            tests.add(new Object[] {rec});
         }
         return tests.iterator();
     }
@@ -304,12 +369,12 @@ public class SamPairUtilTest extends HtsjdkTest {
          * @param read2Reverse
          * @param read2Cigar
          */
-        return new Object[][]{
-                {"50M/50M", 1, false, "50M", 500, true, "50M"},
-                {"50M/25M5I20M", 1, false, "50M", 500, true, "25M5I20M"},
-                {"25M5I20M/50M", 1, false, "25M5I20M", 500, true, "50M"},
-                {"50M/25M5D20M", 1, false, "50M", 500, true, "25M5D20M"},
-                {"25M5D20M/50M", 1, false, "25M5D20M", 500, true, "50M"},
+        return new Object[][] {
+            {"50M/50M", 1, false, "50M", 500, true, "50M"},
+            {"50M/25M5I20M", 1, false, "50M", 500, true, "25M5I20M"},
+            {"25M5I20M/50M", 1, false, "25M5I20M", 500, true, "50M"},
+            {"50M/25M5D20M", 1, false, "50M", 500, true, "25M5D20M"},
+            {"25M5D20M/50M", 1, false, "25M5D20M", 500, true, "50M"},
         };
     }
 
@@ -330,13 +395,13 @@ public class SamPairUtilTest extends HtsjdkTest {
          * @param read2SupplementalReverse
          * @param read2SupplementalCigar
          * */
-        return new Object[][]{
-                {"fragment", 1, false, "50M", -1, false, null, -1, false, null, -1, false, null},
-                {"fragment with supplemental", 1, false, "50M", 10, false, "50M", -1, false, null, -1, false, null},
-                {"pair", 1, false, "50M", -1, false, null, 1, false, "20M", -1, false, null},
-                {"pair first supplemental", 1, false, "50M", 10, false, "50M", 1, false, "20M", -1, false, null},
-                {"pair second supplemental", 1, false, "50M", -1, false, null, 1, false, "20M", 10, false, "50M"},
-                {"pair both supplemental", 1, false, "50M", 10, false, "50M", 1, false, "20M", 10, false, "50M"}
+        return new Object[][] {
+            {"fragment", 1, false, "50M", -1, false, null, -1, false, null, -1, false, null},
+            {"fragment with supplemental", 1, false, "50M", 10, false, "50M", -1, false, null, -1, false, null},
+            {"pair", 1, false, "50M", -1, false, null, 1, false, "20M", -1, false, null},
+            {"pair first supplemental", 1, false, "50M", 10, false, "50M", 1, false, "20M", -1, false, null},
+            {"pair second supplemental", 1, false, "50M", -1, false, null, 1, false, "20M", 10, false, "50M"},
+            {"pair both supplemental", 1, false, "50M", 10, false, "50M", 1, false, "20M", 10, false, "50M"}
         };
     }
 }

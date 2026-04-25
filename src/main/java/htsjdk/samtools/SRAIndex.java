@@ -1,28 +1,28 @@
 /*===========================================================================
-*
-*                            PUBLIC DOMAIN NOTICE
-*               National Center for Biotechnology Information
-*
-*  This software/database is a "United States Government Work" under the
-*  terms of the United States Copyright Act.  It was written as part of
-*  the author's official duties as a United States Government employee and
-*  thus cannot be copyrighted.  This software/database is freely available
-*  to the public for use. The National Library of Medicine and the U.S.
-*  Government have not placed any restriction on its use or reproduction.
-*
-*  Although all reasonable efforts have been taken to ensure the accuracy
-*  and reliability of the software and data, the NLM and the U.S.
-*  Government do not and cannot warrant the performance or results that
-*  may be obtained by using this software or data. The NLM and the U.S.
-*  Government disclaim all warranties, express or implied, including
-*  warranties of performance, merchantability or fitness for any particular
-*  purpose.
-*
-*  Please cite the author in any work or product based on this material.
-*
-* ===========================================================================
-*
-*/
+ *
+ *                            PUBLIC DOMAIN NOTICE
+ *               National Center for Biotechnology Information
+ *
+ *  This software/database is a "United States Government Work" under the
+ *  terms of the United States Copyright Act.  It was written as part of
+ *  the author's official duties as a United States Government employee and
+ *  thus cannot be copyrighted.  This software/database is freely available
+ *  to the public for use. The National Library of Medicine and the U.S.
+ *  Government have not placed any restriction on its use or reproduction.
+ *
+ *  Although all reasonable efforts have been taken to ensure the accuracy
+ *  and reliability of the software and data, the NLM and the U.S.
+ *  Government do not and cannot warrant the performance or results that
+ *  may be obtained by using this software or data. The NLM and the U.S.
+ *  Government disclaim all warranties, express or implied, including
+ *  warranties of performance, merchantability or fitness for any particular
+ *  purpose.
+ *
+ *  Please cite the author in any work or product based on this material.
+ *
+ * ===========================================================================
+ *
+ */
 
 package htsjdk.samtools;
 
@@ -74,7 +74,8 @@ public class SRAIndex implements BrowseableBAMIndex {
     /**
      * First bin number in last level
      */
-    private static final int SRA_BIN_INDEX_OFFSET = GenomicIndexUtil.LEVEL_STARTS[GenomicIndexUtil.LEVEL_STARTS.length - 1];
+    private static final int SRA_BIN_INDEX_OFFSET =
+            GenomicIndexUtil.LEVEL_STARTS[GenomicIndexUtil.LEVEL_STARTS.length - 1];
 
     /**
      * How many bases should we go left on the reference to find all fragments that start before requested interval
@@ -102,9 +103,8 @@ public class SRAIndex implements BrowseableBAMIndex {
     @Override
     public int getLevelSize(int levelNumber) {
         if (levelNumber == GenomicIndexUtil.LEVEL_STARTS.length - 1)
-            return GenomicIndexUtil.MAX_BINS - GenomicIndexUtil.LEVEL_STARTS[levelNumber]-1;
-        else
-            return GenomicIndexUtil.LEVEL_STARTS[levelNumber+1] - GenomicIndexUtil.LEVEL_STARTS[levelNumber];
+            return GenomicIndexUtil.MAX_BINS - GenomicIndexUtil.LEVEL_STARTS[levelNumber] - 1;
+        else return GenomicIndexUtil.LEVEL_STARTS[levelNumber + 1] - GenomicIndexUtil.LEVEL_STARTS[levelNumber];
     }
 
     /**
@@ -160,16 +160,16 @@ public class SRAIndex implements BrowseableBAMIndex {
         long refLength = recordRangeInfo.getReferenceLengthsAligned().get(referenceIndex);
 
         // convert to chunk address space within reference
-        long refStartPos =  startPos - 1;
+        long refStartPos = startPos - 1;
         long refEndPos = endPos;
         if (refEndPos >= refLength) {
             throw new RuntimeException("refEndPos is larger than reference length");
         }
 
-        int firstBinNumber = (int)refStartPos / SRA_BIN_SIZE;
-        int lastBinNumber = (int)(refEndPos - 1) / SRA_BIN_SIZE;
+        int firstBinNumber = (int) refStartPos / SRA_BIN_SIZE;
+        int lastBinNumber = (int) (refEndPos - 1) / SRA_BIN_SIZE;
 
-        int numberOfBins = ((int)refLength / SRA_BIN_SIZE) + 1;
+        int numberOfBins = ((int) refLength / SRA_BIN_SIZE) + 1;
 
         BitSet binBitSet = new BitSet();
         binBitSet.set(0, SRA_BIN_INDEX_OFFSET, false);
@@ -214,7 +214,8 @@ public class SRAIndex implements BrowseableBAMIndex {
     public long getStartOfLastLinearBin() {
         int numberOfReferences = recordRangeInfo.getReferenceLengthsAligned().size();
         long refOffset = recordRangeInfo.getReferenceOffsets().get(numberOfReferences - 1);
-        long lastChunkNumber = recordRangeInfo.getReferenceLengthsAligned().get(numberOfReferences - 1) / SRA_CHUNK_SIZE;
+        long lastChunkNumber =
+                recordRangeInfo.getReferenceLengthsAligned().get(numberOfReferences - 1) / SRA_CHUNK_SIZE;
         return lastChunkNumber * SRA_CHUNK_SIZE + refOffset;
     }
 
@@ -224,7 +225,7 @@ public class SRAIndex implements BrowseableBAMIndex {
     }
 
     @Override
-    public void close() { }
+    public void close() {}
 
     /**
      * @param bin Requested bin
@@ -241,7 +242,8 @@ public class SRAIndex implements BrowseableBAMIndex {
         int binNumber = bin.getBinNumber() - SRA_BIN_INDEX_OFFSET;
         long refOffset = recordRangeInfo.getReferenceOffsets().get(bin.getReferenceSequence());
 
-        // move requested position MAX_FRAGMENT_OVERLAP bases behind, so that we take all the reads that overlap requested position
+        // move requested position MAX_FRAGMENT_OVERLAP bases behind, so that we take all the reads that overlap
+        // requested position
         int firstChunkCorrection = binNumber == 0 ? 0 : -MAX_FRAGMENT_OVERLAP;
 
         long binGlobalOffset = binNumber * SRA_BIN_SIZE + refOffset;

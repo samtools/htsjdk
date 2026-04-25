@@ -1,17 +1,15 @@
 package htsjdk.samtools;
 
-
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class CachingBAMFileIndexTest extends HtsjdkTest {
 
@@ -21,15 +19,16 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
      */
     @Test
     public void testCachingBamFileIndextest() throws IOException {
-        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+        try (final CachingBAMFileIndex index = getIndexWith200Contigs()) {
             Assert.assertNotNull(index.getQueryResults(1));
             System.gc();
-            //contig 1 is never garbage collected because Integer(1) is interned by the jvm and never garbage collectable
+            // contig 1 is never garbage collected because Integer(1) is interned by the jvm and never garbage
+            // collectable
             Assert.assertNotNull(index.getQueryResults(1));
 
             Assert.assertNotNull(index.getQueryResults(128));
             System.gc();
-            //contig 128 is garbage collected and hits the bug because 128+ is not interned
+            // contig 128 is garbage collected and hits the bug because 128+ is not interned
             Assert.assertNotNull(index.getQueryResults(128));
         }
     }
@@ -44,16 +43,18 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
 
         final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory().setCreateIndex(true);
         final File outBam = File.createTempFile("tmp", ".bam");
-        try(final SAMFileWriter writer = writerFactory.makeWriter(header, true, outBam, null)){
-            IntStream.range(1,200).mapToObj(i -> {
-                final SAMRecord record = new SAMRecord(header);
-                record.setReadName("name" + i);
-                record.setReferenceName(String.valueOf(i));
-                record.setReadUnmappedFlag(false);
-                record.setAlignmentStart(1);
-                record.setCigarString("20M");
-                return record;
-            }).forEach(writer::addAlignment);
+        try (final SAMFileWriter writer = writerFactory.makeWriter(header, true, outBam, null)) {
+            IntStream.range(1, 200)
+                    .mapToObj(i -> {
+                        final SAMRecord record = new SAMRecord(header);
+                        record.setReadName("name" + i);
+                        record.setReferenceName(String.valueOf(i));
+                        record.setReadUnmappedFlag(false);
+                        record.setAlignmentStart(1);
+                        record.setCigarString("20M");
+                        return record;
+                    })
+                    .forEach(writer::addAlignment);
         }
 
         final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + FileExtensions.BAI_INDEX);
@@ -64,7 +65,7 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
 
     @Test
     public void testCacheHitsAndMissesTheExpectedNumberOfTimes() throws IOException {
-        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+        try (final CachingBAMFileIndex index = getIndexWith200Contigs()) {
             index.getQueryResults(1);
             assertCacheStats(index, 0, 1);
 
@@ -75,10 +76,10 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
             assertCacheStats(index, 1, 2);
 
             index.getQueryResults(150);
-            assertCacheStats(index,2,2);
+            assertCacheStats(index, 2, 2);
 
             index.getQueryResults(150);
-            assertCacheStats(index,3,2);
+            assertCacheStats(index, 3, 2);
 
             index.getQueryResults(1);
             assertCacheStats(index, 3, 3);
@@ -87,13 +88,13 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
             assertCacheStats(index, 4, 3);
 
             index.getQueryResults(1000);
-            assertCacheStats(index,4,4);
+            assertCacheStats(index, 4, 4);
         }
     }
 
     @Test
     public void testNullResultIsCached() throws IOException {
-        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+        try (final CachingBAMFileIndex index = getIndexWith200Contigs()) {
             BAMIndexContent queryResults = index.getQueryResults(1000);
             Assert.assertNull(queryResults);
             assertCacheStats(index, 0, 1);
@@ -121,7 +122,6 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
         Assert.assertEquals(index.getCacheMisses(), misses, "cache misses didn't match expected");
     }
 
-
     /**
      * This tests that the optimization for querying forwards in https://github.com/samtools/htsjdk/pull/1396
      * returns the same results as the unoptimized queries going backwards.
@@ -131,24 +131,24 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
         final BAMIndexContent[] forward = new BAMIndexContent[200];
         final BAMIndexContent[] reverse = new BAMIndexContent[200];
 
-        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
-            //iterate forward which triggers the optimized path
+        try (final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+            // iterate forward which triggers the optimized path
             for (int i = 1; i <= 200; i++) {
                 final BAMIndexContent query = index.query(i, 1, -1);
                 forward[i - 1] = query;
             }
         }
 
-        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
-            //iterate backwards which doesn't use the optimized path
+        try (final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+            // iterate backwards which doesn't use the optimized path
             for (int i = 200; i > 0; i--) {
                 final BAMIndexContent query = index.query(i, 1, -1);
                 reverse[i - 1] = query;
             }
         }
 
-        for( int i = 0; i < 200; i++){
-               Assert.assertEquals(forward[i], reverse[i]);
+        for (int i = 0; i < 200; i++) {
+            Assert.assertEquals(forward[i], reverse[i]);
         }
     }
 }

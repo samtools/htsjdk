@@ -27,7 +27,6 @@ import htsjdk.io.HtsPath;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -65,12 +64,12 @@ public class ReferenceSequenceFileWalker implements Closeable {
         get(sequenceIndex);
         if (!referenceSequence.getName().equals(sequenceName)) {
             // Sanity check the sequence names against the sequence dictionary while scanning through.
-            throw new SAMException("Sequence name mismatch at sequence index (" + referenceSequence.getContigIndex() +
-                    ", " + referenceSequence.getName() + ") != " + sequenceName);
+            throw new SAMException("Sequence name mismatch at sequence index (" + referenceSequence.getContigIndex()
+                    + ", " + referenceSequence.getName() + ") != " + sequenceName);
         }
         if (referenceSequence.getBases().length != length) {
-            throw new SAMException("Sequence length mismatch for (" + sequenceIndex + ", " + sequenceName +
-            ").  expected " + length + " but found " + referenceSequence.getBases().length);
+            throw new SAMException("Sequence length mismatch for (" + sequenceIndex + ", " + sequenceName
+                    + ").  expected " + length + " but found " + referenceSequence.getBases().length);
         }
         return referenceSequence;
     }
@@ -84,25 +83,25 @@ public class ReferenceSequenceFileWalker implements Closeable {
             return referenceSequence;
         }
         if (referenceSequence != null && referenceSequence.getContigIndex() > sequenceIndex) {
-            throw new SAMException("Requesting earlier reference sequence: " + sequenceIndex + " < " +
-            referenceSequence.getContigIndex());
+            throw new SAMException("Requesting earlier reference sequence: " + sequenceIndex + " < "
+                    + referenceSequence.getContigIndex());
         }
         referenceSequence = null;
 
-        if(referenceSequenceFile.isIndexed() && referenceSequenceFile.getSequenceDictionary() != null) {
-            final SAMSequenceRecord samSequenceRecord = referenceSequenceFile.getSequenceDictionary().getSequence(sequenceIndex);
-            if(samSequenceRecord != null) {
-                referenceSequence = referenceSequenceFile.getSequence(samSequenceRecord.getSequenceName()) ;
+        if (referenceSequenceFile.isIndexed() && referenceSequenceFile.getSequenceDictionary() != null) {
+            final SAMSequenceRecord samSequenceRecord =
+                    referenceSequenceFile.getSequenceDictionary().getSequence(sequenceIndex);
+            if (samSequenceRecord != null) {
+                referenceSequence = referenceSequenceFile.getSequence(samSequenceRecord.getSequenceName());
             } // else referenceSequence will remain null
         } else {
             do {
                 referenceSequence = referenceSequenceFile.nextSequence();
-            }
-            while (referenceSequence != null && referenceSequence.getContigIndex() < sequenceIndex);
+            } while (referenceSequence != null && referenceSequence.getContigIndex() < sequenceIndex);
         }
         if (referenceSequence == null || referenceSequence.getContigIndex() != sequenceIndex) {
-            throw new SAMException("Reference sequence (" + sequenceIndex +
-                    ") not found in " + referenceSequenceFile.toString());
+            throw new SAMException(
+                    "Reference sequence (" + sequenceIndex + ") not found in " + referenceSequenceFile.toString());
         }
         return referenceSequence;
     }

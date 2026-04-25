@@ -45,7 +45,8 @@ public enum StructuralVariantType {
      */
     BND;
 
-    // TODO: 10/10/18 one caveat: BND's have symbolic alt allele, but it takes more information (novel adjacency at the minimum)
+    // TODO: 10/10/18 one caveat: BND's have symbolic alt allele, but it takes more information (novel adjacency at the
+    // minimum)
     /**
      * Create angle-bracketed alt allele for simple SV types
      * @return angle-bracketed alt allele for simple SV types

@@ -26,10 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,6 +35,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.zip.Deflater;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
@@ -69,7 +68,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         final BlockCompressedInputStream bcis = new BlockCompressedInputStream(f);
         final BufferedReader reader = new BufferedReader(new InputStreamReader(bcis));
         String line;
-        for(int i = 0; (line = reader.readLine()) != null; ++i) {
+        for (int i = 0; (line = reader.readLine()) != null; ++i) {
             Assert.assertEquals(line + "\n", linesWritten.get(i));
         }
         bcis.close();
@@ -88,12 +87,12 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
     public void testWriteSingleBytes() throws Exception {
         final File f = File.createTempFile("BCOST.", ".gz");
         f.deleteOnExit();
-        final String s  = "Hello, I am a test string, and I will be written out one painful byte at a time.";
+        final String s = "Hello, I am a test string, and I will be written out one painful byte at a time.";
         final byte[] bs = s.getBytes();
         final int iterations = BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2 / bs.length;
 
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
-        for (int i=0; i<iterations; ++i) {
+        for (int i = 0; i < iterations; ++i) {
             for (final byte b : bs) {
                 bcos.write(b);
             }
@@ -116,58 +115,100 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "seekReadExceptionsData")
-    private Object[][] seekReadExceptionsData()
-    {
-        return new Object[][]{
-                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", FileTruncatedException.class,
-                        BlockCompressedInputStream.PREMATURE_END_MSG + System.getProperty("user.dir") + "/" +
-                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", true, false, false, 0},
-                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", IOException.class,
-                        BlockCompressedInputStream.INCORRECT_HEADER_SIZE_MSG + System.getProperty("user.dir") + "/" +
-                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", true, false, false, 0},
-                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
-                        BlockCompressedInputStream.CANNOT_SEEK_STREAM_MSG, false, true, false, 0},
-                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
-                        BlockCompressedInputStream.CANNOT_SEEK_CLOSED_STREAM_MSG, false, true, true, 0},
-                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
-                        BlockCompressedInputStream.INVALID_FILE_PTR_MSG + 1000 + " for " + System.getProperty("user.dir") + "/" +
-                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", true, true, false, 1000 }
+    private Object[][] seekReadExceptionsData() {
+        return new Object[][] {
+            {
+                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz",
+                FileTruncatedException.class,
+                BlockCompressedInputStream.PREMATURE_END_MSG + System.getProperty("user.dir") + "/"
+                        + HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz",
+                true,
+                false,
+                false,
+                0
+            },
+            {
+                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz",
+                IOException.class,
+                BlockCompressedInputStream.INCORRECT_HEADER_SIZE_MSG + System.getProperty("user.dir") + "/"
+                        + HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz",
+                true,
+                false,
+                false,
+                0
+            },
+            {
+                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz",
+                IOException.class,
+                BlockCompressedInputStream.CANNOT_SEEK_STREAM_MSG,
+                false,
+                true,
+                false,
+                0
+            },
+            {
+                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz",
+                IOException.class,
+                BlockCompressedInputStream.CANNOT_SEEK_CLOSED_STREAM_MSG,
+                false,
+                true,
+                true,
+                0
+            },
+            {
+                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz",
+                IOException.class,
+                BlockCompressedInputStream.INVALID_FILE_PTR_MSG + 1000 + " for " + System.getProperty("user.dir") + "/"
+                        + HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz",
+                true,
+                true,
+                false,
+                1000
+            }
         };
     }
 
     @Test(dataProvider = "seekReadExceptionsData")
-    public void testSeekReadExceptions(final String filePath, final Class c, final String msg, final boolean isFile, final boolean isSeek, final boolean isClosed,
-                                       final int pos) throws Exception {
+    public void testSeekReadExceptions(
+            final String filePath,
+            final Class c,
+            final String msg,
+            final boolean isFile,
+            final boolean isSeek,
+            final boolean isClosed,
+            final int pos)
+            throws Exception {
 
-        final BlockCompressedInputStream bcis = isFile ?
-                new BlockCompressedInputStream(new File(filePath)) :
-                new BlockCompressedInputStream(new FileInputStream(filePath));
+        final BlockCompressedInputStream bcis = isFile
+                ? new BlockCompressedInputStream(new File(filePath))
+                : new BlockCompressedInputStream(new FileInputStream(filePath));
 
-        if ( isClosed ) {
+        if (isClosed) {
             bcis.close();
         }
 
         boolean haveException = false;
         try {
-            if ( isSeek ) {
+            if (isSeek) {
                 bcis.seek(pos);
             } else {
                 final BufferedReader reader = new BufferedReader(new InputStreamReader(bcis));
                 reader.readLine();
             }
         } catch (final Exception e) {
-            if ( e.getClass().equals(c) ) {
+            if (e.getClass().equals(c)) {
                 haveException = true;
                 Assert.assertEquals(e.getMessage(), msg);
             }
         }
 
-        if ( !haveException ) {
+        if (!haveException) {
             Assert.fail("Expected " + c.getSimpleName());
         }
     }
 
-    @Test public void testOverflow() throws Exception {
+    @Test
+    public void testOverflow() throws Exception {
         final File f = File.createTempFile("BCOST.", ".gz");
         f.deleteOnExit();
         System.out.println("Creating file " + f);
@@ -185,7 +226,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         int i = 0;
         while ((len = bcis.read(output, 0, output.length)) != -1) {
             for (int j = 0; j < len; j++) {
-               Assert.assertEquals(output[j], input[i++]);
+                Assert.assertEquals(output[j], input[i++]);
             }
         }
         Assert.assertEquals(i, INPUT_SIZE);
@@ -207,20 +248,20 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         f.deleteOnExit();
         System.out.println("Creating file " + f);
 
-        final int[] deflateCalls = {0}; //Note: using and array is a HACK to fool the compiler
+        final int[] deflateCalls = {0}; // Note: using and array is a HACK to fool the compiler
 
-        class MyDeflater extends Deflater{
-            MyDeflater(int level, boolean gzipCompatible){
+        class MyDeflater extends Deflater {
+            MyDeflater(int level, boolean gzipCompatible) {
                 super(level, gzipCompatible);
             }
+
             @Override
             public int deflate(byte[] b, int off, int len) {
                 deflateCalls[0]++;
                 return super.deflate(b, off, len);
             }
-
         }
-        final DeflaterFactory myDeflaterFactory= new DeflaterFactory(){
+        final DeflaterFactory myDeflaterFactory = new DeflaterFactory() {
             @Override
             public Deflater makeDeflater(final int compressionLevel, final boolean gzipCompatible) {
                 return new MyDeflater(compressionLevel, gzipCompatible);
@@ -229,10 +270,10 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         final List<String> linesWritten = new ArrayList<>();
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f, 5, myDeflaterFactory);
         String s = "Hi, Mom!\n";
-        bcos.write(s.getBytes()); //Call 1
+        bcos.write(s.getBytes()); // Call 1
         linesWritten.add(s);
         s = "Hi, Dad!\n";
-        bcos.write(s.getBytes()); //Call 2
+        bcos.write(s.getBytes()); // Call 2
         linesWritten.add(s);
         bcos.flush();
         final StringBuilder sb = new StringBuilder(BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2);
@@ -241,12 +282,12 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
             sb.append(s);
             linesWritten.add(s);
         }
-        bcos.write(sb.toString().getBytes()); //Call 3
+        bcos.write(sb.toString().getBytes()); // Call 3
         bcos.close();
         final BlockCompressedInputStream bcis = new BlockCompressedInputStream(f);
         final BufferedReader reader = new BufferedReader(new InputStreamReader(bcis));
         String line;
-        for(int i = 0; (line = reader.readLine()) != null; ++i) {
+        for (int i = 0; (line = reader.readLine()) != null; ++i) {
             Assert.assertEquals(line + "\n", linesWritten.get(i));
         }
         bcis.close();

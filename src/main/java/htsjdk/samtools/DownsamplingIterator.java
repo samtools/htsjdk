@@ -49,22 +49,35 @@ public abstract class DownsamplingIterator implements CloseableIterator<SAMRecor
     }
 
     /** Does nothing. */
-    @Override public void close() { /** No Op. */ }
+    @Override
+    public void close() {
+        /** No Op. */
+    }
 
     /** Returns the number of records seen, including accepted and discarded, since creation of the last call to resetStatistics. */
-    public long getSeenCount() { return this.recordsSeen; }
+    public long getSeenCount() {
+        return this.recordsSeen;
+    }
 
     /** Returns the number of records returned since creation of the last call to resetStatistics. */
-    public long getAcceptedCount() { return this.recordsAccepted; }
+    public long getAcceptedCount() {
+        return this.recordsAccepted;
+    }
 
     /** Returns the number of records discarded since creation of the last call to resetStatistics. */
-    public long getDiscardedCount() { return this.recordsSeen - this.recordsAccepted; }
+    public long getDiscardedCount() {
+        return this.recordsSeen - this.recordsAccepted;
+    }
 
     /** Gets the fraction of records discarded since creation or the last call to resetStatistics(). */
-    public double getDiscardedFraction() { return getDiscardedCount() / (double) getSeenCount(); }
+    public double getDiscardedFraction() {
+        return getDiscardedCount() / (double) getSeenCount();
+    }
 
     /** Gets the fraction of records accepted since creation or the last call to resetStatistics(). */
-    public double getAcceptedFraction() { return getAcceptedCount() / (double) getSeenCount(); }
+    public double getAcceptedFraction() {
+        return getAcceptedCount() / (double) getSeenCount();
+    }
 
     /** Resets the statistics for records seen/accepted/discarded. */
     public void resetStatistics() {
@@ -78,13 +91,18 @@ public abstract class DownsamplingIterator implements CloseableIterator<SAMRecor
     }
 
     /** Method for subclasses to record a record as being discarded. */
-    protected final void recordDiscardedRecord() { this.recordsSeen++; }
+    protected final void recordDiscardedRecord() {
+        this.recordsSeen++;
+    }
 
     /**
      * Method for subclasses to record a specific record as being accepted. Null may be passed if a record
      * was discarded but access to the object is no longer available.
      */
-    protected final void recordAcceptedRecord() { this.recordsSeen++; this.recordsAccepted++; }
+    protected final void recordAcceptedRecord() {
+        this.recordsSeen++;
+        this.recordsAccepted++;
+    }
 
     /** Record one or more records as having been discarded. */
     protected final void recordDiscardRecords(final long n) {
@@ -107,7 +125,8 @@ public abstract class DownsamplingIterator implements CloseableIterator<SAMRecor
     }
 
     /** Not supported. */
-    @Override public void remove() {
+    @Override
+    public void remove() {
         throw new UnsupportedOperationException("remove() not supported in DownsamplingIterators");
     }
 }

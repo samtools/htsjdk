@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.ref;
 
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.util.Log;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -39,10 +38,8 @@ public class EnaRefService {
      *                         limit.
      */
     byte[] getSequence(final String md5, final long timeoutMs, int maxTries, final long restBetweenTriesMs) {
-        if (md5 == null)
-            throw new NullPointerException("Expecting sequence md5 but got null.");
-        if (!md5.matches("[a-z0-9]{32}"))
-            throw new RuntimeException("Does not look like an md5 checksum: " + md5);
+        if (md5 == null) throw new NullPointerException("Expecting sequence md5 but got null.");
+        if (!md5.matches("[a-z0-9]{32}")) throw new RuntimeException("Does not look like an md5 checksum: " + md5);
 
         // from https://www.ebi.ac.uk/ena/software/cram-reference-registry
         final String httpEbiString = "https://www.ebi.ac.uk/ena/cram/md5/%s";
@@ -78,10 +75,11 @@ public class EnaRefService {
                     case HTTP_INTERNAL_SEVER_PROBLEM:
                         break;
                     case HTTP_MOVED_PERMANENTLY:
-                        log.error("It seems that the base URL for the ENA service has changed permanently. Got error:" + code +
-                        "\n Please contact the HtsJdk developers at www.github.com/samtools/htsjdk. \n" +
-                                "Tried to access "+ url + "\n" +
-                                "Response header: " + http.getHeaderFields().toString());
+                        log.error("It seems that the base URL for the ENA service has changed permanently. Got error:"
+                                + code + "\n Please contact the HtsJdk developers at www.github.com/samtools/htsjdk. \n"
+                                + "Tried to access "
+                                + url + "\n" + "Response header: "
+                                + http.getHeaderFields().toString());
                         throw new RuntimeException("Bad http status code: " + code);
                     default:
                         throw new RuntimeException("Unknown http status code: " + code);
@@ -110,5 +108,4 @@ public class EnaRefService {
 
         throw new GaveUpException(md5);
     }
-
 }

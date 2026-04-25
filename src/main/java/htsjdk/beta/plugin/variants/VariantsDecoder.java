@@ -8,4 +8,4 @@ import htsjdk.variant.vcf.VCFHeader;
 /**
  *  Base class for all {@link HtsContentType#VARIANT_CONTEXTS} decoders.
  */
-public interface VariantsDecoder extends HtsDecoder<VCFHeader, VariantContext> { }
+public interface VariantsDecoder extends HtsDecoder<VCFHeader, VariantContext> {}

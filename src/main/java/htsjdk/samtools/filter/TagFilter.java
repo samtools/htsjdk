@@ -24,7 +24,6 @@
 package htsjdk.samtools.filter;
 
 import htsjdk.samtools.SAMRecord;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -35,8 +34,8 @@ import java.util.List;
  */
 public class TagFilter implements SamRecordFilter {
 
-    private final String tag;           // The key of the tag to match
-    private final List<Object> values;  // The list of matching values
+    private final String tag; // The key of the tag to match
+    private final List<Object> values; // The list of matching values
     private Boolean includeReads;
 
     /**

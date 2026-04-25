@@ -14,8 +14,7 @@ import htsjdk.samtools.util.Log;
  * @param <T> the data series type of the codec
  */
 abstract class ExperimentalCodec<T> extends CoreCodec<T> {
-    ExperimentalCodec(final BitInputStream coreBlockInputStream,
-                      final BitOutputStream coreBlockOutputStream) {
+    ExperimentalCodec(final BitInputStream coreBlockInputStream, final BitOutputStream coreBlockOutputStream) {
         super(coreBlockInputStream, coreBlockOutputStream);
 
         final String subclass = this.getClass().getName();

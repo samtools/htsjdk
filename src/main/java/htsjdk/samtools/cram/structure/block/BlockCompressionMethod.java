@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.samtools.cram.CRAMException;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;

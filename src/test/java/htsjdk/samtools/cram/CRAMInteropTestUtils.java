@@ -38,7 +38,9 @@ public class CRAMInteropTestUtils {
     // Given a compressed test file path, return the corresponding uncompressed file path
     protected static final Path getUnCompressedPathForCompressedPath(final Path compressedInteropPath) {
         final String uncompressedFileName = getUncompressedFileName(compressedInteropPath);
-        return compressedInteropPath.getParent().getParent()
+        return compressedInteropPath
+                .getParent()
+                .getParent()
                 .resolve(CRAMInteropTestUtils.GZIP_PATH + uncompressedFileName);
     }
 
@@ -50,8 +52,8 @@ public class CRAMInteropTestUtils {
             final String compressedFileName = fileName.substring(0, lastDotIndex);
             return compressedFileName + CRAMInteropTestUtils.GZIP_SUFFIX;
         } else {
-            throw new CRAMException("The name of the compressed file should contain a period followed by a number that" +
-                    "indicates the order of compression. Actual compressed file name = "+ fileName);
+            throw new CRAMException("The name of the compressed file should contain a period followed by a number that"
+                    + "indicates the order of compression. Actual compressed file name = " + fileName);
         }
     }
 
@@ -60,7 +62,8 @@ public class CRAMInteropTestUtils {
     // in the repo)
     protected static final List<Path> getRawCRAMInteropTestFiles() throws IOException {
         final List<Path> paths = new ArrayList<>();
-        Files.newDirectoryStream(CRAMInteropTestUtils.getCRAMInteropTestDataLocation().resolve(GZIP_PATH))
+        Files.newDirectoryStream(
+                        CRAMInteropTestUtils.getCRAMInteropTestDataLocation().resolve(GZIP_PATH))
                 .forEach(path -> paths.add(path));
         return paths;
     }
@@ -73,18 +76,17 @@ public class CRAMInteropTestUtils {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             int skip = 0;
             for (final byte b : rawBytes) {
-                if (b == '\t'){
+                if (b == '\t') {
                     skip = 1;
                 }
                 if (b == '\n') {
                     skip = 0;
                 }
-                if (skip == 0 && b !='\n') {
+                if (skip == 0 && b != '\n') {
                     baos.write(b);
                 }
             }
             return baos.toByteArray();
         }
     }
-
 }

@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.CRAMException;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -40,69 +39,69 @@ public enum DataSeries {
 
     // Main
 
-    BF_BitFlags                         (DataSeriesType.INT,        "BF", 15),
-    CF_CompressionBitFlags              (DataSeriesType.INT,        "CF", 16),
+    BF_BitFlags(DataSeriesType.INT, "BF", 15),
+    CF_CompressionBitFlags(DataSeriesType.INT, "CF", 16),
 
     // Positional
 
-    RI_RefId                            (DataSeriesType.INT,        "RI", 33),
-    RL_ReadLength                       (DataSeriesType.INT,        "RL", 25),
-    AP_AlignmentPositionOffset          (DataSeriesType.INT,        "AP", 17),
-    RG_ReadGroup                        (DataSeriesType.INT,        "RG", 18),
+    RI_RefId(DataSeriesType.INT, "RI", 33),
+    RL_ReadLength(DataSeriesType.INT, "RL", 25),
+    AP_AlignmentPositionOffset(DataSeriesType.INT, "AP", 17),
+    RG_ReadGroup(DataSeriesType.INT, "RG", 18),
 
     // Read Name
 
-    RN_ReadName                         (DataSeriesType.BYTE_ARRAY, "RN", 11),
+    RN_ReadName(DataSeriesType.BYTE_ARRAY, "RN", 11),
 
     // Mate Record
 
-    NF_RecordsToNextFragment            (DataSeriesType.INT,        "NF", 24),
-    MF_MateBitFlags                     (DataSeriesType.INT,        "MF", 21),
-    NS_NextFragmentReferenceSequenceID  (DataSeriesType.INT,        "NS", 20),
-    NP_NextFragmentAlignmentStart       (DataSeriesType.INT,        "NP", 23),
-    TS_InsertSize                       (DataSeriesType.INT,        "TS", 22),
+    NF_RecordsToNextFragment(DataSeriesType.INT, "NF", 24),
+    MF_MateBitFlags(DataSeriesType.INT, "MF", 21),
+    NS_NextFragmentReferenceSequenceID(DataSeriesType.INT, "NS", 20),
+    NP_NextFragmentAlignmentStart(DataSeriesType.INT, "NP", 23),
+    TS_InsertSize(DataSeriesType.INT, "TS", 22),
 
     // Auxiliary Tags
 
-    TL_TagIdList                        (DataSeriesType.INT,        "TL", 32),
+    TL_TagIdList(DataSeriesType.INT, "TL", 32),
 
     // Retained for backward compatibility on CRAM read. See https://github.com/samtools/hts-specs/issues/598
     // https://github.com/samtools/htsjdk/issues/1571
 
-    TC_TagCount                         (DataSeriesType.INT,        "TC", 44),
-    TN_TagNameAndType                   (DataSeriesType.INT,        "TN", 39),
+    TC_TagCount(DataSeriesType.INT, "TC", 44),
+    TN_TagNameAndType(DataSeriesType.INT, "TN", 39),
 
     // Mapped Reads
 
-    MQ_MappingQualityScore              (DataSeriesType.INT,        "MQ", 19),
+    MQ_MappingQualityScore(DataSeriesType.INT, "MQ", 19),
 
     // Read Feature Records
 
-    FN_NumberOfReadFeatures             (DataSeriesType.INT,        "FN", 26),
-    FP_FeaturePosition                  (DataSeriesType.INT,        "FP", 28),
-    FC_FeatureCode                      (DataSeriesType.BYTE,       "FC", 27),
+    FN_NumberOfReadFeatures(DataSeriesType.INT, "FN", 26),
+    FP_FeaturePosition(DataSeriesType.INT, "FP", 28),
+    FC_FeatureCode(DataSeriesType.BYTE, "FC", 27),
 
     // Read Feature Codes
 
-    BB_Bases                            (DataSeriesType.BYTE_ARRAY, "BB", 37),
-    QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 38),
-    BA_Base                             (DataSeriesType.BYTE,       "BA", 30),
+    BB_Bases(DataSeriesType.BYTE_ARRAY, "BB", 37),
+    QQ_scores(DataSeriesType.BYTE_ARRAY, "QQ", 38),
+    BA_Base(DataSeriesType.BYTE, "BA", 30),
     // NOTE: the CramRecordReader and CramRecordWriter split the QS_QualityScore into two separate
     // DataSeriesReader/Writer(s), one uses the params described here (BYTE) and one uses BYTE_ARRAY
-    QS_QualityScore                     (DataSeriesType.BYTE,       "QS", 12),
-    BS_BaseSubstitutionCode             (DataSeriesType.BYTE,       "BS", 31),
-    IN_Insertion                        (DataSeriesType.BYTE_ARRAY, "IN", 13),
-    DL_DeletionLength                   (DataSeriesType.INT,        "DL", 29),
-    RS_RefSkip                          (DataSeriesType.INT,        "RS", 34),
-    SC_SoftClip                         (DataSeriesType.BYTE_ARRAY, "SC", 14),
-    PD_padding                          (DataSeriesType.INT,        "PD", 35),
-    HC_HardClip                         (DataSeriesType.INT,        "HC", 36),
+    QS_QualityScore(DataSeriesType.BYTE, "QS", 12),
+    BS_BaseSubstitutionCode(DataSeriesType.BYTE, "BS", 31),
+    IN_Insertion(DataSeriesType.BYTE_ARRAY, "IN", 13),
+    DL_DeletionLength(DataSeriesType.INT, "DL", 29),
+    RS_RefSkip(DataSeriesType.INT, "RS", 34),
+    SC_SoftClip(DataSeriesType.BYTE_ARRAY, "SC", 14),
+    PD_padding(DataSeriesType.INT, "PD", 35),
+    HC_HardClip(DataSeriesType.INT, "HC", 36),
 
     // For Testing Only — IDs match htslib's DS_TM=45, DS_TV=46
 
     // NOTE: these are not listed in the spec
-    TM_TestMark                         (DataSeriesType.INT,        "TM", 45),
-    TV_TestMark                         (DataSeriesType.INT,        "TV", 46);
+    TM_TestMark(DataSeriesType.INT, "TM", 45),
+    TV_TestMark(DataSeriesType.INT, "TV", 46);
 
     private final DataSeriesType type;
     private final String canonicalName;
@@ -141,11 +140,13 @@ public enum DataSeries {
      */
     public static DataSeries byCanonicalName(final String dataSeriesAbbreviation) {
         if (dataSeriesAbbreviation.length() != 2) {
-            throw new CRAMException("Data Series Canonical Name should be exactly two characters: " + dataSeriesAbbreviation);
+            throw new CRAMException(
+                    "Data Series Canonical Name should be exactly two characters: " + dataSeriesAbbreviation);
         }
 
         return Optional.ofNullable(CANONICAL_NAME_MAP.get(dataSeriesAbbreviation))
-                .orElseThrow(() -> new CRAMException("Could not find Data Series Encoding for: " + dataSeriesAbbreviation));
+                .orElseThrow(
+                        () -> new CRAMException("Could not find Data Series Encoding for: " + dataSeriesAbbreviation));
     }
 
     private static final Map<String, DataSeries> CANONICAL_NAME_MAP =

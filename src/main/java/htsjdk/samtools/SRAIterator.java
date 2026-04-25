@@ -1,51 +1,47 @@
 /*===========================================================================
-*
-*                            PUBLIC DOMAIN NOTICE
-*               National Center for Biotechnology Information
-*
-*  This software/database is a "United States Government Work" under the
-*  terms of the United States Copyright Act.  It was written as part of
-*  the author's official duties as a United States Government employee and
-*  thus cannot be copyrighted.  This software/database is freely available
-*  to the public for use. The National Library of Medicine and the U.S.
-*  Government have not placed any restriction on its use or reproduction.
-*
-*  Although all reasonable efforts have been taken to ensure the accuracy
-*  and reliability of the software and data, the NLM and the U.S.
-*  Government do not and cannot warrant the performance or results that
-*  may be obtained by using this software or data. The NLM and the U.S.
-*  Government disclaim all warranties, express or implied, including
-*  warranties of performance, merchantability or fitness for any particular
-*  purpose.
-*
-*  Please cite the author in any work or product based on this material.
-*
-* ===========================================================================
-*
-*/
+ *
+ *                            PUBLIC DOMAIN NOTICE
+ *               National Center for Biotechnology Information
+ *
+ *  This software/database is a "United States Government Work" under the
+ *  terms of the United States Copyright Act.  It was written as part of
+ *  the author's official duties as a United States Government employee and
+ *  thus cannot be copyrighted.  This software/database is freely available
+ *  to the public for use. The National Library of Medicine and the U.S.
+ *  Government have not placed any restriction on its use or reproduction.
+ *
+ *  Although all reasonable efforts have been taken to ensure the accuracy
+ *  and reliability of the software and data, the NLM and the U.S.
+ *  Government do not and cannot warrant the performance or results that
+ *  may be obtained by using this software or data. The NLM and the U.S.
+ *  Government disclaim all warranties, express or implied, including
+ *  warranties of performance, merchantability or fitness for any particular
+ *  purpose.
+ *
+ *  Please cite the author in any work or product based on this material.
+ *
+ * ===========================================================================
+ *
+ */
 
 /**
  * Created by andrii.nikitiuk on 8/11/15.
  */
-
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-
 import htsjdk.samtools.sra.ReferenceCache;
 import htsjdk.samtools.sra.SRAAccession;
 import htsjdk.samtools.sra.SRAAlignmentIterator;
 import htsjdk.samtools.sra.SRAUnalignmentIterator;
 import htsjdk.samtools.sra.SRAUtils;
-import ngs.ErrorMsg;
-import ngs.ReadCollection;
-import ngs.Reference;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import ngs.ErrorMsg;
+import ngs.ReadCollection;
 
 /**
  * SRA iterator which returns SAMRecords for requested list of chunks
@@ -134,8 +130,13 @@ public class SRAIterator implements SAMRecordIterator {
      * @param recordRangeInfo info about record ranges withing SRA archive
      * @param chunks used to determine which records the iterator should return
      */
-    public SRAIterator(SRAAccession accession, final ReadCollection run, final SAMFileHeader header, ReferenceCache cachedReferences,
-                       final RecordRangeInfo recordRangeInfo, final List<Chunk> chunks) {
+    public SRAIterator(
+            SRAAccession accession,
+            final ReadCollection run,
+            final SAMFileHeader header,
+            ReferenceCache cachedReferences,
+            final RecordRangeInfo recordRangeInfo,
+            final List<Chunk> chunks) {
         this.accession = accession;
         this.run = run;
         this.header = header;
@@ -174,7 +175,8 @@ public class SRAIterator implements SAMRecordIterator {
         while (currentChunk != null) {
             if (alignmentIterator == null) {
                 if (currentChunk.getChunkStart() < recordRangeInfo.getTotalReferencesLength()) {
-                    alignmentIterator = new SRAAlignmentIterator(accession, run, header, cachedReferences, recordRangeInfo, currentChunk);
+                    alignmentIterator = new SRAAlignmentIterator(
+                            accession, run, header, cachedReferences, recordRangeInfo, currentChunk);
                     if (validationStringency != null) {
                         alignmentIterator.setValidationStringency(validationStringency);
                     }
@@ -187,7 +189,8 @@ public class SRAIterator implements SAMRecordIterator {
 
             if (unalignmentIterator == null) {
                 if (currentChunk.getChunkEnd() > recordRangeInfo.getTotalReferencesLength()) {
-                    unalignmentIterator = new SRAUnalignmentIterator(accession, run, header, recordRangeInfo, currentChunk);
+                    unalignmentIterator =
+                            new SRAUnalignmentIterator(accession, run, header, recordRangeInfo, currentChunk);
                     if (validationStringency != null) {
                         unalignmentIterator.setValidationStringency(validationStringency);
                     }
@@ -230,7 +233,9 @@ public class SRAIterator implements SAMRecordIterator {
     }
 
     @Override
-    public void remove() { throw new UnsupportedOperationException("Removal of records not implemented."); }
+    public void remove() {
+        throw new UnsupportedOperationException("Removal of records not implemented.");
+    }
 
     @Override
     public void close() {
@@ -241,7 +246,9 @@ public class SRAIterator implements SAMRecordIterator {
     }
 
     @Override
-    public SAMRecordIterator assertSorted(final SortOrder sortOrder) { throw new UnsupportedOperationException("assertSorted is not implemented."); }
+    public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
+        throw new UnsupportedOperationException("assertSorted is not implemented.");
+    }
 
     public void setValidationStringency(ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;

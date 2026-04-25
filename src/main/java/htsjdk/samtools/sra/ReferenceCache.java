@@ -5,7 +5,6 @@ import ngs.ErrorMsg;
 import ngs.ReadCollection;
 import ngs.Reference;
 
-
 /**
  * That is a thread-safe wrapper for a list of cache Reference objects.
  * Those objects can be used from different threads without issues, however to load and save a Reference object, we

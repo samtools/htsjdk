@@ -1,9 +1,6 @@
 package htsjdk.samtools.util.htsget;
 
 import htsjdk.samtools.util.RuntimeIOException;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +11,8 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Class allowing deserialization from json htsget response, as defined in https://samtools.github.io/hts-specs/htsget.html
@@ -78,7 +77,8 @@ public class HtsgetResponse {
                 case "http":
                 case "https":
                     try {
-                        final HttpURLConnection conn = (HttpURLConnection) this.uri.toURL().openConnection();
+                        final HttpURLConnection conn =
+                                (HttpURLConnection) this.uri.toURL().openConnection();
                         conn.setRequestMethod("GET");
                         this.headers.forEach(conn::setRequestProperty);
                         conn.connect();
@@ -92,9 +92,10 @@ public class HtsgetResponse {
                         throw new HtsgetMalformedResponseException("data URI must be base64 encoded: " + dataUri);
                     }
                     return new ByteArrayInputStream(
-                        Base64.getDecoder().decode(dataUri.replaceFirst("^data:.*;base64,", "")));
+                            Base64.getDecoder().decode(dataUri.replaceFirst("^data:.*;base64,", "")));
                 default:
-                    throw new HtsgetMalformedResponseException("Unrecognized URI scheme in data block: " + this.uri.getScheme());
+                    throw new HtsgetMalformedResponseException(
+                            "Unrecognized URI scheme in data block: " + this.uri.getScheme());
             }
         }
 
@@ -107,8 +108,10 @@ public class HtsgetResponse {
         public static Block parse(final JSONObject blockJson) {
             final String uriJson = blockJson.optString("url", null);
             if (uriJson == null) {
-                throw new HtsgetMalformedResponseException("No URI found in Htsget data block: " +
-                    blockJson.toString().substring(0, Math.min(100, blockJson.toString().length())));
+                throw new HtsgetMalformedResponseException("No URI found in Htsget data block: "
+                        + blockJson
+                                .toString()
+                                .substring(0, Math.min(100, blockJson.toString().length())));
             }
             final URI uri;
             try {
@@ -118,19 +121,15 @@ public class HtsgetResponse {
             }
 
             final String dataClassJson = blockJson.optString("class", null);
-            final HtsgetClass dataClass = dataClassJson == null
-                ? null
-                : HtsgetClass.valueOf(dataClassJson.toLowerCase());
-
+            final HtsgetClass dataClass =
+                    dataClassJson == null ? null : HtsgetClass.valueOf(dataClassJson.toLowerCase());
 
             final JSONObject headersJson = blockJson.optJSONObject("headers");
             final Map<String, String> headers = headersJson == null
-                ? null
-                : headersJson.toMap().entrySet().stream()
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> e.getValue().toString()
-                ));
+                    ? null
+                    : headersJson.toMap().entrySet().stream()
+                            .collect(Collectors.toMap(
+                                    Map.Entry::getKey, e -> e.getValue().toString()));
 
             return new Block(uri, headers, dataClass);
         }
@@ -182,15 +181,12 @@ public class HtsgetResponse {
         }
 
         final List<Block> blocks = IntStream.range(0, blocksJson.length())
-            .mapToObj(blocksJson::getJSONObject)
-            .map(Block::parse)
-            .collect(Collectors.toList());
+                .mapToObj(blocksJson::getJSONObject)
+                .map(Block::parse)
+                .collect(Collectors.toList());
 
         return new HtsgetResponse(
-            formatJson == null ? null : HtsgetFormat.valueOf(formatJson.toUpperCase()),
-            blocks,
-            md5Json
-        );
+                formatJson == null ? null : HtsgetFormat.valueOf(formatJson.toUpperCase()), blocks, md5Json);
     }
 
     /**

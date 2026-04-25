@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
-
 import java.io.OutputStream;
 
 /**
@@ -82,13 +81,8 @@ public final class SBIIndexMerger extends IndexMerger<SBIIndex> {
      */
     @Override
     public void finish(final long dataFileLength) {
-        final SBIIndex.Header header =
-                new SBIIndex.Header(
-                        dataFileLength,
-                        SBIIndexWriter.EMPTY_MD5,
-                        SBIIndexWriter.EMPTY_UUID,
-                        recordCount,
-                        granularity);
+        final SBIIndex.Header header = new SBIIndex.Header(
+                dataFileLength, SBIIndexWriter.EMPTY_MD5, SBIIndexWriter.EMPTY_UUID, recordCount, granularity);
         indexWriter.finish(header, finalVirtualOffset);
     }
 }

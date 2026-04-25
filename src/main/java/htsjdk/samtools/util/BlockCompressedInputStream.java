@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools.util;
 
-
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
@@ -32,7 +31,6 @@ import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
-
 import java.io.*;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -48,19 +46,19 @@ import java.util.Arrays;
  * It probably is not necessary to wrap this stream in a buffering stream, because there is internal buffering.
  * The advantage of BGZF over conventional GZip format is that BGZF allows for seeking without having to read the
  * entire file up to the location being sought.  Note that seeking is only possible if the input stream is seekable.
- * 
- * Note that this implementation is not synchronized. If multiple threads access an instance concurrently, it must be synchronized externally. 
+ *
+ * Note that this implementation is not synchronized. If multiple threads access an instance concurrently, it must be synchronized externally.
  *
  * c.f. http://samtools.sourceforge.net/SAM1.pdf for details of BGZF format
  */
 public class BlockCompressedInputStream extends InputStream implements LocationAware {
 
-    public final static String INCORRECT_HEADER_SIZE_MSG = "Incorrect header size for file: ";
-    public final static String UNEXPECTED_BLOCK_LENGTH_MSG = "Unexpected compressed block length: ";
-    public final static String PREMATURE_END_MSG = "Premature end of file: ";
-    public final static String CANNOT_SEEK_STREAM_MSG = "Cannot seek a position for a non-file stream";
-    public final static String CANNOT_SEEK_CLOSED_STREAM_MSG = "Cannot seek a position for a closed stream";
-    public final static String INVALID_FILE_PTR_MSG = "Invalid file pointer: ";
+    public static final String INCORRECT_HEADER_SIZE_MSG = "Incorrect header size for file: ";
+    public static final String UNEXPECTED_BLOCK_LENGTH_MSG = "Unexpected compressed block length: ";
+    public static final String PREMATURE_END_MSG = "Premature end of file: ";
+    public static final String CANNOT_SEEK_STREAM_MSG = "Cannot seek a position for a non-file stream";
+    public static final String CANNOT_SEEK_CLOSED_STREAM_MSG = "Cannot seek a position for a closed stream";
+    public static final String INVALID_FILE_PTR_MSG = "Invalid file pointer: ";
 
     private InputStream mStream = null;
     private boolean mIsClosed = false;
@@ -103,11 +101,11 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @param allowBuffering if true, allow buffering
      * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
      */
-    public BlockCompressedInputStream(final InputStream stream, final boolean allowBuffering, final InflaterFactory inflaterFactory) {
+    public BlockCompressedInputStream(
+            final InputStream stream, final boolean allowBuffering, final InflaterFactory inflaterFactory) {
         if (allowBuffering) {
             mStream = IOUtil.toBufferedStream(stream);
-        }
-        else {
+        } else {
             mStream = stream;
         }
 
@@ -124,14 +122,12 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         this(file, BlockGunzipper.getDefaultInflaterFactory());
     }
 
-
     /**
      * Equivalent constructor for Path as the one that takes a File. Supports seeking.
      */
     public BlockCompressedInputStream(final Path file) throws IOException {
         this(new SeekablePathStream(file));
     }
-
 
     /**
      * Use this ctor if you wish to call seek()
@@ -144,7 +140,6 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         mStream = null;
         blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
-
 
     /**
      * @param url source of bytes
@@ -244,7 +239,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * Reads the next byte of data from the input stream. The value byte is returned as an int in the range 0 to 255.
      * If no byte is available because the end of the stream has been reached, the value -1 is returned.
      * This method blocks until input data is available, the end of the stream is detected, or an exception is thrown.
-
+     *
      * @return the next byte of data, or -1 if the end of the stream is reached.
      */
     @Override
@@ -271,9 +266,9 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     private volatile ByteArrayOutputStream buf = null;
     private static final byte eol = '\n';
     private static final byte eolCr = '\r';
-    
+
     /**
-     * Reads a whole line. A line is considered to be terminated by either a line feed ('\n'), 
+     * Reads a whole line. A line is considered to be terminated by either a line feed ('\n'),
      * carriage return ('\r') or carriage return followed by a line feed ("\r\n").
      *
      * @return  A String containing the contents of the line, excluding the line terminating
@@ -286,7 +281,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         if (available == 0) {
             return null;
         }
-        if(null == buf){ // lazy initialisation 
+        if (null == buf) { // lazy initialisation
             buf = new ByteArrayOutputStream(8192);
         }
         buf.reset();
@@ -295,27 +290,27 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         while (!done) {
             int linetmpPos = mCurrentOffset;
             int bCnt = 0;
-            while((available-- > 0)){
+            while ((available-- > 0)) {
                 final byte c = mCurrentBlock.mBlock[linetmpPos++];
-                if(c == eol){ // found \n
+                if (c == eol) { // found \n
                     done = true;
                     break;
-                } else if(foundCr){  // previous char was \r
+                } else if (foundCr) { // previous char was \r
                     --linetmpPos; // current char is not \n so put it back
                     done = true;
                     break;
-                } else if(c == eolCr){ // found \r
+                } else if (c == eolCr) { // found \r
                     foundCr = true;
                     continue; // no ++bCnt
                 }
                 ++bCnt;
             }
-            if(mCurrentOffset < linetmpPos) {
+            if (mCurrentOffset < linetmpPos) {
                 buf.write(mCurrentBlock.mBlock, mCurrentOffset, bCnt);
                 mCurrentOffset = linetmpPos;
             }
             available = available();
-            if(available == 0) {
+            if (available == 0) {
                 // EOF
                 done = true;
             }
@@ -397,20 +392,19 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
         mCurrentOffset = uncompressedOffset;
     }
-    
+
     /**
-     * Performs cleanup required before seek is called on the underlying stream 
+     * Performs cleanup required before seek is called on the underlying stream
      */
-    protected void prepareForSeek() {
-    }
+    protected void prepareForSeek() {}
 
     private boolean eof() throws IOException {
         if (mFile.eof()) {
             return true;
         }
         // If the last remaining block is the size of the EMPTY_GZIP_BLOCK, this is the same as being at EOF.
-        return (mFile.length() - (mCurrentBlock.mBlockAddress
-                + mCurrentBlock.mBlockCompressedSize) == BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
+        return (mFile.length() - (mCurrentBlock.mBlockAddress + mCurrentBlock.mBlockCompressedSize)
+                == BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
     }
 
     /**
@@ -427,7 +421,8 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             // If current offset is at the end of the current block, file
             // pointer should point
             // to the beginning of the next block.
-            return BlockCompressedFilePointerUtil.makeFilePointer(mCurrentBlock.mBlockAddress + mCurrentBlock.mBlockCompressedSize, 0);
+            return BlockCompressedFilePointerUtil.makeFilePointer(
+                    mCurrentBlock.mBlockAddress + mCurrentBlock.mBlockCompressedSize, 0);
         }
         return BlockCompressedFilePointerUtil.makeFilePointer(mCurrentBlock.mBlockAddress, mCurrentOffset);
     }
@@ -440,7 +435,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     public static long getFileBlock(final long bgzfOffset) {
         return BlockCompressedFilePointerUtil.getBlockAddress(bgzfOffset);
     }
-    
+
     /**
      * @param stream Must be at start of file.  Throws RuntimeException if !stream.markSupported().
      * @return true if the given file looks like a valid BGZF file.
@@ -457,12 +452,12 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     }
 
     private static boolean isValidBlockHeader(final byte[] buffer) {
-        return (buffer[0] == BlockCompressedStreamConstants.GZIP_ID1 &&
-                (buffer[1] & 0xFF) == BlockCompressedStreamConstants.GZIP_ID2 &&
-                (buffer[3] & BlockCompressedStreamConstants.GZIP_FLG) != 0 &&
-                buffer[10] == BlockCompressedStreamConstants.GZIP_XLEN &&
-                buffer[12] == BlockCompressedStreamConstants.BGZF_ID1 &&
-                buffer[13] == BlockCompressedStreamConstants.BGZF_ID2);
+        return (buffer[0] == BlockCompressedStreamConstants.GZIP_ID1
+                && (buffer[1] & 0xFF) == BlockCompressedStreamConstants.GZIP_ID2
+                && (buffer[3] & BlockCompressedStreamConstants.GZIP_FLG) != 0
+                && buffer[10] == BlockCompressedStreamConstants.GZIP_XLEN
+                && buffer[12] == BlockCompressedStreamConstants.BGZF_ID1
+                && buffer[13] == BlockCompressedStreamConstants.BGZF_ID2);
     }
 
     private void readBlock() throws IOException {
@@ -493,9 +488,9 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             }
         }
     }
-    
+
     /**
-     * Attempt to reuse the buffer of the given block 
+     * Attempt to reuse the buffer of the given block
      * @param block owning block
      * @return null decompressing buffer to reuse, null if no buffer is available
      */
@@ -503,9 +498,9 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         if (block == null) return null;
         return block.mBlock;
     }
-    
+
     /**
-     * Decompress the next block from the input stream. When using asynchronous 
+     * Decompress the next block from the input stream. When using asynchronous
      * IO, this will be called by the background thread.
      * @param bufferAvailableForReuse buffer in which to place decompressed block. A null or
      *  incorrectly sized buffer will result in the buffer being ignored and
@@ -525,20 +520,23 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
                 return new DecompressedBlock(blockAddress, new byte[0], 0);
             }
             if (headerByteCount != BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH) {
-                return new DecompressedBlock(blockAddress, headerByteCount, new IOException(INCORRECT_HEADER_SIZE_MSG + getSource()));
+                return new DecompressedBlock(
+                        blockAddress, headerByteCount, new IOException(INCORRECT_HEADER_SIZE_MSG + getSource()));
             }
             final int blockLength = unpackInt16(mFileBuffer, BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET) + 1;
             if (blockLength < BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH || blockLength > mFileBuffer.length) {
-                return new DecompressedBlock(blockAddress, blockLength,
+                return new DecompressedBlock(
+                        blockAddress,
+                        blockLength,
                         new IOException(UNEXPECTED_BLOCK_LENGTH_MSG + blockLength + " for " + getSource()));
             }
             final int remaining = blockLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH;
-            final int dataByteCount = readBytes(mFileBuffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH,
-                    remaining);
+            final int dataByteCount =
+                    readBytes(mFileBuffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, remaining);
             mStreamOffset += dataByteCount;
             if (dataByteCount != remaining) {
-                return new DecompressedBlock(blockAddress, blockLength,
-                        new FileTruncatedException(PREMATURE_END_MSG + getSource()));
+                return new DecompressedBlock(
+                        blockAddress, blockLength, new FileTruncatedException(PREMATURE_END_MSG + getSource()));
             }
             final byte[] decompressed = inflateBlock(mFileBuffer, blockLength, bufferAvailableForReuse);
             return new DecompressedBlock(blockAddress, decompressed, blockLength);
@@ -547,15 +545,16 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
     }
 
-    private byte[] inflateBlock(final byte[] compressedBlock, final int compressedLength,
-            final byte[] bufferAvailableForReuse) throws IOException {
+    private byte[] inflateBlock(
+            final byte[] compressedBlock, final int compressedLength, final byte[] bufferAvailableForReuse)
+            throws IOException {
         final int uncompressedLength = unpackInt32(compressedBlock, compressedLength - 4);
         if (uncompressedLength < 0) {
             throw new RuntimeIOException(getSource() + " has invalid uncompressedLength: " + uncompressedLength);
         }
         byte[] buffer = bufferAvailableForReuse;
         if (buffer == null || uncompressedLength != buffer.length) {
-        	// can't reuse the buffer since the size is incorrect
+            // can't reuse the buffer since the size is incorrect
             buffer = new byte[uncompressedLength];
         }
         blockGunzipper.unzipBlock(buffer, compressedBlock, compressedLength);
@@ -576,7 +575,8 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
     }
 
-    private static int readBytes(final SeekableStream file, final byte[] buffer, final int offset, final int length) throws IOException {
+    private static int readBytes(final SeekableStream file, final byte[] buffer, final int offset, final int length)
+            throws IOException {
         int bytesRead = 0;
         while (bytesRead < length) {
             final int count = file.read(buffer, offset + bytesRead, length - bytesRead);
@@ -588,7 +588,8 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         return bytesRead;
     }
 
-    private static int readBytes(final InputStream stream, final byte[] buffer, final int offset, final int length) throws IOException {
+    private static int readBytes(final InputStream stream, final byte[] buffer, final int offset, final int length)
+            throws IOException {
         int bytesRead = 0;
         while (bytesRead < length) {
             final int count = stream.read(buffer, offset + bytesRead, length - bytesRead);
@@ -601,18 +602,21 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     }
 
     private int unpackInt16(final byte[] buffer, final int offset) {
-        return ((buffer[offset] & 0xFF) |
-                ((buffer[offset+1] & 0xFF) << 8));
+        return ((buffer[offset] & 0xFF) | ((buffer[offset + 1] & 0xFF) << 8));
     }
 
     private int unpackInt32(final byte[] buffer, final int offset) {
-        return ((buffer[offset] & 0xFF) |
-                ((buffer[offset+1] & 0xFF) << 8) |
-                ((buffer[offset+2] & 0xFF) << 16) |
-                ((buffer[offset+3] & 0xFF) << 24));
+        return ((buffer[offset] & 0xFF)
+                | ((buffer[offset + 1] & 0xFF) << 8)
+                | ((buffer[offset + 2] & 0xFF) << 16)
+                | ((buffer[offset + 3] & 0xFF) << 24));
     }
 
-    public enum FileTermination {HAS_TERMINATOR_BLOCK, HAS_HEALTHY_LAST_BLOCK, DEFECTIVE}
+    public enum FileTermination {
+        HAS_TERMINATOR_BLOCK,
+        HAS_HEALTHY_LAST_BLOCK,
+        DEFECTIVE
+    }
 
     /**
      *
@@ -631,7 +635,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @throws IOException
      */
     public static FileTermination checkTermination(final Path path) throws IOException {
-        try( final SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ) ){
+        try (final SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ)) {
             return checkTermination(channel);
         }
     }
@@ -656,27 +660,30 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         try {
             channel.position(fileSize - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
 
-            //Check if the end of the file is an empty gzip block which is used as the terminator for a bgzipped file
-            final ByteBuffer lastBlockBuffer = ByteBuffer.allocate(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
+            // Check if the end of the file is an empty gzip block which is used as the terminator for a bgzipped file
+            final ByteBuffer lastBlockBuffer =
+                    ByteBuffer.allocate(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
             readFully(channel, lastBlockBuffer);
             if (Arrays.equals(lastBlockBuffer.array(), BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK)) {
                 return FileTermination.HAS_TERMINATOR_BLOCK;
             }
 
-            //if the last block isn't an empty gzip block, check to see if it is a healthy compressed block or if it's corrupted
+            // if the last block isn't an empty gzip block, check to see if it is a healthy compressed block or if it's
+            // corrupted
             final int bufsize = (int) Math.min(fileSize, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
             final byte[] bufferArray = new byte[bufsize];
             channel.position(fileSize - bufsize);
             readFully(channel, ByteBuffer.wrap(bufferArray));
-            for (int i = bufferArray.length - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length;
-                 i >= 0; --i) {
-                if (!preambleEqual(BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE,
-                                   bufferArray, i, BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length)) {
+            for (int i = bufferArray.length - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length; i >= 0; --i) {
+                if (!preambleEqual(
+                        BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE,
+                        bufferArray,
+                        i,
+                        BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length)) {
                     continue;
                 }
-                final ByteBuffer byteBuffer = ByteBuffer.wrap(bufferArray,
-                                                              i + BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length,
-                                                              4);
+                final ByteBuffer byteBuffer =
+                        ByteBuffer.wrap(bufferArray, i + BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length, 4);
                 byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
                 final int totalBlockSizeMinusOne = byteBuffer.getShort() & 0xFFFF;
                 if (bufferArray.length - i == totalBlockSizeMinusOne + 1) {
@@ -690,9 +697,10 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             exceptionThrown = true;
             throw e;
         } finally {
-            //if an exception was thrown we don't want to reset the position because that would be likely to throw again
-            //and suppress the initial exception
-            if(!exceptionThrown) {
+            // if an exception was thrown we don't want to reset the position because that would be likely to throw
+            // again
+            // and suppress the initial exception
+            if (!exceptionThrown) {
                 channel.position(initialPosition);
             }
         }
@@ -726,7 +734,8 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
     }
 
-    private static boolean preambleEqual(final byte[] preamble, final byte[] buf, final int startOffset, final int length) {
+    private static boolean preambleEqual(
+            final byte[] preamble, final byte[] buf, final int startOffset, final int length) {
         for (int i = 0; i < length; ++i) {
             if (preamble[i] != buf[i + startOffset]) {
                 return false;

@@ -25,9 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -36,6 +33,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * The tests listed here are not exhaustive, and duplicate some of the work found in Picard's MarkDuplicates test classes.
@@ -43,15 +42,15 @@ import java.util.Random;
  * @author nhomer
  */
 public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
-    
-    private final static SAMRecordDuplicateComparator comparator = new SAMRecordDuplicateComparator();
 
-    protected final static int DEFAULT_BASE_QUALITY = 10;
+    private static final SAMRecordDuplicateComparator comparator = new SAMRecordDuplicateComparator();
+
+    protected static final int DEFAULT_BASE_QUALITY = 10;
 
     private SAMRecordSetBuilder getSAMRecordSetBuilder() {
-        return  new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
+        return new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
     }
-    
+
     private boolean matchesExpected(final int expected, final int actual) {
         if (expected < 0) return (actual < 0);
         else if (0 == expected) return (0 == actual);
@@ -60,7 +59,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
     private void assertEquals(List<Integer> expectedValues, final SAMRecordSetBuilder records, boolean fullCompare) {
         SAMRecord previous = null, current;
-        
+
         Assert.assertEquals(expectedValues.size() + 1, records.size());
 
         Iterator<SAMRecord> iterator = records.getRecords().iterator();
@@ -71,16 +70,16 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
             if (null != previous) {
                 if (fullCompare) {
                     Assert.assertTrue(matchesExpected(integerIterator.next(), comparator.compare(previous, current)));
-                }
-                else {
-                    Assert.assertTrue(matchesExpected(integerIterator.next(), comparator.duplicateSetCompare(previous, current)));
+                } else {
+                    Assert.assertTrue(
+                            matchesExpected(integerIterator.next(), comparator.duplicateSetCompare(previous, current)));
                 }
             }
 
             previous = current;
         }
     }
-    
+
     private void assertEquals(int expected, final SAMRecordSetBuilder records, boolean fullCompare) {
         assertEquals(Collections.singletonList(expected), records, fullCompare);
     }
@@ -91,7 +90,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
     @Test
     public void testFragmentsSamePositive() {
         final SAMRecordSetBuilder records = getSAMRecordSetBuilder();
-        
+
         records.addFrag("READ0", 1, 1, false);
         records.addFrag("READ1", 1, 1, false);
 
@@ -124,7 +123,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         records.addFrag("READ0", 1, 1, false);
         records.addFrag("READ1", 2, 1, false);
-    
+
         assertEquals(-1, records, false);
     }
 
@@ -137,7 +136,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         assertEquals(-1, records, false);
     }
-    
+
     @Test
     public void testFragmentsDifferentCigar() {
         final SAMRecordSetBuilder records = getSAMRecordSetBuilder();
@@ -175,7 +174,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         records.addFrag("READ0", 1, 50, true, false, "50M", null, DEFAULT_BASE_QUALITY);
         records.addFrag("READ1", 1, 101, false, false, "50M", null, DEFAULT_BASE_QUALITY);
-        
+
         assertEquals(-1, records, false);
     }
 
@@ -185,7 +184,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         records.addFrag("READ0", 1, 55, false, false, "5S50M", null, DEFAULT_BASE_QUALITY);
         records.addFrag("READ1", 1, 60, false, false, "10S50M", null, DEFAULT_BASE_QUALITY);
-        
+
         assertEquals(0, records, false);
     }
 
@@ -195,7 +194,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         records.addFrag("READ0", 1, 55, true, false, "50M10S", null, DEFAULT_BASE_QUALITY);
         records.addFrag("READ1", 1, 60, true, false, "50M5S", null, DEFAULT_BASE_QUALITY);
-        
+
         assertEquals(0, records, false);
     }
 
@@ -218,10 +217,10 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
         records.addPair("READ0", 1, 55, 55);
         records.addPair("READ1", 2, 55, 55);
 
-        assertEquals(Arrays.asList(-1,-1,-1), records, false);
+        assertEquals(Arrays.asList(-1, -1, -1), records, false);
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNullHeaders() {
         final SAMRecordSetBuilder records = getSAMRecordSetBuilder();
 
@@ -240,24 +239,27 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
         // Generates synthetic data that is unsorted, it sorts the data, then validates that it was sorted correctly
 
         // Generate synthetic data
-        final SAMRecordSetBuilder randomSetOfRecords = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted, true);
+        final SAMRecordSetBuilder randomSetOfRecords =
+                new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted, true);
         final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("testing_read_group_id");
         readGroupRecord.setSample("test_sample_name");
         randomSetOfRecords.setReadGroup(readGroupRecord);
 
-        // The choice of 100000 iterations was done to be large enough to trigger a race condition in htsjdk 2.23.0 and earlier
+        // The choice of 100000 iterations was done to be large enough to trigger a race condition in htsjdk 2.23.0 and
+        // earlier
         // with a probability > 90%.  Larger numbers of iterations could be used to increase the probability of failure.
         final Random rand = new Random(42);
-        for (int i = 0;i < 100000;i++) {
+        for (int i = 0; i < 100000; i++) {
             randomSetOfRecords.addPair("readname" + i, 1, rand.nextInt(1000) + 1, rand.nextInt(1000) + 1);
         }
 
         // Sort Bam
-        final File sortedBam = File.createTempFile("testOut",".bam");
+        final File sortedBam = File.createTempFile("testOut", ".bam");
         final SamReader reader = randomSetOfRecords.getSamReader();
-                // SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(input);
+        // SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(input);
         reader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.duplicate);
-        final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(), false, sortedBam);
+        final SAMFileWriter writer =
+                new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(), false, sortedBam);
 
         for (final SAMRecord rec : reader) {
             writer.addAlignment(rec);
@@ -267,11 +269,14 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
 
         // Validate that the results are sorted
         final SAMSortOrderChecker sortChecker = new SAMSortOrderChecker(SAMFileHeader.SortOrder.duplicate);
-        final SamReader r = SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(sortedBam);
+        final SamReader r = SamReaderFactory.makeDefault()
+                .referenceSequence(Defaults.REFERENCE_FASTA)
+                .open(sortedBam);
 
-        for(final SAMRecord rec : r) {
-            Assert.assertTrue(sortChecker.isSorted(rec), "Simulated read with name: " + rec.getReadName() + " is not in duplicate sort order.");
+        for (final SAMRecord rec : r) {
+            Assert.assertTrue(
+                    sortChecker.isSorted(rec),
+                    "Simulated read with name: " + rec.getReadName() + " is not in duplicate sort order.");
         }
     }
-
 }

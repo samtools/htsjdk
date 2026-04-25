@@ -40,7 +40,9 @@ public class ReadsEncoderOptions implements HtsEncoderOptions {
      *
      * @return the {@link BAMEncoderOptions} for these ReadsEncoderOptions
      */
-    public BAMEncoderOptions getBAMEncoderOptions() { return bamEncoderOptions; }
+    public BAMEncoderOptions getBAMEncoderOptions() {
+        return bamEncoderOptions;
+    }
 
     /**
      * Set the {@link BAMEncoderOptions} for these ReadsEncoderOptions. Defaults values are default
@@ -76,5 +78,4 @@ public class ReadsEncoderOptions implements HtsEncoderOptions {
         this.cramEncoderOptions = cramEncoderOptions;
         return this;
     }
-
 }

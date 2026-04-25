@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.compression.nametokenisation.tokens;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.nametokenisation.TokenStreams;
-
 import java.util.Objects;
 
 /**
@@ -25,6 +24,7 @@ public class EncodeToken {
 
     /** Cached parsed integer for relativeValue, avoiding repeated Integer.parseInt() calls. */
     private int relativeValueInt;
+
     private boolean hasRelativeValueInt;
 
     /**
@@ -97,7 +97,8 @@ public class EncodeToken {
         public DupOrDiffToken(final byte tokenType, final String relativeValue) {
             super(tokenType, null, relativeValue);
             if (tokenType != TokenStreams.TOKEN_DIFF && tokenType != TokenStreams.TOKEN_DUP) {
-                throw new CRAMException("This constructor should only be used for token types TOKEN_DIFF and TOKEN_DUP");
+                throw new CRAMException(
+                        "This constructor should only be used for token types TOKEN_DIFF and TOKEN_DUP");
             }
         }
 
@@ -109,9 +110,6 @@ public class EncodeToken {
     @Override
     public int hashCode() {
         return Objects.hash(
-                tokenType,
-                actualValue == null ? 0 : actualValue,
-                relativeValue == null ? 0 : relativeValue);
+                tokenType, actualValue == null ? 0 : actualValue, relativeValue == null ? 0 : relativeValue);
     }
-
 }

@@ -1,12 +1,11 @@
 package htsjdk.tribble.annotation;
 
 import htsjdk.HtsjdkTest;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Unit tests for {@link Strand}.
@@ -43,16 +42,22 @@ public class StrandTest extends HtsjdkTest {
 
     @Test
     public void testEncodeUniqueness() {
-        Assert.assertEquals(Stream.of(Strand.values())
-                .map(Strand::encode)
-                .collect(Collectors.toSet()).size(), Strand.values().length);
+        Assert.assertEquals(
+                Stream.of(Strand.values())
+                        .map(Strand::encode)
+                        .collect(Collectors.toSet())
+                        .size(),
+                Strand.values().length);
     }
 
     @Test
     public void testEncodeAsCharUniqueness() {
-        Assert.assertEquals(Stream.of(Strand.values())
-                .map(Strand::encodeAsChar)
-                .collect(Collectors.toSet()).size(), Strand.values().length);
+        Assert.assertEquals(
+                Stream.of(Strand.values())
+                        .map(Strand::encodeAsChar)
+                        .collect(Collectors.toSet())
+                        .size(),
+                Strand.values().length);
     }
 
     @Test
@@ -107,18 +112,29 @@ public class StrandTest extends HtsjdkTest {
 
     @DataProvider(name = "invalidEncodingStringsData")
     public Object[][] invalidEncodingStringsData() {
-        return Stream.of("", null, "+++", "---", "POSITIVE",
-                "NEGATIVE", "NONE",
-                "FORWARD", "REVERSE",
-                " +", "- ", "p", "m", "x", "!")
-                .map(s -> new Object[] { s}).toArray(Object[][]::new);
+        return Stream.of(
+                        "",
+                        null,
+                        "+++",
+                        "---",
+                        "POSITIVE",
+                        "NEGATIVE",
+                        "NONE",
+                        "FORWARD",
+                        "REVERSE",
+                        " +",
+                        "- ",
+                        "p",
+                        "m",
+                        "x",
+                        "!")
+                .map(s -> new Object[] {s})
+                .toArray(Object[][]::new);
     }
 
     @DataProvider(name = "invalidEncodingCharsData")
     public Object[][] invalidEncodingCharsData() {
         final Character[] testCases = new Character[] {(char) 0, 'c', '\t', '\n', (char) -1, 'p', 'n', 'x', '!'};
-        return Stream.of(testCases)
-                .map(c -> new Object[] { c })
-                .toArray(Object[][]::new);
+        return Stream.of(testCases).map(c -> new Object[] {c}).toArray(Object[][]::new);
     }
 }

@@ -33,5 +33,6 @@ package htsjdk.tribble;
  */
 public interface NameAwareCodec {
     public String getName();
+
     public void setName(String name);
 }

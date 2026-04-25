@@ -1,19 +1,17 @@
 package htsjdk.beta.io.bundle;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.io.IOPathUtils;
 import htsjdk.io.IOPath;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class InputStreamResourceTest extends HtsjdkTest {
-    final static int TEST_STREAM_SIZE = 10;
+    static final int TEST_STREAM_SIZE = 10;
     final byte[] testBuffer = "zzzzzzzzzz".getBytes();
 
     @Test
@@ -41,7 +39,8 @@ public class InputStreamResourceTest extends HtsjdkTest {
 
     @Test
     public void testGetSeekableStream() throws IOException {
-        Assert.assertFalse(makeInputStreamResource(testBuffer).getSeekableStream().isPresent());
+        Assert.assertFalse(
+                makeInputStreamResource(testBuffer).getSeekableStream().isPresent());
     }
 
     @Test
@@ -51,8 +50,8 @@ public class InputStreamResourceTest extends HtsjdkTest {
 
     @Test
     public void testGetSignatureStream() throws IOException {
-        try (final SignatureStream signatureStream = makeInputStreamResource(testBuffer)
-                .getSignatureStream(TEST_STREAM_SIZE)) {
+        try (final SignatureStream signatureStream =
+                makeInputStreamResource(testBuffer).getSignatureStream(TEST_STREAM_SIZE)) {
             final byte[] roundTripBuffer = new byte[TEST_STREAM_SIZE];
             signatureStream.read(roundTripBuffer);
             Assert.assertEquals(roundTripBuffer, testBuffer);
@@ -68,7 +67,7 @@ public class InputStreamResourceTest extends HtsjdkTest {
             Assert.assertEquals(roundTripBuffer, testBuffer);
         }
 
-        //throws
+        // throws
         inputStreamResource.getSignatureStream(TEST_STREAM_SIZE);
     }
 
@@ -91,14 +90,13 @@ public class InputStreamResourceTest extends HtsjdkTest {
 
     private final InputStreamResource makeInputStreamResource(final byte[] testBuffer) throws IOException {
         final IOPath ioPath = IOPathUtils.createTempPath("testSeekable", ".txt");
-        try (final FileOutputStream fos = new FileOutputStream(ioPath.toPath().toFile().toString())) {
+        try (final FileOutputStream fos =
+                new FileOutputStream(ioPath.toPath().toFile().toString())) {
             fos.write(testBuffer);
         }
 
         final InputStreamResource inputStreamResource = new InputStreamResource(
-                new FileInputStream(ioPath.toPath().toFile()),
-                "contenttype",
-                ioPath.getRawInputString());
+                new FileInputStream(ioPath.toPath().toFile()), "contenttype", ioPath.getRawInputString());
 
         return inputStreamResource;
     }

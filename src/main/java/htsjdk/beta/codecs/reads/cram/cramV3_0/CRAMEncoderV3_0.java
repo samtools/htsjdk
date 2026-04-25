@@ -27,5 +27,4 @@ public class CRAMEncoderV3_0 extends CRAMEncoder {
     public HtsVersion getVersion() {
         return CRAMCodecV3_0.VERSION_3_0;
     }
-
 }

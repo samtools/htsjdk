@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.bcf2;
 
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -63,7 +62,7 @@ public final class BCF2Decoder {
      * @param stream
      */
     public void readNextBlock(final int blockSizeInBytes, final InputStream stream) {
-        if ( blockSizeInBytes < 0 ) throw new TribbleException("Invalid block size " + blockSizeInBytes);
+        if (blockSizeInBytes < 0) throw new TribbleException("Invalid block size " + blockSizeInBytes);
         setRecordBytes(readRecordBytes(blockSizeInBytes, stream));
     }
 
@@ -74,9 +73,9 @@ public final class BCF2Decoder {
      */
     public void skipNextBlock(final int blockSizeInBytes, final InputStream stream) {
         try {
-            final int bytesRead = (int)stream.skip(blockSizeInBytes);
+            final int bytesRead = (int) stream.skip(blockSizeInBytes);
             validateReadBytes(bytesRead, 1, blockSizeInBytes);
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             throw new TribbleException("I/O error while reading BCF2 file", e);
         }
         this.recordBytes = null;
@@ -131,20 +130,20 @@ public final class BCF2Decoder {
     }
 
     public final Object decodeTypedValue(final byte typeDescriptor, final int size) throws IOException {
-        if ( size == 0 ) {
+        if (size == 0) {
             // missing value => null in java
             return null;
         } else {
             final BCF2Type type = BCF2Utils.decodeType(typeDescriptor);
-            if ( type == BCF2Type.CHAR ) { // special case string decoding for efficiency
+            if (type == BCF2Type.CHAR) { // special case string decoding for efficiency
                 return decodeLiteralString(size);
-            } else if ( size == 1 ) {
+            } else if (size == 1) {
                 return decodeSingleValue(type);
             } else {
                 final ArrayList<Object> ints = new ArrayList<Object>(size);
-                for ( int i = 0; i < size; i++ ) {
+                for (int i = 0; i < size; i++) {
                     final Object val = decodeSingleValue(type);
-                    if ( val == null ) continue; // auto-pruning.  We remove trailing nulls
+                    if (val == null) continue; // auto-pruning.  We remove trailing nulls
                     ints.add(val);
                 }
                 return ints.isEmpty() ? null : ints; // return null when all of the values are null
@@ -156,16 +155,20 @@ public final class BCF2Decoder {
         // TODO -- decodeTypedValue should integrate this routine
         final int value = decodeInt(type);
 
-        if ( value == type.getMissingBytes() )
-            return null;
+        if (value == type.getMissingBytes()) return null;
         else {
             switch (type) {
                 case INT8:
                 case INT16:
-                case INT32: return value;
-                case FLOAT: return rawFloatToFloat(value);
-                case CHAR:  return value & 0xFF; // TODO -- I cannot imagine why we'd get here, as string needs to be special cased
-                default:    throw new TribbleException("BCF2 codec doesn't know how to decode type " + type );
+                case INT32:
+                    return value;
+                case FLOAT:
+                    return rawFloatToFloat(value);
+                case CHAR:
+                    return value
+                            & 0xFF; // TODO -- I cannot imagine why we'd get here, as string needs to be special cased
+                default:
+                    throw new TribbleException("BCF2 codec doesn't know how to decode type " + type);
             }
         }
     }
@@ -185,22 +188,20 @@ public final class BCF2Decoder {
             recordStream.read(bytes);
 
             int goodLength = 0;
-            for ( ; goodLength < bytes.length ; goodLength++ )
-                if ( bytes[goodLength] == 0 ) break;
+            for (; goodLength < bytes.length; goodLength++) if (bytes[goodLength] == 0) break;
 
-            if ( goodLength == 0 )
-                return null;
+            if (goodLength == 0) return null;
             else {
                 final String s = new String(bytes, 0, goodLength);
                 return BCF2Utils.isCollapsedString(s) ? BCF2Utils.explodeStringList(s) : s;
             }
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             throw new TribbleException("readByte failure", e);
         }
     }
 
     public final int decodeNumberOfElements(final byte typeDescriptor) throws IOException {
-        if ( BCF2Utils.sizeIsOverflow(typeDescriptor) )
+        if (BCF2Utils.sizeIsOverflow(typeDescriptor))
             // -1 ensures we explode immediately with a bad size if the result is missing
             return decodeInt(readTypeDescriptor(), -1);
         else
@@ -245,26 +246,27 @@ public final class BCF2Decoder {
      * @return see description
      */
     public final int[] decodeIntArray(final int size, final BCF2Type type, int[] maybeDest) throws IOException {
-        if ( size == 0 ) {
+        if (size == 0) {
             return null;
         } else {
-            if ( maybeDest != null && maybeDest.length < size )
-                maybeDest = null; // by nulling this out we ensure that we do fresh allocations as maybeDest is too small
+            if (maybeDest != null && maybeDest.length < size)
+                maybeDest =
+                        null; // by nulling this out we ensure that we do fresh allocations as maybeDest is too small
 
             final int val1 = decodeInt(type);
-            if ( val1 == type.getMissingBytes() ) {
+            if (val1 == type.getMissingBytes()) {
                 // fast path for first element being missing
-                for ( int i = 1; i < size; i++ ) decodeInt(type);
+                for (int i = 1; i < size; i++) decodeInt(type);
                 return null;
             } else {
                 // we know we will have at least 1 element, so making the int[] is worth it
                 final int[] ints = maybeDest == null ? new int[size] : maybeDest;
                 ints[0] = val1; // we already read the first one
-                for ( int i = 1; i < size; i++ ) {
+                for (int i = 1; i < size; i++) {
                     ints[i] = decodeInt(type);
-                    if ( ints[i] == type.getMissingBytes() ) {
+                    if (ints[i] == type.getMissingBytes()) {
                         // read the rest of the missing values, dropping them
-                        for ( int j = i + 1; j < size; j++ ) decodeInt(type);
+                        for (int j = i + 1; j < size; j++) decodeInt(type);
                         // deal with auto-pruning by returning an int[] containing
                         // only the non-MISSING values.  We do this by copying the first
                         // i elements, as i itself is missing
@@ -282,7 +284,7 @@ public final class BCF2Decoder {
     }
 
     private double rawFloatToFloat(final int rawFloat) {
-        return (double)Float.intBitsToFloat(rawFloat);
+        return (double) Float.intBitsToFloat(rawFloat);
     }
 
     // ----------------------------------------------------------------------
@@ -319,20 +321,19 @@ public final class BCF2Decoder {
             int nReadAttempts = 0; // keep track of how many times we've read
 
             // because we might not read enough bytes from the file in a single go, do it in a loop until we get EOF
-            while ( bytesRead < blockSizeInBytes ) {
+            while (bytesRead < blockSizeInBytes) {
                 final int read1 = inputStream.read(record, bytesRead, blockSizeInBytes - bytesRead);
-                if ( read1 == -1 )
-                    validateReadBytes(bytesRead, nReadAttempts, blockSizeInBytes);
-                else
-                    bytesRead += read1;
+                if (read1 == -1) validateReadBytes(bytesRead, nReadAttempts, blockSizeInBytes);
+                else bytesRead += read1;
             }
 
-            if ( GeneralUtils.DEBUG_MODE_ENABLED && nReadAttempts > 1 ) { // TODO -- remove me
-                System.err.println("Required multiple read attempts to actually get the entire BCF2 block, unexpected behavior");
+            if (GeneralUtils.DEBUG_MODE_ENABLED && nReadAttempts > 1) { // TODO -- remove me
+                System.err.println(
+                        "Required multiple read attempts to actually get the entire BCF2 block, unexpected behavior");
             }
 
             validateReadBytes(bytesRead, nReadAttempts, blockSizeInBytes);
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             throw new TribbleException("I/O error while reading BCF2 file", e);
         }
 
@@ -349,10 +350,10 @@ public final class BCF2Decoder {
     private static void validateReadBytes(final int actuallyRead, final int nReadAttempts, final int expected) {
         assert expected >= 0;
 
-        if ( actuallyRead < expected ) {
-            throw new TribbleException(
-                    String.format("Failed to read next complete record: expected %d bytes but read only %d after %d iterations",
-                            expected, actuallyRead, nReadAttempts));
+        if (actuallyRead < expected) {
+            throw new TribbleException(String.format(
+                    "Failed to read next complete record: expected %d bytes but read only %d after %d iterations",
+                    expected, actuallyRead, nReadAttempts));
         }
     }
 

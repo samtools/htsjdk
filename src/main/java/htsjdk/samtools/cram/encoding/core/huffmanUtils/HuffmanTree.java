@@ -19,7 +19,6 @@ package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.*;
 
 /**
@@ -61,7 +60,7 @@ abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
      */
     public HuffmanParams<T> getHuffmanParams() {
         final TreeMap<T, HuffmanBitCode<T>> codeWords = new TreeMap<>();
-        getCodeWords(0,0, codeWords);
+        getCodeWords(0, 0, codeWords);
 
         final List<T> symbols = new ArrayList();
         final List<Integer> codeWordLengths = new ArrayList();
@@ -86,5 +85,4 @@ abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
     public int compareTo(final HuffmanTree tree) {
         return frequency - tree.frequency;
     }
-
 }

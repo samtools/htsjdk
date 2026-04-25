@@ -23,12 +23,9 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import static htsjdk.samtools.GenomicIndexUtil.MAX_BINS;
 
 import java.util.Arrays;
-import java.util.List;
-
-import static htsjdk.samtools.GenomicIndexUtil.MAX_BINS;
 
 /**
  * Builder for a BinningIndexContent object.
@@ -54,7 +51,8 @@ public class BinningIndexBuilder {
      *                                  if false, leave uninitialized values as -1, which is required when merging index files
      *                                  (see {@link BAMIndexMerger})
      */
-    public BinningIndexBuilder(final int referenceSequence, final int sequenceLength, final boolean fillInUninitializedValues) {
+    public BinningIndexBuilder(
+            final int referenceSequence, final int sequenceLength, final boolean fillInUninitializedValues) {
         this.referenceSequence = referenceSequence;
         this.fillInUninitializedValues = fillInUninitializedValues;
         // Initially set each window to -1 so we can distinguish between windows that have no overlapping
@@ -84,8 +82,11 @@ public class BinningIndexBuilder {
      */
     public interface FeatureToBeIndexed {
         public int getStart();
+
         public int getEnd();
+
         public Integer getIndexingBin();
+
         public Chunk getChunk();
     }
 
@@ -95,7 +96,6 @@ public class BinningIndexBuilder {
 
         final Integer binNumber = feature.getIndexingBin();
         final int binNum = binNumber == null ? computeIndexingBin(feature) : binNumber;
-
 
         // is there a bin already represented for this index?  if not, add one
         final Bin bin;
@@ -120,7 +120,7 @@ public class BinningIndexBuilder {
         int startWindow = LinearIndex.convertToLinearIndexOffset(feature.getStart()); // the 16k window
         final int endWindow;
 
-        if (featureEnd == GenomicIndexUtil.UNSET_GENOMIC_LOCATION) {   // assume feature uses one position
+        if (featureEnd == GenomicIndexUtil.UNSET_GENOMIC_LOCATION) { // assume feature uses one position
             // Next line for C (samtools index) compatibility. Differs only when on a window boundary
             startWindow = LinearIndex.convertToLinearIndexOffset(feature.getStart() - 1);
             endWindow = startWindow;
@@ -151,16 +151,16 @@ public class BinningIndexBuilder {
      */
     public BinningIndexContent generateIndexContent() {
 
-
         // process bins
-        if (binsSeen == 0) return null;  // no bins for this reference
+        if (binsSeen == 0) return null; // no bins for this reference
 
         // process chunks
         // nothing needed
 
         // process linear index
         // linear index will only be as long as the largest index seen
-        final long[] newIndex = new long[largestIndexSeen + 1]; // in java1.6 Arrays.copyOf(index, largestIndexSeen + 1);
+        final long[] newIndex =
+                new long[largestIndexSeen + 1]; // in java1.6 Arrays.copyOf(index, largestIndexSeen + 1);
 
         // C (samtools index) also fills in intermediate 0's with values.  This seems unnecessary, but safe
         long lastNonZeroOffset = 0;
@@ -183,7 +183,7 @@ public class BinningIndexBuilder {
 
     private int computeIndexingBin(final FeatureToBeIndexed feature) {
         // regionToBin has zero-based, half-open API
-        final int start = feature.getStart()-1;
+        final int start = feature.getStart() - 1;
         int end = feature.getEnd();
         if (end <= 0) {
             // If feature end cannot be determined (e.g. because a read is not really aligned),

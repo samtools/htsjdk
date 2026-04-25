@@ -1,7 +1,6 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,9 +9,9 @@ import java.util.stream.Collectors;
  * of characters that have special meaning in VCF.
  */
 public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
-    final static private String ENCODING_SENTINEL_STRING = "%";
-    final static private char ENCODING_SENTNEL_CHAR = '%';
-    final static private int ENCODING_BASE_RADIX = 16;
+    private static final String ENCODING_SENTINEL_STRING = "%";
+    private static final char ENCODING_SENTNEL_CHAR = '%';
+    private static final int ENCODING_BASE_RADIX = 16;
 
     /**
      * Transform a single string, replacing % encoded values with their corresponding text.
@@ -53,9 +52,11 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
                 final char c = rawText.charAt(i);
                 if (c == ENCODING_SENTNEL_CHAR && ((i + 2) < rawText.length())) {
                     try {
-                        final char[] trans = Character.toChars(Integer.parseInt(rawText.substring(i + 1, i + 3), ENCODING_BASE_RADIX));
+                        final char[] trans = Character.toChars(
+                                Integer.parseInt(rawText.substring(i + 1, i + 3), ENCODING_BASE_RADIX));
                         if (trans.length != 1) {
-                            throw new TribbleException(String.format("escape sequence '%c' corresponds to an invalid encoding in '%s'", c, rawText));
+                            throw new TribbleException(String.format(
+                                    "escape sequence '%c' corresponds to an invalid encoding in '%s'", c, rawText));
                         }
                         builder.append(trans[0]);
                         i += 2;
@@ -70,5 +71,4 @@ public class VCFPercentEncodedTextTransformer implements VCFTextTransformer {
         }
         return rawText;
     }
-
 }

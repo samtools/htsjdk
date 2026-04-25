@@ -23,12 +23,10 @@
  */
 package htsjdk.samtools;
 
+import static org.testng.Assert.*;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.*;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
@@ -38,8 +36,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-
-import static org.testng.Assert.*;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Test BAM file indexing.
@@ -49,28 +48,27 @@ public class BAMFileIndexTest extends HtsjdkTest {
     private final boolean mVerbose = false;
 
     @Test
-    public void testGetSearchBins()
-            throws Exception {
-        final DiskBasedBAMFileIndex bfi = new DiskBasedBAMFileIndex(new File(BAM_FILE.getPath() + ".bai"),
-                null);    // todo can null be replaced with a Sequence dictionary for the BAM_FILE?
+    public void testGetSearchBins() throws Exception {
+        final DiskBasedBAMFileIndex bfi = new DiskBasedBAMFileIndex(
+                new File(BAM_FILE.getPath() + ".bai"),
+                null); // todo can null be replaced with a Sequence dictionary for the BAM_FILE?
         final long[] bins = bfi.getSpanOverlapping(1, 0, 0).toCoordinateArray();
         /***
-         if (bins == null) {
-         System.out.println("Search bins: " + bins);
-         return;
-         }
-         System.out.println("Search bins:");
-         for (int i = 0; i < bins.length; i++) {
-         System.out.println(" " + Long.toHexString(bins[i]));
-         }
+         * if (bins == null) {
+         * System.out.println("Search bins: " + bins);
+         * return;
+         * }
+         * System.out.println("Search bins:");
+         * for (int i = 0; i < bins.length; i++) {
+         * System.out.println(" " + Long.toHexString(bins[i]));
+         * }
          ***/
         assertNotNull(bins);
         assertEquals(bins.length, 2);
     }
 
     @Test
-    public void testSpecificQueries()
-            throws Exception {
+    public void testSpecificQueries() throws Exception {
         assertEquals(runQueryTest(BAM_FILE, "chrM", 10400, 10600, true), 1);
         assertEquals(runQueryTest(BAM_FILE, "chrM", 10400, 10600, false), 2);
     }
@@ -86,28 +84,28 @@ public class BAMFileIndexTest extends HtsjdkTest {
         checkChromosome("chr1", 885);
         checkChromosome("chr2", 837);
         /***
-         checkChromosome("chr3", 683);
-         checkChromosome("chr4", 633);
-         checkChromosome("chr5", 611);
-         checkChromosome("chr6", 585);
-         checkChromosome("chr7", 521);
-         checkChromosome("chr8", 507);
-         checkChromosome("chr9", 388);
-         checkChromosome("chr10", 477);
-         checkChromosome("chr11", 467);
-         checkChromosome("chr12", 459);
-         checkChromosome("chr13", 327);
-         checkChromosome("chr14", 310);
-         checkChromosome("chr15", 280);
-         checkChromosome("chr16", 278);
-         checkChromosome("chr17", 269);
-         checkChromosome("chr18", 265);
-         checkChromosome("chr19", 178);
-         checkChromosome("chr20", 228);
-         checkChromosome("chr21", 123);
-         checkChromosome("chr22", 121);
-         checkChromosome("chrX", 237);
-         checkChromosome("chrY", 29);
+         * checkChromosome("chr3", 683);
+         * checkChromosome("chr4", 633);
+         * checkChromosome("chr5", 611);
+         * checkChromosome("chr6", 585);
+         * checkChromosome("chr7", 521);
+         * checkChromosome("chr8", 507);
+         * checkChromosome("chr9", 388);
+         * checkChromosome("chr10", 477);
+         * checkChromosome("chr11", 467);
+         * checkChromosome("chr12", 459);
+         * checkChromosome("chr13", 327);
+         * checkChromosome("chr14", 310);
+         * checkChromosome("chr15", 280);
+         * checkChromosome("chr16", 278);
+         * checkChromosome("chr17", 269);
+         * checkChromosome("chr18", 265);
+         * checkChromosome("chr19", 178);
+         * checkChromosome("chr20", 228);
+         * checkChromosome("chr21", 123);
+         * checkChromosome("chr22", 121);
+         * checkChromosome("chrX", 237);
+         * checkChromosome("chrY", 29);
          ***/
     }
 
@@ -179,12 +177,13 @@ public class BAMFileIndexTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "queryIntervalsData")
-    public Object[][] queryIntervalsData(){
+    public Object[][] queryIntervalsData() {
         return new Object[][] {
-                {true, 1},
-                {false, 2}
+            {true, 1},
+            {false, 2}
         };
     }
+
     @Test(dataProvider = "queryIntervalsData")
     public void testQueryIntervals(final boolean contained, final int expected) {
         final SamReader reader = SamReaderFactory.makeDefault().enable().open(BAM_FILE);
@@ -249,12 +248,15 @@ public class BAMFileIndexTest extends HtsjdkTest {
     public void testMultiIntervalQuery(final boolean contained) {
         final List<String> referenceNames = getReferenceNames(BAM_FILE);
 
-        final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random(TestUtil.RANDOM_SEED));
+        final QueryInterval[] intervals =
+                generateRandomIntervals(referenceNames.size(), 1000, new Random(TestUtil.RANDOM_SEED));
         final Set<SAMRecord> multiIntervalRecords = new HashSet<SAMRecord>();
         final Set<SAMRecord> singleIntervalRecords = new HashSet<SAMRecord>();
         final SamReader reader = SamReaderFactory.makeDefault().open(BAM_FILE);
         for (final QueryInterval interval : intervals) {
-            consumeAll(singleIntervalRecords, reader.query(referenceNames.get(interval.referenceIndex), interval.start, interval.end, contained));
+            consumeAll(
+                    singleIntervalRecords,
+                    reader.query(referenceNames.get(interval.referenceIndex), interval.start, interval.end, contained));
         }
 
         final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
@@ -278,25 +280,24 @@ public class BAMFileIndexTest extends HtsjdkTest {
 
     @DataProvider(name = "testMultiIntervalQueryDataProvider")
     private Object[][] testMultiIntervalQueryDataProvider() {
-        return new Object[][]{{true}, {false}};
+        return new Object[][] {{true}, {false}};
     }
 
     @Test
     public void testUnmappedMateWithCoordinate() throws Exception {
         // TODO: Use SAMRecordSetBuilder when it is able to create a pair with one end unmapped
-        final String samText = "@HD\tVN:1.0\tSO:coordinate\n" +
-                "@SQ\tSN:chr1\tLN:101\n" +
-                "@SQ\tSN:chr2\tLN:101\n" +
-                "@SQ\tSN:chr3\tLN:101\n" +
-                "@SQ\tSN:chr4\tLN:101\n" +
-                "@SQ\tSN:chr5\tLN:101\n" +
-                "@SQ\tSN:chr6\tLN:101\n" +
-                "@SQ\tSN:chr7\tLN:404\n" +
-                "@SQ\tSN:chr8\tLN:202\n" +
-                "@RG\tID:0\tSM:Hi,Mom!\n" +
-                "@PG\tID:1\tPN:Hey!\tVN:2.0\n" +
-                "one_end_mapped\t73\tchr7\t100\t255\t101M\t*\t0\t0\tCAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN\t)'.*.+2,))&&'&*/)-&*-)&.-)&)&),/-&&..)./.,.).*&&,&.&&-)&&&0*&&&&&&&&/32/,01460&&/6/*0*/2/283//36868/&\tRG:Z:0\n" +
-                "one_end_mapped\t133\tchr7\t100\t0\t*\t=\t100\t0\tNCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA\t&/15445666651/566666553+2/14/&/555512+3/)-'/-&-'*+))*''13+3)'//++''/'))/3+&*5++)&'2+&+/*&-&&*)&-./1'1\tRG:Z:0\n";
+        final String samText = "@HD\tVN:1.0\tSO:coordinate\n" + "@SQ\tSN:chr1\tLN:101\n"
+                + "@SQ\tSN:chr2\tLN:101\n"
+                + "@SQ\tSN:chr3\tLN:101\n"
+                + "@SQ\tSN:chr4\tLN:101\n"
+                + "@SQ\tSN:chr5\tLN:101\n"
+                + "@SQ\tSN:chr6\tLN:101\n"
+                + "@SQ\tSN:chr7\tLN:404\n"
+                + "@SQ\tSN:chr8\tLN:202\n"
+                + "@RG\tID:0\tSM:Hi,Mom!\n"
+                + "@PG\tID:1\tPN:Hey!\tVN:2.0\n"
+                + "one_end_mapped\t73\tchr7\t100\t255\t101M\t*\t0\t0\tCAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN\t)'.*.+2,))&&'&*/)-&*-)&.-)&)&),/-&&..)./.,.).*&&,&.&&-)&&&0*&&&&&&&&/32/,01460&&/6/*0*/2/283//36868/&\tRG:Z:0\n"
+                + "one_end_mapped\t133\tchr7\t100\t0\t*\t=\t100\t0\tNCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA\t&/15445666651/566666553+2/14/&/555512+3/)-'/-&-'*+))*''13+3)'//++''/'))/3+&*5++)&'2+&+/*&-&&*)&-./1'1\tRG:Z:0\n";
         final ByteArrayInputStream bis = new ByteArrayInputStream(StringUtil.stringToBytes(samText));
         final File bamFile = File.createTempFile("BAMFileIndexTest.", FileExtensions.BAM);
         bamFile.deleteOnExit();
@@ -323,7 +324,8 @@ public class BAMFileIndexTest extends HtsjdkTest {
         iterator.close();
     }
 
-    private SAMRecord getSingleRecordStartingAt(final SamReader reader, final String sequence, final int alignmentStart) {
+    private SAMRecord getSingleRecordStartingAt(
+            final SamReader reader, final String sequence, final int alignmentStart) {
         final CloseableIterator<SAMRecord> it = reader.queryAlignmentStart(sequence, alignmentStart);
         Assert.assertTrue(it.hasNext());
         final SAMRecord rec = it.next();
@@ -335,8 +337,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
 
     private int countElements(final CloseableIterator<SAMRecord> it) {
         int num;
-        for (num = 0; it.hasNext(); ++num, it.next()) {
-        }
+        for (num = 0; it.hasNext(); ++num, it.next()) {}
         it.close();
         return num;
     }
@@ -385,7 +386,8 @@ public class BAMFileIndexTest extends HtsjdkTest {
     private List<String> getReferenceNames(final File bamFile) {
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         final List<String> result = new ArrayList<String>();
-        final List<SAMSequenceRecord> seqRecords = reader.getFileHeader().getSequenceDictionary().getSequences();
+        final List<SAMSequenceRecord> seqRecords =
+                reader.getFileHeader().getSequenceDictionary().getSequences();
         for (final SAMSequenceRecord seqRecord : seqRecords) {
             if (seqRecord.getSequenceName() != null) {
                 result.add(seqRecord.getSequenceName());
@@ -395,7 +397,8 @@ public class BAMFileIndexTest extends HtsjdkTest {
         return result;
     }
 
-    private int runQueryTest(final File bamFile, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private int runQueryTest(
+            final File bamFile, final String sequence, final int startPos, final int endPos, final boolean contained) {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
         final SamReader reader1 = SamReaderFactory.makeDefault().open(bamFile);
         final SamReader reader2 = SamReaderFactory.makeDefault().open(bamFile);
@@ -452,21 +455,30 @@ public class BAMFileIndexTest extends HtsjdkTest {
         return count1;
     }
 
-    private void checkPassesFilter(final boolean expected, final SAMRecord record, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private void checkPassesFilter(
+            final boolean expected,
+            final SAMRecord record,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final boolean contained) {
         final boolean passes = passesFilter(record, sequence, startPos, endPos, contained);
         if (passes != expected) {
-            System.out.println("Error: Record erroneously " +
-                    (passes ? "passed" : "failed") +
-                    " filter.");
+            System.out.println("Error: Record erroneously " + (passes ? "passed" : "failed") + " filter.");
             System.out.println(" Record: " + record.getSAMString());
-            System.out.println(" Filter: " + sequence + ":" +
-                    startPos + "-" + endPos +
-                    " (" + (contained ? "contained" : "overlapping") + ")");
+            System.out.println(" Filter: " + sequence + ":" + startPos
+                    + "-" + endPos + " ("
+                    + (contained ? "contained" : "overlapping") + ")");
             assertEquals(passes, expected);
         }
     }
 
-    private boolean passesFilter(final SAMRecord record, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private boolean passesFilter(
+            final SAMRecord record,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final boolean contained) {
         if (record == null) {
             return false;
         }

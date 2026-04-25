@@ -26,7 +26,6 @@ package htsjdk.samtools.seekablestream;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.tribble.TribbleException;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
@@ -40,7 +39,7 @@ import java.util.function.Function;
  * @author jrobinso
  * @date Nov 30, 2009
  */
-public class SeekableStreamFactory{
+public class SeekableStreamFactory {
 
     private static final ISeekableStreamFactory DEFAULT_FACTORY;
     private static final String HTTP = "http";
@@ -50,21 +49,22 @@ public class SeekableStreamFactory{
      * the set of url schemes that have special support in htsjdk that isn't through a FileSystemProvider
      */
     private static final Set<String> URL_SCHEMES_WITH_LEGACY_SUPPORT = Set.of(HTTP, FTP, HTTPS);
+
     public static final String FILE_SCHEME = "file";
     private static ISeekableStreamFactory currentFactory;
 
-    static{
+    static {
         DEFAULT_FACTORY = new DefaultSeekableStreamFactory();
         currentFactory = DEFAULT_FACTORY;
     }
 
-    private SeekableStreamFactory(){}
+    private SeekableStreamFactory() {}
 
-    public static void setInstance(final ISeekableStreamFactory factory){
+    public static void setInstance(final ISeekableStreamFactory factory) {
         currentFactory = factory;
     }
 
-    public static ISeekableStreamFactory getInstance(){
+    public static ISeekableStreamFactory getInstance() {
         return currentFactory;
     }
 
@@ -86,14 +86,14 @@ public class SeekableStreamFactory{
      * @param path a path to check
      * @return if the path is not being handled by a FileSystemProvider and it can be read by legacy streams
      */
-    public static boolean isBeingHandledByLegacyUrlSupport(final String path){
-        return !new HtsPath(path).hasFileSystemProvider()  //if we have a provider for it that's what we'll use
+    public static boolean isBeingHandledByLegacyUrlSupport(final String path) {
+        return !new HtsPath(path).hasFileSystemProvider() // if we have a provider for it that's what we'll use
                 && canBeHandledByLegacyUrlSupport(path); // otherwise we fall back to the special handlers
     }
 
-    //is this one of the url types that has legacy htsjdk support built in?
+    // is this one of the url types that has legacy htsjdk support built in?
     public static boolean canBeHandledByLegacyUrlSupport(final String path) {
-        return URL_SCHEMES_WITH_LEGACY_SUPPORT.stream().anyMatch(scheme-> path.startsWith(scheme +"://"));
+        return URL_SCHEMES_WITH_LEGACY_SUPPORT.stream().anyMatch(scheme -> path.startsWith(scheme + "://"));
     }
 
     private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {
@@ -117,11 +117,10 @@ public class SeekableStreamFactory{
          * @param wrapper a wrapper to apply to the stream allowing direct transformations on the byte stream to be applied
          */
         @Override
-        public SeekableStream getStreamFor(final String path,
-                                           Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        public SeekableStream getStreamFor(
+                final String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
             return getStreamFor(new HtsPath(path), wrapper);
         }
-
 
         /**
          * The wrapper will only be applied to the stream if the stream is treated as a non file:// {@link Path}
@@ -132,31 +131,32 @@ public class SeekableStreamFactory{
          * @param wrapper a wrapper to apply to the stream allowing direct transformations on the byte stream to be applied
          * @throws IOException
          */
-        public static SeekableStream getStreamFor(final IOPath path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
-            if(path.hasFileSystemProvider()) {
+        public static SeekableStream getStreamFor(
+                final IOPath path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+            if (path.hasFileSystemProvider()) {
                 return path.getScheme().equals(FILE_SCHEME)
-                        ? new SeekableFileStream(path.toPath().toFile()) //don't apply the wrapper to local files
+                        ? new SeekableFileStream(path.toPath().toFile()) // don't apply the wrapper to local files
                         : new SeekablePathStream(path.toPath(), wrapper);
             } else {
-               return switch(path.getScheme()){
-                   case HTTP, HTTPS -> new SeekableHTTPStream(new URL(path.getRawInputString()));
-                   case FTP -> new SeekableFTPStream((new URL(path.getRawInputString())));
-                   default -> throw new TribbleException("Unknown path type. No FileSystemProvider available for " + path.getRawInputString());
-               };
+                return switch (path.getScheme()) {
+                    case HTTP, HTTPS -> new SeekableHTTPStream(new URL(path.getRawInputString()));
+                    case FTP -> new SeekableFTPStream((new URL(path.getRawInputString())));
+                    default ->
+                        throw new TribbleException(
+                                "Unknown path type. No FileSystemProvider available for " + path.getRawInputString());
+                };
             }
         }
 
         @Override
-        public SeekableStream getBufferedStream(SeekableStream stream){
+        public SeekableStream getBufferedStream(SeekableStream stream) {
             return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
         }
 
         @Override
-        public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize){
+        public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize) {
             if (bufferSize == 0) return stream;
             else return new SeekableBufferedStream(stream, bufferSize);
         }
-
     }
-
 }

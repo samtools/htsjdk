@@ -22,9 +22,8 @@ import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.core.huffmanUtils.HuffmanParams;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
-
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -70,8 +69,9 @@ public final class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer>
 
     @Override
     public byte[] toSerializedEncodingParams() {
-        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES *
-                (huffmanParams.getSymbols().size() + huffmanParams.getCodeWordLengths().size()));
+        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES
+                * (huffmanParams.getSymbols().size()
+                        + huffmanParams.getCodeWordLengths().size()));
 
         ITF8.writeUnsignedITF8(huffmanParams.getSymbols().size(), buf);
         for (final int value : huffmanParams.getSymbols()) {
@@ -91,8 +91,9 @@ public final class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer>
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams,
-                                         final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<Integer> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new CanonicalHuffmanIntegerCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
@@ -108,7 +109,9 @@ public final class CanonicalHuffmanIntegerEncoding extends CRAMEncoding<Integer>
     }
 
     @Override
-    public int hashCode() { return huffmanParams.hashCode(); }
+    public int hashCode() {
+        return huffmanParams.hashCode();
+    }
 
     @Override
     public String toString() {

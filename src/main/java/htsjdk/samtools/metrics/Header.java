@@ -39,5 +39,4 @@ public interface Header extends Serializable {
 
     /** Parses the data contained in the String version of the header. */
     public void parse(String in);
-
 }

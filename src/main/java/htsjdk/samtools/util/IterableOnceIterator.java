@@ -22,8 +22,7 @@ public abstract class IterableOnceIterator<T> implements Iterable<T>, Iterator<T
     public Iterator<T> iterator() {
         if (iterated) {
             throw new IllegalStateException("May not call iterator() more than once on IterableOnceIterator.");
-        }
-        else {
+        } else {
             iterated = true;
             return this;
         }
@@ -36,7 +35,8 @@ public abstract class IterableOnceIterator<T> implements Iterable<T>, Iterator<T
     }
 
     /** Does nothing, intended to be overridden when needed. */
-    @Override public void close() throws IOException {
+    @Override
+    public void close() throws IOException {
         // Default do nothing implementation
     }
 }

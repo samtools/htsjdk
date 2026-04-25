@@ -21,7 +21,6 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +30,7 @@ import java.io.InputStream;
  *
  * {@link BufferedReader} and its {@link java.io.BufferedReader#readLine()} method should be used in preference to this class (when the
  * {@link htsjdk.samtools.util.LocationAware} functionality is not required) because it offers greater performance.
- * 
+ *
  * @author jrobinso
  */
 public class AsciiLineReader implements LineReader, LocationAware {
@@ -45,7 +44,8 @@ public class AsciiLineReader implements LineReader, LocationAware {
     private char[] lineBuffer;
     private int lineTerminatorLength = -1;
 
-    protected AsciiLineReader() {};
+    protected AsciiLineReader() {}
+    ;
 
     /**
      * Note: This class implements LocationAware, which requires preservation of virtual file pointers on BGZF inputs.
@@ -55,8 +55,9 @@ public class AsciiLineReader implements LineReader, LocationAware {
      * @deprecated 8/8/2017 use {@link #from}
      */
     @Deprecated
-    public AsciiLineReader(final InputStream is){
-        // NOTE: This will wrap the input stream in a PositionalBufferedStream even if its already a PositionalBufferedStream
+    public AsciiLineReader(final InputStream is) {
+        // NOTE: This will wrap the input stream in a PositionalBufferedStream even if its already a
+        // PositionalBufferedStream
         this(new PositionalBufferedStream(is));
     }
 
@@ -86,11 +87,12 @@ public class AsciiLineReader implements LineReader, LocationAware {
             return new BlockCompressedAsciiLineReader((BlockCompressedInputStream) inputStream);
         } else if (inputStream instanceof PositionalBufferedStream) {
             // if this is already a PositionalBufferedStream, don't let AsciiLineReader wrap it with another one...
-            return new AsciiLineReader((PositionalBufferedStream)inputStream);
+            return new AsciiLineReader((PositionalBufferedStream) inputStream);
         } else {
-            log.warn("Creating an indexable source for an AsciiFeatureCodec using a stream that is " +
-                    "neither a PositionalBufferedStream nor a BlockCompressedInputStream");
-            return new AsciiLineReader(new PositionalBufferedStream(inputStream)); // wrap the stream in a PositionalBufferedStream
+            log.warn("Creating an indexable source for an AsciiFeatureCodec using a stream that is "
+                    + "neither a PositionalBufferedStream nor a BlockCompressedInputStream");
+            return new AsciiLineReader(
+                    new PositionalBufferedStream(inputStream)); // wrap the stream in a PositionalBufferedStream
         }
     }
 
@@ -98,9 +100,10 @@ public class AsciiLineReader implements LineReader, LocationAware {
      * @return The position of the InputStream
      */
     @Override
-    public long getPosition(){
-        if(is == null){
-            throw new TribbleException("getPosition() called but no default stream was provided to the class on creation");
+    public long getPosition() {
+        if (is == null) {
+            throw new TribbleException(
+                    "getPosition() called but no default stream was provided to the class on creation");
         }
         return is.getPosition();
     }
@@ -127,7 +130,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
      *         end of the stream has been reached
      */
     @Deprecated
-    public String readLine(final PositionalBufferedStream stream) throws IOException{
+    public String readLine(final PositionalBufferedStream stream) throws IOException {
         int linePosition = 0;
 
         while (true) {
@@ -148,8 +151,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
                 if (c == CARRIAGE_RETURN && stream.peek() == LINEFEED) {
                     stream.read(); // <= skip the trailing \n in case of \r\n termination
                     this.lineTerminatorLength = 2;
-                }
-                else {
+                } else {
                     this.lineTerminatorLength = 1;
                 }
 
@@ -175,22 +177,22 @@ public class AsciiLineReader implements LineReader, LocationAware {
      * @return The next string, or null when input is exhausted.
      */
     @Override
-    public String readLine() throws IOException{
-        if ( is == null ){
-            throw new TribbleException("readLine() called without an explicit stream argument but no default stream was provided to the class on creation");
+    public String readLine() throws IOException {
+        if (is == null) {
+            throw new TribbleException(
+                    "readLine() called without an explicit stream argument but no default stream was provided to the class on creation");
         }
         return readLine(is);
     }
 
     @Override
     public void close() {
-        if ( is != null ) is.close();
+        if (is != null) is.close();
         lineBuffer = null;
     }
-    
+
     @Override
     public String toString() {
-        return "AsciiLineReader("+(this.is == null ? "closed"  : String.valueOf(this.is.getPosition())) +")";
+        return "AsciiLineReader(" + (this.is == null ? "closed" : String.valueOf(this.is.getPosition())) + ")";
     }
 }
-

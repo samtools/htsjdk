@@ -5,11 +5,10 @@ import htsjdk.samtools.cram.encoding.readfeatures.Bases;
 import htsjdk.samtools.cram.encoding.readfeatures.Scores;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class ReadFeaturesTest extends HtsjdkTest {
 
@@ -48,7 +47,9 @@ public class ReadFeaturesTest extends HtsjdkTest {
         for (Substitution s1 : substitutions) {
             for (Substitution s2 : substitutions) {
                 if (s1.equals(s2)) {
-                    Assert.assertEquals(s1.hashCode(), s2. hashCode(),
+                    Assert.assertEquals(
+                            s1.hashCode(),
+                            s2.hashCode(),
                             String.format("Comparing %s (%s) and %s (%s)", s1, s1.getCode(), s2, s2.getCode()));
                 }
             }

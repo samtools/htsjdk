@@ -27,12 +27,10 @@ package htsjdk.samtools.reference;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,14 +48,15 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     /**
      * Store the entries.  Use a LinkedHashMap for consistent iteration in insertion order.
      */
-    private final Map<String,FastaSequenceIndexEntry> sequenceEntries = new LinkedHashMap<String,FastaSequenceIndexEntry>();
+    private final Map<String, FastaSequenceIndexEntry> sequenceEntries =
+            new LinkedHashMap<String, FastaSequenceIndexEntry>();
 
     /**
      * Build a sequence index from the specified file.
      * @param indexFile File to open.
      * @throws FileNotFoundException if the index file cannot be found.
      */
-    public FastaSequenceIndex( File indexFile ) {
+    public FastaSequenceIndex(File indexFile) {
         this(IOUtil.toPath(indexFile));
     }
 
@@ -66,7 +65,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @param indexFile File to open.
      * @throws FileNotFoundException if the index file cannot be found.
      */
-    public FastaSequenceIndex( Path indexFile ) {
+    public FastaSequenceIndex(Path indexFile) {
         IOUtil.assertFileIsReadable(indexFile);
         try (InputStream in = Files.newInputStream(indexFile)) {
             parseIndexFile(in);
@@ -93,7 +92,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @param indexEntry New index entry to add.
      */
     protected void add(FastaSequenceIndexEntry indexEntry) {
-        final FastaSequenceIndexEntry ret = sequenceEntries.put(indexEntry.getContig(),indexEntry);
+        final FastaSequenceIndexEntry ret = sequenceEntries.put(indexEntry.getContig(), indexEntry);
         if (ret != null) {
             throw new SAMException("Contig '" + indexEntry.getContig() + "' already exists in fasta index.");
         }
@@ -104,7 +103,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @param entry entry to update.
      * @param newName New name for the index entry.
      */
-    protected void rename(FastaSequenceIndexEntry entry,String newName) {
+    protected void rename(FastaSequenceIndexEntry entry, String newName) {
         sequenceEntries.remove(entry.getContig());
         entry.setContig(newName);
         add(entry);
@@ -116,22 +115,18 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @return True if index has the same entries as other instance, in the same order
      */
     public boolean equals(Object other) {
-        if(!(other instanceof FastaSequenceIndex))
-            return false;
+        if (!(other instanceof FastaSequenceIndex)) return false;
 
         if (this == other) return true;
 
-        FastaSequenceIndex otherIndex = (FastaSequenceIndex)other;
-        if(this.size() != otherIndex.size())
-            return false;
+        FastaSequenceIndex otherIndex = (FastaSequenceIndex) other;
+        if (this.size() != otherIndex.size()) return false;
 
         Iterator<FastaSequenceIndexEntry> iter = this.iterator();
         Iterator<FastaSequenceIndexEntry> otherIter = otherIndex.iterator();
         while (iter.hasNext()) {
-            if (!otherIter.hasNext())
-                return false;
-            if (!iter.next().equals(otherIter.next()))
-                return false;
+            if (!otherIter.hasNext()) return false;
+            if (!iter.next().equals(otherIter.next())) return false;
         }
         return true;
     }
@@ -148,13 +143,12 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     private void parseIndexFile(InputStream in) {
         try (Scanner scanner = new Scanner(in)) {
             int sequenceIndex = 0;
-            while( scanner.hasNext() ) {
+            while (scanner.hasNext()) {
                 // Tokenize and validate the index line.
                 String result = scanner.findInLine("(.+)\\t+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)");
-                if( result == null )
-                    throw new SAMException("Found invalid line in index file:" + scanner.nextLine());
+                if (result == null) throw new SAMException("Found invalid line in index file:" + scanner.nextLine());
                 MatchResult tokens = scanner.match();
-                if( tokens.groupCount() != 5 )
+                if (tokens.groupCount() != 5)
                     throw new SAMException("Found invalid line in index file:" + scanner.nextLine());
 
                 // Skip past the line separator
@@ -169,7 +163,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
 
                 contig = SAMSequenceRecord.truncateSequenceName(contig);
                 // Build sequence structure
-                add(new FastaSequenceIndexEntry(contig,location,size,basesPerLine,bytesPerLine, sequenceIndex++) );
+                add(new FastaSequenceIndexEntry(contig, location, size, basesPerLine, bytesPerLine, sequenceIndex++));
             }
         }
     }
@@ -183,15 +177,15 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      */
     public void write(final Path indexFile) throws IOException {
         try (final PrintStream writer = new PrintStream(Files.newOutputStream(indexFile))) {
-            sequenceEntries.values().forEach(se ->
-                    writer.println(String.join("\t",
+            sequenceEntries
+                    .values()
+                    .forEach(se -> writer.println(String.join(
+                            "\t",
                             se.getContig(),
                             String.valueOf(se.getSize()),
                             String.valueOf(se.getLocation()),
                             String.valueOf(se.getBasesPerLine()),
-                            String.valueOf(se.getBytesPerLine()))
-                    )
-            );
+                            String.valueOf(se.getBytesPerLine()))));
         }
     }
 
@@ -200,7 +194,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @param contigName The contig name for which to search.
      * @return True if contig name is present; false otherwise.
      */
-    public boolean hasIndexEntry( String contigName ) {
+    public boolean hasIndexEntry(String contigName) {
         return sequenceEntries.containsKey(contigName);
     }
 
@@ -210,9 +204,8 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @return Index entry associated with the given contig.
      * @throws SAMException if the associated index entry can't be found.
      */
-    public FastaSequenceIndexEntry getIndexEntry( String contigName ) {
-        if( !hasIndexEntry(contigName) )
-            throw new SAMException("Unable to find entry for contig: " + contigName);
+    public FastaSequenceIndexEntry getIndexEntry(String contigName) {
+        if (!hasIndexEntry(contigName)) throw new SAMException("Unable to find entry for contig: " + contigName);
 
         return sequenceEntries.get(contigName);
     }

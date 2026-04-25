@@ -14,11 +14,15 @@ enum SubstitutionBase {
     // The base this substitution represents
     private final byte base;
 
-    SubstitutionBase() { this.base = (byte) name().charAt(0); }
+    SubstitutionBase() {
+        this.base = (byte) name().charAt(0);
+    }
 
     /**
      * The base this substitution represents
      * @return the underlying base
      */
-    public byte getBase() { return base; }
+    public byte getBase() {
+        return base;
+    }
 };

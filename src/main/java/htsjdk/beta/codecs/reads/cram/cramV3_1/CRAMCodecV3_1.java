@@ -10,7 +10,6 @@ import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.cram.structure.CramHeader;
-
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -56,6 +55,7 @@ public class CRAMCodecV3_1 extends CRAMCodec {
     }
 
     @Override
-    protected String getSignatureString() { return CRAM_MAGIC_3_1; }
-
+    protected String getSignatureString() {
+        return CRAM_MAGIC_3_1;
+    }
 }

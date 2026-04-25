@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Murmur3;
-
 import java.io.Serializable;
 
 /**
@@ -67,6 +66,7 @@ public class SAMRecordQueryHashComparator extends SAMRecordQueryNameComparator i
 
     /** Compares the hash values for two records. */
     private int compareHashes(final SAMRecord lhs, final SAMRecord rhs) {
-        return Integer.compare(this.hasher.hashUnencodedChars(lhs.getReadName()), this.hasher.hashUnencodedChars(rhs.getReadName()));
+        return Integer.compare(
+                this.hasher.hashUnencodedChars(lhs.getReadName()), this.hasher.hashUnencodedChars(rhs.getReadName()));
     }
 }

@@ -43,8 +43,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
 
     private final List<CigarElement> cigarElements = new ArrayList<CigarElement>();
 
-    public Cigar() {
-    }
+    public Cigar() {}
 
     public Cigar(final List<CigarElement> cigarElements) {
         this.cigarElements.addAll(cigarElements);
@@ -84,7 +83,8 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                 case X:
                     length += element.getLength();
                     break;
-                default: break;
+                default:
+                    break;
             }
         }
         return length;
@@ -105,7 +105,8 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                 case P:
                     length += element.getLength();
                     break;
-                default: break;
+                default:
+                    break;
             }
         }
         return length;
@@ -124,8 +125,8 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
     public static int getReadLength(final List<CigarElement> cigarElements) {
         int length = 0;
         for (final CigarElement element : cigarElements) {
-            if (element.getOperator().consumesReadBases()){
-                    length += element.getLength();
+            if (element.getOperator().consumesReadBases()) {
+                length += element.getLength();
             }
         }
         return length;
@@ -149,8 +150,11 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
             final CigarElement element = cigarElements.get(i);
             if (element.getLength() == 0) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
-                ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                        "CIGAR element with zero length", readName, recordNumber));
+                ret.add(new SAMValidationError(
+                        SAMValidationError.Type.INVALID_CIGAR,
+                        "CIGAR element with zero length",
+                        readName,
+                        recordNumber));
             }
             // clipping operator can only be at start or end of CIGAR
             final CigarOperator op = element.getOperator();
@@ -158,8 +162,11 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                 if (op == CigarOperator.H) {
                     if (i != 0 && i != cigarElements.size() - 1) {
                         if (ret == null) ret = new ArrayList<SAMValidationError>();
-                        ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                                "Hard clipping operator not at start or end of CIGAR", readName, recordNumber));
+                        ret.add(new SAMValidationError(
+                                SAMValidationError.Type.INVALID_CIGAR,
+                                "Hard clipping operator not at start or end of CIGAR",
+                                readName,
+                                recordNumber));
                     }
                 } else {
                     if (op != CigarOperator.S) throw new IllegalStateException("Should never happen: " + op.name());
@@ -171,40 +178,49 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                             // from the end.
                         } else if (cigarElements.get(0).getOperator() != CigarOperator.H) {
                             if (ret == null) ret = new ArrayList<SAMValidationError>();
-                            ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                                "Soft clipping CIGAR operator can only be inside of hard clipping operator",
-                                    readName, recordNumber));
+                            ret.add(new SAMValidationError(
+                                    SAMValidationError.Type.INVALID_CIGAR,
+                                    "Soft clipping CIGAR operator can only be inside of hard clipping operator",
+                                    readName,
+                                    recordNumber));
                         }
                     } else if (i == cigarElements.size() - 2) {
                         if (cigarElements.get(cigarElements.size() - 1).getOperator() != CigarOperator.H) {
                             if (ret == null) ret = new ArrayList<SAMValidationError>();
-                            ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                                "Soft clipping CIGAR operator can only be inside of hard clipping operator",
-                                    readName, recordNumber));
+                            ret.add(new SAMValidationError(
+                                    SAMValidationError.Type.INVALID_CIGAR,
+                                    "Soft clipping CIGAR operator can only be inside of hard clipping operator",
+                                    readName,
+                                    recordNumber));
                         }
                     } else {
                         if (ret == null) ret = new ArrayList<SAMValidationError>();
-                        ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                            "Soft clipping CIGAR operator can at start or end of read, or be inside of hard clipping operator",
-                                readName, recordNumber));
+                        ret.add(new SAMValidationError(
+                                SAMValidationError.Type.INVALID_CIGAR,
+                                "Soft clipping CIGAR operator can at start or end of read, or be inside of hard clipping operator",
+                                readName,
+                                recordNumber));
                     }
-
                 }
             } else if (isRealOperator(op)) {
                 // Must be at least one real operator (MIDN)
                 seenRealOperator = true;
                 // There should be an M or P operator between any pair of IDN operators
                 if (isInDelOperator(op)) {
-                    for (int j = i+1; j < cigarElements.size(); ++j) {
+                    for (int j = i + 1; j < cigarElements.size(); ++j) {
                         final CigarOperator nextOperator = cigarElements.get(j).getOperator();
                         // Allow
-                        if ((isRealOperator(nextOperator) && !isInDelOperator(nextOperator)) || isPaddingOperator(nextOperator)) {
+                        if ((isRealOperator(nextOperator) && !isInDelOperator(nextOperator))
+                                || isPaddingOperator(nextOperator)) {
                             break;
                         }
                         if (isInDelOperator(nextOperator) && op == nextOperator) {
                             if (ret == null) ret = new ArrayList<SAMValidationError>();
-                            ret.add(new SAMValidationError(SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR,
-                                    "No M or N operator between pair of " + op.name() + " operators in CIGAR", readName, recordNumber));
+                            ret.add(new SAMValidationError(
+                                    SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR,
+                                    "No M or N operator between pair of " + op.name() + " operators in CIGAR",
+                                    readName,
+                                    recordNumber));
                         }
                     }
                 }
@@ -214,42 +230,55 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                      * Removed restriction that padding not be the first operator because if a read starts in the middle of a pad
                      * in a padded reference, it is necessary to precede the read with padding so that alignment start refers to a
                      * position on the unpadded reference.
-                    */
+                     */
                 } else if (i == cigarElements.size() - 1) {
                     if (ret == null) ret = new ArrayList<SAMValidationError>();
-                    ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                            "Padding operator not valid at end of CIGAR", readName, recordNumber));
-                } else if (!isRealOperator(cigarElements.get(i-1).getOperator()) ||
-                        !isRealOperator(cigarElements.get(i+1).getOperator())) {
+                    ret.add(new SAMValidationError(
+                            SAMValidationError.Type.INVALID_CIGAR,
+                            "Padding operator not valid at end of CIGAR",
+                            readName,
+                            recordNumber));
+                } else if (!isRealOperator(cigarElements.get(i - 1).getOperator())
+                        || !isRealOperator(cigarElements.get(i + 1).getOperator())) {
                     if (ret == null) ret = new ArrayList<SAMValidationError>();
-                    ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                            "Padding operator not between real operators in CIGAR", readName, recordNumber));
+                    ret.add(new SAMValidationError(
+                            SAMValidationError.Type.INVALID_CIGAR,
+                            "Padding operator not between real operators in CIGAR",
+                            readName,
+                            recordNumber));
                 }
             }
         }
         if (!seenRealOperator) {
             if (ret == null) ret = new ArrayList<SAMValidationError>();
-            ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
-                    "No real operator (M|I|D|N) in CIGAR", readName, recordNumber));
+            ret.add(new SAMValidationError(
+                    SAMValidationError.Type.INVALID_CIGAR,
+                    "No real operator (M|I|D|N) in CIGAR",
+                    readName,
+                    recordNumber));
         }
         return ret;
     }
 
     private static boolean isRealOperator(final CigarOperator op) {
-        return op == CigarOperator.M || op == CigarOperator.EQ || op == CigarOperator.X || 
-               op == CigarOperator.I || op == CigarOperator.D || op == CigarOperator.N;
+        return op == CigarOperator.M
+                || op == CigarOperator.EQ
+                || op == CigarOperator.X
+                || op == CigarOperator.I
+                || op == CigarOperator.D
+                || op == CigarOperator.N;
     }
 
     private static boolean isInDelOperator(final CigarOperator op) {
-        return op !=null && op.isIndel();
+        return op != null && op.isIndel();
     }
 
     private static boolean isClippingOperator(final CigarOperator op) {
-        return op !=null && op.isClipping();
+        return op != null && op.isClipping();
     }
 
     private static boolean isPaddingOperator(final CigarOperator op) {
-        return op !=null && op.isPadding();
+        return op != null && op.isPadding();
     }
 
     @Override
@@ -261,27 +290,27 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
 
         return cigarElements.equals(cigar.cigarElements);
     }
-    
+
     /** build a new Cigar object from a list of cigar operators.
      * This can be used if you have the  operators associated to
      * each base in the read.
-     * 
+     *
      * e.g: read length =10 with cigar= <code>[M,M,M,M,M,M,M,M,M,M]</code>, here
      * fromCigarOperators would generate the cigar '10M'
-     * 
+     *
      * later the user resolved the 'M' to '=' or 'X', the array is now
-     * 
+     *
      * <code>[=,=,=,=,=,X,X,=,=,=]</code>
-     * 
+     *
      * fromCigarOperators would generate the cigar '5M2X3M'
-     * 
+     *
      * */
     public static Cigar fromCigarOperators(final List<CigarOperator> cigarOperators) {
         if (cigarOperators == null) throw new IllegalArgumentException("cigarOperators is null");
         final List<CigarElement> cigarElementList = new ArrayList<>();
         int i = 0;
         // find adjacent operators and build list of cigar elements
-        while (i < cigarOperators.size() ) {
+        while (i < cigarOperators.size()) {
             final CigarOperator currentOp = cigarOperators.get(i);
             int j = i + 1;
             while (j < cigarOperators.size() && cigarOperators.get(j).equals(currentOp)) {
@@ -299,31 +328,31 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
      * @param cigarString A SAM formatted CIGAR string.
      * @return a new Cigar
      */
-    public static Cigar fromCigarString(String cigarString){
+    public static Cigar fromCigarString(String cigarString) {
         return TextCigarCodec.decode(cigarString);
     }
-    
+
     /** shortcut to <code>getCigarElements().iterator()</code> */
     @Override
     public Iterator<CigarElement> iterator() {
         return this.getCigarElements().iterator();
     }
-    
+
     /** returns true if the cigar string contains the given operator */
     public boolean containsOperator(final CigarOperator operator) {
-        return this.cigarElements.stream().anyMatch( element -> element.getOperator() == operator);
+        return this.cigarElements.stream().anyMatch(element -> element.getOperator() == operator);
     }
-    
+
     /** returns the first cigar element */
     public CigarElement getFirstCigarElement() {
-        return isEmpty() ? null : this.cigarElements.get(0); 
+        return isEmpty() ? null : this.cigarElements.get(0);
     }
-    
+
     /** returns the last cigar element */
     public CigarElement getLastCigarElement() {
-        return isEmpty() ? null : this.cigarElements.get(this.numCigarElements() - 1 ); 
+        return isEmpty() ? null : this.cigarElements.get(this.numCigarElements() - 1);
     }
-    
+
     /** returns true if the cigar string starts With a clipping operator */
     public boolean isLeftClipped() {
         return !isEmpty() && isClippingOperator(getFirstCigarElement().getOperator());
@@ -338,7 +367,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
     public boolean isClipped() {
         return isLeftClipped() || isRightClipped();
     }
-    
+
     @Override
     public int hashCode() {
         return cigarElements.hashCode();

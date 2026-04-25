@@ -1,8 +1,7 @@
 package htsjdk.samtools.cram.spec30;
 
-import org.testng.annotations.Test;
-
 import java.io.IOException;
+import org.testng.annotations.Test;
 
 /** Tests mapped reads with reference (feature codes) from the hts-specs 3.0 test suite. */
 public class Spec30MappedWithRefTest extends HtsSpecsComplianceTestBase {

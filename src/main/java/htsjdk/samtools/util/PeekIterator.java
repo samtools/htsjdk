@@ -38,12 +38,12 @@ public class PeekIterator<T> implements Iterator<T> {
     }
 
     /**
-     * @return true if the iteration has more elements. (In other words, returns true if next would return an element 
+     * @return true if the iteration has more elements. (In other words, returns true if next would return an element
      * rather than throwing an exception.)
      */
     @Override
     public boolean hasNext() {
-        return peekedElement != null || underlyingIterator.hasNext();  
+        return peekedElement != null || underlyingIterator.hasNext();
     }
 
     /**

@@ -18,8 +18,7 @@ class ByteArrayLenCodec implements CRAMCodec<byte[]> {
      * @param lenCodec the length codec, for Integers
      * @param byteCodec the value codec, for byte[]
      */
-    public ByteArrayLenCodec(final CRAMCodec<Integer> lenCodec,
-                             final CRAMCodec<byte[]> byteCodec) {
+    public ByteArrayLenCodec(final CRAMCodec<Integer> lenCodec, final CRAMCodec<byte[]> byteCodec) {
         this.lenCodec = lenCodec;
         this.byteCodec = byteCodec;
     }
@@ -40,5 +39,4 @@ class ByteArrayLenCodec implements CRAMCodec<byte[]> {
         lenCodec.write(object.length);
         byteCodec.write(object);
     }
-
 }

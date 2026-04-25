@@ -33,7 +33,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FastLineReader;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,7 +49,6 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     private FastLineReader in;
     private int sequenceIndex = -1;
     private final byte[] basesBuffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
-
 
     /** Constructs a FastaSequenceFile that reads from the specified file. */
     public FastaSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
@@ -84,7 +82,11 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
      * Constructs a FastaSequenceFile that reads from the specified stream (which must not be compressed, i.e.
      * the caller is responsible for decompressing the stream).
      */
-    public FastaSequenceFile(String source, final SeekableStream seekableStream, SAMSequenceDictionary dictionary, final boolean truncateNamesAtWhitespace) {
+    public FastaSequenceFile(
+            String source,
+            final SeekableStream seekableStream,
+            SAMSequenceDictionary dictionary,
+            final boolean truncateNamesAtWhitespace) {
         super(null, source, dictionary);
         this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
         this.seekableStream = seekableStream;
@@ -111,7 +113,9 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         }
 
         // Read the sequence
-        final int knownLength = (getSequenceDictionary() == null) ? -1 : getSequenceDictionary().getSequence(this.sequenceIndex).getSequenceLength();
+        final int knownLength = (getSequenceDictionary() == null)
+                ? -1
+                : getSequenceDictionary().getSequence(this.sequenceIndex).getSequenceLength();
         final byte[] bases = readSequence(knownLength);
         return new ReferenceSequence(name, this.sequenceIndex, bases);
     }
@@ -139,8 +143,8 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         }
         final byte b = in.getByte();
         if (b != '>') {
-            throw new SAMException("Format exception reading FASTA " + getSource() + ".  Expected > but saw chr(" +
-            b + ") at start of sequence with index " + this.sequenceIndex);
+            throw new SAMException("Format exception reading FASTA " + getSource() + ".  Expected > but saw chr(" + b
+                    + ") at start of sequence with index " + this.sequenceIndex);
         }
         final byte[] nameBuffer = new byte[4096];
         int nameLength = 0;
@@ -169,7 +173,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
      * @return ASCII bases for sequence
      */
     private byte[] readSequence(final int knownLength) {
-        byte[] bases = (knownLength == -1) ?  basesBuffer : new byte[knownLength] ;
+        byte[] bases = (knownLength == -1) ? basesBuffer : new byte[knownLength];
 
         int sequenceLength = 0;
         while (!in.eof()) {
@@ -190,9 +194,9 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
                 break;
             }
             if (sequenceLength == bases.length) {
-                    final byte[] tmp = new byte[bases.length * 2];
-                    System.arraycopy(bases, 0, tmp, 0, sequenceLength);
-                    bases = tmp;
+                final byte[] tmp = new byte[bases.length * 2];
+                System.arraycopy(bases, 0, tmp, 0, sequenceLength);
+                bases = tmp;
             }
         }
 

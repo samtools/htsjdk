@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.compression.fqzcomp;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.range.ByteModel;
 import htsjdk.samtools.cram.compression.range.RangeCoder;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -88,8 +87,8 @@ public class FQZCompEncode {
     }
 
     // Parameter flag masks (same as in FQZParam)
-    private static final int PFLAG_DO_DEDUP  = 0x02;
-    private static final int PFLAG_DO_LEN    = 0x04;
+    private static final int PFLAG_DO_DEDUP = 0x02;
+    private static final int PFLAG_DO_LEN = 0x04;
     private static final int PFLAG_HAVE_QMAP = 0x10;
     private static final int PFLAG_HAVE_PTAB = 0x20;
     private static final int PFLAG_HAVE_DTAB = 0x40;
@@ -213,8 +212,8 @@ public class FQZCompEncode {
 
                 // Encode duplicate flag
                 if (params.doDedup) {
-                    final boolean isDup = i > 0 && len == lastLen &&
-                            arraysEqual(qualData, i - lastLen, qualData, i, len);
+                    final boolean isDup =
+                            i > 0 && len == lastLen && arraysEqual(qualData, i - lastLen, qualData, i, len);
                     dupModel.modelEncode(rangeCoder, isDup ? 1 : 0);
                     if (isDup) {
                         lastLen = len;
@@ -274,8 +273,8 @@ public class FQZCompEncode {
      * based on symbol count, data size, and record characteristics, matching htslib's
      * {@code fqz_pick_parameters}.
      */
-    private EncoderParams buildParameters(final ByteBuffer inBuffer, final int[] recordLengths,
-                                          final int[] bamFlags, final int dataSize) {
+    private EncoderParams buildParameters(
+            final ByteBuffer inBuffer, final int[] recordLengths, final int[] bamFlags, final int dataSize) {
         final EncoderParams params = new EncoderParams();
 
         // Scan for symbol statistics
@@ -321,8 +320,9 @@ public class FQZCompEncode {
 
         // Auto-compute pshift from read length (htslib line 814-815)
         if (pshift < 0) {
-            pshift = recordLengths.length > 0 ?
-                    Math.max(0, (int) (Math.log((double) recordLengths[0] / (1 << pbits)) / Math.log(2) + 0.5)) : 0;
+            pshift = recordLengths.length > 0
+                    ? Math.max(0, (int) (Math.log((double) recordLengths[0] / (1 << pbits)) / Math.log(2) + 0.5))
+                    : 0;
         }
 
         params.qbits = qbits;
@@ -409,8 +409,10 @@ public class FQZCompEncode {
             inBuffer.position(pos); // restore position
             for (int rec = 0; rec < recordLengths.length; rec++) {
                 final int len = recordLengths[rec];
-                if (rec > 0 && len == prevLen && offset >= prevLen &&
-                        arraysEqual(data, offset - prevLen, data, offset, len)) {
+                if (rec > 0
+                        && len == prevLen
+                        && offset >= prevLen
+                        && arraysEqual(data, offset - prevLen, data, offset, len)) {
                     dupCount++;
                 }
                 offset += len;
@@ -423,12 +425,11 @@ public class FQZCompEncode {
         params.doReverse = (bamFlags != null);
 
         // Parameter flags
-        params.pflags =
-                (params.ptab != null ? PFLAG_HAVE_PTAB : 0) |
-                (params.dtab != null ? PFLAG_HAVE_DTAB : 0) |
-                (params.fixedLen ? PFLAG_DO_LEN : 0) |
-                (params.doDedup ? PFLAG_DO_DEDUP : 0) |
-                (storeQmap ? PFLAG_HAVE_QMAP : 0);
+        params.pflags = (params.ptab != null ? PFLAG_HAVE_PTAB : 0)
+                | (params.dtab != null ? PFLAG_HAVE_DTAB : 0)
+                | (params.fixedLen ? PFLAG_DO_LEN : 0)
+                | (params.doDedup ? PFLAG_DO_DEDUP : 0)
+                | (storeQmap ? PFLAG_HAVE_QMAP : 0);
 
         // Global flags
         params.gflags = params.doReverse ? GFLAG_DO_REV : 0;
@@ -564,8 +565,8 @@ public class FQZCompEncode {
         int maxSymbol;
         int qbits, qshift, qmask;
         int qloc, sloc, ploc, dloc;
-        int[] qmap;         // forward map: qmap[originalQ] = encodedIndex
-        int[] reverseQmap;  // reverse map: reverseQmap[encodedIndex] = originalQ (for serialization)
+        int[] qmap; // forward map: qmap[originalQ] = encodedIndex
+        int[] reverseQmap; // reverse map: reverseQmap[encodedIndex] = originalQ (for serialization)
         int[] qtab;
         int[] ptab;
         int[] dtab;

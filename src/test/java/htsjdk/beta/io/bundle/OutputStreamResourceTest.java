@@ -2,17 +2,16 @@ package htsjdk.beta.io.bundle;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.exception.HtsjdkException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class OutputStreamResourceTest extends HtsjdkTest {
 
-    final static int TEST_STREAM_SIZE = 10;
+    static final int TEST_STREAM_SIZE = 10;
 
     @Test
     public void testOutputStream() throws IOException {
@@ -36,12 +35,16 @@ public class OutputStreamResourceTest extends HtsjdkTest {
 
     @Test
     public void testGetInputStreamEmpty() {
-        Assert.assertFalse(makeOutputStreamResource(new ByteArrayOutputStream(TEST_STREAM_SIZE)).getInputStream().isPresent());
+        Assert.assertFalse(makeOutputStreamResource(new ByteArrayOutputStream(TEST_STREAM_SIZE))
+                .getInputStream()
+                .isPresent());
     }
 
     @Test
     public void testGetSeekableStreamEmpty() {
-        Assert.assertFalse(makeOutputStreamResource(new ByteArrayOutputStream(TEST_STREAM_SIZE)).getSeekableStream().isPresent());
+        Assert.assertFalse(makeOutputStreamResource(new ByteArrayOutputStream(TEST_STREAM_SIZE))
+                .getSeekableStream()
+                .isPresent());
     }
 
     @Test(expectedExceptions = HtsjdkException.class)
@@ -70,5 +73,4 @@ public class OutputStreamResourceTest extends HtsjdkTest {
     private final OutputStreamResource makeOutputStreamResource(final OutputStream os) {
         return new OutputStreamResource(os, "teststream", "contenttype");
     }
-
 }

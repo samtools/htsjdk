@@ -1,12 +1,12 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
-import htsjdk.beta.plugin.HtsContentType;
-import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.io.bundle.Bundle;
-import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
+import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.SignatureStream;
+import htsjdk.beta.plugin.HtsContentType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -15,7 +15,6 @@ import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -41,7 +40,8 @@ public class HtsTestCodec implements ReadsCodec {
         // parameters. Since this no-arg constructor is the one that will be called if the codec
         // is ever instantiated through normal codec discovery, throw if it ever gets called, since
         // it probably indicates a packaging issue.
-        throw new HtsjdkPluginException("The HtsTestCodec codec should never be instantiated using the no-arg constructor");
+        throw new HtsjdkPluginException(
+                "The HtsTestCodec codec should never be instantiated using the no-arg constructor");
     }
 
     // used by tests to create a variety of different test codecs that vary by format/version/extensions/protocol
@@ -51,11 +51,11 @@ public class HtsTestCodec implements ReadsCodec {
             final String fileExtension,
             final String protocolScheme,
             final boolean useGzippedInputs) {
-        this.htsFormat              = htsFormat;
-        this.htsVersion             = htsVersion;
-        this.fileExtension          = fileExtension;
-        this.protocolScheme         = protocolScheme;
-        this.useGzippedInputs       = useGzippedInputs;
+        this.htsFormat = htsFormat;
+        this.htsVersion = htsVersion;
+        this.fileExtension = fileExtension;
+        this.protocolScheme = protocolScheme;
+        this.useGzippedInputs = useGzippedInputs;
     }
 
     @Override
@@ -77,7 +77,9 @@ public class HtsTestCodec implements ReadsCodec {
     }
 
     @Override
-    public int getSignatureProbeLength() { return 64 * 1024; }
+    public int getSignatureProbeLength() {
+        return 64 * 1024;
+    }
 
     @Override
     public int getSignatureLength() {
@@ -89,7 +91,7 @@ public class HtsTestCodec implements ReadsCodec {
         return protocolScheme != null && protocolScheme.equals(ioPath.getScheme());
     }
 
-   @Override
+    @Override
     public boolean canDecodeURI(IOPath resource) {
         final Optional<String> extension = resource.getExtension();
         return extension.isPresent() && extension.get().equals(fileExtension);
@@ -113,11 +115,10 @@ public class HtsTestCodec implements ReadsCodec {
                 }
             }
             try (final InputStream streamToUse =
-                         useGzippedInputs ?
-                                 new BlockCompressedInputStream(probingInputStream) :
-                                 probingInputStream) {
+                    useGzippedInputs ? new BlockCompressedInputStream(probingInputStream) : probingInputStream) {
                 if (streamToUse.read(signatureBytes) <= 0) {
-                    throw new HtsjdkIOException(String.format("Failure reading content from input stream for %s", sourceName));
+                    throw new HtsjdkIOException(
+                            String.format("Failure reading content from input stream for %s", sourceName));
                 }
                 return Arrays.equals(signatureBytes, (htsFormat + htsVersion).getBytes());
             }
@@ -140,5 +141,4 @@ public class HtsTestCodec implements ReadsCodec {
     public boolean runVersionUpgrade(final HtsVersion sourceCodecVersion, final HtsVersion targetCodecVersion) {
         throw new HtsjdkUnsupportedOperationException("Version upgrade not yet implemented");
     }
-
 }

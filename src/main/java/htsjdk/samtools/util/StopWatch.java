@@ -32,12 +32,10 @@ public class StopWatch {
     private long elapsedTime = 0;
     private boolean running = false;
 
-
     public void start() {
         this.startTime = System.currentTimeMillis();
         this.running = true;
     }
-
 
     public void stop() {
         long stopTime = System.currentTimeMillis();
@@ -59,13 +57,12 @@ public class StopWatch {
     public long getElapsedTime() {
         final long currentElapsed;
         if (running) {
-             currentElapsed = (System.currentTimeMillis() - startTime);
+            currentElapsed = (System.currentTimeMillis() - startTime);
         } else {
             currentElapsed = 0;
         }
         return currentElapsed + elapsedTime;
     }
-
 
     /**
      * @return same as getElapsedTime(), but truncated to seconds.

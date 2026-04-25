@@ -4,12 +4,11 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.encoding.core.BetaIntegerCodec;
 import htsjdk.samtools.cram.encoding.external.ExternalByteArrayCodec;
 import htsjdk.samtools.cram.io.*;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class ByteArrayLenCodecTest extends HtsjdkTest {
     @Test(dataProvider = "testByteArrays", dataProviderClass = IOTestCases.class)
@@ -17,7 +16,7 @@ public class ByteArrayLenCodecTest extends HtsjdkTest {
         byte[] writtenCore;
         byte[] writtenExternal;
         try (final ByteArrayOutputStream coreOS = new ByteArrayOutputStream();
-             final BitOutputStream coreBitOS = new DefaultBitOutputStream(coreOS)) {
+                final BitOutputStream coreBitOS = new DefaultBitOutputStream(coreOS)) {
             final CRAMByteWriter externalOS = new CRAMByteWriter();
 
             // arbitrary choice here: any Integer, byte[] codec pair will do
@@ -34,7 +33,7 @@ public class ByteArrayLenCodecTest extends HtsjdkTest {
         }
 
         try (final ByteArrayInputStream coreIS = new ByteArrayInputStream(writtenCore);
-             final BitInputStream coreBitIS = new DefaultBitInputStream(coreIS)) {
+                final BitInputStream coreBitIS = new DefaultBitInputStream(coreIS)) {
             final CRAMByteReader externalIS = new CRAMByteReader(writtenExternal);
 
             final CRAMCodec<Integer> lenReadCodec = new BetaIntegerCodec(coreBitIS, null, 0, 8);

@@ -58,8 +58,7 @@ public class HardClip implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         HardClip hardClip = (HardClip) o;
-        return position == hardClip.position &&
-                length == hardClip.length;
+        return position == hardClip.position && length == hardClip.length;
     }
 
     @Override

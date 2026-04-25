@@ -26,7 +26,6 @@ package htsjdk.samtools.liftover;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.*;
-
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -37,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  * Java port of UCSC liftOver.  Only the most basic liftOver functionality is implemented.
  * Internally coordinates are 0-based, half-open. The API is standard Picard 1-based, inclusive.
@@ -46,7 +44,7 @@ import java.util.Set;
  */
 public class LiftOver {
     private static final Log LOG = Log.getInstance(LiftOver.class);
-    
+
     public static final double DEFAULT_LIFTOVER_MINMATCH = 0.95;
 
     private double liftOverMinMatch = DEFAULT_LIFTOVER_MINMATCH;
@@ -83,7 +81,7 @@ public class LiftOver {
     /**
      * Load UCSC chain file in order to lift over Intervals.
      */
-    public LiftOver(File chainFile){
+    public LiftOver(File chainFile) {
         this(Chain.loadChains(chainFile));
     }
 
@@ -98,12 +96,11 @@ public class LiftOver {
         this.chains = chains;
         for (final Chain chain : this.chains.getAll()) {
             final String from = chain.fromSequenceName;
-            final String to   = chain.toSequenceName;
+            final String to = chain.toSequenceName;
             final Set<String> names;
             if (contigMap.containsKey(from)) {
                 names = contigMap.get(from);
-            }
-            else {
+            } else {
                 names = new HashSet<>();
                 contigMap.put(from, names);
             }
@@ -117,10 +114,10 @@ public class LiftOver {
     public void validateToSequences(final SAMSequenceDictionary sequenceDictionary) {
         for (final Chain chain : chains.getAll()) {
             if (sequenceDictionary.getSequence(chain.toSequenceName) == null) {
-                throw new SAMException("Sequence " + chain.toSequenceName + " from chain file is not found in sequence dictionary.");
+                throw new SAMException(
+                        "Sequence " + chain.toSequenceName + " from chain file is not found in sequence dictionary.");
             }
         }
-
     }
 
     /**
@@ -141,8 +138,8 @@ public class LiftOver {
      */
     public Interval liftOver(final Interval interval, final double liftOverMinMatch) {
         if (interval.length() == 0) {
-            throw new IllegalArgumentException("Zero-length interval cannot be lifted over.  Interval: " +
-                    interval.getName());
+            throw new IllegalArgumentException(
+                    "Zero-length interval cannot be lifted over.  Interval: " + interval.getName());
         }
         Chain chainHit = null;
         TargetIntersection targetIntersection = null;
@@ -163,10 +160,12 @@ public class LiftOver {
             } else if (candidateIntersection != null) {
                 hasOverlapBelowThreshold = true;
                 if (logFailedIntervals) {
-                    LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
-                            " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
-                            + minMatchSize +
-                            " (" + (candidateIntersection.intersectionLength/(float)interval.length()) + " < " + liftOverMinMatch + ")");
+                    LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id
+                            + " because intersection length "
+                            + candidateIntersection.intersectionLength + " < minMatchSize "
+                            + minMatchSize + " ("
+                            + (candidateIntersection.intersectionLength / (float) interval.length()) + " < "
+                            + liftOverMinMatch + ")");
                 }
             }
         }
@@ -185,8 +184,8 @@ public class LiftOver {
     public List<PartialLiftover> diagnosticLiftover(final Interval interval) {
         final List<PartialLiftover> ret = new ArrayList<PartialLiftover>();
         if (interval.length() == 0) {
-            throw new IllegalArgumentException("Zero-length interval cannot be lifted over.  Interval: " +
-                    interval.getName());
+            throw new IllegalArgumentException(
+                    "Zero-length interval cannot be lifted over.  Interval: " + interval.getName());
         }
         for (final Chain chain : chains.getOverlaps(interval)) {
             Interval intersectingChain = interval.intersect(chain.interval);
@@ -194,9 +193,11 @@ public class LiftOver {
             if (targetIntersection == null) {
                 ret.add(new PartialLiftover(intersectingChain, chain.id));
             } else {
-                Interval toInterval = createToInterval(interval.getName(), interval.isNegativeStrand(), targetIntersection);
-                float percentLiftedOver = targetIntersection.intersectionLength/(float)interval.length();
-                ret.add(new PartialLiftover(intersectingChain, toInterval, targetIntersection.chain.id, percentLiftedOver));
+                Interval toInterval =
+                        createToInterval(interval.getName(), interval.isNegativeStrand(), targetIntersection);
+                float percentLiftedOver = targetIntersection.intersectionLength / (float) interval.length();
+                ret.add(new PartialLiftover(
+                        intersectingChain, toInterval, targetIntersection.chain.id, percentLiftedOver));
             }
         }
         return ret;
@@ -209,11 +210,19 @@ public class LiftOver {
         return Collections.unmodifiableMap(contigMap);
     }
 
-    private static Interval createToInterval(final String intervalName, final boolean sourceNegativeStrand, final TargetIntersection targetIntersection) {
+    private static Interval createToInterval(
+            final String intervalName,
+            final boolean sourceNegativeStrand,
+            final TargetIntersection targetIntersection) {
         // Compute the query interval given the offsets of the target interval start and end into the first and
         // last ContinuousBlocks.
-        int toStart = targetIntersection.chain.getBlock(targetIntersection.firstBlockIndex).toStart + targetIntersection.startOffset;
-        int toEnd = targetIntersection.chain.getBlock(targetIntersection.lastBlockIndex).getToEnd() - targetIntersection.offsetFromEnd;
+        int toStart = targetIntersection.chain.getBlock(targetIntersection.firstBlockIndex).toStart
+                + targetIntersection.startOffset;
+        int toEnd = targetIntersection
+                        .chain
+                        .getBlock(targetIntersection.lastBlockIndex)
+                        .getToEnd()
+                - targetIntersection.offsetFromEnd;
         if (toEnd <= toStart || toStart < 0) {
             throw new SAMException("Something strange lifting over interval " + intervalName);
         }
@@ -226,8 +235,9 @@ public class LiftOver {
             toEnd = negativeEnd;
         }
         // Convert to 1-based, inclusive.
-        final boolean negativeStrand = targetIntersection.chain.toOppositeStrand ? !sourceNegativeStrand : sourceNegativeStrand;
-        return new Interval(targetIntersection.chain.toSequenceName, toStart+1, toEnd, negativeStrand, intervalName);
+        final boolean negativeStrand =
+                targetIntersection.chain.toOppositeStrand ? !sourceNegativeStrand : sourceNegativeStrand;
+        return new Interval(targetIntersection.chain.toSequenceName, toStart + 1, toEnd, negativeStrand, intervalName);
     }
 
     /**
@@ -275,7 +285,8 @@ public class LiftOver {
         if (intersectionLength == 0) {
             return null;
         }
-        return new TargetIntersection(chain, intersectionLength, startOffset, offsetFromEnd, firstBlockIndex, lastBlockIndex);
+        return new TargetIntersection(
+                chain, intersectionLength, startOffset, offsetFromEnd, firstBlockIndex, lastBlockIndex);
     }
 
     /**
@@ -293,8 +304,8 @@ public class LiftOver {
     }
 
     /**
-    * Value class returned by targetIntersection()
-    */
+     * Value class returned by targetIntersection()
+     */
     private static class TargetIntersection {
         /** Chain used for this intersection */
         final Chain chain;
@@ -309,8 +320,13 @@ public class LiftOver {
         /** Index of last ContinuousBlock matching interval. */
         final int lastBlockIndex;
 
-        TargetIntersection(final Chain chain,final int intersectionLength, final int startOffset,
-                           final int offsetFromEnd, final int firstBlockIndex, final int lastBlockIndex) {
+        TargetIntersection(
+                final Chain chain,
+                final int intersectionLength,
+                final int startOffset,
+                final int offsetFromEnd,
+                final int firstBlockIndex,
+                final int lastBlockIndex) {
             this.chain = chain;
             this.intersectionLength = intersectionLength;
             this.startOffset = startOffset;
@@ -335,7 +351,11 @@ public class LiftOver {
         /** Percentage of bases in fromInterval that lifted over.  0 if fromInterval is not covered by any chain. */
         final float percentLiftedOver;
 
-        PartialLiftover(final Interval fromInterval, final Interval toInterval, final int chainId, final float percentLiftedOver) {
+        PartialLiftover(
+                final Interval fromInterval,
+                final Interval toInterval,
+                final int chainId,
+                final float percentLiftedOver) {
             this.fromInterval = fromInterval;
             this.toInterval = toInterval;
             this.chainId = chainId;

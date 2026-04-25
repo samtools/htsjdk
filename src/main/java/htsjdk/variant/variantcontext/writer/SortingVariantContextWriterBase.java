@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
-
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Queue;
@@ -106,10 +105,8 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
     public void close() {
         stopWaitingToSort();
 
-        if (takeOwnershipOfInner)
-            innerWriter.close();
+        if (takeOwnershipOfInner) innerWriter.close();
     }
-
 
     /**
      * add a record to the file
@@ -119,12 +116,14 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
     @Override
     public synchronized void add(VariantContext vc) {
         /* Note that the code below does not prevent the successive add()-ing of: (chr1, 10), (chr20, 200), (chr15, 100)
-           since there is no implicit ordering of chromosomes:
-         */
+          since there is no implicit ordering of chromosomes:
+        */
         VCFRecord firstRec = queue.peek();
-        if (firstRec != null && !vc.getContig().equals(firstRec.vc.getContig())) { // if we hit a new contig, flush the queue
+        if (firstRec != null
+                && !vc.getContig().equals(firstRec.vc.getContig())) { // if we hit a new contig, flush the queue
             if (finishedChromosomes.contains(vc.getContig()))
-                throw new IllegalArgumentException("Added a record at " + vc.getContig() + ":" + vc.getStart() + ", but already finished with chromosome" + vc.getContig());
+                throw new IllegalArgumentException("Added a record at " + vc.getContig() + ":" + vc.getStart()
+                        + ", but already finished with chromosome" + vc.getContig());
 
             finishedChromosomes.add(firstRec.vc.getContig());
             stopWaitingToSort();
@@ -167,8 +166,13 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
 
     protected void noteCurrentRecord(VariantContext vc) {
         // did the user break the contract by giving a record too late?
-        if (mostUpstreamWritableLoc != null && vc.getStart() < mostUpstreamWritableLoc) // went too far back, since may have already written anything that is <= mostUpstreamWritableLoc
-            throw new IllegalArgumentException("Permitted to write any record upstream of position " + mostUpstreamWritableLoc + ", but a record at " + vc.getContig() + ":" + vc.getStart() + " was just added.");
+        if (mostUpstreamWritableLoc != null
+                && vc.getStart()
+                        < mostUpstreamWritableLoc) // went too far back, since may have already written anything that is
+            // <= mostUpstreamWritableLoc
+            throw new IllegalArgumentException(
+                    "Permitted to write any record upstream of position " + mostUpstreamWritableLoc
+                            + ", but a record at " + vc.getContig() + ":" + vc.getStart() + " was just added.");
     }
 
     // --------------------------------------------------------------------------------
@@ -185,8 +189,7 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
             if (emitUnsafe || mostUpstreamWritableLoc == null || firstRec.vc.getStart() <= mostUpstreamWritableLoc) {
                 queue.poll();
                 innerWriter.add(firstRec.vc);
-            }
-            else {
+            } else {
                 break;
             }
         }

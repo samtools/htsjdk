@@ -30,15 +30,14 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SAMRecordUnitTest extends HtsjdkTest {
 
@@ -47,70 +46,74 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
-                { new File("src/test/resources/htsjdk/samtools/serialization_test.sam") },
-                { new File("src/test/resources/htsjdk/samtools/serialization_test.bam") }
+            {new File("src/test/resources/htsjdk/samtools/serialization_test.sam")},
+            {new File("src/test/resources/htsjdk/samtools/serialization_test.bam")}
         };
     }
 
     @Test(dataProvider = "serializationTestData")
-    public void testSAMRecordSerialization( final File inputFile ) throws Exception {
+    public void testSAMRecordSerialization(final File inputFile) throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
         final SAMRecord initialSAMRecord = reader.iterator().next();
         reader.close();
 
         final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
 
-        Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
+        Assert.assertEquals(
+                deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
 
     @DataProvider
-    public Object [][] offsetAtReferenceData() {
-        return new Object[][]{
-                {"3S9M",   7, 10, false},
-                {"3S9M",   0,  0, false},
-                {"3S9M",  -1,  0, false},
-                {"3S9M",  13,  0, false},
-                {"4M1D6M", 4,  4, false},
-                {"4M1D6M", 4,  4, true},
-                {"4M1D6M", 5,  0, false},
-                {"4M1D6M", 5,  4, true},
-                {"4M1I6M", 5,  6, false},
-                {"4M1I6M", 11, 0, false},
+    public Object[][] offsetAtReferenceData() {
+        return new Object[][] {
+            {"3S9M", 7, 10, false},
+            {"3S9M", 0, 0, false},
+            {"3S9M", -1, 0, false},
+            {"3S9M", 13, 0, false},
+            {"4M1D6M", 4, 4, false},
+            {"4M1D6M", 4, 4, true},
+            {"4M1D6M", 5, 0, false},
+            {"4M1D6M", 5, 4, true},
+            {"4M1I6M", 5, 6, false},
+            {"4M1I6M", 11, 0, false},
         };
     }
 
     @Test(dataProvider = "offsetAtReferenceData")
-    public void testOffsetAtReference(String cigar, int posInReference, int expectedPosInRead, boolean returnLastBaseIfDeleted) {
+    public void testOffsetAtReference(
+            String cigar, int posInReference, int expectedPosInRead, boolean returnLastBaseIfDeleted) {
 
-            SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
-            Assert.assertEquals(SAMRecord.getReadPositionAtReferencePosition(sam, posInReference, returnLastBaseIfDeleted), expectedPosInRead);
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
+        Assert.assertEquals(
+                SAMRecord.getReadPositionAtReferencePosition(sam, posInReference, returnLastBaseIfDeleted),
+                expectedPosInRead);
     }
 
     @DataProvider
-    public Object [][] referenceAtReadData() {
-        return new Object[][]{
-                {"3S9M", 7, 10},
-                {"3S9M", 0, 0},
-                {"3S9M", 0, 13},
-                {"4M1D6M", 4, 4},
-                {"4M1D6M", 6, 5},
-                {"4M1I6M", 0, 5},
-                {"4M1I6M", 5, 6},
+    public Object[][] referenceAtReadData() {
+        return new Object[][] {
+            {"3S9M", 7, 10},
+            {"3S9M", 0, 0},
+            {"3S9M", 0, 13},
+            {"4M1D6M", 4, 4},
+            {"4M1D6M", 6, 5},
+            {"4M1I6M", 0, 5},
+            {"4M1I6M", 5, 6},
         };
     }
 
     @Test(dataProvider = "referenceAtReadData")
     public void testOffsetAtRead(String cigar, int expectedReferencePos, int posInRead) {
 
-            SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
-            Assert.assertEquals(sam.getReferencePositionAtReadPosition(posInRead), expectedReferencePos);
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
+        Assert.assertEquals(sam.getReferencePositionAtReadPosition(posInRead), expectedReferencePos);
     }
 
     @DataProvider(name = "deepCopyTestData")
-    public Object [][] deepCopyTestData() {
-        return new Object[][]{
-                { new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2) },
-                { new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "4M1I6M", null, 2) }
+    public Object[][] deepCopyTestData() {
+        return new Object[][] {
+            {new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2)},
+            {new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "4M1I6M", null, 2)}
         };
     }
 
@@ -134,8 +137,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "deepCopyTestData")
-    public void testDeepCopyGetCigar(final SAMRecord sam)
-    {
+    public void testDeepCopyGetCigar(final SAMRecord sam) {
         testDeepCopy(sam);
         sam.setCigarString(sam.getCigarString());
         sam.getCigar(); // force cigar elements to be resolved for equals
@@ -163,10 +165,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "deepCopyTestData")
-    public void testDeepByteAttributes( final SAMRecord sam ) throws Exception {
+    public void testDeepByteAttributes(final SAMRecord sam) throws Exception {
         SAMRecord deepCopy = testDeepCopy(sam);
 
-        final byte bytes[] = { -2, -1, 0, 1, 2 };
+        final byte bytes[] = {-2, -1, 0, 1, 2};
         sam.setAttribute("BY", bytes);
         deepCopy = sam.deepCopy();
         Assert.assertEquals(sam, deepCopy);
@@ -179,9 +181,9 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         // validate mutation independence
         final byte testByte = -1;
-        Assert.assertTrue(samBytes[2] != testByte);  // ensure initial test condition
+        Assert.assertTrue(samBytes[2] != testByte); // ensure initial test condition
         Assert.assertTrue(copyBytes[2] != testByte); // ensure initial test condition
-        samBytes[2] = testByte;                      // mutate original
+        samBytes[2] = testByte; // mutate original
         Assert.assertTrue(samBytes[2] == testByte);
         Assert.assertTrue(copyBytes[2] != testByte);
         sam.setAttribute("BY", samBytes);
@@ -200,18 +202,19 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final byte uByte = 1;
         Assert.assertTrue(samUBytes[2] != uByte); //  ensure initial test condition
         Assert.assertTrue(samUBytes[2] != uByte); //  ensure initial test condition
-        samUBytes[2] = uByte;  // mutate original
+        samUBytes[2] = uByte; // mutate original
         Assert.assertTrue(samUBytes[2] == uByte);
         Assert.assertTrue(copyUBytes[2] != uByte);
         sam.setUnsignedArrayAttribute("BY", samBytes);
-        Assert.assertTrue(sam.getUnsignedByteArrayAttribute("BY")[2] != deepCopy.getUnsignedByteArrayAttribute("BY")[2]);
+        Assert.assertTrue(
+                sam.getUnsignedByteArrayAttribute("BY")[2] != deepCopy.getUnsignedByteArrayAttribute("BY")[2]);
     }
 
     @Test(dataProvider = "deepCopyTestData")
-    public void testDeepShortAttributes( final SAMRecord sam ) throws Exception {
+    public void testDeepShortAttributes(final SAMRecord sam) throws Exception {
         SAMRecord deepCopy = testDeepCopy(sam);
 
-        final short shorts[] = { -20, -10, 0, 10, 20 };
+        final short shorts[] = {-20, -10, 0, 10, 20};
         sam.setAttribute("SH", shorts);
         deepCopy = sam.deepCopy();
         Assert.assertEquals(sam, deepCopy);
@@ -226,7 +229,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final short testShort = -1;
         Assert.assertTrue(samShorts[2] != testShort); //  ensure initial test condition
         Assert.assertTrue(samShorts[2] != testShort); //  ensure initial test condition
-        samShorts[2] = testShort;  // mutate original
+        samShorts[2] = testShort; // mutate original
         Assert.assertTrue(samShorts[2] == testShort);
         Assert.assertTrue(copyShorts[2] != testShort);
         sam.setAttribute("SH", samShorts);
@@ -246,25 +249,26 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final byte uShort = 1;
         Assert.assertTrue(samUShorts[2] != uShort); //  ensure initial test condition
         Assert.assertTrue(samUShorts[2] != uShort); //  ensure initial test condition
-        samUShorts[2] = uShort;  // mutate original
+        samUShorts[2] = uShort; // mutate original
         Assert.assertTrue(samUShorts[2] == uShort);
         Assert.assertTrue(copyUShorts[2] != uShort);
         sam.setUnsignedArrayAttribute("SH", samShorts);
-        Assert.assertTrue(sam.getUnsignedShortArrayAttribute("SH")[2] != deepCopy.getUnsignedShortArrayAttribute("SH")[2]);
+        Assert.assertTrue(
+                sam.getUnsignedShortArrayAttribute("SH")[2] != deepCopy.getUnsignedShortArrayAttribute("SH")[2]);
     }
 
     @Test(dataProvider = "deepCopyTestData")
-    public void testDeepIntAttributes( final SAMRecord sam ) throws Exception {
+    public void testDeepIntAttributes(final SAMRecord sam) throws Exception {
         SAMRecord deepCopy = testDeepCopy(sam);
 
-        final int ints[] = { -200, -100, 0, 100, 200 };
+        final int ints[] = {-200, -100, 0, 100, 200};
         sam.setAttribute("IN", ints);
         deepCopy = sam.deepCopy();
         Assert.assertEquals(sam, deepCopy);
 
         // validate reference inequality and content equality
-        final  int samInts[] = sam.getSignedIntArrayAttribute("IN");
-        final  int copyInts[] = deepCopy.getSignedIntArrayAttribute("IN");
+        final int samInts[] = sam.getSignedIntArrayAttribute("IN");
+        final int copyInts[] = deepCopy.getSignedIntArrayAttribute("IN");
         Assert.assertFalse(copyInts == ints);
         Assert.assertTrue(Arrays.equals(copyInts, samInts));
 
@@ -272,7 +276,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final short testInt = -1;
         Assert.assertTrue(samInts[2] != testInt); //  ensure initial test condition
         Assert.assertTrue(samInts[2] != testInt); //  ensure initial test condition
-        samInts[2] = testInt;  // mutate original
+        samInts[2] = testInt; // mutate original
         Assert.assertTrue(samInts[2] == testInt);
         Assert.assertTrue(copyInts[2] != testInt);
         sam.setAttribute("IN", samInts);
@@ -292,7 +296,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         byte uInt = 1;
         Assert.assertTrue(samUInts[2] != uInt); //  ensure initial test condition
         Assert.assertTrue(samUInts[2] != uInt); //  ensure initial test condition
-        samInts[2] = uInt;  // mutate original
+        samInts[2] = uInt; // mutate original
         Assert.assertTrue(samUInts[2] == uInt);
         Assert.assertTrue(copyUInts[2] != uInt);
         sam.setUnsignedArrayAttribute("IN", samInts);
@@ -300,10 +304,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "deepCopyTestData")
-    public void testDeepFloatAttributes( final SAMRecord sam ) throws Exception {
+    public void testDeepFloatAttributes(final SAMRecord sam) throws Exception {
         SAMRecord deepCopy = testDeepCopy(sam);
 
-        final float floats[] = { -2.4f, -1.2f, 0, 2.3f, 4.6f };
+        final float floats[] = {-2.4f, -1.2f, 0, 2.3f, 4.6f};
         sam.setAttribute("FL", floats);
         deepCopy = sam.deepCopy();
         Assert.assertEquals(sam, deepCopy);
@@ -319,7 +323,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final float testFloat = -1.0f;
         Assert.assertTrue(samFloats[2] != testFloat); //  ensure initial test condition
         Assert.assertTrue(samFloats[2] != testFloat); //  ensure initial test condition
-        samFloats[2] = testFloat;  // mutate original
+        samFloats[2] = testFloat; // mutate original
         Assert.assertTrue(samFloats[2] == testFloat);
         Assert.assertTrue(copyFloats[2] != testFloat);
         sam.setAttribute("FL", samFloats);
@@ -346,11 +350,15 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(binaryTag).longValue());
 
         record.setAttribute("UI", BinaryCodec.MAX_UINT);
-        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(stringTag).longValue());
-        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(binaryTag).longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT,
+                record.getUnsignedIntegerAttribute(stringTag).longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT,
+                record.getUnsignedIntegerAttribute(binaryTag).longValue());
 
         final SAMBinaryTagAndValue tv_zero = new SAMBinaryTagAndValue(binaryTag, 0L);
-        record = new SAMRecord(header){
+        record = new SAMRecord(header) {
             {
                 setAttributes(tv_zero);
             }
@@ -359,14 +367,17 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(0L, record.getUnsignedIntegerAttribute(binaryTag).longValue());
 
         final SAMBinaryTagAndValue tv_max = new SAMBinaryTagAndValue(binaryTag, BinaryCodec.MAX_UINT);
-        record = new SAMRecord(header){
+        record = new SAMRecord(header) {
             {
-
                 setAttributes(tv_max);
             }
         };
-        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(stringTag).longValue());
-        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(binaryTag).longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT,
+                record.getUnsignedIntegerAttribute(stringTag).longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT,
+                record.getUnsignedIntegerAttribute(binaryTag).longValue());
     }
 
     /**
@@ -385,7 +396,8 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         record = new SAMRecord(header);
         record.setAttribute("UI", BinaryCodec.MAX_UINT);
-        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute("UI").longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute("UI").longValue());
     }
 
     @Test(expectedExceptions = SAMException.class)
@@ -413,10 +425,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue("a string"));
         Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue('C'));
         Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(0.1F));
-        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new byte[]{0}));
-        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new short[]{0}));
-        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new int[]{0}));
-        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new float[]{0.1F}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new byte[] {0}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new short[] {0}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new int[] {0}));
+        Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(new float[] {0.1F}));
 
         // unsigned integers:
         Assert.assertTrue(SAMBinaryTagAndValue.isAllowedAttributeValue(0L));
@@ -433,11 +445,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertNull(record.getStringAttribute(SAMTag.MD));
         record.setAttribute(SAMTag.MD, "");
         Assert.assertNotNull(record.getStringAttribute(SAMTag.MD));
-        Assert.assertEquals(record.getStringAttribute(SAMTag.MD),"");
+        Assert.assertEquals(record.getStringAttribute(SAMTag.MD), "");
         record.setAttribute(SAMTag.MD, null);
         Assert.assertNull(record.getStringAttribute(SAMTag.MD));
     }
-
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void test_setAttribute_unsigned_int_negative() {
@@ -464,7 +475,8 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
 
         record.setAttribute(tag, BinaryCodec.MAX_UINT);
-        Assert.assertEquals(BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(tag).longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT, record.getUnsignedIntegerAttribute(tag).longValue());
 
         record.setAttribute(tag, null);
         Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
@@ -511,7 +523,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertTrue(sam.getReferenceName().equals("chr4"));
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidReferenceIndex() {
         // unresolvable reference
         final SAMRecord sam = createTestRecordHelper();
@@ -554,7 +566,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertTrue(sam.getMateReferenceName().equals("chr4"));
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidMateReferenceIndex() {
         // unresolvable reference
         final SAMRecord sam = createTestRecordHelper();
@@ -633,7 +645,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertTrue(sam.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testNullHeaderSetReferenceIndex() {
         final SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
@@ -641,7 +653,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         sam.setReferenceIndex(3);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testNullHeaderGetReferenceIndex() {
         final SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
@@ -649,7 +661,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         sam.getReferenceIndex();
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testNullHeaderForceIndexResolutionFailure() {
         // force the internal SAMRecord reference index value to null initial state
         final SAMRecord sam = new SAMRecord(null);
@@ -713,14 +725,14 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertTrue(sam.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testNullHeaderSetMateReferenceIndex() {
         final SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
         sam.setMateReferenceIndex(3);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testNullHeaderGetMateReferenceIndex() {
         final SAMRecord sam = createTestRecordHelper();
         sam.setMateReferenceName("chr1");
@@ -729,7 +741,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         sam.getMateReferenceIndex();
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testNullHeaderForceMateIndexResolutionFailure() {
         // force the internal SAMRecord reference index value to null initial state
         final SAMRecord sam = new SAMRecord(null);
@@ -742,7 +754,8 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMRecord sam = createTestRecordHelper();
         Assert.assertTrue(null != sam.getHeader());
 
-        Assert.assertTrue(null != sam.getReadGroup() && sam.getReadGroup().getId().equals("1"));
+        Assert.assertTrue(
+                null != sam.getReadGroup() && sam.getReadGroup().getId().equals("1"));
         sam.setHeader(null);
         Assert.assertNull(sam.getReadGroup());
     }
@@ -755,17 +768,17 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         initialSAMRecord.setHeader(null);
         final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
-        Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
+        Assert.assertEquals(
+                deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
 
-
     @Test
-    public void testValidateNonsenseCigar(){
+    public void testValidateNonsenseCigar() {
         // Create nonsense record
         SAMRecord rec = createTestRecordHelper();
         rec.setCigarString("nonsense");
 
-        //The default validationStringency of a sam record is SILENT.
+        // The default validationStringency of a sam record is SILENT.
         rec.setValidationStringency(ValidationStringency.STRICT);
         // Validate record
         List<SAMValidationError> err = rec.validateCigar(-1);
@@ -834,7 +847,8 @@ public class SAMRecordUnitTest extends HtsjdkTest {
                 sam.getReadLength(),
                 sam.getMateReferenceIndex(),
                 sam.getMateAlignmentStart(),
-                0, null);
+                0,
+                null);
 
         bamRec.setCigarString(sam.getCigarString());
 
@@ -872,7 +886,8 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final String origSequenceName = sam.getContig();
 
         final SAMFileHeader origSamHeader = sam.getHeader();
-        final int origSequenceLength = origSamHeader.getSequence(origSequenceName).getSequenceLength();
+        final int origSequenceLength =
+                origSamHeader.getSequence(origSequenceName).getSequenceLength();
         final SAMFileHeader newHeader = new SAMFileHeader();
         newHeader.addSequence(new SAMSequenceRecord(origSequenceName, origSequenceLength));
 
@@ -881,25 +896,28 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(sam.getReferenceIndex().intValue(), 0);
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testSetHeaderStrictInvalidReference() {
         SAMRecord sam = createTestRecordHelper();
         final SAMFileHeader samHeader = sam.getHeader();
 
         sam.setReferenceName("unresolvable");
-        Assert.assertEquals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, sam.getReferenceIndex().intValue());
+        Assert.assertEquals(
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, sam.getReferenceIndex().intValue());
 
         // throw on force re-resolution of the unresolvable reference name
         sam.setHeaderStrict(samHeader);
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testSetHeaderStrictInvalidMateReference() {
         SAMRecord sam = createTestRecordHelper();
         final SAMFileHeader samHeader = sam.getHeader();
 
         sam.setMateReferenceName("unresolvable");
-        Assert.assertEquals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, sam.getMateReferenceIndex().intValue());
+        Assert.assertEquals(
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                sam.getMateReferenceIndex().intValue());
 
         // throw on force re-resolution of the unresolvable mate reference name
         sam.setHeaderStrict(samHeader);
@@ -921,15 +939,17 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMRecord sam = createTestRecordHelper();
         final SAMFileHeader samHeader = sam.getHeader();
         final String contigName = sam.getContig();
-        Assert.assertEquals(SAMRecord.resolveIndexFromName(contigName, samHeader, true).intValue(), samHeader.getSequenceIndex(contigName));
+        Assert.assertEquals(
+                SAMRecord.resolveIndexFromName(contigName, samHeader, true).intValue(),
+                samHeader.getSequenceIndex(contigName));
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testResolveIndexUnresolvableNullHeader() {
         SAMRecord.resolveIndexFromName("unresolvable", null, false);
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testResolveIndexUnresolvableStrict() {
         final SAMFileHeader samHeader = new SAMFileHeader();
         SAMRecord.resolveIndexFromName("unresolvable", samHeader, true);
@@ -944,11 +964,13 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void testResolveIndexNoAlignment() {
         final SAMFileHeader samHeader = new SAMFileHeader();
-        Assert.assertEquals(SAMRecord.resolveIndexFromName(
-                SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, samHeader, true).intValue(), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertEquals(
+                SAMRecord.resolveIndexFromName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, samHeader, true)
+                        .intValue(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testResolveIndexNullHeader() {
         SAMRecord.resolveIndexFromName("unresolvable", null, true);
     }
@@ -964,7 +986,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(SAMRecord.resolveNameFromIndex(contigIndex, samHeader), contigName);
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testResolveNameUnresolvable() {
         final SAMFileHeader samHeader = new SAMFileHeader();
         SAMRecord.resolveNameFromIndex(99, samHeader);
@@ -973,11 +995,12 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void testResolveNameNoAlignment() {
         final SAMFileHeader samHeader = new SAMFileHeader();
-        Assert.assertEquals(SAMRecord.resolveNameFromIndex(
-                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, samHeader), SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        Assert.assertEquals(
+                SAMRecord.resolveNameFromIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, samHeader),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void testResolveNameNullHeader() {
         SAMRecord.resolveNameFromIndex(1, null);
     }
@@ -989,10 +1012,10 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         rec.reverseComplement(Arrays.asList("Y1"), Arrays.asList("X1", "X2", "X3", "X4", "X5"), false);
         Assert.assertEquals(rec.getReadString(), "GTGTGTGTGT");
         Assert.assertEquals(rec.getBaseQualityString(), "IIIIIHHHHH");
-        Assert.assertEquals(rec.getByteArrayAttribute("X1"), new byte[] {5,4,3,2,1});
-        Assert.assertEquals(rec.getSignedShortArrayAttribute("X2"), new short[] {5,4,3,2,1});
-        Assert.assertEquals(rec.getSignedIntArrayAttribute("X3"), new int[] {5,4,3,2,1});
-        Assert.assertEquals(rec.getFloatArrayAttribute("X4"), new float[] {5.0f,4.0f,3.0f,2.0f,1.0f});
+        Assert.assertEquals(rec.getByteArrayAttribute("X1"), new byte[] {5, 4, 3, 2, 1});
+        Assert.assertEquals(rec.getSignedShortArrayAttribute("X2"), new short[] {5, 4, 3, 2, 1});
+        Assert.assertEquals(rec.getSignedIntArrayAttribute("X3"), new int[] {5, 4, 3, 2, 1});
+        Assert.assertEquals(rec.getFloatArrayAttribute("X4"), new float[] {5.0f, 4.0f, 3.0f, 2.0f, 1.0f});
         Assert.assertEquals(rec.getStringAttribute("Y1"), "GTTTTCTTTT");
     }
 
@@ -1002,18 +1025,38 @@ public class SAMRecordUnitTest extends HtsjdkTest {
      * is true.
      */
     @DataProvider
-    public Object [][] reverseComplementData() {
-        return new Object[][]{
-                {false, "ACACACACAC", "HHHHHIIIII", "AAAAGAAAAC", new byte[] {1,2,3,4,5}, new short[] {1,2,3,4,5}, new int[] {1,2,3,4,5}, new float[] {1,2,3,4,5}},
-                {true, "GTGTGTGTGT", "IIIIIHHHHH", "AAAAGAAAAC", new byte[] {5,4,3,2,1}, new short[] {5,4,3,2,1}, new int[] {5,4,3,2,1}, new float[] {5,4,3,2,1}},
+    public Object[][] reverseComplementData() {
+        return new Object[][] {
+            {
+                false,
+                "ACACACACAC",
+                "HHHHHIIIII",
+                "AAAAGAAAAC",
+                new byte[] {1, 2, 3, 4, 5},
+                new short[] {1, 2, 3, 4, 5},
+                new int[] {1, 2, 3, 4, 5},
+                new float[] {1, 2, 3, 4, 5}
+            },
+            {
+                true,
+                "GTGTGTGTGT",
+                "IIIIIHHHHH",
+                "AAAAGAAAAC",
+                new byte[] {5, 4, 3, 2, 1},
+                new short[] {5, 4, 3, 2, 1},
+                new int[] {5, 4, 3, 2, 1},
+                new float[] {5, 4, 3, 2, 1}
+            },
         };
     }
 
     @Test(dataProvider = "reverseComplementData")
-    public void testSafeReverseComplement(boolean inplace, String bases, String quals, String y1, byte[] x1, short[] x2, int[] x3, float[] x4) throws CloneNotSupportedException {
+    public void testSafeReverseComplement(
+            boolean inplace, String bases, String quals, String y1, byte[] x1, short[] x2, int[] x3, float[] x4)
+            throws CloneNotSupportedException {
         final SAMRecord original = createTestSamRec();
         final SAMRecord cloneOfOriginal = (SAMRecord) original.clone();
-        //Runs a copy (rather than in-place) reverseComplement
+        // Runs a copy (rather than in-place) reverseComplement
         cloneOfOriginal.reverseComplement(Arrays.asList("Y1"), Arrays.asList("X1", "X2", "X3", "X4", "X5"), inplace);
 
         Assert.assertEquals(original.getReadString(), bases);
@@ -1026,12 +1069,11 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         Assert.assertEquals(cloneOfOriginal.getReadString(), "GTGTGTGTGT");
         Assert.assertEquals(cloneOfOriginal.getBaseQualityString(), "IIIIIHHHHH");
-        Assert.assertEquals(cloneOfOriginal.getByteArrayAttribute("X1"), new byte[] {5,4,3,2,1});
-        Assert.assertEquals(cloneOfOriginal.getSignedShortArrayAttribute("X2"), new short[] {5,4,3,2,1});
-        Assert.assertEquals(cloneOfOriginal.getSignedIntArrayAttribute("X3"), new int[] {5,4,3,2,1});
-        Assert.assertEquals(cloneOfOriginal.getFloatArrayAttribute("X4"), new float[] {5.0f,4.0f,3.0f,2.0f,1.0f});
+        Assert.assertEquals(cloneOfOriginal.getByteArrayAttribute("X1"), new byte[] {5, 4, 3, 2, 1});
+        Assert.assertEquals(cloneOfOriginal.getSignedShortArrayAttribute("X2"), new short[] {5, 4, 3, 2, 1});
+        Assert.assertEquals(cloneOfOriginal.getSignedIntArrayAttribute("X3"), new int[] {5, 4, 3, 2, 1});
+        Assert.assertEquals(cloneOfOriginal.getFloatArrayAttribute("X4"), new float[] {5.0f, 4.0f, 3.0f, 2.0f, 1.0f});
         Assert.assertEquals(cloneOfOriginal.getStringAttribute("Y1"), "GTTTTCTTTT");
-
     }
 
     public SAMRecord createTestSamRec() {
@@ -1039,21 +1081,21 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMRecord rec = new SAMRecord(header);
         rec.setReadString("ACACACACAC");
         rec.setBaseQualityString("HHHHHIIIII");
-        rec.setAttribute("X1", new byte[] {1,2,3,4,5});
-        rec.setAttribute("X2", new short[] {1,2,3,4,5});
-        rec.setAttribute("X3", new int[] {1,2,3,4,5});
-        rec.setAttribute("X4", new float[] {1.0f,2.0f,3.0f,4.0f,5.0f});
+        rec.setAttribute("X1", new byte[] {1, 2, 3, 4, 5});
+        rec.setAttribute("X2", new short[] {1, 2, 3, 4, 5});
+        rec.setAttribute("X3", new int[] {1, 2, 3, 4, 5});
+        rec.setAttribute("X4", new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f});
         rec.setAttribute("Y1", "AAAAGAAAAC");
 
-        return(rec);
+        return (rec);
     }
 
     @DataProvider
-    public Object [][] readBasesArrayGetReadLengthData() {
-        return new Object[][]{
-                { null, 0 },
-                { SAMRecord.NULL_SEQUENCE, 0 },
-                { new byte[] {'A', 'C'}, 2 }
+    public Object[][] readBasesArrayGetReadLengthData() {
+        return new Object[][] {
+            {null, 0},
+            {SAMRecord.NULL_SEQUENCE, 0},
+            {new byte[] {'A', 'C'}, 2}
         };
     }
 
@@ -1065,11 +1107,11 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object [][] readBasesStringGetReadLengthData() {
-        return new Object[][]{
-                { null, 0 },
-                { SAMRecord.NULL_SEQUENCE_STRING, 0 },
-                { "AC", 2 }
+    public Object[][] readBasesStringGetReadLengthData() {
+        return new Object[][] {
+            {null, 0},
+            {SAMRecord.NULL_SEQUENCE_STRING, 0},
+            {"AC", 2}
         };
     }
 
@@ -1082,27 +1124,26 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
     @DataProvider(name = "attributeAccessTestData")
     private Object[][] hasAttributeTestData() throws IOException {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest/variousAttributes.sam"));
+        final SamReader reader = SamReaderFactory.makeDefault()
+                .open(new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest/variousAttributes.sam"));
         final SAMRecord samRecordWithAttributes = reader.iterator().next();
         final SAMRecord samRecordWithoutAnyAttributes = new SAMRecord(reader.getFileHeader());
         reader.close();
 
         return new Object[][] {
-                {samRecordWithAttributes, "MF", true},
-                {samRecordWithAttributes, "Nm", true},
-                {samRecordWithAttributes, "H0", true},
-                {samRecordWithAttributes, "H1", true},
-                {samRecordWithAttributes, "SB", true},
-                {samRecordWithAttributes, "UB", true},
-                {samRecordWithAttributes, "SS", true},
-                {samRecordWithAttributes, "US", true},
-                {samRecordWithAttributes, "SI", true},
-                {samRecordWithAttributes, "I2", true},
-                {samRecordWithAttributes, "UI", true},
-
-                {samRecordWithAttributes, "AS", false},
-
-                {samRecordWithoutAnyAttributes, "RG", false}
+            {samRecordWithAttributes, "MF", true},
+            {samRecordWithAttributes, "Nm", true},
+            {samRecordWithAttributes, "H0", true},
+            {samRecordWithAttributes, "H1", true},
+            {samRecordWithAttributes, "SB", true},
+            {samRecordWithAttributes, "UB", true},
+            {samRecordWithAttributes, "SS", true},
+            {samRecordWithAttributes, "US", true},
+            {samRecordWithAttributes, "SI", true},
+            {samRecordWithAttributes, "I2", true},
+            {samRecordWithAttributes, "UI", true},
+            {samRecordWithAttributes, "AS", false},
+            {samRecordWithoutAnyAttributes, "RG", false}
         };
     }
 
@@ -1138,27 +1179,26 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     private static Object[][] getEmptyArrays() {
-        return new Object[][]{
-                {new int[0], int[].class},
-                {new short[0], short[].class},
-                {new byte[0], byte[].class},
-                {new float[0], float[].class},
+        return new Object[][] {
+            {new int[0], int[].class},
+            {new short[0], short[].class},
+            {new byte[0], byte[].class},
+            {new float[0], float[].class},
         };
     }
 
-    private static Object[][] getFileExtensions(){
-        return new Object[][]{
-                {FileExtensions.BAM}, {FileExtensions.SAM}, {FileExtensions.CRAM}
-        };
+    private static Object[][] getFileExtensions() {
+        return new Object[][] {{FileExtensions.BAM}, {FileExtensions.SAM}, {FileExtensions.CRAM}};
     }
 
     @DataProvider
-    public Object[][] getEmptyArraysAndExtensions(){
+    public Object[][] getEmptyArraysAndExtensions() {
         return TestNGUtils.cartesianProduct(getEmptyArrays(), getFileExtensions());
     }
 
     @Test(dataProvider = "getEmptyArraysAndExtensions")
-    public void testWriteSamWithEmptyArray(Object emptyArray, Class<?> arrayClass, String fileExtension) throws IOException {
+    public void testWriteSamWithEmptyArray(Object emptyArray, Class<?> arrayClass, String fileExtension)
+            throws IOException {
         Assert.assertEquals(emptyArray.getClass(), arrayClass);
         Assert.assertEquals(Array.getLength(emptyArray), 0);
 
@@ -1171,17 +1211,16 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final Path tmp = Files.createTempFile("tmp", fileExtension);
         IOUtil.deleteOnExit(tmp);
 
-        final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory()
-                .setCreateMd5File(false)
-                .setCreateIndex(false);
+        final SAMFileWriterFactory writerFactory =
+                new SAMFileWriterFactory().setCreateMd5File(false).setCreateIndex(false);
         final Path reference = IOUtil.getPath("src/test/resources/htsjdk/samtools/one-contig.fasta");
-        try (final SAMFileWriter samFileWriter = writerFactory.makeWriter(samRecords.getHeader(), false, tmp, reference)) {
+        try (final SAMFileWriter samFileWriter =
+                writerFactory.makeWriter(samRecords.getHeader(), false, tmp, reference)) {
             samFileWriter.addAlignment(record);
         }
 
-        try (final SamReader reader = SamReaderFactory.makeDefault()
-                .referenceSequence(reference)
-                .open(tmp)) {
+        try (final SamReader reader =
+                SamReaderFactory.makeDefault().referenceSequence(reference).open(tmp)) {
             final SAMRecordIterator iterator = reader.iterator();
             Assert.assertTrue(iterator.hasNext());
             final SAMRecord recordFromDisk = iterator.next();

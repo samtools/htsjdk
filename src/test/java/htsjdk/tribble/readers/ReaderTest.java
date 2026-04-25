@@ -1,12 +1,6 @@
 package htsjdk.tribble.readers;
 
-
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -15,19 +9,20 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Tests for streams and readers
  */
 public class ReaderTest extends HtsjdkTest {
     @BeforeClass
-    public void setup() throws IOException {
-    }
+    public void setup() throws IOException {}
 
     @AfterClass
-    public void teardown() throws Exception {
-
-    }
+    public void teardown() throws Exception {}
 
     @Test
     public void testMultipleLines() throws IOException {
@@ -44,11 +39,10 @@ public class ReaderTest extends HtsjdkTest {
         testStream("");
     }
 
-
     @Test
     public void testLotsOfLines() throws IOException {
         final StringBuilder b = new StringBuilder();
-        for ( int i = 0; i < 10000; i++ ) {
+        for (int i = 0; i < 10000; i++) {
             b.append("line " + i + "\n");
         }
         testStream(b.toString());
@@ -57,8 +51,8 @@ public class ReaderTest extends HtsjdkTest {
     @Test
     public void testMassiveLines() throws IOException {
         final StringBuilder b = new StringBuilder();
-        for ( int i = 0; i < 10; i++ ) {
-            for ( int j = 0; j < 1000000; j++) {
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 1000000; j++) {
                 b.append(i + "." + j);
             }
             b.append("\n");
@@ -68,25 +62,25 @@ public class ReaderTest extends HtsjdkTest {
 
     @Test
     public void testSkip() throws IOException {
-        for ( int skipSizeBase : Arrays.asList(0, 10, 100, 1000, 10000, 1000000)) {
-            for ( int skipSizeAdd = 0; skipSizeAdd < 10; skipSizeAdd ++ ) {
+        for (int skipSizeBase : Arrays.asList(0, 10, 100, 1000, 10000, 1000000)) {
+            for (int skipSizeAdd = 0; skipSizeAdd < 10; skipSizeAdd++) {
                 final int skipSize = skipSizeBase + skipSizeAdd;
-                final byte[] bytes = new byte[skipSize+2];
-                Arrays.fill(bytes, 0, skipSize, (byte)0);
+                final byte[] bytes = new byte[skipSize + 2];
+                Arrays.fill(bytes, 0, skipSize, (byte) 0);
                 bytes[skipSize] = 1;
-                bytes[skipSize+1] = 2;
+                bytes[skipSize + 1] = 2;
 
                 final InputStream is = new ByteArrayInputStream(bytes);
                 final PositionalBufferedStream pbs = new PositionalBufferedStream(is);
                 pbs.skip(skipSize);
 
                 // first value is 1
-                Assert.assertTrue(! pbs.isDone());
+                Assert.assertTrue(!pbs.isDone());
                 Assert.assertEquals(pbs.getPosition(), skipSize);
                 Assert.assertEquals(pbs.peek(), 1);
                 Assert.assertEquals(pbs.read(), 1);
 
-                Assert.assertTrue(! pbs.isDone());
+                Assert.assertTrue(!pbs.isDone());
                 Assert.assertEquals(pbs.getPosition(), skipSize + 1);
                 Assert.assertEquals(pbs.peek(), 2);
                 Assert.assertEquals(pbs.read(), 2);
@@ -106,7 +100,7 @@ public class ReaderTest extends HtsjdkTest {
         final PositionalBufferedStream pbs = new PositionalBufferedStream(is);
 
         int bytePos = 0;
-        while ( ! pbs.isDone() ) {
+        while (!pbs.isDone()) {
             Assert.assertTrue(bytePos < bytes.length);
 
             // test position
@@ -125,7 +119,7 @@ public class ReaderTest extends HtsjdkTest {
             Assert.assertEquals(pbs.getPosition(), bytePos);
 
             // test repeek
-            if ( bytePos < bytes.length ) {
+            if (bytePos < bytes.length) {
                 Assert.assertEquals(toByte(pbs.peek()), bytes[bytePos]);
                 // test position
                 Assert.assertEquals(pbs.getPosition(), bytePos);
@@ -142,22 +136,23 @@ public class ReaderTest extends HtsjdkTest {
         final List<String> eachLine = new ArrayList<String>();
         while (true) {
             final String line = br.readLine();
-            if ( line == null ) break;
+            if (line == null) break;
             eachLine.add(line);
         }
 
         final byte[] bytes = lines.getBytes();
         final InputStream is = new ByteArrayInputStream(bytes);
         final PositionalBufferedStream pbs = new PositionalBufferedStream(is);
-        final LineReader alr = new AsciiLineReader(pbs); // AsciiLineReader must be used here because it does not read ahead.
+        final LineReader alr =
+                new AsciiLineReader(pbs); // AsciiLineReader must be used here because it does not read ahead.
 
         int bytePos = 0, linePos = 0;
-        /** 
+        /**
          * TODO: Requires revision: we're calling readLine() here, but making assumptions about how the underlying input stream operates.
          * Specifically, these tests assume the underlying stream only advances exactly the required number of characters to find the
          * newline, which is not true for most buffered readers.
          */
-        while ( ! pbs.isDone() ) {
+        while (!pbs.isDone()) {
             Assert.assertTrue(bytePos < bytes.length);
 
             // test position
@@ -179,6 +174,6 @@ public class ReaderTest extends HtsjdkTest {
     }
 
     private final byte toByte(int i) {
-        return (byte)(i & 0xFF);
+        return (byte) (i & 0xFF);
     }
 }

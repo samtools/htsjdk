@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.util.zip.InflaterFactory;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.zip.CRC32;
@@ -105,19 +104,22 @@ public class BlockGunzipper {
      * @param compressedLength size of compressed data, possibly less than the size of the buffer.
      * @return the uncompressed data size.
      */
-    public int unzipBlock(byte[] uncompressedBlock, int uncompressedBlockOffset,
-                           byte[] compressedBlock, int compressedBlockOffset, int compressedLength) {
+    public int unzipBlock(
+            byte[] uncompressedBlock,
+            int uncompressedBlockOffset,
+            byte[] compressedBlock,
+            int compressedBlockOffset,
+            int compressedLength) {
         int uncompressedSize;
         try {
             ByteBuffer byteBuffer = ByteBuffer.wrap(compressedBlock, compressedBlockOffset, compressedLength);
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
             // Validate GZIP header
-            if (byteBuffer.get() != BlockCompressedStreamConstants.GZIP_ID1 ||
-                    byteBuffer.get() != (byte)BlockCompressedStreamConstants.GZIP_ID2 ||
-                    byteBuffer.get() != BlockCompressedStreamConstants.GZIP_CM_DEFLATE ||
-                    byteBuffer.get() != BlockCompressedStreamConstants.GZIP_FLG
-                    ) {
+            if (byteBuffer.get() != BlockCompressedStreamConstants.GZIP_ID1
+                    || byteBuffer.get() != (byte) BlockCompressedStreamConstants.GZIP_ID2
+                    || byteBuffer.get() != BlockCompressedStreamConstants.GZIP_CM_DEFLATE
+                    || byteBuffer.get() != BlockCompressedStreamConstants.GZIP_FLG) {
                 throw new SAMFormatException("Invalid GZIP header");
             }
             // Skip MTIME, XFL, OS fields
@@ -134,14 +136,19 @@ public class BlockGunzipper {
             }
 
             // Read expected size and CRD from end of GZIP block
-            final int deflatedSize = compressedLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH - BlockCompressedStreamConstants.BLOCK_FOOTER_LENGTH;
+            final int deflatedSize = compressedLength
+                    - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH
+                    - BlockCompressedStreamConstants.BLOCK_FOOTER_LENGTH;
             byteBuffer.position(byteBuffer.position() + deflatedSize);
             int expectedCrc = byteBuffer.getInt();
             uncompressedSize = byteBuffer.getInt();
             inflater.reset();
 
             // Decompress
-            inflater.setInput(compressedBlock, compressedBlockOffset + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, deflatedSize);
+            inflater.setInput(
+                    compressedBlock,
+                    compressedBlockOffset + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH,
+                    deflatedSize);
             final int inflatedBytes = inflater.inflate(uncompressedBlock, uncompressedBlockOffset, uncompressedSize);
             if (inflatedBytes != uncompressedSize) {
                 throw new SAMFormatException("Did not inflate expected amount");
@@ -152,12 +159,11 @@ public class BlockGunzipper {
                 crc32.reset();
                 crc32.update(uncompressedBlock, uncompressedBlockOffset, uncompressedSize);
                 final long crc = crc32.getValue();
-                if ((int)crc != expectedCrc) {
+                if ((int) crc != expectedCrc) {
                     throw new SAMFormatException("CRC mismatch");
                 }
             }
-        } catch (DataFormatException e)
-        {
+        } catch (DataFormatException e) {
             throw new RuntimeIOException(e);
         }
         return uncompressedSize;

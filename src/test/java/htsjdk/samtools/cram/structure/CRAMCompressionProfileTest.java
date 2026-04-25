@@ -3,11 +3,10 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import java.util.EnumMap;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.EnumMap;
 
 /**
  * Tests for {@link CRAMCompressionProfile} and its integration with {@link CRAMEncodingStrategy}.
@@ -16,11 +15,11 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
 
     @DataProvider(name = "profiles")
     public Object[][] getProfiles() {
-        return new Object[][]{
-                {CRAMCompressionProfile.FAST},
-                {CRAMCompressionProfile.NORMAL},
-                {CRAMCompressionProfile.SMALL},
-                {CRAMCompressionProfile.ARCHIVE},
+        return new Object[][] {
+            {CRAMCompressionProfile.FAST},
+            {CRAMCompressionProfile.NORMAL},
+            {CRAMCompressionProfile.SMALL},
+            {CRAMCompressionProfile.ARCHIVE},
         };
     }
 
@@ -34,7 +33,8 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
 
     @Test(dataProvider = "profiles")
     public void testCompressorMapCoversAllWrittenDataSeries(final CRAMCompressionProfile profile) {
-        final EnumMap<DataSeries, CompressorDescriptor> map = profile.toStrategy().getCompressorMap();
+        final EnumMap<DataSeries, CompressorDescriptor> map =
+                profile.toStrategy().getCompressorMap();
 
         // All profiles should have entries for QS, RN, BA, and other written series
         Assert.assertNotNull(map.get(DataSeries.QS_QualityScore), "QS must be in compressor map");
@@ -55,8 +55,8 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         // FAST should use GZIP for everything
         final EnumMap<DataSeries, CompressorDescriptor> map = strategy.getCompressorMap();
         for (final CompressorDescriptor desc : map.values()) {
-            Assert.assertEquals(desc.method(), BlockCompressionMethod.GZIP,
-                    "FAST profile should use GZIP for all data series");
+            Assert.assertEquals(
+                    desc.method(), BlockCompressionMethod.GZIP, "FAST profile should use GZIP for all data series");
         }
     }
 
@@ -147,12 +147,13 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         Assert.assertFalse(trialMap.isEmpty(), "ARCHIVE trial map should not be empty");
 
         // BA_Base should have trial candidates including ARITH and BZIP2
-        Assert.assertTrue(trialMap.containsKey(DataSeries.BA_Base),
-                "BA_Base should have trial candidates in ARCHIVE");
+        Assert.assertTrue(trialMap.containsKey(DataSeries.BA_Base), "BA_Base should have trial candidates in ARCHIVE");
         final java.util.List<CompressorDescriptor> baCandidates = trialMap.get(DataSeries.BA_Base);
-        Assert.assertTrue(baCandidates.stream().anyMatch(d -> d.method() == BlockCompressionMethod.ADAPTIVE_ARITHMETIC),
+        Assert.assertTrue(
+                baCandidates.stream().anyMatch(d -> d.method() == BlockCompressionMethod.ADAPTIVE_ARITHMETIC),
                 "ARCHIVE BA_Base trial candidates should include Range (ARITH) coder");
-        Assert.assertTrue(baCandidates.stream().anyMatch(d -> d.method() == BlockCompressionMethod.BZIP2),
+        Assert.assertTrue(
+                baCandidates.stream().anyMatch(d -> d.method() == BlockCompressionMethod.BZIP2),
                 "ARCHIVE BA_Base trial candidates should include BZIP2");
     }
 
@@ -163,15 +164,16 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         Assert.assertNotNull(trialMap, "SMALL profile should have trial candidates");
 
         // SMALL should have BZIP2 as trial candidate for general data series
-        Assert.assertTrue(trialMap.containsKey(DataSeries.BA_Base),
-                "BA_Base should have trial candidates in SMALL");
+        Assert.assertTrue(trialMap.containsKey(DataSeries.BA_Base), "BA_Base should have trial candidates in SMALL");
     }
 
     @Test
     public void testFastAndNormalHaveNoTrialCandidates() {
-        Assert.assertNull(CRAMCompressionProfile.FAST.toStrategy().getTrialCandidatesMap(),
+        Assert.assertNull(
+                CRAMCompressionProfile.FAST.toStrategy().getTrialCandidatesMap(),
                 "FAST should not have trial candidates");
-        Assert.assertNull(CRAMCompressionProfile.NORMAL.toStrategy().getTrialCandidatesMap(),
+        Assert.assertNull(
+                CRAMCompressionProfile.NORMAL.toStrategy().getTrialCandidatesMap(),
                 "NORMAL should not have trial candidates");
     }
 }

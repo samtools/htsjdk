@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
-
 import java.io.Serializable;
 import java.util.Comparator;
 

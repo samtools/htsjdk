@@ -1,7 +1,6 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +34,9 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
         attributes.put("isMixed", (Genotype g) -> g.isMixed() ? true_string : false_string);
         attributes.put("isAvailable", (Genotype g) -> g.isAvailable() ? true_string : false_string);
         attributes.put("isPassFT", (Genotype g) -> g.isFiltered() ? false_string : true_string);
-        attributes.put(VCFConstants.GENOTYPE_FILTER_KEY, (Genotype g) -> g.isFiltered()?  g.getFilters() : VCFConstants.PASSES_FILTERS_v4);
+        attributes.put(
+                VCFConstants.GENOTYPE_FILTER_KEY,
+                (Genotype g) -> g.isFiltered() ? g.getFilters() : VCFConstants.PASSES_FILTERS_v4);
         attributes.put(VCFConstants.GENOTYPE_QUALITY_KEY, Genotype::getGQ);
     }
 
@@ -46,14 +47,13 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
 
     @Override
     public Object get(String name) {
-        //should matching genotype attributes always supersede vc?
-        if ( attributes.containsKey(name) ) { // dynamic resolution of name -> value via map
+        // should matching genotype attributes always supersede vc?
+        if (attributes.containsKey(name)) { // dynamic resolution of name -> value via map
             return attributes.get(name).get(g);
-        } else if ( g.hasAnyAttribute(name) ) {
+        } else if (g.hasAnyAttribute(name)) {
             return g.getAnyAttribute(name);
-        } else if ( g.getFilters() != null && g.getFilters().contains(name) ) {
+        } else if (g.getFilters() != null && g.getFilters().contains(name)) {
             return true_string;
-        } else
-            return super.get(name);
+        } else return super.get(name);
     }
 }

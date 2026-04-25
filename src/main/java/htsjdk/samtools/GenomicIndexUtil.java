@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.utils.ValidationUtils;
-
 import java.util.BitSet;
 
 /**
@@ -34,20 +33,19 @@ public class GenomicIndexUtil {
     /**
      * Reports the total amount of genomic data that any bin can index.
      */
-    public static final int BIN_GENOMIC_SPAN = 512*1024*1024;
+    public static final int BIN_GENOMIC_SPAN = 512 * 1024 * 1024;
 
     /**
      * What is the starting bin for each level?
      */
-    public static final int[] LEVEL_STARTS = {0,1,9,73,585,4681};
+    public static final int[] LEVEL_STARTS = {0, 1, 9, 73, 585, 4681};
 
     /**
      * Reports the maximum number of bins that can appear in a binning index.
      */
-    public static final int MAX_BINS = 37450;   // =(8^6-1)/7+1
+    public static final int MAX_BINS = 37450; // =(8^6-1)/7+1
 
-    public static final int MAX_LINEAR_INDEX_SIZE = MAX_BINS+1-LEVEL_STARTS[LEVEL_STARTS.length-1];
-
+    public static final int MAX_LINEAR_INDEX_SIZE = MAX_BINS + 1 - LEVEL_STARTS[LEVEL_STARTS.length - 1];
 
     /**
      * E.g. for a SAMRecord with no genomic coordinate.
@@ -60,10 +58,10 @@ public class GenomicIndexUtil {
      * @return the binning index level for the given bin
      */
     public static int binTolevel(int bin) {
-        ValidationUtils.validateArg(bin >=0 && bin <= MAX_BINS, "Bin number must be >=0 and <= 37450");
+        ValidationUtils.validateArg(bin >= 0 && bin <= MAX_BINS, "Bin number must be >=0 and <= 37450");
         // As described in Tabix: fast retrieval of sequence features from generic TAB-delimited files.
         // doi: 10.1093/bioinformatics/btq671
-        return (int) Math.floor(((Math.log((7*bin) + 1) / Math.log(2)) / 3));
+        return (int) Math.floor(((Math.log((7 * bin) + 1) / Math.log(2)) / 3));
     }
 
     /**
@@ -73,10 +71,10 @@ public class GenomicIndexUtil {
      * @return the size for a bin at the given level
      */
     public static int levelToSize(int level) {
-        ValidationUtils.validateArg(level >=0 && level <= 5, "Level number must be >=0 and <= 5");
+        ValidationUtils.validateArg(level >= 0 && level <= 5, "Level number must be >=0 and <= 5");
         // As described in Tabix: fast retrieval of sequence features from generic TAB-delimited files.
         // doi: 10.1093/bioinformatics/btq671
-        return (int) Math.pow(2, 29-(3*level));
+        return (int) Math.pow(2, 29 - (3 * level));
     }
 
     /**
@@ -91,14 +89,10 @@ public class GenomicIndexUtil {
         final int level = binTolevel(bin);
         final int levelStart = LEVEL_STARTS[level];
         final int binSize = levelToSize(level);
-        final int binStart = (bin-levelStart) * binSize;
-        return String.format("bin=%d, level=%d, first bin=%d, bin size=%,d bin range=(%,d-%,d)",
-                bin,
-                level,
-                levelStart,
-                binSize,
-                binStart,
-                binStart + binSize);
+        final int binStart = (bin - levelStart) * binSize;
+        return String.format(
+                "bin=%d, level=%d, first bin=%d, bin size=%,d bin range=(%,d-%,d)",
+                bin, level, levelStart, binSize, binStart, binStart + binSize);
     }
 
     /**
@@ -107,15 +101,14 @@ public class GenomicIndexUtil {
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
      */
-    public static int regionToBin(final int beg, int end)
-    {
+    public static int regionToBin(final int beg, int end) {
         --end;
 
-        if (beg>>14 == end>>14) return ((1<<15)-1)/7 + (beg>>14);
-        if (beg>>17 == end>>17) return ((1<<12)-1)/7 + (beg>>17);
-        if (beg>>20 == end>>20) return  ((1<<9)-1)/7 + (beg>>20);
-        if (beg>>23 == end>>23) return  ((1<<6)-1)/7 + (beg>>23);
-        if (beg>>26 == end>>26) return  ((1<<3)-1)/7 + (beg>>26);
+        if (beg >> 14 == end >> 14) return ((1 << 15) - 1) / 7 + (beg >> 14);
+        if (beg >> 17 == end >> 17) return ((1 << 12) - 1) / 7 + (beg >> 17);
+        if (beg >> 20 == end >> 20) return ((1 << 9) - 1) / 7 + (beg >> 20);
+        if (beg >> 23 == end >> 23) return ((1 << 6) - 1) / 7 + (beg >> 23);
+        if (beg >> 26 == end >> 26) return ((1 << 3) - 1) / 7 + (beg >> 26);
         return 0;
     }
 
@@ -127,18 +120,17 @@ public class GenomicIndexUtil {
      * @param minShift minimum bin width (2^minShift)
      * @param binDepth number of levels in the binning scheme (including bin 0)
      */
-    public static int regionToBin(final int beg, int end, final int minShift, final int binDepth)
-    {
-        final int maxShift = minShift + 3*(binDepth-1);
+    public static int regionToBin(final int beg, int end, final int minShift, final int binDepth) {
+        final int maxShift = minShift + 3 * (binDepth - 1);
         int binWidth = minShift;
 
         --end;
 
         while (binWidth < maxShift) {
-            if (beg>>binWidth == end>>binWidth) {
-                return ((1<< (maxShift - binWidth)) - 1)/7 + (beg>>binWidth);
+            if (beg >> binWidth == end >> binWidth) {
+                return ((1 << (maxShift - binWidth)) - 1) / 7 + (beg >> binWidth);
             }
-            binWidth+=3;
+            binWidth += 3;
         }
 
         return 0;
@@ -155,19 +147,19 @@ public class GenomicIndexUtil {
      */
     public static BitSet regionToBins(final int startPos, final int endPos) {
         final int maxPos = 0x1FFFFFFF;
-        final int start = (startPos <= 0) ? 0 : (startPos-1) & maxPos;
-        final int end = (endPos <= 0) ? maxPos : (endPos-1) & maxPos;
+        final int start = (startPos <= 0) ? 0 : (startPos - 1) & maxPos;
+        final int end = (endPos <= 0) ? maxPos : (endPos - 1) & maxPos;
         if (start > end) {
             return null;
         }
         int k;
         final BitSet bins = new BitSet(GenomicIndexUtil.MAX_BINS);
         bins.set(0);
-        for (k =    1 + (start>>26); k <=    1 + (end>>26); ++k) bins.set(k);
-        for (k =    9 + (start>>23); k <=    9 + (end>>23); ++k) bins.set(k);
-        for (k =   73 + (start>>20); k <=   73 + (end>>20); ++k) bins.set(k);
-        for (k =  585 + (start>>17); k <=  585 + (end>>17); ++k) bins.set(k);
-        for (k = 4681 + (start>>14); k <= 4681 + (end>>14); ++k) bins.set(k);
+        for (k = 1 + (start >> 26); k <= 1 + (end >> 26); ++k) bins.set(k);
+        for (k = 9 + (start >> 23); k <= 9 + (end >> 23); ++k) bins.set(k);
+        for (k = 73 + (start >> 20); k <= 73 + (end >> 20); ++k) bins.set(k);
+        for (k = 585 + (start >> 17); k <= 585 + (end >> 17); ++k) bins.set(k);
+        for (k = 4681 + (start >> 14); k <= 4681 + (end >> 14); ++k) bins.set(k);
         return bins;
     }
 
@@ -205,5 +197,4 @@ public class GenomicIndexUtil {
         }
         return bins;
     }
-
 }

@@ -11,8 +11,8 @@ import java.util.zip.GZIPOutputStream;
  * @author Tim Fennell
  */
 public class CustomGzipOutputStream extends GZIPOutputStream {
-    public CustomGzipOutputStream(final OutputStream outputStream, final int bufferSize, final int compressionLevel) throws
-            IOException {
+    public CustomGzipOutputStream(final OutputStream outputStream, final int bufferSize, final int compressionLevel)
+            throws IOException {
         super(outputStream, bufferSize);
         this.def.setLevel(compressionLevel);
     }

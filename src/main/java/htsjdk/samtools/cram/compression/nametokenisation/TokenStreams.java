@@ -4,7 +4,6 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -25,7 +24,7 @@ public class TokenStreams {
     public static final byte TOKEN_DELTA = 0x08;
     public static final byte TOKEN_DELTA0 = 0x09;
     public static final byte TOKEN_MATCH = 0x0A;
-    public static final byte TOKEN_NOP = 0x0B; //unused
+    public static final byte TOKEN_NOP = 0x0B; // unused
     public static final byte TOKEN_END = 0x0C;
 
     public static final int TOTAL_TOKEN_TYPES = 13;
@@ -58,8 +57,11 @@ public class TokenStreams {
      * @param numNames the number of read names in the slice
      * @param sharedRansDecoder optional shared rANS decoder instance (avoids per-stream allocation)
      */
-    public TokenStreams(final ByteBuffer inputByteBuffer, final int useArith, final int numNames,
-                        final RANSNx16Decode sharedRansDecoder) {
+    public TokenStreams(
+            final ByteBuffer inputByteBuffer,
+            final int useArith,
+            final int numNames,
+            final RANSNx16Decode sharedRansDecoder) {
         // pre-allocate enough room for 32 token positions; we'll reallocate if we exceed this; it is ok if
         // the actual number is less than the pre-allocated amount
         // note that this array is often very sparse (unused cells have null instead of an actual ByteBuffer)
@@ -77,7 +79,8 @@ public class TokenStreams {
             if (startNewPosition) {
                 tokenPosition++;
                 if (tokenPosition == numberOfPreallocatedPositions) {
-                    // if we encounter a new position that is past the number of positions for which we've pre-allocated,
+                    // if we encounter a new position that is past the number of positions for which we've
+                    // pre-allocated,
                     // expand our array and copy the old values into it; this has side effects
                     numberOfPreallocatedPositions = reallocateTokenStreams(numberOfPreallocatedPositions);
                 }
@@ -113,7 +116,8 @@ public class TokenStreams {
                     final RangeDecode rangeDecode = new RangeDecode();
                     uncompressedTokenStream = rangeDecode.uncompress(CompressionUtils.wrap(compressedTokenStream));
                 } else {
-                    final RANSNx16Decode ransDecode = sharedRansDecoder != null ? sharedRansDecoder : new RANSNx16Decode();
+                    final RANSNx16Decode ransDecode =
+                            sharedRansDecoder != null ? sharedRansDecoder : new RANSNx16Decode();
                     uncompressedTokenStream = ByteBuffer.wrap(ransDecode.uncompress(compressedTokenStream))
                             .order(java.nio.ByteOrder.LITTLE_ENDIAN);
                 }

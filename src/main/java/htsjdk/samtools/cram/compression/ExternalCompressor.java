@@ -23,8 +23,8 @@ import htsjdk.utils.ValidationUtils;
  * on raw byte arrays. Instances are typically obtained via {@link #getCompressorForMethod}.
  */
 public abstract class ExternalCompressor {
-    final public static int NO_COMPRESSION_ARG = -1;
-    final private static String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
+    public static final int NO_COMPRESSION_ARG = -1;
+    private static final String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
 
     private BlockCompressionMethod method;
 
@@ -104,8 +104,7 @@ public abstract class ExternalCompressor {
      * @return an ExternalCompressor of the requested type, populated with an compressor-specific args
      */
     public static ExternalCompressor getCompressorForMethod(
-            final BlockCompressionMethod compressionMethod,
-            final int compressorSpecificArg) {
+            final BlockCompressionMethod compressionMethod, final int compressorSpecificArg) {
         switch (compressionMethod) {
             case RAW:
                 ValidationUtils.validateArg(
@@ -114,9 +113,9 @@ public abstract class ExternalCompressor {
                 return new RAWExternalCompressor();
 
             case GZIP:
-                return compressorSpecificArg == NO_COMPRESSION_ARG ?
-                        new GZIPExternalCompressor() :
-                        new GZIPExternalCompressor(compressorSpecificArg);
+                return compressorSpecificArg == NO_COMPRESSION_ARG
+                        ? new GZIPExternalCompressor()
+                        : new GZIPExternalCompressor(compressorSpecificArg);
 
             case LZMA:
                 ValidationUtils.validateArg(
@@ -125,19 +124,21 @@ public abstract class ExternalCompressor {
                 return new LZMAExternalCompressor();
 
             case RANS:
-                return compressorSpecificArg == NO_COMPRESSION_ARG ?
-                        new RANS4x8ExternalCompressor(new RANS4x8Encode(), new RANS4x8Decode()) :
-                        new RANS4x8ExternalCompressor(compressorSpecificArg, new RANS4x8Encode(), new RANS4x8Decode());
+                return compressorSpecificArg == NO_COMPRESSION_ARG
+                        ? new RANS4x8ExternalCompressor(new RANS4x8Encode(), new RANS4x8Decode())
+                        : new RANS4x8ExternalCompressor(
+                                compressorSpecificArg, new RANS4x8Encode(), new RANS4x8Decode());
 
             case RANSNx16:
-                return compressorSpecificArg == NO_COMPRESSION_ARG ?
-                        new RANSNx16ExternalCompressor(new RANSNx16Encode(), new RANSNx16Decode()) :
-                        new RANSNx16ExternalCompressor(compressorSpecificArg, new RANSNx16Encode(), new RANSNx16Decode());
+                return compressorSpecificArg == NO_COMPRESSION_ARG
+                        ? new RANSNx16ExternalCompressor(new RANSNx16Encode(), new RANSNx16Decode())
+                        : new RANSNx16ExternalCompressor(
+                                compressorSpecificArg, new RANSNx16Encode(), new RANSNx16Decode());
 
             case ADAPTIVE_ARITHMETIC:
-                return compressorSpecificArg == NO_COMPRESSION_ARG ?
-                        new RangeExternalCompressor(new RangeEncode(), new RangeDecode()) :
-                        new RangeExternalCompressor(compressorSpecificArg, new RangeEncode(), new RangeDecode());
+                return compressorSpecificArg == NO_COMPRESSION_ARG
+                        ? new RangeExternalCompressor(new RangeEncode(), new RangeDecode())
+                        : new RangeExternalCompressor(compressorSpecificArg, new RangeEncode(), new RangeDecode());
 
             case NAME_TOKENISER:
                 return new NameTokeniserExternalCompressor(new NameTokenisationEncode(), new NameTokenisationDecode());
@@ -155,5 +156,4 @@ public abstract class ExternalCompressor {
                 throw new IllegalArgumentException(String.format("Unknown compression method %s", compressionMethod));
         }
     }
-
 }

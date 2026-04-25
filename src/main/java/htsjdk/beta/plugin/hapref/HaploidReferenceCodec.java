@@ -6,11 +6,11 @@ import htsjdk.beta.plugin.HtsContentType;
 /**
  *  Base class for all {@link HtsContentType#HAPLOID_REFERENCE} codecs.
  */
-public interface HaploidReferenceCodec extends HtsCodec<
-        HaploidReferenceDecoderOptions,
-        HaploidReferenceEncoderOptions> {
+public interface HaploidReferenceCodec
+        extends HtsCodec<HaploidReferenceDecoderOptions, HaploidReferenceEncoderOptions> {
 
     @Override
-    default HtsContentType getContentType() { return HtsContentType.HAPLOID_REFERENCE; }
-
+    default HtsContentType getContentType() {
+        return HtsContentType.HAPLOID_REFERENCE;
+    }
 }

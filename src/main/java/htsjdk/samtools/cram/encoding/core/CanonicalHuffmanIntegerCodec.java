@@ -36,9 +36,10 @@ final class CanonicalHuffmanIntegerCodec extends CoreCodec<Integer> {
      * @param coreBlockOutputStream the output bitstream to write to
      * @param huffmanParams the {@link HuffmanParams} to use for the codec)
      */
-    public CanonicalHuffmanIntegerCodec(final BitInputStream coreBlockInputStream,
-                                        final BitOutputStream coreBlockOutputStream,
-                                        final HuffmanParams<Integer> huffmanParams) {
+    public CanonicalHuffmanIntegerCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final HuffmanParams<Integer> huffmanParams) {
         super(coreBlockInputStream, coreBlockOutputStream);
         helper = new HuffmanCanoncialCodeGenerator(huffmanParams);
     }

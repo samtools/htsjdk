@@ -24,11 +24,10 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.Arrays;
 
 public class SAMFileHeaderTest extends HtsjdkTest {
 
@@ -38,30 +37,30 @@ public class SAMFileHeaderTest extends HtsjdkTest {
 
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
+        Assert.assertEquals(
+                header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
 
         header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, SAMFileHeader.SortOrder.queryname.name());
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.queryname);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.queryname.name());
+        Assert.assertEquals(
+                header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.queryname.name());
 
         header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, SAMFileHeader.SortOrder.coordinate);
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
+        Assert.assertEquals(
+                header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
 
         header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, "UNKNOWN");
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.unknown);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
-                            SAMFileHeader.SortOrder.unknown.name());
+        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.unknown.name());
 
         header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, "uNknOWn");
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.unknown);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
-                            SAMFileHeader.SortOrder.unknown.name());
+        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.unknown.name());
 
         header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, "cOoRdinate");
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.unknown);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
-                            SAMFileHeader.SortOrder.unknown.name());
+        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.unknown.name());
     }
 
     @Test
@@ -74,7 +73,8 @@ public class SAMFileHeaderTest extends HtsjdkTest {
 
         header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.reference.name());
         Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.reference);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.reference.name());
+        Assert.assertEquals(
+                header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.reference.name());
 
         header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.query);
         Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.query);
@@ -92,7 +92,7 @@ public class SAMFileHeaderTest extends HtsjdkTest {
     @Test
     public void testGetSequenceIfNameIsNotFound() {
         final SAMFileHeader header = new SAMFileHeader();
-        final SAMSequenceRecord rec = new SAMSequenceRecord("chr1",1);
+        final SAMSequenceRecord rec = new SAMSequenceRecord("chr1", 1);
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(Arrays.asList(rec));
         header.setSequenceDictionary(dict);
 
@@ -102,8 +102,8 @@ public class SAMFileHeaderTest extends HtsjdkTest {
     @DataProvider
     public Object[][] dataForInvalidTagKeyTests() {
         return new Object[][] {
-                {"@RG\tID:A1\tPL:ILLUMINA\tLNID:1\tSM:A2", "key is not two characters"},
-                {"@RG\tID:A1\tSM:A2", ""}
+            {"@RG\tID:A1\tPL:ILLUMINA\tLNID:1\tSM:A2", "key is not two characters"},
+            {"@RG\tID:A1\tSM:A2", ""}
         };
     }
 
@@ -121,12 +121,12 @@ public class SAMFileHeaderTest extends HtsjdkTest {
 
     @Test
     public void testWrongTag() {
-        String[] testData = new String[]{
-                "@hd\tVN:1.0\tSO:unsorted\n",
-                "@sq\tSN:chrM\tLN:16571\n",
-                "@rg\tID:1\tSM:sample1\n",
-                "@pg\tID:1\tPN:A\n",
-                "@co\tVN:1.0\tSO:unsorted\n"
+        String[] testData = new String[] {
+            "@hd\tVN:1.0\tSO:unsorted\n",
+            "@sq\tSN:chrM\tLN:16571\n",
+            "@rg\tID:1\tSM:sample1\n",
+            "@pg\tID:1\tPN:A\n",
+            "@co\tVN:1.0\tSO:unsorted\n"
         };
         for (String stringHeader : testData) {
             SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
@@ -134,18 +134,17 @@ public class SAMFileHeaderTest extends HtsjdkTest {
             String validationErrors = header.getValidationErrors().toString();
             Assert.assertTrue(validationErrors.contains("Unrecognized header record type"));
         }
-
     }
 
     @DataProvider(name = "DataForWrongTagTests")
     public Object[][] dataForWrongTagTests() {
         return new Object[][] {
-                {"@HD\tVN:1.0\tSO:UNSORTED\n"},
-                {"@HD\tVN:1.0\tSO:FALSE\n"},
-                {"@HD\tVN:1.0\tSO:COORDINATE\n"},
-                {"@HD\tVN:1.0\tSO:uNknOWn\n"},
-                {"@HD\tVN:1.0\tSO:cOoRdinate\n"},
-                };
+            {"@HD\tVN:1.0\tSO:UNSORTED\n"},
+            {"@HD\tVN:1.0\tSO:FALSE\n"},
+            {"@HD\tVN:1.0\tSO:COORDINATE\n"},
+            {"@HD\tVN:1.0\tSO:uNknOWn\n"},
+            {"@HD\tVN:1.0\tSO:cOoRdinate\n"},
+        };
     }
 
     @Test(dataProvider = "DataForWrongTagTests")
@@ -157,7 +156,8 @@ public class SAMFileHeaderTest extends HtsjdkTest {
 
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
+        Assert.assertEquals(
+                header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
 
         header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
         Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.unsorted);

@@ -8,27 +8,26 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.util.SequenceUtil;
+import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.*;
-
 public class CRAMCompressionRecordTest extends HtsjdkTest {
 
-    @DataProvider(name="alignmentEndData")
+    @DataProvider(name = "alignmentEndData")
     public Object[][] getAlignmentEndTestData() {
         return new Object[][] {
-                // readLength, alignmentStart, isMapped, readFeatures, expected alignmentEnd
-                { 100, 5, true, null, 104},
-                { 100, 10, true, Collections.singletonList(new SoftClip(1, "AAA".getBytes())), 100+10-1 -3},
-                { 100, 10, true, Collections.singletonList(new Deletion(1, 5)), 100+10-1 +5},
-                { 100, 30, true, Collections.singletonList(new Insertion(1, "CCCCCCCCCC".getBytes())), 100+30-1 -10},
-                { 100, 40, true, Collections.singletonList(new InsertBase(1, (byte) 'A')), 100+40-1 -1}
+            // readLength, alignmentStart, isMapped, readFeatures, expected alignmentEnd
+            {100, 5, true, null, 104},
+            {100, 10, true, Collections.singletonList(new SoftClip(1, "AAA".getBytes())), 100 + 10 - 1 - 3},
+            {100, 10, true, Collections.singletonList(new Deletion(1, 5)), 100 + 10 - 1 + 5},
+            {100, 30, true, Collections.singletonList(new Insertion(1, "CCCCCCCCCC".getBytes())), 100 + 30 - 1 - 10},
+            {100, 40, true, Collections.singletonList(new InsertBase(1, (byte) 'A')), 100 + 40 - 1 - 1}
         };
     }
 
-    @Test(dataProvider="alignmentEndData")
+    @Test(dataProvider = "alignmentEndData")
     public void testAlignmentEnd(
             final int readLength,
             final int alignmentStart,
@@ -42,7 +41,7 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
                 alignmentStart,
                 isMapped ? 0 : SAMFlag.READ_UNMAPPED.intValue(),
                 0,
-                new byte[]{'a', 'a', 'a', 'a', 'a'},
+                new byte[] {'a', 'a', 'a', 'a', 'a'},
                 0,
                 readFeatures);
         Assert.assertEquals(cramCompressionRecord.getAlignmentStart(), alignmentStart);
@@ -54,10 +53,10 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         final List<Object[]> retval = new ArrayList<>();
 
         final int validSeqId = 0;
-        final int[] sequenceIds = new int[]{ SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, validSeqId };
+        final int[] sequenceIds = new int[] {SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, validSeqId};
         final int validAlignmentStart = 1;
-        final int[] starts = new int[]{ SAMRecord.NO_ALIGNMENT_START, validAlignmentStart };
-        final boolean[] mappeds = new boolean[] { true, false };
+        final int[] starts = new int[] {SAMRecord.NO_ALIGNMENT_START, validAlignmentStart};
+        final boolean[] mappeds = new boolean[] {true, false};
 
         for (final int sequenceId : sequenceIds) {
             for (final int start : starts) {
@@ -81,28 +80,30 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
                         placementExpectation = false;
                     }
 
-                    retval.add(new Object[]{sequenceId, start, mapped, placementExpectation});
+                    retval.add(new Object[] {sequenceId, start, mapped, placementExpectation});
                 }
-
             }
         }
 
         return retval.toArray(new Object[0][0]);
     }
 
-    @DataProvider(name="baseNormalization")
+    @DataProvider(name = "baseNormalization")
     public Object[][] getBaseNormalization() {
         // ref bases, read bases, cigar string, expected roundtrip read bases
-        return new Object[][]{
-                {
-                        // "acgt"
-                        "NNNN", "acgt", "4M", "ACGT"
-                },
-                {
-                        // CRAM turns everything to upper case, and preserves IUPAC codes except for ".", which goes toN
-                        // ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY"
-                        "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", SequenceUtil.getIUPACCodesString(), "31M", "NAABBCCDDGGHHKKMMNNRRSSTTVVWWYY"
-                }
+        return new Object[][] {
+            {
+                // "acgt"
+                "NNNN", "acgt", "4M", "ACGT"
+            },
+            {
+                // CRAM turns everything to upper case, and preserves IUPAC codes except for ".", which goes toN
+                // ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY"
+                "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
+                SequenceUtil.getIUPACCodesString(),
+                "31M",
+                "NAABBCCDDGGHHKKMMNNRRSSTTVVWWYY"
+            }
         };
     }
 
@@ -112,10 +113,7 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
      */
     @Test(dataProvider = "baseNormalization")
     public void testCRAMRecordBaseNormalization(
-            final String refBases,
-            final String readBases,
-            final String cigarString,
-            final String expectedReadBases) {
+            final String refBases, final String readBases, final String cigarString, final String expectedReadBases) {
         final SAMRecord samRecord = CRAMStructureTestHelper.createSAMRecordMapped(0, 1);
         samRecord.setReadBases(readBases.getBytes());
         samRecord.setBaseQualities(new byte[readBases.length()]);
@@ -131,8 +129,8 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
                 new HashMap<>());
         final List<CRAMCompressionRecord> cramRecords = Collections.singletonList(cramRecord);
 
-        final CompressionHeader compressionHeader = new CompressionHeaderFactory(new CRAMEncodingStrategy())
-                .createCompressionHeader(cramRecords, true);
+        final CompressionHeader compressionHeader =
+                new CompressionHeaderFactory(new CRAMEncodingStrategy()).createCompressionHeader(cramRecords, true);
         final Slice slice = new Slice(cramRecords, compressionHeader, 0L, 0L);
         final CRAMReferenceSource cramReferenceSource = new CRAMReferenceSource() {
             @Override
@@ -142,9 +140,7 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
 
             @Override
             public byte[] getReferenceBasesByRegion(
-                    final SAMSequenceRecord sequenceRecord,
-                    final int zeroBasedStart,
-                    final int requestedRegionLength) {
+                    final SAMSequenceRecord sequenceRecord, final int zeroBasedStart, final int requestedRegionLength) {
                 return Arrays.copyOfRange(refBases.getBytes(), zeroBasedStart, requestedRegionLength);
             }
         };
@@ -161,14 +157,14 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
     @DataProvider(name = "basesTest")
     public final Object[][] getBasesTests() {
         return new Object[][] {
-                // ref bases, read bases, cigar string, expected read bases
-                {"AAAAA", "acgta", "5M", "ACGTA"},
-                {"AAAAA", "ttttt", "5X", "TTTTT"},
-                {"AAAAA", "ggggg", "5=", "GGGGG"},
+            // ref bases, read bases, cigar string, expected read bases
+            {"AAAAA", "acgta", "5M", "ACGTA"},
+            {"AAAAA", "ttttt", "5X", "TTTTT"},
+            {"AAAAA", "ggggg", "5=", "GGGGG"},
         };
     }
 
-    @Test(dataProvider="basesTest")
+    @Test(dataProvider = "basesTest")
     public void testCRAMRecordUpperCasesReadBases(
             final String refBases,
             final String originalReadBases,
@@ -184,12 +180,7 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         record.setBaseQualities(SAMRecord.NULL_QUALS);
 
         final CRAMCompressionRecord cramCompressionRecord = new CRAMCompressionRecord(
-                CramVersions.CRAM_v3,
-                new CRAMEncodingStrategy(),
-                record,
-                refBases.getBytes(),
-                1,
-                new HashMap<>());
+                CramVersions.CRAM_v3, new CRAMEncodingStrategy(), record, refBases.getBytes(), 1, new HashMap<>());
 
         Assert.assertNotEquals(cramCompressionRecord.getReadBases(), record.getReadBases());
         Assert.assertEquals(cramCompressionRecord.getReadBases(), expectedReadBases.getBytes());
@@ -197,16 +188,17 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
 
     @DataProvider(name = "emptyFeatureListProvider")
     public Object[][] testPositive() {
-        return new Object[][]{
-                // a matching base
-                {"A", "A", "!"},
-                // a matching ambiguity base
-                {"R", "R", "!"},
+        return new Object[][] {
+            // a matching base
+            {"A", "A", "!"},
+            // a matching ambiguity base
+            {"R", "R", "!"},
         };
     }
 
     @Test(dataProvider = "emptyFeatureListProvider")
-    public void testAddMismatchReadFeaturesNoReadFeaturesForMatch(final String refBases, final String readBases, final String fastqScores) {
+    public void testAddMismatchReadFeaturesNoReadFeaturesForMatch(
+            final String refBases, final String readBases, final String fastqScores) {
         final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures(refBases, readBases, fastqScores);
         Assert.assertTrue(readFeatures.isEmpty());
     }
@@ -246,12 +238,14 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(SAMUtils.fastqToPhred('1'), readBaseFeature.getQualityScore());
     }
 
-    private List<ReadFeature> buildMatchOrMismatchReadFeatures(final String refBases, final String readBases, final String scores) {
+    private List<ReadFeature> buildMatchOrMismatchReadFeatures(
+            final String refBases, final String readBases, final String scores) {
         final List<ReadFeature> readFeatures = new ArrayList<>();
         final int fromPosInRead = 0;
         final int alignmentStartOffset = 0;
         final int nofReadBases = 1;
-        CRAMRecordReadFeatures.addMismatchReadFeatures(refBases.getBytes(),
+        CRAMRecordReadFeatures.addMismatchReadFeatures(
+                refBases.getBytes(),
                 1,
                 readFeatures,
                 fromPosInRead,
@@ -261,5 +255,4 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
                 SAMUtils.fastqToPhred(scores));
         return readFeatures;
     }
-
 }

@@ -53,7 +53,9 @@ public class ReferenceSequence implements HtsRecord {
     }
 
     /** Gets the set of names given to this sequence in the source file. */
-    public String getName() { return name; }
+    public String getName() {
+        return name;
+    }
 
     /**
      * Gets the array of bases that define this sequence. The bases can include any
@@ -61,7 +63,9 @@ public class ReferenceSequence implements HtsRecord {
      * letters.  This array is mutable (obviously!) and it NOT a clone of the array
      * held interally.  Do not modify it!!!
      */
-    public byte[] getBases() { return bases; }
+    public byte[] getBases() {
+        return bases;
+    }
 
     /**
      * Returns the bases represented by this ReferenceSequence as a String. Since this will copy the bases
@@ -71,14 +75,20 @@ public class ReferenceSequence implements HtsRecord {
      *
      * @return The set of bases represented by this ReferenceSequence, as a String
      */
-    public String getBaseString() { return StringUtil.bytesToString(bases); }
+    public String getBaseString() {
+        return StringUtil.bytesToString(bases);
+    }
 
     /** Gets the 0-based index of this contig in the source file from which it came. */
-    public int getContigIndex() { return contigIndex; }
+    public int getContigIndex() {
+        return contigIndex;
+    }
 
     /** Gets the length of this reference sequence in bases. */
-    public int length() { return length; }
-    
+    public int length() {
+        return length;
+    }
+
     public String toString() {
         return "ReferenceSequence " + getName();
     }

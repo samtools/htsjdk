@@ -2,14 +2,13 @@ package htsjdk.beta.codecs.reads.bam.bamV1_0;
 
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.bam.BAMDecoder;
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
-import htsjdk.beta.plugin.interval.HtsIntervalUtils;
-import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.interval.HtsInterval;
+import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
-
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
@@ -18,13 +17,12 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
 /**
-  * BAM v1.0 decoder.
+ * BAM v1.0 decoder.
  */
 public class BAMDecoderV1_0 extends BAMDecoder {
     private final SamReader samReader;
@@ -78,9 +76,8 @@ public class BAMDecoderV1_0 extends BAMDecoder {
         ValidationUtils.nonNull(queryRule, "queryRule");
 
         ReadsCodecUtils.assertBundleContainsIndex(getInputBundle());
-        final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
-                intervals,
-                samFileHeader.getSequenceDictionary());
+        final QueryInterval[] queryIntervals =
+                HtsIntervalUtils.toQueryIntervalArray(intervals, samFileHeader.getSequenceDictionary());
         return samReader.query(queryIntervals, queryRule == HtsQueryRule.CONTAINED);
     }
 
@@ -116,5 +113,4 @@ public class BAMDecoderV1_0 extends BAMDecoder {
             throw new HtsjdkIOException(String.format("Exception closing reader for %s", getInputBundle()), e);
         }
     }
-
 }

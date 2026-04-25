@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -55,15 +54,21 @@ public class CRC32OutputStream extends FilterOutputStream {
 
     public byte[] getCrc32_BigEndian() {
         final long value = crc32.getValue();
-        return new byte[]{(byte) (0xFF & (value >> 24)),
-                (byte) (0xFF & (value >> 16)), (byte) (0xFF & (value >> 8)),
-                (byte) (0xFF & value)};
+        return new byte[] {
+            (byte) (0xFF & (value >> 24)),
+            (byte) (0xFF & (value >> 16)),
+            (byte) (0xFF & (value >> 8)),
+            (byte) (0xFF & value)
+        };
     }
 
     public byte[] getCrc32_LittleEndian() {
         final long value = crc32.getValue();
-        return new byte[]{(byte) (0xFF & (value)),
-                (byte) (0xFF & (value >> 8)), (byte) (0xFF & (value >> 16)),
-                (byte) (0xFF & (value >> 24))};
+        return new byte[] {
+            (byte) (0xFF & (value)),
+            (byte) (0xFF & (value >> 8)),
+            (byte) (0xFF & (value >> 16)),
+            (byte) (0xFF & (value >> 24))
+        };
     }
 }

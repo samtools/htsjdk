@@ -62,9 +62,7 @@ public interface URLHelper {
      * @return
      * @throws IOException
      */
-
     InputStream openInputStreamForRange(long start, long end) throws IOException;
 
     public boolean exists() throws IOException;
-
 }

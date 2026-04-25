@@ -14,12 +14,14 @@ import htsjdk.utils.ValidationUtils;
  * VCF V4.2 codec.
  */
 public class VCFCodecV4_2 extends VCFCodec {
-    public static final HtsVersion VCF_V42_VERSION = new HtsVersion(4,2,0);
+    public static final HtsVersion VCF_V42_VERSION = new HtsVersion(4, 2, 0);
 
     private static final String VCF_V42_MAGIC = "##fileformat=VCFv4.2";
 
     @Override
-    public HtsVersion getVersion() { return VCF_V42_VERSION; }
+    public HtsVersion getVersion() {
+        return VCF_V42_VERSION;
+    }
 
     @Override
     public VCFDecoder getDecoder(final Bundle inputBundle, final VariantsDecoderOptions decoderOptions) {
@@ -43,6 +45,7 @@ public class VCFCodecV4_2 extends VCFCodec {
     }
 
     @Override
-    protected String getSignatureString() { return VCF_V42_MAGIC; }
-
+    protected String getSignatureString() {
+        return VCF_V42_MAGIC;
+    }
 }

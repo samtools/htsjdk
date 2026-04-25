@@ -24,13 +24,12 @@
  */
 package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.compression.rans.RANS4x8Decode;
 import htsjdk.samtools.cram.compression.rans.RANS4x8Encode;
 import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
+import htsjdk.samtools.cram.compression.rans.RANSParams;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-
 import java.util.Objects;
 
 /**
@@ -48,9 +47,7 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
      * @param ransEncode ransEncoder to use
      * @param ransDecode ransDecoder to use
      */
-    public RANS4x8ExternalCompressor(
-            final RANS4x8Encode ransEncode,
-            final RANS4x8Decode ransDecode) {
+    public RANS4x8ExternalCompressor(final RANS4x8Encode ransEncode, final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.ZERO, ransEncode, ransDecode);
     }
 
@@ -61,10 +58,7 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
      * @param ransEncode shared encoder instance
      * @param ransDecode shared decoder instance
      */
-    public RANS4x8ExternalCompressor(
-            final int order,
-            final RANS4x8Encode ransEncode,
-            final RANS4x8Decode ransDecode) {
+    public RANS4x8ExternalCompressor(final int order, final RANS4x8Encode ransEncode, final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.fromInt(order), ransEncode, ransDecode);
     }
 
@@ -76,9 +70,7 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
      * @param ransDecode shared decoder instance
      */
     public RANS4x8ExternalCompressor(
-            final RANSParams.ORDER order,
-            final RANS4x8Encode ransEncode,
-            final RANS4x8Decode ransDecode) {
+            final RANSParams.ORDER order, final RANS4x8Encode ransEncode, final RANS4x8Decode ransDecode) {
         super(BlockCompressionMethod.RANS);
         this.ransEncode = ransEncode;
         this.ransDecode = ransDecode;
@@ -114,5 +106,4 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
     public int hashCode() {
         return Objects.hash(getMethod(), order);
     }
-
 }

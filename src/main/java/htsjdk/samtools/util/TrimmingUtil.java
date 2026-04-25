@@ -53,7 +53,7 @@ public class TrimmingUtil {
         int score = 0, maxScore = 0, trimPoint = length;
         if (trimQual < 1 || length == 0) return 0;
 
-        for (int i=length-1; i>=0; --i) {
+        for (int i = length - 1; i >= 0; --i) {
             score += trimQual - (quals[i]);
             if (score < 0) break;
             if (score > maxScore) {

@@ -16,9 +16,7 @@ public class FQZCompExternalCompressor extends ExternalCompressor {
     private final FQZCompEncode fqzCompEncoder;
     private final FQZCompDecode fqzCompDecoder;
 
-    public FQZCompExternalCompressor(
-            final FQZCompEncode fqzCompEncoder,
-            final FQZCompDecode fqzCompDecoder) {
+    public FQZCompExternalCompressor(final FQZCompEncode fqzCompEncoder, final FQZCompDecode fqzCompDecoder) {
         super(BlockCompressionMethod.FQZCOMP);
         this.fqzCompEncoder = fqzCompEncoder;
         this.fqzCompDecoder = fqzCompDecoder;
@@ -48,8 +46,7 @@ public class FQZCompExternalCompressor extends ExternalCompressor {
         final int[] lengths = filterNonZero(allLengths);
         final int[] bamFlags = allFlags != null ? filterByNonZero(allFlags, allLengths) : null;
 
-        return CompressionUtils.toByteArray(
-                fqzCompEncoder.compress(CompressionUtils.wrap(data), lengths, bamFlags));
+        return CompressionUtils.toByteArray(fqzCompEncoder.compress(CompressionUtils.wrap(data), lengths, bamFlags));
     }
 
     /**
@@ -69,7 +66,7 @@ public class FQZCompExternalCompressor extends ExternalCompressor {
             }
         }
         // Fall back: treat the entire data as a single record
-        return new int[]{dataLength};
+        return new int[] {dataLength};
     }
 
     /** Returns a new array containing only the non-zero values from the input. */
@@ -110,5 +107,4 @@ public class FQZCompExternalCompressor extends ExternalCompressor {
         }
         return fqzCompDecoder.uncompress(CompressionUtils.wrap(data)).array();
     }
-
 }

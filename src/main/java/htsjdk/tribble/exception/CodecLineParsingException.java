@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble.exception;
 
-
 /**
  * Class CodecLineParsingException
  *
@@ -45,6 +44,5 @@ public class CodecLineParsingException extends RuntimeException {
         super(message);
     }
 
-    public CodecLineParsingException() {
-    }
+    public CodecLineParsingException() {}
 }

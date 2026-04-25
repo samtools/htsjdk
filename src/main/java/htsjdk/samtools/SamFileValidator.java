@@ -24,8 +24,8 @@
 
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMValidationError.Type;
 import htsjdk.samtools.BamIndexValidator.IndexValidationStringency;
+import htsjdk.samtools.SAMValidationError.Type;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -33,7 +33,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FastqQualityFormat;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.IOUtil;
@@ -42,12 +41,9 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.QualityEncodingDetector;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
-
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -84,7 +80,7 @@ import java.util.stream.Collectors;
  */
 public class SamFileValidator {
 
-    private final static Log log = Log.getInstance(SamFileValidator.class);
+    private static final Log log = Log.getInstance(SamFileValidator.class);
 
     private final PrintWriter out;
     private Histogram<Type> errorsByType;
@@ -221,10 +217,13 @@ public class SamFileValidator {
             final BlockCompressedInputStream.FileTermination terminationState =
                     BlockCompressedInputStream.checkTermination(inputFile);
             if (terminationState.equals(BlockCompressedInputStream.FileTermination.DEFECTIVE)) {
-                addError(new SAMValidationError(Type.TRUNCATED_FILE, "BAM file has defective last gzip block",
+                addError(new SAMValidationError(
+                        Type.TRUNCATED_FILE,
+                        "BAM file has defective last gzip block",
                         inputFile.toUri().toString()));
             } else if (terminationState.equals(BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK)) {
-                addError(new SAMValidationError(Type.BAM_FILE_MISSING_TERMINATOR_BLOCK,
+                addError(new SAMValidationError(
+                        Type.BAM_FILE_MISSING_TERMINATOR_BLOCK,
                         "Older BAM file -- does not have terminator block",
                         inputFile.toUri().toString()));
             }
@@ -337,16 +336,19 @@ public class SamFileValidator {
                 validateSecondaryBaseCalls(record, recordNumber);
                 validateTags(record, recordNumber);
                 if (sequenceDictionaryEmptyAndNoWarningEmitted && !record.getReadUnmappedFlag()) {
-                    addError(new SAMValidationError(Type.MISSING_SEQUENCE_DICTIONARY, "Sequence dictionary is empty", null));
+                    addError(new SAMValidationError(
+                            Type.MISSING_SEQUENCE_DICTIONARY, "Sequence dictionary is empty", null));
                     sequenceDictionaryEmptyAndNoWarningEmitted = false;
-
                 }
 
-                if ((qualityNotStoredErrorCount++ < MAX_QUALITY_NOT_STORED_ERRORS) && record.getBaseQualityString().equals("*")) {
-                    addError(new SAMValidationError(Type.QUALITY_NOT_STORED,
-                            "QUAL field is set to * (unspecified quality scores), this is allowed by the SAM" +
-                                    " specification but many tools expect reads to include qualities ",
-                            record.getReadName(), recordNumber));
+                if ((qualityNotStoredErrorCount++ < MAX_QUALITY_NOT_STORED_ERRORS)
+                        && record.getBaseQualityString().equals("*")) {
+                    addError(new SAMValidationError(
+                            Type.QUALITY_NOT_STORED,
+                            "QUAL field is set to * (unspecified quality scores), this is allowed by the SAM"
+                                    + " specification but many tools expect reads to include qualities ",
+                            record.getReadName(),
+                            recordNumber));
                 }
 
                 progress.record(record);
@@ -354,9 +356,15 @@ public class SamFileValidator {
 
             try {
                 if (progress.getCount() > 0) { // Avoid exception being thrown as a result of no qualities being read
-                    final FastqQualityFormat format = qualityDetector.generateBestGuess(QualityEncodingDetector.FileContext.SAM, FastqQualityFormat.Standard);
+                    final FastqQualityFormat format = qualityDetector.generateBestGuess(
+                            QualityEncodingDetector.FileContext.SAM, FastqQualityFormat.Standard);
                     if (format != FastqQualityFormat.Standard) {
-                        addError(new SAMValidationError(Type.INVALID_QUALITY_FORMAT, String.format("Detected %s quality score encoding, but expected %s.", format, FastqQualityFormat.Standard), null));
+                        addError(new SAMValidationError(
+                                Type.INVALID_QUALITY_FORMAT,
+                                String.format(
+                                        "Detected %s quality score encoding, but expected %s.",
+                                        format, FastqQualityFormat.Standard),
+                                null));
                     }
                 }
             } catch (SAMException e) {
@@ -378,10 +386,11 @@ public class SamFileValidator {
     private void validateReadGroup(final SAMRecord record, final SAMFileHeader header) {
         final SAMReadGroupRecord rg = record.getReadGroup();
         if (rg == null) {
-            addError(new SAMValidationError(Type.RECORD_MISSING_READ_GROUP,
-                    "A record is missing a read group", record.getReadName()));
+            addError(new SAMValidationError(
+                    Type.RECORD_MISSING_READ_GROUP, "A record is missing a read group", record.getReadName()));
         } else if (header.getReadGroup(rg.getId()) == null) {
-            addError(new SAMValidationError(Type.READ_GROUP_NOT_FOUND,
+            addError(new SAMValidationError(
+                    Type.READ_GROUP_NOT_FOUND,
                     "A record has a read group not found in the header: ",
                     record.getReadName() + ", " + rg.getReadGroupId()));
         }
@@ -399,22 +408,30 @@ public class SamFileValidator {
 
         for (final SAMRecord.SAMTagAndValue tagAndValue : attributes) {
             if (tagAndValue.value instanceof Long) {
-                addError(new SAMValidationError(Type.TAG_VALUE_TOO_LARGE,
+                addError(new SAMValidationError(
+                        Type.TAG_VALUE_TOO_LARGE,
                         "Numeric value too large for tag " + tagAndValue.tag,
-                        record.getReadName(), recordNumber));
+                        record.getReadName(),
+                        recordNumber));
             }
 
             if (!tags.add(tagAndValue.tag)) {
-                addError(new SAMValidationError(Type.DUPLICATE_SAM_TAG,
-                        "Duplicate SAM tag (" + tagAndValue.tag + ") found.", record.getReadName(), recordNumber));
+                addError(new SAMValidationError(
+                        Type.DUPLICATE_SAM_TAG,
+                        "Duplicate SAM tag (" + tagAndValue.tag + ") found.",
+                        record.getReadName(),
+                        recordNumber));
             }
         }
 
-        if (tags.contains(SAMTag.CG.name())){
-            addError(new SAMValidationError(Type.CG_TAG_FOUND_IN_ATTRIBUTES,
-                    "The CG Tag should only be used in BAM format to hold a large cigar. " +
-                            "It was found containing the value: " +
-                            record.getAttribute(SAMTag.CG), record.getReadName(), recordNumber));
+        if (tags.contains(SAMTag.CG.name())) {
+            addError(new SAMValidationError(
+                    Type.CG_TAG_FOUND_IN_ATTRIBUTES,
+                    "The CG Tag should only be used in BAM format to hold a large cigar. "
+                            + "It was found containing the value: "
+                            + record.getAttribute(SAMTag.CG),
+                    record.getReadName(),
+                    recordNumber));
         }
     }
 
@@ -422,9 +439,11 @@ public class SamFileValidator {
         final String e2 = (String) record.getAttribute(SAMTag.E2);
         if (e2 != null) {
             if (e2.length() != record.getReadLength()) {
-                addError(new SAMValidationError(Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH,
+                addError(new SAMValidationError(
+                        Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH,
                         String.format("E2 tag length (%d) != read length (%d)", e2.length(), record.getReadLength()),
-                        record.getReadName(), recordNumber));
+                        record.getReadName(),
+                        recordNumber));
             }
             final byte[] bases = record.getReadBases();
             final byte[] secondaryBases = StringUtil.stringToBytes(e2);
@@ -433,19 +452,24 @@ public class SamFileValidator {
                     continue;
                 }
                 if (SequenceUtil.basesEqual(bases[i], secondaryBases[i])) {
-                    addError(new SAMValidationError(Type.E2_BASE_EQUALS_PRIMARY_BASE,
-                            String.format("Secondary base call  (%c) == primary base call (%c)",
+                    addError(new SAMValidationError(
+                            Type.E2_BASE_EQUALS_PRIMARY_BASE,
+                            String.format(
+                                    "Secondary base call  (%c) == primary base call (%c)",
                                     (char) secondaryBases[i], (char) bases[i]),
-                            record.getReadName(), recordNumber));
+                            record.getReadName(),
+                            recordNumber));
                     break;
                 }
             }
         }
         final String u2 = (String) record.getAttribute(SAMTag.U2);
         if (u2 != null && u2.length() != record.getReadLength()) {
-            addError(new SAMValidationError(Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH,
+            addError(new SAMValidationError(
+                    Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH,
                     String.format("U2 tag length (%d) != read length (%d)", u2.length(), record.getReadLength()),
-                    record.getReadName(), recordNumber));
+                    record.getReadName(),
+                    recordNumber));
         }
     }
 
@@ -460,7 +484,8 @@ public class SamFileValidator {
     private boolean validateCigar(final SAMRecord record, final long recordNumber, final boolean isReadCigar) {
         final ValidationStringency savedStringency = record.getValidationStringency();
         record.setValidationStringency(ValidationStringency.LENIENT);
-        final List<SAMValidationError> errors = isReadCigar ? record.validateCigar(recordNumber) : SAMUtils.validateMateCigar(record, recordNumber);
+        final List<SAMValidationError> errors =
+                isReadCigar ? record.validateCigar(recordNumber) : SAMUtils.validateMateCigar(record, recordNumber);
         record.setValidationStringency(savedStringency);
         if (errors == null) {
             return true;
@@ -520,14 +545,14 @@ public class SamFileValidator {
                         recordNumber));
             } else if (refFileWalker != null) {
                 final ReferenceSequence refSequence = refFileWalker.get(record.getReferenceIndex());
-                final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSequence.getBases(),
-                        0, isBisulfiteSequenced());
+                final int actualNucleotideDiffs =
+                        SequenceUtil.calculateSamNmTag(record, refSequence.getBases(), 0, isBisulfiteSequenced());
 
                 if (!tagNucleotideDiffs.equals(actualNucleotideDiffs)) {
                     addError(new SAMValidationError(
                             Type.INVALID_TAG_NM,
-                            "NM tag (nucleotide differences) in file [" + tagNucleotideDiffs +
-                                    "] does not match reality [" + actualNucleotideDiffs + "]",
+                            "NM tag (nucleotide differences) in file [" + tagNucleotideDiffs
+                                    + "] does not match reality [" + actualNucleotideDiffs + "]",
                             record.getReadName(),
                             recordNumber));
                 }
@@ -547,7 +572,8 @@ public class SamFileValidator {
 
         final PairEndInfo pairEndInfo = pairEndInfoByName.remove(record.getReferenceIndex(), record.getReadName());
         if (pairEndInfo == null) {
-            pairEndInfoByName.put(record.getMateReferenceIndex(), record.getReadName(), new PairEndInfo(record, recordNumber));
+            pairEndInfoByName.put(
+                    record.getMateReferenceIndex(), record.getReadName(), new PairEndInfo(record, recordNumber));
         } else {
             final List<SAMValidationError> errors =
                     pairEndInfo.validateMates(new PairEndInfo(record, recordNumber), record.getReadName());
@@ -564,9 +590,11 @@ public class SamFileValidator {
         if (fileHeader.getVersion() == null) {
             addError(new SAMValidationError(Type.MISSING_VERSION_NUMBER, "Header has no version number", null));
         } else if (!SAMFileHeader.ACCEPTABLE_VERSIONS.contains(fileHeader.getVersion())) {
-            addError(new SAMValidationError(Type.INVALID_VERSION_NUMBER, "Header version: " +
-                    fileHeader.getVersion() + " does not match any of the acceptable versions: " +
-                    StringUtil.join(", ", SAMFileHeader.ACCEPTABLE_VERSIONS.toArray(new String[0])),
+            addError(new SAMValidationError(
+                    Type.INVALID_VERSION_NUMBER,
+                    "Header version: " + fileHeader.getVersion()
+                            + " does not match any of the acceptable versions: "
+                            + StringUtil.join(", ", SAMFileHeader.ACCEPTABLE_VERSIONS.toArray(new String[0])),
                     null));
         }
         if (fileHeader.getSequenceDictionary().isEmpty()) {
@@ -574,15 +602,18 @@ public class SamFileValidator {
         } else {
             if (samSequenceDictionary != null) {
                 if (!fileHeader.getSequenceDictionary().isSameDictionary(samSequenceDictionary)) {
-                    addError(new SAMValidationError(Type.MISMATCH_FILE_SEQ_DICT, "Mismatch between file and sequence dictionary", null));
+                    addError(new SAMValidationError(
+                            Type.MISMATCH_FILE_SEQ_DICT, "Mismatch between file and sequence dictionary", null));
                 }
             }
-            
+
             final List<SAMSequenceRecord> longSeqs = fileHeader.getSequenceDictionary().getSequences().stream()
-                    .filter(s -> s.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN).collect(Collectors.toList());
+                    .filter(s -> s.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN)
+                    .collect(Collectors.toList());
 
             if (!longSeqs.isEmpty()) {
-                final String msg = "Reference sequences are too long for BAI indexing: " + StringUtil.join(", ", longSeqs);
+                final String msg =
+                        "Reference sequences are too long for BAI indexing: " + StringUtil.join(", ", longSeqs);
                 addError(new SAMValidationError(Type.REF_SEQ_TOO_LONG_FOR_BAI, msg, null));
             }
         }
@@ -593,8 +624,10 @@ public class SamFileValidator {
         for (int i = 0; i < pgs.size() - 1; i++) {
             for (int j = i + 1; j < pgs.size(); j++) {
                 if (pgs.get(i).getProgramGroupId().equals(pgs.get(j).getProgramGroupId())) {
-                    addError(new SAMValidationError(Type.DUPLICATE_PROGRAM_GROUP_ID, "Duplicate " +
-                            "program group id: " + pgs.get(i).getProgramGroupId(), null));
+                    addError(new SAMValidationError(
+                            Type.DUPLICATE_PROGRAM_GROUP_ID,
+                            "Duplicate " + "program group id: " + pgs.get(i).getProgramGroupId(),
+                            null));
                 }
             }
         }
@@ -605,15 +638,16 @@ public class SamFileValidator {
         for (final SAMReadGroupRecord record : rgs) {
             final String readGroupID = record.getReadGroupId();
             if (readGroupIDs.contains(readGroupID)) {
-                addError(new SAMValidationError(Type.DUPLICATE_READ_GROUP_ID, "Duplicate " +
-                        "read group id: " + readGroupID, null));
+                addError(new SAMValidationError(
+                        Type.DUPLICATE_READ_GROUP_ID, "Duplicate " + "read group id: " + readGroupID, null));
             } else {
                 readGroupIDs.add(readGroupID);
             }
 
             final String platformValue = record.getPlatform();
             if (platformValue == null || "".equals(platformValue)) {
-                addError(new SAMValidationError(Type.MISSING_PLATFORM_VALUE,
+                addError(new SAMValidationError(
+                        Type.MISSING_PLATFORM_VALUE,
                         "A platform (PL) attribute was not found for read group ",
                         readGroupID));
             } else {
@@ -621,8 +655,10 @@ public class SamFileValidator {
                 try {
                     SAMReadGroupRecord.PlatformValue.valueOf(platformValue.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    addError(new SAMValidationError(Type.INVALID_PLATFORM_VALUE,
-                            "The platform (PL) attribute (" + platformValue + ") + was not one of the valid values for read group ",
+                    addError(new SAMValidationError(
+                            Type.INVALID_PLATFORM_VALUE,
+                            "The platform (PL) attribute (" + platformValue
+                                    + ") + was not one of the valid values for read group ",
                             readGroupID));
                 }
             }
@@ -700,7 +736,8 @@ public class SamFileValidator {
     @Deprecated
     public SamFileValidator setValidateIndex(final boolean validateIndex) {
         // The SamReader must also have IndexCaching enabled to have the index validated,
-        return this.setIndexValidationStringency(validateIndex ? IndexValidationStringency.EXHAUSTIVE : IndexValidationStringency.NONE);
+        return this.setIndexValidationStringency(
+                validateIndex ? IndexValidationStringency.EXHAUSTIVE : IndexValidationStringency.NONE);
     }
 
     public SamFileValidator setIndexValidationStringency(final IndexValidationStringency stringency) {
@@ -708,8 +745,7 @@ public class SamFileValidator {
         return this;
     }
 
-    public static class ValidationMetrics extends MetricBase {
-    }
+    public static class ValidationMetrics extends MetricBase {}
 
     /**
      * This class is used so we don't have to store the entire SAMRecord in memory while we wait
@@ -751,10 +787,19 @@ public class SamFileValidator {
             this.firstOfPairFlag = record.getFirstOfPairFlag();
         }
 
-        private PairEndInfo(final int readAlignmentStart, final int readReferenceIndex, final boolean readNegStrandFlag, final boolean readUnmappedFlag,
-                            final String readCigarString,
-                            final int mateAlignmentStart, final int mateReferenceIndex, final boolean mateNegStrandFlag, final boolean mateUnmappedFlag,
-                            final String mateCigarString, final boolean firstOfPairFlag, final long recordNumber) {
+        private PairEndInfo(
+                final int readAlignmentStart,
+                final int readReferenceIndex,
+                final boolean readNegStrandFlag,
+                final boolean readUnmappedFlag,
+                final String readCigarString,
+                final int mateAlignmentStart,
+                final int mateReferenceIndex,
+                final boolean mateNegStrandFlag,
+                final boolean mateUnmappedFlag,
+                final String mateCigarString,
+                final boolean firstOfPairFlag,
+                final long recordNumber) {
             this.readAlignmentStart = readAlignmentStart;
             this.readReferenceIndex = readReferenceIndex;
             this.readNegStrandFlag = readNegStrandFlag;
@@ -780,13 +825,16 @@ public class SamFileValidator {
                         Type.MATES_ARE_SAME_END,
                         "Both mates are marked as " + whichEnd + " of pair",
                         readName,
-                        this.recordNumber
-                ));
+                        this.recordNumber));
             }
             return errors;
         }
 
-        private void validateMateFields(final PairEndInfo end1, final PairEndInfo end2, final String readName, final List<SAMValidationError> errors) {
+        private void validateMateFields(
+                final PairEndInfo end1,
+                final PairEndInfo end2,
+                final String readName,
+                final List<SAMValidationError> errors) {
             if (end1.mateAlignmentStart != end2.readAlignmentStart) {
                 errors.add(new SAMValidationError(
                         Type.MISMATCH_MATE_ALIGNMENT_START,
@@ -922,10 +970,19 @@ public class SamFileValidator {
                     final boolean firstOfPairFlag = in.readBoolean();
 
                     final long recordNumber = in.readLong();
-                    final PairEndInfo rec = new PairEndInfo(readAlignmentStart, readReferenceIndex, readNegStrandFlag,
-                            readUnmappedFlag, readCigarString, mateAlignmentStart, mateReferenceIndex, mateNegStrandFlag,
-                            mateUnmappedFlag, mateCigarString,
-                            firstOfPairFlag, recordNumber);
+                    final PairEndInfo rec = new PairEndInfo(
+                            readAlignmentStart,
+                            readReferenceIndex,
+                            readNegStrandFlag,
+                            readUnmappedFlag,
+                            readCigarString,
+                            mateAlignmentStart,
+                            mateReferenceIndex,
+                            mateNegStrandFlag,
+                            mateUnmappedFlag,
+                            mateCigarString,
+                            firstOfPairFlag,
+                            recordNumber);
                     return new AbstractMap.SimpleEntry(key, rec);
                 } catch (IOException e) {
                     throw new SAMException("Error reading PairInfo from disk", e);

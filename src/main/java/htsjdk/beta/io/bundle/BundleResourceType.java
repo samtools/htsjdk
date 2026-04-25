@@ -1,6 +1,5 @@
 package htsjdk.beta.io.bundle;
 
-import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 
@@ -26,6 +25,7 @@ public class BundleResourceType {
 
     /**************************************** Common primary content types ******************************************/
     public static final String CT_ALIGNED_READS = "ALIGNED_READS";
+
     public static final String CT_VARIANT_CONTEXTS = "VARIANT_CONTEXTS";
     public static final String CT_HAPLOID_REFERENCE = "HAPLOID_REFERENCE";
     public static final String CT_FEATURES = "FEATURES";
@@ -33,6 +33,7 @@ public class BundleResourceType {
     /****************************************** Resource types for READS ********************************************/
     /** Formats for primary content type {@link BundleResourceType#CT_ALIGNED_READS} */
     public static final String FMT_READS_SAM = ReadsFormats.SAM;
+
     public static final String FMT_READS_BAM = ReadsFormats.BAM;
     public static final String FMT_READS_CRAM = ReadsFormats.CRAM;
     public static final String FMT_READS_HTSGET_BAM = ReadsFormats.HTSGET_BAM;
@@ -41,12 +42,14 @@ public class BundleResourceType {
     public static final String CT_READS_INDEX = "READS_INDEX";
     /** Formats for secondary content type {@link BundleResourceType#CT_READS_INDEX} resources */
     public static final String FMT_READS_INDEX_BAI = "BAI";
+
     public static final String FMT_READS_INDEX_CRAI = "CRAI";
     public static final String FMT_READS_INDEX_CSI = "CSI";
 
     /****************************************** Resource types for VARIANTS ******************************************/
     /** Format names for content type {@link BundleResourceType#CT_VARIANT_CONTEXTS} */
     public static final String FMT_VARIANTS_VCF = VariantsFormats.VCF;
+
     public static final String FMT_VARIANTS_BCF = VariantsFormats.BCF;
 
     /** Secondary content types for primary content type {@link #CT_VARIANT_CONTEXTS} resources */
@@ -55,14 +58,12 @@ public class BundleResourceType {
     /****************************************** Resource types for HAPLOID REFERENCES ********************************/
     /** Secondary content types for {@link BundleResourceType#CT_HAPLOID_REFERENCE} resources*/
     public static final String CT_REFERENCE_DICTIONARY = "REFERENCE_DICTIONARY";
+
     public static final String CT_REFERENCE_INDEX = "REFERENCE_INDEX";
     public static final String CT_REFERENCE_INDEX_GZI = "REFERENCE_INDEX_GZI";
 
-
     /****************************************** Resource types for FEATURES ********************************/
-
 
     /****************************************** MISCELLANEOUS Resource types  ********************************/
     public static final String CT_MD5 = "MD5";
-
 }

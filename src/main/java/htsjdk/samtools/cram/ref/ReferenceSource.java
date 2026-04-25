@@ -29,7 +29,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,7 +70,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     }
 
     public ReferenceSource(final Path path) {
-        this( path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
+        this(path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
     }
 
     public ReferenceSource(final ReferenceSequenceFile rsFile) {
@@ -95,22 +94,21 @@ public class ReferenceSource implements CRAMReferenceSource {
      * <li>ENA Reference Service if it is enabled</li>
      * </ul>
      */
-     public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
+    public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
         if (null != Defaults.REFERENCE_FASTA) {
             if (Defaults.REFERENCE_FASTA.exists()) {
-                log.info(String.format("Default reference file %s exists, so going to use that.", Defaults.REFERENCE_FASTA.getAbsolutePath()));
+                log.info(String.format(
+                        "Default reference file %s exists, so going to use that.",
+                        Defaults.REFERENCE_FASTA.getAbsolutePath()));
                 return new ReferenceSource(Defaults.REFERENCE_FASTA);
+            } else {
+                throw new IllegalArgumentException("The file specified by the reference_fasta property does not exist: "
+                        + Defaults.REFERENCE_FASTA.getName());
             }
-            else {
-                throw new IllegalArgumentException(
-                        "The file specified by the reference_fasta property does not exist: " + Defaults.REFERENCE_FASTA.getName());
-            }
-        }
-        else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
+        } else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
             log.info("USE_CRAM_REF_DOWNLOAD=true, so attempting to download reference file as needed.");
-            return new ReferenceSource((ReferenceSequenceFile)null);
-        }
-        else {
+            return new ReferenceSource((ReferenceSequenceFile) null);
+        } else {
             return new CRAMLazyReferenceSource();
         }
     }
@@ -119,8 +117,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         final WeakReference<byte[]> weakReference = cacheW.get(name);
         if (weakReference != null) {
             final byte[] bytes = weakReference.get();
-            if (bytes != null)
-                return bytes;
+            if (bytes != null) return bytes;
         }
         return null;
     }
@@ -138,8 +135,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     }
 
     @Override
-    public synchronized byte[] getReferenceBases(final SAMSequenceRecord record,
-                                                 final boolean tryNameVariants) {
+    public synchronized byte[] getReferenceBases(final SAMSequenceRecord record, final boolean tryNameVariants) {
         { // check cache by sequence name:
             final String name = record.getSequenceName();
             final byte[] bases = findInCache(name);
@@ -152,14 +148,11 @@ public class ReferenceSource implements CRAMReferenceSource {
         { // check cache by md5:
             if (md5 != null) {
                 byte[] bases = findInCache(md5);
-                if (bases != null)
-                    return bases;
+                if (bases != null) return bases;
                 bases = findInCache(md5.toLowerCase());
-                if (bases != null)
-                    return bases;
+                if (bases != null) return bases;
                 bases = findInCache(md5.toUpperCase());
-                if (bases != null)
-                    return bases;
+                if (bases != null) return bases;
             }
         }
 
@@ -189,9 +182,7 @@ public class ReferenceSource implements CRAMReferenceSource {
 
     @Override
     public byte[] getReferenceBasesByRegion(
-            final SAMSequenceRecord sequenceRecord,
-            final int zeroBasedStart,
-            final int requestedRegionLength) {
+            final SAMSequenceRecord sequenceRecord, final int zeroBasedStart, final int requestedRegionLength) {
         ValidationUtils.validateArg(zeroBasedStart >= 0, "start must be >= 0");
 
         // this implementation maintains the entire reference sequence, and hands out whatever region
@@ -204,11 +195,12 @@ public class ReferenceSource implements CRAMReferenceSource {
             backingContigIndex = sequenceRecord.getSequenceIndex();
 
             if (zeroBasedStart >= bases.length) {
-                throw new IllegalArgumentException(String.format("Requested start %d is beyond the sequence length %s",
-                        zeroBasedStart,
-                        sequenceRecord.getSequenceName()));
+                throw new IllegalArgumentException(String.format(
+                        "Requested start %d is beyond the sequence length %s",
+                        zeroBasedStart, sequenceRecord.getSequenceName()));
             }
-            return Arrays.copyOfRange(bases, zeroBasedStart, Math.min(bases.length, zeroBasedStart + requestedRegionLength));
+            return Arrays.copyOfRange(
+                    bases, zeroBasedStart, Math.min(bases.length, zeroBasedStart + requestedRegionLength));
         }
         return bases;
     }
@@ -222,8 +214,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     }
 
     private byte[] findBasesByName(final String name, final boolean tryVariants) {
-        if (rsFile == null || !rsFile.isIndexed())
-            return null;
+        if (rsFile == null || !rsFile.isIndexed()) return null;
 
         ReferenceSequence sequence = null;
         try {
@@ -231,8 +222,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         } catch (final SAMException e) {
             // the only way to test if rsFile contains the sequence is to try and catch exception.
         }
-        if (sequence != null)
-            return sequence.getBases();
+        if (sequence != null) return sequence.getBases();
 
         if (tryVariants) {
             for (final String variant : getVariants(name)) {
@@ -241,8 +231,7 @@ public class ReferenceSource implements CRAMReferenceSource {
                 } catch (final SAMException e) {
                     log.warn("Sequence not found: " + variant);
                 }
-                if (sequence != null)
-                    return sequence.getBases();
+                if (sequence != null) return sequence.getBases();
             }
         }
         return null;
@@ -253,8 +242,7 @@ public class ReferenceSource implements CRAMReferenceSource {
 
         for (int i = 0; i < downloadTriesBeforeFailing; i++) {
             try (final InputStream is = new URL(url).openStream()) {
-                if (is == null)
-                    return null;
+                if (is == null) return null;
 
                 log.info("Downloading reference sequence: " + url);
                 final byte[] data = InputStreamUtils.readFully(is);
@@ -264,37 +252,29 @@ public class ReferenceSource implements CRAMReferenceSource {
                 if (md5.equals(downloadedMD5)) {
                     return data;
                 } else {
-                    final String message = String
-                            .format("Downloaded sequence is corrupt: requested md5=%s, received md5=%s",
-                                    md5, downloadedMD5);
+                    final String message = String.format(
+                            "Downloaded sequence is corrupt: requested md5=%s, received md5=%s", md5, downloadedMD5);
                     log.error(message);
                 }
-            }
-            catch (final IOException e) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        throw new GaveUpException("Giving up on downloading sequence for md5 "
-                + md5);
+        throw new GaveUpException("Giving up on downloading sequence for md5 " + md5);
     }
 
-    private static final Pattern chrPattern = Pattern.compile("chr.*",
-            Pattern.CASE_INSENSITIVE);
+    private static final Pattern chrPattern = Pattern.compile("chr.*", Pattern.CASE_INSENSITIVE);
 
     private List<String> getVariants(final String name) {
         final List<String> variants = new ArrayList<>();
 
-        if (name.equals("M"))
-            variants.add("MT");
+        if (name.equals("M")) variants.add("MT");
 
-        if (name.equals("MT"))
-            variants.add("M");
+        if (name.equals("MT")) variants.add("M");
 
         final boolean chrPatternMatch = chrPattern.matcher(name).matches();
-        if (chrPatternMatch)
-            variants.add(name.substring(3));
-        else
-            variants.add("chr" + name);
+        if (chrPatternMatch) variants.add(name.substring(3));
+        else variants.add("chr" + name);
 
         if ("chrM".equals(name)) {
             // chrM case:

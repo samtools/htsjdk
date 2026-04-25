@@ -34,8 +34,7 @@ public class FQZUtils {
             if (run == last) {
                 int copy = inBuffer.get() & 0xFF;
                 z += run * copy;
-                while (copy-- > 0)
-                    rle[j++] = run;
+                while (copy-- > 0) rle[j++] = run;
             }
             last = run;
         }
@@ -52,8 +51,7 @@ public class FQZUtils {
                 run_len += part;
             } while (part == 255);
 
-            while (run_len-- > 0)
-                table[z++] = i;
+            while (run_len-- > 0) table[z++] = i;
             i++;
         }
     }

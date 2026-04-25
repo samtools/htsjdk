@@ -21,9 +21,8 @@ import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
-
+import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import java.nio.ByteBuffer;
 
 public final class GammaIntegerEncoding extends CRAMEncoding<Integer> {
@@ -55,7 +54,9 @@ public final class GammaIntegerEncoding extends CRAMEncoding<Integer> {
     }
 
     @Override
-    public CRAMCodec<Integer> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<Integer> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new GammaIntegerCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),

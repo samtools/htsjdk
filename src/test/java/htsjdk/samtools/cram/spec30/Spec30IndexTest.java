@@ -4,14 +4,10 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests CRAI index query correctness using the hts-specs 3.0 index test files (1400-1406).
@@ -152,9 +148,14 @@ public class Spec30IndexTest extends HtsSpecsComplianceTestBase {
 
     // ---- Helpers ----
 
-    private void assertQueryCount(final String basename, final String contig,
-                                  final int start, final int end, final boolean contained,
-                                  final int expectedCount) throws IOException {
+    private void assertQueryCount(
+            final String basename,
+            final String contig,
+            final int start,
+            final int end,
+            final boolean contained,
+            final int expectedCount)
+            throws IOException {
         final File cramFile = SPEC_30_DIR.resolve(basename + ".cram").toFile();
         final File craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai").toFile();
         final ReferenceSource source = new ReferenceSource(REFERENCE);
@@ -166,11 +167,10 @@ public class Spec30IndexTest extends HtsSpecsComplianceTestBase {
                 ValidationStringency.SILENT)) {
 
             final int seqIdx = reader.getFileHeader().getSequenceIndex(contig);
-            final QueryInterval[] intervals = new QueryInterval[]{new QueryInterval(seqIdx, start, end)};
+            final QueryInterval[] intervals = new QueryInterval[] {new QueryInterval(seqIdx, start, end)};
             try (final CloseableIterator<SAMRecord> iterator = reader.query(intervals, contained)) {
                 final int count = countRecords(iterator);
-                Assert.assertEquals(count, expectedCount,
-                        basename + " query " + contig + ":" + start + "-" + end);
+                Assert.assertEquals(count, expectedCount, basename + " query " + contig + ":" + start + "-" + end);
             }
         }
     }

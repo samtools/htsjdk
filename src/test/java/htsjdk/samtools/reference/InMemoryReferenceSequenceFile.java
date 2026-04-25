@@ -1,22 +1,19 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-//TODO: move this into the CRAM structure package
-public class InMemoryReferenceSequenceFile implements
-        ReferenceSequenceFile {
+// TODO: move this into the CRAM structure package
+public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     Map<String, ReferenceSequence> map = new HashMap<String, ReferenceSequence>();
     List<String> index;
     int current = 0;
 
     public void add(final String name, final byte[] bases) {
-        final ReferenceSequence sequence = new ReferenceSequence(name,
-                map.size(), bases);
+        final ReferenceSequence sequence = new ReferenceSequence(name, map.size(), bases);
         map.put(sequence.getName(), sequence);
     }
 
@@ -37,15 +34,12 @@ public class InMemoryReferenceSequenceFile implements
     }
 
     @Override
-    public ReferenceSequence getSubsequenceAt(final String contig, final long start,
-                                              final long stop) {
+    public ReferenceSequence getSubsequenceAt(final String contig, final long start, final long stop) {
         final ReferenceSequence sequence = getSequence(contig);
         if (sequence == null) return null;
         final byte[] bases = new byte[(int) (stop - start) + 1];
-        System.arraycopy(sequence.getBases(), (int) start - 1, bases, 0,
-                bases.length);
-        return new ReferenceSequence(contig, sequence.getContigIndex(),
-                bases);
+        System.arraycopy(sequence.getBases(), (int) start - 1, bases, 0, bases.length);
+        return new ReferenceSequence(contig, sequence.getContigIndex(), bases);
     }
 
     @Override

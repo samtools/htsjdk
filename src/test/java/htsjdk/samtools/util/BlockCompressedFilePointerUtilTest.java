@@ -24,40 +24,39 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.ArrayList;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
 public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
-    final static long BIG_BLOCK_ADDRESS = 1L << 46;
+    static final long BIG_BLOCK_ADDRESS = 1L << 46;
 
     @Test
-    public void basicTest() 
-    {
+    public void basicTest() {
         List<Long> pointers = new ArrayList<Long>();
         pointers.add(makeFilePointer(0, 0));
         pointers.add(makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET));
-        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS-1, 0));
-        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS-1, BlockCompressedFilePointerUtil.MAX_OFFSET));
+        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS - 1, 0));
+        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS - 1, BlockCompressedFilePointerUtil.MAX_OFFSET));
         pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, 0));
         pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET));
         pointers.add(makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, 0));
-        pointers.add(makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET));
+        pointers.add(makeFilePointer(
+                BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET));
         for (int i = 0; i < pointers.size() - 1; ++i) {
-            for (int j = i+1; j < pointers.size(); ++j) {
-                Assert.assertTrue(BlockCompressedFilePointerUtil.compare(pointers.get(i), pointers.get(j)) < 0,
-                        BlockCompressedFilePointerUtil.asString(pointers.get(i)) + " should be < " +
-                                BlockCompressedFilePointerUtil.asString(pointers.get(j)));
-                Assert.assertTrue(BlockCompressedFilePointerUtil.compare(pointers.get(j), pointers.get(i)) > 0,
-                        BlockCompressedFilePointerUtil.asString(pointers.get(j)) + " should be > " +
-                                BlockCompressedFilePointerUtil.asString(pointers.get(i)));
+            for (int j = i + 1; j < pointers.size(); ++j) {
+                Assert.assertTrue(
+                        BlockCompressedFilePointerUtil.compare(pointers.get(i), pointers.get(j)) < 0,
+                        BlockCompressedFilePointerUtil.asString(pointers.get(i)) + " should be < "
+                                + BlockCompressedFilePointerUtil.asString(pointers.get(j)));
+                Assert.assertTrue(
+                        BlockCompressedFilePointerUtil.compare(pointers.get(j), pointers.get(i)) > 0,
+                        BlockCompressedFilePointerUtil.asString(pointers.get(j)) + " should be > "
+                                + BlockCompressedFilePointerUtil.asString(pointers.get(i)));
             }
         }
-        
     }
 
     /**
@@ -66,8 +65,7 @@ public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
      * @param blockOffset
      * @return block compressed file pointer
      */
-    private long makeFilePointer(long blockAddress, int blockOffset)
-    {
+    private long makeFilePointer(long blockAddress, int blockOffset) {
         final long ret = BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, blockOffset);
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(ret), blockAddress);
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(ret), blockOffset);
@@ -81,46 +79,54 @@ public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
         Assert.assertFalse(true, "Should not get here.");
     }
 
-    @DataProvider(name="badInputs")
-    public Object[][]  badInputs() {
-        return new Object[][]{
-                {-1L, 0},
-                {0L, -1},
-                {BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS+1, 0},
-                {0L, BlockCompressedFilePointerUtil.MAX_OFFSET+1}
+    @DataProvider(name = "badInputs")
+    public Object[][] badInputs() {
+        return new Object[][] {
+            {-1L, 0},
+            {0L, -1},
+            {BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS + 1, 0},
+            {0L, BlockCompressedFilePointerUtil.MAX_OFFSET + 1}
         };
     }
-    
+
     @Test(dataProvider = "shiftInputs")
     public void shiftTest(long blockAddress, int blockOffset) {
         final long shift = 100;
         long virtualFilePointer = makeFilePointer(blockAddress, blockOffset);
         long shiftedVfp = BlockCompressedFilePointerUtil.shift(virtualFilePointer, shift);
-        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(shiftedVfp), BlockCompressedFilePointerUtil.getBlockAddress(virtualFilePointer) + shift);
-        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(shiftedVfp), BlockCompressedFilePointerUtil.getBlockOffset(virtualFilePointer));
+        Assert.assertEquals(
+                BlockCompressedFilePointerUtil.getBlockAddress(shiftedVfp),
+                BlockCompressedFilePointerUtil.getBlockAddress(virtualFilePointer) + shift);
+        Assert.assertEquals(
+                BlockCompressedFilePointerUtil.getBlockOffset(shiftedVfp),
+                BlockCompressedFilePointerUtil.getBlockOffset(virtualFilePointer));
     }
 
-    @DataProvider(name="shiftInputs")
-    public Object[][]  shiftInputs() {
-        return new Object[][]{
-                {0L, 0},
-                {0L, BlockCompressedFilePointerUtil.MAX_OFFSET},
-                {1L << 46, 0},
-                {1L << 46, BlockCompressedFilePointerUtil.MAX_OFFSET}
+    @DataProvider(name = "shiftInputs")
+    public Object[][] shiftInputs() {
+        return new Object[][] {
+            {0L, 0},
+            {0L, BlockCompressedFilePointerUtil.MAX_OFFSET},
+            {1L << 46, 0},
+            {1L << 46, BlockCompressedFilePointerUtil.MAX_OFFSET}
         };
     }
-    
-    @DataProvider(name="virtualFilePointerStrings")
+
+    @DataProvider(name = "virtualFilePointerStrings")
     public Object[][] getFilePointers() {
         return new Object[][] {
-                { makeFilePointer(0, 0), "0:0" },
-                { makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET), "0:65535" },
-                { makeFilePointer(BIG_BLOCK_ADDRESS-1, 0), "70368744177663:0" },
-                { makeFilePointer(BIG_BLOCK_ADDRESS-1, BlockCompressedFilePointerUtil.MAX_OFFSET), "70368744177663:65535" },
-                { makeFilePointer(BIG_BLOCK_ADDRESS, 0), "70368744177664:0" },
-                { makeFilePointer(BIG_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET), "70368744177664:65535" },
-                { makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, 0), "281474976710655:0" },
-                { makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET), "281474976710655:65535" }
+            {makeFilePointer(0, 0), "0:0"},
+            {makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET), "0:65535"},
+            {makeFilePointer(BIG_BLOCK_ADDRESS - 1, 0), "70368744177663:0"},
+            {makeFilePointer(BIG_BLOCK_ADDRESS - 1, BlockCompressedFilePointerUtil.MAX_OFFSET), "70368744177663:65535"},
+            {makeFilePointer(BIG_BLOCK_ADDRESS, 0), "70368744177664:0"},
+            {makeFilePointer(BIG_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET), "70368744177664:65535"},
+            {makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, 0), "281474976710655:0"},
+            {
+                makeFilePointer(
+                        BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET),
+                "281474976710655:65535"
+            }
         };
     }
 
@@ -128,7 +134,6 @@ public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
     public void testAsAddressOffsetString(final long vfp, final String addressOffset) {
         Assert.assertEquals(BlockCompressedFilePointerUtil.asAddressOffsetString(vfp), addressOffset);
     }
-
 }
 
 /******************************************************************/

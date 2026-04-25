@@ -27,17 +27,16 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class ReadTagTest extends HtsjdkTest {
 
     @Test
-    public void test () {
+    public void test() {
         SAMFileHeader h = new SAMFileHeader();
         SAMRecord r = new SAMRecord(h);
         r.setAttribute("OQ", "A:SOME:RANDOM:NONSENSE".getBytes());
@@ -51,7 +50,7 @@ public class ReadTagTest extends HtsjdkTest {
         ByteBuffer byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         Object value = ReadTag.readSingleValue((byte) 'i', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
-        Assert.assertEquals (((Integer) value).intValue(), intValue);
+        Assert.assertEquals(((Integer) value).intValue(), intValue);
 
         String sValue = "value";
         data = ReadTag.writeSingleValue((byte) 'Z', sValue, false);
@@ -70,14 +69,14 @@ public class ReadTagTest extends HtsjdkTest {
 
     @Test
     public void testUnsignedInt() {
-        long intValue = Integer.MAX_VALUE+1L;
+        long intValue = Integer.MAX_VALUE + 1L;
         byte[] data = ReadTag.writeSingleValue((byte) 'I', intValue, false);
         ByteBuffer byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         Object value = ReadTag.readSingleValue((byte) 'I', byteBuffer, ValidationStringency.SILENT);
         Assert.assertTrue(value instanceof Long);
-        long lValue = (Long)value;
-        Assert.assertEquals (lValue & 0xFFFFFFFF, intValue);
+        long lValue = (Long) value;
+        Assert.assertEquals(lValue & 0xFFFFFFFF, intValue);
     }
 
     @Test
@@ -88,31 +87,31 @@ public class ReadTagTest extends HtsjdkTest {
         final long timeout = 1000L * 5; // just in case
         final List<Thread> threads = new ArrayList<Thread>(allArgs.length);
         final Map<Object[], Exception> results = Collections.synchronizedMap(new HashMap<Object[], Exception>());
-        for (final Object[] argLine: allArgs) {
+        for (final Object[] argLine : allArgs) {
             threads.add(new Thread() {
                 @Override
                 public void run() {
                     try {
-                        testParallelReadTag((Byte)argLine[0], argLine[1]);
+                        testParallelReadTag((Byte) argLine[0], argLine[1]);
                     } catch (final Exception e) {
                         Assert.assertNull(results.put(argLine, e));
                     }
                 }
             });
         }
-        for (final Thread thread: threads) {
+        for (final Thread thread : threads) {
             thread.start();
         }
-        for (final Thread thread: threads) {
+        for (final Thread thread : threads) {
             thread.join(timeout);
         }
-        for (final Map.Entry<Object[], Exception> result: results.entrySet()) {
+        for (final Map.Entry<Object[], Exception> result : results.entrySet()) {
             // Will fail only on the first, for now, but a debugger will be able to see all the results.
             Assert.fail("failed: " + Arrays.toString(result.getKey()), result.getValue());
         }
     }
 
-    //@Test(dataProvider = "parallelReadTagData")
+    // @Test(dataProvider = "parallelReadTagData")
     public void testParallelReadTag(final byte tagType, final Object originalValue) {
         // refactored from ReadTag.main()
         final byte[] data = ReadTag.writeSingleValue(tagType, originalValue, false);
@@ -122,12 +121,12 @@ public class ReadTagTest extends HtsjdkTest {
         Assert.assertEquals(readValue, originalValue);
     }
 
-    //@DataProvider(name = "parallelReadTagData", parallel = true)
+    // @DataProvider(name = "parallelReadTagData", parallel = true)
     public Object[][] getParallelReadTagData() {
         final int testCount = 10;
         final Object[][] testData = new Object[testCount][];
         for (int i = 0; i < testCount; i++) {
-            testData[i] = new Object[]{(byte)'Z', "test" + i};
+            testData[i] = new Object[] {(byte) 'Z', "test" + i};
         }
         return testData;
     }
@@ -147,14 +146,14 @@ public class ReadTagTest extends HtsjdkTest {
     @Test
     public void testIntToNameTypeVariousTags() {
         final String[][] cases = {
-                {"RG", "Z"},
-                {"MD", "Z"},
-                {"NM", "i"},
-                {"XA", "Z"},
-                {"OQ", "Z"},
-                {"X0", "C"},
-                {"SA", "Z"},
-                {"BC", "Z"},
+            {"RG", "Z"},
+            {"MD", "Z"},
+            {"NM", "i"},
+            {"XA", "Z"},
+            {"OQ", "Z"},
+            {"X0", "C"},
+            {"SA", "Z"},
+            {"BC", "Z"},
         };
         for (final String[] tag : cases) {
             final String name = tag[0];

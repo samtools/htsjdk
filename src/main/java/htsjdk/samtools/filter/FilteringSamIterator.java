@@ -31,7 +31,6 @@ import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.PeekableIterator;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -57,11 +56,11 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
      * @param filter       the filter (which may be a FilterAggregator)
      * @param filterByPair if true, filter reads in pairs
      */
-    public FilteringSamIterator(final Iterator<SAMRecord> iterator, final SamRecordFilter filter,
-                                final boolean filterByPair) {
+    public FilteringSamIterator(
+            final Iterator<SAMRecord> iterator, final SamRecordFilter filter, final boolean filterByPair) {
 
         if (filterByPair && iterator instanceof SAMRecordIterator) {
-            ((SAMRecordIterator)iterator).assertSorted(SAMFileHeader.SortOrder.queryname);
+            ((SAMRecordIterator) iterator).assertSorted(SAMFileHeader.SortOrder.queryname);
         }
 
         this.iterator = new PeekableIterator<SAMRecord>(iterator);
@@ -134,8 +133,7 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
         while (iterator.hasNext()) {
             final SAMRecord record = iterator.next();
 
-            if (filterReadPairs && record.getReadPairedFlag() && record.getFirstOfPairFlag() &&
-                iterator.hasNext()) {
+            if (filterReadPairs && record.getReadPairedFlag() && record.getFirstOfPairFlag() && iterator.hasNext()) {
 
                 SamPairUtil.assertMate(record, iterator.peek());
 
@@ -145,8 +143,7 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
                 } else {
                     return record;
                 }
-            } else if (filterReadPairs && record.getReadPairedFlag() &&
-                record.getSecondOfPairFlag()) {
+            } else if (filterReadPairs && record.getReadPairedFlag() && record.getSecondOfPairFlag()) {
                 // assume that we did a pass(first, second) and it passed the filter
                 return record;
             } else if (!filter.filterOut(record)) {

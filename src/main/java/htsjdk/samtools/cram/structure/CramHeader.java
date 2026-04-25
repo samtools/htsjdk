@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.common.CRAMVersion;
-
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -49,7 +48,7 @@ public final class CramHeader {
         this.id = new byte[CRAM_ID_LENGTH];
         Arrays.fill(this.id, (byte) 0);
         if (id != null) {
-            System.arraycopy(id.getBytes(),0, this.id, 0, Math.min(id.length(), this.id.length));
+            System.arraycopy(id.getBytes(), 0, this.id, 0, Math.min(id.length(), this.id.length));
         }
     }
 
@@ -66,8 +65,7 @@ public final class CramHeader {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final CramHeader that = (CramHeader) o;
-        return Objects.equals(cramVersion, that.cramVersion) &&
-                Arrays.equals(id, that.id);
+        return Objects.equals(cramVersion, that.cramVersion) && Arrays.equals(id, that.id);
     }
 
     @Override

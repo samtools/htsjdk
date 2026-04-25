@@ -28,7 +28,6 @@ import java.util.Objects;
 public class Scores implements Serializable, ReadFeature {
     public static final byte operator = 'q';
 
-
     private int position;
     private byte[] scores;
 
@@ -65,8 +64,7 @@ public class Scores implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Scores scores1 = (Scores) o;
-        return position == scores1.position &&
-                Arrays.equals(scores, scores1.scores);
+        return position == scores1.position && Arrays.equals(scores, scores1.scores);
     }
 
     @Override

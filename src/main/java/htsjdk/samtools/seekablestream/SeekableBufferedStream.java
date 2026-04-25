@@ -62,10 +62,9 @@ public class SeekableBufferedStream extends SeekableStream {
         }
     }
 
-
     public static final int DEFAULT_BUFFER_SIZE = 512000;
 
-    final private int bufferSize;
+    private final int bufferSize;
     final SeekableStream wrappedStream;
     ExtBufferedInputStream bufferedStream;
     long position;
@@ -132,10 +131,10 @@ public class SeekableBufferedStream extends SeekableStream {
     public int read(final byte[] buffer, final int offset, final int length) throws IOException {
         int nBytesRead = bufferedStream.read(buffer, offset, length);
         if (nBytesRead > 0) {
-            //if we can't read as many bytes as we are asking for then attempt another read to reset the buffer.
+            // if we can't read as many bytes as we are asking for then attempt another read to reset the buffer.
             if (nBytesRead < length) {
                 final int additionalBytesRead = bufferedStream.read(buffer, nBytesRead + offset, length - nBytesRead);
-                //if there were additional bytes read then update nBytesRead
+                // if there were additional bytes read then update nBytesRead
                 if (additionalBytesRead > 0) {
                     nBytesRead += additionalBytesRead;
                 }

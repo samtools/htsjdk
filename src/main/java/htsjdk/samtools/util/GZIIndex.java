@@ -27,7 +27,6 @@ package htsjdk.samtools.util;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
@@ -93,9 +92,9 @@ public final class GZIIndex {
 
         @Override
         public String toString() {
-            return String.format("IndexEntry={compressed=%d(0x%x),uncompressed=%d(0x%x)",
-                    compressedOffset, compressedOffset,
-                    uncompressedOffset, uncompressedOffset);
+            return String.format(
+                    "IndexEntry={compressed=%d(0x%x),uncompressed=%d(0x%x)",
+                    compressedOffset, compressedOffset, uncompressedOffset, uncompressedOffset);
         }
 
         @Override
@@ -104,8 +103,7 @@ public final class GZIIndex {
                 return false;
             }
             final IndexEntry other = (IndexEntry) obj;
-            return compressedOffset == other.compressedOffset
-                    && uncompressedOffset == other.uncompressedOffset;
+            return compressedOffset == other.compressedOffset && uncompressedOffset == other.uncompressedOffset;
         }
 
         @Override
@@ -167,7 +165,8 @@ public final class GZIIndex {
             }
 
             // binary search in the entries for the uncompressed offset
-            final int pos = Collections.binarySearch(entries,
+            final int pos = Collections.binarySearch(
+                    entries,
                     // this is a fake index for getting the uncompressed offsets
                     new IndexEntry(0, uncompressedOffset),
                     Comparator.comparingLong(IndexEntry::getUncompressedOffset));
@@ -199,7 +198,8 @@ public final class GZIIndex {
             // we use the file pointer utils to convert to the virtual-offset representation
             return BlockCompressedFilePointerUtil.makeFilePointer(indexEntry.getCompressedOffset(), blockOffset);
         } catch (ArithmeticException e) {
-            throw new IllegalArgumentException("Cannot handle offsets within blocks larger than " +  Integer.MAX_VALUE, e);
+            throw new IllegalArgumentException(
+                    "Cannot handle offsets within blocks larger than " + Integer.MAX_VALUE, e);
         }
     }
 
@@ -317,7 +317,7 @@ public final class GZIIndex {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
 
         if (Long.BYTES != channel.read(buffer)) {
-            throw getCorruptedIndexException(source, "less than " + Long.BYTES+ "bytes", null);
+            throw getCorruptedIndexException(source, "less than " + Long.BYTES + "bytes", null);
         }
         buffer.flip();
 
@@ -326,8 +326,10 @@ public final class GZIIndex {
             numberOfEntries = Math.toIntExact(buffer.getLong());
         } catch (ArithmeticException e) {
             buffer.flip();
-            throw getCorruptedIndexException(source,
-                    String.format("HTSJDK cannot handle more than %d entries in .gzi index, but found %s",
+            throw getCorruptedIndexException(
+                    source,
+                    String.format(
+                            "HTSJDK cannot handle more than %d entries in .gzi index, but found %s",
                             Integer.MAX_VALUE, buffer.getLong()),
                     e);
         }
@@ -354,9 +356,9 @@ public final class GZIIndex {
                 }
             } else if (entries.get(i - 1).getCompressedOffset() >= entry.getCompressedOffset()
                     || entries.get(i - 1).getUncompressedOffset() >= entry.getUncompressedOffset()) {
-                throw getCorruptedIndexException(source,
-                        String.format("index entries in misplaced order - %s vs %s",
-                                entries.get(i - 1), entry),
+                throw getCorruptedIndexException(
+                        source,
+                        String.format("index entries in misplaced order - %s vs %s", entries.get(i - 1), entry),
                         null);
             }
 
@@ -366,11 +368,10 @@ public final class GZIIndex {
         return new GZIIndex(entries);
     }
 
-    private static final IOException getCorruptedIndexException(final String source, final String msg, final Exception e) {
-        return new IOException(String.format("Corrupted index file: %s (%s)",
-                msg,
-                source == null ? "unknown" : source),
-                e);
+    private static final IOException getCorruptedIndexException(
+            final String source, final String msg, final Exception e) {
+        return new IOException(
+                String.format("Corrupted index file: %s (%s)", msg, source == null ? "unknown" : source), e);
     }
 
     /**
@@ -390,7 +391,8 @@ public final class GZIIndex {
             throw new IllegalArgumentException("null input path");
         }
         // open the file for reading as a block-compressed file
-        try (final BlockCompressedInputStream bgzipStream = new BlockCompressedInputStream(Files.newInputStream(bgzipFile))) {
+        try (final BlockCompressedInputStream bgzipStream =
+                new BlockCompressedInputStream(Files.newInputStream(bgzipFile))) {
 
             // store the entries as a list
             final List<IndexEntry> entries = new ArrayList<>();
@@ -403,7 +405,8 @@ public final class GZIIndex {
                 // if we are at the end of the block
                 if (bgzipStream.endOfBlock()) {
                     // gets the block address (compressed offset) - requires to parse with the file pointer utils
-                    final long compressed = BlockCompressedFilePointerUtil.getBlockAddress(bgzipStream.getFilePointer());
+                    final long compressed =
+                            BlockCompressedFilePointerUtil.getBlockAddress(bgzipStream.getFilePointer());
                     // add a new IndexEntry
                     entries.add(new IndexEntry(compressed, currentOffset));
                 }
@@ -439,8 +442,7 @@ public final class GZIIndex {
     }
 
     // helper method for allocate a buffer for read/write
-    private static final ByteBuffer allocateBuffer(final int numberOfEntries,
-            final boolean includeNumberOfEntries) {
+    private static final ByteBuffer allocateBuffer(final int numberOfEntries, final boolean includeNumberOfEntries) {
         // everything is encoded as an unsigned long
         int size = (includeNumberOfEntries) ? Long.BYTES : 0;
         size += numberOfEntries * 2 * Long.BYTES;
@@ -467,7 +469,8 @@ public final class GZIIndex {
             output = Files.newOutputStream(outputFile);
         }
 
-        // Adds a new index location given the compressed file offset and a running tally based on the uncompressed block sizes
+        // Adds a new index location given the compressed file offset and a running tally based on the uncompressed
+        // block sizes
         public void addGzipBlock(final long compressedFileOffset, final long uncompressedBlockSize) {
             IndexEntry indexEntry = new IndexEntry(compressedFileOffset, uncompressedFileOffset);
             uncompressedFileOffset += uncompressedBlockSize;
@@ -477,7 +480,7 @@ public final class GZIIndex {
         @Override
         public void close() throws IOException {
             GZIIndex index = new GZIIndex(entries);
-            index.writeIndex(output); //NOTE this relies on writeIndex closing the output stream for it
+            index.writeIndex(output); // NOTE this relies on writeIndex closing the output stream for it
         }
     }
 }

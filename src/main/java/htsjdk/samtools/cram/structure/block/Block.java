@@ -26,7 +26,6 @@ import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -80,11 +79,12 @@ public class Block {
      * @param compressedContent  the compressed form of the data to be stored in this block
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
-    protected Block(final BlockCompressionMethod compressionMethod,
-                    final BlockContentType contentType,
-                    final int contentId,
-                    final byte[] compressedContent,
-                    final int uncompressedLength) {
+    protected Block(
+            final BlockCompressionMethod compressionMethod,
+            final BlockContentType contentType,
+            final int contentId,
+            final byte[] compressedContent,
+            final int uncompressedLength) {
         this.compressionMethod = compressionMethod;
         this.contentType = contentType;
         this.contentId = contentId;
@@ -94,9 +94,9 @@ public class Block {
         // There are quite a few htsjdk and GATk test files around that contain external blocks that violate this
         // (that is they have contentID==0). So we may have to leave this out, and only validate that we don't violate
         // this on write. See https://github.com/samtools/htsjdk/issues/1232
-        //if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
+        // if (type == BlockContentType.EXTERNAL && getContentId() == Block.NO_CONTENT_ID) {
         //    throw new CRAMException("Valid Content ID required for external blocks.");
-        //}
+        // }
 
         if (contentType != BlockContentType.EXTERNAL && contentId != Block.NO_CONTENT_ID) {
             throw new CRAMException("Cannot set a Content ID for non-external blocks.");
@@ -128,7 +128,8 @@ public class Block {
     public static Block createGZIPFileHeaderBlock(final byte[] rawContent) {
         return new Block(
                 BlockCompressionMethod.GZIP,
-                BlockContentType.FILE_HEADER, NO_CONTENT_ID,
+                BlockContentType.FILE_HEADER,
+                NO_CONTENT_ID,
                 (new GZIPExternalCompressor()).compress(rawContent, null),
                 rawContent.length);
     }
@@ -175,13 +176,14 @@ public class Block {
      * @param compressedContent  the content of this block, in compressed mode
      * @param uncompressedLength the length of the content stored in this block when uncompressed
      */
-    public static Block createExternalBlock(final BlockCompressionMethod compressionMethod,
-                                            final int contentId,
-                                            final byte[] compressedContent,
-                                            final int uncompressedLength) {
+    public static Block createExternalBlock(
+            final BlockCompressionMethod compressionMethod,
+            final int contentId,
+            final byte[] compressedContent,
+            final int uncompressedLength) {
         ValidationUtils.validateArg(contentId >= 0, "Invalid external block content id");
-        return new Block(compressionMethod, BlockContentType.EXTERNAL,
-                contentId, compressedContent, uncompressedLength);
+        return new Block(
+                compressionMethod, BlockContentType.EXTERNAL, contentId, compressedContent, uncompressedLength);
     }
 
     public final BlockCompressionMethod getCompressionMethod() {
@@ -214,7 +216,8 @@ public class Block {
      * @throws IllegalArgumentException if the block is not {@link BlockCompressionMethod#RAW}.
      */
     public final byte[] getRawContent() {
-        ValidationUtils.validateArg(getCompressionMethod() == BlockCompressionMethod.RAW,
+        ValidationUtils.validateArg(
+                getCompressionMethod() == BlockCompressionMethod.RAW,
                 "getRawContent should only be called on blocks with RAW compression method");
         return compressedContent;
     }
@@ -228,13 +231,13 @@ public class Block {
      */
     public final byte[] getUncompressedContent(final CompressorCache compressorCache) {
         // when uncompressing, no compressor-specific args are required since any variant of the compressor will do
-        final ExternalCompressor compressor = compressorCache.getCompressorForMethod(compressionMethod, ExternalCompressor.NO_COMPRESSION_ARG);
+        final ExternalCompressor compressor =
+                compressorCache.getCompressorForMethod(compressionMethod, ExternalCompressor.NO_COMPRESSION_ARG);
         final byte[] uncompressedContent = compressor.uncompress(compressedContent);
         if (uncompressedContent.length != uncompressedLength) {
             throw new CRAMException(String.format(
                     "Block uncompressed length did not match expected length: %04x vs %04x",
-                    uncompressedLength,
-                    uncompressedContent.length));
+                    uncompressedLength, uncompressedContent.length));
         }
         return uncompressedContent;
     }
@@ -286,13 +289,13 @@ public class Block {
                 final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
                 final int checksum = CramInt.readInt32(inputStream);
                 if (checksum != actualChecksum) {
-                    throw new RuntimeException(String.format("Block CRC32 mismatch, actual: %04x expected: %04x", checksum, actualChecksum));
+                    throw new RuntimeException(String.format(
+                            "Block CRC32 mismatch, actual: %04x expected: %04x", checksum, actualChecksum));
                 }
             }
 
             return new Block(compressionMethod, contentType, contentId, compressedContent, uncompressedSize);
-        }
-        catch (final IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -313,8 +316,7 @@ public class Block {
             } else {
                 doWrite(outputStream);
             }
-        }
-        catch (final IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -332,12 +334,12 @@ public class Block {
 
     @Override
     public String toString() {
-        return String.format("method=%s, type=%s, id=%d, raw size=%d, compressed size=%d",
+        return String.format(
+                "method=%s, type=%s, id=%d, raw size=%d, compressed size=%d",
                 getCompressionMethod().name(),
                 getContentType().name(),
                 getContentId(),
                 getUncompressedContentSize(),
                 getCompressedContentSize());
     }
-
 }

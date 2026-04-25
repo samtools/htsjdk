@@ -26,7 +26,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.FileExtensions;
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,10 +35,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 /**
  * SBI is an index into BGZF-compressed data files, which has an entry for the file position of the start of every
@@ -87,11 +83,11 @@ public final class SBIIndex implements Serializable {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final Header header = (Header) o;
-            return fileLength == header.fileLength &&
-                    totalNumberOfRecords == header.totalNumberOfRecords &&
-                    granularity == header.granularity &&
-                    Arrays.equals(md5, header.md5) &&
-                    Arrays.equals(uuid, header.uuid);
+            return fileLength == header.fileLength
+                    && totalNumberOfRecords == header.totalNumberOfRecords
+                    && granularity == header.granularity
+                    && Arrays.equals(md5, header.md5)
+                    && Arrays.equals(uuid, header.uuid);
         }
 
         @Override
@@ -104,13 +100,12 @@ public final class SBIIndex implements Serializable {
 
         @Override
         public String toString() {
-            return "Header{" +
-                    "fileLength=" + fileLength +
-                    ", md5=" + Arrays.toString(md5) +
-                    ", uuid=" + Arrays.toString(uuid) +
-                    ", totalNumberOfRecords=" + totalNumberOfRecords +
-                    ", granularity=" + granularity +
-                    '}';
+            return "Header{" + "fileLength="
+                    + fileLength + ", md5="
+                    + Arrays.toString(md5) + ", uuid="
+                    + Arrays.toString(uuid) + ", totalNumberOfRecords="
+                    + totalNumberOfRecords + ", granularity="
+                    + granularity + '}';
         }
     }
 
@@ -172,9 +167,7 @@ public final class SBIIndex implements Serializable {
         for (int i = 0; i < numOffsets; i++) {
             final long cur = binaryCodec.readLong();
             if (prev > cur) {
-                throw new RuntimeException(String.format(
-                        "Invalid SBI; offsets not in order: %#x > %#x",
-                        prev, cur));
+                throw new RuntimeException(String.format("Invalid SBI; offsets not in order: %#x > %#x", prev, cur));
             }
             virtualOffsets[i] = cur;
             prev = cur;
@@ -186,7 +179,8 @@ public final class SBIIndex implements Serializable {
         final byte[] buffer = new byte[SBI_MAGIC.length];
         binaryCodec.readBytes(buffer);
         if (!Arrays.equals(buffer, SBI_MAGIC)) {
-            throw new RuntimeException("Invalid file header in SBI: " + new String(buffer) + " (" + Arrays.toString(buffer) + ")");
+            throw new RuntimeException(
+                    "Invalid file header in SBI: " + new String(buffer) + " (" + Arrays.toString(buffer) + ")");
         }
         final long fileLength = binaryCodec.readLong();
         final byte[] md5 = new byte[16];
@@ -281,7 +275,8 @@ public final class SBIIndex implements Serializable {
      */
     public Chunk getChunk(final long splitStart, final long splitEnd) {
         if (splitStart >= splitEnd) {
-            throw new IllegalArgumentException(String.format("Split start (%s) must be less than end (%s)", splitStart, splitEnd));
+            throw new IllegalArgumentException(
+                    String.format("Split start (%s) must be less than end (%s)", splitStart, splitEnd));
         }
         final long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
         final long maxEnd = BlockCompressedFilePointerUtil.getBlockAddress(lastVirtualOffset);
@@ -303,8 +298,10 @@ public final class SBIIndex implements Serializable {
             index = -index - 1;
             if (index == virtualOffsets.length) {
                 long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
-                throw new IllegalArgumentException(String.format("No virtual offset found for virtual file pointer %s, last virtual offset %s",
-                        BlockCompressedFilePointerUtil.asString(virtualOffset), BlockCompressedFilePointerUtil.asString(lastVirtualOffset)));
+                throw new IllegalArgumentException(String.format(
+                        "No virtual offset found for virtual file pointer %s, last virtual offset %s",
+                        BlockCompressedFilePointerUtil.asString(virtualOffset),
+                        BlockCompressedFilePointerUtil.asString(lastVirtualOffset)));
             }
         }
         return virtualOffsets[index];
@@ -315,8 +312,7 @@ public final class SBIIndex implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final SBIIndex sbiIndex = (SBIIndex) o;
-        return Objects.equals(header, sbiIndex.header) &&
-                Arrays.equals(virtualOffsets, sbiIndex.virtualOffsets);
+        return Objects.equals(header, sbiIndex.header) && Arrays.equals(virtualOffsets, sbiIndex.virtualOffsets);
     }
 
     @Override
@@ -330,14 +326,14 @@ public final class SBIIndex implements Serializable {
     public String toString() {
         String virtualOffsetsString;
         if (virtualOffsets.length > 30) {
-            virtualOffsetsString = Arrays.toString(Arrays.copyOfRange(virtualOffsets, 0, 30)).replace("]", ", ...]");
+            virtualOffsetsString =
+                    Arrays.toString(Arrays.copyOfRange(virtualOffsets, 0, 30)).replace("]", ", ...]");
         } else {
             virtualOffsetsString = Arrays.toString(virtualOffsets);
         }
-        return "SBIIndex{" +
-                "header=" + header +
-                ", numVirtualOffsets=" + virtualOffsets.length +
-                ", virtualOffsets=" + virtualOffsetsString +
-                '}';
+        return "SBIIndex{" + "header="
+                + header + ", numVirtualOffsets="
+                + virtualOffsets.length + ", virtualOffsets="
+                + virtualOffsetsString + '}';
     }
 }

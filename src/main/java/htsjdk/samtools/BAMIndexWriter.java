@@ -30,7 +30,7 @@ import java.io.Closeable;
  *
  * @author mborkan
  */
-interface BAMIndexWriter extends Closeable {  // note - only package visibility
+interface BAMIndexWriter extends Closeable { // note - only package visibility
 
     /**
      * Write the data for one alignments to one reference sequence
@@ -51,5 +51,4 @@ interface BAMIndexWriter extends Closeable {  // note - only package visibility
      */
     @Override
     public void close();
-
 }

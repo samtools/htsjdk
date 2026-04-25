@@ -22,7 +22,6 @@ import htsjdk.tribble.index.AbstractIndex;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -120,9 +119,7 @@ public class IntervalTreeIndex extends AbstractIndex {
         /**
          * Default constructor needed for factory methods -- DO NOT REMOVE
          */
-        public ChrIndex() {
-
-        }
+        public ChrIndex() {}
 
         public ChrIndex(final String name) {
             this.name = name;
@@ -143,7 +140,6 @@ public class IntervalTreeIndex extends AbstractIndex {
             return null;
         }
 
-
         @Override
         public List<Block> getBlocks(final int start, final int end) {
 
@@ -163,8 +159,11 @@ public class IntervalTreeIndex extends AbstractIndex {
             Arrays.sort(blocks, new Comparator<Block>() {
                 @Override
                 public int compare(final Block b1, final Block b2) {
-                    // this is a little cryptic because the normal method (b1.getStartPosition() - b2.getStartPosition()) wraps in int space and we incorrectly sort the blocks in extreme cases
-                    return b1.getStartPosition() - b2.getStartPosition() < 1 ? -1 : (b1.getStartPosition() - b2.getStartPosition() > 1 ? 1 : 0);
+                    // this is a little cryptic because the normal method (b1.getStartPosition() -
+                    // b2.getStartPosition()) wraps in int space and we incorrectly sort the blocks in extreme cases
+                    return b1.getStartPosition() - b2.getStartPosition() < 1
+                            ? -1
+                            : (b1.getStartPosition() - b2.getStartPosition() > 1 ? 1 : 0);
                 }
             });
 
@@ -202,7 +201,6 @@ public class IntervalTreeIndex extends AbstractIndex {
                 dos.writeLong(interval.getBlock().getStartPosition());
                 dos.writeInt((int) interval.getBlock().getSize());
             }
-
         }
 
         @Override
@@ -222,9 +220,6 @@ public class IntervalTreeIndex extends AbstractIndex {
                 final Interval iv = new Interval(start, end, new Block(pos, size));
                 tree.insert(iv);
             }
-
-
         }
-
     }
 }

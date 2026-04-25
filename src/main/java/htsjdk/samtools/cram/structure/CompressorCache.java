@@ -35,7 +35,6 @@ import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.HashMap;
 
 /**
@@ -45,8 +44,9 @@ import java.util.HashMap;
  */
 public class CompressorCache {
     private final String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
-    //keep track of the compressors we have cached
-    private record CompressorCacheRecord(BlockCompressionMethod method, int compressorArg) { }
+    // keep track of the compressors we have cached
+    private record CompressorCacheRecord(BlockCompressionMethod method, int compressorArg) {}
+
     private final HashMap<CompressorCacheRecord, ExternalCompressor> compressorCache = new HashMap<>();
     private RANS4x8Encode sharedRANS4x8Encode;
     private RANS4x8Decode sharedRANS4x8Decode;
@@ -61,8 +61,7 @@ public class CompressorCache {
      * @return a cached compressor instance
      */
     public ExternalCompressor getCompressorForMethod(
-            final BlockCompressionMethod compressionMethod,
-            final int compressorSpecificArg) {
+            final BlockCompressionMethod compressionMethod, final int compressorSpecificArg) {
         switch (compressionMethod) {
             case GZIP:
             case ADAPTIVE_ARITHMETIC:
@@ -81,12 +80,11 @@ public class CompressorCache {
             case RANS: {
                 // in previous implementations, we would cache separate order-0 and order-1 compressors for performance
                 // reasons; we no longer NEED to do so but retain this structure for now
-                final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG ?
-                        RANS4x8Params.ORDER.ZERO.ordinal() :
-                        compressorSpecificArg;
-                final CompressorCacheRecord compressorRec = new CompressorCacheRecord(
-                        BlockCompressionMethod.RANS,
-                        ransArg);
+                final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG
+                        ? RANS4x8Params.ORDER.ZERO.ordinal()
+                        : compressorSpecificArg;
+                final CompressorCacheRecord compressorRec =
+                        new CompressorCacheRecord(BlockCompressionMethod.RANS, ransArg);
                 if (!compressorCache.containsKey(compressorRec)) {
                     if (sharedRANS4x8Encode == null) {
                         sharedRANS4x8Encode = new RANS4x8Encode();
@@ -96,8 +94,7 @@ public class CompressorCache {
                     }
                     compressorCache.put(
                             compressorRec,
-                            new RANS4x8ExternalCompressor(ransArg, sharedRANS4x8Encode, sharedRANS4x8Decode)
-                    );
+                            new RANS4x8ExternalCompressor(ransArg, sharedRANS4x8Encode, sharedRANS4x8Decode));
                 }
                 return getCachedCompressorForMethod(compressorRec.method, compressorRec.compressorArg);
             }
@@ -105,12 +102,11 @@ public class CompressorCache {
             case RANSNx16: {
                 // in previous implementations, we would cache separate order-0 and order-1 compressors for performance
                 // reasons; we no longer NEED to do so but retain this structure for now
-                final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG ?
-                        RANSNx16Params.ORDER.ZERO.ordinal() :
-                        compressorSpecificArg;
-                final CompressorCacheRecord compressorRec = new CompressorCacheRecord(
-                        BlockCompressionMethod.RANSNx16,
-                        ransArg);
+                final int ransArg = compressorSpecificArg == ExternalCompressor.NO_COMPRESSION_ARG
+                        ? RANSNx16Params.ORDER.ZERO.ordinal()
+                        : compressorSpecificArg;
+                final CompressorCacheRecord compressorRec =
+                        new CompressorCacheRecord(BlockCompressionMethod.RANSNx16, ransArg);
                 if (!compressorCache.containsKey(compressorRec)) {
                     if (sharedRANSNx16Encode == null) {
                         sharedRANSNx16Encode = new RANSNx16Encode();
@@ -120,8 +116,7 @@ public class CompressorCache {
                     }
                     compressorCache.put(
                             compressorRec,
-                            new RANSNx16ExternalCompressor(ransArg, sharedRANSNx16Encode, sharedRANSNx16Decode)
-                    );
+                            new RANSNx16ExternalCompressor(ransArg, sharedRANSNx16Encode, sharedRANSNx16Decode));
                 }
                 return getCachedCompressorForMethod(compressorRec.method, compressorRec.compressorArg);
             }
@@ -131,13 +126,10 @@ public class CompressorCache {
         }
     }
 
-    private ExternalCompressor getCachedCompressorForMethod(final BlockCompressionMethod method, final int compressorSpecificArg) {
+    private ExternalCompressor getCachedCompressorForMethod(
+            final BlockCompressionMethod method, final int compressorSpecificArg) {
         return compressorCache.computeIfAbsent(
                 new CompressorCacheRecord(method, compressorSpecificArg),
-                k -> ExternalCompressor.getCompressorForMethod(
-                        method,
-                        compressorSpecificArg)
-        );
+                k -> ExternalCompressor.getCompressorForMethod(method, compressorSpecificArg));
     }
-
 }

@@ -29,7 +29,6 @@ import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.EnumMap;
 
 /**
@@ -126,27 +125,29 @@ public class CRAMEncodingStrategy {
     public CRAMEncodingStrategy setReadsPerSlice(final int readsPerSlice) {
         ValidationUtils.validateArg(
                 readsPerSlice > 0 && readsPerSlice >= minimumSingleReferenceSliceSize,
-                String.format("Reads per slice must be > 0 and >= minimum single reference slice size (%d)",
+                String.format(
+                        "Reads per slice must be > 0 and >= minimum single reference slice size (%d)",
                         minimumSingleReferenceSliceSize));
         this.readsPerSlice = readsPerSlice;
         return this;
     }
 
-   /**
-    * The minimum number of reads we need to have seen to emit a single-reference slice. If we've seen
-    * fewer than this number, and we have more reads from a different reference context, we prefer to
-    * switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
-    * that contains fewer than this number of records.
-    *
-    * This number must be <= the value for {@link #getReadsPerSlice}
-    *
-    * @param minimumSingleReferenceSliceSize the minimum slice size
-    * @return this strategy for chaining
-    */
+    /**
+     * The minimum number of reads we need to have seen to emit a single-reference slice. If we've seen
+     * fewer than this number, and we have more reads from a different reference context, we prefer to
+     * switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
+     * that contains fewer than this number of records.
+     *
+     * This number must be <= the value for {@link #getReadsPerSlice}
+     *
+     * @param minimumSingleReferenceSliceSize the minimum slice size
+     * @return this strategy for chaining
+     */
     public CRAMEncodingStrategy setMinimumSingleReferenceSliceSize(int minimumSingleReferenceSliceSize) {
         ValidationUtils.validateArg(
                 minimumSingleReferenceSliceSize <= readsPerSlice,
-                String.format("Minimum single reference slice size must be <= the reads per slice size (%d)", readsPerSlice));
+                String.format(
+                        "Minimum single reference slice size must be <= the reads per slice size (%d)", readsPerSlice));
         this.minimumSingleReferenceSliceSize = minimumSingleReferenceSliceSize;
         return this;
     }
@@ -188,8 +189,8 @@ public class CRAMEncodingStrategy {
      * @return this strategy for chaining
      */
     public CRAMEncodingStrategy setGZIPCompressionLevel(final int compressionLevel) {
-        ValidationUtils.validateArg(compressionLevel >= 0 && compressionLevel <= 10,
-                "cram gzip compression level must be >= 0 and <= 10");
+        ValidationUtils.validateArg(
+                compressionLevel >= 0 && compressionLevel <= 10, "cram gzip compression level must be >= 0 and <= 10");
         this.gzipCompressionLevel = compressionLevel;
         return this;
     }
@@ -277,7 +278,9 @@ public class CRAMEncodingStrategy {
     }
 
     /** @return whether NM:i tags are stored verbatim (false = stripped and regenerated) */
-    public boolean getStoreNM() { return storeNM; }
+    public boolean getStoreNM() {
+        return storeNM;
+    }
 
     /**
      * Set whether to store the MD:Z tag verbatim. When false (default), MD is stripped during
@@ -293,20 +296,29 @@ public class CRAMEncodingStrategy {
     }
 
     /** @return whether MD:Z tags are stored verbatim (false = stripped and regenerated) */
-    public boolean getStoreMD() { return storeMD; }
+    public boolean getStoreMD() {
+        return storeMD;
+    }
 
-    public int getGZIPCompressionLevel() { return gzipCompressionLevel; }
-    public int getReadsPerSlice() { return readsPerSlice; }
-    public int getSlicesPerContainer() { return slicesPerContainer; }
+    public int getGZIPCompressionLevel() {
+        return gzipCompressionLevel;
+    }
+
+    public int getReadsPerSlice() {
+        return readsPerSlice;
+    }
+
+    public int getSlicesPerContainer() {
+        return slicesPerContainer;
+    }
 
     @Override
     public String toString() {
-        return "CRAMEncodingStrategy{" +
-                "cramVersion=" + cramVersion +
-                ", gzipCompressionLevel=" + gzipCompressionLevel +
-                ", readsPerSlice=" + readsPerSlice +
-                ", slicesPerContainer=" + slicesPerContainer +
-                '}';
+        return "CRAMEncodingStrategy{" + "cramVersion="
+                + cramVersion + ", gzipCompressionLevel="
+                + gzipCompressionLevel + ", readsPerSlice="
+                + readsPerSlice + ", slicesPerContainer="
+                + slicesPerContainer + '}';
     }
 
     @Override
@@ -321,9 +333,7 @@ public class CRAMEncodingStrategy {
         if (getReadsPerSlice() != that.getReadsPerSlice()) return false;
         if (getSlicesPerContainer() != that.getSlicesPerContainer()) return false;
         if (!cramVersion.equals(that.cramVersion)) return false;
-        return compressorMap != null ?
-                compressorMap.equals(that.compressorMap) :
-                that.compressorMap == null;
+        return compressorMap != null ? compressorMap.equals(that.compressorMap) : that.compressorMap == null;
     }
 
     @Override

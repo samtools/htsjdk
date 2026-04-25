@@ -3,7 +3,6 @@ package htsjdk.samtools.sra;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SRAFileReader;
 import htsjdk.samtools.util.TestUtil;
-
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -16,9 +15,7 @@ public class SRALazyRecordTest extends AbstractSRATest {
 
     @DataProvider(name = "serializationTestData")
     private Object[][] getSerializationTestData() {
-        return new Object[][] {
-                { DEFAULT_ACCESSION }
-        };
+        return new Object[][] {{DEFAULT_ACCESSION}};
     }
 
     @Test(dataProvider = "serializationTestData")
@@ -29,7 +26,8 @@ public class SRALazyRecordTest extends AbstractSRATest {
 
         final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
 
-        Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
+        Assert.assertEquals(
+                deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
 
     @Test(dataProvider = "serializationTestData")
@@ -38,7 +36,7 @@ public class SRALazyRecordTest extends AbstractSRATest {
         final SAMRecord record = reader.getIterator().next();
         reader.close();
 
-        final SAMRecord newRecord = (SAMRecord)record.clone();
+        final SAMRecord newRecord = (SAMRecord) record.clone();
         Assert.assertFalse(record == newRecord);
         Assert.assertNotSame(record, newRecord);
         Assert.assertEquals(record, newRecord);

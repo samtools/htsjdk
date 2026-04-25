@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.rans.Constants;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -27,7 +26,7 @@ public class CompressionUtils {
         } while (X > 0);
         do {
             s -= 7;
-            //writeByte
+            // writeByte
             final int s_ = (s > 0) ? 1 : 0;
             cp.put((byte) (((i >> s) & 0x7f) + (s_ << 7)));
         } while (s > 0);
@@ -95,7 +94,7 @@ public class CompressionUtils {
             final ByteBuffer outBuffer,
             final int[] frequencyTable,
             final int[] packMappingTable,
-            final int numSymbols){
+            final int numSymbols) {
         final int inSize = inBuffer.remaining();
         final ByteBuffer encodedBuffer;
         if (numSymbols <= 1) {
@@ -103,38 +102,41 @@ public class CompressionUtils {
         } else if (numSymbols <= 2) {
 
             // 1 bit per value
-            final int encodedBufferSize = (int) Math.ceil((double) inSize/8);
+            final int encodedBufferSize = (int) Math.ceil((double) inSize / 8);
             encodedBuffer = CompressionUtils.allocateByteBuffer(encodedBufferSize);
             int j = -1;
-            for (int i = 0; i < inSize; i ++) {
+            for (int i = 0; i < inSize; i++) {
                 if (i % 8 == 0) {
                     encodedBuffer.put(++j, (byte) 0);
                 }
-                encodedBuffer.put(j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << (i % 8))));
+                encodedBuffer.put(
+                        j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << (i % 8))));
             }
         } else if (numSymbols <= 4) {
 
             // 2 bits per value
-            final int encodedBufferSize = (int) Math.ceil((double) inSize/4);
+            final int encodedBufferSize = (int) Math.ceil((double) inSize / 4);
             encodedBuffer = CompressionUtils.allocateByteBuffer(encodedBufferSize);
             int j = -1;
-            for (int i = 0; i < inSize; i ++) {
+            for (int i = 0; i < inSize; i++) {
                 if (i % 4 == 0) {
                     encodedBuffer.put(++j, (byte) 0);
                 }
-                encodedBuffer.put(j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
+                encodedBuffer.put(
+                        j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
             }
         } else {
 
             // 4 bits per value
-            final int encodedBufferSize = (int) Math.ceil((double)inSize/2);
+            final int encodedBufferSize = (int) Math.ceil((double) inSize / 2);
             encodedBuffer = CompressionUtils.allocateByteBuffer(encodedBufferSize);
             int j = -1;
-            for (int i = 0; i < inSize; i ++) {
+            for (int i = 0; i < inSize; i++) {
                 if (i % 2 == 0) {
                     encodedBuffer.put(++j, (byte) 0);
                 }
-                encodedBuffer.put(j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
+                encodedBuffer.put(
+                        j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
             }
         }
 
@@ -142,7 +144,7 @@ public class CompressionUtils {
         outBuffer.put((byte) numSymbols);
 
         // write mapping table "packMappingTable" that converts mapped value to original symbol
-        for(int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i ++) {
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
             if (frequencyTable[i] > 0) {
                 outBuffer.put((byte) i);
             }
@@ -171,7 +173,7 @@ public class CompressionUtils {
         final ByteBuffer outBufferPack = CompressionUtils.allocateByteBuffer(uncompressedPackOutputLength);
         int j = 0;
         if (numSymbols <= 1) {
-            for (int i=0; i < uncompressedPackOutputLength; i++){
+            for (int i = 0; i < uncompressedPackOutputLength; i++) {
                 outBufferPack.put(i, packMappingTable[0]);
             }
         }
@@ -179,36 +181,36 @@ public class CompressionUtils {
         // 1 bit per value
         else if (numSymbols <= 2) {
             int v = 0;
-            for (int i=0; i < uncompressedPackOutputLength; i++){
-                if (i % 8 == 0){
+            for (int i = 0; i < uncompressedPackOutputLength; i++) {
+                if (i % 8 == 0) {
                     v = inBuffer.get(j++);
                 }
                 outBufferPack.put(i, packMappingTable[v & 1]);
-                v >>=1;
+                v >>= 1;
             }
         }
 
         // 2 bits per value
-        else if (numSymbols <= 4){
+        else if (numSymbols <= 4) {
             int v = 0;
-            for(int i=0; i < uncompressedPackOutputLength; i++){
-                if (i % 4 == 0){
+            for (int i = 0; i < uncompressedPackOutputLength; i++) {
+                if (i % 4 == 0) {
                     v = inBuffer.get(j++);
                 }
                 outBufferPack.put(i, packMappingTable[v & 3]);
-                v >>=2;
+                v >>= 2;
             }
         }
 
         // 4 bits per value
-        else if (numSymbols <= 16){
+        else if (numSymbols <= 16) {
             int v = 0;
-            for(int i=0; i < uncompressedPackOutputLength; i++){
-                if (i % 2 == 0){
+            for (int i = 0; i < uncompressedPackOutputLength; i++) {
+                if (i % 2 == 0) {
                     v = inBuffer.get(j++);
                 }
                 outBufferPack.put(i, packMappingTable[v & 15]);
-                v >>=4;
+                v >>= 4;
             }
         }
         return outBufferPack;
@@ -240,7 +242,7 @@ public class CompressionUtils {
      * @param bufferSize the capacity of the buffer
      * @return a new little-endian ByteBuffer
      */
-    public static ByteBuffer allocateByteBuffer(final int bufferSize){
+    public static ByteBuffer allocateByteBuffer(final int bufferSize) {
         return ByteBuffer.allocate(bufferSize).order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -250,7 +252,7 @@ public class CompressionUtils {
      * @param inputBytes the byte array to wrap
      * @return a little-endian ByteBuffer backed by the input array
      */
-    public static ByteBuffer wrap(final byte[] inputBytes){
+    public static ByteBuffer wrap(final byte[] inputBytes) {
         return ByteBuffer.wrap(inputBytes).order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -260,7 +262,7 @@ public class CompressionUtils {
      * @param inputBuffer the buffer to slice
      * @return a new little-endian ByteBuffer sharing the input's content
      */
-    public static ByteBuffer slice(final ByteBuffer inputBuffer){
+    public static ByteBuffer slice(final ByteBuffer inputBuffer) {
         return inputBuffer.slice().order(ByteOrder.LITTLE_ENDIAN);
     }
 

@@ -26,7 +26,6 @@ package htsjdk.samtools.fastq;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.Serializable;
 
 /**
@@ -47,7 +46,8 @@ public class FastqRecord implements Serializable {
      * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
      * @param baseQualities the base quality scores
      */
-    public FastqRecord(final String readName, final String readBases, final String qualityHeader, final String baseQualities) {
+    public FastqRecord(
+            final String readName, final String readBases, final String qualityHeader, final String baseQualities) {
         if (readName != null && !readName.isEmpty()) {
             this.readName = readName;
         } else {
@@ -70,7 +70,8 @@ public class FastqRecord implements Serializable {
      * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
      * @param baseQualities the base qualities as binary PHRED scores (not ASCII)
      */
-    public FastqRecord(final String readName, final byte[] readBases, final String qualityHeader, final byte[] baseQualities) {
+    public FastqRecord(
+            final String readName, final byte[] readBases, final String qualityHeader, final byte[] baseQualities) {
         this(readName, StringUtil.bytesToString(readBases), qualityHeader, SAMUtils.phredToFastq(baseQualities));
     }
 
@@ -175,46 +176,31 @@ public class FastqRecord implements Serializable {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime
-                * result
-                + ((qualityHeader == null) ? 0 : qualityHeader.hashCode());
-        result = prime * result
-                + ((baseQualityString == null) ? 0 : baseQualityString.hashCode());
-        result = prime * result
-                + ((readName == null) ? 0 : readName.hashCode());
+        result = prime * result + ((qualityHeader == null) ? 0 : qualityHeader.hashCode());
+        result = prime * result + ((baseQualityString == null) ? 0 : baseQualityString.hashCode());
+        result = prime * result + ((readName == null) ? 0 : readName.hashCode());
         result = prime * result + ((readString == null) ? 0 : readString.hashCode());
         return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
         FastqRecord other = (FastqRecord) obj;
         if (readString == null) {
-            if (other.readString != null)
-                return false;
-        } else if (!readString.equals(other.readString))
-            return false;
+            if (other.readString != null) return false;
+        } else if (!readString.equals(other.readString)) return false;
         if (qualityHeader == null) {
-            if (other.qualityHeader != null)
-                return false;
-        } else if (!qualityHeader.equals(other.qualityHeader))
-            return false;
+            if (other.qualityHeader != null) return false;
+        } else if (!qualityHeader.equals(other.qualityHeader)) return false;
         if (baseQualityString == null) {
-            if (other.baseQualityString != null)
-                return false;
-        } else if (!baseQualityString.equals(other.baseQualityString))
-            return false;
+            if (other.baseQualityString != null) return false;
+        } else if (!baseQualityString.equals(other.baseQualityString)) return false;
         if (readName == null) {
-            if (other.readName != null)
-                return false;
-        } else if (!readName.equals(other.readName))
-            return false;
+            if (other.readName != null) return false;
+        } else if (!readName.equals(other.readName)) return false;
 
         return true;
     }

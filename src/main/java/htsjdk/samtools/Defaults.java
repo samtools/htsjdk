@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.Optional;
@@ -15,8 +14,8 @@ import java.util.TreeMap;
  * @author Tim Fennell
  */
 public class Defaults {
-      private static final Log log = Log.getInstance(Defaults.class);
-    
+    private static final Log log = Log.getInstance(Defaults.class);
+
     /** Should BAM index files be created when writing out coordinate sorted BAM files?  Default = false. */
     public static final boolean CREATE_INDEX;
 
@@ -102,7 +101,6 @@ public class Defaults {
      */
     public static final boolean SRA_LIBRARIES_DOWNLOAD;
 
-
     /**
      * Whether to attempt to use jlibdeflate (libdeflate via JNI) for DEFLATE compression and decompression.
      * When true, the default deflater/inflater factories will try to load the native library and fall back
@@ -117,13 +115,13 @@ public class Defaults {
 
     public static final String OPTIMISTIC_VCF_4_4_PROPERTY = "optimistic_vcf_4_4";
 
-
     /**
      * Disable use of the Snappy compressor.  Default = false.
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
     public static final String SAMJDK_PREFIX = "samjdk.";
+
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
@@ -143,7 +141,8 @@ public class Defaults {
         USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
         EBI_REFERENCE_SERVICE_URL_MASK = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
-        SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
+        SAM_FLAG_FIELD_FORMAT =
+                SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         USE_LIBDEFLATE = getBooleanProperty("use_libdeflate", true);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
@@ -155,7 +154,7 @@ public class Defaults {
      * The returned map is unmodifiable.
      * This function is useful for example when logging all defaults.
      */
-    public static SortedMap<String, Object> allDefaults(){
+    public static SortedMap<String, Object> allDefaults() {
         final SortedMap<String, Object> result = new TreeMap<>();
         result.put("CREATE_INDEX", CREATE_INDEX);
         result.put("CREATE_MD5", CREATE_MD5);
@@ -175,14 +174,17 @@ public class Defaults {
         return Collections.unmodifiableSortedMap(result);
     }
 
-    /** Gets a string system property, prefixed with "samjdk." using the default 
+    /** Gets a string system property, prefixed with "samjdk." using the default
      * if the property does not exist or if the java.security manager raises an exception for
      * applications started with  -Djava.security.manager  . */
     private static String getStringProperty(final String name, final String def) {
         try {
             return System.getProperty(Defaults.SAMJDK_PREFIX + name, def);
         } catch (final SecurityException error) {
-            log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: " + def );
+            log.warn(
+                    error,
+                    "java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: "
+                            + def);
             return def;
         }
     }
@@ -190,11 +192,11 @@ public class Defaults {
     /** Checks whether a string system property, prefixed with "samjdk.", exists.
      * If the property does not exist or if the java.security manager raises an exception for
      * applications started with  -Djava.security.manager  this method returns false. */
-    private static boolean hasProperty(final String name){
+    private static boolean hasProperty(final String name) {
         try {
             return null != System.getProperty(Defaults.SAMJDK_PREFIX + name);
         } catch (final SecurityException error) {
-            log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning false");
+            log.warn(error, "java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning false");
             return false;
         }
     }
@@ -217,7 +219,9 @@ public class Defaults {
         Optional<File> maybeFile = Optional.ofNullable(value).map(File::new);
         maybeFile.ifPresent(f -> {
             if (!f.exists()) {
-                log.warn(String.format("File property for %s has value %s. However file %s doesn't exist.", SAMJDK_PREFIX + name, value, f.getAbsolutePath()));
+                log.warn(String.format(
+                        "File property for %s has value %s. However file %s doesn't exist.",
+                        SAMJDK_PREFIX + name, value, f.getAbsolutePath()));
             } else {
                 log.info(String.format("Found file for property %s: %s ", SAMJDK_PREFIX + name, f.getAbsolutePath()));
             }

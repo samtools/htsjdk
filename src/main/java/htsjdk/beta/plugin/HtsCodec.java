@@ -1,12 +1,12 @@
 package htsjdk.beta.plugin;
 
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.registry.HtsCodecRegistry;
 import htsjdk.io.IOPath;
-import htsjdk.beta.io.bundle.Bundle;
 
 /**
  * Base interface implemented by all {@link htsjdk.beta.plugin} codecs.
@@ -221,7 +221,8 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * @return a user-friendly display name for this codec
      */
     default String getDisplayName() {
-        return String.format("%s/%s/%s", getFileFormat(), getVersion(), getClass().getName());
+        return String.format(
+                "%s/%s/%s", getFileFormat(), getVersion(), getClass().getName());
     }
 
     /**
@@ -260,7 +261,9 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * @param ioPath the ioPath to inspect
      * @return true if the ioPath's URI represents a custom URI that this codec handles
      */
-    default boolean ownsURI(final IOPath ioPath) { return false; }
+    default boolean ownsURI(final IOPath ioPath) {
+        return false;
+    }
 
     /**
      * Determine if the URI for <code>ioPath</code> (obtained via {@link IOPath#getURI()})
@@ -362,7 +365,9 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * may throw exceptions.
      * </p>
      */
-    default int getSignatureProbeLength() { return getSignatureLength(); }
+    default int getSignatureProbeLength() {
+        return getSignatureLength();
+    }
 
     /**
      * Get an {@link HtsDecoder} to decode the provided inputs. The input bundle must contain
@@ -397,5 +402,4 @@ public interface HtsCodec<D extends HtsDecoderOptions, E extends HtsEncoderOptio
      * @return an {@link HtsEncoder} suitable for writing to the provided outputs
      */
     HtsEncoder<?, ? extends HtsRecord> getEncoder(final Bundle outputBundle, final E encoderOptions);
-
 }

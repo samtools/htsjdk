@@ -31,22 +31,21 @@ import java.util.Set;
  * SAM flags as enum, to be used in GUI, menu, etc...
  */
 public enum SAMFlag {
-    READ_PAIRED(                    0x1,    "Template having multiple segments in sequencing"),
-    PROPER_PAIR(                    0x2,    "Each segment properly aligned according to the aligner"),
-    READ_UNMAPPED(                  0x4,    "Segment unmapped"),
-    MATE_UNMAPPED(                  0x8,    "Next segment in the template unmapped"),
-    READ_REVERSE_STRAND(            0x10,   "SEQ being reverse complemented"),
-    MATE_REVERSE_STRAND(            0x20,   "SEQ of the next segment in the template being reverse complemented"),
-    FIRST_OF_PAIR(                  0x40,   "The first segment in the template"),
-    SECOND_OF_PAIR(                 0x80,   "The last segment in the template"),
-    SECONDARY_ALIGNMENT(            0x100,  "Secondary alignment"),
+    READ_PAIRED(0x1, "Template having multiple segments in sequencing"),
+    PROPER_PAIR(0x2, "Each segment properly aligned according to the aligner"),
+    READ_UNMAPPED(0x4, "Segment unmapped"),
+    MATE_UNMAPPED(0x8, "Next segment in the template unmapped"),
+    READ_REVERSE_STRAND(0x10, "SEQ being reverse complemented"),
+    MATE_REVERSE_STRAND(0x20, "SEQ of the next segment in the template being reverse complemented"),
+    FIRST_OF_PAIR(0x40, "The first segment in the template"),
+    SECOND_OF_PAIR(0x80, "The last segment in the template"),
+    SECONDARY_ALIGNMENT(0x100, "Secondary alignment"),
     /** @deprecated use {@link #SECONDARY_ALIGNMENT} instead. */
     @Deprecated
-    NOT_PRIMARY_ALIGNMENT(          0x100,  "Secondary alignment"),
-    READ_FAILS_VENDOR_QUALITY_CHECK(0x200,  "Not passing quality controls"),
-    DUPLICATE_READ(                 0x400,  "PCR or optical duplicate"), 
-    SUPPLEMENTARY_ALIGNMENT(        0x800,  "Supplementary alignment")
-    ;
+    NOT_PRIMARY_ALIGNMENT(0x100, "Secondary alignment"),
+    READ_FAILS_VENDOR_QUALITY_CHECK(0x200, "Not passing quality controls"),
+    DUPLICATE_READ(0x400, "PCR or optical duplicate"),
+    SUPPLEMENTARY_ALIGNMENT(0x800, "Supplementary alignment");
 
     /* visible for the package, to be used by SAMRecord */
     final int flag;
@@ -75,18 +74,15 @@ public enum SAMFlag {
     /** @return the SAMFlag for the value 'flag' or null if it was not found */
     public static SAMFlag valueOf(int flag) {
         for (SAMFlag f : values()) {
-            if (flag == f.flag)
-                return f;
+            if (flag == f.flag) return f;
         }
         return null;
     }
 
     /** @return find SAMFlag the flag by name, or null if it was not found */
-    public static SAMFlag findByName(String flag)
-        {   
+    public static SAMFlag findByName(String flag) {
         for (SAMFlag f : values()) {
-            if (f.name().equals(flag))
-                return f;
+            if (f.name().equals(flag)) return f;
         }
         return null;
     }
@@ -105,8 +101,7 @@ public enum SAMFlag {
     public static Set<SAMFlag> getFlags(int flag) {
         Set<SAMFlag> set = new HashSet<SAMFlag>();
         for (SAMFlag f : values()) {
-            if (f.isSet(flag))
-                set.add(f);
+            if (f.isSet(flag)) set.add(f);
         }
         return set;
     }

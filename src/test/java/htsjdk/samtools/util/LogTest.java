@@ -1,15 +1,14 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 @Test(singleThreaded = true)
 public class LogTest extends HtsjdkTest {

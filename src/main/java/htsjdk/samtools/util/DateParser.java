@@ -73,7 +73,6 @@ webmaster
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -91,20 +90,16 @@ import java.util.TimeZone;
  */
 public class DateParser {
 
-    private static boolean check(StringTokenizer st, String token)
-            throws InvalidDateException
-    {
+    private static boolean check(StringTokenizer st, String token) throws InvalidDateException {
         if (!st.hasMoreElements()) return false;
         if (st.nextToken().equals(token)) {
             return true;
         } else {
-            throw new InvalidDateException("Missing ["+token+"]");
+            throw new InvalidDateException("Missing [" + token + "]");
         }
     }
 
-    private static Calendar getCalendar(String isodate)
-            throws InvalidDateException
-    {
+    private static Calendar getCalendar(String isodate) throws InvalidDateException {
         // YYYY-MM-DDThh:mm:ss.sTZD
         StringTokenizer st = new StringTokenizer(isodate, "-T:.+Z", true);
 
@@ -120,7 +115,7 @@ public class DateParser {
             }
             // Month
             if (check(st, "-") && (st.hasMoreTokens())) {
-                int month = Integer.parseInt(st.nextToken()) -1;
+                int month = Integer.parseInt(st.nextToken()) - 1;
                 calendar.set(Calendar.MONTH, month);
             } else {
                 return calendar;
@@ -159,7 +154,7 @@ public class DateParser {
             //
 
             // Secondes
-            if (! st.hasMoreTokens()) {
+            if (!st.hasMoreTokens()) {
                 return calendar;
             }
             String tok = st.nextToken();
@@ -167,7 +162,7 @@ public class DateParser {
                 if (st.hasMoreTokens()) {
                     int secondes = Integer.parseInt(st.nextToken());
                     calendar.set(Calendar.SECOND, secondes);
-                    if (! st.hasMoreTokens()) {
+                    if (!st.hasMoreTokens()) {
                         return calendar;
                     }
                     // frac sec
@@ -175,14 +170,14 @@ public class DateParser {
                     if (tok.equals(".")) {
                         // bug fixed, thx to Martin Bottcher
                         String nt = st.nextToken();
-                        while(nt.length() < 3) {
+                        while (nt.length() < 3) {
                             nt += "0";
                         }
-                        nt = nt.substring( 0, 3 ); //Cut trailing chars..
+                        nt = nt.substring(0, 3); // Cut trailing chars..
                         int millisec = Integer.parseInt(nt);
-                        //int millisec = Integer.parseInt(st.nextToken()) * 10;
+                        // int millisec = Integer.parseInt(st.nextToken()) * 10;
                         calendar.set(Calendar.MILLISECOND, millisec);
-                        if (! st.hasMoreTokens()) {
+                        if (!st.hasMoreTokens()) {
                             return calendar;
                         }
                         tok = st.nextToken();
@@ -197,16 +192,16 @@ public class DateParser {
                 calendar.set(Calendar.MILLISECOND, 0);
             }
             // Timezone
-            if (! tok.equals("Z")) { // UTC
-                if (! (tok.equals("+") || tok.equals("-"))) {
+            if (!tok.equals("Z")) { // UTC
+                if (!(tok.equals("+") || tok.equals("-"))) {
                     throw new InvalidDateException("only Z, + or - allowed");
                 }
                 boolean plus = tok.equals("+");
-                if (! st.hasMoreTokens()) {
+                if (!st.hasMoreTokens()) {
                     throw new InvalidDateException("Missing hour field");
                 }
                 int tzhour = Integer.parseInt(st.nextToken());
-                int tzmin  = 0;
+                int tzmin = 0;
                 if (check(st, ":") && (st.hasMoreTokens())) {
                     tzmin = Integer.parseInt(st.nextToken());
                 } else {
@@ -227,8 +222,7 @@ public class DateParser {
                 }
             }
         } catch (NumberFormatException ex) {
-            throw new InvalidDateException("["+ex.getMessage()+
-                    "] is not an integer");
+            throw new InvalidDateException("[" + ex.getMessage() + "] is not an integer");
         }
         return calendar;
     }
@@ -239,16 +233,14 @@ public class DateParser {
      * @return a Date instance
      * @exception InvalidDateException if the date is not valid
      */
-    public static Date parse(String isodate)
-            throws InvalidDateException
-    {
+    public static Date parse(String isodate) throws InvalidDateException {
         Calendar calendar = getCalendar(isodate);
         return calendar.getTime();
     }
 
     private static String twoDigit(int i) {
-        if (i >=0 && i < 10) {
-            return "0"+String.valueOf(i);
+        if (i >= 0 && i < 10) {
+            return "0" + String.valueOf(i);
         }
         return String.valueOf(i);
     }
@@ -261,7 +253,8 @@ public class DateParser {
     public static String getIsoDate(Date date) {
         Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         calendar.setTime(date);
-        return new StringBuffer().append(calendar.get(Calendar.YEAR))
+        return new StringBuffer()
+                .append(calendar.get(Calendar.YEAR))
                 .append("-")
                 .append(twoDigit(calendar.get(Calendar.MONTH) + 1))
                 .append("-")
@@ -274,12 +267,12 @@ public class DateParser {
                 .append(twoDigit(calendar.get(Calendar.SECOND)))
                 .append(".")
                 .append(twoDigit(calendar.get(Calendar.MILLISECOND) / 10))
-                .append("Z").toString();
+                .append("Z")
+                .toString();
     }
 
     public static class InvalidDateException extends SAMException {
-        public InvalidDateException() {
-        }
+        public InvalidDateException() {}
 
         public InvalidDateException(final String s) {
             super(s);

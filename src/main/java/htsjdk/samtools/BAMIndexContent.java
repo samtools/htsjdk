@@ -35,15 +35,17 @@ class BAMIndexContent extends BinningIndexContent {
      */
     private final BAMIndexMetaData mMetaData;
 
-
-
     /**
      * @param referenceSequence Content corresponds to this reference.
      * @param binList              Array of bins represented by this content, possibly sparse
      * @param metaData          Extra information about the reference in this index
      * @param linearIndex       Additional index used to optimize queries
      */
-    BAMIndexContent(final int referenceSequence, final BinList binList, final BAMIndexMetaData metaData, final LinearIndex linearIndex) {
+    BAMIndexContent(
+            final int referenceSequence,
+            final BinList binList,
+            final BAMIndexMetaData metaData,
+            final LinearIndex linearIndex) {
         super(referenceSequence, binList, linearIndex);
         this.mMetaData = metaData;
     }
@@ -55,7 +57,12 @@ class BAMIndexContent extends BinningIndexContent {
      * @param metaData          Extra information about the reference in this index
      * @param linearIndex       Additional index used to optimize queries
      */
-    BAMIndexContent(final int referenceSequence, final Bin[] bins, final int numberOfBins, final BAMIndexMetaData metaData, final LinearIndex linearIndex) {
+    BAMIndexContent(
+            final int referenceSequence,
+            final Bin[] bins,
+            final int numberOfBins,
+            final BAMIndexMetaData metaData,
+            final LinearIndex linearIndex) {
         this(referenceSequence, new BinList(bins, numberOfBins), metaData, linearIndex);
     }
 
@@ -65,5 +72,4 @@ class BAMIndexContent extends BinningIndexContent {
     public BAMIndexMetaData getMetaData() {
         return mMetaData;
     }
-
 }

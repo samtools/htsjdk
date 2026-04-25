@@ -23,40 +23,39 @@
  */
 package htsjdk.variant.variantcontext.filter;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-
 import htsjdk.samtools.filter.AbstractJavascriptFilter;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
 
 /**
  * javascript based variant filter The script puts the following variables in
  * the script context:
  *
- * - 'header' a htsjdk.variant.vcf.VCFHeader 
+ * - 'header' a htsjdk.variant.vcf.VCFHeader
  * - 'variant' a htsjdk.variant.variantcontext.VariantContext
- * 
+ *
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
 public class JavascriptVariantFilter extends AbstractJavascriptFilter<VCFHeader, VariantContext>
         implements VariantContextFilter {
-	/**
-	 * constructor using a javascript File
-	 * 
-	 * @param scriptFile
-	 *            the javascript file to be compiled
-	 * @param header
-	 *            the SAMHeader
-	 */
-	public JavascriptVariantFilter(final File scriptFile, final VCFHeader header) throws IOException {
-		super(scriptFile, header);
-	}
+    /**
+     * constructor using a javascript File
+     *
+     * @param scriptFile
+     *            the javascript file to be compiled
+     * @param header
+     *            the SAMHeader
+     */
+    public JavascriptVariantFilter(final File scriptFile, final VCFHeader header) throws IOException {
+        super(scriptFile, header);
+    }
 
-	/**
+    /**
      * constructor using a Reader
-     * 
+     *
      * @param scriptReader
      *            the reader for the script to be compiled. Will be closed
      * @param header
@@ -65,33 +64,33 @@ public class JavascriptVariantFilter extends AbstractJavascriptFilter<VCFHeader,
     public JavascriptVariantFilter(final Reader scriptReader, final VCFHeader header) throws IOException {
         super(scriptReader, header);
     }
-    
-	/**
-	 * constructor using a javascript expression
-	 * 
-	 * @param scriptExpression
-	 *            the javascript expression to be compiled
-	 * @param header
-	 *            the SAMHeader
-	 */
-	public JavascriptVariantFilter(final String scriptExpression, final VCFHeader header) {
-		super(scriptExpression, header);
-	}
 
-	/**
-	 * Determines whether a VariantContext matches this filter
-	 *
-	 * @param record
-	 *            the VariantContext to evaluate
-	 * @return true if accept(record) returned true
-	 */
-	@Override
-	public boolean test(final VariantContext record) {
-		return accept(record);
-	}
+    /**
+     * constructor using a javascript expression
+     *
+     * @param scriptExpression
+     *            the javascript expression to be compiled
+     * @param header
+     *            the SAMHeader
+     */
+    public JavascriptVariantFilter(final String scriptExpression, final VCFHeader header) {
+        super(scriptExpression, header);
+    }
 
-	@Override
-	public String getRecordKey() {
-		return "variant";
-	}
+    /**
+     * Determines whether a VariantContext matches this filter
+     *
+     * @param record
+     *            the VariantContext to evaluate
+     * @return true if accept(record) returned true
+     */
+    @Override
+    public boolean test(final VariantContext record) {
+        return accept(record);
+    }
+
+    @Override
+    public String getRecordKey() {
+        return "variant";
+    }
 }

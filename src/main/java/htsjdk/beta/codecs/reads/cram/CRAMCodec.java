@@ -1,23 +1,22 @@
 package htsjdk.beta.codecs.reads.cram;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.codecs.hapref.fasta.FASTADecoderV1_0;
+import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
-import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.SignatureStream;
-import htsjdk.io.IOPath;
 import htsjdk.beta.plugin.HtsVersion;
-import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,13 +32,15 @@ public abstract class CRAMCodec implements ReadsCodec {
     protected static final Set<String> extensionMap = new HashSet<>(Arrays.asList(FileExtensions.CRAM));
 
     @Override
-    public String getFileFormat() { return ReadsFormats.CRAM; }
+    public String getFileFormat() {
+        return ReadsFormats.CRAM;
+    }
 
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
         ValidationUtils.nonNull(ioPath, "ioPath");
 
-        return extensionMap.stream().anyMatch(ext-> ioPath.hasExtension(ext));
+        return extensionMap.stream().anyMatch(ext -> ioPath.hasExtension(ext));
     }
 
     @Override
@@ -74,7 +75,7 @@ public abstract class CRAMCodec implements ReadsCodec {
             throw new HtsjdkException(String.format("Unable to get reference codec for %s", referencePath));
         }
 
-        //TODO: we need a solution here doesn't require access to this getter...its necessary because
+        // TODO: we need a solution here doesn't require access to this getter...its necessary because
         // the generic decoder interface is an iterable<ReferenceSequence>, but we need the native (indexed
         // by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource, so we
         // need to cast the decoder to get access to the ReferenceSequenceFile; it might be possible to
@@ -89,5 +90,4 @@ public abstract class CRAMCodec implements ReadsCodec {
      * @return the signature string for this codec
      */
     protected abstract String getSignatureString();
-
 }

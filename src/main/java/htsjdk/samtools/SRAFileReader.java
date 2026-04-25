@@ -1,51 +1,44 @@
 /*===========================================================================
-*
-*                            PUBLIC DOMAIN NOTICE
-*               National Center for Biotechnology Information
-*
-*  This software/database is a "United States Government Work" under the
-*  terms of the United States Copyright Act.  It was written as part of
-*  the author's official duties as a United States Government employee and
-*  thus cannot be copyrighted.  This software/database is freely available
-*  to the public for use. The National Library of Medicine and the U.S.
-*  Government have not placed any restriction on its use or reproduction.
-*
-*  Although all reasonable efforts have been taken to ensure the accuracy
-*  and reliability of the software and data, the NLM and the U.S.
-*  Government do not and cannot warrant the performance or results that
-*  may be obtained by using this software or data. The NLM and the U.S.
-*  Government disclaim all warranties, express or implied, including
-*  warranties of performance, merchantability or fitness for any particular
-*  purpose.
-*
-*  Please cite the author in any work or product based on this material.
-*
-* ===========================================================================
-*
-*/
+ *
+ *                            PUBLIC DOMAIN NOTICE
+ *               National Center for Biotechnology Information
+ *
+ *  This software/database is a "United States Government Work" under the
+ *  terms of the United States Copyright Act.  It was written as part of
+ *  the author's official duties as a United States Government employee and
+ *  thus cannot be copyrighted.  This software/database is freely available
+ *  to the public for use. The National Library of Medicine and the U.S.
+ *  Government have not placed any restriction on its use or reproduction.
+ *
+ *  Although all reasonable efforts have been taken to ensure the accuracy
+ *  and reliability of the software and data, the NLM and the U.S.
+ *  Government do not and cannot warrant the performance or results that
+ *  may be obtained by using this software or data. The NLM and the U.S.
+ *  Government disclaim all warranties, express or implied, including
+ *  warranties of performance, merchantability or fitness for any particular
+ *  purpose.
+ *
+ *  Please cite the author in any work or product based on this material.
+ *
+ * ===========================================================================
+ *
+ */
 
 /**
  * Created by andrii.nikitiuk on 8/11/15.
  */
-
 package htsjdk.samtools;
 
+import htsjdk.samtools.SamReader.Type;
 import htsjdk.samtools.sra.ReferenceCache;
 import htsjdk.samtools.sra.SRAAccession;
 import htsjdk.samtools.util.CloseableIterator;
-
-import htsjdk.samtools.SamReader.Type;
-
 import htsjdk.samtools.util.Log;
+import java.util.List;
 import ngs.ErrorMsg;
 import ngs.ReadCollection;
 import ngs.ReadGroupIterator;
 import ngs.ReferenceIterator;
-import ngs.Reference;
-
-import java.util.ArrayList;
-import java.util.List;
-
 
 public class SRAFileReader extends SamReader.ReaderImplementation implements SamReader.Indexing {
     private static final Log log = Log.getInstance(SRAFileReader.class);
@@ -61,8 +54,8 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
         this.acc = acc;
 
         if (!acc.isValid()) {
-            throw new IllegalArgumentException("SRAFileReader: cannot resolve SRA accession '" + acc + "'\n" +
-                "Possible causes are an invalid SRA accession or a connection problem.");
+            throw new IllegalArgumentException("SRAFileReader: cannot resolve SRA accession '" + acc + "'\n"
+                    + "Possible causes are an invalid SRA accession or a connection problem.");
         }
 
         try {
@@ -114,7 +107,8 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
 
         List<Chunk> chunkList = ((BAMFileSpan) chunks).getChunks();
 
-        final SRAIterator newIterator = new SRAIterator(acc, run, virtualHeader, cachedReferences, recordRangeInfo, chunkList);
+        final SRAIterator newIterator =
+                new SRAIterator(acc, run, virtualHeader, cachedReferences, recordRangeInfo, chunkList);
         if (validationStringency != null) {
             newIterator.setValidationStringency(validationStringency);
         }
@@ -166,7 +160,8 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
             throw new RuntimeException("Cannot create file span - SRA file is empty");
         }
 
-        SAMFileSpan span = new BAMFileSpan(new Chunk(recordRangeInfo.getTotalReferencesLength(), recordRangeInfo.getTotalRecordRangeLength()));
+        SAMFileSpan span = new BAMFileSpan(
+                new Chunk(recordRangeInfo.getTotalReferencesLength(), recordRangeInfo.getTotalRecordRangeLength()));
         return getIterator(span);
     }
 
@@ -180,9 +175,7 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
         return validationStringency;
     }
 
-
     /** INDEXING */
-
 
     /**
      * Returns true if the supported index is browseable, meaning the bins in it can be traversed
@@ -270,8 +263,7 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
         ReadGroupIterator itRg = run.getReadGroups();
         while (itRg.nextReadGroup()) {
             String rgName = itRg.getName();
-            if (rgName.isEmpty())
-                rgName = runName;
+            if (rgName.isEmpty()) rgName = runName;
             SAMReadGroupRecord rg = new SAMReadGroupRecord(rgName);
             rg.setSample(runName);
             header.addReadGroup(rg);

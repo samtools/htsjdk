@@ -23,11 +23,9 @@
  */
 package htsjdk.samtools;
 
-
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
-
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -94,15 +92,22 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param samRecordFactory SAM record factory
      * @throws IOException
      */
-    BAMFileReader(final InputStream stream,
-                  final File indexFile,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory)
+    BAMFileReader(
+            final InputStream stream,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory)
             throws IOException {
-        this(stream, indexFile, eagerDecode, useAsynchronousIO, validationStringency, samRecordFactory,
-             BlockGunzipper.getDefaultInflaterFactory());
+        this(
+                stream,
+                indexFile,
+                eagerDecode,
+                useAsynchronousIO,
+                validationStringency,
+                samRecordFactory,
+                BlockGunzipper.getDefaultInflaterFactory());
     }
 
     /**
@@ -116,17 +121,20 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
      * @throws IOException
      */
-    BAMFileReader(final InputStream stream,
-                  final File indexFile,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory,
-                  final InflaterFactory inflaterFactory)
+    BAMFileReader(
+            final InputStream stream,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory,
+            final InflaterFactory inflaterFactory)
             throws IOException {
         mIndexFile = indexFile;
         mIsSeekable = false;
-        mCompressedInputStream = useAsynchronousIO ? new AsyncBlockCompressedInputStream(stream, inflaterFactory) : new BlockCompressedInputStream(stream, inflaterFactory);
+        mCompressedInputStream = useAsynchronousIO
+                ? new AsyncBlockCompressedInputStream(stream, inflaterFactory)
+                : new BlockCompressedInputStream(stream, inflaterFactory);
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
         this.mValidationStringency = validationStringency;
@@ -144,14 +152,22 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param samRecordFactory SAM record factory
      * @throws IOException
      */
-    BAMFileReader(final File file,
-                  final File indexFile,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory)
-        throws IOException {
-        this(file, indexFile, eagerDecode, useAsynchronousIO, validationStringency, samRecordFactory, BlockGunzipper.getDefaultInflaterFactory());
+    BAMFileReader(
+            final File file,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory)
+            throws IOException {
+        this(
+                file,
+                indexFile,
+                eagerDecode,
+                useAsynchronousIO,
+                validationStringency,
+                samRecordFactory,
+                BlockGunzipper.getDefaultInflaterFactory());
     }
 
     /**
@@ -165,20 +181,29 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
      * @throws IOException
      */
-    BAMFileReader(final File file,
-                  final File indexFile,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory,
-                  final InflaterFactory inflaterFactory)
-        throws IOException {
-        this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(file, inflaterFactory) : new BlockCompressedInputStream(file, inflaterFactory),
-                indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, useAsynchronousIO, file.getAbsolutePath(), validationStringency, samRecordFactory);
+    BAMFileReader(
+            final File file,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory,
+            final InflaterFactory inflaterFactory)
+            throws IOException {
+        this(
+                useAsynchronousIO
+                        ? new AsyncBlockCompressedInputStream(file, inflaterFactory)
+                        : new BlockCompressedInputStream(file, inflaterFactory),
+                indexFile != null ? indexFile : SamFiles.findIndex(file),
+                eagerDecode,
+                useAsynchronousIO,
+                file.getAbsolutePath(),
+                validationStringency,
+                samRecordFactory);
 
         if (mIndexFile != null && mIndexFile.lastModified() < file.lastModified() - 5000) {
-            System.err.println("WARNING: BAM index file " + mIndexFile.getAbsolutePath() +
-                    " is older than BAM " + file.getAbsolutePath());
+            System.err.println("WARNING: BAM index file " + mIndexFile.getAbsolutePath() + " is older than BAM "
+                    + file.getAbsolutePath());
         }
 
         // Provide better error message when there is an error reading.
@@ -195,14 +220,22 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param samRecordFactory SAM record factory
      * @throws IOException
      */
-    BAMFileReader(final SeekableStream strm,
-                  final File indexFile,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory)
-        throws IOException {
-        this(strm, indexFile, eagerDecode, useAsynchronousIO, validationStringency, samRecordFactory, BlockGunzipper.getDefaultInflaterFactory());
+    BAMFileReader(
+            final SeekableStream strm,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory)
+            throws IOException {
+        this(
+                strm,
+                indexFile,
+                eagerDecode,
+                useAsynchronousIO,
+                validationStringency,
+                samRecordFactory,
+                BlockGunzipper.getDefaultInflaterFactory());
     }
 
     /**
@@ -216,16 +249,25 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
      * @throws IOException
      */
-    BAMFileReader(final SeekableStream strm,
-                  final File indexFile,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory,
-                  final InflaterFactory inflaterFactory)
-        throws IOException {
-        this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(strm, inflaterFactory) : new BlockCompressedInputStream(strm, inflaterFactory),
-                indexFile, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, samRecordFactory);
+    BAMFileReader(
+            final SeekableStream strm,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory,
+            final InflaterFactory inflaterFactory)
+            throws IOException {
+        this(
+                useAsynchronousIO
+                        ? new AsyncBlockCompressedInputStream(strm, inflaterFactory)
+                        : new BlockCompressedInputStream(strm, inflaterFactory),
+                indexFile,
+                eagerDecode,
+                useAsynchronousIO,
+                strm.getSource(),
+                validationStringency,
+                samRecordFactory);
     }
 
     /**
@@ -238,14 +280,22 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param samRecordFactory SAM record factory
      * @throws IOException
      */
-    BAMFileReader(final SeekableStream strm,
-                  final SeekableStream indexStream,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory)
-        throws IOException {
-        this(strm, indexStream, eagerDecode, useAsynchronousIO, validationStringency, samRecordFactory, BlockGunzipper.getDefaultInflaterFactory());
+    BAMFileReader(
+            final SeekableStream strm,
+            final SeekableStream indexStream,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory)
+            throws IOException {
+        this(
+                strm,
+                indexStream,
+                eagerDecode,
+                useAsynchronousIO,
+                validationStringency,
+                samRecordFactory,
+                BlockGunzipper.getDefaultInflaterFactory());
     }
 
     /**
@@ -259,16 +309,25 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
      * @throws IOException
      */
-    BAMFileReader(final SeekableStream strm,
-                  final SeekableStream indexStream,
-                  final boolean eagerDecode,
-                  final boolean useAsynchronousIO,
-                  final ValidationStringency validationStringency,
-                  final SAMRecordFactory samRecordFactory,
-                  final InflaterFactory inflaterFactory)
-        throws IOException {
-        this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(strm, inflaterFactory) : new BlockCompressedInputStream(strm, inflaterFactory),
-                indexStream, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, samRecordFactory);
+    BAMFileReader(
+            final SeekableStream strm,
+            final SeekableStream indexStream,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory,
+            final InflaterFactory inflaterFactory)
+            throws IOException {
+        this(
+                useAsynchronousIO
+                        ? new AsyncBlockCompressedInputStream(strm, inflaterFactory)
+                        : new BlockCompressedInputStream(strm, inflaterFactory),
+                indexStream,
+                eagerDecode,
+                useAsynchronousIO,
+                strm.getSource(),
+                validationStringency,
+                samRecordFactory);
     }
 
     /**
@@ -282,14 +341,15 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param samRecordFactory SAM record factory
      * @throws IOException
      */
-    private BAMFileReader(final BlockCompressedInputStream compressedInputStream,
-                          final File indexFile,
-                          final boolean eagerDecode,
-                          final boolean useAsynchronousIO,
-                          final String source,
-                          final ValidationStringency validationStringency,
-                          final SAMRecordFactory samRecordFactory)
-        throws IOException {
+    private BAMFileReader(
+            final BlockCompressedInputStream compressedInputStream,
+            final File indexFile,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final String source,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory)
+            throws IOException {
         mIndexFile = indexFile;
         mIsSeekable = true;
         mCompressedInputStream = compressedInputStream;
@@ -312,14 +372,15 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param samRecordFactory SAM record factory
      * @throws IOException
      */
-    private BAMFileReader(final BlockCompressedInputStream compressedInputStream,
-                          final SeekableStream indexStream,
-                          final boolean eagerDecode,
-                          final boolean useAsynchronousIO,
-                          final String source,
-                          final ValidationStringency validationStringency,
-                          final SAMRecordFactory samRecordFactory)
-        throws IOException {
+    private BAMFileReader(
+            final BlockCompressedInputStream compressedInputStream,
+            final SeekableStream indexStream,
+            final boolean eagerDecode,
+            final boolean useAsynchronousIO,
+            final String source,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory samRecordFactory)
+            throws IOException {
         mIndexStream = indexStream;
         mIsSeekable = true;
         mCompressedInputStream = compressedInputStream;
@@ -333,7 +394,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     /** Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file. */
     static long findVirtualOffsetOfFirstRecord(final File bam) throws IOException {
-        final BAMFileReader reader = new BAMFileReader(bam, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+        final BAMFileReader reader =
+                new BAMFileReader(bam, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
         final long offset = reader.mFirstRecordPointer;
         reader.close();
         return offset;
@@ -344,7 +406,13 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * The caller is responsible for closing the stream.
      */
     static long findVirtualOffsetOfFirstRecord(final SeekableStream seekableStream) throws IOException {
-        final BAMFileReader reader = new BAMFileReader(seekableStream, (SeekableStream) null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+        final BAMFileReader reader = new BAMFileReader(
+                seekableStream,
+                (SeekableStream) null,
+                false,
+                false,
+                ValidationStringency.SILENT,
+                new DefaultSAMRecordFactory());
         return reader.mFirstRecordPointer;
     }
 
@@ -363,7 +431,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      */
     @Override
     protected void enableIndexCaching(final boolean enabled) {
-        if(mIndex != null)
+        if (mIndex != null)
             throw new SAMException("Unable to turn on index caching; index file has already been loaded.");
         this.mEnableIndexCaching = enabled;
     }
@@ -381,11 +449,15 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.mEnableIndexMemoryMapping = enabled;
     }
 
-    @Override void enableCrcChecking(final boolean enabled) {
+    @Override
+    void enableCrcChecking(final boolean enabled) {
         this.mCompressedInputStream.setCheckCrcs(enabled);
     }
 
-    @Override void setSAMRecordFactory(final SAMRecordFactory samRecordFactory) { this.samRecordFactory = samRecordFactory; }
+    @Override
+    void setSAMRecordFactory(final SAMRecordFactory samRecordFactory) {
+        this.samRecordFactory = samRecordFactory;
+    }
 
     @Override
     public SamReader.Type type() {
@@ -409,26 +481,27 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      */
     @Override
     public BAMIndex getIndex() {
-        if(!hasIndex()) {
+        if (!hasIndex()) {
             throw new SAMException("No index is available for this BAM file.");
         }
-        if(mIndex == null) {
+        if (mIndex == null) {
             final SamIndexes samIndexType = getIndexType();
             final SAMSequenceDictionary sequenceDictionary = getFileHeader().getSequenceDictionary();
-            if(mIndexFile != null) {
+            if (mIndexFile != null) {
                 if (samIndexType.equals(SamIndexes.BAI)) {
-                    mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, sequenceDictionary, mEnableIndexMemoryMapping)
+                    mIndex = mEnableIndexCaching
+                            ? new CachingBAMFileIndex(mIndexFile, sequenceDictionary, mEnableIndexMemoryMapping)
                             : new DiskBasedBAMFileIndex(mIndexFile, sequenceDictionary, mEnableIndexMemoryMapping);
                 } else if (samIndexType.equals(SamIndexes.CSI)) {
                     mIndex = new CSIIndex(mIndexFile, mEnableIndexMemoryMapping, sequenceDictionary);
                 } else {
                     throw new SAMFormatException("Unsupported BAM index file format: " + mIndexFile.getName());
                 }
-            } else if(mIndexStream != null) {
+            } else if (mIndexStream != null) {
                 if (samIndexType.equals(SamIndexes.BAI)) {
                     mIndex = new CachingBAMFileIndex(mIndexStream, sequenceDictionary);
                 } else if (samIndexType.equals(SamIndexes.CSI)) {
-                    mIndex = new CSIIndex(mIndexStream,  sequenceDictionary);
+                    mIndex = new CSIIndex(mIndexStream, sequenceDictionary);
                 } else {
                     throw new SAMFormatException("Unsupported BAM index file format: " + mIndexStream.getSource());
                 }
@@ -455,13 +528,16 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             if (samIndexesType == SamIndexes.BAI || samIndexesType == SamIndexes.CSI) {
                 return samIndexesType;
             }
-            throw new SAMFormatException(String.format("Unknown BAM index file type: %s in %s", samIndexesType, mIndexStream.getSource()));
+            throw new SAMFormatException(
+                    String.format("Unknown BAM index file type: %s in %s", samIndexesType, mIndexStream.getSource()));
         }
 
         return null;
     }
 
-    public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
+    public void setEagerDecode(final boolean desired) {
+        this.eagerDecode = desired;
+    }
 
     @Override
     public void close() {
@@ -541,7 +617,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         }
 
         // Create an iterator over the given chunk boundaries.
-        mCurrentIterator = new BAMFileIndexIterator(((BAMFileSpan)chunks).toCoordinateArray());
+        mCurrentIterator = new BAMFileIndexIterator(((BAMFileSpan) chunks).toCoordinateArray());
         return mCurrentIterator;
     }
 
@@ -553,7 +629,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      */
     @Override
     public SAMFileSpan getFilePointerSpanningReads() {
-        return new BAMFileSpan(new Chunk(mFirstRecordPointer,Long.MAX_VALUE));
+        return new BAMFileSpan(new Chunk(mFirstRecordPointer, Long.MAX_VALUE));
     }
 
     /**
@@ -704,8 +780,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param validationStringency Determines how stringent to be when validating the sam
      * @param source Note that this is used only for reporting errors.
      */
-    protected static SAMFileHeader readHeader(final BinaryCodec stream, final ValidationStringency validationStringency, final String source)
-        throws IOException {
+    protected static SAMFileHeader readHeader(
+            final BinaryCodec stream, final ValidationStringency validationStringency, final String source)
+            throws IOException {
 
         final byte[] buffer = new byte[4];
         stream.readBytes(buffer);
@@ -717,27 +794,27 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         final String textHeader = stream.readString(headerTextLength);
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
         headerCodec.setValidationStringency(validationStringency);
-        final SAMFileHeader samFileHeader = headerCodec.decode(BufferedLineReader.fromString(textHeader),
-                source);
+        final SAMFileHeader samFileHeader = headerCodec.decode(BufferedLineReader.fromString(textHeader), source);
 
         final int sequenceCount = stream.readInt();
         if (!samFileHeader.getSequenceDictionary().isEmpty()) {
             // It is allowed to have binary sequences but no text sequences, so only validate if both are present
             if (sequenceCount != samFileHeader.getSequenceDictionary().size()) {
-                throw new SAMFormatException("Number of sequences in text header (" +
-                        samFileHeader.getSequenceDictionary().size() +
-                        ") != number of sequences in binary header (" + sequenceCount + ") for file " + source);
+                throw new SAMFormatException("Number of sequences in text header ("
+                        + samFileHeader.getSequenceDictionary().size()
+                        + ") != number of sequences in binary header ("
+                        + sequenceCount + ") for file " + source);
             }
             for (int i = 0; i < sequenceCount; i++) {
                 final SAMSequenceRecord binarySequenceRecord = readSequenceRecord(stream, source);
                 final SAMSequenceRecord sequenceRecord = samFileHeader.getSequence(i);
                 if (!sequenceRecord.getSequenceName().equals(binarySequenceRecord.getSequenceName())) {
-                    throw new SAMFormatException("For sequence " + i + ", text and binary have different names in file " +
-                            source);
+                    throw new SAMFormatException(
+                            "For sequence " + i + ", text and binary have different names in file " + source);
                 }
                 if (sequenceRecord.getSequenceLength() != binarySequenceRecord.getSequenceLength()) {
-                    throw new SAMFormatException("For sequence " + i + ", text and binary have different lengths in file " +
-                            source);
+                    throw new SAMFormatException(
+                            "For sequence " + i + ", text and binary have different lengths in file " + source);
                 }
             }
         } else {
@@ -794,7 +871,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         public void remove() {
             throw new UnsupportedOperationException("Not supported: remove");
         }
-
     }
 
     private class EmptyBamIterator extends AbstractBamIterator {
@@ -810,8 +886,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
-
-    /**
+     *
+     * /**
      * Iterator for non-indexed sequential iteration through all SAMRecords in file.
      * Starting point of iteration is wherever current file position is when the iterator is constructed.
      */
@@ -829,8 +905,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          */
         BAMFileIterator(final boolean advance) {
             this.bamRecordCodec = new BAMRecordCodec(getFileHeader(), samRecordFactory);
-            this.bamRecordCodec.setInputStream(BAMFileReader.this.mStream.getInputStream(),
-                    BAMFileReader.this.mStream.getInputFileName());
+            this.bamRecordCodec.setInputStream(
+                    BAMFileReader.this.mStream.getInputStream(), BAMFileReader.this.mStream.getInputFileName());
 
             if (advance) {
                 advance();
@@ -861,9 +937,10 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                     mNextRecord.setValidationStringency(mValidationStringency);
 
                     if (mValidationStringency != ValidationStringency.SILENT) {
-                        final List<SAMValidationError> validationErrors = mNextRecord.isValid(mValidationStringency == ValidationStringency.STRICT);
-                        SAMUtils.processValidationErrors(validationErrors,
-                                this.samRecordIndex, BAMFileReader.this.getValidationStringency());
+                        final List<SAMValidationError> validationErrors =
+                                mNextRecord.isValid(mValidationStringency == ValidationStringency.STRICT);
+                        SAMUtils.processValidationErrors(
+                                validationErrors, this.samRecordIndex, BAMFileReader.this.getValidationStringency());
                     }
                 }
                 if (eagerDecode && mNextRecord != null) {
@@ -882,8 +959,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             final SAMRecord next = bamRecordCodec.decode();
             final long stopCoordinate = mCompressedInputStream.getFilePointer();
 
-            if(mReader != null && next != null)
-                next.setFileSource(new SAMFileSource(mReader,new BAMFileSpan(new Chunk(startCoordinate,stopCoordinate))));
+            if (mReader != null && next != null)
+                next.setFileSource(
+                        new SAMFileSource(mReader, new BAMFileSpan(new Chunk(startCoordinate, stopCoordinate))));
 
             return next;
         }
@@ -901,8 +979,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param referenceIndex Desired reference sequence.
      * @param start 1-based alignment start.
      */
-    private CloseableIterator<SAMRecord> createStartingAtIndexIterator(final int referenceIndex,
-                                                                       final int start) {
+    private CloseableIterator<SAMRecord> createStartingAtIndexIterator(final int referenceIndex, final int start) {
 
         // Hit the index to determine the chunk boundaries for the required data.
         final BAMIndex fileIndex = getIndex();
@@ -914,7 +991,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         // Add some preprocessing filters for edge-case reads that don't fit into this
         // query type.
-        return new BAMQueryFilteringIterator(iterator,new BAMStartingAtIteratorFilter(referenceIndex,start));
+        return new BAMQueryFilteringIterator(iterator, new BAMStartingAtIteratorFilter(referenceIndex, start));
     }
 
     /**
@@ -927,7 +1004,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         final BAMFileSpan[] inputSpans = new BAMFileSpan[intervals.length];
         for (int i = 0; i < intervals.length; ++i) {
             final QueryInterval interval = intervals[i];
-            final BAMFileSpan span = fileIndex.getSpanOverlapping(interval.referenceIndex, interval.start, interval.end);
+            final BAMFileSpan span =
+                    fileIndex.getSpanOverlapping(interval.referenceIndex, interval.start, interval.end);
             inputSpans[i] = span;
         }
         final BAMFileSpan span;
@@ -939,8 +1017,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         return span;
     }
 
-    private CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
-                                                             final boolean contained) {
+    private CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals, final boolean contained) {
 
         QueryInterval.assertIntervalsOptimized(intervals);
 
@@ -951,7 +1028,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         // Add some preprocessing filters for edge-case reads that don't fit into this
         // query type.
-        return new BAMQueryFilteringIterator(iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
+        return new BAMQueryFilteringIterator(
+                iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
     }
 
     /**
@@ -962,9 +1040,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param filePointers file pointer pairs corresponding to chunk boundaries for the
      *                     intervals
      */
-    public CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
-                                                            final boolean contained,
-                                                            final long[] filePointers) {
+    public CloseableIterator<SAMRecord> createIndexIterator(
+            final QueryInterval[] intervals, final boolean contained, final long[] filePointers) {
 
         QueryInterval.assertIntervalsOptimized(intervals);
 
@@ -973,7 +1050,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         // Add some preprocessing filters for edge-case reads that don't fit into this
         // query type.
-        return new BAMQueryFilteringIterator(iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
+        return new BAMQueryFilteringIterator(
+                iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
     }
 
     /**
@@ -998,18 +1076,16 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          * @param filePointers the block / offset combination, stored in chunk format.
          */
         BAMFileIndexIterator(final long[] filePointers) {
-            super(false);  // delay advance() until after construction
+            super(false); // delay advance() until after construction
             mFilePointers = filePointers;
             advance();
         }
 
         @Override
-        SAMRecord getNextRecord()
-            throws IOException {
+        SAMRecord getNextRecord() throws IOException {
             // Advance to next file block if necessary
             while (mCompressedInputStream.getFilePointer() >= mFilePointerLimit) {
-                if (mFilePointers == null ||
-                        mFilePointerIndex >= mFilePointers.length) {
+                if (mFilePointers == null || mFilePointerIndex >= mFilePointers.length) {
                     return null;
                 }
                 final long startOffset = mFilePointers[mFilePointerIndex++];
@@ -1034,10 +1110,11 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          * The next record to be returned.  Will be null if no such record exists.
          */
         protected SAMRecord mNextRecord;
+
         private final BAMIteratorFilter iteratorFilter;
 
-        public BAMQueryFilteringIterator(final CloseableIterator<SAMRecord> iterator,
-                                         final BAMIteratorFilter iteratorFilter) {
+        public BAMQueryFilteringIterator(
+                final CloseableIterator<SAMRecord> iterator, final BAMIteratorFilter iteratorFilter) {
             this.wrappedIterator = iterator;
             this.iteratorFilter = iteratorFilter;
             mNextRecord = advance();
@@ -1058,8 +1135,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          */
         @Override
         public SAMRecord next() {
-            if(!hasNext())
-                throw new NoSuchElementException("BAMQueryFilteringIterator: no next element available");
+            if (!hasNext()) throw new NoSuchElementException("BAMQueryFilteringIterator: no next element available");
             final SAMRecord currentRead = mNextRecord;
             mNextRecord = advance();
             return currentRead;
@@ -1068,21 +1144,24 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         SAMRecord advance() {
             while (true) {
                 // Pull next record from stream
-                if(!wrappedIterator.hasNext())
-                    return null;
+                if (!wrappedIterator.hasNext()) return null;
 
                 final SAMRecord record = wrappedIterator.next();
                 switch (iteratorFilter.compareToFilter(record)) {
-                    case MATCHES_FILTER: return record;
-                    case STOP_ITERATION: return null;
-                    case CONTINUE_ITERATION: break; // keep looping
-                    default: throw new SAMException("Unexpected return from compareToFilter");
+                    case MATCHES_FILTER:
+                        return record;
+                    case STOP_ITERATION:
+                        return null;
+                    case CONTINUE_ITERATION:
+                        break; // keep looping
+                    default:
+                        throw new SAMException("Unexpected return from compareToFilter");
                 }
             }
         }
     }
 
-    private class BAMFileIndexUnmappedIterator extends BAMFileIterator  {
+    private class BAMFileIndexUnmappedIterator extends BAMFileIterator {
         private BAMFileIndexUnmappedIterator() {
             while (this.hasNext() && peek().getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                 advance();

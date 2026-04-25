@@ -42,8 +42,9 @@ public class TimeRandomAccessFile {
         }
         System.out.println("Total bytes: " + totalBytesRead);
     }
+
     private static int readBytes(final RandomAccessFile file, final byte[] buffer, final int offset, final int length)
-        throws IOException {
+            throws IOException {
         int bytesRead = 0;
         while (bytesRead < length) {
             final int count = file.read(buffer, offset + bytesRead, length - bytesRead);

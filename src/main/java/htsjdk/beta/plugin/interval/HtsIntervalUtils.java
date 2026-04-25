@@ -1,15 +1,13 @@
 package htsjdk.beta.plugin.interval;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Locatable;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 /**
  * Methods for interconverting between HtsQueryInterval and existing htsjdk types such as Locatable/QueryInterval
@@ -57,9 +55,7 @@ public class HtsIntervalUtils {
 
             @Override
             public String toString() {
-                return String.format("%s:%s-%s",
-                        interval.getQueryName(),
-                        interval.getStart(), interval.getEnd());
+                return String.format("%s:%s-%s", interval.getQueryName(), interval.getStart(), interval.getEnd());
             }
         };
     }
@@ -73,10 +69,7 @@ public class HtsIntervalUtils {
     @InternalAPI
     public static List<Locatable> toLocatableList(final List<HtsInterval> intervals) {
         ValidationUtils.nonNull(intervals, "interval list");
-        return intervals
-                .stream()
-                .map(si -> toLocatable(si))
-                .collect(Collectors.toList());
+        return intervals.stream().map(si -> toLocatable(si)).collect(Collectors.toList());
     }
 
     /**
@@ -88,14 +81,13 @@ public class HtsIntervalUtils {
      */
     @InternalAPI
     public static QueryInterval[] toQueryIntervalArray(
-            final List<HtsInterval> intervals,
-            final SAMSequenceDictionary dictionary) {
+            final List<HtsInterval> intervals, final SAMSequenceDictionary dictionary) {
         ValidationUtils.nonNull(intervals, "interval list");
         ValidationUtils.nonNull(dictionary, "SAMSequenceDictionary");
-        return intervals
-                .stream()
+        return intervals.stream()
                 .map(si -> toQueryInterval(si, dictionary))
-                .collect(Collectors.toList()).toArray(new QueryInterval[intervals.size()]);
+                .collect(Collectors.toList())
+                .toArray(new QueryInterval[intervals.size()]);
     }
 
     /**
@@ -106,8 +98,7 @@ public class HtsIntervalUtils {
      */
     @InternalAPI
     public static List<HtsInterval> fromQueryIntervalArray(
-            final QueryInterval[] queryIntervals,
-            final SAMSequenceDictionary dictionary) {
+            final QueryInterval[] queryIntervals, final SAMSequenceDictionary dictionary) {
         return Arrays.stream(queryIntervals)
                 .map(si -> new HtsQueryInterval(si, dictionary))
                 .collect(Collectors.toList());
@@ -126,7 +117,8 @@ public class HtsIntervalUtils {
         try {
             return Math.toIntExact(coord);
         } catch (ArithmeticException e) {
-            throw new IllegalArgumentException(String.format("long to int conversion of %ld results in integer overflow", coord), e);
+            throw new IllegalArgumentException(
+                    String.format("long to int conversion of %ld results in integer overflow", coord), e);
         }
     }
 }

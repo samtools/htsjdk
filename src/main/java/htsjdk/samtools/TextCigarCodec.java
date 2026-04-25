@@ -28,8 +28,7 @@ import htsjdk.samtools.util.StringUtil;
 /**
  * Convert between String and Cigar class representations of CIGAR.
  */
-public class TextCigarCodec
-{
+public class TextCigarCodec {
     private static final byte ZERO_BYTE = "0".getBytes()[0];
     private static final byte NINE_BYTE = "9".getBytes()[0];
 
@@ -77,13 +76,10 @@ public class TextCigarCodec
         }
         return ret;
     }
-    
+
     private static boolean isDigit(final byte c) {
         return c >= ZERO_BYTE && c <= NINE_BYTE;
     }
-
-    
-        
 }
 
 /******************************************************************/

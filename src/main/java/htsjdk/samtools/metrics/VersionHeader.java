@@ -48,12 +48,18 @@ public class VersionHeader implements Header {
         return this.versionedItem + "\t" + this.versionString;
     }
 
-    public String getVersionedItem() { return versionedItem; }
+    public String getVersionedItem() {
+        return versionedItem;
+    }
+
     public void setVersionedItem(String versionedItem) {
         this.versionedItem = StringUtil.assertCharactersNotInString(versionedItem, '\t', '\n');
     }
 
-    public String getVersionString() { return versionString; }
+    public String getVersionString() {
+        return versionString;
+    }
+
     public void setVersionString(String versionString) {
         this.versionString = StringUtil.assertCharactersNotInString(versionString, '\t', '\n');
     }

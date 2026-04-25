@@ -3,16 +3,16 @@ package htsjdk.samtools.fastq;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.TestUtil;
+import java.util.ArrayList;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.ArrayList;
 
 public final class FastqRecordTest extends HtsjdkTest {
 
     @Test
     public void testBasic() {
-        final String seqHeaderPrefix = "FAKE0003 Original version has Solexa scores from 62 to -5 inclusive (in that order)";
+        final String seqHeaderPrefix =
+                "FAKE0003 Original version has Solexa scores from 62 to -5 inclusive (in that order)";
         final String seqLine = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
         final String qualHeaderPrefix = "";
         final String qualLine = ";<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -23,7 +23,7 @@ public final class FastqRecordTest extends HtsjdkTest {
         Assert.assertEquals(fastqRecord.getReadName(), seqHeaderPrefix);
         Assert.assertEquals(fastqRecord.getBaseQualityString(), qualLine);
         Assert.assertEquals(fastqRecord.getReadString(), seqLine);
-        Assert.assertNotNull(fastqRecord.toString());//just check not nullness
+        Assert.assertNotNull(fastqRecord.toString()); // just check not nullness
         Assert.assertNotEquals(fastqRecord, null);
         Assert.assertFalse(fastqRecord.equals(null));
         Assert.assertNotEquals(null, fastqRecord);
@@ -31,7 +31,9 @@ public final class FastqRecordTest extends HtsjdkTest {
         Assert.assertNotEquals(fastqRecord, "fred");
         Assert.assertNotEquals("fred", fastqRecord);
         Assert.assertEquals(fastqRecord.getReadLength(), seqLine.length());
-        Assert.assertEquals(fastqRecord.getBaseQualityString().length(), fastqRecord.getReadString().length());
+        Assert.assertEquals(
+                fastqRecord.getBaseQualityString().length(),
+                fastqRecord.getReadString().length());
         Assert.assertEquals(fastqRecord.getReadString().length(), fastqRecord.getReadLength());
     }
 
@@ -48,7 +50,8 @@ public final class FastqRecordTest extends HtsjdkTest {
 
     @Test
     public void testCopy() {
-        final String seqHeaderPrefix = "FAKE0003 Original version has Solexa scores from 62 to -5 inclusive (in that order)";
+        final String seqHeaderPrefix =
+                "FAKE0003 Original version has Solexa scores from 62 to -5 inclusive (in that order)";
         final String seqLine = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
         final String qualHeaderPrefix = "";
         final String qualLine = ";<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -74,7 +77,7 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String qualHeaderPrefix = "";
         final String qualLine = ";<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         new FastqRecord(seqHeaderPrefix, seqLine, qualHeaderPrefix, qualLine);
-        //Note: this does not blow up now but it will once we enforce non null seqLine
+        // Note: this does not blow up now but it will once we enforce non null seqLine
     }
 
     @Test
@@ -136,7 +139,7 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String seqHeaderPrefix = "header";
         final String seqLine = "GATTACA";
         new FastqRecord(seqHeaderPrefix, seqLine, "qualHeaderPrefix", null);
-        //Note: this does not blow up now but it will once we enforce non null quals
+        // Note: this does not blow up now but it will once we enforce non null quals
     }
 
     @Test
@@ -144,7 +147,7 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String seqHeaderPrefix = "header";
         final String qualLine = "GATTACA";
         new FastqRecord(seqHeaderPrefix, null, "qualHeaderPrefix", qualLine);
-        //Note: this does not blow up now but it will once we enforce non null seqLine
+        // Note: this does not blow up now but it will once we enforce non null seqLine
     }
 
     @Test
@@ -152,7 +155,7 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String seqHeaderPrefix = "header";
         final String seqLine = "GATTACA";
         new FastqRecord(seqHeaderPrefix, seqLine, "qualHeaderPrefix", "");
-        //Note: this does not blow up now but it will once we enforce non empty quals
+        // Note: this does not blow up now but it will once we enforce non empty quals
     }
 
     @Test
@@ -160,12 +163,12 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String seqHeaderPrefix = "header";
         final String qualLine = "GATTACA";
         new FastqRecord(seqHeaderPrefix, "", "qualHeaderPrefix", qualLine);
-        //Note: this does not blow up now but it will once we enforce non empty seqLine
+        // Note: this does not blow up now but it will once we enforce non empty seqLine
     }
 
     @Test
     public void testEmptyRecord() {
-        //Note: this does not blow up now but it will once we enforce non empty fields
+        // Note: this does not blow up now but it will once we enforce non empty fields
         final FastqRecord record = new FastqRecord(null, (String) null, null, null);
         // assert how null is handled
         Assert.assertNull(record.getReadName());
@@ -225,16 +228,16 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String qualLine1 = seqLine1 + "X";
 
         new FastqRecord("header", seqLine1, "qualHeaderPrefix", qualLine1);
-        //Note: this does not blow up now but it will once we enforce that seqLine and qualLine be the same length
+        // Note: this does not blow up now but it will once we enforce that seqLine and qualLine be the same length
     }
 
     @Test
     public void testFastqSerialize() throws Exception {
         final ArrayList<FastqRecord> records = new ArrayList<>();
-        records.add(new FastqRecord("q1", "ACGTACGT",     "", "########"));
-        records.add(new FastqRecord("q2", "CCAGCGTAATA",  "", "????????###"));
+        records.add(new FastqRecord("q1", "ACGTACGT", "", "########"));
+        records.add(new FastqRecord("q2", "CCAGCGTAATA", "", "????????###"));
         records.add(new FastqRecord("q3", "NNNNNNNNNNNN", "", "############"));
 
-        Assert.assertEquals(TestUtil.serializeAndDeserialize(records),records);
+        Assert.assertEquals(TestUtil.serializeAndDeserialize(records), records);
     }
 }

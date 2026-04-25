@@ -26,7 +26,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -104,9 +103,7 @@ public final class SBIIndexWriter {
 
     void writeVirtualOffset(final long virtualOffset) {
         if (prev > virtualOffset) {
-            throw new IllegalArgumentException(String.format(
-                    "Offsets not in order: %#x > %#x",
-                    prev, virtualOffset));
+            throw new IllegalArgumentException(String.format("Offsets not in order: %#x > %#x", prev, virtualOffset));
         }
         tempOffsetsCodec.writeLong(virtualOffset);
         virtualOffsetCount++;
@@ -138,7 +135,12 @@ public final class SBIIndexWriter {
         if (uuid != null && uuid.length != 16) {
             throw new IllegalArgumentException("Invalid UUID length: " + uuid.length);
         }
-        final SBIIndex.Header header = new SBIIndex.Header(dataFileLength, md5 == null ? EMPTY_MD5 : md5, uuid == null ? EMPTY_UUID : uuid, recordCount, granularity);
+        final SBIIndex.Header header = new SBIIndex.Header(
+                dataFileLength,
+                md5 == null ? EMPTY_MD5 : md5,
+                uuid == null ? EMPTY_UUID : uuid,
+                recordCount,
+                granularity);
         finish(header, finalVirtualOffset);
     }
 
@@ -147,7 +149,7 @@ public final class SBIIndexWriter {
         writeVirtualOffset(finalVirtualOffset);
         tempOffsetsCodec.close();
         try (BinaryCodec binaryCodec = new BinaryCodec(out);
-             InputStream tempOffsets = new BufferedInputStream(Files.newInputStream(tempOffsetsFile))) {
+                InputStream tempOffsets = new BufferedInputStream(Files.newInputStream(tempOffsetsFile))) {
             // header
             binaryCodec.writeBytes(SBIIndex.SBI_MAGIC);
             binaryCodec.writeLong(header.getFileLength());

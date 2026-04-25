@@ -27,7 +27,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalUtil;
-
 import java.util.Iterator;
 import java.util.List;
 
@@ -45,6 +44,7 @@ public class IntervalFilter implements SamRecordFilter {
      * Null only if there are no more intervals
      */
     private final SAMFileHeader samHeader;
+
     private Interval currentInterval;
     private int currentSequenceIndex;
 
@@ -67,14 +67,16 @@ public class IntervalFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord record) {
-        while (currentInterval != null &&
-                (currentSequenceIndex < record.getReferenceIndex() ||
-                 (currentSequenceIndex == record.getReferenceIndex() && currentInterval.getEnd() < record.getAlignmentStart()))) {
+        while (currentInterval != null
+                && (currentSequenceIndex < record.getReferenceIndex()
+                        || (currentSequenceIndex == record.getReferenceIndex()
+                                && currentInterval.getEnd() < record.getAlignmentStart()))) {
             advanceInterval();
         }
         // Return true if record should be filtered out
-        return !(currentInterval != null && currentSequenceIndex == record.getReferenceIndex() &&
-                 currentInterval.getStart() <= record.getAlignmentEnd());
+        return !(currentInterval != null
+                && currentSequenceIndex == record.getReferenceIndex()
+                && currentInterval.getStart() <= record.getAlignmentEnd());
     }
 
     private void advanceInterval() {
@@ -99,6 +101,7 @@ public class IntervalFilter implements SamRecordFilter {
         // This can never be implemented because if the bam is coordinate sorted,
         // which it has to be for this filter, it will never get both the first and second reads together
         // and the filterOut method goes in order of the intervals in coordinate order so it will miss reads.
-        throw new UnsupportedOperationException("Paired IntervalFilter filter cannot be implemented, use IntervalKeepPairFilter.");
+        throw new UnsupportedOperationException(
+                "Paired IntervalFilter filter cannot be implemented, use IntervalKeepPairFilter.");
     }
 }

@@ -14,5 +14,4 @@ public class HtsjdkPluginException extends HtsjdkException {
     public HtsjdkPluginException(String message) {
         super(message);
     }
-
 }

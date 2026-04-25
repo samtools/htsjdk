@@ -58,8 +58,7 @@ public class RefSkip implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final RefSkip refSkip = (RefSkip) o;
-        return position == refSkip.position &&
-                length == refSkip.length;
+        return position == refSkip.position && length == refSkip.length;
     }
 
     @Override

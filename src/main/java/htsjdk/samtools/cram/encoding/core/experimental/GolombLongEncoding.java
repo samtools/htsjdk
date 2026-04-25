@@ -22,7 +22,6 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
-
 import java.nio.ByteBuffer;
 
 public final class GolombLongEncoding extends ExperimentalEncoding<Long> {
@@ -59,7 +58,9 @@ public final class GolombLongEncoding extends ExperimentalEncoding<Long> {
     }
 
     @Override
-    public CRAMCodec<Long> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<Long> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new GolombLongCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),
@@ -71,5 +72,4 @@ public final class GolombLongEncoding extends ExperimentalEncoding<Long> {
     public String toString() {
         return String.format("Offset: %d m: %d", offset, m);
     }
-
 }

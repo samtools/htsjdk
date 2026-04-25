@@ -30,7 +30,6 @@ import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.PositionalBufferedStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -98,7 +97,8 @@ public final class FastaSequenceIndexCreator {
      * @throws IOException  if an IO error occurs.
      */
     public static FastaSequenceIndex buildFromFasta(final Path fastaFile) throws IOException, SAMException {
-        try(final AsciiLineReader in = AsciiLineReader.from(optionallyWrapAsPositional(IOUtil.openFileForReading(fastaFile)))) {
+        try (final AsciiLineReader in =
+                AsciiLineReader.from(optionallyWrapAsPositional(IOUtil.openFileForReading(fastaFile)))) {
 
             // sanity check reference format:
             // 1. Non-empty file
@@ -126,7 +126,8 @@ public final class FastaSequenceIndexCreator {
                     // first entry should be skipped; otherwise it should be added to the index
                     if (entry != null) index.add(entry.build());
                     // creates a new entry (and update sequence index)
-                    entry = new FaiEntryBuilder(sequenceIndex++, previous, line, in.getLineTerminatorLength(), location);
+                    entry = new FaiEntryBuilder(
+                            sequenceIndex++, previous, line, in.getLineTerminatorLength(), location);
                 } else if (line != null && line.charAt(0) == '>') {
                     // update the location, next iteration the sequence will be handled
                     location = in.getPosition();
@@ -159,7 +160,12 @@ public final class FastaSequenceIndexCreator {
         // flag to check if the supposedly last line was already reached
         private boolean lessBasesFound;
 
-        private FaiEntryBuilder(final int index, final String header, final String firstSequenceLine, final int endOfLineLength, final long location) {
+        private FaiEntryBuilder(
+                final int index,
+                final String header,
+                final String firstSequenceLine,
+                final int endOfLineLength,
+                final long location) {
             if (header == null || header.charAt(0) != '>') {
                 throw new SAMException("Wrong sequence header: " + header);
             } else if (firstSequenceLine == null) {
@@ -167,7 +173,8 @@ public final class FastaSequenceIndexCreator {
             }
             this.index = index;
             // parse the contig name (without the starting '>' and truncating white-spaces)
-            this.contig =  SAMSequenceRecord.truncateSequenceName(header.substring(1).trim());
+            this.contig =
+                    SAMSequenceRecord.truncateSequenceName(header.substring(1).trim());
             this.location = location;
             this.basesPerLine = firstSequenceLine.length();
             this.endOfLineLength = endOfLineLength;
@@ -180,12 +187,18 @@ public final class FastaSequenceIndexCreator {
                 throw new SAMException(String.format("Different end of line for the same sequence was found."));
             }
             if (sequence.length() > basesPerLine) {
-                throw new SAMException(String.format("Sequence line for {} was longer than the expected length ({}): {}",
-                        contig, basesPerLine, sequence));
+                throw new SAMException(String.format(
+                        "Sequence line for {} was longer than the expected length ({}): {}",
+                        contig,
+                        basesPerLine,
+                        sequence));
             } else if (sequence.length() < basesPerLine) {
                 if (lessBasesFound) {
-                    throw new SAMException(String.format("Only last line could have less than {} bases for '{}' sequence, but at least two are different. Last sequence line: {}",
-                            basesPerLine, contig, sequence));
+                    throw new SAMException(String.format(
+                            "Only last line could have less than {} bases for '{}' sequence, but at least two are different. Last sequence line: {}",
+                            basesPerLine,
+                            contig,
+                            sequence));
                 }
                 lessBasesFound = true;
             }
@@ -194,7 +207,8 @@ public final class FastaSequenceIndexCreator {
         }
 
         private FastaSequenceIndexEntry build() {
-            return new FastaSequenceIndexEntry(contig, location, size, basesPerLine, basesPerLine + endOfLineLength, index);
+            return new FastaSequenceIndexEntry(
+                    contig, location, size, basesPerLine, basesPerLine + endOfLineLength, index);
         }
     }
 }

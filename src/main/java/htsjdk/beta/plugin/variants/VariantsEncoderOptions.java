@@ -6,12 +6,11 @@ import htsjdk.beta.plugin.HtsEncoderOptions;
 import htsjdk.samtools.Defaults;
 
 public class VariantsEncoderOptions implements HtsEncoderOptions {
-    private boolean writeSitesOnly                  = false;
-    private boolean writeFullFormatField            = false;
-    private boolean allowFieldsMissingFromHeader    = false;
-    private boolean isAsyncIO                       = false;
-    private int bufferSize                          = Defaults.NON_ZERO_BUFFER_SIZE; // 128k
-
+    private boolean writeSitesOnly = false;
+    private boolean writeFullFormatField = false;
+    private boolean allowFieldsMissingFromHeader = false;
+    private boolean isAsyncIO = false;
+    private int bufferSize = Defaults.NON_ZERO_BUFFER_SIZE; // 128k
 
     /**
      * Get the buffer size used when writing to an {@link IOPathResource}. Defaults
@@ -115,5 +114,4 @@ public class VariantsEncoderOptions implements HtsEncoderOptions {
         this.writeFullFormatField = writeFullFormatField;
         return this;
     }
-
 }

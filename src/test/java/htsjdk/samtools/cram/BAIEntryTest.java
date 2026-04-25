@@ -16,50 +16,50 @@ public class BAIEntryTest extends HtsjdkTest {
         // container reference context, including unmapped
         new BAIEntry(
                 ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                new AlignmentSpan(
-                        new AlignmentContext(new ReferenceContext(1), 1, 1),
-                        1,
-                        0,
-                        0
-                ),
+                new AlignmentSpan(new AlignmentContext(new ReferenceContext(1), 1, 1), 1, 0, 0),
                 0,
                 0L,
                 0);
     }
 
-    @DataProvider(name="badUnmappedUnplacedBAIEntry")
+    @DataProvider(name = "badUnmappedUnplacedBAIEntry")
     public Object[][] getBadUnmappedUnplacedBAIEntry() {
         return new Object[][] {
-                {
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                        new AlignmentSpan(
-                                new AlignmentContext(new ReferenceContext(1),
-                                        2, // alignment start must be 0 or -1
-                                        1),
-                                1,
-                                0,
-                                0), 0, 0L, 0
-                },
-                {
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                        new AlignmentSpan(
-                                new AlignmentContext(new ReferenceContext(1),
-                                        0,
-                                        2), // alignment start must be 0 or 1
-                                1,
-                                0,
-                                0), 0, 0L, 0
-                },
+            {
+                ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                new AlignmentSpan(
+                        new AlignmentContext(
+                                new ReferenceContext(1),
+                                2, // alignment start must be 0 or -1
+                                1),
+                        1,
+                        0,
+                        0),
+                0,
+                0L,
+                0
+            },
+            {
+                ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                new AlignmentSpan(
+                        new AlignmentContext(new ReferenceContext(1), 0, 2), // alignment start must be 0 or 1
+                        1,
+                        0,
+                        0),
+                0,
+                0L,
+                0
+            },
         };
     }
 
     @Test(dataProvider = "badUnmappedUnplacedBAIEntry", expectedExceptions = CRAMException.class)
     public void testRejectBadUnmappedUnplacedBAIEntry(
-        final ReferenceContext referenceContext,
-        final AlignmentSpan alignmentSpan,
-        final long containerOffset,
-        final long sliceHeaderBlockByteOffset,
-        final int landmarkIndex) {
+            final ReferenceContext referenceContext,
+            final AlignmentSpan alignmentSpan,
+            final long containerOffset,
+            final long sliceHeaderBlockByteOffset,
+            final int landmarkIndex) {
         new BAIEntry(referenceContext, alignmentSpan, containerOffset, sliceHeaderBlockByteOffset, landmarkIndex);
     }
 }

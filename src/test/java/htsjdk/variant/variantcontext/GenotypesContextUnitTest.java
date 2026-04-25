@@ -1,42 +1,35 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
-
 // the imports for unit testing.
-
 
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.utils.GeneralUtils;
-import org.testng.Assert;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,7 +37,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import org.testng.Assert;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class GenotypesContextUnitTest extends VariantBaseTest {
     Allele Aref, C, T;
@@ -92,10 +88,11 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
     private final class lazyMaker implements LazyGenotypesContext.LazyParser, ContextMaker {
         @Override
         public LazyGenotypesContext.LazyData parse(final Object data) {
-            GenotypesContext gc = GenotypesContext.copy((List<Genotype>)data);
+            GenotypesContext gc = GenotypesContext.copy((List<Genotype>) data);
             gc.ensureSampleNameMap();
             gc.ensureSampleOrdering();
-            return new LazyGenotypesContext.LazyData(gc.notToBeDirectlyAccessedGenotypes, gc.sampleNamesInOrder, gc.sampleNameToOffset);
+            return new LazyGenotypesContext.LazyData(
+                    gc.notToBeDirectlyAccessedGenotypes, gc.sampleNamesInOrder, gc.sampleNameToOffset);
         }
 
         @Override
@@ -131,22 +128,22 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
     public Object[][] MakeSampleNamesTest() {
         List<Object[]> tests = new ArrayList<Object[]>();
 
-        for ( ContextMaker maker : allMakers ) {
-            for ( int i = 0; i < allGenotypes.size(); i++ ) {
+        for (ContextMaker maker : allMakers) {
+            for (int i = 0; i < allGenotypes.size(); i++) {
                 List<Genotype> samples = allGenotypes.subList(0, i);
                 // sorted
-                tests.add(new Object[]{new GenotypesContextProvider(maker, samples)});
+                tests.add(new Object[] {new GenotypesContextProvider(maker, samples)});
                 // unsorted
-                tests.add(new Object[]{new GenotypesContextProvider(maker, GeneralUtils.reverse(samples))});
+                tests.add(new Object[] {new GenotypesContextProvider(maker, GeneralUtils.reverse(samples))});
             }
         }
 
-        return tests.toArray(new Object[][]{});
+        return tests.toArray(new Object[][] {});
     }
 
-    private final static void testIterable(Iterable<Genotype> genotypeIterable, Set<String> expectedNames) {
+    private static final void testIterable(Iterable<Genotype> genotypeIterable, Set<String> expectedNames) {
         int count = 0;
-        for ( final Genotype g : genotypeIterable ) {
+        for (final Genotype g : genotypeIterable) {
             Assert.assertTrue(expectedNames.contains(g.getSampleName()));
             count++;
         }
@@ -158,19 +155,20 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         testGenotypesContextContainsExpectedSamples(cfg.makeContext(), cfg.initialSamples);
     }
 
-    private final void testGenotypesContextContainsExpectedSamples(GenotypesContext gc, List<Genotype> expectedSamples) {
+    private final void testGenotypesContextContainsExpectedSamples(
+            GenotypesContext gc, List<Genotype> expectedSamples) {
         Assert.assertEquals(gc.isEmpty(), expectedSamples.isEmpty());
         Assert.assertEquals(gc.size(), expectedSamples.size());
 
         // get(index) is doing the right thing
-        for ( int i = 0; i < expectedSamples.size(); i++ ) {
+        for (int i = 0; i < expectedSamples.size(); i++) {
             Assert.assertEquals(gc.get(i), expectedSamples.get(i));
         }
         Assert.assertFalse(gc.containsSample(MISSING.getSampleName()));
 
         // we can fetch samples by name
         final Set<String> genotypeNames = VariantContextUtils.genotypeNames(expectedSamples);
-        for ( final String name : genotypeNames ) {
+        for (final String name : genotypeNames) {
             Assert.assertTrue(gc.containsSample(name));
         }
         Assert.assertFalse(gc.containsSample(MISSING.getSampleName()));
@@ -179,7 +177,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         testIterable(gc.iterateInSampleNameOrder(), genotypeNames);
         testIterable(gc, genotypeNames);
         testIterable(gc.iterateInSampleNameOrder(genotypeNames), genotypeNames);
-        if ( ! genotypeNames.isEmpty() ) {
+        if (!genotypeNames.isEmpty()) {
             Set<String> first = Collections.singleton(genotypeNames.iterator().next());
             testIterable(gc.iterateInSampleNameOrder(first), first);
         }
@@ -203,7 +201,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(gc.isMutable(), false);
     }
 
-    @Test(enabled = true, dataProvider = "GenotypesContextProvider", expectedExceptions = Throwable.class )
+    @Test(enabled = true, dataProvider = "GenotypesContextProvider", expectedExceptions = Throwable.class)
     public void testImmutableCall1(GenotypesContextProvider cfg) {
         GenotypesContext gc = cfg.makeContext();
         gc.immutable();
@@ -217,13 +215,13 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         testGenotypesContextContainsExpectedSamples(gc, Collections.<Genotype>emptyList());
     }
 
-    private static final List<Genotype> with(List<Genotype> genotypes, Genotype ... add) {
+    private static final List<Genotype> with(List<Genotype> genotypes, Genotype... add) {
         List<Genotype> l = new ArrayList<Genotype>(genotypes);
         l.addAll(Arrays.asList(add));
         return l;
     }
 
-    private static final List<Genotype> without(List<Genotype> genotypes, Genotype ... remove) {
+    private static final List<Genotype> without(List<Genotype> genotypes, Genotype... remove) {
         List<Genotype> l = new ArrayList<Genotype>(genotypes);
         l.removeAll(Arrays.asList(remove));
         return l;
@@ -275,8 +273,8 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
 
         gc = cfg.makeContext();
         HashSet<Genotype> expected = new HashSet<Genotype>();
-        if ( gc.contains(rm1) ) expected.add(rm1);
-        if ( gc.contains(rm2) ) expected.add(rm2);
+        if (gc.contains(rm1)) expected.add(rm1);
+        if (gc.contains(rm2)) expected.add(rm2);
         gc.retainAll(Arrays.asList(rm1, rm2));
 
         // ensure that the two lists are the same
@@ -289,7 +287,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
     public void testSet(GenotypesContextProvider cfg) {
         Genotype set = GenotypeBuilder.create("replace", Arrays.asList(Aref, Aref));
         int n = cfg.makeContext().size();
-        for ( int i = 0; i < n; i++ ) {
+        for (int i = 0; i < n; i++) {
             GenotypesContext gc = cfg.makeContext();
             Genotype setted = gc.set(i, set);
             Assert.assertNotNull(setted);
@@ -302,7 +300,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
     @Test(enabled = true, dataProvider = "GenotypesContextProvider")
     public void testReplace(GenotypesContextProvider cfg) {
         int n = cfg.makeContext().size();
-        for ( int i = 0; i < n; i++ ) {
+        for (int i = 0; i < n; i++) {
             GenotypesContext gc = cfg.makeContext();
             Genotype toReplace = gc.get(i);
             Genotype replacement = GenotypeBuilder.create(toReplace.getSampleName(), Arrays.asList(Aref, Aref));

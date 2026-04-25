@@ -31,13 +31,16 @@ import org.testng.annotations.Test;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class BufferedLineReaderTest extends HtsjdkTest{
+public class BufferedLineReaderTest extends HtsjdkTest {
 
     private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};
     private static final boolean[] LAST_LINE_TERMINATED = {false, true};
 
     enum EmptyLineState {
-        FIRST_LINE, LAST_LINE, MIDDLE_LINE, COMPLETELY_EMPTY
+        FIRST_LINE,
+        LAST_LINE,
+        MIDDLE_LINE,
+        COMPLETELY_EMPTY
     }
 
     /**
@@ -47,8 +50,7 @@ public class BufferedLineReaderTest extends HtsjdkTest{
     public void testFromString() {
         for (final String terminator : TERMINATORS) {
             for (final boolean lastLineTerminated : LAST_LINE_TERMINATED) {
-                for (final EmptyLineState emptyLineState : EmptyLineState
-                        .values()) {
+                for (final EmptyLineState emptyLineState : EmptyLineState.values()) {
                     if (emptyLineState == EmptyLineState.COMPLETELY_EMPTY) {
                         fromStringEmptyTestHelper(terminator, lastLineTerminated);
                     } else {
@@ -87,7 +89,8 @@ public class BufferedLineReaderTest extends HtsjdkTest{
      * @param lastLineTerminated should the input end with a terminator
      * @param emptyLineState where in the input should an empty line be.
      */
-    private void fromStringTestHelper(final String terminator, final boolean lastLineTerminated, final EmptyLineState emptyLineState) {
+    private void fromStringTestHelper(
+            final String terminator, final boolean lastLineTerminated, final EmptyLineState emptyLineState) {
         final String[] lines = new String[3];
         if (emptyLineState == EmptyLineState.FIRST_LINE) {
             lines[0] = "";
@@ -117,8 +120,7 @@ public class BufferedLineReaderTest extends HtsjdkTest{
         // Last line may need to be handled specially
         blr.peek();
         String s = blr.readLine();
-        if (!lastLineTerminated
-                && emptyLineState == EmptyLineState.LAST_LINE) {
+        if (!lastLineTerminated && emptyLineState == EmptyLineState.LAST_LINE) {
             Assert.assertNull(s);
         } else {
             String expected = lines[lines.length - 1];
@@ -128,5 +130,4 @@ public class BufferedLineReaderTest extends HtsjdkTest{
         s = blr.readLine();
         Assert.assertNull(s);
     }
-
 }

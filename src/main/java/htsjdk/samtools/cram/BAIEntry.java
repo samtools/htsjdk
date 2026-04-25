@@ -44,22 +44,21 @@ public class BAIEntry implements Comparable<BAIEntry> {
             final AlignmentSpan alignmentSpan,
             final long containerStartByteOffset,
             final long sliceHeaderBlockByteOffset,
-            final int landmarkIndex
-    ) {
+            final int landmarkIndex) {
         // Note: a BAIEntry should never be made from a MULTI_REF reference context, because for a BAI index
         // MUTLI_REF slices need to be resolved down to constituent BAIEntry for each reference context, including
         // unmapped
         if (referenceContext.equals(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT)) {
             throw new CRAMException("Attempt to create BAI entry from a multi ref context");
-        } else if ((referenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT) &&
-                //unfortunately, many tests fail if we don't allow alignmentStart == -1 or alignmentSpan == 1
-                //because there are files out there with these (non-epc conforming) values
-                ((alignmentSpan.getAlignmentStart() != 0 && alignmentSpan.getAlignmentStart() != -1) ||
-                        (alignmentSpan.getAlignmentSpan() != 0 && alignmentSpan.getAlignmentSpan() != 1)))) {
-            throw new CRAMException(
-                    String.format("Attempt to create a bai entry for an unmapped slice with unexpected alignment start (%d) or span (%d) values",
-                            alignmentSpan.getAlignmentStart(),
-                            alignmentSpan.getAlignmentSpan()));
+        } else if ((referenceContext.equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)
+                &&
+                // unfortunately, many tests fail if we don't allow alignmentStart == -1 or alignmentSpan == 1
+                // because there are files out there with these (non-epc conforming) values
+                ((alignmentSpan.getAlignmentStart() != 0 && alignmentSpan.getAlignmentStart() != -1)
+                        || (alignmentSpan.getAlignmentSpan() != 0 && alignmentSpan.getAlignmentSpan() != 1)))) {
+            throw new CRAMException(String.format(
+                    "Attempt to create a bai entry for an unmapped slice with unexpected alignment start (%d) or span (%d) values",
+                    alignmentSpan.getAlignmentStart(), alignmentSpan.getAlignmentSpan()));
         }
         this.referenceContext = referenceContext;
         this.alignmentSpan = alignmentSpan;
@@ -80,13 +79,9 @@ public class BAIEntry implements Comparable<BAIEntry> {
      * @param craiEntry
      */
     public BAIEntry(final CRAIEntry craiEntry) {
-        this(new ReferenceContext(craiEntry.getSequenceId()),
-                new AlignmentSpan(
-                    craiEntry.getAlignmentStart(),
-                    craiEntry.getAlignmentSpan(),
-                    0,
-                    0,
-                    0),
+        this(
+                new ReferenceContext(craiEntry.getSequenceId()),
+                new AlignmentSpan(craiEntry.getAlignmentStart(), craiEntry.getAlignmentSpan(), 0, 0, 0),
                 craiEntry.getContainerStartByteOffset(),
                 craiEntry.getSliceByteOffsetFromCompressionHeaderStart(),
                 0);
@@ -111,20 +106,23 @@ public class BAIEntry implements Comparable<BAIEntry> {
     @Override
     public int compareTo(final BAIEntry other) {
         // we need to call getReferenceContextID here since we might be unmapped
-        if (getReferenceContext().getReferenceContextID() != other.getReferenceContext().getReferenceContextID()) {
+        if (getReferenceContext().getReferenceContextID()
+                != other.getReferenceContext().getReferenceContextID()) {
             if (getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID) {
                 return 1;
             }
             if (other.getReferenceContext().getReferenceContextID() == ReferenceContext.UNMAPPED_UNPLACED_ID) {
                 return -1;
             }
-            return Integer.compare(getReferenceContext().getReferenceSequenceID(), other.getReferenceContext().getReferenceSequenceID());
+            return Integer.compare(
+                    getReferenceContext().getReferenceSequenceID(),
+                    other.getReferenceContext().getReferenceSequenceID());
         }
 
         // only sort by alignment start values for placed entries
         // we need to call getReferenceContextID here since we might be unmapped
-        if (getReferenceContext().getReferenceContextID() != ReferenceContext.UNMAPPED_UNPLACED_ID &&
-                getAlignmentStart() != other.getAlignmentStart()) {
+        if (getReferenceContext().getReferenceContextID() != ReferenceContext.UNMAPPED_UNPLACED_ID
+                && getAlignmentStart() != other.getAlignmentStart()) {
             return Integer.compare(getAlignmentStart(), other.getAlignmentStart());
         }
 
@@ -132,8 +130,10 @@ public class BAIEntry implements Comparable<BAIEntry> {
             return Long.compare(getContainerStartByteOffset(), other.getContainerStartByteOffset());
         }
 
-        return Long.compare(getSliceByteOffsetFromCompressionHeaderStart(), other.getSliceByteOffsetFromCompressionHeaderStart());
-    };
+        return Long.compare(
+                getSliceByteOffsetFromCompressionHeaderStart(), other.getSliceByteOffsetFromCompressionHeaderStart());
+    }
+    ;
 
     // Note: this should never be a multiple ref context
     public ReferenceContext getReferenceContext() {
@@ -155,6 +155,7 @@ public class BAIEntry implements Comparable<BAIEntry> {
     public int getUnmappedReadsCount() {
         return alignmentSpan.getUnmappedCount();
     }
+
     public int getUnmappedUnplacedReadsCount() {
         return alignmentSpan.getUnmappedUnplacedCount();
     }
@@ -170,5 +171,4 @@ public class BAIEntry implements Comparable<BAIEntry> {
     public int getLandmarkIndex() {
         return landmarkIndex;
     }
-
 }

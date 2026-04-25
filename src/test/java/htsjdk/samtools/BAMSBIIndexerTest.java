@@ -28,22 +28,22 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Iterables;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class BAMSBIIndexerTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
     private static final File CRAM_TEST_DATA_DIR = new File(TEST_DATA_DIR, "cram");
     private static final File BAM_FILE = new File(TEST_DATA_DIR, "example.bam");
     private static final File EMPTY_BAM_FILE = new File(TEST_DATA_DIR, "empty.bam");
-    private static final File LARGE_BAM_FILE = new File(CRAM_TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
+    private static final File LARGE_BAM_FILE =
+            new File(CRAM_TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
 
     @Test
     public void testEmptyBam() throws Exception {
@@ -54,8 +54,10 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         Assert.assertEquals(index1.dataFileLength(), bamFileSize);
         Assert.assertEquals(index2.dataFileLength(), bamFileSize);
         // the splitting index for a BAM with no records has a single entry that is just the length of the BAM file
-        Assert.assertEquals(index1.getVirtualOffsets(), new long[] { BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize) });
-        Assert.assertEquals(index1.getVirtualOffsets(), new long[] { BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize) });
+        Assert.assertEquals(
+                index1.getVirtualOffsets(), new long[] {BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize)});
+        Assert.assertEquals(
+                index1.getVirtualOffsets(), new long[] {BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize)});
     }
 
     @Test
@@ -63,7 +65,8 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         final SBIIndex index = fromBAMFile(BAM_FILE, 2);
         final long[] virtualOffsets = index.getVirtualOffsets();
         final Long firstVirtualOffset = virtualOffsets[0];
-        final Long expectedFirstAlignment = SAMUtils.findVirtualOffsetOfFirstRecordInBam(new SeekableFileStream(BAM_FILE));
+        final Long expectedFirstAlignment =
+                SAMUtils.findVirtualOffsetOfFirstRecordInBam(new SeekableFileStream(BAM_FILE));
         Assert.assertEquals(firstVirtualOffset, expectedFirstAlignment);
         Assert.assertNotNull(getReadAtOffset(BAM_FILE, firstVirtualOffset));
 
@@ -96,7 +99,7 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
     @Test
     public void testIndexersProduceSameIndexes() throws Exception {
         final long bamFileSize = BAM_FILE.length();
-        for (final long g : new long[] { 1, 2, 10, SBIIndexWriter.DEFAULT_GRANULARITY }) {
+        for (final long g : new long[] {1, 2, 10, SBIIndexWriter.DEFAULT_GRANULARITY}) {
             final SBIIndex index1 = fromBAMFile(BAM_FILE, g);
             final SBIIndex index2 = fromSAMRecords(BAM_FILE, g);
             Assert.assertEquals(index1, index2);
@@ -114,7 +117,7 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
     private SBIIndex fromSAMRecords(final File bamFile, final long granularity) throws IOException {
         final BAMFileReader bamFileReader = bamFileReader(bamFile);
         try (CloseableIterator<SAMRecord> iterator = bamFileReader.getIterator();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             final SBIIndexWriter indexWriter = new SBIIndexWriter(out, granularity);
             while (iterator.hasNext()) {
                 processAlignment(indexWriter, iterator.next());
@@ -136,7 +139,8 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
     private BAMFileReader bamFileReader(final File bamFile) {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(bamFile);
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bamFile);
         return (BAMFileReader) ((SamReader.PrimitiveSamReaderToSamReaderAdapter) samReader).underlyingReader();
     }
 
@@ -151,7 +155,8 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
     private List<SAMRecord> getReads(final File bamFile) throws IOException {
         try (SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(bamFile)) {
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bamFile)) {
             return Iterables.slurp(samReader);
         }
     }

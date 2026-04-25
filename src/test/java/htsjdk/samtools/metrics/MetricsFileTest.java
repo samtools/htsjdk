@@ -29,15 +29,14 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.TestUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests for the various classes in the metrics package.  Constructs a MetricsFile,
@@ -47,46 +46,53 @@ import java.util.Date;
  * @author Tim Fennell
  */
 public class MetricsFileTest extends HtsjdkTest {
-    public enum TestEnum {One, Two, Three}
+    public enum TestEnum {
+        One,
+        Two,
+        Three
+    }
 
     public static class TestMetric extends MetricBase implements Cloneable, Serializable {
         private static final long serialVersionUID = 1L;
 
-        public String    STRING_PROP;
-        public Date      DATE_PROP;
-        public Short     SHORT_PROP;
-        public Integer   INTEGER_PROP;
-        public Long      LONG_PROP;
-        public Float     FLOAT_PROP;
-        public Double    DOUBLE_PROP;
-        public TestEnum  ENUM_PROP;
-        public Boolean   BOOLEAN_PROP;
+        public String STRING_PROP;
+        public Date DATE_PROP;
+        public Short SHORT_PROP;
+        public Integer INTEGER_PROP;
+        public Long LONG_PROP;
+        public Float FLOAT_PROP;
+        public Double DOUBLE_PROP;
+        public TestEnum ENUM_PROP;
+        public Boolean BOOLEAN_PROP;
         public Character CHARACTER_PROP;
-        public short     SHORT_PRIMITIVE;
-        public int       INT_PRIMITIVE;
-        public long      LONG_PRIMITIVE;
-        public float     FLOAT_PRIMITIVE;
-        public double    DOUBLE_PRIMITIVE;
-        public boolean   BOOLEAN_PRIMITIVE;
-        public char      CHAR_PRIMITIVE;
+        public short SHORT_PRIMITIVE;
+        public int INT_PRIMITIVE;
+        public long LONG_PRIMITIVE;
+        public float FLOAT_PRIMITIVE;
+        public double DOUBLE_PRIMITIVE;
+        public boolean BOOLEAN_PRIMITIVE;
+        public char CHAR_PRIMITIVE;
 
         @Override
-        public TestMetric clone()  {
-            try { return (TestMetric) super.clone(); }
-            catch (CloneNotSupportedException cnse) { throw new SAMException("That's Unpossible!"); }
+        public TestMetric clone() {
+            try {
+                return (TestMetric) super.clone();
+            } catch (CloneNotSupportedException cnse) {
+                throw new SAMException("That's Unpossible!");
+            }
         }
     }
 
-    public static class FloatingPointMetric extends MetricBase{
+    public static class FloatingPointMetric extends MetricBase {
         public double DOUBLE_PRIMITIVE;
         public Double DOUBLE_PROP;
-        public float  FLOAT_PRIMITIVE;
+        public float FLOAT_PRIMITIVE;
         public Float FLOAT_PROP;
     }
 
     @Test
     public void testFloatingPointEquality() throws IOException {
-        MetricsFile<FloatingPointMetric,Integer> file = new MetricsFile<FloatingPointMetric,Integer>();
+        MetricsFile<FloatingPointMetric, Integer> file = new MetricsFile<FloatingPointMetric, Integer>();
 
         FloatingPointMetric metric = new FloatingPointMetric();
         metric.DOUBLE_PRIMITIVE = .0000000000000000001d;
@@ -95,34 +101,34 @@ public class MetricsFileTest extends HtsjdkTest {
         metric.FLOAT_PROP = .0000000000000000001f;
         file.addMetric(metric);
 
-        MetricsFile<FloatingPointMetric,Integer> file2 = writeThenReadBack(file);
+        MetricsFile<FloatingPointMetric, Integer> file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
     }
 
     @Test
     public void testWriteMetricsFile() throws IOException, ClassNotFoundException {
-        MetricsFile<TestMetric,Integer> file = new MetricsFile<TestMetric,Integer>();
+        MetricsFile<TestMetric, Integer> file = new MetricsFile<TestMetric, Integer>();
         TestMetric metric = new TestMetric();
-        metric.STRING_PROP       = "Hello World";
-        metric.DATE_PROP         = new FormatUtil().parseDate("2008-12-31");
-        metric.SHORT_PROP        = 123;
-        metric.INTEGER_PROP      = null;
-        metric.LONG_PROP         = Long.MAX_VALUE;
-        metric.FLOAT_PROP        = 456.789f;
-        metric.DOUBLE_PROP       = 0.713487;
-        metric.ENUM_PROP         = TestEnum.Two;
-        metric.BOOLEAN_PROP      = false;
-        metric.CHARACTER_PROP    = 'A';
-        metric.SHORT_PRIMITIVE   = 123;
-        metric.INT_PRIMITIVE     = 919834781;
-        metric.LONG_PRIMITIVE    = Long.MAX_VALUE - Integer.MAX_VALUE;
-        metric.FLOAT_PRIMITIVE   = 0.55694f;
-        metric.DOUBLE_PRIMITIVE  = 0.229233;
+        metric.STRING_PROP = "Hello World";
+        metric.DATE_PROP = new FormatUtil().parseDate("2008-12-31");
+        metric.SHORT_PROP = 123;
+        metric.INTEGER_PROP = null;
+        metric.LONG_PROP = Long.MAX_VALUE;
+        metric.FLOAT_PROP = 456.789f;
+        metric.DOUBLE_PROP = 0.713487;
+        metric.ENUM_PROP = TestEnum.Two;
+        metric.BOOLEAN_PROP = false;
+        metric.CHARACTER_PROP = 'A';
+        metric.SHORT_PRIMITIVE = 123;
+        metric.INT_PRIMITIVE = 919834781;
+        metric.LONG_PRIMITIVE = Long.MAX_VALUE - Integer.MAX_VALUE;
+        metric.FLOAT_PRIMITIVE = 0.55694f;
+        metric.DOUBLE_PRIMITIVE = 0.229233;
         metric.BOOLEAN_PRIMITIVE = true;
-        metric.CHAR_PRIMITIVE    = 'B';
+        metric.CHAR_PRIMITIVE = 'B';
         file.addMetric(metric);
 
-        MetricsFile<TestMetric,Integer> file2 = writeThenReadBack(file);
+        MetricsFile<TestMetric, Integer> file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
 
         // Now add some headers and run the test again
@@ -172,21 +178,21 @@ public class MetricsFileTest extends HtsjdkTest {
         file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
 
-        //Test that we can serialize and deserialize this whole thing
+        // Test that we can serialize and deserialize this whole thing
         MetricsFile<TestMetric, Integer> file3 = TestUtil.serializeAndDeserialize(file);
 
         Assert.assertEquals(file, file3);
     }
 
     @Test
-    public void areMetricsFilesEqualTest(){
+    public void areMetricsFilesEqualTest() {
         final File TEST_DIR = new File("src/test/resources/htsjdk/samtools/metrics/");
-        final File file1 = new File(TEST_DIR,"metricsOne.metrics");
-        final File file2 = new File(TEST_DIR,"metricsOneCopy.metrics");
-        final File file3 = new File(TEST_DIR,"metricsOneCopyReordered.metrics");
+        final File file1 = new File(TEST_DIR, "metricsOne.metrics");
+        final File file2 = new File(TEST_DIR, "metricsOneCopy.metrics");
+        final File file3 = new File(TEST_DIR, "metricsOneCopyReordered.metrics");
 
-        final File fileModifiedHist = new File(TEST_DIR,"metricsOneModifiedHistogram.metrics");
-        final File fileModifiedMet = new File(TEST_DIR,"metricsOneModifiedMetrics.metrics");
+        final File fileModifiedHist = new File(TEST_DIR, "metricsOneModifiedHistogram.metrics");
+        final File fileModifiedMet = new File(TEST_DIR, "metricsOneModifiedMetrics.metrics");
 
         Assert.assertTrue(MetricsFile.areMetricsEqual(file1, file2));
         Assert.assertTrue(MetricsFile.areMetricsEqual(file1, file3));
@@ -198,13 +204,14 @@ public class MetricsFileTest extends HtsjdkTest {
     }
 
     /** Helper method to persist metrics to file and read them back again. */
-    private <METRIC extends MetricBase> MetricsFile<METRIC, Integer> writeThenReadBack(MetricsFile<METRIC, Integer> in) throws IOException {
+    private <METRIC extends MetricBase> MetricsFile<METRIC, Integer> writeThenReadBack(MetricsFile<METRIC, Integer> in)
+            throws IOException {
         File f = File.createTempFile("test", ".metrics");
         f.deleteOnExit();
         FileWriter out = new FileWriter(f);
         in.write(out);
 
-        MetricsFile<METRIC, Integer> retval = new MetricsFile<METRIC,Integer>();
+        MetricsFile<METRIC, Integer> retval = new MetricsFile<METRIC, Integer>();
         retval.read(new FileReader(f));
         return retval;
     }

@@ -37,7 +37,6 @@ import htsjdk.samtools.cram.encoding.readfeatures.Scores;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.*;
 
 /**
@@ -49,26 +48,27 @@ public class CRAMCompressionRecord {
     private static final Log log = Log.getInstance(CRAMCompressionRecord.class);
 
     // CF data series flags (defined by the CRAM spec)
-    public static final int CF_QS_PRESERVED_AS_ARRAY = 0x1;  // preserve quality scores as array
-    public static final int CF_DETACHED            = 0x2;  // mate is stored literally vs as record offset
+    public static final int CF_QS_PRESERVED_AS_ARRAY = 0x1; // preserve quality scores as array
+    public static final int CF_DETACHED = 0x2; // mate is stored literally vs as record offset
     public static final int CF_HAS_MATE_DOWNSTREAM = 0x4;
     // sequence is unknown; encoded reference differences are present only to recreate the CIGAR string
-    public static final int CF_UNKNOWN_BASES       = 0x8;
+    public static final int CF_UNKNOWN_BASES = 0x8;
 
-    public final static int NO_READGROUP_ID = -1;
-    public final static byte MISSING_QUALITY_SCORE = -1; // SAMRecord.UNKNOWN_MAPPING_QUALITY: 255
-    private final static byte DEFAULT_QUALITY_SCORE = '?' - '!';
+    public static final int NO_READGROUP_ID = -1;
+    public static final byte MISSING_QUALITY_SCORE = -1; // SAMRecord.UNKNOWN_MAPPING_QUALITY: 255
+    private static final byte DEFAULT_QUALITY_SCORE = '?' - '!';
 
     // NOTE: "mate unmapped" and "mate negative strand" (MF_MATE_UNMAPPED and MF_MATE_NEG_STRAND, aka
     // MATE_REVERSE_STRAND and MATE_UNMAPPED in SAMRecord flag space) have different values in CRAM
     // mateFlags space and SAMFlags space) are modeled redundantly in the bamFlags and mateFlags fields.
     // MF data series flags (defined by the CRAM spec)
-    public static final int MF_MATE_NEG_STRAND = 0x1;  // same meaning as SAMFlag.MATE_REVERSE_STRAND, but different value
-    public static final int MF_MATE_UNMAPPED   = 0x2;  // same meaning as SAMFlag.MATE_UNMAPPED, but different value
+    public static final int MF_MATE_NEG_STRAND =
+            0x1; // same meaning as SAMFlag.MATE_REVERSE_STRAND, but different value
+    public static final int MF_MATE_UNMAPPED = 0x2; // same meaning as SAMFlag.MATE_UNMAPPED, but different value
 
     private final int referenceIndex;
     private final int alignmentStart; // position on the reference where this read starts (1-based (SAM) coordinates)
-    private final int alignmentEnd;  // position on the reference where this alignment ends
+    private final int alignmentEnd; // position on the reference where this alignment ends
     private final int readLength;
     private final CRAMRecordReadFeatures readFeatures;
     private final int mappingQuality;
@@ -87,7 +87,7 @@ public class CRAMCompressionRecord {
     private Cigar cachedCigar; // populated by restoreBasesAndTags, used by toSAMRecord
     private MutableInt tagIdsIndex = new MutableInt(0);
 
-    //mate info
+    // mate info
     private int mateFlags;
     private int mateAlignmentStart;
     private int mateReferenceIndex;
@@ -155,9 +155,9 @@ public class CRAMCompressionRecord {
         // IUPAC codes without a dot, so we follow the same approach to reproduce the behaviour of samtools.
         // copy read bases before we modify the bases to BAM bases to avoid changing the original record:
         final byte[] originalBases = samRecord.getReadBases();
-        readBases = originalBases == null || originalBases.equals(SAMRecord.NULL_SEQUENCE) ?
-                SAMRecord.NULL_SEQUENCE :
-                SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(originalBases, samRecord.getReadLength()));
+        readBases = originalBases == null || originalBases.equals(SAMRecord.NULL_SEQUENCE)
+                ? SAMRecord.NULL_SEQUENCE
+                : SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(originalBases, samRecord.getReadLength()));
         if (samRecord.getReadUnmappedFlag()) {
             readFeatures = new CRAMRecordReadFeatures();
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
@@ -198,9 +198,7 @@ public class CRAMCompressionRecord {
         }
 
         final SAMReadGroupRecord readGroup = samRecord.getReadGroup();
-        readGroupID = readGroup == null ?
-                NO_READGROUP_ID :
-                readGroupMap.get(readGroup.getId());
+        readGroupID = readGroup == null ? NO_READGROUP_ID : readGroupMap.get(readGroup.getId());
 
         // Tag handling: NM:i and MD:Z are stripped for mapped reads (matching htslib default)
         // and regenerated from read features + reference during decode. If the stored NM/MD
@@ -210,9 +208,12 @@ public class CRAMCompressionRecord {
         boolean stripMD = !samRecord.getReadUnmappedFlag() && !encodingStrategy.getStoreMD();
 
         // Validate that stored NM/MD match recomputed values; keep non-standard values verbatim
-        if ((stripNM || stripMD) && referenceBases != null &&
-                samRecord.getCigar() != null && !samRecord.getCigar().isEmpty() &&
-                samRecord.getReadBases() != null && samRecord.getReadBases().length > 0) {
+        if ((stripNM || stripMD)
+                && referenceBases != null
+                && samRecord.getCigar() != null
+                && !samRecord.getCigar().isEmpty()
+                && samRecord.getReadBases() != null
+                && samRecord.getReadBases().length > 0) {
             final htsjdk.samtools.util.Tuple<String, Integer> computed =
                     htsjdk.samtools.util.SequenceUtil.calculateMdAndNm(
                             samRecord.getCigar().getCigarElements(),
@@ -282,16 +283,17 @@ public class CRAMCompressionRecord {
             final byte[] qualityScores,
             final byte[] readBases,
             final List<ReadTag> readTags,
-            final List<ReadFeature>readFeaturesList,
+            final List<ReadFeature> readFeaturesList,
             final int readGroupID,
             final int mateFlags,
             final int mateReferenceIndex,
             final int mateAlignmentStart,
             final int recordsToNextFragment) {
-        ValidationUtils.nonNull( qualityScores,"quality scores argument must be null or nonzero length");
-        ValidationUtils.nonNull(readBases,"read bases argument cannot be null");
+        ValidationUtils.nonNull(qualityScores, "quality scores argument must be null or nonzero length");
+        ValidationUtils.nonNull(readBases, "read bases argument cannot be null");
         ValidationUtils.validateArg(readTags == null || readTags.size() > 0, "invalid read tag argument");
-        ValidationUtils.validateArg(readFeaturesList == null || readFeaturesList.size() > 0, "invalid read features argument");
+        ValidationUtils.validateArg(
+                readFeaturesList == null || readFeaturesList.size() > 0, "invalid read features argument");
         ValidationUtils.validateArg(sequentialIndex >= 0, "index must be >= 0");
 
         this.sequentialIndex = sequentialIndex;
@@ -313,12 +315,11 @@ public class CRAMCompressionRecord {
         this.recordsToNextFragment = recordsToNextFragment;
         // its acceptable to have a mapped, placed read, but no read features, if the read matches the
         // reference exactly
-        readFeatures = readFeaturesList == null ?
-                    new CRAMRecordReadFeatures() :
-                    new CRAMRecordReadFeatures(readFeaturesList);
-        alignmentEnd = isPlaced() ?
-                this.readFeatures.getAlignmentEnd(alignmentStart, readLength) :
-                AlignmentContext.NO_ALIGNMENT_END;
+        readFeatures =
+                readFeaturesList == null ? new CRAMRecordReadFeatures() : new CRAMRecordReadFeatures(readFeaturesList);
+        alignmentEnd = isPlaced()
+                ? this.readFeatures.getAlignmentEnd(alignmentStart, readLength)
+                : AlignmentContext.NO_ALIGNMENT_END;
     }
 
     /**
@@ -327,8 +328,8 @@ public class CRAMCompressionRecord {
      * @return a SAMRecord
      */
     public SAMRecord toSAMRecord(final SAMFileHeader samFileHeader) {
-        ValidationUtils.nonNull( samFileHeader,"a valid sam header is required");
-        ValidationUtils.validateArg( isNormalized,"record must be normalized to convert to SAMRecord");
+        ValidationUtils.nonNull(samFileHeader, "a valid sam header is required");
+        ValidationUtils.validateArg(isNormalized, "record must be normalized to convert to SAMRecord");
         final SAMRecord samRecord = new SAMRecord(samFileHeader);
 
         samRecord.setReadName(readName);
@@ -352,9 +353,7 @@ public class CRAMCompressionRecord {
 
         if (samRecord.getReadPairedFlag()) {
             samRecord.setMateReferenceIndex(mateReferenceIndex);
-            samRecord.setMateAlignmentStart(mateAlignmentStart > 0 ?
-                            mateAlignmentStart :
-                            SAMRecord.NO_ALIGNMENT_START);
+            samRecord.setMateAlignmentStart(mateAlignmentStart > 0 ? mateAlignmentStart : SAMRecord.NO_ALIGNMENT_START);
             samRecord.setMateNegativeStrandFlag(isMateNegativeStrand());
             samRecord.setMateUnmappedFlag(isMateUnmapped());
         } else {
@@ -373,7 +372,8 @@ public class CRAMCompressionRecord {
         }
 
         if (readGroupID != NO_READGROUP_ID) {
-            final SAMReadGroupRecord readGroupRecord = samFileHeader.getReadGroups().get(readGroupID);
+            final SAMReadGroupRecord readGroupRecord =
+                    samFileHeader.getReadGroups().get(readGroupID);
             samRecord.setAttribute("RG", readGroupRecord.getId());
         }
 
@@ -412,7 +412,9 @@ public class CRAMCompressionRecord {
      * across all records in a Slice.
      * (see {@link Slice#normalizeCRAMRecords(List, CRAMReferenceRegion)}).
      */
-    void setIsNormalized() { isNormalized = true; }
+    void setIsNormalized() {
+        isNormalized = true;
+    }
 
     /**
      * When a CRAM record is read from a CRAM stream, it is "raw" in that the record's read bases, quality
@@ -422,7 +424,9 @@ public class CRAMCompressionRecord {
      * (see {@link Slice#normalizeCRAMRecords(List, CRAMReferenceRegion)}).
      * @return true if this record is normalized
      */
-    public boolean isNormalized() { return isNormalized; }
+    public boolean isNormalized() {
+        return isNormalized;
+    }
 
     /**
      * Resolve the quality scores for this CRAM record based on preserved scores, read features and flags.
@@ -443,11 +447,7 @@ public class CRAMCompressionRecord {
                         final Scores scoresFeature = (Scores) feature;
                         pos = scoresFeature.getPosition();
                         System.arraycopy(
-                                scoresFeature.getScores(),
-                                0,
-                                scores,
-                                pos - 1,
-                                scoresFeature.getScores().length);
+                                scoresFeature.getScores(), 0, scores, pos - 1, scoresFeature.getScores().length);
                         hasMissingScores = false;
                         break;
                     case ReadBase.operator:
@@ -493,9 +493,9 @@ public class CRAMCompressionRecord {
      * @return template length for firstEnd (negate for secondEnd)
      */
     static int computeInsertSize(final CRAMCompressionRecord firstEnd, final CRAMCompressionRecord secondEnd) {
-        if (firstEnd.isSegmentUnmapped() ||
-                secondEnd.isSegmentUnmapped()||
-                firstEnd.referenceIndex != secondEnd.referenceIndex) {
+        if (firstEnd.isSegmentUnmapped()
+                || secondEnd.isSegmentUnmapped()
+                || firstEnd.referenceIndex != secondEnd.referenceIndex) {
             return 0;
         }
 
@@ -522,9 +522,7 @@ public class CRAMCompressionRecord {
             readBases = SAMRecord.NULL_SEQUENCE;
         } else {
             readBases = CRAMRecordReadFeatures.restoreReadBases(
-                    readFeatures == null ?
-                            Collections.EMPTY_LIST :
-                            readFeatures.getReadFeaturesList(),
+                    readFeatures == null ? Collections.EMPTY_LIST : readFeatures.getReadFeaturesList(),
                     isUnknownBases(),
                     alignmentStart,
                     readLength,
@@ -540,8 +538,8 @@ public class CRAMCompressionRecord {
      *
      * <p>The CIGAR is cached on this record for use by {@link #toSAMRecord()}.
      */
-    void restoreBasesAndTags(final CRAMReferenceRegion cramReferenceRegion,
-                             final SubstitutionMatrix substitutionMatrix) {
+    void restoreBasesAndTags(
+            final CRAMReferenceRegion cramReferenceRegion, final SubstitutionMatrix substitutionMatrix) {
         // Handle the cF internal tag from htslib's embed_ref=2 mode
         boolean suppressMD = false;
         boolean suppressNM = false;
@@ -569,10 +567,10 @@ public class CRAMCompressionRecord {
         final boolean needMD = !hasMD && !suppressMD;
         final boolean needNM = !hasNM && !suppressNM;
 
-        final boolean computeMdNm = (needMD || needNM) &&
-                readLength > 0 &&
-                readFeatures != null &&
-                cramReferenceRegion.getCurrentReferenceBases() != null;
+        final boolean computeMdNm = (needMD || needNM)
+                && readLength > 0
+                && readFeatures != null
+                && cramReferenceRegion.getCurrentReferenceBases() != null;
 
         final CRAMRecordReadFeatures.DecodeResult result = CRAMRecordReadFeatures.restoreBasesAndTags(
                 readFeatures == null ? Collections.emptyList() : readFeatures.getReadFeaturesList(),
@@ -674,50 +672,75 @@ public class CRAMCompressionRecord {
             }
         } else if (!isSegmentUnmapped()) {
             final String warning = String.format(
-                    "CRAMRecord [%s] appears to be mapped but does not have a valid alignment start.",
-                    this.toString());
+                    "CRAMRecord [%s] appears to be mapped but does not have a valid alignment start.", this.toString());
             log.warn(warning);
         }
 
         return placed;
     }
 
-    public String getReadName() { return readName; }
+    public String getReadName() {
+        return readName;
+    }
 
-    public int getAlignmentStart() { return alignmentStart; }
+    public int getAlignmentStart() {
+        return alignmentStart;
+    }
 
-    public int getReadLength() { return readLength; }
+    public int getReadLength() {
+        return readLength;
+    }
 
-    public byte[] getReadBases() { return readBases; }
+    public byte[] getReadBases() {
+        return readBases;
+    }
 
-    public byte[] getQualityScores() { return qualityScores; }
+    public byte[] getQualityScores() {
+        return qualityScores;
+    }
 
-    public int getMappingQuality() { return mappingQuality; }
+    public int getMappingQuality() {
+        return mappingQuality;
+    }
 
-    public int getReferenceIndex() { return referenceIndex; }
+    public int getReferenceIndex() {
+        return referenceIndex;
+    }
 
-    public int getTemplateSize() { return templateSize; }
+    public int getTemplateSize() {
+        return templateSize;
+    }
 
-    public List<ReadTag> getTags() { return tags; }
+    public List<ReadTag> getTags() {
+        return tags;
+    }
 
-    public int getRecordsToNextFragment() { return recordsToNextFragment; }
+    public int getRecordsToNextFragment() {
+        return recordsToNextFragment;
+    }
 
     public List<ReadFeature> getReadFeatures() {
-        return readFeatures == null ?
-                null :
-                readFeatures.getReadFeaturesList();
+        return readFeatures == null ? null : readFeatures.getReadFeaturesList();
     }
 
     /**
      * @return read group id, or {@link #NO_READGROUP_ID} if no read group assigned
      */
-    public int getReadGroupID() { return readGroupID; }
+    public int getReadGroupID() {
+        return readGroupID;
+    }
 
-    public int getBAMFlags() { return bamFlags; }
+    public int getBAMFlags() {
+        return bamFlags;
+    }
 
-    public int getMateReferenceIndex() { return mateReferenceIndex; }
+    public int getMateReferenceIndex() {
+        return mateReferenceIndex;
+    }
 
-    public int getMateAlignmentStart() { return mateAlignmentStart; }
+    public int getMateAlignmentStart() {
+        return mateAlignmentStart;
+    }
 
     public void setTagIdsIndex(MutableInt tagIdsIndex) {
         // The MutableInt is intentionally shared by reference across all records with the same tag
@@ -726,16 +749,24 @@ public class CRAMCompressionRecord {
         this.tagIdsIndex = tagIdsIndex;
     }
 
-    public MutableInt getTagIdsIndex() { return tagIdsIndex; }
+    public MutableInt getTagIdsIndex() {
+        return tagIdsIndex;
+    }
 
-    public int getMateFlags() { return (0xFF & mateFlags); }
+    public int getMateFlags() {
+        return (0xFF & mateFlags);
+    }
 
-    public int getCRAMFlags() { return (0xFF & cramFlags); }
+    public int getCRAMFlags() {
+        return (0xFF & cramFlags);
+    }
 
     /**
      * @return the initialized alignmentEnd
      */
-    public int getAlignmentEnd() { return alignmentEnd; }
+    public int getAlignmentEnd() {
+        return alignmentEnd;
+    }
 
     // used in read name generation and mate restoration
     public long getSequentialIndex() {
@@ -764,9 +795,9 @@ public class CRAMCompressionRecord {
     }
 
     private void setSecondaryAlignment(final boolean secondaryAlignment) {
-        bamFlags = secondaryAlignment ?
-                bamFlags | SAMFlag.SECONDARY_ALIGNMENT.intValue() :
-                bamFlags & ~SAMFlag.SECONDARY_ALIGNMENT.intValue();
+        bamFlags = secondaryAlignment
+                ? bamFlags | SAMFlag.SECONDARY_ALIGNMENT.intValue()
+                : bamFlags & ~SAMFlag.SECONDARY_ALIGNMENT.intValue();
     }
 
     /** Return true if this record's CRAM flags indicate a downstream mate in the same slice. */
@@ -785,7 +816,9 @@ public class CRAMCompressionRecord {
     }
 
     /** Test the detached bit in the given CRAM flags value. */
-    public static boolean isDetached(final int cramFlags) { return (cramFlags & CF_DETACHED) != 0; }
+    public static boolean isDetached(final int cramFlags) {
+        return (cramFlags & CF_DETACHED) != 0;
+    }
 
     /** Return true if quality scores are preserved as a full array for this record. */
     public boolean isForcePreserveQualityScores() {
@@ -793,7 +826,9 @@ public class CRAMCompressionRecord {
     }
 
     /** Test the quality-scores-preserved-as-array bit in the given CRAM flags value. */
-    public static boolean isForcePreserveQualityScores(final int cramFlags) {return (cramFlags & CF_QS_PRESERVED_AS_ARRAY) != 0; }
+    public static boolean isForcePreserveQualityScores(final int cramFlags) {
+        return (cramFlags & CF_QS_PRESERVED_AS_ARRAY) != 0;
+    }
 
     /** Return true if the original sequence was unknown (SEQ="*"). */
     public boolean isUnknownBases() {
@@ -811,7 +846,8 @@ public class CRAMCompressionRecord {
     }
 
     private void setMultiFragment(final boolean multiFragment) {
-        bamFlags = multiFragment ? bamFlags | SAMFlag.READ_PAIRED.intValue() : bamFlags & ~SAMFlag.READ_PAIRED.intValue();
+        bamFlags =
+                multiFragment ? bamFlags | SAMFlag.READ_PAIRED.intValue() : bamFlags & ~SAMFlag.READ_PAIRED.intValue();
     }
 
     /**
@@ -827,10 +863,14 @@ public class CRAMCompressionRecord {
     }
 
     /** Test the segment-unmapped bit in the given BAM flags value. */
-    public static boolean isSegmentUnmapped(final int bamFlags) { return (bamFlags & SAMFlag.READ_UNMAPPED.intValue()) != 0; }
+    public static boolean isSegmentUnmapped(final int bamFlags) {
+        return (bamFlags & SAMFlag.READ_UNMAPPED.intValue()) != 0;
+    }
 
     private void setSegmentUnmapped(final boolean segmentUnmapped) {
-        bamFlags = segmentUnmapped ? bamFlags | SAMFlag.READ_UNMAPPED.intValue() : bamFlags & ~SAMFlag.READ_UNMAPPED.intValue();
+        bamFlags = segmentUnmapped
+                ? bamFlags | SAMFlag.READ_UNMAPPED.intValue()
+                : bamFlags & ~SAMFlag.READ_UNMAPPED.intValue();
     }
 
     /** Return true if this record is the first segment in the template. */
@@ -839,7 +879,9 @@ public class CRAMCompressionRecord {
     }
 
     private void setFirstSegment(final boolean firstSegment) {
-        bamFlags = firstSegment ? bamFlags | SAMFlag.FIRST_OF_PAIR.intValue() : bamFlags & ~SAMFlag.FIRST_OF_PAIR.intValue();
+        bamFlags = firstSegment
+                ? bamFlags | SAMFlag.FIRST_OF_PAIR.intValue()
+                : bamFlags & ~SAMFlag.FIRST_OF_PAIR.intValue();
     }
 
     /** Return true if this record is the last segment in the template. */
@@ -848,7 +890,9 @@ public class CRAMCompressionRecord {
     }
 
     private void setLastSegment(final boolean lastSegment) {
-        bamFlags = lastSegment ? bamFlags | SAMFlag.SECOND_OF_PAIR.intValue() : bamFlags & ~SAMFlag.SECOND_OF_PAIR.intValue();
+        bamFlags = lastSegment
+                ? bamFlags | SAMFlag.SECOND_OF_PAIR.intValue()
+                : bamFlags & ~SAMFlag.SECOND_OF_PAIR.intValue();
     }
 
     private boolean isVendorFiltered() {
@@ -856,7 +900,9 @@ public class CRAMCompressionRecord {
     }
 
     private void setVendorFiltered(final boolean vendorFiltered) {
-        bamFlags = vendorFiltered ? bamFlags | SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.intValue() : bamFlags & ~SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.intValue();
+        bamFlags = vendorFiltered
+                ? bamFlags | SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.intValue()
+                : bamFlags & ~SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.intValue();
     }
 
     private boolean isProperPair() {
@@ -872,7 +918,9 @@ public class CRAMCompressionRecord {
     }
 
     private void setDuplicate(final boolean duplicate) {
-        bamFlags = duplicate ? bamFlags | SAMFlag.DUPLICATE_READ.intValue() : bamFlags & ~SAMFlag.DUPLICATE_READ.intValue();
+        bamFlags = duplicate
+                ? bamFlags | SAMFlag.DUPLICATE_READ.intValue()
+                : bamFlags & ~SAMFlag.DUPLICATE_READ.intValue();
     }
 
     private boolean isNegativeStrand() {
@@ -880,7 +928,9 @@ public class CRAMCompressionRecord {
     }
 
     private void setNegativeStrand(final boolean negativeStrand) {
-        bamFlags = negativeStrand ? bamFlags | SAMFlag.READ_REVERSE_STRAND.intValue() : bamFlags & ~SAMFlag.READ_REVERSE_STRAND.intValue();
+        bamFlags = negativeStrand
+                ? bamFlags | SAMFlag.READ_REVERSE_STRAND.intValue()
+                : bamFlags & ~SAMFlag.READ_REVERSE_STRAND.intValue();
     }
 
     // NOTE: "mate unmapped" and "mate negative strand" (MF_MATE_UNMAPPED and MF_MATE_NEG_STRAND, aka
@@ -894,13 +944,12 @@ public class CRAMCompressionRecord {
     private boolean isMateUnmapped() {
         return (mateFlags & MF_MATE_UNMAPPED) != 0;
     }
+
     private void setMateUnmapped(final boolean mateUnmapped) {
-        mateFlags = mateUnmapped ?
-                mateFlags | MF_MATE_UNMAPPED :
-                mateFlags & ~MF_MATE_UNMAPPED;
-        bamFlags = mateUnmapped ?
-                bamFlags | SAMFlag.MATE_UNMAPPED.intValue() :
-                bamFlags & ~SAMFlag.MATE_UNMAPPED.intValue();
+        mateFlags = mateUnmapped ? mateFlags | MF_MATE_UNMAPPED : mateFlags & ~MF_MATE_UNMAPPED;
+        bamFlags = mateUnmapped
+                ? bamFlags | SAMFlag.MATE_UNMAPPED.intValue()
+                : bamFlags & ~SAMFlag.MATE_UNMAPPED.intValue();
     }
     // Note that this flag is maintained in both the bamFlags and mateFlags; we only test the mate flags here
     private boolean isMateNegativeStrand() {
@@ -909,12 +958,10 @@ public class CRAMCompressionRecord {
 
     // Note that this flag is maintained in both the bamFlags and mateFlags, so we set both here
     private void setMateNegativeStrand(final boolean mateNegativeStrand) {
-        mateFlags = mateNegativeStrand ?
-                mateFlags | MF_MATE_NEG_STRAND :
-                mateFlags & ~MF_MATE_NEG_STRAND;
-        bamFlags = mateNegativeStrand ?
-                bamFlags | SAMFlag.MATE_REVERSE_STRAND.intValue() :
-                bamFlags & ~SAMFlag.MATE_REVERSE_STRAND.intValue();
+        mateFlags = mateNegativeStrand ? mateFlags | MF_MATE_NEG_STRAND : mateFlags & ~MF_MATE_NEG_STRAND;
+        bamFlags = mateNegativeStrand
+                ? bamFlags | SAMFlag.MATE_REVERSE_STRAND.intValue()
+                : bamFlags & ~SAMFlag.MATE_REVERSE_STRAND.intValue();
     }
 
     /** Set or clear the has-mate-downstream CRAM flag. */
@@ -927,7 +974,7 @@ public class CRAMCompressionRecord {
         cramFlags = detached ? cramFlags | CF_DETACHED : cramFlags & ~CF_DETACHED;
     }
 
-   private void setUnknownBases(final boolean unknownBases) {
+    private void setUnknownBases(final boolean unknownBases) {
         cramFlags = unknownBases ? cramFlags | CF_UNKNOWN_BASES : cramFlags & ~CF_UNKNOWN_BASES;
     }
 
@@ -937,13 +984,15 @@ public class CRAMCompressionRecord {
     }
 
     private void setSupplementary(final boolean supplementary) {
-        bamFlags = supplementary ? bamFlags | SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue() : bamFlags & ~SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue();
+        bamFlags = supplementary
+                ? bamFlags | SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue()
+                : bamFlags & ~SAMFlag.SUPPLEMENTARY_ALIGNMENT.intValue();
     }
 
     private void setForcePreserveQualityScores(final boolean forcePreserveQualityScores) {
-        cramFlags = forcePreserveQualityScores ?
-                cramFlags | CF_QS_PRESERVED_AS_ARRAY :
-                cramFlags & ~CF_QS_PRESERVED_AS_ARRAY;
+        cramFlags = forcePreserveQualityScores
+                ? cramFlags | CF_QS_PRESERVED_AS_ARRAY
+                : cramFlags & ~CF_QS_PRESERVED_AS_ARRAY;
     }
 
     private static void copyFlags(final CRAMCompressionRecord cramCompressionRecord, final SAMRecord samRecord) {
@@ -979,10 +1028,9 @@ public class CRAMCompressionRecord {
         if (getMateAlignmentStart() != that.getMateAlignmentStart()) return false;
         if (getMateReferenceIndex() != that.getMateReferenceIndex()) return false;
         if (getRecordsToNextFragment() != that.getRecordsToNextFragment()) return false;
-        if (getReadFeatures() != null ?
-                !getReadFeatures().equals(that.getReadFeatures()) :
-                that.getReadFeatures() != null)
-            return false;
+        if (getReadFeatures() != null
+                ? !getReadFeatures().equals(that.getReadFeatures())
+                : that.getReadFeatures() != null) return false;
         if (getTags() != null ? !getTags().equals(that.getTags()) : that.getTags() != null) return false;
         if (getReadName() != null ? !getReadName().equals(that.getReadName()) : that.getReadName() != null)
             return false;
@@ -990,12 +1038,12 @@ public class CRAMCompressionRecord {
             return false;
         }
         if (!Arrays.equals(getQualityScores(), that.getQualityScores())) return false;
-        if (!getTagIdsIndex().equals(that.getTagIdsIndex()))
-            return false;
+        if (!getTagIdsIndex().equals(that.getTagIdsIndex())) return false;
         if (getNextSegment() != null ? !getNextSegment().equals(that.getNextSegment()) : that.getNextSegment() != null)
             return false;
-        return getPreviousSegment() != null ? getPreviousSegment().equals(that.getPreviousSegment()) :
-                that.getPreviousSegment() == null;
+        return getPreviousSegment() != null
+                ? getPreviousSegment().equals(that.getPreviousSegment())
+                : that.getPreviousSegment() == null;
     }
 
     @Override
@@ -1021,8 +1069,8 @@ public class CRAMCompressionRecord {
         result = 31 * result + getMateReferenceIndex();
         result = 31 * result + getRecordsToNextFragment();
         result = 31 * result + (getNextSegment() != null ? getNextSegment().hashCode() : 0);
-        result = 31 * result + (getPreviousSegment() != null ? getPreviousSegment().hashCode() : 0);
+        result = 31 * result
+                + (getPreviousSegment() != null ? getPreviousSegment().hashCode() : 0);
         return result;
     }
-
 }

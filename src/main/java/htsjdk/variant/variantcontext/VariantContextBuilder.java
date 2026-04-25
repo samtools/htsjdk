@@ -1,32 +1,31 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +81,7 @@ public class VariantContextBuilder {
     private boolean filtersCanBeModified = false;
 
     /** enum of what must be validated */
-    final private EnumSet<VariantContext.Validation> toValidate = EnumSet.noneOf(VariantContext.Validation.class);
+    private final EnumSet<VariantContext.Validation> toValidate = EnumSet.noneOf(VariantContext.Validation.class);
 
     /**
      * Create an empty VariantContextBuilder where all values adopt their default values.  Note that
@@ -95,7 +94,12 @@ public class VariantContextBuilder {
      * Create an empty VariantContextBuilder where all values adopt their default values, but the bare min.
      * of info (source, chr, start, stop, and alleles) have been provided to start.
      */
-    public VariantContextBuilder(final String source, final String contig, final long start, final long stop, final Collection<Allele> alleles) {
+    public VariantContextBuilder(
+            final String source,
+            final String contig,
+            final long start,
+            final long stop,
+            final Collection<Allele> alleles) {
         this.source = source;
         this.contig = contig;
         this.start = start;
@@ -169,7 +173,8 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder(final VariantContext parent) {
         if (parent == null) {
-            throw new IllegalArgumentException("BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
+            throw new IllegalArgumentException(
+                    "BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
         }
         this.alleles = parent.getAlleles();
         this.contig = parent.getContig();
@@ -191,7 +196,9 @@ public class VariantContextBuilder {
     }
 
     public VariantContextBuilder(final VariantContextBuilder parent) {
-        if ( parent == null ) throw new IllegalArgumentException("BUG: VariantContext parent argument cannot be null in VariantContextBuilder");
+        if (parent == null)
+            throw new IllegalArgumentException(
+                    "BUG: VariantContext parent argument cannot be null in VariantContextBuilder");
 
         this.attributesCanBeModified = false;
         this.filtersCanBeModified = false;
@@ -229,14 +236,14 @@ public class VariantContextBuilder {
     public VariantContextBuilder alleles(final List<String> alleleStrings) {
         final List<Allele> alleles = new ArrayList<>(alleleStrings.size());
 
-        for ( int i = 0; i < alleleStrings.size(); i++ ) {
+        for (int i = 0; i < alleleStrings.size(); i++) {
             alleles.add(Allele.create(alleleStrings.get(i), i == 0));
         }
 
         return alleles(alleles);
     }
 
-    public VariantContextBuilder alleles(final String ... alleleStrings) {
+    public VariantContextBuilder alleles(final String... alleleStrings) {
         return alleles(Arrays.asList(alleleStrings));
     }
 
@@ -266,7 +273,6 @@ public class VariantContextBuilder {
         return this;
     }
 
-
     /**
      * Tells this builder to put this map of attributes into the resulting <code>VariantContext</code>. The
      * contents of the Map are copied to the current Map (or a new one is created if null)
@@ -290,7 +296,6 @@ public class VariantContextBuilder {
         this.attributesCanBeModified = true;
         return this;
     }
-
 
     /**
      * Puts the key -&gt; value mapping into this builder's attributes
@@ -324,8 +329,7 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder rmAttributes(final List<String> keys) {
         makeAttributesModifiable();
-        for ( final String key : keys )
-            attributes.remove(key);
+        for (final String key : keys) attributes.remove(key);
         return this;
     }
 
@@ -393,15 +397,14 @@ public class VariantContextBuilder {
         toValidate.add(VariantContext.Validation.FILTERS);
     }
 
-
     /**
      * {@link #filters}
      *
      * @param filters  Strings to set as the filters for this builder
      * @return this builder
      */
-    public VariantContextBuilder filters(final String ... filters) {
-        if(filters == null){
+    public VariantContextBuilder filters(final String... filters) {
+        if (filters == null) {
             this.unfiltered();
         } else {
             this.filtersCanBeModified = true;
@@ -482,7 +485,7 @@ public class VariantContextBuilder {
      * Tells this builder that the resulting <code>VariantContext</code> should use a <code>GenotypeContext</code> containing genotypes
      * @param genotypes genotypes to set as genotypes for this builder
      */
-    public VariantContextBuilder genotypes(final Genotype ... genotypes) {
+    public VariantContextBuilder genotypes(final Genotype... genotypes) {
         return genotypes(GenotypesContext.copy(Arrays.asList(genotypes)));
     }
 
@@ -596,7 +599,8 @@ public class VariantContextBuilder {
      *                              if no is expected but will throw an error if one is found
      * @return this builder
      */
-    public VariantContextBuilder computeEndFromAlleles(final List<Allele> alleles, final int start, final int endForSymbolicAlleles) {
+    public VariantContextBuilder computeEndFromAlleles(
+            final List<Allele> alleles, final int start, final int endForSymbolicAlleles) {
         stop(VariantContextUtils.computeEndFromAlleles(alleles, start, endForSymbolicAlleles));
         return this;
     }
@@ -644,8 +648,18 @@ public class VariantContextBuilder {
             filtersCanBeModified = false;
         }
 
-        return new VariantContext(source, ID, contig, start, stop, alleles,
-                genotypes, log10PError, filters, attributes,
-                fullyDecoded, toValidate);
+        return new VariantContext(
+                source,
+                ID,
+                contig,
+                start,
+                stop,
+                alleles,
+                genotypes,
+                log10PError,
+                filters,
+                attributes,
+                fullyDecoded,
+                toValidate);
     }
 }

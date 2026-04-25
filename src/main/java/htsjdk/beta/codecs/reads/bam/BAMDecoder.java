@@ -1,11 +1,11 @@
 package htsjdk.beta.codecs.reads.bam;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
-import htsjdk.beta.plugin.reads.ReadsDecoder;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 
 /**
@@ -30,19 +30,24 @@ public abstract class BAMDecoder implements ReadsDecoder {
      */
     @InternalAPI
     public BAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
-        ValidationUtils.nonNull(inputBundle,"inputBundle");
+        ValidationUtils.nonNull(inputBundle, "inputBundle");
         ValidationUtils.nonNull(readsDecoderOptions, "readsDecoderOptions");
 
         this.inputBundle = inputBundle;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
+        this.displayName =
+                inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
         this.readsDecoderOptions = readsDecoderOptions;
     }
 
     @Override
-    final public String getFileFormat() { return ReadsFormats.BAM; }
+    public final String getFileFormat() {
+        return ReadsFormats.BAM;
+    }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     /**
      * Get the input {@link Bundle} for this decoder.

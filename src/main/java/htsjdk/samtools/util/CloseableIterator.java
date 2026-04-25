@@ -34,7 +34,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * This interface is used by iterators that use releasable resources during iteration.
- * 
+ *
  * The consumer of a CloseableIterator should ensure that the close() method is always called,
  * for example by putting such a call in a finally block.  Two conventions should be followed
  * by all implementors of CloseableIterator:

@@ -15,7 +15,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,8 +69,7 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
      * that the registry contains an incorrectly written codec.
      */
     public HaploidReferenceDecoder getHaploidReferenceDecoder(
-            final IOPath inputPath,
-            final HaploidReferenceDecoderOptions HaploidReferenceDecoderOptions) {
+            final IOPath inputPath, final HaploidReferenceDecoderOptions HaploidReferenceDecoderOptions) {
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
 
@@ -109,12 +107,12 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
      */
     @SuppressWarnings("unchecked")
     public HaploidReferenceDecoder getHaploidReferenceDecoder(
-            final Bundle inputBundle,
-            final HaploidReferenceDecoderOptions HaploidReferenceDecoderOptions) {
+            final Bundle inputBundle, final HaploidReferenceDecoderOptions HaploidReferenceDecoderOptions) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(HaploidReferenceDecoderOptions, "Decoder options");
 
-        return (HaploidReferenceDecoder) resolveForDecoding(inputBundle).getDecoder(inputBundle, HaploidReferenceDecoderOptions);
+        return (HaploidReferenceDecoder)
+                resolveForDecoding(inputBundle).getDecoder(inputBundle, HaploidReferenceDecoderOptions);
     }
 
     /**
@@ -126,38 +124,33 @@ public class HaploidReferenceResolver extends HtsCodecResolver<HaploidReferenceC
      * @return a reference Bundle
      * @param <T>
      */
-    public static <T extends IOPath> Bundle referenceBundleFromFastaPath(final IOPath fastaPath, final Function<String, T> ioPathConstructor)  {
+    public static <T extends IOPath> Bundle referenceBundleFromFastaPath(
+            final IOPath fastaPath, final Function<String, T> ioPathConstructor) {
         final BundleBuilder referenceBundleBuilder = new BundleBuilder();
         referenceBundleBuilder.addPrimary(new IOPathResource(fastaPath, BundleResourceType.CT_HAPLOID_REFERENCE));
 
         final Path dictPath = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(fastaPath.toPath());
         if (Files.exists(dictPath)) {
-            referenceBundleBuilder.addSecondary(
-                    new IOPathResource(
-                            ioPathConstructor.apply(dictPath.toUri().toString()),
-                            BundleResourceType.CT_REFERENCE_DICTIONARY));
+            referenceBundleBuilder.addSecondary(new IOPathResource(
+                    ioPathConstructor.apply(dictPath.toUri().toString()), BundleResourceType.CT_REFERENCE_DICTIONARY));
         }
 
         final Path idxPath = ReferenceSequenceFileFactory.getFastaIndexFileName(fastaPath.toPath());
         if (Files.exists(idxPath)) {
-            referenceBundleBuilder.addSecondary(
-                    new IOPathResource(
-                            ioPathConstructor.apply(idxPath.toUri().toString()),
-                            BundleResourceType.CT_REFERENCE_INDEX));
+            referenceBundleBuilder.addSecondary(new IOPathResource(
+                    ioPathConstructor.apply(idxPath.toUri().toString()), BundleResourceType.CT_REFERENCE_INDEX));
         }
 
         try {
             if (IOUtil.isBlockCompressed(fastaPath.toPath(), true)) {
                 final Path gziPath = GZIIndex.resolveIndexNameForBgzipFile(fastaPath.toPath());
-                referenceBundleBuilder.addSecondary(
-                        new IOPathResource(
-                                ioPathConstructor.apply(gziPath.toUri().toString()),
-                                BundleResourceType.CT_REFERENCE_INDEX_GZI));
+                referenceBundleBuilder.addSecondary(new IOPathResource(
+                        ioPathConstructor.apply(gziPath.toUri().toString()),
+                        BundleResourceType.CT_REFERENCE_INDEX_GZI));
             }
         } catch (IOException e) {
             throw new HtsjdkException("Error while checking for block compression", e);
         }
         return referenceBundleBuilder.build();
     }
-
 }

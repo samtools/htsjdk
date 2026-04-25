@@ -22,7 +22,6 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.readers.*;
-
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,10 +35,11 @@ import java.io.InputStream;
  */
 public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatureCodec<T, LineIterator> {
     private static final Log log = Log.getInstance(AsciiFeatureCodec.class);
+
     protected AsciiFeatureCodec(final Class<T> myClass) {
         super(myClass);
     }
-    
+
     @Override
     public void close(final LineIterator lineIterator) {
         CloserUtil.close(lineIterator);
@@ -60,8 +60,8 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
         return new LineIteratorImpl(new SynchronousLineReader(bufferedInputStream));
     }
 
-    /** 
-     * Convenience method.  Decoding in ASCII files operates line-by-line, so obviate the need to call 
+    /**
+     * Convenience method.  Decoding in ASCII files operates line-by-line, so obviate the need to call
      * {@link htsjdk.tribble.readers.LineIterator#next()} in implementing classes and, instead, have them implement
      * {@link AsciiFeatureCodec#decode(String)}.
      */
@@ -84,5 +84,5 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
      *
      * @return the actual header data in the file, or null if none is available
      */
-    abstract public Object readActualHeader(final LineIterator reader);
+    public abstract Object readActualHeader(final LineIterator reader);
 }

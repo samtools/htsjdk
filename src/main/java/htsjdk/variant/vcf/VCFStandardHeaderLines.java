@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -51,7 +50,8 @@ public class VCFStandardHeaderLines {
     /**
      * Enabling this causes us to repair header lines even if only their descriptions differ.
      */
-    private final static boolean REPAIR_BAD_DESCRIPTIONS = false;
+    private static final boolean REPAIR_BAD_DESCRIPTIONS = false;
+
     private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<VCFFormatHeaderLine>();
     private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<VCFInfoHeaderLine>();
 
@@ -60,11 +60,12 @@ public class VCFStandardHeaderLines {
      * allocated {@link VCFHeader} with standard VCF header lines repaired as necessary.
      */
     public static VCFHeader repairStandardHeaderLines(final VCFHeader oldHeader) {
-        final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(oldHeader.getMetaDataInInputOrder().size());
-        for ( VCFHeaderLine line : oldHeader.getMetaDataInInputOrder() ) {
-            if ( line instanceof VCFFormatHeaderLine ) {
+        final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(
+                oldHeader.getMetaDataInInputOrder().size());
+        for (VCFHeaderLine line : oldHeader.getMetaDataInInputOrder()) {
+            if (line instanceof VCFFormatHeaderLine) {
                 line = formatStandards.repair((VCFFormatHeaderLine) line);
-            } else if ( line instanceof VCFInfoHeaderLine) {
+            } else if (line instanceof VCFInfoHeaderLine) {
                 line = infoStandards.repair((VCFInfoHeaderLine) line);
             }
 
@@ -86,14 +87,16 @@ public class VCFStandardHeaderLines {
      * {@code IDs} without standard descriptions, unless {@code throwErrorForMissing} is true, in which
      * case this situation results in a {@link TribbleException}
      */
-    public static Set<String> addStandardFormatLines(final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final Collection<String> IDs) {
+    public static Set<String> addStandardFormatLines(
+            final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final Collection<String> IDs) {
         return formatStandards.addToHeader(headerLines, IDs, throwErrorForMissing);
     }
 
     /**
      * @see #addStandardFormatLines(java.util.Set, boolean, java.util.Collection)
      */
-    public static Set<String> addStandardFormatLines(final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final String ... IDs) {
+    public static Set<String> addStandardFormatLines(
+            final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final String... IDs) {
         return addStandardFormatLines(headerLines, throwErrorForMissing, Arrays.asList(IDs));
     }
 
@@ -118,14 +121,16 @@ public class VCFStandardHeaderLines {
      * IDs without standard descriptions, unless {@code throwErrorForMissing} is true, in which
      * case this situation results in a {@link TribbleException}.
      */
-    public static Set<String> addStandardInfoLines(final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final Collection<String> IDs) {
+    public static Set<String> addStandardInfoLines(
+            final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final Collection<String> IDs) {
         return infoStandards.addToHeader(headerLines, IDs, throwErrorForMissing);
     }
 
     /**
      * @see #addStandardFormatLines(java.util.Set, boolean, java.util.Collection)
      */
-    public static Set<String> addStandardInfoLines(final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final String ... IDs) {
+    public static Set<String> addStandardInfoLines(
+            final Set<VCFHeaderLine> headerLines, final boolean throwErrorForMissing, final String... IDs) {
         return addStandardInfoLines(headerLines, throwErrorForMissing, Arrays.asList(IDs));
     }
 
@@ -145,7 +150,6 @@ public class VCFStandardHeaderLines {
         return getInfoLine(ID, true);
     }
 
-
     private static void registerStandard(final VCFInfoHeaderLine line) {
         infoStandards.add(line);
     }
@@ -159,26 +163,71 @@ public class VCFStandardHeaderLines {
     //
     static {
         // FORMAT lines
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_KEY,           1,                            VCFHeaderLineType.String,  "Genotype"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_QUALITY_KEY,   1,                            VCFHeaderLineType.Integer, "Genotype Quality"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.DEPTH_KEY,              1,                            VCFHeaderLineType.Integer, "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY,        VCFHeaderLineCount.G,         VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFHeaderLineCount.R,         VCFHeaderLineType.Integer, "Allelic depths for the ref and alt alleles in the order listed"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_FILTER_KEY,    VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String,  "Genotype-level filter"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_SET_KEY,          1,                            VCFHeaderLineType.Integer, "Phasing set (typically the position of the first variant in the set)"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                            VCFHeaderLineType.Float,   "Read-backed phasing quality"));
+        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_KEY, 1, VCFHeaderLineType.String, "Genotype"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.GENOTYPE_QUALITY_KEY, 1, VCFHeaderLineType.Integer, "Genotype Quality"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.DEPTH_KEY,
+                1,
+                VCFHeaderLineType.Integer,
+                "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.GENOTYPE_PL_KEY,
+                VCFHeaderLineCount.G,
+                VCFHeaderLineType.Integer,
+                "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.GENOTYPE_ALLELE_DEPTHS,
+                VCFHeaderLineCount.R,
+                VCFHeaderLineType.Integer,
+                "Allelic depths for the ref and alt alleles in the order listed"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.GENOTYPE_FILTER_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.String,
+                "Genotype-level filter"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.PHASE_SET_KEY,
+                1,
+                VCFHeaderLineType.Integer,
+                "Phasing set (typically the position of the first variant in the set)"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.PHASE_QUALITY_KEY, 1, VCFHeaderLineType.Float, "Read-backed phasing quality"));
 
         // INFO lines
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.END_KEY,                  1,                    VCFHeaderLineType.Integer, "Stop position of the interval"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.DBSNP_KEY,                0,                    VCFHeaderLineType.Flag,    "dbSNP Membership"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.DEPTH_KEY,                1,                    VCFHeaderLineType.Integer, "Approximate read depth; some reads may have been filtered"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.STRAND_BIAS_KEY,          1,                    VCFHeaderLineType.Float,   "Strand Bias"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_FREQUENCY_KEY,     VCFHeaderLineCount.A, VCFHeaderLineType.Float,   "Allele Frequency, for each ALT allele, in the same order as listed"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_COUNT_KEY,         VCFHeaderLineCount.A, VCFHeaderLineType.Integer, "Allele count in genotypes, for each ALT allele, in the same order as listed"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_NUMBER_KEY,        1,                    VCFHeaderLineType.Integer, "Total number of alleles in called genotypes"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.MAPPING_QUALITY_ZERO_KEY, 1,                    VCFHeaderLineType.Integer, "Total Mapping Quality Zero Reads"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.RMS_MAPPING_QUALITY_KEY,  1,                    VCFHeaderLineType.Float,   "RMS Mapping Quality"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY,              0,                    VCFHeaderLineType.Flag,    "Somatic event"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.END_KEY, 1, VCFHeaderLineType.Integer, "Stop position of the interval"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.DBSNP_KEY, 0, VCFHeaderLineType.Flag, "dbSNP Membership"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.DEPTH_KEY,
+                1,
+                VCFHeaderLineType.Integer,
+                "Approximate read depth; some reads may have been filtered"));
+        registerStandard(
+                new VCFInfoHeaderLine(VCFConstants.STRAND_BIAS_KEY, 1, VCFHeaderLineType.Float, "Strand Bias"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.ALLELE_FREQUENCY_KEY,
+                VCFHeaderLineCount.A,
+                VCFHeaderLineType.Float,
+                "Allele Frequency, for each ALT allele, in the same order as listed"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.ALLELE_COUNT_KEY,
+                VCFHeaderLineCount.A,
+                VCFHeaderLineType.Integer,
+                "Allele count in genotypes, for each ALT allele, in the same order as listed"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.ALLELE_NUMBER_KEY,
+                1,
+                VCFHeaderLineType.Integer,
+                "Total number of alleles in called genotypes"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.MAPPING_QUALITY_ZERO_KEY,
+                1,
+                VCFHeaderLineType.Integer,
+                "Total Mapping Quality Zero Reads"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RMS_MAPPING_QUALITY_KEY, 1, VCFHeaderLineType.Float, "RMS Mapping Quality"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY, 0, VCFHeaderLineType.Flag, "Somatic event"));
     }
 
     private static class Standards<T extends VCFCompoundHeaderLine> {
@@ -186,20 +235,32 @@ public class VCFStandardHeaderLines {
 
         public T repair(final T line) {
             final T standard = get(line.getID(), false);
-            if ( standard != null ) {
+            if (standard != null) {
                 final boolean badCountType = line.getCountType() != standard.getCountType();
-                final boolean badCount     = line.isFixedCount() && ! badCountType && line.getCount() != standard.getCount();
-                final boolean badType      = line.getType() != standard.getType();
-                final boolean badDesc      = ! line.getDescription().equals(standard.getDescription());
-                final boolean needsRepair  = badCountType || badCount || badType || (REPAIR_BAD_DESCRIPTIONS && badDesc);
+                final boolean badCount = line.isFixedCount() && !badCountType && line.getCount() != standard.getCount();
+                final boolean badType = line.getType() != standard.getType();
+                final boolean badDesc = !line.getDescription().equals(standard.getDescription());
+                final boolean needsRepair = badCountType || badCount || badType || (REPAIR_BAD_DESCRIPTIONS && badDesc);
 
-                if ( needsRepair ) {
-                    if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                if (needsRepair) {
+                    if (GeneralUtils.DEBUG_MODE_ENABLED) {
                         System.err.println("Repairing standard header line for field " + line.getID() + " because"
-                                           + (badCountType ? " -- count types disagree; header has " + line.getCountType() + " but standard is " + standard.getCountType() : "")
-                                           + (badType ? " -- type disagree; header has " + line.getType() + " but standard is " + standard.getType() : "")
-                                           + (badCount ? " -- counts disagree; header has " + line.getCount() + " but standard is " + standard.getCount() : "")
-                                           + (badDesc ? " -- descriptions disagree; header has '" + line.getDescription() + "' but standard is '" + standard.getDescription() + "'": ""));
+                                + (badCountType
+                                        ? " -- count types disagree; header has " + line.getCountType()
+                                                + " but standard is " + standard.getCountType()
+                                        : "")
+                                + (badType
+                                        ? " -- type disagree; header has " + line.getType() + " but standard is "
+                                                + standard.getType()
+                                        : "")
+                                + (badCount
+                                        ? " -- counts disagree; header has " + line.getCount() + " but standard is "
+                                                + standard.getCount()
+                                        : "")
+                                + (badDesc
+                                        ? " -- descriptions disagree; header has '" + line.getDescription()
+                                                + "' but standard is '" + standard.getDescription() + "'"
+                                        : ""));
                     }
                     return standard;
                 } else {
@@ -210,21 +271,22 @@ public class VCFStandardHeaderLines {
             }
         }
 
-        public Set<String> addToHeader(final Set<VCFHeaderLine> headerLines, final Collection<String> IDs, final boolean throwErrorForMissing) {
+        public Set<String> addToHeader(
+                final Set<VCFHeaderLine> headerLines,
+                final Collection<String> IDs,
+                final boolean throwErrorForMissing) {
             final Set<String> missing = new HashSet<String>();
-            for ( final String ID : IDs ) {
+            for (final String ID : IDs) {
                 final T line = get(ID, throwErrorForMissing);
-                if ( line == null )
-                    missing.add(ID);
-                else
-                    headerLines.add(line);
+                if (line == null) missing.add(ID);
+                else headerLines.add(line);
             }
 
             return missing;
         }
 
         public void add(final T line) {
-            if ( standards.containsKey(line.getID()) ) {
+            if (standards.containsKey(line.getID())) {
                 throw new TribbleException("Attempting to add multiple standard header lines for ID " + line.getID());
             }
             standards.put(line.getID(), line);
@@ -232,7 +294,7 @@ public class VCFStandardHeaderLines {
 
         public T get(final String ID, final boolean throwErrorForMissing) {
             final T x = standards.get(ID);
-            if ( throwErrorForMissing && x == null ) {
+            if (throwErrorForMissing && x == null) {
                 throw new TribbleException("Couldn't find a standard VCF header line for field " + ID);
             }
             return x;

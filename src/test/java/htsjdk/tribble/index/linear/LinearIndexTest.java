@@ -28,25 +28,24 @@ import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 public class LinearIndexTest extends HtsjdkTest {
     private static final File RANDOM_FILE = new File("notMeaningful");
 
-    private final static Block CHR1_B1 = new Block(1, 10);
-    private final static Block CHR1_B2 = new Block(10, 20);
-    private final static Block CHR1_B3 = new Block(20, 30);
-    private final static Block CHR2_B1 = new Block(1, 100);
-    private final static Block CHR2_B2 = new Block(100, 200);
+    private static final Block CHR1_B1 = new Block(1, 10);
+    private static final Block CHR1_B2 = new Block(10, 20);
+    private static final Block CHR1_B3 = new Block(20, 30);
+    private static final Block CHR2_B1 = new Block(1, 100);
+    private static final Block CHR2_B2 = new Block(100, 200);
 
     private LinearIndex idx;
 
@@ -112,16 +111,16 @@ public class LinearIndexTest extends HtsjdkTest {
 
         idx2.setTS(123456789);
         Assert.assertNotSame(idx, idx2, "Indices with different timestamps are not the same");
-        Assert.assertTrue(idx.equalsIgnoreProperties(idx2), "Indices with different timestamps are equalIgnoreTimeStamp");
+        Assert.assertTrue(
+                idx.equalsIgnoreProperties(idx2), "Indices with different timestamps are equalIgnoreTimeStamp");
     }
-
 
     // chr1 (0, 10]
     // chr1 (10, 20]
     // chr1 (20, 30]
     // chr2 (0, 100]
     // chr2 (100, 200]
-    //@Test()
+    // @Test()
     // TODO -- this is not a useful test as written -- the linear index always returns a single block since by
     // TODO -- definition they are contiguous and can be collapsed to a single block.
     public void testBasicQuery() {
@@ -148,14 +147,18 @@ public class LinearIndexTest extends HtsjdkTest {
         testQuery("chr2", 251, 251); // just escaping the 50 bp longest event
     }
 
-    private final void testQuery(final String chr, final int start, final int stop, final Block... expectedBlocksArray) {
+    private final void testQuery(
+            final String chr, final int start, final int stop, final Block... expectedBlocksArray) {
         final List<Block> qBlocks = idx.getBlocks(chr, start, stop);
         final List<Block> eBlocks = Arrays.asList(expectedBlocksArray);
 
-        Assert.assertEquals(qBlocks.size(), eBlocks.size(),
-                String.format("Query %s:%d-%d returned %d blocks but we only expected %d.", chr, start, stop, qBlocks.size(), eBlocks.size()));
-        for (int i = 0; i < qBlocks.size(); i++)
-            Assert.assertEquals(qBlocks.get(i), eBlocks.get(i));
+        Assert.assertEquals(
+                qBlocks.size(),
+                eBlocks.size(),
+                String.format(
+                        "Query %s:%d-%d returned %d blocks but we only expected %d.",
+                        chr, start, stop, qBlocks.size(), eBlocks.size()));
+        for (int i = 0; i < qBlocks.size(); i++) Assert.assertEquals(qBlocks.get(i), eBlocks.get(i));
     }
 
     File fakeBed = new File(TestUtils.DATA_DIR + "fakeBed.bed");
@@ -164,7 +167,8 @@ public class LinearIndexTest extends HtsjdkTest {
     public void oneEntryFirstChr() {
         final BEDCodec code = new BEDCodec();
         final Index index = IndexFactory.createLinearIndex(fakeBed, code);
-        final AbstractFeatureReader reader = AbstractFeatureReader.getFeatureReader(fakeBed.getAbsolutePath(), code, index);
+        final AbstractFeatureReader reader =
+                AbstractFeatureReader.getFeatureReader(fakeBed.getAbsolutePath(), code, index);
 
         try {
             final CloseableTribbleIterator it = reader.iterator();
@@ -179,7 +183,6 @@ public class LinearIndexTest extends HtsjdkTest {
         }
     }
 
-
     @Test
     /**
      *
@@ -190,20 +193,19 @@ public class LinearIndexTest extends HtsjdkTest {
      * chr2	179266309	179266748	Hs.609465
      * chr2	179296428	179300012	Hs.623987
      * chr2	179302952	179303488	Hs.594545
-
+     *
      */
     public void testOverlappingFeatures() throws Exception {
-        //chr2:179,222,066-179,262,059<- CONTAINS TTN
+        // chr2:179,222,066-179,262,059<- CONTAINS TTN
 
-        final Set<String> names = new HashSet<String>(Arrays.asList("Hs.134602", "Hs.620337", "Hs.609465", "Hs.623987",
-                "Hs.594545", "LONG_FEATURE"));
+        final Set<String> names = new HashSet<String>(
+                Arrays.asList("Hs.134602", "Hs.620337", "Hs.609465", "Hs.623987", "Hs.594545", "LONG_FEATURE"));
 
         final String bedFile = TestUtils.DATA_DIR + "bed/Unigene.sample.bed";
         final String chr = "chr2";
         final int start = 179266309;
         final int end = 179303488;
         final int expectedCount = 6;
-
 
         // Linear binned index
         LinearIndex.enableAdaptiveIndexing = false;
@@ -222,7 +224,7 @@ public class LinearIndexTest extends HtsjdkTest {
 
         Assert.assertEquals(countInterval, expectedCount);
 
-        //Repeat with adaptive indexing
+        // Repeat with adaptive indexing
         LinearIndex.enableAdaptiveIndexing = true;
         idx = IndexFactory.createLinearIndex(new File(bedFile), new BEDCodec(), binSize);
 
@@ -237,8 +239,5 @@ public class LinearIndexTest extends HtsjdkTest {
         }
 
         Assert.assertEquals(countInterval, expectedCount);
-
-
     }
-
 }

@@ -73,11 +73,10 @@ webmaster
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.Date;
 
 /**
  * NOTE: This code has been taken from w3.org, and modified slightly to handle timezones of the form [-+]DDDD,
@@ -88,7 +87,6 @@ import java.util.Date;
  * @version $Revision: 1.3 $
  * @author  bmahe@w3.org
  */
-
 public class DateParserTest extends HtsjdkTest {
 
     private static void test(final String isodate) {
@@ -110,16 +108,16 @@ public class DateParserTest extends HtsjdkTest {
         Assert.assertTrue(Math.abs(date.getTime() - dateRoundTrip.getTime()) < 10);
     }
 
-    @DataProvider(name="dateDate")
+    @DataProvider(name = "dateDate")
     public Object[][] dateData() {
-        return new Object[][]{
-                {"1997-07-16T19:20:30.45-02:00"},
-                {"1997-07-16T19:20:30+01:00"},
-                {"1997-07-16T19:20:30+01:00"},
-                {"1997-07-16T19:20"},
-                {"1997-07-16"},
-                {"1997-07"},
-                {"1997"},
+        return new Object[][] {
+            {"1997-07-16T19:20:30.45-02:00"},
+            {"1997-07-16T19:20:30+01:00"},
+            {"1997-07-16T19:20:30+01:00"},
+            {"1997-07-16T19:20"},
+            {"1997-07-16"},
+            {"1997-07"},
+            {"1997"},
         };
     }
 

@@ -30,11 +30,10 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentContext;
-import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CRAMCompressionRecord;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Slice;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -93,11 +92,10 @@ public final class SliceFactory {
      * @return
      */
     public long createNewSliceEntry(final int currentReferenceContextID, final List<SAMRecord> sliceSAMRecords) {
-        cramRecordSliceEntries.add(
-                new SliceStagingEntry(
-                        currentReferenceContextID,
-                        convertToCRAMRecords(sliceSAMRecords, sliceRecordCounter),
-                        sliceRecordCounter));
+        cramRecordSliceEntries.add(new SliceStagingEntry(
+                currentReferenceContextID,
+                convertToCRAMRecords(sliceSAMRecords, sliceRecordCounter),
+                sliceRecordCounter));
         return sliceRecordCounter + sliceSAMRecords.size();
     }
 
@@ -113,9 +111,11 @@ public final class SliceFactory {
         // container, no matter how they may be distributed across slices). So if more than one slice
         // entry has been accumulated, we need to temporarily stream all the records into a single
         // list to present to compressionHeaderFactory.
-        return cramRecordSliceEntries.size() > 1 ?
-                cramRecordSliceEntries.stream().flatMap(e -> e.records.stream()).collect(Collectors.toList()) :
-                cramRecordSliceEntries.get(0).getRecords();
+        return cramRecordSliceEntries.size() > 1
+                ? cramRecordSliceEntries.stream()
+                        .flatMap(e -> e.records.stream())
+                        .collect(Collectors.toList())
+                : cramRecordSliceEntries.get(0).getRecords();
     }
 
     public int getNumberOfSliceEntries() {
@@ -128,22 +128,19 @@ public final class SliceFactory {
      * @param containerByteOffset the container byte offset to use for the newly created Slices
      * @return List of Slices created from the accumulated state of this SliceFactory
      */
-    public List<Slice> createSlices(
-            final CompressionHeader compressionHeader,
-            final long containerByteOffset) {
+    public List<Slice> createSlices(final CompressionHeader compressionHeader, final long containerByteOffset) {
         final List<Slice> slices = new ArrayList<>(cramRecordSliceEntries.size());
         for (final SliceStagingEntry sliceStagingEntry : cramRecordSliceEntries) {
             final Slice slice = new Slice(
                     sliceStagingEntry.getRecords(),
                     compressionHeader,
                     containerByteOffset,
-                    sliceStagingEntry.getGlobalRecordCounter()
-            );
+                    sliceStagingEntry.getGlobalRecordCounter());
             final AlignmentContext sliceAlignmentContext = slice.getAlignmentContext();
             if (sliceAlignmentContext.getReferenceContext().isMappedSingleRef()) {
                 cramReferenceRegion.fetchReferenceBasesByRegion(sliceAlignmentContext);
                 slice.setReferenceMD5(cramReferenceRegion);
-             }
+            }
             slices.add(slice);
         }
         cramRecordSliceEntries.clear();
@@ -152,7 +149,8 @@ public final class SliceFactory {
 
     // The htsjdk write implementation marks all mate pair records as "detached" state, even when in the same slice,
     // in order to preserve full round trip fidelity through CRAM.
-    private final List<CRAMCompressionRecord> convertToCRAMRecords(final List<SAMRecord> samRecords, final long sliceRecordCounter) {
+    private final List<CRAMCompressionRecord> convertToCRAMRecords(
+            final List<SAMRecord> samRecords, final long sliceRecordCounter) {
         long recordIndex = sliceRecordCounter;
         final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>();
         for (final SAMRecord samRecord : samRecords) {
@@ -218,9 +216,9 @@ public final class SliceFactory {
             case ReferenceContext.UNMAPPED_UNPLACED_ID:
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still unmapped...
-                    return sliceFull ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.UNMAPPED_UNPLACED_ID;
+                    return sliceFull
+                            ? ReferenceContext.UNINITIALIZED_REFERENCE_ID
+                            : ReferenceContext.UNMAPPED_UNPLACED_ID;
                 } else if (coordinateSorted) {
                     // coordinate sorted, and we're going from unmapped to mapped ??
                     throw new CRAMException("Invalid coord-sorted input - unmapped records must be last");
@@ -229,9 +227,9 @@ public final class SliceFactory {
                     // record into the same slice with the unmapped ones, since there is no index query
                     // concern since we're not coord sorted anyway (though there is no reference compression
                     // happening in this container).
-                    return sliceFull ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.MULTIPLE_REFERENCE_ID;
+                    return sliceFull
+                            ? ReferenceContext.UNINITIALIZED_REFERENCE_ID
+                            : ReferenceContext.MULTIPLE_REFERENCE_ID;
                 }
 
             case ReferenceContext.MULTIPLE_REFERENCE_ID:
@@ -239,14 +237,14 @@ public final class SliceFactory {
                 // to emit smaller multi-ref slices on the theory that the stream will get back on track
                 // for single ref, at least for coord-sorted.
                 if (coordinateSorted) {
-                    return numberOfSAMRecords < minimumSingleReferenceSliceThreshold ?
-                            ReferenceContext.MULTIPLE_REFERENCE_ID :
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID; // emit a small mutli-ref
+                    return numberOfSAMRecords < minimumSingleReferenceSliceThreshold
+                            ? ReferenceContext.MULTIPLE_REFERENCE_ID
+                            : ReferenceContext.UNINITIALIZED_REFERENCE_ID; // emit a small mutli-ref
                 } else {
                     // multi-ref, not coord sorted
-                    return sliceFull ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            ReferenceContext.MULTIPLE_REFERENCE_ID;
+                    return sliceFull
+                            ? ReferenceContext.UNINITIALIZED_REFERENCE_ID
+                            : ReferenceContext.MULTIPLE_REFERENCE_ID;
                 }
 
             default:
@@ -254,20 +252,19 @@ public final class SliceFactory {
                 // (currentReferenceContext is an actual reference index, not a sentinel).
                 if (nextReferenceIndex == currentReferenceContext) {
                     // still on the same reference contig
-                    return sliceFull ?
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID :
-                            nextReferenceIndex;
+                    return sliceFull ? ReferenceContext.UNINITIALIZED_REFERENCE_ID : nextReferenceIndex;
                 } else {
                     // switching to either a new reference contig, or to unmapped
-                    return numberOfSAMRecords < minimumSingleReferenceSliceThreshold ?
+                    return numberOfSAMRecords < minimumSingleReferenceSliceThreshold
+                            ?
                             // if we already have accumulated at least one slice, then we emit it rather than
                             // switch to multi-ref so we can prevent a multi-ref slice from being packed into
                             // a container with a single-ref slice (which violates the spec, so the alternative
                             // to doing so would require making both slices multi-ref)
-                            (getNumberOfSliceEntries() > 0 ?
-                                    ReferenceContext.UNINITIALIZED_REFERENCE_ID:
-                                    ReferenceContext.MULTIPLE_REFERENCE_ID) :
-                            ReferenceContext.UNINITIALIZED_REFERENCE_ID;
+                            (getNumberOfSliceEntries() > 0
+                                    ? ReferenceContext.UNINITIALIZED_REFERENCE_ID
+                                    : ReferenceContext.MULTIPLE_REFERENCE_ID)
+                            : ReferenceContext.UNINITIALIZED_REFERENCE_ID;
                 }
         }
     }
@@ -281,17 +278,25 @@ public final class SliceFactory {
         private final ReferenceContext referenceContext;
         private final long sliceRecordCounter;
 
-        public SliceStagingEntry(final int referenceContextID, final List<CRAMCompressionRecord> sourceRecords, final long sliceRecordCounter) {
+        public SliceStagingEntry(
+                final int referenceContextID,
+                final List<CRAMCompressionRecord> sourceRecords,
+                final long sliceRecordCounter) {
             this.records = new ArrayList<>(sourceRecords);
             this.referenceContext = new ReferenceContext(referenceContextID);
             this.sliceRecordCounter = sliceRecordCounter;
         }
+
         public ReferenceContext getReferenceContext() {
             return referenceContext;
         }
+
         public List<CRAMCompressionRecord> getRecords() {
             return records;
         }
-        public long getGlobalRecordCounter() { return sliceRecordCounter; }
+
+        public long getGlobalRecordCounter() {
+            return sliceRecordCounter;
+        }
     }
 }

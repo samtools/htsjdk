@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,8 +89,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
     @Override
     public BAMFileSpan clone() {
         final BAMFileSpan clone = new BAMFileSpan();
-        for(final Chunk chunk: chunks)
-            clone.chunks.add(chunk.clone());
+        for (final Chunk chunk : chunks) clone.chunks.add(chunk.clone());
         return clone;
     }
 
@@ -104,30 +102,26 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      */
     @Override
     public SAMFileSpan removeContentsBefore(final SAMFileSpan fileSpan) {
-        if(fileSpan == null)
-            return clone();
+        if (fileSpan == null) return clone();
 
-        if(!(fileSpan instanceof BAMFileSpan))
-            throw new SAMException("Unable to compare ");
+        if (!(fileSpan instanceof BAMFileSpan)) throw new SAMException("Unable to compare ");
 
-        final BAMFileSpan bamFileSpan = (BAMFileSpan)fileSpan;
+        final BAMFileSpan bamFileSpan = (BAMFileSpan) fileSpan;
 
-        if(bamFileSpan.isEmpty())
-            return clone();
+        if (bamFileSpan.isEmpty()) return clone();
 
         validateSorted();
 
         final BAMFileSpan trimmedChunkList = new BAMFileSpan();
         final long chunkStart = bamFileSpan.chunks.get(0).getChunkStart();
-        for(final Chunk chunkToTrim: chunks) {
-            if(chunkToTrim.getChunkEnd() > chunkStart) {
-                if(chunkToTrim.getChunkStart() >= chunkStart) {
+        for (final Chunk chunkToTrim : chunks) {
+            if (chunkToTrim.getChunkEnd() > chunkStart) {
+                if (chunkToTrim.getChunkStart() >= chunkStart) {
                     // This chunk from the list is completely beyond the start of the filtering chunk.
                     trimmedChunkList.add(chunkToTrim.clone());
-                }
-                else {
+                } else {
                     // This chunk from the list partially overlaps the filtering chunk and must be trimmed.
-                    trimmedChunkList.add(new Chunk(chunkStart,chunkToTrim.getChunkEnd()));
+                    trimmedChunkList.add(new Chunk(chunkStart, chunkToTrim.getChunkEnd()));
                 }
             }
         }
@@ -143,30 +137,27 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * given chunk.
      */
     public SAMFileSpan removeContentsAfter(final SAMFileSpan fileSpan) {
-        if(fileSpan == null)
-            return clone();
+        if (fileSpan == null) return clone();
 
-        if(!(fileSpan instanceof BAMFileSpan))
-            throw new SAMException("Unable to compare ");
+        if (!(fileSpan instanceof BAMFileSpan)) throw new SAMException("Unable to compare ");
 
-        final BAMFileSpan bamFileSpan = (BAMFileSpan)fileSpan;
+        final BAMFileSpan bamFileSpan = (BAMFileSpan) fileSpan;
 
-        if(bamFileSpan.isEmpty())
-            return clone();
+        if (bamFileSpan.isEmpty()) return clone();
 
         validateSorted();
 
         final BAMFileSpan trimmedChunkList = new BAMFileSpan();
-        final long chunkEnd = bamFileSpan.chunks.get(bamFileSpan.chunks.size() - 1).getChunkEnd();
-        for(final Chunk chunkToTrim: chunks) {
-            if(chunkToTrim.getChunkStart() < chunkEnd) {
-                if(chunkToTrim.getChunkEnd() <= chunkEnd) {
+        final long chunkEnd =
+                bamFileSpan.chunks.get(bamFileSpan.chunks.size() - 1).getChunkEnd();
+        for (final Chunk chunkToTrim : chunks) {
+            if (chunkToTrim.getChunkStart() < chunkEnd) {
+                if (chunkToTrim.getChunkEnd() <= chunkEnd) {
                     // This chunk from the list is completely before the end of the filtering chunk.
                     trimmedChunkList.add(chunkToTrim.clone());
-                }
-                else {
+                } else {
                     // This chunk from the list partially overlaps the filtering chunk and must be trimmed.
-                    trimmedChunkList.add(new Chunk(chunkToTrim.getChunkStart(),chunkEnd));
+                    trimmedChunkList.add(new Chunk(chunkToTrim.getChunkStart(), chunkEnd));
                 }
             }
         }
@@ -179,10 +170,10 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      */
     @Override
     public SAMFileSpan getContentsFollowing() {
-        if(chunks.isEmpty())
+        if (chunks.isEmpty())
             throw new SAMException("Unable to get the file pointer following this one: no data present.");
         validateSorted();
-        return new BAMFileSpan(new Chunk(chunks.get(chunks.size()-1).getChunkEnd(),Long.MAX_VALUE));
+        return new BAMFileSpan(new Chunk(chunks.get(chunks.size() - 1).getChunkEnd(), Long.MAX_VALUE));
     }
 
     /**
@@ -228,7 +219,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      */
     public long getFirstOffset() {
         final long result = 0;
-        if (chunks == null){
+        if (chunks == null) {
             return result;
         }
         for (final Chunk chunk : chunks) {
@@ -250,7 +241,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * @return The single chunk stored in this span
      */
     protected Chunk getSingleChunk() {
-        if (chunks.size() != 1){
+        if (chunks.size() != 1) {
             throw new SAMException("Expecting a single chunk for span. Found " + chunks.size());
         }
         return chunks.get(0);
@@ -265,12 +256,12 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * @return A list of chunks.
      */
     protected static SAMFileSpan toChunkList(final long[] coordinateArray) {
-        if(coordinateArray.length % 2 != 0)
+        if (coordinateArray.length % 2 != 0)
             throw new SAMException("Data supplied does not appear to be in coordinate array format.");
 
         final BAMFileSpan chunkList = new BAMFileSpan();
-        for(int i = 0; i < coordinateArray.length; i += 2)
-            chunkList.add(new Chunk(coordinateArray[i],coordinateArray[i+1]));
+        for (int i = 0; i < coordinateArray.length; i += 2)
+            chunkList.add(new Chunk(coordinateArray[i], coordinateArray[i + 1]));
 
         chunkList.validateSorted();
 
@@ -281,9 +272,10 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * Validates the list of chunks to ensure that they appear in sorted order.
      */
     private void validateSorted() {
-        for(int i = 1; i < chunks.size(); i++) {
-            if(chunks.get(i).getChunkStart() < chunks.get(i-1).getChunkEnd())
-                throw new SAMException(String.format("Chunk list is unsorted; chunk %s is before chunk %s",chunks.get(i-1),chunks.get(i)));
+        for (int i = 1; i < chunks.size(); i++) {
+            if (chunks.get(i).getChunkStart() < chunks.get(i - 1).getChunkEnd())
+                throw new SAMException(String.format(
+                        "Chunk list is unsorted; chunk %s is before chunk %s", chunks.get(i - 1), chunks.get(i)));
         }
     }
 
@@ -303,7 +295,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
     public static BAMFileSpan merge(final BAMFileSpan[] spans) {
         final ArrayList<Chunk> inputChunks = new ArrayList<Chunk>();
         for (final BAMFileSpan span : spans) {
-            if(span != null){
+            if (span != null) {
                 inputChunks.addAll(span.chunks);
             }
         }

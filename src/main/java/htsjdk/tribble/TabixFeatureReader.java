@@ -27,7 +27,6 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
@@ -60,7 +59,8 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @param codec
      * @throws IOException
      */
-    public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec) throws IOException {
+    public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec)
+            throws IOException {
         this(featureFile, indexFile, codec, null, null);
     }
 
@@ -73,9 +73,13 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @param indexWrapper a wrapper to apply to the byte stream from the indexResource, may be null, will only be
      *                     applied if indexFile is a uri representing a {@link java.nio.file.Path}
      */
-    public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec,
-                              final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
-                              final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+    public TabixFeatureReader(
+            final String featureFile,
+            final String indexFile,
+            final AsciiFeatureCodec codec,
+            final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+            final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper)
+            throws IOException {
         super(featureFile, codec, wrapper, indexWrapper);
         tabixReader = new TabixReader(this.path, indexFile, wrapper, indexWrapper);
         sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
@@ -91,10 +95,12 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     private void readHeader() throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(SeekableStreamFactory.getInstance().getStreamFor(path, wrapper))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(
+                    SeekableStreamFactory.getInstance().getStreamFor(path, wrapper))));
             header = codec.readHeader(source);
         } catch (Exception e) {
-            throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
+            throw new TribbleException.MalformedFeatureFile(
+                    "Unable to parse header with error: " + e.getMessage(), path, e);
         } finally {
             if (source != null) {
                 codec.close(source);
@@ -124,18 +130,21 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     @Override
     public CloseableTribbleIterator<T> query(final String chr, final int start, final int end) throws IOException {
         final List<String> mp = getSequenceNames();
-        if (mp == null) throw new TribbleException.TabixReaderFailure("Unable to find sequence named " + chr +
-                " in the tabix index. ", path);
+        if (mp == null)
+            throw new TribbleException.TabixReaderFailure(
+                    "Unable to find sequence named " + chr + " in the tabix index. ", path);
         if (!mp.contains(chr)) {
             return new EmptyIterator<T>();
         }
-        final TabixIteratorLineReader lineReader = new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid(chr), start - 1, end));
+        final TabixIteratorLineReader lineReader =
+                new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid(chr), start - 1, end));
         return new FeatureIterator<T>(lineReader, start - 1, end);
     }
 
     @Override
     public CloseableTribbleIterator<T> iterator() throws IOException {
-        final InputStream is = new BlockCompressedInputStream(SeekableStreamFactory.getInstance().getStreamFor(path, wrapper));
+        final InputStream is = new BlockCompressedInputStream(
+                SeekableStreamFactory.getInstance().getStreamFor(path, wrapper));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
         final LineReader reader = new SynchronousLineReader(stream);
         return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
@@ -172,13 +181,13 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                 try {
                     f = ((AsciiFeatureCodec) codec).decode(nextLine);
                     if (f == null) {
-                        continue;   // Skip
+                        continue; // Skip
                     }
                     if (f.getStart() > end) {
-                        return;    // Done
+                        return; // Done
                     }
                     if (f.getEnd() <= start) {
-                        continue;   // Skip
+                        continue; // Skip
                     }
 
                     currentRecord = (T) f;
@@ -204,8 +213,10 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             try {
                 readNextRecord();
             } catch (IOException e) {
-                throw new RuntimeIOException("Unable to read the next record, the last record was at " +
-                        ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
+                throw new RuntimeIOException(
+                        "Unable to read the next record, the last record was at " + ret.getContig() + ":"
+                                + ret.getStart() + "-" + ret.getEnd(),
+                        e);
             }
             return ret;
         }

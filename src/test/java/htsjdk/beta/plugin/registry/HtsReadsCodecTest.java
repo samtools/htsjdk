@@ -2,12 +2,12 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.bam.BAMCodec;
-import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleBuilder;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.io.bundle.InputStreamResource;
+import htsjdk.beta.plugin.IOUtils;
 import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
@@ -26,26 +26,30 @@ import org.testng.annotations.Test;
 public class HtsReadsCodecTest extends HtsjdkTest {
     final IOPath TEST_DIR = new HtsPath("src/test/resources/htsjdk/samtools/");
 
-    @DataProvider(name="readsCodecTestCases")
+    @DataProvider(name = "readsCodecTestCases")
     public Object[][] getCodecInputResolutionSucceeds() {
-        return new Object[][]{
-                { new BundleBuilder().addPrimary(
-                        new IOPathResource(
-                                new HtsPath(TEST_DIR + "example.bam"),
-                                BundleResourceType.CT_ALIGNED_READS)).build() },
-
-                { new BundleBuilder().addPrimary(
-                        new InputStreamResource(
+        return new Object[][] {
+            {
+                new BundleBuilder()
+                        .addPrimary(new IOPathResource(
+                                new HtsPath(TEST_DIR + "example.bam"), BundleResourceType.CT_ALIGNED_READS))
+                        .build()
+            },
+            {
+                new BundleBuilder()
+                        .addPrimary(new InputStreamResource(
                                 new HtsPath(TEST_DIR + "example.bam").getInputStream(),
                                 "testReadsStream",
-                                BundleResourceType.CT_ALIGNED_READS)).build() },
+                                BundleResourceType.CT_ALIGNED_READS))
+                        .build()
+            },
         };
     }
 
     @Test(dataProvider = "readsCodecTestCases")
     public void testReadsDecoderForBundle(final Bundle readsBundle) {
         try (final ReadsDecoder readsDecoder =
-                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
             Assert.assertNotNull(readsDecoder);
             Assert.assertEquals(readsDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
@@ -62,7 +66,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         final IOPath inputPath = new HtsPath(TEST_DIR + "example.bam");
 
         try (final ReadsDecoder readsDecoder =
-                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath)) {
             Assert.assertNotNull(readsDecoder);
             Assert.assertEquals(readsDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
@@ -82,7 +86,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
                 new ReadsDecoderOptions().setValidationStringency(ValidationStringency.SILENT);
 
         try (final ReadsDecoder readsDecoder =
-                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
+                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath, readsDecoderOptions)) {
             Assert.assertNotNull(readsDecoder);
             Assert.assertEquals(readsDecoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsDecoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
@@ -99,7 +103,7 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
         try (final ReadsEncoder readsEncoder =
-                     HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
+                HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
             Assert.assertNotNull(readsEncoder);
             Assert.assertEquals(readsEncoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsEncoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
@@ -112,11 +116,12 @@ public class HtsReadsCodecTest extends HtsjdkTest {
     public void testReadsEncoderForVersion() {
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
-        try (final ReadsEncoder readsEncoder = HtsDefaultRegistry.getReadsResolver().getReadsEncoder(
-                new ReadsBundle(outputPath),
-                new ReadsEncoderOptions(),
-                ReadsFormats.BAM,
-                BAMCodec.BAM_DEFAULT_VERSION)) {
+        try (final ReadsEncoder readsEncoder = HtsDefaultRegistry.getReadsResolver()
+                .getReadsEncoder(
+                        new ReadsBundle(outputPath),
+                        new ReadsEncoderOptions(),
+                        ReadsFormats.BAM,
+                        BAMCodec.BAM_DEFAULT_VERSION)) {
             Assert.assertNotNull(readsEncoder);
             Assert.assertEquals(readsEncoder.getFileFormat(), ReadsFormats.BAM);
             Assert.assertEquals(readsEncoder.getVersion(), BAMCodec.BAM_DEFAULT_VERSION);
@@ -128,8 +133,10 @@ public class HtsReadsCodecTest extends HtsjdkTest {
         final IOPath inputPath = new HtsPath(TEST_DIR + "example.bam");
         final IOPath outputPath = IOUtils.createTempPath("pluginTestOutput", ".bam");
 
-        try (final ReadsDecoder readDecoder = HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath);
-             final ReadsEncoder readsEncoder = HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
+        try (final ReadsDecoder readDecoder =
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(inputPath);
+                final ReadsEncoder readsEncoder =
+                        HtsDefaultRegistry.getReadsResolver().getReadsEncoder(outputPath)) {
 
             Assert.assertNotNull(readDecoder);
             Assert.assertEquals(readDecoder.getFileFormat(), ReadsFormats.BAM);
@@ -145,5 +152,4 @@ public class HtsReadsCodecTest extends HtsjdkTest {
             }
         }
     }
-
 }

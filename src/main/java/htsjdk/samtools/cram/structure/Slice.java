@@ -31,15 +31,14 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.io.LTF8;
 import htsjdk.samtools.cram.ref.ReferenceContext;
-import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.*;
 import java.math.BigInteger;
 import java.util.*;
@@ -68,7 +67,7 @@ public class Slice {
     private final AlignmentContext alignmentContext; // ref sequence, alignment start and span
     private final int nRecords;
     private final long globalRecordCounter;
-    private final int nSliceBlocks;              // includes the core block and external blocks, but not the header block
+    private final int nSliceBlocks; // includes the core block and external blocks, but not the header block
     private List<Integer> contentIDs;
     private int embeddedReferenceBlockContentID = EMBEDDED_REFERENCE_ABSENT_CONTENT_ID;
     private byte[] referenceMD5 = new byte[MD5_BYTE_SIZE];
@@ -97,7 +96,7 @@ public class Slice {
     // not part of the stream, and the individual records are not decoded until they're requested (they are
     // not decoded during indexing, with the exception of MULTI_REF slices, where its required that the slice
     // be resolved into individual reference contexts for inclusion in the index).
-    private int mappedReadsCount = 0;   // mapped (rec.getReadUnmappedFlag() != true)
+    private int mappedReadsCount = 0; // mapped (rec.getReadUnmappedFlag() != true)
     private int unmappedReadsCount = 0; // unmapped (rec.getReadUnmappedFlag() == true)
     private int unplacedReadsCount = 0; // nocoord (alignmentStart == SAMRecord.NO_ALIGNMENT_START)
 
@@ -122,7 +121,8 @@ public class Slice {
         this.cramVersion = cramVersion;
         sliceHeaderBlock = Block.read(cramVersion, inputStream);
         if (sliceHeaderBlock.getContentType() != BlockContentType.MAPPED_SLICE) {
-            throw new RuntimeException("Slice Header Block expected, found:  " + sliceHeaderBlock.getContentType().name());
+            throw new RuntimeException("Slice Header Block expected, found:  "
+                    + sliceHeaderBlock.getContentType().name());
         }
 
         final InputStream parseInputStream = new ByteArrayInputStream(sliceHeaderBlock.getRawContent());
@@ -150,7 +150,7 @@ public class Slice {
                     readTagBytes, 0, readTagBytes.length, ValidationStringency.DEFAULT_STRINGENCY));
         }
 
-        //NOTE: this reads the underlying blocks from the stream, but doesn't decode them because we don't want
+        // NOTE: this reads the underlying blocks from the stream, but doesn't decode them because we don't want
         // to do this automatically since there are case where we want to iterate through containers or slices
         // (i.e., during indexing, or when satisfying index queries) when we want to consume the underlying blocks,
         // but not actually decode them
@@ -234,10 +234,8 @@ public class Slice {
             }
         }
 
-        this.alignmentContext = getDerivedAlignmentContext(
-                referenceContexts,
-                singleRefAlignmentStart,
-                singleRefAlignmentEnd);
+        this.alignmentContext =
+                getDerivedAlignmentContext(referenceContexts, singleRefAlignmentStart, singleRefAlignmentEnd);
 
         sliceTags = null;
         nRecords = records.size();
@@ -295,8 +293,7 @@ public class Slice {
                 // would differ from the original, keep both records detached to preserve
                 // the original TLEN values (matching htslib's cross-validation behavior)
                 final int computedTlen = CRAMCompressionRecord.computeInsertSize(previous, record);
-                if (previous.getTemplateSize() != computedTlen ||
-                        record.getTemplateSize() != -computedTlen) {
+                if (previous.getTemplateSize() != computedTlen || record.getTemplateSize() != -computedTlen) {
                     // TLEN mismatch — keep both detached
                     readNameToIndex.remove(readName);
                     continue;
@@ -319,16 +316,27 @@ public class Slice {
         }
     }
 
-    public CRAMVersion getCramVersion() { return cramVersion; }
+    public CRAMVersion getCramVersion() {
+        return cramVersion;
+    }
 
     // May be null
-    public Block getSliceHeaderBlock() { return sliceHeaderBlock; }
+    public Block getSliceHeaderBlock() {
+        return sliceHeaderBlock;
+    }
 
-    public AlignmentContext getAlignmentContext() { return alignmentContext; }
-    public SliceBlocks getSliceBlocks() { return sliceBlocks; }
+    public AlignmentContext getAlignmentContext() {
+        return alignmentContext;
+    }
+
+    public SliceBlocks getSliceBlocks() {
+        return sliceBlocks;
+    }
+
     public int getNumberOfRecords() {
         return nRecords;
     }
+
     public long getGlobalRecordCounter() {
         return globalRecordCounter;
     }
@@ -337,7 +345,10 @@ public class Slice {
      * @return the number of blocks as defined by the CRAM spec; this is 1 for the
      * core block plus the number of external blocks (does not include the slice header block);
      */
-    public int getNumberOfBlocks() { return nSliceBlocks; }
+    public int getNumberOfBlocks() {
+        return nSliceBlocks;
+    }
+
     public List<Integer> getContentIDs() {
         return contentIDs;
     }
@@ -345,7 +356,10 @@ public class Slice {
     private void setContentIDs(final List<Integer> contentIDs) {
         this.contentIDs = contentIDs;
     }
-    public byte[] getReferenceMD5() { return referenceMD5; }
+
+    public byte[] getReferenceMD5() {
+        return referenceMD5;
+    }
 
     /**
      * The Slice's offset in bytes from the beginning of the Container's Compression Header
@@ -411,20 +425,18 @@ public class Slice {
      * @param embeddedReferenceBlockContentID
      */
     public void setEmbeddedReferenceContentID(final int embeddedReferenceBlockContentID) {
-        if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
-                this.embeddedReferenceBlockContentID != embeddedReferenceBlockContentID) {
-            throw new CRAMException(
-                    String.format("Can't reset embedded reference content ID (old %d new %d)",
-                            this.embeddedReferenceBlockContentID, embeddedReferenceBlockContentID));
-
+        if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID
+                && this.embeddedReferenceBlockContentID != embeddedReferenceBlockContentID) {
+            throw new CRAMException(String.format(
+                    "Can't reset embedded reference content ID (old %d new %d)",
+                    this.embeddedReferenceBlockContentID, embeddedReferenceBlockContentID));
         }
-        if (this.embeddedReferenceBlock != null &&
-                this.embeddedReferenceBlock.getContentId() != embeddedReferenceBlockContentID) {
-            throw new CRAMException(
-                    String.format("Attempt to set embedded reference block content ID (%d) that is in conflict" +
-                                    "with the content ID (%d) of the existing reference block ID",
-                            embeddedReferenceBlockContentID,
-                            this.embeddedReferenceBlock.getContentId()));
+        if (this.embeddedReferenceBlock != null
+                && this.embeddedReferenceBlock.getContentId() != embeddedReferenceBlockContentID) {
+            throw new CRAMException(String.format(
+                    "Attempt to set embedded reference block content ID (%d) that is in conflict"
+                            + "with the content ID (%d) of the existing reference block ID",
+                    embeddedReferenceBlockContentID, this.embeddedReferenceBlock.getContentId()));
         }
         this.embeddedReferenceBlockContentID = embeddedReferenceBlockContentID;
     }
@@ -441,19 +453,20 @@ public class Slice {
 
     public void setEmbeddedReferenceBlock(final Block embeddedReferenceBlock) {
         ValidationUtils.nonNull(embeddedReferenceBlock, "Embedded reference block must be non-null");
-        ValidationUtils.validateArg(embeddedReferenceBlock.getContentId() != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
-                String.format("Invalid content ID (%d) for embedded reference block", embeddedReferenceBlock.getContentId()));
-        ValidationUtils.validateArg(embeddedReferenceBlock.getContentType() == BlockContentType.EXTERNAL,
+        ValidationUtils.validateArg(
+                embeddedReferenceBlock.getContentId() != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID,
+                String.format(
+                        "Invalid content ID (%d) for embedded reference block", embeddedReferenceBlock.getContentId()));
+        ValidationUtils.validateArg(
+                embeddedReferenceBlock.getContentType() == BlockContentType.EXTERNAL,
                 String.format("Invalid embedded reference block type (%s)", embeddedReferenceBlock.getContentType()));
         if (this.embeddedReferenceBlock != null) {
             throw new CRAMException("Can't reset the slice embedded reference block");
-        } else if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID &&
-                embeddedReferenceBlock.getContentId() != this.embeddedReferenceBlockContentID) {
-            throw new CRAMException(
-                    String.format(
-                            "Embedded reference block content id (%d) conflicts with existing block if (%d)",
-                            embeddedReferenceBlock.getContentId(),
-                            this.embeddedReferenceBlockContentID));
+        } else if (this.embeddedReferenceBlockContentID != EMBEDDED_REFERENCE_ABSENT_CONTENT_ID
+                && embeddedReferenceBlock.getContentId() != this.embeddedReferenceBlockContentID) {
+            throw new CRAMException(String.format(
+                    "Embedded reference block content id (%d) conflicts with existing block if (%d)",
+                    embeddedReferenceBlock.getContentId(), this.embeddedReferenceBlockContentID));
         }
 
         setEmbeddedReferenceContentID(embeddedReferenceBlock.getContentId());
@@ -465,9 +478,13 @@ public class Slice {
      * @return embedded reference block. May be null.
      */
     // Unused because embedded reference isn't implemented for write
-    public Block getEmbeddedReferenceBlock() { return embeddedReferenceBlock; }
+    public Block getEmbeddedReferenceBlock() {
+        return embeddedReferenceBlock;
+    }
 
-    public CompressionHeader getCompressionHeader() { return compressionHeader; }
+    public CompressionHeader getCompressionHeader() {
+        return compressionHeader;
+    }
 
     /**
      * Reads and decodes the underlying blocks and returns a list of CRAMCompressionRecord. This isn't done initially
@@ -483,8 +500,7 @@ public class Slice {
      * @return list of raw (not normalized) CRAMCompressionRecord for this Slice ({@link #normalizeCRAMRecords})
      */
     public ArrayList<CRAMCompressionRecord> deserializeCRAMRecords(
-            final CompressorCache compressorCache,
-            final ValidationStringency validationStringency) {
+            final CompressorCache compressorCache, final ValidationStringency validationStringency) {
         final CramRecordReader cramRecordReader = new CramRecordReader(this, compressorCache, validationStringency);
         final ArrayList<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>(nRecords);
 
@@ -493,7 +509,8 @@ public class Slice {
         int prevAlignmentStart = alignmentContext.getAlignmentStart();
         for (int i = 0; i < nRecords; i++) {
             // read the new record and update the running prevAlignmentStart
-            final CRAMCompressionRecord cramCompressionRecord = cramRecordReader.readCRAMRecord(globalRecordCounter + i, prevAlignmentStart);
+            final CRAMCompressionRecord cramCompressionRecord =
+                    cramRecordReader.readCRAMRecord(globalRecordCounter + i, prevAlignmentStart);
             prevAlignmentStart = cramCompressionRecord.getAlignmentStart();
             cramCompressionRecords.add(cramCompressionRecord);
         }
@@ -514,8 +531,8 @@ public class Slice {
      * @param cramCompressionRecords CRAMCompressionRecords to normalize
      * @param cramReferenceRegion the reference region for this slice
      */
-    public void normalizeCRAMRecords(final List<CRAMCompressionRecord> cramCompressionRecords,
-                                     final CRAMReferenceRegion cramReferenceRegion) {
+    public void normalizeCRAMRecords(
+            final List<CRAMCompressionRecord> cramCompressionRecords, final CRAMReferenceRegion cramReferenceRegion) {
         boolean hasEmbeddedReference = false;
         if (compressionHeader.isReferenceRequired()) {
             // get the reference bases required for the entire slice and validate the reference MD5
@@ -539,14 +556,15 @@ public class Slice {
 
         // restore mate pairing first:
         for (final CRAMCompressionRecord record : cramCompressionRecords) {
-            if (record.isReadPaired() &&
-                    !record.isDetached() &&
-                    record.isHasMateDownStream()) {
+            if (record.isReadPaired() && !record.isDetached() && record.isHasMateDownStream()) {
                 final CRAMCompressionRecord downMate = cramCompressionRecords.get(
                         // getRecordsToNextFragment returns the value from the NF ("next fragment") data series,
                         // which is interpreted as the number of records to skip within this slice to find the next
                         // mate for this fragment
-                        (int) (record.getSequentialIndex() + record.getRecordsToNextFragment() + 1L - globalRecordCounter));
+                        (int) (record.getSequentialIndex()
+                                + record.getRecordsToNextFragment()
+                                + 1L
+                                - globalRecordCounter));
                 record.setNextSegment(downMate);
                 downMate.setPreviousSegment(record);
             }
@@ -566,21 +584,20 @@ public class Slice {
         // resolve bases:
         for (final CRAMCompressionRecord record : cramCompressionRecords) {
             if (!record.isSegmentUnmapped()) { // read bases for unmapped are restored directly from the input stream
-                if (compressionHeader.isReferenceRequired() &&
-                        getAlignmentContext().getReferenceContext().isMultiRef() &&
-                        !record.isUnknownBases() &&
-                        !hasEmbeddedReference) {
+                if (compressionHeader.isReferenceRequired()
+                        && getAlignmentContext().getReferenceContext().isMultiRef()
+                        && !record.isUnknownBases()
+                        && !hasEmbeddedReference) {
                     // if the slice is a multi-ref slice because the reads are not coordinate-sorted, this code
                     // can wind up needing to re-resolve the reference bases for *each* record in the slice, which
                     // can in turn be pathologically slow, especially if the reference source is remote
                     cramReferenceRegion.fetchReferenceBasesByRegion(
                             record.getReferenceIndex(),
-                            record.getAlignmentStart() - 1,  // 1 based to 0-based
+                            record.getAlignmentStart() - 1, // 1 based to 0-based
                             record.getAlignmentEnd() - record.getAlignmentStart() + 1);
                 }
                 record.restoreBasesAndTags(
-                        cramReferenceRegion,
-                        getCompressionHeader().getSubstitutionMatrix());
+                        cramReferenceRegion, getCompressionHeader().getSubstitutionMatrix());
             }
         }
 
@@ -591,7 +608,7 @@ public class Slice {
             // in this last pass, set all records as normalized
             record.setIsNormalized();
         }
-     }
+    }
 
     private int caclulateNumberOfBlocks() {
         // Each Slice has 1 core data block, plus zero or more external data blocks.
@@ -611,7 +628,8 @@ public class Slice {
 
     private byte[] createSliceHeaderBlockContent(final CRAMVersion cramVersion) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ITF8.writeUnsignedITF8(getAlignmentContext().getReferenceContext().getReferenceContextID(), byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(
+                getAlignmentContext().getReferenceContext().getReferenceContextID(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(getAlignmentContext().getAlignmentStart(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(getAlignmentContext().getAlignmentSpan(), byteArrayOutputStream);
         ITF8.writeUnsignedITF8(getNumberOfRecords(), byteArrayOutputStream);
@@ -654,11 +672,13 @@ public class Slice {
         final StringBuilder error = new StringBuilder();
 
         if (byteOffsetOfSliceHeaderBlock == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for BAI because its byteOffsetFromCompressionHeaderStart is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for BAI because its byteOffsetFromCompressionHeaderStart is unknown.")
+                    .append(System.lineSeparator());
         }
 
         if (landmarkIndex == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for BAI because its index is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for BAI because its index is unknown.")
+                    .append(System.lineSeparator());
         }
 
         if (error.length() > 0) {
@@ -674,11 +694,14 @@ public class Slice {
         final StringBuilder error = new StringBuilder();
 
         if (byteOffsetOfSliceHeaderBlock == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for CRAI because its byteOffsetFromCompressionHeaderStart is unknown.").append(System.lineSeparator());
+            error.append(
+                            "Cannot index this Slice for CRAI because its byteOffsetFromCompressionHeaderStart is unknown.")
+                    .append(System.lineSeparator());
         }
 
         if (byteSizeOfSliceBlocks == UNINITIALIZED_INDEXING_PARAMETER) {
-            error.append("Cannot index this Slice for CRAI because its byteSize is unknown.").append(System.lineSeparator());
+            error.append("Cannot index this Slice for CRAI because its byteSize is unknown.")
+                    .append(System.lineSeparator());
         }
 
         if (error.length() > 0) {
@@ -707,13 +730,12 @@ public class Slice {
 
         if (referenceContext.isMappedSingleRef()) {
             AlignmentContext.validateAlignmentContext(
-                    true, referenceContext,
-                    singleRefAlignmentStart,
-                    singleRefAlignmentEnd - singleRefAlignmentStart + 1);
-            return new AlignmentContext(
+                    true,
                     referenceContext,
                     singleRefAlignmentStart,
                     singleRefAlignmentEnd - singleRefAlignmentStart + 1);
+            return new AlignmentContext(
+                    referenceContext, singleRefAlignmentStart, singleRefAlignmentEnd - singleRefAlignmentStart + 1);
         } else if (referenceContext.isUnmappedUnplaced()) {
             return AlignmentContext.UNMAPPED_UNPLACED_CONTEXT;
         } else {
@@ -727,17 +749,17 @@ public class Slice {
             return;
         }
 
-        if (referenceBases == null &&
-                alignmentContext.getAlignmentStart() > 0 &&
-                alignmentContext.getReferenceContext().isMappedSingleRef()) {
-            throw new CRAMException ("No reference bases found for mapped slice .");
+        if (referenceBases == null
+                && alignmentContext.getAlignmentStart() > 0
+                && alignmentContext.getReferenceContext().isMappedSingleRef()) {
+            throw new CRAMException("No reference bases found for mapped slice .");
         }
 
         // Reads are permitted to extend beyond the reference length (tested by CRAMComplianceTest/c1#bounds
         // and CRAMEdgeCasesTest.testNullsAndBeyondRef). This matches samtools/htslib behavior. Log a warning
         // but don't fail, since BAMs produced by some aligners contain such reads.
-        if (((alignmentContext.getAlignmentStart()-1)  < cramReferenceRegion.getRegionStart()) ||
-                (alignmentContext.getAlignmentSpan() > cramReferenceRegion.getRegionLength())) {
+        if (((alignmentContext.getAlignmentStart() - 1) < cramReferenceRegion.getRegionStart())
+                || (alignmentContext.getAlignmentSpan() > cramReferenceRegion.getRegionLength())) {
             log.warn(String.format(
                     "Slice mapped outside of reference bases length %d: slice reference context=%s, start=%d, span=%d, counter=%d.",
                     cramReferenceRegion.getFullContigLength(),
@@ -748,17 +770,14 @@ public class Slice {
         }
     }
 
-    //VisibleForTesting
+    // VisibleForTesting
     void validateReferenceBases(final CRAMReferenceRegion cramReferenceRegion) {
         if (alignmentContext.getReferenceContext().isMappedSingleRef() && compressionHeader.isReferenceRequired()) {
             validateAlignmentSpanForReference(cramReferenceRegion);
-            if (!referenceMD5IsValid(
-                    cramReferenceRegion,
-                    alignmentContext.getAlignmentSpan(),
-                    referenceMD5)) {
+            if (!referenceMD5IsValid(cramReferenceRegion, alignmentContext.getAlignmentSpan(), referenceMD5)) {
                 throw new CRAMException(
                         String.format(
-                            "The MD5 for the reference failed to validate against the expected value %032x. %s.",
+                                "The MD5 for the reference failed to validate against the expected value %032x. %s.",
                                 new BigInteger(1, referenceMD5),
                                 "This indicates that the supplied reference is not the one originally used to create the CRAM."));
             }
@@ -766,9 +785,7 @@ public class Slice {
     }
 
     private static boolean referenceMD5IsValid(
-            final CRAMReferenceRegion cramReferenceRegion,
-            final int alignmentSpan,
-            final byte[] expectedMD5) {
+            final CRAMReferenceRegion cramReferenceRegion, final int alignmentSpan, final byte[] expectedMD5) {
         final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
         final int span = Math.min(alignmentSpan, referenceBases.length);
         // use offset 0 here, based on the assumption that we're always using a CRAMReferenceRegion that
@@ -800,7 +817,7 @@ public class Slice {
         final byte[] referenceBases = cramReferenceRegion.getCurrentReferenceBases();
         // Multi-ref and unmapped/unplaced slices can have alignmentStart < 1 (e.g. 0 for unmapped).
         // In that case there's no meaningful reference span, so use a zeroed MD5.
-        if (! alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
+        if (!alignmentContext.getReferenceContext().isMappedSingleRef() && alignmentContext.getAlignmentStart() < 1) {
             referenceMD5 = new byte[MD5_BYTE_SIZE];
         } else {
             final int span = Math.min(alignmentContext.getAlignmentSpan(), referenceBases.length);
@@ -816,10 +833,9 @@ public class Slice {
      *
      * @param validationStringency how strict to be when reading CRAM records
      */
-    //VisibleForTesting
+    // VisibleForTesting
     public Map<ReferenceContext, AlignmentSpan> getMultiRefAlignmentSpans(
-            final CompressorCache compressorCache,
-            final ValidationStringency validationStringency) {
+            final CompressorCache compressorCache, final ValidationStringency validationStringency) {
         if (!getAlignmentContext().getReferenceContext().isMultiRef()) {
             throw new IllegalStateException("can only create multiref span reader for multiref context slice");
         }
@@ -830,14 +846,16 @@ public class Slice {
         // See https://github.com/samtools/htsjdk/issues/1347.
         // Note that this doesn't normalize the CRAMCompressionRecord, which bypasses resolution of bases
         // against the reference.
-        final List<CRAMCompressionRecord> cramCompressionRecords = deserializeCRAMRecords(compressorCache, validationStringency);
+        final List<CRAMCompressionRecord> cramCompressionRecords =
+                deserializeCRAMRecords(compressorCache, validationStringency);
 
         final Map<ReferenceContext, AlignmentSpan> spans = new HashMap<>();
         cramCompressionRecords.forEach(r -> mergeRecordSpan(r, spans));
         return Collections.unmodifiableMap(spans);
     }
 
-    private void mergeRecordSpan(final CRAMCompressionRecord cramCompressionRecord, final Map<ReferenceContext, AlignmentSpan> spans) {
+    private void mergeRecordSpan(
+            final CRAMCompressionRecord cramCompressionRecord, final Map<ReferenceContext, AlignmentSpan> spans) {
         // if unplaced: create or replace the current spans map entry.
         // we don't need to combine entries for different records because
         // we count them elsewhere and span is irrelevant
@@ -846,21 +864,12 @@ public class Slice {
         if (cramCompressionRecord.isSegmentUnmapped()) {
             if (cramCompressionRecord.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
                 // count it as both unmapped *and* unplaced, since for BAI we distinguish between them
-                final AlignmentSpan span = new AlignmentSpan(
-                        SAMRecord.NO_ALIGNMENT_START,
-                        0,
-                        0,
-                        1,
-                        1);
+                final AlignmentSpan span = new AlignmentSpan(SAMRecord.NO_ALIGNMENT_START, 0, 0, 1, 1);
                 spans.merge(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, span, AlignmentSpan::combine);
             } else {
                 // merge it in with the reference context its mapped to
                 final AlignmentSpan span = new AlignmentSpan(
-                        cramCompressionRecord.getAlignmentStart(),
-                        cramCompressionRecord.getReadLength(),
-                        0,
-                        1,
-                        0);
+                        cramCompressionRecord.getAlignmentStart(), cramCompressionRecord.getReadLength(), 0, 1, 0);
                 final int refIndex = cramCompressionRecord.getReferenceIndex();
                 spans.merge(new ReferenceContext(refIndex), span, AlignmentSpan::combine);
             }
@@ -894,9 +903,8 @@ public class Slice {
         craiIndexInitializationCheck();
 
         if (alignmentContext.getReferenceContext().isMultiRef()) {
-            final Map<ReferenceContext, AlignmentSpan> spans = getMultiRefAlignmentSpans(
-                    compressorCache,
-                    ValidationStringency.DEFAULT_STRINGENCY);
+            final Map<ReferenceContext, AlignmentSpan> spans =
+                    getMultiRefAlignmentSpans(compressorCache, ValidationStringency.DEFAULT_STRINGENCY);
 
             return spans.entrySet().stream()
                     .map(e -> new CRAIEntry(
@@ -905,22 +913,19 @@ public class Slice {
                             e.getValue().getAlignmentSpan(),
                             byteOffsetOfContainer,
                             byteOffsetOfSliceHeaderBlock,
-                            byteSizeOfSliceBlocks)
-                    )
+                            byteSizeOfSliceBlocks))
                     .sorted()
                     .collect(Collectors.toList());
         } else {
             // single ref or unmapped
             final int sequenceId = alignmentContext.getReferenceContext().getReferenceContextID();
-            return Collections.singletonList(
-                    new CRAIEntry(
-                        sequenceId,
-                        alignmentContext.getAlignmentStart(),
-                        alignmentContext.getAlignmentSpan(),
-                        byteOffsetOfContainer,
-                        byteOffsetOfSliceHeaderBlock,
-                        byteSizeOfSliceBlocks)
-            );
+            return Collections.singletonList(new CRAIEntry(
+                    sequenceId,
+                    alignmentContext.getAlignmentStart(),
+                    alignmentContext.getAlignmentSpan(),
+                    byteOffsetOfContainer,
+                    byteOffsetOfSliceHeaderBlock,
+                    byteSizeOfSliceBlocks));
         }
     }
 
@@ -936,20 +941,17 @@ public class Slice {
         final List<BAIEntry> baiEntries = new ArrayList<>();
         switch (getAlignmentContext().getReferenceContext().getType()) {
             case UNMAPPED_UNPLACED_TYPE:
-                baiEntries.add(
-                        new BAIEntry(
-                            getAlignmentContext().getReferenceContext(),
-                            new AlignmentSpan(
-                                    0,
-                                    0,
-                                    mappedReadsCount, //aligned
-                                    unmappedReadsCount,
-                                    unplacedReadsCount),
-                            byteOffsetOfContainer,
-                            byteOffsetOfSliceHeaderBlock,
-                            landmarkIndex
-                        )
-                );
+                baiEntries.add(new BAIEntry(
+                        getAlignmentContext().getReferenceContext(),
+                        new AlignmentSpan(
+                                0,
+                                0,
+                                mappedReadsCount, // aligned
+                                unmappedReadsCount,
+                                unplacedReadsCount),
+                        byteOffsetOfContainer,
+                        byteOffsetOfSliceHeaderBlock,
+                        landmarkIndex));
                 break;
 
             case MULTIPLE_REFERENCE_TYPE:
@@ -957,57 +959,47 @@ public class Slice {
                 // i.e., there might be only one record per reference context, and thus not enough of any one
                 // to warrant a separate slice)
                 // unmapped span needs to go last
-                final Map<ReferenceContext, AlignmentSpan> sliceSpanMap = getMultiRefAlignmentSpans(
-                        compressorCache,
-                        ValidationStringency.LENIENT);
-                sliceSpanMap.entrySet().stream().filter(as -> !as.getKey().equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT)).forEach(
-                        entry -> baiEntries.add(
-                                new BAIEntry(
-                                    entry.getKey(),
-                                    new AlignmentSpan(
-                                            entry.getValue().getAlignmentStart(),
-                                            entry.getValue().getAlignmentSpan(),
-                                            entry.getValue().getMappedCount(),
-                                            entry.getValue().getUnmappedCount(),
-                                            entry.getValue().getUnmappedUnplacedCount()),
-                                    byteOffsetOfContainer,
-                                    byteOffsetOfSliceHeaderBlock,
-                                    landmarkIndex)
-                        )
-                );
+                final Map<ReferenceContext, AlignmentSpan> sliceSpanMap =
+                        getMultiRefAlignmentSpans(compressorCache, ValidationStringency.LENIENT);
+                sliceSpanMap.entrySet().stream()
+                        .filter(as -> !as.getKey().equals(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT))
+                        .forEach(entry -> baiEntries.add(new BAIEntry(
+                                entry.getKey(),
+                                new AlignmentSpan(
+                                        entry.getValue().getAlignmentStart(),
+                                        entry.getValue().getAlignmentSpan(),
+                                        entry.getValue().getMappedCount(),
+                                        entry.getValue().getUnmappedCount(),
+                                        entry.getValue().getUnmappedUnplacedCount()),
+                                byteOffsetOfContainer,
+                                byteOffsetOfSliceHeaderBlock,
+                                landmarkIndex)));
                 final AlignmentSpan unmappedSpan = sliceSpanMap.get(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT);
                 if (unmappedSpan != null) {
-                    baiEntries.add(
-                            new BAIEntry(
-                                    ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                                    unmappedSpan,
-                                    byteOffsetOfContainer,
-                                    byteOffsetOfSliceHeaderBlock,
-                                    landmarkIndex
-                            )
-                     );
+                    baiEntries.add(new BAIEntry(
+                            ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                            unmappedSpan,
+                            byteOffsetOfContainer,
+                            byteOffsetOfSliceHeaderBlock,
+                            landmarkIndex));
                 }
                 break;
 
             default:
-                baiEntries.add(
-                        new BAIEntry(
-                            getAlignmentContext().getReferenceContext(),
-                            new AlignmentSpan(
-                                    getAlignmentContext().getAlignmentStart(),
-                                    getAlignmentContext().getAlignmentSpan(),
-                                    getMappedReadsCount(),
-                                    getUnmappedReadsCount(),
-                                    getUnplacedReadsCount()),
-                            byteOffsetOfContainer,
-                            byteOffsetOfSliceHeaderBlock,
-                            landmarkIndex
-                        )
-                );
+                baiEntries.add(new BAIEntry(
+                        getAlignmentContext().getReferenceContext(),
+                        new AlignmentSpan(
+                                getAlignmentContext().getAlignmentStart(),
+                                getAlignmentContext().getAlignmentSpan(),
+                                getMappedReadsCount(),
+                                getUnmappedReadsCount(),
+                                getUnplacedReadsCount()),
+                        byteOffsetOfContainer,
+                        byteOffsetOfSliceHeaderBlock,
+                        landmarkIndex));
                 break;
         }
 
         return baiEntries;
     }
-
 }

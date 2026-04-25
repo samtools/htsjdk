@@ -31,7 +31,5 @@ public interface CRAMReferenceSource {
      * @return the bases for the reference region, or null if the sequence cannot be found.
      */
     byte[] getReferenceBasesByRegion(
-            final SAMSequenceRecord sequenceRecord,
-            final int zeroBasedStart,
-            final int requestedRegionLength);
+            final SAMSequenceRecord sequenceRecord, final int zeroBasedStart, final int requestedRegionLength);
 }

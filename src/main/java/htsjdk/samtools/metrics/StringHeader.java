@@ -44,11 +44,21 @@ public class StringHeader implements Header {
     }
 
     @Override
-    public void parse(String in) { value = in.trim(); }
-    public String toString() { return value; }
+    public void parse(String in) {
+        value = in.trim();
+    }
 
-    public String getValue() { return value; }
-    public void setValue(String value) { this.value = StringUtil.assertCharactersNotInString(value, '\n'); }
+    public String toString() {
+        return value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = StringUtil.assertCharactersNotInString(value, '\n');
+    }
 
     /** Checks equality on the value of the header. */
     public boolean equals(Object o) {
@@ -56,12 +66,10 @@ public class StringHeader implements Header {
             StringHeader that = (StringHeader) o;
             if (this.value == null) {
                 return that.value == null;
-            }
-            else {
+            } else {
                 return this.value.equals(that.value);
             }
-        }
-        else {
+        } else {
             return false;
         }
     }

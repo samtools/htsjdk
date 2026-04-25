@@ -5,7 +5,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,7 +14,7 @@ import java.util.Arrays;
 
 /**
  * Utilities related to processing of {@link java.io.InputStream}s encoding SAM data
- * 
+ *
  * @author mccowan
  */
 public class SamStreams {
@@ -46,8 +45,7 @@ public class SamStreams {
      * @param stream stream.markSupported() must be true
      * @return true if this looks like a BAM file.
      */
-    public static boolean isBAMFile(final InputStream stream)
-            throws IOException {
+    public static boolean isBAMFile(final InputStream stream) throws IOException {
         if (!BlockCompressedInputStream.isValidFile(stream)) {
             return false;
         }
@@ -56,10 +54,11 @@ public class SamStreams {
         final byte[] buffer = new byte[buffSize];
         readBytes(stream, buffer, 0, buffSize);
         stream.reset();
-        try(final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer))){
+        try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer))) {
             final byte[] magicBuf = new byte[4];
             final int magicLength = readBytes(bcis, magicBuf, 0, 4);
-            return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
+            return magicLength == BAMFileConstants.BAM_MAGIC.length
+                    && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
         }
     }
 
@@ -83,8 +82,8 @@ public class SamStreams {
             return true;
         }
 
-        //Source will typically be a file path or URL
-        //If it's a URL we require one of the query parameters to be a cram file
+        // Source will typically be a file path or URL
+        // If it's a URL we require one of the query parameters to be a cram file
         try {
             final URL sourceURL = new URL(source);
             final String urlPath = sourceURL.getPath().toLowerCase();
@@ -92,20 +91,18 @@ public class SamStreams {
             if (queryParams != null) {
                 queryParams = queryParams.toLowerCase();
             }
-            return urlPath.endsWith(".bam") ||
-                    (queryParams != null &&
-                            (queryParams.endsWith(".bam") ||
-                                    queryParams.contains(".bam?") ||
-                                    queryParams.contains(".bam&") ||
-                                    queryParams.contains(".bam%26"))
-                    );
-        }
-        catch (MalformedURLException e) {
+            return urlPath.endsWith(".bam")
+                    || (queryParams != null
+                            && (queryParams.endsWith(".bam")
+                                    || queryParams.contains(".bam?")
+                                    || queryParams.contains(".bam&")
+                                    || queryParams.contains(".bam%26")));
+        } catch (MalformedURLException e) {
             source = source.toLowerCase();
-            return source.endsWith(".bam") ||
-                    source.contains(".bam?") ||
-                    source.contains(".bam&") ||
-                    source.contains(".bam%26");
+            return source.endsWith(".bam")
+                    || source.contains(".bam?")
+                    || source.contains(".bam&")
+                    || source.contains(".bam%26");
         }
     }
 
@@ -129,21 +126,18 @@ public class SamStreams {
             if (queryParams != null) {
                 queryParams = queryParams.toLowerCase();
             }
-            return urlPath.endsWith(".cram") ||
-                    (queryParams != null &&
-                            (queryParams.endsWith(".cram") ||
-                             queryParams.contains(".cram?") ||
-                             queryParams.contains(".cram&") ||
-                             queryParams.contains(".cram%26"))
-                    );
-        }
-        catch (MalformedURLException e) {
+            return urlPath.endsWith(".cram")
+                    || (queryParams != null
+                            && (queryParams.endsWith(".cram")
+                                    || queryParams.contains(".cram?")
+                                    || queryParams.contains(".cram&")
+                                    || queryParams.contains(".cram%26")));
+        } catch (MalformedURLException e) {
             source = source.toLowerCase();
-            return source.endsWith(".cram") ||
-                    source.contains(".cram?") ||
-                    source.contains(".cram&") ||
-                    source.contains(".cram%26");
+            return source.endsWith(".cram")
+                    || source.contains(".cram?")
+                    || source.contains(".cram&")
+                    || source.contains(".cram%26");
         }
     }
-
 }

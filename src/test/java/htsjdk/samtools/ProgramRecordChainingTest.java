@@ -53,6 +53,5 @@ public class ProgramRecordChainingTest extends HtsjdkTest {
         Assert.assertNull(first.getPreviousProgramGroupId());
         Assert.assertEquals(second.getPreviousProgramGroupId(), first.getProgramGroupId());
         Assert.assertEquals(third.getPreviousProgramGroupId(), second.getProgramGroupId());
-
     }
 }

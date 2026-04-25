@@ -45,8 +45,9 @@ public class CoordMath {
      * Checks to see if the two sets of coordinates have any overlap.
      */
     public static boolean overlaps(final int start, final int end, final int start2, final int end2) {
-        return (start2 >= start && start2 <= end) || (end2 >=start && end2 <= end) ||
-                encloses(start2, end2, start, end);
+        return (start2 >= start && start2 <= end)
+                || (end2 >= start && end2 <= end)
+                || encloses(start2, end2, start, end);
     }
 
     /** Returns true if the "inner" coords and totally enclosed by the "outer" coords. */
@@ -61,10 +62,10 @@ public class CoordMath {
     public static int getOverlap(final int start, final int end, final int start2, final int end2) {
         return getLength(Math.max(start, start2), Math.min(end, end2));
     }
-    
-    /** 
+
+    /**
      * Determines the read cycle number for the base
-     * 
+     *
      *  @param isNegativeStrand true if the read is negative strand
      *  @param readLength
      *  @param readBaseIndex the 0-based index of the read base in question
@@ -72,5 +73,4 @@ public class CoordMath {
     public static int getCycle(boolean isNegativeStrand, int readLength, final int readBaseIndex) {
         return isNegativeStrand ? readLength - readBaseIndex : readBaseIndex + 1;
     }
-    
 }

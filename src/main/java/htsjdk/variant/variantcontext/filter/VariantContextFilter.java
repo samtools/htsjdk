@@ -33,5 +33,4 @@ import java.util.function.Predicate;
  * @author Yossi Farjoun
  *
  */
-public interface VariantContextFilter extends Predicate<VariantContext> {
-}
+public interface VariantContextFilter extends Predicate<VariantContext> {}

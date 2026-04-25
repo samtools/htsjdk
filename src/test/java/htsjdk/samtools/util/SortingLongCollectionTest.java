@@ -24,20 +24,19 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.*;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.*;
 
 /**
  * @author alecw@broadinstitute.org
  */
 public class SortingLongCollectionTest extends HtsjdkTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
-    private final File tmpDir = new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"),
-            "SortingLongCollectionTest");
+    private final File tmpDir = new File(
+            System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), "SortingLongCollectionTest");
 
     @BeforeMethod
     void setup() {
@@ -69,13 +68,13 @@ public class SortingLongCollectionTest extends HtsjdkTest {
 
     @DataProvider(name = "test1")
     public Object[][] createTestData() {
-        return new Object[][]{
-                {"empty", 0, 100},
-                {"less than threshold", 100, 200},
-                {"greater than threshold", 550, 100},
-                {"threshold multiple", 600, 100},
-                {"threshold multiple plus one", 101, 100},
-                {"exactly threshold", 100, 100},
+        return new Object[][] {
+            {"empty", 0, 100},
+            {"less than threshold", 100, 200},
+            {"greater than threshold", 550, 100},
+            {"threshold multiple", 600, 100},
+            {"threshold multiple plus one", 101, 100},
+            {"exactly threshold", 100, 100},
         };
     }
 
@@ -110,7 +109,10 @@ public class SortingLongCollectionTest extends HtsjdkTest {
         int i = 0;
         sortingCollection.doneAddingStartIteration();
         while (sortingCollection.hasNext()) {
-            Assert.assertEquals(sortingCollection.next(), values[i++], "values failed.  i: " + (i - 1) + "; values[i]" + values[i - 1]);
+            Assert.assertEquals(
+                    sortingCollection.next(),
+                    values[i++],
+                    "values failed.  i: " + (i - 1) + "; values[i]" + values[i - 1]);
         }
         Assert.assertEquals(i, values.length);
     }

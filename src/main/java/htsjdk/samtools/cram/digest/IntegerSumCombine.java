@@ -6,5 +6,4 @@ final class IntegerSumCombine implements Combine<Integer> {
     public Integer combine(final Integer state, final Integer update) {
         return state + update;
     }
-
 }

@@ -8,4 +8,4 @@ import htsjdk.samtools.reference.ReferenceSequence;
 /**
  *  Base class for all {@link HtsContentType#HAPLOID_REFERENCE} decoders.
  */
-public interface HaploidReferenceDecoder extends HtsDecoder<SAMSequenceDictionary, ReferenceSequence> { }
+public interface HaploidReferenceDecoder extends HtsDecoder<SAMSequenceDictionary, ReferenceSequence> {}

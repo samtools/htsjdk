@@ -1,12 +1,11 @@
 package htsjdk.beta.plugin.reads;
 
+import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.HtsDecoder;
-import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.util.Optional;
 
 /**
@@ -31,4 +30,3 @@ public interface ReadsDecoder extends HtsDecoder<SAMFileHeader, SAMRecord>, Read
     @Override
     Optional<SAMRecord> queryMate(SAMRecord rec);
 }
-

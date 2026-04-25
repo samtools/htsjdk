@@ -27,7 +27,6 @@ package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.*;
 
 /**
@@ -54,7 +53,8 @@ public final class HuffmanCanoncialCodeGenerator<T> {
 
         final int nSymbols = huffmanBitCodesByBitLengthThenCode.size();
         huffmanBitCodesBySymbol = new HashMap<>(nSymbols);
-        huffmanBitCodesByBitLengthThenCode.forEach((bitcode) -> huffmanBitCodesBySymbol.put(bitcode.getSymbol(), bitcode));
+        huffmanBitCodesByBitLengthThenCode.forEach(
+                (bitcode) -> huffmanBitCodesBySymbol.put(bitcode.getSymbol(), bitcode));
 
         final int[] sortedBitCodes = new int[nSymbols];
         symbolsSortedByBitCode = new ArrayList<>(nSymbols);
@@ -80,18 +80,19 @@ public final class HuffmanCanoncialCodeGenerator<T> {
      * Return the canonical code words for this helper's {@link HuffmanParams} as a list of HuffmanBitCodes.
      * @return list of HuffmanBitCode for this helper's {@link HuffmanParams}
      */
-    //VisibleForTesting
+    // VisibleForTesting
     public List<HuffmanBitCode<T>> getCanonicalCodeWords() {
         // group the symbols according to code huffman code word length
         final TreeMap<Integer, SortedSet<T>> symbolsByCodeLength = new TreeMap<>();
         for (int i = 0; i < huffmanParams.getCodeWordLengths().size(); i++) {
-            symbolsByCodeLength.computeIfAbsent(
-                    huffmanParams.getCodeWordLengths().get(i),
-                    k -> new TreeSet<>()).add(huffmanParams.getSymbols().get(i));
+            symbolsByCodeLength
+                    .computeIfAbsent(huffmanParams.getCodeWordLengths().get(i), k -> new TreeSet<>())
+                    .add(huffmanParams.getSymbols().get(i));
         }
 
         // now remap the symbols to canonical codes
-        final List<HuffmanBitCode<T>> canonicalCodes = new ArrayList<>(huffmanParams.getCodeWordLengths().size());
+        final List<HuffmanBitCode<T>> canonicalCodes =
+                new ArrayList<>(huffmanParams.getCodeWordLengths().size());
         int codeLength = 0;
         int codeValue = -1;
 
@@ -107,18 +108,16 @@ public final class HuffmanCanoncialCodeGenerator<T> {
             for (final T symbol : symbolsForLength.getValue()) { // Iterate over symbols
                 final int bitLength = symbolsForLength.getKey();
 
-                codeValue++;                                // increment bit symbol by 1
-                final int delta = bitLength - codeLength;   // new length?
+                codeValue++; // increment bit symbol by 1
+                final int delta = bitLength - codeLength; // new length?
                 if (delta != 0) {
-                    codeValue = codeValue << delta;             // pad with 0's if new length
-                    codeLength += delta;                        // adjust current code length
+                    codeValue = codeValue << delta; // pad with 0's if new length
+                    codeLength += delta; // adjust current code length
                 }
                 if (Integer.bitCount(codeValue) > bitLength) {
                     // canonical code words should be of the same length as the originals
-                    throw new IllegalArgumentException(
-                            String.format("Bit length (%d) for symbol (%d) out of range",
-                                    Integer.bitCount(codeValue),
-                                    symbol));
+                    throw new IllegalArgumentException(String.format(
+                            "Bit length (%d) for symbol (%d) out of range", Integer.bitCount(codeValue), symbol));
                 }
 
                 canonicalCodes.add(new HuffmanBitCode(symbol, codeValue, bitLength));
@@ -140,10 +139,7 @@ public final class HuffmanCanoncialCodeGenerator<T> {
         if (code == null) {
             throw new RuntimeException(String.format(
                     "Attempt to write a symbol (%d) that is not in the symbol alphabet for this huffman encoder (found code word %s).",
-                    symbol,
-                    code == null ?
-                            "null" :
-                            code.toString()));
+                    symbol, code == null ? "null" : code.toString()));
         }
         bitOutputStream.write(code.getCodeWord(), code.getCodeWordBitLength());
         return code.getCodeWordBitLength();
@@ -157,7 +153,8 @@ public final class HuffmanCanoncialCodeGenerator<T> {
     public final T read(final BitInputStream bitInputStream) {
         // iterate through huffman codes in order of increasing bit length until we find a match
         for (int i = 0, previousCodeWordLength = 0, codeWord = 0; i < huffmanBitCodesByBitLengthThenCode.size(); i++) {
-            final int newCodeWordLength = huffmanBitCodesByBitLengthThenCode.get(i).getCodeWordBitLength();
+            final int newCodeWordLength =
+                    huffmanBitCodesByBitLengthThenCode.get(i).getCodeWordBitLength();
             codeWord <<= newCodeWordLength - previousCodeWordLength;
             codeWord |= bitInputStream.readBits(newCodeWordLength - previousCodeWordLength);
             previousCodeWordLength = newCodeWordLength;
@@ -168,8 +165,10 @@ public final class HuffmanCanoncialCodeGenerator<T> {
             }
 
             // advance to the end of the codewords of this length
-            for (int j = i; huffmanBitCodesByBitLengthThenCode.get(j + 1).getCodeWordBitLength() == newCodeWordLength
-                    && j < huffmanBitCodesByBitLengthThenCode.size(); j++) {
+            for (int j = i;
+                    huffmanBitCodesByBitLengthThenCode.get(j + 1).getCodeWordBitLength() == newCodeWordLength
+                            && j < huffmanBitCodesByBitLengthThenCode.size();
+                    j++) {
                 i++;
             }
         }
@@ -177,7 +176,7 @@ public final class HuffmanCanoncialCodeGenerator<T> {
         throw new RuntimeException("Unable to map huffman code from input stream to a valid symbol");
     }
 
-    //VisibleForTesting
+    // VisibleForTesting
     public int getCodeWordLenForValue(final T value) {
         return huffmanBitCodesBySymbol.get(value).getCodeWordBitLength();
     }
@@ -185,10 +184,7 @@ public final class HuffmanCanoncialCodeGenerator<T> {
     private final Comparator<HuffmanBitCode<T>> bitCodeComparator =
             (final HuffmanBitCode<T> o1, final HuffmanBitCode<T> o2) -> {
                 final int result = o1.getCodeWordBitLength() - o2.getCodeWordBitLength();
-                    if (result == 0)
-                        return o1.getCodeWord() - o2.getCodeWord();
-                    else
-                        return result;
-                };
-
+                if (result == 0) return o1.getCodeWord() - o2.getCodeWord();
+                else return result;
+            };
 }

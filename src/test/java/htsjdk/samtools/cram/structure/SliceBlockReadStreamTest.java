@@ -2,15 +2,15 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.Map;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SliceBlockReadStreamTest extends HtsjdkTest {
 
     // this test only works on compressors that can work on arbitrary (unstructured) bit streams
-    @Test(dataProvider= "unstructuredStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
+    @Test(dataProvider = "unstructuredStreamCompressionMethods", dataProviderClass = StructureTestUtils.class)
     public void testSliceBlocksReadStreamsRoundTrip(final BlockCompressionMethod compressionMethod) {
 
         // Write directly to blocks, and verify by reading through streams (SliceBlocksReadStreams)
@@ -26,10 +26,10 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                 coreBlockContent,
                 embeddedRefBlockContent,
                 embeddedRefBlockContentID,
-                expectedExternalContentStrings
-        );
+                expectedExternalContentStrings);
 
-        final SliceBlocksReadStreams sliceBlocksReadStream = new SliceBlocksReadStreams(sliceBlocks, new CompressorCache());
+        final SliceBlocksReadStreams sliceBlocksReadStream =
+                new SliceBlocksReadStreams(sliceBlocks, new CompressorCache());
 
         // "core" is a bit stream, but interpret the bits as a 4 byte string for verification
         Assert.assertEquals(sliceBlocksReadStream.getCoreBlockInputStream().readBits(8), (int) coreBlockContent[0]);
@@ -43,9 +43,7 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
                         .getExternalReader(embeddedRefBlockContentID)
                         .read(roundTrippedReferenceBlockContent, 0, roundTrippedReferenceBlockContent.length),
                 embeddedRefBlockContent.length);
-        Assert.assertEquals(
-                new String(roundTrippedReferenceBlockContent),
-                new String(embeddedRefBlockContent));
+        Assert.assertEquals(new String(roundTrippedReferenceBlockContent), new String(embeddedRefBlockContent));
 
         // and read back the content (name of the data series) from the stream and verify
         for (final DataSeries dataSeries : DataSeries.values()) {
@@ -53,8 +51,11 @@ public class SliceBlockReadStreamTest extends HtsjdkTest {
             sliceBlocksReadStream
                     .getExternalReader(dataSeries.getExternalBlockContentId())
                     .read(roundTrippedContent, 0, roundTrippedContent.length);
-            Assert.assertEquals(roundTrippedContent.length, dataSeries.getCanonicalName().length());
-            Assert.assertEquals( new String(roundTrippedContent), expectedExternalContentStrings.get(dataSeries.getExternalBlockContentId()));
+            Assert.assertEquals(
+                    roundTrippedContent.length, dataSeries.getCanonicalName().length());
+            Assert.assertEquals(
+                    new String(roundTrippedContent),
+                    expectedExternalContentStrings.get(dataSeries.getExternalBlockContentId()));
         }
     }
 }

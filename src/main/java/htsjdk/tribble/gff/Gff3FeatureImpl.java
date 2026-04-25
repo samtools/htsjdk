@@ -3,7 +3,6 @@ package htsjdk.tribble.gff;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -12,7 +11,7 @@ import java.util.stream.Collectors;
  * Discontinuous features which are split between multiple lines in the gff files are implemented as separate features linked as "co-features"
  */
 public class Gff3FeatureImpl implements Gff3Feature {
-    private final static String DERIVES_FROM_ATTRIBUTE_KEY = "Derives_from";
+    private static final String DERIVES_FROM_ATTRIBUTE_KEY = "Derives_from";
 
     /**
      * basic data about feature, contig, position, strand, etc.
@@ -29,11 +28,17 @@ public class Gff3FeatureImpl implements Gff3Feature {
      */
     private final Set<Gff3FeatureImpl> topLevelFeatures = new HashSet<>();
 
-    public Gff3FeatureImpl(final String contig, final String source, final String type,
-                           final int start, final int end, final Double score, final Strand strand, final int phase,
-                           final Map<String, List<String>> attributes) {
+    public Gff3FeatureImpl(
+            final String contig,
+            final String source,
+            final String type,
+            final int start,
+            final int end,
+            final Double score,
+            final Strand strand,
+            final int phase,
+            final Map<String, List<String>> attributes) {
         baseData = new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
-
     }
 
     public Gff3FeatureImpl(final Gff3BaseData baseData) {
@@ -62,14 +67,18 @@ public class Gff3FeatureImpl implements Gff3Feature {
      * @return set of parent features
      */
     @Override
-    public Set<Gff3FeatureImpl> getParents() {return parents;}
+    public Set<Gff3FeatureImpl> getParents() {
+        return parents;
+    }
 
     /**
      * Gets set of features for which this feature is a parent
      * @return set of child features
      */
     @Override
-    public Set<Gff3FeatureImpl> getChildren() {return children;}
+    public Set<Gff3FeatureImpl> getChildren() {
+        return children;
+    }
 
     @Override
     public Gff3BaseData getBaseData() {
@@ -84,7 +93,11 @@ public class Gff3FeatureImpl implements Gff3Feature {
     public Set<Gff3FeatureImpl> getAncestors() {
         final List<Gff3FeatureImpl> ancestors = new ArrayList<>(parents);
         for (final Gff3FeatureImpl parent : parents) {
-            ancestors.addAll(getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty()? parent.getAncestors() : parent.getAncestors(new HashSet<>(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY))));
+            ancestors.addAll(
+                    getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty()
+                            ? parent.getAncestors()
+                            : parent.getAncestors(
+                                    new HashSet<>(baseData.getAttributes().get(DERIVES_FROM_ATTRIBUTE_KEY))));
         }
         return new LinkedHashSet<>(ancestors);
     }
@@ -92,7 +105,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
     private Set<Gff3FeatureImpl> getAncestors(final Collection<String> derivingFrom) {
         final List<Gff3FeatureImpl> ancestors = new ArrayList<>();
         for (final Gff3FeatureImpl parent : parents) {
-            if (derivingFrom.contains(parent.getID()) || parent.getAncestors().stream().anyMatch(f -> derivingFrom.contains(f.getID()))) {
+            if (derivingFrom.contains(parent.getID())
+                    || parent.getAncestors().stream().anyMatch(f -> derivingFrom.contains(f.getID()))) {
                 ancestors.add(parent);
                 ancestors.addAll(parent.getAncestors());
             }
@@ -109,20 +123,22 @@ public class Gff3FeatureImpl implements Gff3Feature {
         final List<Gff3FeatureImpl> descendants = new ArrayList<>(children);
         final Set<String> idsInLineage = new HashSet<>(Collections.singleton(baseData.getId()));
         idsInLineage.addAll(children.stream().map(Gff3Feature::getID).collect(Collectors.toSet()));
-        for(final Gff3FeatureImpl child : children) {
+        for (final Gff3FeatureImpl child : children) {
             descendants.addAll(child.getDescendents(idsInLineage));
         }
         return new LinkedHashSet<>(descendants);
     }
 
     private Set<Gff3FeatureImpl> getDescendents(final Set<String> idsInLineage) {
-        final List<Gff3FeatureImpl> childrenToAdd = children.stream().filter(c -> c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty() ||
-                !Collections.disjoint(idsInLineage, c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY))).
-                collect(Collectors.toList());
+        final List<Gff3FeatureImpl> childrenToAdd = children.stream()
+                .filter(c -> c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty()
+                        || !Collections.disjoint(idsInLineage, c.getAttribute(DERIVES_FROM_ATTRIBUTE_KEY)))
+                .collect(Collectors.toList());
         final List<Gff3FeatureImpl> descendants = new ArrayList<>(childrenToAdd);
 
         final Set<String> updatedIdsInLineage = new HashSet<>(idsInLineage);
-        updatedIdsInLineage.addAll(childrenToAdd.stream().map(Gff3Feature::getID).collect(Collectors.toSet()));
+        updatedIdsInLineage.addAll(
+                childrenToAdd.stream().map(Gff3Feature::getID).collect(Collectors.toSet()));
         for (final Gff3FeatureImpl child : childrenToAdd) {
             descendants.addAll(child.getDescendents(updatedIdsInLineage));
         }
@@ -134,22 +150,33 @@ public class Gff3FeatureImpl implements Gff3Feature {
      * @return set of co-features
      */
     @Override
-    public Set<Gff3FeatureImpl> getCoFeatures() {return coFeatures;}
+    public Set<Gff3FeatureImpl> getCoFeatures() {
+        return coFeatures;
+    }
 
     @Override
-    public boolean hasParents() {return !parents.isEmpty();}
+    public boolean hasParents() {
+        return !parents.isEmpty();
+    }
 
     @Override
-    public boolean hasChildren() {return !children.isEmpty();}
-
+    public boolean hasChildren() {
+        return !children.isEmpty();
+    }
 
     @Override
-    public boolean hasCoFeatures() {return !coFeatures.isEmpty();}
+    public boolean hasCoFeatures() {
+        return !coFeatures.isEmpty();
+    }
 
     public void addParent(final Gff3FeatureImpl parent) {
         final Set<Gff3FeatureImpl> topLevelFeaturesToAdd = new HashSet<>(parent.getTopLevelFeatures());
         if (!getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).isEmpty()) {
-            topLevelFeaturesToAdd.removeIf(f -> !getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).contains(f.getID()) && f.getDescendents().stream().noneMatch(f2 -> f2.getID()!= null && getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).contains(f2.getID())));
+            topLevelFeaturesToAdd.removeIf(f -> !getAttribute(DERIVES_FROM_ATTRIBUTE_KEY)
+                            .contains(f.getID())
+                    && f.getDescendents().stream()
+                            .noneMatch(f2 -> f2.getID() != null
+                                    && getAttribute(DERIVES_FROM_ATTRIBUTE_KEY).contains(f2.getID())));
         }
         parents.add(parent);
         parent.addChild(this);
@@ -164,7 +191,7 @@ public class Gff3FeatureImpl implements Gff3Feature {
     private void addTopLevelFeatures(final Collection<Gff3FeatureImpl> topLevelFeaturesToAdd) {
         topLevelFeatures.addAll(topLevelFeaturesToAdd);
 
-        //pass topLevelFeature change through to children
+        // pass topLevelFeature change through to children
         for (final Gff3FeatureImpl child : children) {
             child.addTopLevelFeatures(topLevelFeaturesToAdd);
             child.removeTopLevelFeature(this);
@@ -201,7 +228,8 @@ public class Gff3FeatureImpl implements Gff3Feature {
     private void addCoFeatureShallow(final Gff3FeatureImpl coFeature) {
         coFeatures.add(coFeature);
         if (!coFeature.getID().equals(baseData.getId())) {
-            throw new TribbleException("Attempting to add co-feature with id " + coFeature.getID() + " to feature with id " + baseData.getId());
+            throw new TribbleException("Attempting to add co-feature with id " + coFeature.getID()
+                    + " to feature with id " + baseData.getId());
         }
     }
 
@@ -216,19 +244,15 @@ public class Gff3FeatureImpl implements Gff3Feature {
         /* to test for equality, the doubly linked list representation used to represent feature relationships is replaced with a graph representation.
         equality for between two features is tested by testing equality between their base data fields, and equality between the graphs they are part of.
          */
-        return baseData.equals(((Gff3Feature) other).getBaseData()) &&
-                new Gff3Graph(this).equals(new Gff3Graph((Gff3Feature) other));
+        return baseData.equals(((Gff3Feature) other).getBaseData())
+                && new Gff3Graph(this).equals(new Gff3Graph((Gff3Feature) other));
     }
 
     @Override
     public int hashCode() {
-        //hash only based on baseData, to keep immutable.
+        // hash only based on baseData, to keep immutable.
         return baseData.hashCode();
     }
-
-
-
-
 
     /***
      * flatten this feature and all descendents into a set of features
@@ -247,13 +271,15 @@ public class Gff3FeatureImpl implements Gff3Feature {
      * Used for testing equality between features
      */
     private static class Gff3Graph {
-        final private Set<Gff3BaseData> nodes = new HashSet<>();
-        final private Set<Tuple<Gff3BaseData, Gff3BaseData>> parentEdges = new HashSet<>();
-        final private Set<Tuple<Gff3BaseData, Gff3BaseData>> childEdges = new HashSet<>();
-        final private Set<Set<Gff3BaseData>> coFeatureSets = new HashSet<>();
+        private final Set<Gff3BaseData> nodes = new HashSet<>();
+        private final Set<Tuple<Gff3BaseData, Gff3BaseData>> parentEdges = new HashSet<>();
+        private final Set<Tuple<Gff3BaseData, Gff3BaseData>> childEdges = new HashSet<>();
+        private final Set<Set<Gff3BaseData>> coFeatureSets = new HashSet<>();
 
         Gff3Graph(final Gff3Feature feature) {
-            feature.getTopLevelFeatures().stream().flatMap(f -> f.flatten().stream()).forEach(this::addFeature);
+            feature.getTopLevelFeatures().stream()
+                    .flatMap(f -> f.flatten().stream())
+                    .forEach(this::addFeature);
         }
 
         private void addFeature(final Gff3Feature feature) {
@@ -268,20 +294,22 @@ public class Gff3FeatureImpl implements Gff3Feature {
         }
 
         private void addParentEdges(final Gff3Feature feature) {
-            for(final Gff3Feature parent : feature.getParents()) {
+            for (final Gff3Feature parent : feature.getParents()) {
                 parentEdges.add(new Tuple<>(feature.getBaseData(), parent.getBaseData()));
             }
         }
 
         private void addChildEdges(final Gff3Feature feature) {
-            for(final Gff3Feature child : feature.getChildren()) {
+            for (final Gff3Feature child : feature.getChildren()) {
                 childEdges.add(new Tuple<>(feature.getBaseData(), child.getBaseData()));
             }
         }
 
         private void addCoFeatureSet(final Gff3Feature feature) {
             if (feature.hasCoFeatures()) {
-                final Set<Gff3BaseData> coFeaturesBaseData = feature.getCoFeatures().stream().map(Gff3Feature::getBaseData).collect(Collectors.toSet());
+                final Set<Gff3BaseData> coFeaturesBaseData = feature.getCoFeatures().stream()
+                        .map(Gff3Feature::getBaseData)
+                        .collect(Collectors.toSet());
                 coFeaturesBaseData.add(feature.getBaseData());
                 coFeatureSets.add(coFeaturesBaseData);
             }
@@ -296,10 +324,10 @@ public class Gff3FeatureImpl implements Gff3Feature {
                 return false;
             }
 
-            return nodes.equals(((Gff3Graph) other).nodes) &&
-                    parentEdges.equals(((Gff3Graph) other).parentEdges) &&
-                    childEdges.equals(((Gff3Graph) other).childEdges) &&
-                    coFeatureSets.equals(((Gff3Graph) other).coFeatureSets);
+            return nodes.equals(((Gff3Graph) other).nodes)
+                    && parentEdges.equals(((Gff3Graph) other).parentEdges)
+                    && childEdges.equals(((Gff3Graph) other).childEdges)
+                    && coFeatureSets.equals(((Gff3Graph) other).coFeatureSets);
         }
 
         @Override
@@ -312,5 +340,4 @@ public class Gff3FeatureImpl implements Gff3Feature {
             return hash;
         }
     }
-
 }

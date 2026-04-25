@@ -36,10 +36,10 @@ import java.io.Serializable;
  * Provides an implementation of the Murmur3_32 hash algorithm that has desirable properties in terms of randomness
  * and uniformity of the distribution of output values that make it a useful hashing algorithm for downsampling.
  */
-public final class Murmur3 implements Serializable{
+public final class Murmur3 implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final int seed ;
+    private final int seed;
 
     /** Constructs a Murmur3 hash with the given seed. */
     public Murmur3(final int seed) {
@@ -47,19 +47,19 @@ public final class Murmur3 implements Serializable{
     }
 
     /** Hashes a character stream to an int using Murmur3. */
-    public int hashUnencodedChars(CharSequence input){
+    public int hashUnencodedChars(CharSequence input) {
         int h1 = this.seed;
 
         // step through the CharSequence 2 chars at a time
         final int length = input.length();
-        for(int i = 1; i < length; i += 2)  {
+        for (int i = 1; i < length; i += 2) {
             int k1 = input.charAt(i - 1) | (input.charAt(i) << 16);
             k1 = mixK1(k1);
             h1 = mixH1(h1, k1);
         }
 
         // deal with any remaining characters
-        if((length & 1) == 1) {
+        if ((length & 1) == 1) {
             int k1 = input.charAt(length - 1);
             k1 = mixK1(k1);
             h1 ^= k1;
@@ -68,16 +68,16 @@ public final class Murmur3 implements Serializable{
         return fmix(h1, 2 * length);
     }
 
-    private int hashInt(int input){
-        if(input == 0) return 0;
+    private int hashInt(int input) {
+        if (input == 0) return 0;
         int k1 = mixK1(input);
         int h1 = mixH1(this.seed, k1);
 
         return fmix(h1, 4);
     }
 
-    private int hashLong(long input){
-        if(input == 0) return 0;
+    private int hashLong(long input) {
+        if (input == 0) return 0;
         int low = (int) input;
         int high = (int) (input >>> 32);
 
@@ -90,7 +90,7 @@ public final class Murmur3 implements Serializable{
         return fmix(h1, 8);
     }
 
-    private static int mixK1(int k1){
+    private static int mixK1(int k1) {
         final int c1 = 0xcc9e2d51;
         final int c2 = 0x1b873593;
         k1 *= c1;
@@ -99,7 +99,7 @@ public final class Murmur3 implements Serializable{
         return k1;
     }
 
-    private static int mixH1(int h1, int k1){
+    private static int mixH1(int h1, int k1) {
         h1 ^= k1;
         h1 = Integer.rotateLeft(h1, 13);
         h1 = h1 * 5 + 0xe6546b64;
@@ -107,7 +107,7 @@ public final class Murmur3 implements Serializable{
     }
 
     // Finalization mix - force all bits of a hash block to avalanche
-    private static int fmix(int h1, int length){
+    private static int fmix(int h1, int length) {
         h1 ^= length;
         h1 ^= h1 >>> 16;
         h1 *= 0x85ebca6b;

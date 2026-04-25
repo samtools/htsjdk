@@ -23,12 +23,10 @@ import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
-
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.util.*;
-
-import htsjdk.samtools.util.RuntimeIOException;
 
 public class CRAMIterator implements SAMRecordIterator, Closeable {
     private final CountingInputStream countingInputStream;
@@ -54,11 +52,13 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
      * (for identification by the validator which records are invalid)
      */
     private long samRecordIndex;
+
     private Iterator<SAMRecord> samRecordIterator = Collections.EMPTY_LIST.iterator();
 
-    public CRAMIterator(final InputStream inputStream,
-                        final CRAMReferenceSource referenceSource,
-                        final ValidationStringency validationStringency) {
+    public CRAMIterator(
+            final InputStream inputStream,
+            final CRAMReferenceSource referenceSource,
+            final ValidationStringency validationStringency) {
         this.countingInputStream = new CountingInputStream(inputStream);
         this.containerIterator = new CramContainerIterator(this.countingInputStream);
 
@@ -71,11 +71,12 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         this.queryIntervals = null;
     }
 
-    public CRAMIterator(final SeekableStream seekableStream,
-                        final CRAMReferenceSource referenceSource,
-                        final ValidationStringency validationStringency,
-                        final QueryInterval[] queryIntervals,
-                        final long[] coordinates) {
+    public CRAMIterator(
+            final SeekableStream seekableStream,
+            final CRAMReferenceSource referenceSource,
+            final ValidationStringency validationStringency,
+            final QueryInterval[] queryIntervals,
+            final long[] coordinates) {
         this.countingInputStream = new CountingInputStream(seekableStream);
         this.containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);
 
@@ -110,10 +111,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
 
         if (containerMatchesQuery(container)) {
             samRecords = container.getSAMRecords(
-                    validationStringency,
-                    cramReferenceRegion,
-                    compressorCache,
-                    getSAMFileHeader());
+                    validationStringency, cramReferenceRegion, compressorCache, getSAMFileHeader());
             samRecordIterator = samRecords.iterator();
             // A container may match the query but produce no records (e.g. a container with
             // only a compression header and no slices). Skip to the next container in that case.
@@ -132,21 +130,25 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
             // binary search our query intervals to see if the alignment span of this container
             // overlaps any query - it doesn't matter which one, we only care whether or not there is a match
             final AlignmentContext alignmentContext = container.getAlignmentContext();
-            return (!alignmentContext.getReferenceContext().isMappedSingleRef() ||
-                Arrays.binarySearch(
-                    queryIntervals,
-                    new QueryInterval(
-                            alignmentContext.getReferenceContext().getReferenceContextID(),
-                            alignmentContext.getAlignmentStart(),
-                            alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan() - 1
-                    ),
-                    overlapsContainerSpan) >= 0);
+            return (!alignmentContext.getReferenceContext().isMappedSingleRef()
+                    || Arrays.binarySearch(
+                                    queryIntervals,
+                                    new QueryInterval(
+                                            alignmentContext
+                                                    .getReferenceContext()
+                                                    .getReferenceContextID(),
+                                            alignmentContext.getAlignmentStart(),
+                                            alignmentContext.getAlignmentStart()
+                                                    + alignmentContext.getAlignmentSpan()
+                                                    - 1),
+                                    overlapsContainerSpan)
+                            >= 0);
         }
     }
 
-    //TODO: this should filter at the slice level!
-    //we don't actually care which QueryInterval overlaps with the container; we just want to know if there is one...
-    private final static Comparator<QueryInterval> overlapsContainerSpan = (queryInterval, containerInterval) -> {
+    // TODO: this should filter at the slice level!
+    // we don't actually care which QueryInterval overlaps with the container; we just want to know if there is one...
+    private static final Comparator<QueryInterval> overlapsContainerSpan = (queryInterval, containerInterval) -> {
         int comp = queryInterval.referenceIndex - containerInterval.referenceIndex;
         if (comp != 0) {
             return comp;
@@ -154,9 +156,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         if (queryInterval.end <= 0) {
             // our query interval specifies a symbolic end, so call it a match if the container span
             // overlaps the start of the queryInterval
-            return containerInterval.end <= queryInterval.start ?
-                    -1 :
-                    0;
+            return containerInterval.end <= queryInterval.start ? -1 : 0;
         } else if (containerInterval.overlaps(queryInterval)) {
             return 0; // there is overlap so call it a match
         }
@@ -169,7 +169,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
      * @param refIndex reference sequence index
      * @param pos      alignment start to skip to
      */
-    //TODO: this should first select the correct slice so we don't decode all slices unnecessarily
+    // TODO: this should first select the correct slice so we don't decode all slices unnecessarily
     public boolean advanceToAlignmentInContainer(final int refIndex, final int pos) {
         if (!hasNext()) return false;
         int i = 0;
@@ -204,7 +204,7 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
         if (!samRecordIterator.hasNext()) {
             BAMIteratorFilter.FilteringIteratorState nextContainerPasses =
                     BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION;
-            while (nextContainerPasses == BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION){
+            while (nextContainerPasses == BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION) {
                 nextContainerPasses = nextContainer();
             }
             return nextContainerPasses == BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER;
@@ -238,7 +238,8 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
             if (countingInputStream != null) {
                 countingInputStream.close();
             }
-        } catch (final RuntimeIOException e) { }
+        } catch (final RuntimeIOException e) {
+        }
     }
 
     public long getFirstContainerOffset() {
@@ -273,5 +274,4 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
     public SAMFileHeader getSAMFileHeader() {
         return samFileHeader;
     }
-
 }

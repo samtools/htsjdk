@@ -28,42 +28,36 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
-import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
-import htsjdk.tribble.readers.LineIterator;
-import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class BEDCodecTest extends HtsjdkTest {
 
     @DataProvider(name = "gzippedBedTestData")
-    public Object[][] getBedTestData(){
+    public Object[][] getBedTestData() {
         return new Object[][] {
-                {
-                    // BGZP BED file with no header, 2 features
-                    new File(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"), 0  // header has length 0
-                },
-                {
-                    // BGZP BED file with one line header, 2 features
-                    new File(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"), 10 // header has length 10
-
-                }
+            {
+                // BGZP BED file with no header, 2 features
+                new File(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"), 0 // header has length 0
+            },
+            {
+                // BGZP BED file with one line header, 2 features
+                new File(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"), 10 // header has length 10
+            }
         };
     }
 
@@ -73,8 +67,7 @@ public class BEDCodecTest extends HtsjdkTest {
         // of the first feature, whether there is a header or not
         BEDCodec bedCodec = new BEDCodec();
         try (final InputStream is = ParsingUtils.openInputStream(gzippedBedFile.getPath());
-             final BlockCompressedInputStream bcis = new BlockCompressedInputStream(is))
-        {
+                final BlockCompressedInputStream bcis = new BlockCompressedInputStream(is)) {
             AsciiLineReaderIterator it = (AsciiLineReaderIterator) bedCodec.makeIndexableSourceFromStream(bcis);
             Object header = bedCodec.readActualHeader(it);
             // BEDCodec doesn't model or return the BED header, even when there is one!
@@ -216,7 +209,6 @@ public class BEDCodecTest extends HtsjdkTest {
         Assert.assertEquals(expected_lines, count);
 
         reader.close();
-
     }
 
     /**
@@ -226,10 +218,10 @@ public class BEDCodecTest extends HtsjdkTest {
      */
     @Test(expectedExceptions = RuntimeException.class)
     public void testDecodeBEDFile_bad() throws Exception {
-        //This file has an extra tab in the second to last line
+        // This file has an extra tab in the second to last line
         String filepath = TestUtils.DATA_DIR + "bed/NA12878.deletions.10kbp.het.gq99.hand_curated.hg19.bed";
-        //The iterator implementation next() actually performs a get / read_next. The bad line is number 32,
-        //so we actually will only get 31 lines before reading that line.
+        // The iterator implementation next() actually performs a get / read_next. The bad line is number 32,
+        // so we actually will only get 31 lines before reading that line.
         int expected_count = 31;
         BEDCodec codec = new BEDCodec();
 
@@ -252,7 +244,7 @@ public class BEDCodecTest extends HtsjdkTest {
     public void testCanDecode() {
         final BEDCodec codec = new BEDCodec();
         final String pattern = "filename.%s%s";
-        for(final String bcExt: FileExtensions.BLOCK_COMPRESSED) {
+        for (final String bcExt : FileExtensions.BLOCK_COMPRESSED) {
             Assert.assertTrue(codec.canDecode(String.format(pattern, "bed", bcExt)));
             Assert.assertFalse(codec.canDecode(String.format(pattern, "vcf", bcExt)));
             Assert.assertFalse(codec.canDecode(String.format(pattern, "bed.gzip", bcExt)));

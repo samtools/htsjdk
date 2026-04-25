@@ -36,39 +36,33 @@ public final class FileExtensions {
 
     /** extensions for read files and related formats. */
     public static final Set<String> FASTA = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-        ".fasta",
-        ".fasta.gz",
-        ".fas",
-        ".fas.gz",
-        ".fa",
-        ".fa.gz",
-        ".fna",
-        ".fna.gz",
-        ".txt",
-        ".txt.gz"
-    )));
-        
+            ".fasta", ".fasta.gz", ".fas", ".fas.gz", ".fa", ".fa.gz", ".fna", ".fna.gz", ".txt", ".txt.gz")));
+
     public static final String FASTA_INDEX = ".fai";
 
     /** extensions for alignment files SAM, BAM, CRAM. */
     public static final String SAM = ".sam";
+
     public static final String BAM = ".bam";
     public static final String BAI_INDEX = ".bai";
     public static final String CRAM = ".cram";
     public static final String CRAM_INDEX = ".crai";
-    
+
     public static final String BED = ".bed";
     public static final String TABIX_INDEX = ".tbi";
     public static final String TRIBBLE_INDEX = ".idx";
 
     /** extensions for VCF files and related formats. */
     public static final String VCF = ".vcf";
+
     public static final String VCF_INDEX = TRIBBLE_INDEX;
     public static final String BCF = ".bcf";
-    public static final String COMPRESSED_VCF_BGZ = ".vcf.bgz"; // suffix used by gnomad see https://gnomad.broadinstitute.org/data#v4
+    public static final String COMPRESSED_VCF_BGZ =
+            ".vcf.bgz"; // suffix used by gnomad see https://gnomad.broadinstitute.org/data#v4
     public static final String COMPRESSED_VCF = ".vcf.gz";
     public static final String COMPRESSED_VCF_INDEX = ".tbi";
-    public static final List<String> VCF_LIST = Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, COMPRESSED_VCF_BGZ, BCF));
+    public static final List<String> VCF_LIST =
+            Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, COMPRESSED_VCF_BGZ, BCF));
 
     public static final String INTERVAL_LIST = ".interval_list";
     public static final String COMPRESSED_INTERVAL_LIST = ".interval_list.gz";
@@ -78,7 +72,9 @@ public final class FileExtensions {
     public static final String CSI = ".csi";
     public static final String MD5 = ".md5";
 
-    public static final Set<String> BLOCK_COMPRESSED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    public static final Set<String> BLOCK_COMPRESSED =
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
-    public static final Set<String> GFF3 = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gff3", ".gff", ".gff3.gz", ".gff.gz")));
+    public static final Set<String> GFF3 =
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gff3", ".gff", ".gff3.gz", ".gff.gz")));
 }

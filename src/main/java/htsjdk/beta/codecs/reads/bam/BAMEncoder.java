@@ -2,9 +2,9 @@ package htsjdk.beta.codecs.reads.bam;
 
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
-import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.utils.ValidationUtils;
 
 /**
@@ -31,19 +31,24 @@ public abstract class BAMEncoder implements ReadsEncoder {
      * @param readsEncoderOptions {@link ReadsEncoderOptions} to use
      */
     public BAMEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
-        ValidationUtils.nonNull(outputBundle,"outputBundle");
+        ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "readsEncoderOptions");
 
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
+        this.displayName =
+                outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override
-    final public String getFileFormat() { return ReadsFormats.BAM; }
+    public final String getFileFormat() {
+        return ReadsFormats.BAM;
+    }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     /**
      * Get the output {@link Bundle} for this encoder.
@@ -62,5 +67,4 @@ public abstract class BAMEncoder implements ReadsEncoder {
     public ReadsEncoderOptions getReadsEncoderOptions() {
         return readsEncoderOptions;
     }
-
 }

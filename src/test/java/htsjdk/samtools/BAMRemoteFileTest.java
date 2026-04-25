@@ -23,11 +23,11 @@
  */
 package htsjdk.samtools;
 
+import static org.testng.Assert.*;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.TestUtil;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -35,14 +35,14 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-
-import static org.testng.Assert.*;
+import org.testng.annotations.Test;
 
 /**
  * Test BAM file indexing.
  */
 public class BAMRemoteFileTest extends HtsjdkTest {
-    private final File BAM_INDEX_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    private final File BAM_INDEX_FILE =
+            new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final String BAM_URL_STRING = TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam";
     private final URL bamURL;
@@ -52,7 +52,6 @@ public class BAMRemoteFileTest extends HtsjdkTest {
     public BAMRemoteFileTest() throws Exception {
         bamURL = new URL(BAM_URL_STRING);
     }
-
 
     @Test
     public void testRemoteLocal() throws Exception {
@@ -76,31 +75,30 @@ public class BAMRemoteFileTest extends HtsjdkTest {
         checkChromosome("chr1", 885);
         checkChromosome("chr2", 837);
         /***
-         checkChromosome("chr3", 683);
-         checkChromosome("chr4", 633);
-         checkChromosome("chr5", 611);
-         checkChromosome("chr6", 585);
-         checkChromosome("chr7", 521);
-         checkChromosome("chr8", 507);
-         checkChromosome("chr9", 388);
-         checkChromosome("chr10", 477);
-         checkChromosome("chr11", 467);
-         checkChromosome("chr12", 459);
-         checkChromosome("chr13", 327);
-         checkChromosome("chr14", 310);
-         checkChromosome("chr15", 280);
-         checkChromosome("chr16", 278);
-         checkChromosome("chr17", 269);
-         checkChromosome("chr18", 265);
-         checkChromosome("chr19", 178);
-         checkChromosome("chr20", 228);
-         checkChromosome("chr21", 123);
-         checkChromosome("chr22", 121);
-         checkChromosome("chrX", 237);
-         checkChromosome("chrY", 29);
+         * checkChromosome("chr3", 683);
+         * checkChromosome("chr4", 633);
+         * checkChromosome("chr5", 611);
+         * checkChromosome("chr6", 585);
+         * checkChromosome("chr7", 521);
+         * checkChromosome("chr8", 507);
+         * checkChromosome("chr9", 388);
+         * checkChromosome("chr10", 477);
+         * checkChromosome("chr11", 467);
+         * checkChromosome("chr12", 459);
+         * checkChromosome("chr13", 327);
+         * checkChromosome("chr14", 310);
+         * checkChromosome("chr15", 280);
+         * checkChromosome("chr16", 278);
+         * checkChromosome("chr17", 269);
+         * checkChromosome("chr18", 265);
+         * checkChromosome("chr19", 178);
+         * checkChromosome("chr20", 228);
+         * checkChromosome("chr21", 123);
+         * checkChromosome("chr22", 121);
+         * checkChromosome("chrX", 237);
+         * checkChromosome("chrY", 29);
          ***/
     }
-
 
     private void checkChromosome(final String name, final int expectedCount) {
         int count = runQueryTest(bamURL, name, 0, 0, true);
@@ -135,7 +133,8 @@ public class BAMRemoteFileTest extends HtsjdkTest {
         final SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamFile.openStream()));
 
         final List<String> result = new ArrayList<String>();
-        final List<SAMSequenceRecord> seqRecords = reader.getFileHeader().getSequenceDictionary().getSequences();
+        final List<SAMSequenceRecord> seqRecords =
+                reader.getFileHeader().getSequenceDictionary().getSequences();
         for (final SAMSequenceRecord seqRecord : seqRecords) {
             if (seqRecord.getSequenceName() != null) {
                 result.add(seqRecord.getSequenceName());
@@ -145,7 +144,13 @@ public class BAMRemoteFileTest extends HtsjdkTest {
         return result;
     }
 
-    private void runLocalRemoteTest(final URL bamURL, final File bamFile, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private void runLocalRemoteTest(
+            final URL bamURL,
+            final File bamFile,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final boolean contained) {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
         final SamReader reader1 = SamReaderFactory.makeDefault()
                 .disable(SamReaderFactory.Option.EAGERLY_DECODE)
@@ -173,7 +178,8 @@ public class BAMRemoteFileTest extends HtsjdkTest {
         }
     }
 
-    private int runQueryTest(final URL bamURL, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private int runQueryTest(
+            final URL bamURL, final String sequence, final int startPos, final int endPos, final boolean contained) {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
         final SamReader reader1 = SamReaderFactory.makeDefault()
                 .disable(SamReaderFactory.Option.EAGERLY_DECODE)
@@ -234,21 +240,30 @@ public class BAMRemoteFileTest extends HtsjdkTest {
         return count1;
     }
 
-    private void checkPassesFilter(final boolean expected, final SAMRecord record, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private void checkPassesFilter(
+            final boolean expected,
+            final SAMRecord record,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final boolean contained) {
         final boolean passes = passesFilter(record, sequence, startPos, endPos, contained);
         if (passes != expected) {
-            System.out.println("Error: Record erroneously " +
-                    (passes ? "passed" : "failed") +
-                    " filter.");
+            System.out.println("Error: Record erroneously " + (passes ? "passed" : "failed") + " filter.");
             System.out.println(" Record: " + record.getSAMString());
-            System.out.println(" Filter: " + sequence + ":" +
-                    startPos + "-" + endPos +
-                    " (" + (contained ? "contained" : "overlapping") + ")");
+            System.out.println(" Filter: " + sequence + ":" + startPos
+                    + "-" + endPos + " ("
+                    + (contained ? "contained" : "overlapping") + ")");
             assertEquals(passes, expected);
         }
     }
 
-    private boolean passesFilter(final SAMRecord record, final String sequence, final int startPos, final int endPos, final boolean contained) {
+    private boolean passesFilter(
+            final SAMRecord record,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final boolean contained) {
         if (record == null) {
             return false;
         }

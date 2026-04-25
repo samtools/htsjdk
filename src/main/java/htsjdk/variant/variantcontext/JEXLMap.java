@@ -1,23 +1,22 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
+import java.util.*;
 import org.apache.commons.jexl2.JexlContext;
 import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
-
-import java.util.*;
 
 /**
  * This is an implementation of a Map of {@link JexlVCMatchExp} to true or false values.
  * It lazily initializes each value as requested to save as much processing time as possible.
  */
-
 class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     /**
      * If a JEXL expression contains values that are not available in the given context, the default behavior is to
      * treat that expression as a miss match.
      */
-    public static final JexlMissingValueTreatment DEFAULT_MISSING_VALUE_TREATMENT = JexlMissingValueTreatment.TREAT_AS_MISMATCH;
+    public static final JexlMissingValueTreatment DEFAULT_MISSING_VALUE_TREATMENT =
+            JexlMissingValueTreatment.TREAT_AS_MISMATCH;
 
     // our variant context and/or Genotype
     private final VariantContext vc;
@@ -29,7 +28,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * our mapping from {@link JexlVCMatchExp} to {@link Boolean}s, which will be set to {@code NULL}
      * for previously un-cached {@link JexlVCMatchExp}.
      */
-    private final Map<JexlVCMatchExp,Boolean> jexl;
+    private final Map<JexlVCMatchExp, Boolean> jexl;
 
     // our context
     private JexlContext jContext = null;
@@ -41,13 +40,16 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * @param g genotype to evaluate expressions against, may be null
      * @param howToTreatMissingValues how missing values in vc and g should be treated
      */
-    public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g, final JexlMissingValueTreatment howToTreatMissingValues) {
+    public JEXLMap(
+            final Collection<JexlVCMatchExp> jexlCollection,
+            final VariantContext vc,
+            final Genotype g,
+            final JexlMissingValueTreatment howToTreatMissingValues) {
         this.jexl = initializeMap(jexlCollection);
         this.vc = vc;
         this.g = g;
         this.howToTreatMissingValues = howToTreatMissingValues;
     }
-
 
     /**
      * Construct a new JEXLMap which can evaluate expressions against a specific genotype and variant context
@@ -103,7 +105,9 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * @return true if we have a value for that key
      */
     @Override
-    public boolean containsKey(Object o) { return jexl.containsKey(o); }
+    public boolean containsKey(Object o) {
+        return jexl.containsKey(o);
+    }
 
     @Override
     public Set<JexlVCMatchExp> keySet() {
@@ -139,7 +143,9 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     }
 
     @Override
-    public boolean isEmpty() { return this.jexl.isEmpty(); }
+    public boolean isEmpty() {
+        return this.jexl.isEmpty();
+    }
 
     @Override
     public Boolean put(JexlVCMatchExp jexlVCMatchExp, Boolean aBoolean) {
@@ -157,9 +163,9 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      *
      * @return an initialized map of jexlExpression -> null
      */
-    private static Map<JexlVCMatchExp,Boolean> initializeMap(final Collection<JexlVCMatchExp> jexlCollection) {
-        final Map<JexlVCMatchExp,Boolean> jexlMap = new HashMap<>(jexlCollection.size());
-        for (final JexlVCMatchExp exp: jexlCollection) {
+    private static Map<JexlVCMatchExp, Boolean> initializeMap(final Collection<JexlVCMatchExp> jexlCollection) {
+        final Map<JexlVCMatchExp, Boolean> jexlMap = new HashMap<>(jexlCollection.size());
+        for (final JexlVCMatchExp exp : jexlCollection) {
             jexlMap.put(exp, null);
         }
 
@@ -182,14 +188,15 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
         }
 
         try {
-            //TODO figure out of this can ever evaluate to null or if that isn't actually possible
+            // TODO figure out of this can ever evaluate to null or if that isn't actually possible
             final Boolean value = (Boolean) exp.exp.evaluate(jContext);
             return value == null ? howToTreatMissingValues.getMissingValueOrExplode() : value;
         } catch (final JexlException.Variable e) {
-            //this occurs when the jexl expression contained a literal that didn't match anything in the given context
+            // this occurs when the jexl expression contained a literal that didn't match anything in the given context
             return howToTreatMissingValues.getMissingValueOrExplode();
         } catch (final JexlException e) {
-            // todo - might be better if no exception is caught here but let's user decide how to deal with them; note this will propagate to get() and values()
+            // todo - might be better if no exception is caught here but let's user decide how to deal with them; note
+            // this will propagate to get() and values()
             throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s", exp.name), e);
         }
     }
@@ -225,7 +232,6 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     public Boolean remove(Object o) {
         throw new UnsupportedOperationException("remove() not supported on a JEXLMap");
     }
-
 
     @Override
     public Set<Entry<JexlVCMatchExp, Boolean>> entrySet() {

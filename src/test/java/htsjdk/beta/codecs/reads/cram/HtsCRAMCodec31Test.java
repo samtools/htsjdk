@@ -11,36 +11,34 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.cram31.CRAM31FidelityTestBase;
 import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.cram31.CRAM31FidelityTestBase;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.utils.SamtoolsTestUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class HtsCRAMCodec31Test extends HtsjdkTest {
     final IOPath TEST_DIR = new HtsPath("src/test/resources/htsjdk/samtools/");
 
     @Test
     public void testCRAMDecoder() {
-        final IOPath sourceCRAMPath = new HtsPath(TEST_DIR + "cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram");
+        final IOPath sourceCRAMPath =
+                new HtsPath(TEST_DIR + "cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram");
         final IOPath referencePath = new HtsPath(TEST_DIR + "reference/human_g1k_v37.20.21.fasta.gz");
-        final IOPath input31CRAM = SamtoolsTestUtils.convertToCRAM(
-                sourceCRAMPath,
-                referencePath,
-                "--output-fmt cram,version=3.1,normal");
+        final IOPath input31CRAM =
+                SamtoolsTestUtils.convertToCRAM(sourceCRAMPath, referencePath, "--output-fmt cram,version=3.1,normal");
 
         final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
                 .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
 
         try (final CRAMDecoder cramDecoder =
-                     (CRAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(input31CRAM, readsDecoderOptions)) {
+                (CRAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(input31CRAM, readsDecoderOptions)) {
             Assert.assertNotNull(cramDecoder);
             Assert.assertEquals(cramDecoder.getFileFormat(), ReadsFormats.CRAM);
             Assert.assertEquals(cramDecoder.getVersion(), CRAMCodecV3_1.VERSION_3_1);
@@ -62,22 +60,21 @@ public class HtsCRAMCodec31Test extends HtsjdkTest {
 
     @Test
     public void testRoundTripCRAM31() throws IOException {
-        final IOPath sourceCRAMPath = new HtsPath(TEST_DIR + "cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram");
+        final IOPath sourceCRAMPath =
+                new HtsPath(TEST_DIR + "cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram");
         final IOPath referencePath = new HtsPath(TEST_DIR + "reference/human_g1k_v37.20.21.fasta.gz");
         final IOPath tempCRAM31Path = IOUtils.createTempPath("htsCRAMCodecTemporary", FileExtensions.CRAM);
 
-        final ReadsDecoderOptions readsDecoderOptions =
-                new ReadsDecoderOptions().setCRAMDecoderOptions(
-                        new CRAMDecoderOptions().setReferencePath(referencePath));
-        final ReadsEncoderOptions readsEncoderOptions =
-                new ReadsEncoderOptions()
-                        .setPreSorted(true)
-                        .setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(referencePath));
+        final ReadsDecoderOptions readsDecoderOptions = new ReadsDecoderOptions()
+                .setCRAMDecoderOptions(new CRAMDecoderOptions().setReferencePath(referencePath));
+        final ReadsEncoderOptions readsEncoderOptions = new ReadsEncoderOptions()
+                .setPreSorted(true)
+                .setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(referencePath));
 
         try (final CRAMDecoder cramDecoder = (CRAMDecoder)
-                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(sourceCRAMPath, readsDecoderOptions);
-             final CRAMEncoder cram31Encoder = (CRAMEncoder)
-                     HtsDefaultRegistry.getReadsResolver().getReadsEncoder(tempCRAM31Path, readsEncoderOptions)) {
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(sourceCRAMPath, readsDecoderOptions);
+                final CRAMEncoder cram31Encoder = (CRAMEncoder)
+                        HtsDefaultRegistry.getReadsResolver().getReadsEncoder(tempCRAM31Path, readsEncoderOptions)) {
 
             Assert.assertNotNull(cramDecoder);
             Assert.assertEquals(cramDecoder.getFileFormat(), ReadsFormats.CRAM);
@@ -101,17 +98,16 @@ public class HtsCRAMCodec31Test extends HtsjdkTest {
         final List<SAMRecord> recs31 = new ArrayList<>();
 
         try (final CRAMDecoder cram30Decoder = (CRAMDecoder)
-                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(sourceCRAMPath, readsDecoderOptions);
-             final CRAMDecoder cram31Decoder = (CRAMDecoder)
-                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(tempCRAM31Path, readsDecoderOptions)) {
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(sourceCRAMPath, readsDecoderOptions);
+                final CRAMDecoder cram31Decoder = (CRAMDecoder)
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(tempCRAM31Path, readsDecoderOptions)) {
             final Iterator<SAMRecord> it31 = cram31Decoder.iterator();
             for (final SAMRecord sam30Rec : cram30Decoder) {
-                final SAMRecord sam31Rec =  it31.next();
+                final SAMRecord sam31Rec = it31.next();
                 recs30.add(sam30Rec);
                 recs31.add(sam31Rec);
                 Assert.assertEquals(sam30Rec, sam31Rec);
             }
         }
     }
-
 }

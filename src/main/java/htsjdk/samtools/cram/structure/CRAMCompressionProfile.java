@@ -5,7 +5,6 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-
 import java.util.EnumMap;
 
 /**
@@ -72,8 +71,8 @@ public enum CRAMCompressionProfile {
                 return profile;
             }
         }
-        throw new IllegalArgumentException("Unknown CRAM compression profile: " + name +
-                ". Must be one of: fast, normal, small, archive");
+        throw new IllegalArgumentException(
+                "Unknown CRAM compression profile: " + name + ". Must be one of: fast, normal, small, archive");
     }
 
     CRAMCompressionProfile(final CRAMVersion cramVersion, final int gzipLevel, final int readsPerSlice) {
@@ -145,8 +144,10 @@ public enum CRAMCompressionProfile {
     /** NORMAL: rANS Nx16 for low-entropy data, GZIP for positional/byte-array data, FQZComp for QS, NameTok for RN. */
     private void buildNormalMap(final EnumMap<DataSeries, CompressorDescriptor> map) {
         final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
-        final CompressorDescriptor ransOrder0 = new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal());
-        final CompressorDescriptor ransOrder1 = new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
+        final CompressorDescriptor ransOrder0 =
+                new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal());
+        final CompressorDescriptor ransOrder1 =
+                new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
 
         // Default everything to GZIP — then override specific series with better codecs
         for (final DataSeries ds : getWrittenDataSeries()) {
@@ -211,64 +212,90 @@ public enum CRAMCompressionProfile {
         final CompressorDescriptor bzip2 = new CompressorDescriptor(BlockCompressionMethod.BZIP2);
 
         // Range (ARITH) coder variants as alternatives to rANS Nx16
-        final CompressorDescriptor arithOrder0 = new CompressorDescriptor(BlockCompressionMethod.ADAPTIVE_ARITHMETIC, 0);
-        final CompressorDescriptor arithOrder1 = new CompressorDescriptor(
-                BlockCompressionMethod.ADAPTIVE_ARITHMETIC, RangeParams.ORDER_FLAG_MASK);
+        final CompressorDescriptor arithOrder0 =
+                new CompressorDescriptor(BlockCompressionMethod.ADAPTIVE_ARITHMETIC, 0);
+        final CompressorDescriptor arithOrder1 =
+                new CompressorDescriptor(BlockCompressionMethod.ADAPTIVE_ARITHMETIC, RangeParams.ORDER_FLAG_MASK);
 
         // GZIP as a fallback candidate (may win for small blocks)
         final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
 
         if (this == ARCHIVE) {
             // For entropy-rich data series that use rANS Nx16: also try Range coder and BZIP2
-            for (final DataSeries ds : new DataSeries[]{
-                    DataSeries.BA_Base, DataSeries.BF_BitFlags, DataSeries.CF_CompressionBitFlags,
-                    DataSeries.NS_NextFragmentReferenceSequenceID, DataSeries.RG_ReadGroup,
-                    DataSeries.RL_ReadLength, DataSeries.TS_InsertSize}) {
+            for (final DataSeries ds : new DataSeries[] {
+                DataSeries.BA_Base,
+                DataSeries.BF_BitFlags,
+                DataSeries.CF_CompressionBitFlags,
+                DataSeries.NS_NextFragmentReferenceSequenceID,
+                DataSeries.RG_ReadGroup,
+                DataSeries.RL_ReadLength,
+                DataSeries.TS_InsertSize
+            }) {
                 trialMap.put(ds, java.util.List.of(arithOrder1, bzip2, gzip));
             }
             // Position-like data: also try Range order 0
-            for (final DataSeries ds : new DataSeries[]{
-                    DataSeries.AP_AlignmentPositionOffset, DataSeries.RI_RefId}) {
+            for (final DataSeries ds : new DataSeries[] {DataSeries.AP_AlignmentPositionOffset, DataSeries.RI_RefId}) {
                 trialMap.put(ds, java.util.List.of(arithOrder0, bzip2, gzip));
             }
             // GZIP-compressed data series: also try BZIP2 and rANS
-            final CompressorDescriptor ransOrder1 = new CompressorDescriptor(
-                    BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
-            for (final DataSeries ds : new DataSeries[]{
-                    DataSeries.BS_BaseSubstitutionCode, DataSeries.DL_DeletionLength,
-                    DataSeries.FC_FeatureCode, DataSeries.FN_NumberOfReadFeatures,
-                    DataSeries.FP_FeaturePosition, DataSeries.HC_HardClip,
-                    DataSeries.MF_MateBitFlags, DataSeries.MQ_MappingQualityScore,
-                    DataSeries.NF_RecordsToNextFragment, DataSeries.NP_NextFragmentAlignmentStart,
-                    DataSeries.PD_padding, DataSeries.RS_RefSkip, DataSeries.TL_TagIdList}) {
+            final CompressorDescriptor ransOrder1 =
+                    new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
+            for (final DataSeries ds : new DataSeries[] {
+                DataSeries.BS_BaseSubstitutionCode,
+                DataSeries.DL_DeletionLength,
+                DataSeries.FC_FeatureCode,
+                DataSeries.FN_NumberOfReadFeatures,
+                DataSeries.FP_FeaturePosition,
+                DataSeries.HC_HardClip,
+                DataSeries.MF_MateBitFlags,
+                DataSeries.MQ_MappingQualityScore,
+                DataSeries.NF_RecordsToNextFragment,
+                DataSeries.NP_NextFragmentAlignmentStart,
+                DataSeries.PD_padding,
+                DataSeries.RS_RefSkip,
+                DataSeries.TL_TagIdList
+            }) {
                 trialMap.put(ds, java.util.List.of(bzip2, ransOrder1));
             }
         } else if (this == SMALL) {
             // SMALL: same as NORMAL primary codecs but with BZIP2 added to trial candidates.
             // htslib SMALL (level 6, use_rans=1, use_bz2=1) trials GZIP + BZIP2 + all rANS variants.
             // For rANS-primary series: also try BZIP2 and GZIP
-            for (final DataSeries ds : new DataSeries[]{
-                    DataSeries.BA_Base, DataSeries.BF_BitFlags, DataSeries.CF_CompressionBitFlags,
-                    DataSeries.NS_NextFragmentReferenceSequenceID, DataSeries.RG_ReadGroup,
-                    DataSeries.RL_ReadLength, DataSeries.TS_InsertSize}) {
+            for (final DataSeries ds : new DataSeries[] {
+                DataSeries.BA_Base,
+                DataSeries.BF_BitFlags,
+                DataSeries.CF_CompressionBitFlags,
+                DataSeries.NS_NextFragmentReferenceSequenceID,
+                DataSeries.RG_ReadGroup,
+                DataSeries.RL_ReadLength,
+                DataSeries.TS_InsertSize
+            }) {
                 trialMap.put(ds, java.util.List.of(bzip2, gzip));
             }
             // For rANS Order 0 series: also try BZIP2 and GZIP
-            for (final DataSeries ds : new DataSeries[]{
-                    DataSeries.AP_AlignmentPositionOffset, DataSeries.RI_RefId}) {
+            for (final DataSeries ds : new DataSeries[] {DataSeries.AP_AlignmentPositionOffset, DataSeries.RI_RefId}) {
                 trialMap.put(ds, java.util.List.of(bzip2, gzip));
             }
             // For GZIP-primary series: also try BZIP2 and rANS
-            final CompressorDescriptor ransOrder1 = new CompressorDescriptor(
-                    BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
-            for (final DataSeries ds : new DataSeries[]{
-                    DataSeries.BS_BaseSubstitutionCode, DataSeries.DL_DeletionLength,
-                    DataSeries.FC_FeatureCode, DataSeries.FN_NumberOfReadFeatures,
-                    DataSeries.FP_FeaturePosition, DataSeries.HC_HardClip,
-                    DataSeries.MF_MateBitFlags, DataSeries.MQ_MappingQualityScore,
-                    DataSeries.NF_RecordsToNextFragment, DataSeries.NP_NextFragmentAlignmentStart,
-                    DataSeries.PD_padding, DataSeries.RS_RefSkip, DataSeries.TL_TagIdList,
-                    DataSeries.IN_Insertion, DataSeries.SC_SoftClip}) {
+            final CompressorDescriptor ransOrder1 =
+                    new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ONE.ordinal());
+            for (final DataSeries ds : new DataSeries[] {
+                DataSeries.BS_BaseSubstitutionCode,
+                DataSeries.DL_DeletionLength,
+                DataSeries.FC_FeatureCode,
+                DataSeries.FN_NumberOfReadFeatures,
+                DataSeries.FP_FeaturePosition,
+                DataSeries.HC_HardClip,
+                DataSeries.MF_MateBitFlags,
+                DataSeries.MQ_MappingQualityScore,
+                DataSeries.NF_RecordsToNextFragment,
+                DataSeries.NP_NextFragmentAlignmentStart,
+                DataSeries.PD_padding,
+                DataSeries.RS_RefSkip,
+                DataSeries.TL_TagIdList,
+                DataSeries.IN_Insertion,
+                DataSeries.SC_SoftClip
+            }) {
                 trialMap.put(ds, java.util.List.of(bzip2, ransOrder1));
             }
         }
@@ -281,32 +308,32 @@ public enum CRAMCompressionProfile {
      * Excludes obsolete (TC, TN) and unused (QQ) series.
      */
     private static final DataSeries[] WRITTEN_DATA_SERIES = {
-            DataSeries.AP_AlignmentPositionOffset,
-            DataSeries.BA_Base,
-            DataSeries.BF_BitFlags,
-            DataSeries.BS_BaseSubstitutionCode,
-            DataSeries.CF_CompressionBitFlags,
-            DataSeries.DL_DeletionLength,
-            DataSeries.FC_FeatureCode,
-            DataSeries.FN_NumberOfReadFeatures,
-            DataSeries.FP_FeaturePosition,
-            DataSeries.HC_HardClip,
-            DataSeries.IN_Insertion,
-            DataSeries.MF_MateBitFlags,
-            DataSeries.MQ_MappingQualityScore,
-            DataSeries.NF_RecordsToNextFragment,
-            DataSeries.NP_NextFragmentAlignmentStart,
-            DataSeries.NS_NextFragmentReferenceSequenceID,
-            DataSeries.PD_padding,
-            DataSeries.QS_QualityScore,
-            DataSeries.RG_ReadGroup,
-            DataSeries.RI_RefId,
-            DataSeries.RL_ReadLength,
-            DataSeries.RN_ReadName,
-            DataSeries.RS_RefSkip,
-            DataSeries.SC_SoftClip,
-            DataSeries.TL_TagIdList,
-            DataSeries.TS_InsertSize,
+        DataSeries.AP_AlignmentPositionOffset,
+        DataSeries.BA_Base,
+        DataSeries.BF_BitFlags,
+        DataSeries.BS_BaseSubstitutionCode,
+        DataSeries.CF_CompressionBitFlags,
+        DataSeries.DL_DeletionLength,
+        DataSeries.FC_FeatureCode,
+        DataSeries.FN_NumberOfReadFeatures,
+        DataSeries.FP_FeaturePosition,
+        DataSeries.HC_HardClip,
+        DataSeries.IN_Insertion,
+        DataSeries.MF_MateBitFlags,
+        DataSeries.MQ_MappingQualityScore,
+        DataSeries.NF_RecordsToNextFragment,
+        DataSeries.NP_NextFragmentAlignmentStart,
+        DataSeries.NS_NextFragmentReferenceSequenceID,
+        DataSeries.PD_padding,
+        DataSeries.QS_QualityScore,
+        DataSeries.RG_ReadGroup,
+        DataSeries.RI_RefId,
+        DataSeries.RL_ReadLength,
+        DataSeries.RN_ReadName,
+        DataSeries.RS_RefSkip,
+        DataSeries.SC_SoftClip,
+        DataSeries.TL_TagIdList,
+        DataSeries.TS_InsertSize,
     };
 
     private static DataSeries[] getWrittenDataSeries() {

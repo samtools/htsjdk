@@ -1,13 +1,12 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class CramIntArrayTest extends HtsjdkTest {
 

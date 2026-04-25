@@ -2,66 +2,191 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SubstitutionMatrixTest extends HtsjdkTest {
     // The default substitution code produced for any given base that has no substitutions, or that has a
     // substitution frequency profile that happens to align with the default code order (decreasing substitution
     // frequency for each of {A, C, G, T, N}).
-    final static byte defaultCode = 0x1B; // 00 01 10 11
+    static final byte defaultCode = 0x1B; // 00 01 10 11
 
     // These test cases all test various substitution frequencies for a single reference base (so the resulting
     // matrix only has a non-default substitution code in one position)
     @DataProvider(name = "frequenciesForSingleReferenceBase")
     public Object[][] frequenciesForSingleReferenceBase() {
-        return new Object[][]{
-                // NOTE: For a given base, the matrix entry (substitution code) for that base looks like the following:
-                //
-                //  with substitution counts: 10, 20, 30, 40: 00 01 10 11 = 0xE4
-                //  with substitution counts: 40, 30, 20, 10: 11 10 01 00 = 0x1B
+        return new Object[][] {
+            // NOTE: For a given base, the matrix entry (substitution code) for that base looks like the following:
+            //
+            //  with substitution counts: 10, 20, 30, 40: 00 01 10 11 = 0xE4
+            //  with substitution counts: 40, 30, 20, 10: 11 10 01 00 = 0x1B
 
-                // reference base, number of A, number of C, number of G, number of T, number of N, expected matrix bytes
+            // reference base, number of A, number of C, number of G, number of T, number of N, expected matrix bytes
 
-                {SubstitutionBase.A, 0, 0, 0, 0, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-                //C, G, T, N = 1 2 0 3 = 01 10 00 11 = 0x63
-                {SubstitutionBase.A, 0, 0, 0, 1, 0, new byte[]{(byte)0x63,  defaultCode, defaultCode, defaultCode, defaultCode}},
-                {SubstitutionBase.A, 0, 1, 2, 3, 4, new byte[]{(byte)0xE4,  defaultCode, defaultCode, defaultCode, defaultCode}},
-                // this matches the default (no substitutions) matrix because the frequency distribution follows the default ordering
-                {SubstitutionBase.A, 0, 4, 3, 2, 1, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-
-                {SubstitutionBase.C, 0, 0, 0, 0, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-                {SubstitutionBase.C, 0, 0, 0, 1, 0, new byte[]{defaultCode, 0x63,        defaultCode, defaultCode, defaultCode}},
-                {SubstitutionBase.C, 1, 0, 2, 3, 4, new byte[]{defaultCode, (byte) 0xE4, defaultCode, defaultCode, defaultCode}},
-                {SubstitutionBase.C, 4, 0, 3, 2, 1, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-
-                {SubstitutionBase.G, 0, 0, 0, 0, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-                {SubstitutionBase.G, 0, 0, 0, 1, 0, new byte[]{defaultCode, defaultCode, 0x63,        defaultCode, defaultCode}},
-                {SubstitutionBase.G, 1, 2, 0, 3, 4, new byte[]{defaultCode, defaultCode, (byte) 0xE4, defaultCode, defaultCode}},
-                {SubstitutionBase.G, 4, 3, 0, 2, 1, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-
-                {SubstitutionBase.T, 0, 0, 0, 0, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-                // Note that the "1" here is in the last position, rather than the position 4 (for T) like the others, because
-                // the reference base in this case is 'T', and we can't represent a base that is a substitute for itself
-                // 1, 2, 3, 0 = 01 10 11 00 = 0x6C
-                {SubstitutionBase.T, 0, 0, 0, 0, 1, new byte[]{defaultCode, defaultCode, defaultCode, 0x6C,        defaultCode}},
-                {SubstitutionBase.T, 1, 2, 3, 0, 4, new byte[]{defaultCode, defaultCode, defaultCode, (byte) 0xE4, defaultCode}},
-                {SubstitutionBase.T, 4, 3, 2, 0, 1, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-
-                {SubstitutionBase.N, 0, 0, 0, 0, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}},
-                {SubstitutionBase.N, 0, 0, 0, 1, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, 0x6C}},
-                {SubstitutionBase.N, 1, 2, 3, 4, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, (byte) 0xE4}},
-                {SubstitutionBase.N, 4, 3, 2, 1, 0, new byte[]{defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}}
+            {
+                SubstitutionBase.A,
+                0,
+                0,
+                0,
+                0,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            // C, G, T, N = 1 2 0 3 = 01 10 00 11 = 0x63
+            {
+                SubstitutionBase.A,
+                0,
+                0,
+                0,
+                1,
+                0,
+                new byte[] {(byte) 0x63, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.A,
+                0,
+                1,
+                2,
+                3,
+                4,
+                new byte[] {(byte) 0xE4, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            // this matches the default (no substitutions) matrix because the frequency distribution follows the default
+            // ordering
+            {
+                SubstitutionBase.A,
+                0,
+                4,
+                3,
+                2,
+                1,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.C,
+                0,
+                0,
+                0,
+                0,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {SubstitutionBase.C, 0, 0, 0, 1, 0, new byte[] {defaultCode, 0x63, defaultCode, defaultCode, defaultCode}},
+            {
+                SubstitutionBase.C,
+                1,
+                0,
+                2,
+                3,
+                4,
+                new byte[] {defaultCode, (byte) 0xE4, defaultCode, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.C,
+                4,
+                0,
+                3,
+                2,
+                1,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.G,
+                0,
+                0,
+                0,
+                0,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {SubstitutionBase.G, 0, 0, 0, 1, 0, new byte[] {defaultCode, defaultCode, 0x63, defaultCode, defaultCode}},
+            {
+                SubstitutionBase.G,
+                1,
+                2,
+                0,
+                3,
+                4,
+                new byte[] {defaultCode, defaultCode, (byte) 0xE4, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.G,
+                4,
+                3,
+                0,
+                2,
+                1,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.T,
+                0,
+                0,
+                0,
+                0,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            // Note that the "1" here is in the last position, rather than the position 4 (for T) like the others,
+            // because
+            // the reference base in this case is 'T', and we can't represent a base that is a substitute for itself
+            // 1, 2, 3, 0 = 01 10 11 00 = 0x6C
+            {SubstitutionBase.T, 0, 0, 0, 0, 1, new byte[] {defaultCode, defaultCode, defaultCode, 0x6C, defaultCode}},
+            {
+                SubstitutionBase.T,
+                1,
+                2,
+                3,
+                0,
+                4,
+                new byte[] {defaultCode, defaultCode, defaultCode, (byte) 0xE4, defaultCode}
+            },
+            {
+                SubstitutionBase.T,
+                4,
+                3,
+                2,
+                0,
+                1,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {
+                SubstitutionBase.N,
+                0,
+                0,
+                0,
+                0,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            },
+            {SubstitutionBase.N, 0, 0, 0, 1, 0, new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, 0x6C}},
+            {
+                SubstitutionBase.N,
+                1,
+                2,
+                3,
+                4,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, (byte) 0xE4}
+            },
+            {
+                SubstitutionBase.N,
+                4,
+                3,
+                2,
+                1,
+                0,
+                new byte[] {defaultCode, defaultCode, defaultCode, defaultCode, defaultCode}
+            }
         };
     }
 
     @Test(dataProvider = "frequenciesForSingleReferenceBase")
-    public void testSingleReferenceBaseSubstitution (
+    public void testSingleReferenceBaseSubstitution(
             final SubstitutionBase refBase,
             final int nA,
             final int nC,
@@ -98,7 +223,7 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
     }
 
     @Test
-    public void testMultipleReferenceBaseubstitution () {
+    public void testMultipleReferenceBaseubstitution() {
         final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>();
         cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.A, SubstitutionBase.T, 10));
         cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(SubstitutionBase.A, SubstitutionBase.G, 20));
@@ -108,7 +233,7 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
         // for 'A' -> 10, 00, 01, 11 = 0x87
         // for 'G' -> 10, 01, 11, 00 = 0x9C
 
-        final byte[] expectedMatrixBytes = new byte[]{ (byte) 0x87, defaultCode, (byte) 0x9C, defaultCode, defaultCode};
+        final byte[] expectedMatrixBytes = new byte[] {(byte) 0x87, defaultCode, (byte) 0x9C, defaultCode, defaultCode};
 
         final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(cramCompressionRecords);
         Assert.assertEquals(substitutionMatrix.getEncodedMatrix(), expectedMatrixBytes);
@@ -124,7 +249,7 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "frequenciesForSingleReferenceBase")
-    public void testLowerCaseReferenceBaseSubstitution (
+    public void testLowerCaseReferenceBaseSubstitution(
             final SubstitutionBase refBase,
             final int nA,
             final int nC,
@@ -146,7 +271,8 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
 
                     // now retrieve the substitution base for the lower case reference base given the code
                     // and make sure it matches the substitution base for that code for the upper case reference base
-                    final byte lowerSubstitutedBase = substitutionMatrix.base((byte) Character.toLowerCase((char) referenceBase.getBase()), upperCode);
+                    final byte lowerSubstitutedBase = substitutionMatrix.base(
+                            (byte) Character.toLowerCase((char) referenceBase.getBase()), upperCode);
                     final byte upperSubstitutedBase = substitutionMatrix.base(referenceBase.getBase(), upperCode);
 
                     // first make sure we got the expected base for the upper case substitute
@@ -160,12 +286,7 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
 
     // Create a SubstitutionMatrix with the given substitution frequencies for a single reference base.
     private SubstitutionMatrix getSubstitutionMatrixForFrequencies(
-            final SubstitutionBase refBase,
-            final int nA,
-            final int nC,
-            final int nG,
-            final int nT,
-            final int nN) {
+            final SubstitutionBase refBase, final int nA, final int nC, final int nG, final int nT, final int nN) {
         final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>(nA + nC + nG + nT + nN);
         cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.A, nA));
         cramCompressionRecords.addAll(getCramRecordsWithSubstitutions(refBase, SubstitutionBase.C, nC));
@@ -178,17 +299,21 @@ public class SubstitutionMatrixTest extends HtsjdkTest {
 
     // create a set of CRAM records of size nSubs that each have the given refBase->readBase Substitution read feature
     private List<CRAMCompressionRecord> getCramRecordsWithSubstitutions(
-            final SubstitutionBase refBase,
-            final SubstitutionBase readBase,
-            final int nSubs) {
+            final SubstitutionBase refBase, final SubstitutionBase readBase, final int nSubs) {
         final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>(nSubs);
         for (int i = 0; i < nSubs; i++) {
             final CRAMCompressionRecord rec = CRAMRecordTestHelper.getCRAMRecordWithReadFeatures(
-                    "aname", 10, 1, 2, 0,3, new byte[]{'a', 'c', 'g', 't'},
-                    1, Collections.singletonList(new Substitution(i, readBase.getBase(), refBase.getBase())));
+                    "aname",
+                    10,
+                    1,
+                    2,
+                    0,
+                    3,
+                    new byte[] {'a', 'c', 'g', 't'},
+                    1,
+                    Collections.singletonList(new Substitution(i, readBase.getBase(), refBase.getBase())));
             cramCompressionRecords.add(rec);
         }
         return cramCompressionRecords;
     }
-
 }

@@ -39,10 +39,9 @@ public class FTPStream extends FilterInputStream {
         this.ftp = ftp;
     }
 
-
     @Override
     public int read(byte[] bytes, int i, int i1) throws IOException {
-        return super.read(bytes, i, i1);    //To change body of overridden methods use File | Settings | File Templates.
+        return super.read(bytes, i, i1); // To change body of overridden methods use File | Settings | File Templates.
     }
 
     @Override

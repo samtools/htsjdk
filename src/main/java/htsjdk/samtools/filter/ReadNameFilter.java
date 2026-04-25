@@ -26,7 +26,6 @@ package htsjdk.samtools.filter;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -95,18 +94,15 @@ public class ReadNameFilter implements SamRecordFilter {
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         if (includeReads) {
-            if (readNameFilterSet.contains(first.getReadName()) &&
-                readNameFilterSet.contains(second.getReadName())) {
+            if (readNameFilterSet.contains(first.getReadName()) && readNameFilterSet.contains(second.getReadName())) {
                 return false;
             }
         } else {
-            if (!readNameFilterSet.contains(first.getReadName()) &&
-                !readNameFilterSet.contains(second.getReadName())) {
+            if (!readNameFilterSet.contains(first.getReadName()) && !readNameFilterSet.contains(second.getReadName())) {
                 return false;
             }
         }
 
         return true;
     }
-
 }

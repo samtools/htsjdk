@@ -13,37 +13,41 @@ public class ReferenceContextTest extends HtsjdkTest {
     @DataProvider(name = "validRefContexts")
     private static Object[][] refContexts() {
         return new Object[][] {
-                //context, expectedType, isSingle, isUnplaced, isMultiple, serializableID
-                {
-                        new ReferenceContext(0),
-                        ReferenceContextType.SINGLE_REFERENCE_TYPE,
-                        true, false, false, 0
-                },
-                {
-                        new ReferenceContext(1),
-                        ReferenceContextType.SINGLE_REFERENCE_TYPE,
-                        true, false, false, 1
-                },
-                {
-                        new ReferenceContext(ReferenceContext.UNMAPPED_UNPLACED_ID),
-                        ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
-                        false, true, false, ReferenceContext.UNMAPPED_UNPLACED_ID
-                },
-                {
-                        ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                        ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
-                        false, true, false, ReferenceContext.UNMAPPED_UNPLACED_ID
-                },
-                {
-                        new ReferenceContext(ReferenceContext.MULTIPLE_REFERENCE_ID),
-                        ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
-                        false, false, true, ReferenceContext.MULTIPLE_REFERENCE_ID
-                },
-                {
-                        ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                        ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
-                        false, false, true, ReferenceContext.MULTIPLE_REFERENCE_ID
-                },
+            // context, expectedType, isSingle, isUnplaced, isMultiple, serializableID
+            {new ReferenceContext(0), ReferenceContextType.SINGLE_REFERENCE_TYPE, true, false, false, 0},
+            {new ReferenceContext(1), ReferenceContextType.SINGLE_REFERENCE_TYPE, true, false, false, 1},
+            {
+                new ReferenceContext(ReferenceContext.UNMAPPED_UNPLACED_ID),
+                ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
+                false,
+                true,
+                false,
+                ReferenceContext.UNMAPPED_UNPLACED_ID
+            },
+            {
+                ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+                ReferenceContextType.UNMAPPED_UNPLACED_TYPE,
+                false,
+                true,
+                false,
+                ReferenceContext.UNMAPPED_UNPLACED_ID
+            },
+            {
+                new ReferenceContext(ReferenceContext.MULTIPLE_REFERENCE_ID),
+                ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
+                false,
+                false,
+                true,
+                ReferenceContext.MULTIPLE_REFERENCE_ID
+            },
+            {
+                ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
+                ReferenceContextType.MULTIPLE_REFERENCE_TYPE,
+                false,
+                false,
+                true,
+                ReferenceContext.MULTIPLE_REFERENCE_ID
+            },
         };
     }
 
@@ -69,10 +73,7 @@ public class ReferenceContextTest extends HtsjdkTest {
 
     @DataProvider(name = "sentinels")
     private static Object[][] sentinels() {
-        return new Object[][] {
-                {ReferenceContext.MULTIPLE_REFERENCE_ID},
-                {ReferenceContext.UNMAPPED_UNPLACED_ID}
-        };
+        return new Object[][] {{ReferenceContext.MULTIPLE_REFERENCE_ID}, {ReferenceContext.UNMAPPED_UNPLACED_ID}};
     }
 
     @Test(dataProvider = "sentinels")

@@ -25,11 +25,10 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.io.OutputStream;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
@@ -50,7 +49,7 @@ public class PositionalOutputStreamTest extends HtsjdkTest {
         wrapped.write(100);
         Assert.assertEquals(wrapped.getPosition(), ++position);
         // check that write a byte array adds its length
-        final byte[] bytes = new byte[]{1, 3, 5, 7};
+        final byte[] bytes = new byte[] {1, 3, 5, 7};
         wrapped.write(bytes);
         position += bytes.length;
         Assert.assertEquals(wrapped.getPosition(), position);
@@ -59,5 +58,4 @@ public class PositionalOutputStreamTest extends HtsjdkTest {
         position += 2;
         Assert.assertEquals(wrapped.getPosition(), position);
     }
-
 }

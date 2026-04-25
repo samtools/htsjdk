@@ -9,5 +9,4 @@ public class VCFMetaHeaderLine extends VCFSimpleHeaderLine {
     public VCFMetaHeaderLine(final String line, final VCFHeaderVersion version) {
         super(VCFConstants.META_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, null));
     }
-
 }

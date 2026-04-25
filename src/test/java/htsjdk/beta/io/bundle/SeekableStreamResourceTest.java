@@ -5,15 +5,14 @@ import htsjdk.beta.io.IOPathUtils;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SeekableStreamResourceTest extends HtsjdkTest {
-    final static int TEST_STREAM_SIZE = 10;
+    static final int TEST_STREAM_SIZE = 10;
     final byte[] testBuffer = "zzzzzzzzzz".getBytes();
 
     @Test
@@ -28,7 +27,8 @@ public class SeekableStreamResourceTest extends HtsjdkTest {
         Assert.assertTrue(seekableStreamResource.getSeekableStream().isPresent());
 
         final byte[] roundTripBuffer = new byte[TEST_STREAM_SIZE];
-        try (final SeekableStream ss = seekableStreamResource.getSeekableStream().get()) {
+        try (final SeekableStream ss =
+                seekableStreamResource.getSeekableStream().get()) {
             ss.read(roundTripBuffer);
             Assert.assertEquals(roundTripBuffer, testBuffer);
 
@@ -42,23 +42,26 @@ public class SeekableStreamResourceTest extends HtsjdkTest {
 
     @Test
     public void testGetInputStream() throws IOException {
-        Assert.assertTrue(makeSeekableStreamResource(testBuffer).getInputStream().isPresent());
+        Assert.assertTrue(
+                makeSeekableStreamResource(testBuffer).getInputStream().isPresent());
     }
 
     @Test
     public void testGetSeekableStream() throws IOException {
-        Assert.assertTrue(makeSeekableStreamResource(testBuffer).getSeekableStream().isPresent());
+        Assert.assertTrue(
+                makeSeekableStreamResource(testBuffer).getSeekableStream().isPresent());
     }
 
     @Test
     public void testGetOutputStream() throws IOException {
-        Assert.assertFalse(makeSeekableStreamResource(testBuffer).getOutputStream().isPresent());
+        Assert.assertFalse(
+                makeSeekableStreamResource(testBuffer).getOutputStream().isPresent());
     }
 
     @Test
     public void testGetSignatureStream() throws IOException {
-        try (final SignatureStream signatureStream = makeSeekableStreamResource(testBuffer)
-                .getSignatureStream(TEST_STREAM_SIZE)) {
+        try (final SignatureStream signatureStream =
+                makeSeekableStreamResource(testBuffer).getSignatureStream(TEST_STREAM_SIZE)) {
             final byte[] roundTripBuffer = new byte[TEST_STREAM_SIZE];
             signatureStream.read(roundTripBuffer);
             Assert.assertEquals(roundTripBuffer, testBuffer);
@@ -84,16 +87,14 @@ public class SeekableStreamResourceTest extends HtsjdkTest {
 
     private final SeekableStreamResource makeSeekableStreamResource(final byte[] testBuffer) throws IOException {
         final IOPath ioPath = IOPathUtils.createTempPath("testSeekable", ".txt");
-        try (final FileOutputStream fos = new FileOutputStream(ioPath.toPath().toFile().toString())) {
+        try (final FileOutputStream fos =
+                new FileOutputStream(ioPath.toPath().toFile().toString())) {
             fos.write(testBuffer);
         }
 
         final SeekableStreamResource seekableStreamResource = new SeekableStreamResource(
-                new SeekablePathStream(ioPath.toPath()),
-                "contenttype",
-                ioPath.getRawInputString());
+                new SeekablePathStream(ioPath.toPath()), "contenttype", ioPath.getRawInputString());
 
         return seekableStreamResource;
     }
-
 }

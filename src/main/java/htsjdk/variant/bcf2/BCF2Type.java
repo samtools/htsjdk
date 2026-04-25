@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.bcf2;
 
@@ -39,15 +39,18 @@ import java.util.EnumSet;
 public enum BCF2Type {
     // the actual values themselves
     MISSING(0, 0, 0x00) {
-        @Override public int read(final InputStream in) throws IOException {
+        @Override
+        public int read(final InputStream in) throws IOException {
             throw new IllegalArgumentException("Cannot read MISSING type");
         }
-        @Override public void write(final int value, final OutputStream out) throws IOException {
+
+        @Override
+        public void write(final int value, final OutputStream out) throws IOException {
             throw new IllegalArgumentException("Cannot write MISSING type");
         }
     },
 
-    INT8 (1, 1, 0xFFFFFF80,        -127,        127) {
+    INT8(1, 1, 0xFFFFFF80, -127, 127) {
         @Override
         public int read(final InputStream in) throws IOException {
             return BCF2Utils.readByte(in);
@@ -55,16 +58,16 @@ public enum BCF2Type {
 
         @Override
         public void write(final int value, final OutputStream out) throws IOException {
-            out.write(0xFF & value);   // TODO -- do we need this operation?
+            out.write(0xFF & value); // TODO -- do we need this operation?
         }
     },
 
-    INT16(2, 2, 0xFFFF8000,      -32767,      32767) {
+    INT16(2, 2, 0xFFFF8000, -32767, 32767) {
         @Override
         public int read(final InputStream in) throws IOException {
             final int b2 = BCF2Utils.readByte(in) & 0xFF;
             final int b1 = BCF2Utils.readByte(in) & 0xFF;
-            return (short)((b1 << 8) | b2);
+            return (short) ((b1 << 8) | b2);
         }
 
         @Override
@@ -82,7 +85,7 @@ public enum BCF2Type {
             final int b3 = BCF2Utils.readByte(in) & 0xFF;
             final int b2 = BCF2Utils.readByte(in) & 0xFF;
             final int b1 = BCF2Utils.readByte(in) & 0xFF;
-            return (int)(b1 << 24 | b2 << 16 | b3 << 8 | b4);
+            return (int) (b1 << 24 | b2 << 16 | b3 << 8 | b4);
         }
 
         @Override
@@ -106,7 +109,7 @@ public enum BCF2Type {
         }
     },
 
-    CHAR (7, 1, 0x00000000) {
+    CHAR(7, 1, 0x00000000) {
         @Override
         public int read(final InputStream in) throws IOException {
             return INT8.read(in);
@@ -149,7 +152,9 @@ public enum BCF2Type {
      * The ID according to the BCF2 specification
      * @return
      */
-    public int getID() { return id; }
+    public int getID() {
+        return id;
+    }
 
     /**
      * Can we encode value v in this type, according to its declared range.
@@ -159,7 +164,9 @@ public enum BCF2Type {
      * @param v
      * @return
      */
-    public final boolean withinRange(final long v) { return v >= minValue && v <= maxValue; }
+    public final boolean withinRange(final long v) {
+        return v >= minValue && v <= maxValue;
+    }
 
     /**
      * Return the java object (aka null) that is used to represent a missing value for this
@@ -167,7 +174,9 @@ public enum BCF2Type {
      *
      * @return
      */
-    public Object getMissingJavaValue() { return missingJavaValue; }
+    public Object getMissingJavaValue() {
+        return missingJavaValue;
+    }
 
     /**
      * The bytes (encoded as an int) that are used to represent a missing value
@@ -175,12 +184,14 @@ public enum BCF2Type {
      *
      * @return
      */
-    public int getMissingBytes() { return missingBytes; }
+    public int getMissingBytes() {
+        return missingBytes;
+    }
 
     /**
      * An enum set of the types that might represent Integer values
      */
-    private final static EnumSet<BCF2Type> INTEGERS = EnumSet.of(INT8, INT16, INT32);
+    private static final EnumSet<BCF2Type> INTEGERS = EnumSet.of(INT8, INT16, INT32);
 
     /**
      * @return true if this BCF2Type corresponds to the magic "MISSING" type (0x00)

@@ -1,6 +1,5 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.cram.structure.Container;
 
 /**

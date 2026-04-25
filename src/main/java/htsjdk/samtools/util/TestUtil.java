@@ -24,18 +24,12 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.*;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 
 public class TestUtil {
 
     public static final int RANDOM_SEED = 42;
-
 
     /**
      * Base url where all test files for http tests are found
@@ -49,10 +43,8 @@ public class TestUtil {
         } catch (IOException e) {
             throw new SAMException("Failed to create temporary file.", e);
         }
-        if (!tempDirectory.delete())
-            throw new SAMException("Failed to delete file: " + tempDirectory);
-        if (!tempDirectory.mkdir())
-            throw new SAMException("Failed to make directory: " + tempDirectory);
+        if (!tempDirectory.delete()) throw new SAMException("Failed to delete file: " + tempDirectory);
+        if (!tempDirectory.mkdir()) throw new SAMException("Failed to make directory: " + tempDirectory);
         tempDirectory.deleteOnExit();
         return tempDirectory;
     }
@@ -74,7 +66,8 @@ public class TestUtil {
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    public static <T extends Serializable> T serializeAndDeserialize(T input) throws IOException, ClassNotFoundException {
+    public static <T extends Serializable> T serializeAndDeserialize(T input)
+            throws IOException, ClassNotFoundException {
         final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
         final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
 

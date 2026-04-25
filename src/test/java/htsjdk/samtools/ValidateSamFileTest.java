@@ -34,12 +34,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.StringUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import java.nio.channels.FileChannel;
-import java.nio.file.StandardOpenOption;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
@@ -48,10 +42,15 @@ import java.io.InputStream;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Tests almost all error conditions detected by the sam file validator. The
@@ -66,7 +65,9 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test
     public void testValidSamFile() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "valid.sam"));
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(new File(TEST_DATA_DIR, "valid.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(results.isEmpty());
     }
@@ -78,32 +79,46 @@ public class ValidateSamFileTest extends HtsjdkTest {
         // on decode, so validation finds no errors. Previously this test expected MISSING_NM
         // warnings which are no longer produced.
         final File reference = new File(TEST_DATA_DIR, "nm_tag_validation.fa");
-        final SamReader samReader = SamReaderFactory
-                .makeDefault()
+        final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
                 .referenceSequence(reference)
                 .open(new File(TEST_DATA_DIR, "nm_tag_validation.cram"));
-        final Histogram<String> results = executeValidation(samReader,
-                new FastaSequenceFile(reference, true),
-                IndexValidationStringency.EXHAUSTIVE);
+        final Histogram<String> results = executeValidation(
+                samReader, new FastaSequenceFile(reference, true), IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(results.isEmpty());
     }
 
     @Test
     public void testSamFileVersion1pt5() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.getCount(),2.0);
+        Assert.assertEquals(results.getCount(), 2.0);
     }
 
     @Test
     public void testSortOrder() throws IOException {
-        Histogram<String> results = executeValidation(SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "invalid_coord_sort_order.sam")), null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.RECORD_OUT_OF_ORDER.getHistogramString()).getValue(), 1.0);
-        results = executeValidation(SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "invalid_queryname_sort_order.sam")), null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.RECORD_OUT_OF_ORDER.getHistogramString()).getValue(), 5.0);
+        Histogram<String> results = executeValidation(
+                SamReaderFactory.makeDefault()
+                        .validationStringency(ValidationStringency.SILENT)
+                        .open(new File(TEST_DATA_DIR, "invalid_coord_sort_order.sam")),
+                null,
+                IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.RECORD_OUT_OF_ORDER.getHistogramString())
+                        .getValue(),
+                1.0);
+        results = executeValidation(
+                SamReaderFactory.makeDefault()
+                        .validationStringency(ValidationStringency.SILENT)
+                        .open(new File(TEST_DATA_DIR, "invalid_queryname_sort_order.sam")),
+                null,
+                IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.RECORD_OUT_OF_ORDER.getHistogramString())
+                        .getValue(),
+                5.0);
     }
 
     @Test
@@ -143,15 +158,37 @@ public class ValidateSamFileTest extends HtsjdkTest {
         records.next().setSecondOfPairFlag(true);
         records.next().setMateReferenceIndex(1);
 
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_PROPER_PAIR.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_MATE_NEG_STRAND.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_FIRST_OF_PAIR.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_MATE_REF_INDEX.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNPAIRED_MATE_REFERENCE.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_PROPER_PAIR.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_MATE_NEG_STRAND.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_FIRST_OF_PAIR.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_MATE_REF_INDEX.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_UNPAIRED_MATE_REFERENCE.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
@@ -169,16 +206,37 @@ public class ValidateSamFileTest extends HtsjdkTest {
         records.next().setMateReferenceIndex(records.next().getReferenceIndex() + 1);
         records.next().setMateUnmappedFlag(!records.next().getReadUnmappedFlag());
 
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
-
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_ALIGNMENT_START.getHistogramString()).getValue(), 3.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_NEG_STRAND.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString()).getValue(), 2.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_REF_INDEX.getHistogramString()).getValue(), 2.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNALIGNED_MATE_START.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_ALIGNMENT_START.getHistogramString())
+                        .getValue(),
+                3.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_NEG_STRAND.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString())
+                        .getValue(),
+                2.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_MATE_REF_INDEX.getHistogramString())
+                        .getValue(),
+                2.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_UNALIGNED_MATE_START.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
@@ -196,7 +254,8 @@ public class ValidateSamFileTest extends HtsjdkTest {
         records.next().setMateReferenceIndex(records.next().getReferenceIndex() + 1);
         records.next().setMateUnmappedFlag(!records.next().getReadUnmappedFlag());
 
-        final Histogram<String> results = executeValidationWithErrorIgnoring(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
+        final Histogram<String> results = executeValidationWithErrorIgnoring(
+                samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
 
         Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_NEG_STRAND.getHistogramString()));
         Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString()));
@@ -212,17 +271,21 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final Iterator<SAMRecord> records = samBuilder.iterator();
         records.next();
         records.remove();
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
-        Assert.assertEquals(results.get(SAMValidationError.Type.MATE_NOT_FOUND.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MATE_NOT_FOUND.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @DataProvider(name = "missingMateTestCases")
     public Object[][] missingMateTestCases() {
-        return new Object[][]{
-                {SAMFileHeader.SortOrder.coordinate},
-                {SAMFileHeader.SortOrder.queryname},
-                {SAMFileHeader.SortOrder.unsorted},
+        return new Object[][] {
+            {SAMFileHeader.SortOrder.coordinate},
+            {SAMFileHeader.SortOrder.queryname},
+            {SAMFileHeader.SortOrder.unsorted},
         };
     }
 
@@ -239,10 +302,17 @@ public class ValidateSamFileTest extends HtsjdkTest {
         records.next().setMappingQuality(10);
         records.next().setCigarString("36M");
 
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_NOT_PRIM_ALIGNMENT.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_MAPPING_QUALITY.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_NOT_PRIM_ALIGNMENT.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_MAPPING_QUALITY.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
@@ -256,12 +326,25 @@ public class ValidateSamFileTest extends HtsjdkTest {
         records.next().setCigarString("25M3S25M");
         records.next().setReferenceName("*");
 
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_CIGAR.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_READ_UNMAPPED.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISSING_TAG_NM.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_CIGAR.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_FLAG_READ_UNMAPPED.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISSING_TAG_NM.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
@@ -282,51 +365,63 @@ public class ValidateSamFileTest extends HtsjdkTest {
         recordWithInsert.setCigarString("1D" + Integer.toString(sequence.length - 1) + "M1I");
         recordWithInsert.setAttribute(ReservedTagConstants.NM, 2);
 
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), new ReferenceSequenceFile() {
-            private int index = 0;
+        final Histogram<String> results = executeValidation(
+                samBuilder.getSamReader(),
+                new ReferenceSequenceFile() {
+                    private int index = 0;
 
-            @Override
-            public SAMSequenceDictionary getSequenceDictionary() {
-                return null;
-            }
+                    @Override
+                    public SAMSequenceDictionary getSequenceDictionary() {
+                        return null;
+                    }
 
-            @Override
-            public ReferenceSequence nextSequence() {
-                final byte[] bases = new byte[10000];
-                Arrays.fill(bases, (byte) 'A');
-                return new ReferenceSequence("foo", index++, bases);
-            }
+                    @Override
+                    public ReferenceSequence nextSequence() {
+                        final byte[] bases = new byte[10000];
+                        Arrays.fill(bases, (byte) 'A');
+                        return new ReferenceSequence("foo", index++, bases);
+                    }
 
-            @Override
-            public void reset() {
-                this.index = 0;
-            }
+                    @Override
+                    public void reset() {
+                        this.index = 0;
+                    }
 
-            @Override
-            public boolean isIndexed() { return false; }
+                    @Override
+                    public boolean isIndexed() {
+                        return false;
+                    }
 
-            @Override
-            public ReferenceSequence getSequence(final String contig) {
-                throw new UnsupportedOperationException();
-            }
+                    @Override
+                    public ReferenceSequence getSequence(final String contig) {
+                        throw new UnsupportedOperationException();
+                    }
 
-            @Override
-            public ReferenceSequence getSubsequenceAt(final String contig, final long start, final long stop) {
-                throw new UnsupportedOperationException();
-            }
+                    @Override
+                    public ReferenceSequence getSubsequenceAt(final String contig, final long start, final long stop) {
+                        throw new UnsupportedOperationException();
+                    }
 
-            @Override
-            public void close() throws IOException {
-                //no-op
-            }
-        }, IndexValidationStringency.EXHAUSTIVE);
+                    @Override
+                    public void close() throws IOException {
+                        // no-op
+                    }
+                },
+                IndexValidationStringency.EXHAUSTIVE);
 
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_TAG_NM.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISSING_TAG_NM.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_TAG_NM.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISSING_TAG_NM.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test(dataProvider = "testMateCigarScenarios")
-    public void testMateCigarScenarios(final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
+    public void testMateCigarScenarios(
+            final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
             throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
@@ -336,16 +431,23 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @DataProvider(name = "testMateCigarScenarios")
     public Object[][] testMateCigarScenarios() {
-        return new Object[][]{
-                {"invalid mate cigar", "invalid_mate_cigar_string.sam", SAMValidationError.Type.MISMATCH_MATE_CIGAR_STRING},
-                {"inappropriate mate cigar", "inappropriate_mate_cigar_string.sam", SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE}
+        return new Object[][] {
+            {"invalid mate cigar", "invalid_mate_cigar_string.sam", SAMValidationError.Type.MISMATCH_MATE_CIGAR_STRING},
+            {
+                "inappropriate mate cigar",
+                "inappropriate_mate_cigar_string.sam",
+                SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE
+            }
         };
     }
 
     @Test(dataProvider = "testTruncatedScenarios")
-    public void testTruncated(final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
+    public void testTruncated(
+            final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
             throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, inputFile));
+        final SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(new File(TEST_DATA_DIR, inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
         Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
@@ -353,13 +455,13 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @DataProvider(name = "testTruncatedScenarios")
     public Object[][] testTruncatedScenarios() {
-        return new Object[][]{
-                {"truncated bam", "truncated.bam", SAMValidationError.Type.TRUNCATED_FILE},
-                {"truncated quals", "truncated_quals.sam", SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_QUALS_LENGTH},
-                // TODO: Because validation is turned off when parsing, this error is not detectable currently by validator.
-                //{"truncated tag", "truncated_tag.sam", SAMValidationError.Type.TRUNCATED_FILE},
-                // TODO: Currently, this is not considered an error.  Should it be?
-                //{"hanging tab", "hanging_tab.sam", SAMValidationError.Type.TRUNCATED_FILE},
+        return new Object[][] {
+            {"truncated bam", "truncated.bam", SAMValidationError.Type.TRUNCATED_FILE},
+            {"truncated quals", "truncated_quals.sam", SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_QUALS_LENGTH},
+            // TODO: Because validation is turned off when parsing, this error is not detectable currently by validator.
+            // {"truncated tag", "truncated_tag.sam", SAMValidationError.Type.TRUNCATED_FILE},
+            // TODO: Currently, this is not considered an error.  Should it be?
+            // {"hanging tab", "hanging_tab.sam", SAMValidationError.Type.TRUNCATED_FILE},
         };
     }
 
@@ -372,9 +474,9 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @DataProvider(name = "testFatalParsingErrors")
     public Object[][] testFatalParsingErrorScenarios() {
-        return new Object[][]{
-                {"missing fields", "missing_fields.sam"},
-                {"zero length read", "zero_length_read.sam"}
+        return new Object[][] {
+            {"missing fields", "missing_fields.sam"},
+            {"zero length read", "zero_length_read.sam"}
         };
     }
 
@@ -382,17 +484,20 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testNotStoredQualitiesFields(final String inputFile, final double expectedValue) throws IOException {
         try (final SamReader reader = SamReaderFactory.makeDefault().open((new File(TEST_DATA_DIR, inputFile)))) {
             final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
-            Assert.assertEquals(results.get(SAMValidationError.Type.QUALITY_NOT_STORED.getHistogramString()).getValue(), expectedValue);
+            Assert.assertEquals(
+                    results.get(SAMValidationError.Type.QUALITY_NOT_STORED.getHistogramString())
+                            .getValue(),
+                    expectedValue);
         }
     }
 
-    @DataProvider(name="testQualitiesNotStored")
+    @DataProvider(name = "testQualitiesNotStored")
     public Object[][] NotStoredQualitiesFieldsScenarios() {
-            return new Object[][]{
-                    {"not_stored_qualities_more_than_100.sam",100.0},
-                    {"not_stored_qualities.sam", 2.0},
-                    {"not_stored_qualities.bam", 1.0}
-            };
+        return new Object[][] {
+            {"not_stored_qualities_more_than_100.sam", 100.0},
+            {"not_stored_qualities.sam", 2.0},
+            {"not_stored_qualities.bam", 1.0}
+        };
     }
 
     @Test
@@ -401,14 +506,23 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final InputStream strm = new ByteArrayInputStream(StringUtil.stringToBytes(header));
         final SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(strm));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
-    @Test(enabled = false, description = "File is actually valid for Standard quality scores so this test fails with an NPE.")
+    @Test(
+            enabled = false,
+            description = "File is actually valid for Standard quality scores so this test fails with an NPE.")
     public void testQualityFormatValidation() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().open(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .open(
+                        new File(
+                                "./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        final Histogram.Bin<String> bin = results.get(SAMValidationError.Type.INVALID_QUALITY_FORMAT.getHistogramString());
+        final Histogram.Bin<String> bin =
+                results.get(SAMValidationError.Type.INVALID_QUALITY_FORMAT.getHistogramString());
         final double value = bin.getValue();
         Assert.assertEquals(value, 1.0);
     }
@@ -420,19 +534,24 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final int contigLength = samBuilder.getHeader().getSequence(0).getSequenceLength();
         // Should hang off the end.
         samBuilder.addFrag(String.valueOf(1), 0, contigLength - 1, false);
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertNotNull(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()));
-        Assert.assertEquals(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString())
+                        .getValue(),
+                1.0);
     }
-    
+
     @Test
     public void testCigarNoSeqValidation() throws Exception {
         final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
         samBuilder.addFrag("name", 0, 1, false);
         samBuilder.iterator().next().setReadBases(SAMRecord.NULL_SEQUENCE);
         samBuilder.iterator().next().setBaseQualities(SAMRecord.NULL_SEQUENCE);
-        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH .getHistogramString()));
+        final Histogram<String> results =
+                executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH.getHistogramString()));
     }
 
     @Test(expectedExceptions = SAMFormatException.class)
@@ -448,65 +567,99 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final String header = "@HD	VN:1.0	SO:coordinate	SO:coordinate";
         final InputStream strm = new ByteArrayInputStream(StringUtil.stringToBytes(header));
         final SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(strm));
-        Assert.assertEquals(SAMFileHeader.SortOrder.coordinate, samReader.getFileHeader().getSortOrder());
+        Assert.assertEquals(
+                SAMFileHeader.SortOrder.coordinate, samReader.getFileHeader().getSortOrder());
         CloserUtil.close(samReader);
     }
 
     @Test
     public void testHeaderValidation() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
                 .open(new File(TEST_DATA_DIR, "buggyHeader.sam"));
         final File referenceFile = new File(TEST_DATA_DIR, "../hg19mini.fasta");
         final ReferenceSequenceFile reference = new FastaSequenceFile(referenceFile, false);
         final Histogram<String> results = executeValidation(samReader, reference, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.UNRECOGNIZED_HEADER_TYPE.getHistogramString()).getValue(), 3.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.HEADER_TAG_MULTIPLY_DEFINED.getHistogramString()).getValue(), 1.0);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FILE_SEQ_DICT.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.UNRECOGNIZED_HEADER_TYPE.getHistogramString())
+                        .getValue(),
+                3.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.HEADER_TAG_MULTIPLY_DEFINED.getHistogramString())
+                        .getValue(),
+                1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_FILE_SEQ_DICT.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
     public void testSeqQualMismatch() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
                 .open(new File(TEST_DATA_DIR, "seq_qual_len_mismatch.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_SEQ_QUAL_LENGTH.getHistogramString()).getValue(), 8.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISMATCH_SEQ_QUAL_LENGTH.getHistogramString())
+                        .getValue(),
+                8.0);
     }
 
     @Test
     public void testPlatformMissing() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
                 .open((new File(TEST_DATA_DIR, "missing_platform_unit.sam")));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MISSING_PLATFORM_VALUE.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MISSING_PLATFORM_VALUE.getHistogramString())
+                        .getValue(),
+                1.0);
     }
-    
+
     @Test
     public void testPlatformInvalid() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
                 .open((new File(TEST_DATA_DIR, "invalid_platform_unit.sam")));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_PLATFORM_VALUE.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_PLATFORM_VALUE.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
     public void testDuplicateRGIDs() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
                 .open((new File(TEST_DATA_DIR, "duplicate_rg.sam")));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.DUPLICATE_READ_GROUP_ID.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.DUPLICATE_READ_GROUP_ID.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     @Test
     public void testIndexFileValidation() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
-                .enable(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES).open((new File(TEST_DATA_DIR, "bad_index.bam")));
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .enable(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES)
+                .open((new File(TEST_DATA_DIR, "bad_index.bam")));
 
         Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_INDEX_FILE_POINTER.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_INDEX_FILE_POINTER.getHistogramString())
+                        .getValue(),
+                1.0);
 
         results = executeValidation(samReader, null, IndexValidationStringency.LESS_EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_INDEX_FILE_POINTER.getHistogramString()).getValue(), 1.0);
-
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.INVALID_INDEX_FILE_POINTER.getHistogramString())
+                        .getValue(),
+                1.0);
     }
 
     private void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
@@ -517,10 +670,14 @@ public class ValidateSamFileTest extends HtsjdkTest {
         pw.close();
         final SamReader reader = SamReaderFactory.makeDefault().open(samFile);
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
-        if (expectValid) Assert.assertNull(results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString()));
+        if (expectValid)
+            Assert.assertNull(results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString()));
         else {
             Assert.assertNotNull(results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString()));
-            Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString()).getValue(), 1.0);
+            Assert.assertEquals(
+                    results.get(SAMValidationError.Type.INVALID_VERSION_NUMBER.getHistogramString())
+                            .getValue(),
+                    1.0);
         }
     }
 
@@ -537,74 +694,74 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test(enabled = false)
     public void duplicateReads() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "duplicated_reads.sam"));
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(new File(TEST_DATA_DIR, "duplicated_reads.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertFalse(results.isEmpty());
-        Assert.assertEquals(results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString()).getValue(), 2.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString())
+                        .getValue(),
+                2.0);
     }
 
     @Test
     public void duplicateReadsOutOfOrder() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "duplicated_reads_out_of_order.sam"));
+        final SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(new File(TEST_DATA_DIR, "duplicated_reads_out_of_order.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertFalse(results.isEmpty());
-        Assert.assertEquals(results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString()).getValue(), 2.0);
+        Assert.assertEquals(
+                results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString())
+                        .getValue(),
+                2.0);
     }
-
 
     @DataProvider(name = "TagCorrectlyProcessData")
     public Object[][] tagCorrectlyProcessData() throws IOException {
-        final String E2TagCorrectlyProcessTestData =
-                "@HD\tVN:1.0\tSO:unsorted\n" +
-                        "@SQ\tSN:chr1\tLN:101\n" +
-                        "@RG\tID:0\tSM:Hi,Mom!\n" +
-                        "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tE2:Z:CAA";
+        final String E2TagCorrectlyProcessTestData = "@HD\tVN:1.0\tSO:unsorted\n" + "@SQ\tSN:chr1\tLN:101\n"
+                + "@RG\tID:0\tSM:Hi,Mom!\n"
+                + "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tE2:Z:CAA";
 
-        final String U2TagCorrectlyProcessTestData =
-                "@HD\tVN:1.0\tSO:unsorted\n" +
-                        "@SQ\tSN:chr1\tLN:101\n" +
-                        "@RG\tID:0\tSM:Hi,Mom!\n" +
-                        "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
+        final String U2TagCorrectlyProcessTestData = "@HD\tVN:1.0\tSO:unsorted\n" + "@SQ\tSN:chr1\tLN:101\n"
+                + "@RG\tID:0\tSM:Hi,Mom!\n"
+                + "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
 
-        final String GOTagCorrectlyProcessTestData =
-                "@HD\tVN:1.0\tGO:NOTKNOWN\n" +
-                        "@SQ\tSN:chr1\tLN:101\n" +
-                        "@RG\tID:0\tSM:Hi,Mom!\n" +
-                        "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
+        final String GOTagCorrectlyProcessTestData = "@HD\tVN:1.0\tGO:NOTKNOWN\n" + "@SQ\tSN:chr1\tLN:101\n"
+                + "@RG\tID:0\tSM:Hi,Mom!\n"
+                + "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
 
-        return new Object[][]{
-                {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.E2_BASE_EQUALS_PRIMARY_BASE},
-                {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH},
-                {U2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH},
-                {GOTagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE}
+        return new Object[][] {
+            {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.E2_BASE_EQUALS_PRIMARY_BASE},
+            {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH},
+            {U2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH},
+            {GOTagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE}
         };
     }
 
     @Test(dataProvider = "TagCorrectlyProcessData")
-    public void tagCorrectlyProcessTest(byte[] bytesFromFile,
-                                        SAMValidationError.Type errorType) throws Exception {
-        final SamReader samReader = SamReaderFactory
-                .makeDefault()
+    public void tagCorrectlyProcessTest(byte[] bytesFromFile, SAMValidationError.Type errorType) throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(
-                        SamInputResource.of(
-                                new ByteArrayInputStream(bytesFromFile)
-                        )
-                );
+                .open(SamInputResource.of(new ByteArrayInputStream(bytesFromFile)));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(results.get(errorType.getHistogramString()).getValue(), 1.0);
     }
 
     @DataProvider(name = "validateBamFileTerminationData")
     public Object[][] validateBamFileTerminationData() throws IOException {
-        return new Object[][]{
-                {getBrokenFile(TERMINATION_GZIP_BLOCK_SIZE), SAMValidationError.Type.BAM_FILE_MISSING_TERMINATOR_BLOCK, 1, 0},
-                {getBrokenFile(RANDOM_NUMBER_TRUNC_BYTE), SAMValidationError.Type.TRUNCATED_FILE, 0, 1}
+        return new Object[][] {
+            {getBrokenFile(TERMINATION_GZIP_BLOCK_SIZE), SAMValidationError.Type.BAM_FILE_MISSING_TERMINATOR_BLOCK, 1, 0
+            },
+            {getBrokenFile(RANDOM_NUMBER_TRUNC_BYTE), SAMValidationError.Type.TRUNCATED_FILE, 0, 1}
         };
     }
 
     @Test(dataProvider = "validateBamFileTerminationData")
-    public void validateBamFileTerminationTest(final File file, final SAMValidationError.Type errorType, final int numWarnings, final int numErrors) throws IOException {
+    public void validateBamFileTerminationTest(
+            final File file, final SAMValidationError.Type errorType, final int numWarnings, final int numErrors)
+            throws IOException {
         final SamFileValidator samFileValidator = new SamFileValidator(new PrintWriter(System.out), 8000);
         samFileValidator.validateBamFileTermination(file);
         Assert.assertEquals(samFileValidator.getErrorsByType().get(errorType).getValue(), 1.0);
@@ -612,16 +769,21 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(samFileValidator.getNumErrors(), numErrors);
     }
 
-    private Histogram<String> executeValidation(final SamReader samReader, final ReferenceSequenceFile reference,
-                                                final IndexValidationStringency stringency) throws IOException {
+    private Histogram<String> executeValidation(
+            final SamReader samReader,
+            final ReferenceSequenceFile reference,
+            final IndexValidationStringency stringency)
+            throws IOException {
         return executeValidationWithErrorIgnoring(samReader, reference, stringency, Collections.EMPTY_LIST, false);
     }
 
-    private Histogram<String> executeValidationWithErrorIgnoring(final SamReader samReader,
-                                                                 final ReferenceSequenceFile reference,
-                                                                 final IndexValidationStringency stringency,
-                                                                 final Collection<SAMValidationError.Type> ignoringError,
-                                                                 final boolean skipMateValidation) throws IOException {
+    private Histogram<String> executeValidationWithErrorIgnoring(
+            final SamReader samReader,
+            final ReferenceSequenceFile reference,
+            final IndexValidationStringency stringency,
+            final Collection<SAMValidationError.Type> ignoringError,
+            final boolean skipMateValidation)
+            throws IOException {
         final File outFile = File.createTempFile("validation", ".txt");
         outFile.deleteOnExit();
 
@@ -642,10 +804,12 @@ public class ValidateSamFileTest extends HtsjdkTest {
     }
 
     private File getBrokenFile(int truncByte) throws IOException {
-        final FileChannel stream = FileChannel.open(new File(TEST_DATA_DIR + "/test_samfile_version_1pt5.bam").toPath());
+        final FileChannel stream =
+                FileChannel.open(new File(TEST_DATA_DIR + "/test_samfile_version_1pt5.bam").toPath());
         final File breakingFile = File.createTempFile("trunc", ".bam");
         breakingFile.deleteOnExit();
-        FileChannel.open(breakingFile.toPath(), StandardOpenOption.WRITE).transferFrom(stream, 0, stream.size() - truncByte);
+        FileChannel.open(breakingFile.toPath(), StandardOpenOption.WRITE)
+                .transferFrom(stream, 0, stream.size() - truncByte);
         return breakingFile;
     }
 }

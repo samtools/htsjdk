@@ -1,20 +1,19 @@
 package htsjdk.beta.codecs.hapref.fasta;
 
+import htsjdk.annotations.InternalAPI;
+import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormats;
-import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.annotations.InternalAPI;
-
 import java.io.IOException;
 
 /**
@@ -25,7 +24,9 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     protected Bundle inputBundle;
 
     @Override
-    public String getDisplayName() { return displayName; }
+    public String getDisplayName() {
+        return displayName;
+    }
 
     private final ReferenceSequenceFile referenceSequenceFile;
 
@@ -34,22 +35,23 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         this.displayName = inputBundle.getPrimaryResource().getDisplayName();
         final BundleResource referenceResource = inputBundle.getOrThrow(BundleResourceType.CT_HAPLOID_REFERENCE);
         if (referenceResource.getIOPath().isPresent()) {
-            referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFileFromBundle(inputBundle, true, true);
+            referenceSequenceFile =
+                    ReferenceSequenceFileFactory.getReferenceSequenceFileFromBundle(inputBundle, true, true);
         } else {
-            final SeekableStream seekableStream = referenceResource.getSeekableStream().orElseThrow(
-                    () -> new IllegalArgumentException(
-                            String.format("The reference resource %s is not able to supply the required seekable stream",
-                                    referenceResource.getDisplayName())));
+            final SeekableStream seekableStream = referenceResource
+                    .getSeekableStream()
+                    .orElseThrow(() -> new IllegalArgumentException(String.format(
+                            "The reference resource %s is not able to supply the required seekable stream",
+                            referenceResource.getDisplayName())));
             referenceSequenceFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(
-                    referenceResource.getDisplayName(),
-                    seekableStream,
-                    null
-            );
+                    referenceResource.getDisplayName(), seekableStream, null);
         }
     }
 
     @Override
-    final public String getFileFormat() { return HaploidReferenceFormats.FASTA; }
+    public final String getFileFormat() {
+        return HaploidReferenceFormats.FASTA;
+    }
 
     @Override
     public SAMSequenceDictionary getHeader() {
@@ -83,7 +85,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
             public void close() {
                 try {
                     referenceSequenceFile.close();
-                } catch(final IOException e) {
+                } catch (final IOException e) {
                     throw new HtsjdkIOException(e);
                 }
             }
@@ -100,7 +102,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         return bundleContainsIndex(inputBundle) && referenceSequenceFile.isIndexed();
     }
 
-    //TODO: we need a solution here that doesn't depend on this getter...its necessary because
+    // TODO: we need a solution here that doesn't depend on this getter...its necessary because
     // the generic decoder interface exports an iterable<ReferenceSequence>, but we need the native
     // (indexed by contig) interface implemented on ReferenceSequenceFile to create a ReferenceSource,
     // it might be possible to write a CRAMReferenceSource implementation that uses the HtsQuery
@@ -130,5 +132,4 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
     private static boolean bundleContainsIndex(final Bundle inputBundle) {
         return inputBundle.get(BundleResourceType.CT_READS_INDEX).isPresent();
     }
-
 }

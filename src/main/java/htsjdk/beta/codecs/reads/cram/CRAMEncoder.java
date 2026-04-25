@@ -1,21 +1,20 @@
 package htsjdk.beta.codecs.reads.cram;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
-import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.samtools.CRAMFileWriter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.Optional;
 
 /**
@@ -47,14 +46,19 @@ public abstract class CRAMEncoder implements ReadsEncoder {
 
         this.outputBundle = outputBundle;
         this.readsEncoderOptions = readsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
+        this.displayName =
+                outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override
-    final public String getFileFormat() { return ReadsFormats.CRAM; }
+    public final String getFileFormat() {
+        return ReadsFormats.CRAM;
+    }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     @Override
     public void setHeader(final SAMFileHeader samFileHeader) {
@@ -116,7 +120,8 @@ public abstract class CRAMEncoder implements ReadsEncoder {
         if (cramEncoderOptions.getReferenceSource().isPresent()) {
             return cramEncoderOptions.getReferenceSource().get();
         } else if (cramEncoderOptions.getReferencePath().isPresent()) {
-            return CRAMCodec.getCRAMReferenceSource(cramEncoderOptions.getReferencePath().get());
+            return CRAMCodec.getCRAMReferenceSource(
+                    cramEncoderOptions.getReferencePath().get());
         }
 
         // if none is specified, get the default "lazy" reference source that throws when queried, to allow
@@ -124,7 +129,8 @@ public abstract class CRAMEncoder implements ReadsEncoder {
         return ReferenceSource.getDefaultCRAMReferenceSource();
     }
 
-    private CRAMFileWriter getCRAMWriter(final SAMFileHeader samFileHeader, final ReadsEncoderOptions readsEncoderOptions) {
+    private CRAMFileWriter getCRAMWriter(
+            final SAMFileHeader samFileHeader, final ReadsEncoderOptions readsEncoderOptions) {
         // the CRAMFileWriter constructors assume presorted; so if we're presorted, use the CRAMFileWriters
         // directly so we can support writing to a stream
         if (readsEncoderOptions.isPreSorted()) {
@@ -153,18 +159,19 @@ public abstract class CRAMEncoder implements ReadsEncoder {
             final Optional<BundleResource> optIndexResource = getOutputBundle().get(BundleResourceType.CT_READS_INDEX);
             final Optional<BundleResource> optMD5Resource = getOutputBundle().get(BundleResourceType.CT_MD5);
 
-            //TODO: SamFileWriterFactory code paths currently only support writing an index to a plain file, so
+            // TODO: SamFileWriterFactory code paths currently only support writing an index to a plain file, so
             // for now throw if an index is requested on any other type
             if (optIndexResource.isPresent()) {
                 final BundleResource indexResource = optIndexResource.get();
                 if (indexResource.getIOPath().isPresent()) {
                     samFileWriterFactory.setCreateIndex(true);
                 } else {
-                    throw new HtsjdkUnsupportedOperationException("Writing a CRAM index to a stream is not yet supported");
+                    throw new HtsjdkUnsupportedOperationException(
+                            "Writing a CRAM index to a stream is not yet supported");
                 }
             }
 
-            //TODO: CRAMFileWriter currently only supports writing an md5 to a plain file with a name that
+            // TODO: CRAMFileWriter currently only supports writing an md5 to a plain file with a name that
             // it chooses, so throw if an md5 resource is specified since we can't direct it to the specified
             // resource
             if (optMD5Resource.isPresent()) {
@@ -187,5 +194,4 @@ public abstract class CRAMEncoder implements ReadsEncoder {
             }
         }
     }
-
 }

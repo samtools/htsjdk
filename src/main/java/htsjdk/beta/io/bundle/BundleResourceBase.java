@@ -3,7 +3,6 @@ package htsjdk.beta.io.bundle;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -29,10 +28,7 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
      *                       a resource with content type "READS". Predefined format strings are defined
      *                       in {@link BundleResourceType}.
      */
-    public BundleResourceBase(
-            final String displayName,
-            final String contentType,
-            final String format) {
+    public BundleResourceBase(final String displayName, final String contentType, final String format) {
         ValidationUtils.nonEmpty(displayName, "display name");
         ValidationUtils.nonEmpty(contentType, "content type");
         this.displayName = displayName;
@@ -41,7 +37,9 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     }
 
     @Override
-    public String getDisplayName() { return displayName; }
+    public String getDisplayName() {
+        return displayName;
+    }
 
     @Override
     public String getContentType() {
@@ -54,25 +52,39 @@ public abstract class BundleResourceBase implements BundleResource, Serializable
     }
 
     @Override
-    public Optional<IOPath> getIOPath() { return Optional.empty(); }
+    public Optional<IOPath> getIOPath() {
+        return Optional.empty();
+    }
 
     @Override
-    public Optional<InputStream> getInputStream() { return Optional.empty(); }
+    public Optional<InputStream> getInputStream() {
+        return Optional.empty();
+    }
 
     @Override
-    public Optional<OutputStream> getOutputStream() { return Optional.empty(); }
+    public Optional<OutputStream> getOutputStream() {
+        return Optional.empty();
+    }
 
     @Override
-    public Optional<SeekableStream> getSeekableStream() { return Optional.empty(); }
+    public Optional<SeekableStream> getSeekableStream() {
+        return Optional.empty();
+    }
 
     @Override
-    public boolean hasSeekableStream() { return false; }
+    public boolean hasSeekableStream() {
+        return false;
+    }
 
     @Override
-    public boolean hasInputType() { return false; }
+    public boolean hasInputType() {
+        return false;
+    }
 
     @Override
-    public boolean hasOutputType() { return false; }
+    public boolean hasOutputType() {
+        return false;
+    }
 
     @Override
     public String toString() {

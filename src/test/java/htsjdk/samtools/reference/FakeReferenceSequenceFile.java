@@ -2,7 +2,6 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,8 +79,7 @@ public class FakeReferenceSequenceFile implements ReferenceSequenceFile {
      * Unlike {@link #getSequence}, this returns a copy of the exact requested length.
      */
     @Override
-    public ReferenceSequence getSubsequenceAt(final String contig, final long start,
-                                              final long stop) {
+    public ReferenceSequence getSubsequenceAt(final String contig, final long start, final long stop) {
         int length = (int) (stop - start + 1);
         final byte[] bases = getBasesOfLength(length);
         return new ReferenceSequence(contig, length, Arrays.copyOf(bases, length));

@@ -27,8 +27,7 @@ package htsjdk.samtools;
  * Thrown when a SAM file being read or decoded (text or binary) looks bad.
  */
 public class SAMFormatException extends SAMException {
-    public SAMFormatException() {
-    }
+    public SAMFormatException() {}
 
     public SAMFormatException(final String s) {
         super(s);

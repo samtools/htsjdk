@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2017 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2017 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
@@ -39,10 +39,6 @@ import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.*;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -53,6 +49,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * @author amila
@@ -72,7 +71,8 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test
     public void testWriteAndReadAsyncVCFHeaderless() throws IOException {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", FileExtensions.VCF);
+        final File fakeVCFFile =
+                VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", FileExtensions.VCF);
         fakeVCFFile.deleteOnExit();
 
         Tribble.indexFile(fakeVCFFile).deleteOnExit();
@@ -81,8 +81,10 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY, Options.USE_ASYNC_IO))
+                .setOutputFile(fakeVCFFile)
+                .setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(
+                        Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY, Options.USE_ASYNC_IO))
                 .build()) {
             writer.setHeader(header);
             writer.add(createVC(header));
@@ -108,8 +110,10 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
      * @param additionalColumns  the additional column names
      * @return a fake VCF header
      */
-    public static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
-                                             final SAMSequenceDictionary sequenceDict) {
+    public static VCFHeader createFakeHeader(
+            final Set<VCFHeaderLine> metaData,
+            final Set<String> additionalColumns,
+            final SAMSequenceDictionary sequenceDict) {
         metaData.add(new VCFHeaderLine("two", "2"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");
@@ -126,19 +130,25 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
     private VariantContext createVC(final VCFHeader header) {
 
         final List<Allele> alleles = new ArrayList<Allele>();
-        final Map<String, Object> attributes = new HashMap<String,Object>();
-        final GenotypesContext genotypes = GenotypesContext.create(header.getGenotypeSamples().size());
+        final Map<String, Object> attributes = new HashMap<String, Object>();
+        final GenotypesContext genotypes =
+                GenotypesContext.create(header.getGenotypeSamples().size());
 
-        alleles.add(Allele.create("A",true));
-        alleles.add(Allele.create("ACC",false));
+        alleles.add(Allele.create("A", true));
+        alleles.add(Allele.create("ACC", false));
 
-        attributes.put("DP","50");
+        attributes.put("DP", "50");
         for (final String name : header.getGenotypeSamples()) {
-            final Genotype gt = new GenotypeBuilder(name,alleles.subList(1,2)).GQ(0).attribute("BB", "1").phased(true).make();
+            final Genotype gt = new GenotypeBuilder(name, alleles.subList(1, 2))
+                    .GQ(0)
+                    .attribute("BB", "1")
+                    .phased(true)
+                    .make();
             genotypes.add(gt);
         }
         return new VariantContextBuilder("RANDOM", "1", 1, 1, alleles)
-                .genotypes(genotypes).attributes(attributes).make();
+                .genotypes(genotypes)
+                .attributes(attributes)
+                .make();
     }
 }
-

@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.build;
 
+import static htsjdk.samtools.cram.build.CramIO.*;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -8,27 +10,21 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import java.io.*;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
-import java.util.Arrays;
-
-import static htsjdk.samtools.cram.build.CramIO.*;
-
 public class CramIOTest extends HtsjdkTest {
     private final String testID = "testid";
 
-    @DataProvider(name="cramHeaderAndEOF")
+    @DataProvider(name = "cramHeaderAndEOF")
     private Object[] getCRAMHeaderAndEOF() {
-        return new Object[] {
-                CramVersions.CRAM_v2_1,
-                CramVersions.CRAM_v3
-        };
+        return new Object[] {CramVersions.CRAM_v2_1, CramVersions.CRAM_v3};
     }
 
-    @Test(dataProvider="cramHeaderAndEOF")
+    @Test(dataProvider = "cramHeaderAndEOF")
     public void testCheckHeaderAndEOF(final CRAMVersion cramVersion) throws IOException {
         final CramHeader cramHeader = new CramHeader(cramVersion, testID);
         final File file = File.createTempFile("test", ".cram");
@@ -40,13 +36,10 @@ public class CramIOTest extends HtsjdkTest {
         Assert.assertTrue(checkHeaderAndEOF(file));
     }
 
-    @DataProvider(name="unsupportedCRAMVersions")
+    @DataProvider(name = "unsupportedCRAMVersions")
     private Object[] getUnsupportedCRAMVersions() {
         return new Object[] {
-                new CRAMVersion(1, 0),
-                new CRAMVersion(2, 0),
-                new CRAMVersion(3, 2),
-                new CRAMVersion(4, 0),
+            new CRAMVersion(1, 0), new CRAMVersion(2, 0), new CRAMVersion(3, 2), new CRAMVersion(4, 0),
         };
     }
 
@@ -69,7 +62,8 @@ public class CramIOTest extends HtsjdkTest {
      * @return true if the stream ends with a correct EOF marker, false otherwise
      * @throws IOException as per java IO contract
      */
-    private static boolean checkEOF(final CRAMVersion cramVersion, final SeekableStream seekableStream) throws IOException {
+    private static boolean checkEOF(final CRAMVersion cramVersion, final SeekableStream seekableStream)
+            throws IOException {
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
             return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);
         }
@@ -101,5 +95,4 @@ public class CramIOTest extends HtsjdkTest {
         InputStreamUtils.readFully(seekableStream, tail, 0, tail.length);
         return Arrays.equals(tail, target);
     }
-
 }

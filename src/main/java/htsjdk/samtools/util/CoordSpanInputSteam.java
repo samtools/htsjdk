@@ -2,7 +2,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Chunk;
 import htsjdk.samtools.seekablestream.SeekableStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -56,8 +55,7 @@ public class CoordSpanInputSteam extends InputStream {
             return -1;
         }
 
-        if (delegate.position() < current.getChunkEnd())
-            return delegate.read();
+        if (delegate.position() < current.getChunkEnd()) return delegate.read();
 
         nextChunk();
 
@@ -76,8 +74,7 @@ public class CoordSpanInputSteam extends InputStream {
         if (available > length) return delegate.read(buffer, offset, length);
 
         int read = delegate.read(buffer, offset, available);
-        if (delegate.position() >= current.getChunkEnd())
-            nextChunk();
+        if (delegate.position() >= current.getChunkEnd()) nextChunk();
         return read;
     }
 

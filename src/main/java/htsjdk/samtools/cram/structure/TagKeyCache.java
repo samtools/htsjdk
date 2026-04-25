@@ -33,8 +33,8 @@ public final class TagKeyCache {
             final char c1 = (char) ((id >> 16) & 0xFF);
             final char c2 = (char) ((id >> 8) & 0xFF);
             this.type = (char) (id & 0xFF);
-            this.key = new String(new char[]{c1, c2});
-            this.keyType3Bytes = new String(new char[]{c1, c2, this.type});
+            this.key = new String(new char[] {c1, c2});
+            this.keyType3Bytes = new String(new char[] {c1, c2, this.type});
             this.keyType3BytesAsInt = id;
             this.code = SAMTag.makeBinaryTag(this.key);
         }
