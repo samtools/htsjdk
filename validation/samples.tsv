@@ -1,0 +1,4 @@
+sample	input	reference
+na12878_small	../src/test/resources/htsjdk/samtools/cram/NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram	../src/test/resources/htsjdk/samtools/cram/human_g1k_v37.20.21.1-100.fasta
+na12878_unmapped	../src/test/resources/htsjdk/samtools/cram/NA12878.unmapped.cram	../src/test/resources/htsjdk/samtools/cram/human_g1k_v37.20.21.1-100.fasta
+ceutrio	../src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram	../src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz
