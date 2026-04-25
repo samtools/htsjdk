@@ -726,14 +726,6 @@ public class SRALazyRecord extends SAMRecord {
     }
 
     @Override
-    public String format() {
-        if (!initializedAttributes.contains(LazyAttribute.RG)) {
-            getAttribute("RG");
-        }
-        return super.format();
-    }
-
-    @Override
     public List<SAMValidationError> isValid(final boolean firstOnly) {
         loadFields();
         getFlags();

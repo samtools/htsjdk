@@ -118,8 +118,8 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
             for (final SAMRecord rec1 : reader1) {
                 final SAMRecord rec2 = iterator2.next();
                 if (!rec1.equals(rec2)) {
-                    System.err.printf("%s%s", rec1.getReadUnmappedFlag() ? "unmapped: " : "", rec1.getSAMString());
-                    System.err.printf("%s%s", rec2.getReadUnmappedFlag() ? "unmapped: " : "", rec2.getSAMString());
+                    System.err.printf("%s%s%n", rec1.getReadUnmappedFlag() ? "unmapped: " : "", rec1.getSAMString());
+                    System.err.printf("%s%s%n", rec2.getReadUnmappedFlag() ? "unmapped: " : "", rec2.getSAMString());
                     diffCount++;
                 }
             }

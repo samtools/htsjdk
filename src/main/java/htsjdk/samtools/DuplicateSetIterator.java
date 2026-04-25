@@ -148,7 +148,7 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
 
                     if (0 < cmp) {
                         throw new SAMException("The input records were not sorted in duplicate order:\n" +
-                                representative.getSAMString() + record.getSAMString());
+                                representative.getSAMString() + "\n" + record.getSAMString());
                     } else if (cmp < 0) {
                         duplicateSet = this.duplicateSet;
                         this.duplicateSet = new DuplicateSet(this.comparator);

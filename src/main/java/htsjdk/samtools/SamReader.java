@@ -594,8 +594,8 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
                 if (!checker.isSorted(result)) {
                     throw new IllegalStateException(String.format(
                             "Record %s should come after %s when sorting with %s ordering.",
-                            previous.getSAMString().trim(),
-                            result.getSAMString().trim(), checker.getSortOrder()));
+                            previous.getSAMString(),
+                            result.getSAMString(), checker.getSortOrder()));
                 }
             }
             return result;

@@ -1205,4 +1205,48 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         rec.setAlignmentStart(100);
         Assert.assertEquals(100, rec.getAlignmentBlocks().get(0).getReferenceStart());
     }
+
+    @Test
+    public void testToStringReturnsSamLine() {
+        final SAMRecord rec = createTestRecordHelper();
+        final String[] fields = rec.toString().split("\t", -1);
+        Assert.assertTrue(fields.length >= 11, "Expected at least 11 mandatory SAM fields, got " + fields.length);
+        Assert.assertEquals(fields[0], rec.getReadName());
+        Assert.assertEquals(fields[1], Integer.toString(rec.getFlags()));
+        Assert.assertEquals(fields[2], rec.getReferenceName());
+        Assert.assertEquals(fields[3], Integer.toString(rec.getAlignmentStart()));
+        Assert.assertEquals(fields[5], rec.getCigarString());
+    }
+
+    @Test
+    public void testToStringHasNoTrailingNewline() {
+        final SAMRecord rec = createTestRecordHelper();
+        final String s = rec.toString();
+        Assert.assertFalse(s.isEmpty());
+        Assert.assertNotEquals(s.charAt(s.length() - 1), '\n');
+    }
+
+    @Test
+    public void testGetSAMStringHasNoTrailingNewline() {
+        final SAMRecord rec = createTestRecordHelper();
+        final String s = rec.getSAMString();
+        Assert.assertFalse(s.isEmpty());
+        Assert.assertNotEquals(s.charAt(s.length() - 1), '\n');
+    }
+
+    @Test
+    public void testToStringEqualsGetSAMString() {
+        final SAMRecord rec = createTestRecordHelper();
+        Assert.assertEquals(rec.toString(), rec.getSAMString());
+    }
+
+    @Test
+    public void testToStringIncludesAttributes() {
+        final SAMRecord rec = createTestRecordHelper();
+        rec.setAttribute("XX", 42);
+        rec.setAttribute("YY", "hello");
+        final String s = rec.toString();
+        Assert.assertTrue(s.contains("XX:i:42"), "Expected XX:i:42 in: " + s);
+        Assert.assertTrue(s.contains("YY:Z:hello"), "Expected YY:Z:hello in: " + s);
+    }
 }

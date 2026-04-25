@@ -1841,82 +1841,6 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
     }
 
     /**
-     *
-     * @return String representation of this.
-     * @deprecated This method is not guaranteed to return a valid SAM text representation of the SAMRecord.
-     * To get standard SAM text representation, {@link SAMRecord#getSAMString}.
-     */
-    @Deprecated
-    public String format() {
-        final StringBuilder buffer = new StringBuilder();
-        addField(buffer, getReadName(), null, null);
-        addField(buffer, getFlags(), null, null);
-        addField(buffer, getReferenceName(), null, "*");
-        addField(buffer, getAlignmentStart(), 0, "*");
-        addField(buffer, getMappingQuality(), 0, "0");
-        addField(buffer, getCigarString(), null, "*");
-        addField(buffer, getMateReferenceName(), null, "*");
-        addField(buffer, getMateAlignmentStart(), 0, "*");
-        addField(buffer, getInferredInsertSize(), 0, "*");
-        addField(buffer, getReadString(), null, "*");
-        addField(buffer, getBaseQualityString(), null, "*");
-        if (mAttributes != null) {
-            SAMBinaryTagAndValue entry = getBinaryAttributes();
-            while (entry != null) {
-                addField(buffer, formatTagValue(entry.tag, entry.value));
-                entry = entry.getNext();
-            }
-        }
-        return buffer.toString();
-    }
-
-    private void addField(final StringBuilder buffer, final Object value, final Object defaultValue, final String defaultString) {
-        if (safeEquals(value, defaultValue)) {
-            addField(buffer, defaultString);
-        } else if (value == null) {
-            addField(buffer, "");
-        } else {
-            addField(buffer, value.toString());
-        }
-    }
-
-    private void addField(final StringBuilder buffer, final String field) {
-        if (buffer.length() > 0) {
-            buffer.append('\t');
-        }
-        buffer.append(field);
-    }
-
-    private static String formatTagValue(final short tag, final Object value) {
-        final String tagString = SAMTag.makeStringTag(tag);
-        if (value == null || value instanceof String) {
-            return tagString + ":Z:" + value;
-        } else if (value instanceof Integer || value instanceof Long ||
-                value instanceof Short || value instanceof Byte) {
-            return tagString + ":i:" + value;
-        } else if (value instanceof Character) {
-            return tagString + ":A:" + value;
-        } else if (value instanceof Float) {
-            return tagString + ":f:" + value;
-        } else if (value instanceof byte[]) {
-            return tagString + ":H:" + StringUtil.bytesToHexString((byte[]) value);
-        } else {
-            throw new RuntimeException("Unexpected value type for tag " + tagString +
-                    ": " + value + " of class " + value.getClass().getName());
-        }
-    }
-
-    private boolean safeEquals(final Object o1, final Object o2) {
-        if (o1 == o2) {
-            return true;
-        } else if (o1 == null || o2 == null) {
-            return false;
-        } else {
-            return o1.equals(o2);
-        }
-    }
-
-    /**
      * Force all lazily-initialized data members to be initialized.  If a subclass overrides this method,
      * typically it should also call  super method.
      */
@@ -2386,37 +2310,15 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
         return newSAM;
     }
 
-    /** Simple toString() that gives a little bit of useful info about the read. */
+    /** Returns this record formatted as it would appear in a SAM file. */
     @Override
     public String toString() {
-        final StringBuilder builder = new StringBuilder(64);
-        builder.append(getReadName());
-        if (getReadPairedFlag()) {
-            if (getFirstOfPairFlag()) {
-                builder.append(" 1/2");
-            }
-            else {
-                builder.append(" 2/2");
-            }
-        }
-
-        builder.append(' ')
-                .append(String.valueOf(getReadLength()))
-                .append('b');
-
-        if (getReadUnmappedFlag()) {
-            builder.append(" unmapped read.");
-        }
-        else {
-            builder.append(String.format(" aligned to %s:%d-%d.", getContig(), getAlignmentStart(), getAlignmentEnd()));
-        }
-
-        return builder.toString();
+        return getSAMString();
     }
 
     /**
-     Returns the record in the SAM line-based text format.  Fields are
-     separated by '\t' characters, and the String is terminated by '\n'.
+     Returns the record in the SAM line-based text format.  Fields are separated by
+     '\t' characters. The returned String is NOT terminated by a newline.
      */
     public String getSAMString() {
         return SAMTextWriter.getSAMString(this);
