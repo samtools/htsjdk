@@ -85,8 +85,7 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
         final ScriptEngine engine = manager.getEngineByName("js");
         if (engine == null) {
             CloserUtil.close(scriptReader);
-            throw new RuntimeScriptException("The embedded 'javascript' engine is not available in java. "
-                    + "Do you use the SUN/Oracle Java Runtime ?");
+            throw new RuntimeScriptException(noJsEngineMessage(this.getClass().getSimpleName()));
         }
         if (scriptReader == null) {
             throw new RuntimeScriptException("missing ScriptReader.");
@@ -107,6 +106,30 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
          */
         this.bindings = new SimpleBindings();
         this.bindings.put(DEFAULT_HEADER_KEY, header);
+    }
+
+    static String noJsEngineMessage(final String filterClassName) {
+        return String.join(
+                "\n",
+                "No JSR-223 JavaScript engine (lookup name \"js\") was found on the classpath.",
+                "",
+                "Starting with htsjdk 5.0.0, htsjdk no longer ships a JavaScript engine as a runtime",
+                "dependency, so that consumers who do not use the JavaScript filter classes do not pay",
+                "the cost of carrying ~6 extra jars (nashorn-core plus its ASM transitives, ~2.5 MB).",
+                "",
+                "To use " + filterClassName + ", add a JSR-223-compatible JavaScript engine to your",
+                "runtime classpath. The recommended choice is OpenJDK Nashorn:",
+                "",
+                "    Gradle:  runtimeOnly 'org.openjdk.nashorn:nashorn-core:15.7'",
+                "",
+                "    Maven:   <dependency>",
+                "               <groupId>org.openjdk.nashorn</groupId>",
+                "               <artifactId>nashorn-core</artifactId>",
+                "               <version>15.7</version>",
+                "               <scope>runtime</scope>",
+                "             </dependency>",
+                "",
+                "Any other JSR-223 engine that registers under the name \"js\" will also work.");
     }
 
     /** return a javascript engine as a Compilable */

@@ -31,11 +31,26 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * javascript based variant filter The script puts the following variables in
- * the script context:
+ * JavaScript-based {@link VariantContextFilter}.
  *
- * - 'header' a htsjdk.variant.vcf.VCFHeader
- * - 'variant' a htsjdk.variant.variantcontext.VariantContext
+ * <p>The user-supplied script is evaluated against each {@link VariantContext} with the following
+ * variables in scope:
+ *
+ * <ul>
+ *   <li>{@code variant} - the {@link VariantContext} being evaluated</li>
+ *   <li>{@code header} - the {@link VCFHeader} associated with the reader</li>
+ * </ul>
+ *
+ * <p>Example: keep only variants on chromosome 1:
+ * <pre>{@code
+ *     new JavascriptVariantFilter("variant.getContig() == '1';", header)
+ * }</pre>
+ *
+ * <p><b>Runtime requirement:</b> as of htsjdk 5.0.0, htsjdk does not ship a JavaScript engine as
+ * a runtime dependency. To use this class, add a JSR-223-compatible JavaScript engine
+ * (e.g. {@code org.openjdk.nashorn:nashorn-core}) to your runtime classpath. If no engine is
+ * available, the constructor throws a {@link htsjdk.samtools.util.RuntimeScriptException} whose
+ * message lists the dependency coordinates.
  *
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
