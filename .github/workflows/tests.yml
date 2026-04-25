@@ -71,6 +71,23 @@ jobs:
         with:
           name: test-results-external-apis
           path: build/reports/tests
+  formatCheck:
+    runs-on: ubuntu-latest
+    name: Java Format Check
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # full history + tags so palantir/git-version sees the latest release tag
+      - name: Set up java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+          cache: gradle
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Verify formatting
+        run: ./gradlew spotlessCheck
   spotBugs:
     runs-on: ubuntu-latest
     name: SpotBugs

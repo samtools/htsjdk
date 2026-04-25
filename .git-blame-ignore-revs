@@ -1,0 +1,14 @@
+# Commits listed here are skipped by `git blame` so that mechanical, whole-tree
+# reformats do not obscure the author who actually wrote each line.
+#
+# GitHub honors this file automatically in the web blame view. For `git blame`
+# on the command line, opt in once per clone:
+#
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# When adding a new entry, include a one-line comment above the SHA explaining
+# what the commit did and why it should be skipped. Only mechanical reformats
+# belong here -- never use this to hide substantive changes.
+
+# Apply Palantir Java Format to entire codebase (#1761)
+e80374ba8559a0b124e868d906de9fb59482752c
