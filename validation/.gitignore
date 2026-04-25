@@ -1,0 +1,12 @@
+# Snakemake working files
+.snakemake/
+output/
+
+# Downloaded remote datasets and references
+downloads/
+
+# Rule logs
+logs/
+
+# Pixi environment
+.pixi/
