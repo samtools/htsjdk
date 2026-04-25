@@ -22,21 +22,21 @@ Variants are Picard fat jars dropped into `$PICARD_DIR` (default `/tmp/picard-be
 
 | Suffix | Picard CLI flags | JVM props | Effective Deflater (htsjdk 4.3) | Effective Deflater (htsjdk 5.0) |
 |---|---|---|---|---|
-| `-default` | (none) | (none) | IntelDeflater on x86, JDK zlib on aarch64 | IntelDeflater on x86, **jlibdeflate** on aarch64 |
-| `-jdk` | `--USE_JDK_DEFLATER true --USE_JDK_INFLATER true` | (none) | JDK zlib | **jlibdeflate** (htsjdk default once Picard's IntelDeflater registration is bypassed) |
-| `-zlib` | `--USE_JDK_DEFLATER true --USE_JDK_INFLATER true` | `-Dsamjdk.use_libdeflate=false` | JDK zlib | JDK zlib (forced) |
+| `-default` | (none) | (none) | IntelDeflater on x86, JDK zlib on aarch64 | IntelDeflater on x86, **JDK zlib** on aarch64 |
+| `-jdk` | `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` | (none) | JDK zlib | **jlibdeflate** |
+| `-zlib` | `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` | `-Dsamjdk.use_libdeflate=false` | JDK zlib | JDK zlib (forced) |
 
-> ⚠️ **Picard's `--USE_JDK_DEFLATER` actually means "don't use the IntelDeflater"**, not "use the JDK Deflater specifically". With htsjdk 5.0 + the `-jdk` flag set + libdeflate not explicitly disabled, the Deflater that actually runs is jlibdeflate (htsjdk's default). The `-zlib` variant is what you want for "true JDK zlib in 5.0".
+> ⚠️ **Picard's `IntelDeflaterFactory` is what registers a default Deflater with htsjdk** — and when its native fails to load (e.g. on aarch64) it explicitly falls back to **JDK zlib**, NOT to htsjdk's default. So the `-default` variant on aarch64 measures JDK zlib through Picard's fallback, **not** jlibdeflate. To engage jlibdeflate via Picard you must pass `USE_JDK_DEFLATER=true USE_JDK_INFLATER=true` (the `-jdk` variant) — those flags bypass `IntelDeflaterFactory` entirely and let htsjdk choose its default (libdeflate in 5.0). Confirm via the htsjdk log line: `INFO  DeflaterFactory  libdeflate is available; using libdeflate for DEFLATE compression.`
 
-> ⚠️ **IntelDeflater is x86-only.** On aarch64 (Apple Silicon, Graviton) Picard tries to load it, fails, and falls back. The `-default` and `-jdk` variants therefore collapse to the same thing on aarch64 (4.3 → JDK zlib; 5.0 → jlibdeflate).
+> ⚠️ **IntelDeflater is x86-only.** On aarch64 (Apple Silicon, Graviton) the Intel native `libgkl_compression` fails to load and Picard's `IntelDeflaterFactory` falls back to JDK zlib (see above). On aarch64 the `-default` and `-zlib` variants therefore measure the same thing (JDK zlib), and only `-jdk` engages jlibdeflate.
 
 samtools is used as a fifth variant for the cross-implementation comparison rows.
 
 ### Suggested variants for AWS
 
-**x86** (5 picard variants + samtools): `picard-4.3-default`, `picard-4.3-jdk`, `picard-5.0-default`, `picard-5.0-jdk`, `picard-5.0-zlib`, `samtools`.
+**x86** (5 picard variants + samtools): `picard-4.3-default`, `picard-4.3-jdk`, `picard-5.0-default`, `picard-5.0-jdk`, `picard-5.0-zlib`, `samtools`. Five distinct deflater paths: IntelDeflater (4.3 / 5.0), JDK zlib (4.3 -jdk / 5.0 -zlib), jlibdeflate (5.0 -jdk).
 
-**Graviton (aarch64)** (3 picard variants + samtools): `picard-4.3-default`, `picard-5.0-default`, `picard-5.0-zlib`, `samtools`. (`-jdk` collapses with `-default` here.)
+**Graviton (aarch64)** (3 picard variants + samtools): `picard-4.3-default` (≡ -zlib here, JDK zlib via Picard fallback), `picard-5.0-default` (also JDK zlib via fallback), `picard-5.0-jdk` (jlibdeflate), `samtools`. Three distinct deflater paths: JDK zlib, jlibdeflate, htslib.
 
 ## Methodology
 
