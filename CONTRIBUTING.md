@@ -148,12 +148,44 @@ export GPG_TTY=$(tty)
 
 ### Version Numbering
 
-The version is derived automatically from git tags using the
-[palantir git-version](https://github.com/palantir/gradle-git-version) plugin:
+The build computes the version from git state plus a single declaration in
+`build.gradle`:
 
-- On a release tag (e.g. `4.3.0`): version is `4.3.0`
-- On a commit after a tag: version includes the commit distance and hash
-- Without `-Drelease=true`: `-SNAPSHOT` is appended
+```groovy
+final nextVersionBump = "x"   // "x" major, "x.x" minor, "x.x.x" patch
+```
+
+`nextVersionBump` declares the *shape* of the next planned release relative to
+the most recent semver tag (e.g. `4.3.0`):
+
+| Bump    | Most recent tag | Computed next version |
+| ------- | --------------- | --------------------- |
+| `x`     | `4.3.0`         | `5.0.0`               |
+| `x.x`   | `4.3.0`         | `4.4.0`               |
+| `x.x.x` | `4.3.0`         | `4.3.1`               |
+
+What the build actually publishes:
+
+- **Release** (`-Drelease=true`): HEAD must be on a semver-tagged commit; the
+  tag itself is the version (e.g. `5.0.0`). `nextVersionBump` is ignored on
+  release — the tag is authoritative.
+- **Snapshot** (default): `<computedNextVersion>-<shortHash>-SNAPSHOT`
+  (e.g. `5.0.0-23c681a-SNAPSHOT`).
+
+The short hash in snapshot versions makes each snapshot a distinct, pinnable
+artifact rather than the usual moving-target Maven SNAPSHOT — consumers can
+lock to a specific commit. Trade-off: there is no plain `5.0.0-SNAPSHOT` to
+depend on for "always latest."
+
+To see the version the build will produce:
+
+```bash
+./gradlew -q printVersion
+```
+
+After cutting a release, update `nextVersionBump` if the *next* planned release
+is a different shape (e.g. switch from `x` to `x.x` once you start shipping
+minor releases on a stable major line).
 
 ### Publishing a Snapshot
 
@@ -162,9 +194,6 @@ Snapshots are published from any state of the repository without signing:
 ```bash
 ./gradlew publishAllPublicationsToCentralPortalSnapshots
 ```
-
-The version will be whatever `git describe` produces with `-SNAPSHOT` appended
-(e.g. `4.3.0-1-gabcdef0-SNAPSHOT`).
 
 **Note:** Snapshot publishing to Central Portal requires that SNAPSHOT support is enabled
 on the `com.github.samtools` namespace in the Central Portal settings.
@@ -175,9 +204,20 @@ Releases are published from a git tag. The full process:
 
 #### Step 1: Tag the Release
 
+Make sure `nextVersionBump` in `build.gradle` matches the kind of release you
+intend to ship (major / minor / patch). Then check the version and tag the
+release commit:
+
 ```bash
-git tag X.Y.Z
-git push origin X.Y.Z
+./gradlew -q printVersion   # prints e.g. "5.0.0-23c681a-SNAPSHOT"
+```
+
+Strip the `-<hash>-SNAPSHOT` suffix to get the tag string. For the example
+above, that's `5.0.0`:
+
+```bash
+git tag 5.0.0
+git push origin 5.0.0
 ```
 
 #### Step 2: Verify Locally (Dry Run)

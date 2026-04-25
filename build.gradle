@@ -60,15 +60,75 @@ java {
     withSourcesJar()
 }
 
-// Version is derived from git tags via the palantir git-version plugin.
-// On a tagged commit (e.g. tag "4.3.0") the version is "4.3.0".
-// On a later commit it includes the distance and hash, e.g. "4.3.0-3-gabcdef0".
-// Without -Drelease=true, "-SNAPSHOT" is appended (e.g. "4.3.0-3-gabcdef0-SNAPSHOT").
-final isRelease = Boolean.getBoolean("release")
-final gitVersion = gitVersion().replaceAll("\\.dirty", "")
-version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
+// Versioning
+// ----------
+// The version of the *next* planned release is computed from the most recent
+// release tag plus a "bump shape" declared below:
+//   "x"     -> bump the major component (e.g. 4.3.0 -> 5.0.0)
+//   "x.x"   -> bump the minor component (e.g. 4.3.0 -> 4.4.0)
+//   "x.x.x" -> bump the patch component (e.g. 4.3.0 -> 4.3.1)
+//
+// Release builds (-Drelease=true) require HEAD to be tagged exactly with the
+// computed next version, and the published version is just that string (e.g. "5.0.0").
+//
+// Snapshot builds (the default) publish "<nextVersion>-<shortHash>-SNAPSHOT"
+// (e.g. "5.0.0-abc1234-SNAPSHOT"). Including the short hash means each snapshot
+// is a distinct, pinnable artifact rather than the typical Maven "moving target"
+// SNAPSHOT, so consumers can lock to a specific commit.
+//
+// To change the planned bump (e.g. after a release lands), update nextVersionBump
+// below and commit.
+final nextVersionBump = "x"
 
-logger.info("build for version:" + version)
+final isRelease = Boolean.getBoolean("release")
+final details = versionDetails()
+final lastTag = details.lastTag
+if (lastTag == null) {
+    throw new GradleException("No release tags found; cannot determine version.")
+}
+final semverPattern = /^(\d+)\.(\d+)\.(\d+)$/
+final tagMatcher = lastTag =~ semverPattern
+if (!tagMatcher.matches()) {
+    throw new GradleException(
+        "Most recent tag '${lastTag}' is not in MAJOR.MINOR.PATCH form.")
+}
+
+if (isRelease) {
+    // Release: HEAD must be exactly on a semver-tagged commit AND the working tree
+    // must be clean; the tag IS the version. (nextVersionBump is informational/for
+    // snapshots only — the tag is authoritative.)
+    if (details.commitDistance != 0) {
+        throw new GradleException(
+            "Release requested but HEAD is not on a tagged commit " +
+            "(lastTag=${lastTag}, commitDistance=${details.commitDistance}).")
+    }
+    if (!details.isCleanTag) {
+        throw new GradleException(
+            "Release requested but the working tree has uncommitted changes; " +
+            "commit, stash, or reset before publishing.")
+    }
+    version = lastTag
+} else {
+    // Snapshot: compute the next planned version from the most recent tag + bump shape.
+    final lastMajor = tagMatcher.group(1).toInteger()
+    final lastMinor = tagMatcher.group(2).toInteger()
+    final lastPatch = tagMatcher.group(3).toInteger()
+    final String nextVersion
+    switch (nextVersionBump) {
+        case "x":     nextVersion = "${lastMajor + 1}.0.0"; break
+        case "x.x":   nextVersion = "${lastMajor}.${lastMinor + 1}.0"; break
+        case "x.x.x": nextVersion = "${lastMajor}.${lastMinor}.${lastPatch + 1}"; break
+        default:
+            throw new GradleException(
+                "Unrecognized nextVersionBump '${nextVersionBump}'; expected 'x', 'x.x', or 'x.x.x'.")
+    }
+    version = "${nextVersion}-${details.gitHash.substring(0, 7)}-SNAPSHOT"
+}
+
+logger.info("build for version: ${version}")
+// Note: the palantir git-version plugin already provides a 'printVersion' task
+// that prints the resolved project.version — useful for CI scripts and for
+// figuring out what tag to apply for a release.
 group = 'com.github.samtools'
 
 defaultTasks 'jar'
