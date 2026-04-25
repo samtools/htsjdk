@@ -131,8 +131,8 @@ public class CramComparison {
                     diffCount++;
                     if (diffCount <= maxDiffs) {
                         emit(out, "Record %d: %s", recordCount, diff);
-                        emit(out, "  file1: %s", rec1.getSAMString().trim());
-                        emit(out, "  file2: %s", rec2.getSAMString().trim());
+                        emit(out, "  file1: %s", rec1.getSAMString());
+                        emit(out, "  file2: %s", rec2.getSAMString());
                     }
                 }
             }

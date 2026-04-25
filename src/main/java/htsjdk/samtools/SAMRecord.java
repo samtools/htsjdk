@@ -2393,8 +2393,8 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
     }
 
     /**
-     Returns the record in the SAM line-based text format.  Fields are
-     separated by '\t' characters, and the String is terminated by '\n'.
+     Returns the record in the SAM line-based text format.  Fields are separated by
+     '\t' characters. The returned String is NOT terminated by a newline.
      */
     public String getSAMString() {
         return SAMTextWriter.getSAMString(this);

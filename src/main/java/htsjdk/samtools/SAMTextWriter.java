@@ -123,6 +123,16 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     @Override
     public void writeAlignment(final SAMRecord alignment) {
+        writeAlignmentNoNewline(alignment);
+        try {
+            out.write("\n");
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /** Writes the alignment fields without a trailing newline. Used by {@link #getSAMString}. */
+    private void writeAlignmentNoNewline(final SAMRecord alignment) {
         try {
             out.write(alignment.getReadName());
             out.write(FIELD_SEPARATOR);
@@ -164,21 +174,15 @@ public class SAMTextWriter extends SAMFileWriterImpl {
                 out.write(encodedTag);
                 attribute = attribute.getNext();
             }
-            out.write("\n");
-
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
     }
 
     /* This method is called by SAMRecord.getSAMString(). */
-    private static SAMTextWriter textWriter = null;
-    private static StringWriter stringWriter = null;
-    static synchronized String getSAMString(final SAMRecord alignment) {
-        if (stringWriter == null) stringWriter = new StringWriter();
-        if (textWriter == null) textWriter = new SAMTextWriter(stringWriter);
-        stringWriter.getBuffer().setLength(0);
-        textWriter.writeAlignment(alignment);
+    static String getSAMString(final SAMRecord alignment) {
+        final StringWriter stringWriter = new StringWriter();
+        new SAMTextWriter(stringWriter).writeAlignmentNoNewline(alignment);
         return stringWriter.toString();
     }
 

@@ -131,6 +131,6 @@ public class SAMTextWriterTest extends HtsjdkTest {
         final SAMFileHeader header = new SAMFileHeader();
         final SAMRecord record = new SAMRecord(header);
         record.setAttribute("xa", new int[0]);
-        Assert.assertTrue(record.getSAMString().endsWith("xa:B:i\n"));
+        Assert.assertTrue(record.getSAMString().endsWith("xa:B:i"));
     }
 }

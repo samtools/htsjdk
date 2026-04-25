@@ -72,7 +72,7 @@ public class SAMSortOrderChecker {
             case queryname:
                 return rec.getReadName();
             default:
-                return rec.getSAMString().trim();
+                return rec.getSAMString();
         }
     }
 }
