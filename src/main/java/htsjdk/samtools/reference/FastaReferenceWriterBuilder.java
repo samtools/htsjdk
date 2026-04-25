@@ -28,7 +28,6 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -189,7 +188,6 @@ public class FastaReferenceWriterBuilder {
      * @param fastaOutput a {@link OutputStream} for the output fasta file.
      * @return this builder
      */
-
     public FastaReferenceWriterBuilder setFastaOutput(final OutputStream fastaOutput) {
         this.fastaOutput = fastaOutput;
         this.fastaFile = null;
@@ -250,42 +248,47 @@ public class FastaReferenceWriterBuilder {
      */
     public FastaReferenceWriter build() throws IOException {
         if (fastaFile == null && fastaOutput == null) {
-            throw new IllegalArgumentException("Both fastaFile and fastaOutput were null. Please set one of them to be non-null.");
+            throw new IllegalArgumentException(
+                    "Both fastaFile and fastaOutput were null. Please set one of them to be non-null.");
         }
-        if(fastaFile != null) {
+        if (fastaFile != null) {
 
             if (faiIndexFile == null && faiIndexOutput == null) {
                 faiIndexFile = defaultFaiFile(makeFaiOutput, fastaFile);
                 // Asserting that we were not provided two paths for fai output files
             } else if (faiIndexFile != null && faiIndexOutput != null) {
-                throw new IllegalArgumentException("Both faiIndexFile and faiIndexOutput were non-null. Please set one of them to be null.");
+                throw new IllegalArgumentException(
+                        "Both faiIndexFile and faiIndexOutput were non-null. Please set one of them to be null.");
             }
 
             if (dictFile == null && dictOutput == null) {
                 dictFile = defaultDictFile(makeDictOutput, fastaFile);
                 // Asserting that we were not provided two paths for dict output files
             } else if (dictFile != null && dictOutput != null) {
-                throw new IllegalArgumentException("Both dictFile and dictOutput were non-null. Please set one of them to be null.");
+                throw new IllegalArgumentException(
+                        "Both dictFile and dictOutput were non-null. Please set one of them to be null.");
             }
 
             if (gzippedFastaFile && gziIndexFile == null && gziIndexOutput == null) {
                 gziIndexFile = defaultGziFile(makeGziOutput, fastaFile);
                 // Asserting that we were not given a path for a gzi output for a non-block compressed output
             } else if (!gzippedFastaFile && (gziIndexFile != null || gziIndexOutput != null)) {
-                throw new IllegalArgumentException("Requested a gzi index but the output format fasta file was not a block compressed gzip file");
+                throw new IllegalArgumentException(
+                        "Requested a gzi index but the output format fasta file was not a block compressed gzip file");
             }
 
             // Asserting that we were not provided two paths for gzi output files
             if (gziIndexFile != null && gziIndexOutput != null) {
-                throw new IllegalArgumentException("Both dictFile and dictOutput were non-null. Please set one of them to be null.");
+                throw new IllegalArgumentException(
+                        "Both dictFile and dictOutput were non-null. Please set one of them to be null.");
             }
             // Asserting that that a Gzi output must accompany the fai output for block compressed output
-            if ((faiIndexFile != null || faiIndexOutput != null) &&
-                    gzippedFastaFile &&
-                    (gziIndexFile == null || gziIndexOutput != null)) {
-                throw new IllegalArgumentException("Requested a fai index file for a block compressed output file. This index is unusable without a gzi index file as well");
+            if ((faiIndexFile != null || faiIndexOutput != null)
+                    && gzippedFastaFile
+                    && (gziIndexFile == null || gziIndexOutput != null)) {
+                throw new IllegalArgumentException(
+                        "Requested a fai index file for a block compressed output file. This index is unusable without a gzi index file as well");
             }
-
         }
         // checkout bases-perline first, so that files are not created if failure;
         checkBasesPerLine(basesPerLine);

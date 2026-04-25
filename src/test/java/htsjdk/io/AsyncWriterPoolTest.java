@@ -3,9 +3,6 @@ package htsjdk.io;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,7 +12,8 @@ import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class AsyncWriterPoolTest extends HtsjdkTest {
     private static class TestWriter implements Writer<String> {
@@ -27,7 +25,6 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-
         }
 
         @Override
@@ -60,7 +57,6 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         return true;
     }
 
-
     @Test
     public void testWritingToFile() throws IOException {
         // Test with thread pools sized 1-4
@@ -84,7 +80,9 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             // sequential integers
             for (int i = 0; i < fileNum * 10; i++) {
                 for (int j = 0; j < 10; j++) {
-                    writers.get(i % fileNum).write(String.format("%s\n", streams.get(i % fileNum).next()));
+                    writers.get(i % fileNum)
+                            .write(String.format(
+                                    "%s\n", streams.get(i % fileNum).next()));
                 }
             }
             pool.close();
@@ -92,7 +90,8 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             // Verify that values wrote in order and in full
             for (int i = 0; i < fileNum; i++) {
                 File file = files.get(i);
-                List<Integer> lines = IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
+                List<Integer> lines =
+                        IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
                 Assert.assertTrue(AsyncWriterPoolTest.isSorted(lines));
                 Assert.assertEquals(lines.size(), 100);
             }
@@ -106,7 +105,8 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
         file.deleteOnExit();
         TestWriter writer = new TestWriter(file.toPath());
-        Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
+        Writer<String> pooledWriter =
+                pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
         writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it
         try {
             pooledWriter.write("Exception"); // Will trigger exception in writing thread
@@ -123,5 +123,4 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
             // expected
         }
     }
-
 }

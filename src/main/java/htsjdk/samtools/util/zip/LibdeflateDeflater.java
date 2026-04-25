@@ -24,7 +24,6 @@
 package htsjdk.samtools.util.zip;
 
 import com.fulcrumgenomics.jlibdeflate.LibdeflateCompressor;
-
 import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 
@@ -131,11 +130,11 @@ class LibdeflateDeflater extends Deflater {
 
     @Override
     public void reset() {
-        inputBuf  = null;
-        inputOff  = 0;
-        inputLen  = 0;
+        inputBuf = null;
+        inputOff = 0;
+        inputLen = 0;
         finishing = false;
-        done      = false;
+        done = false;
     }
 
     @Override

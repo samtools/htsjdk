@@ -18,10 +18,8 @@
 
 package htsjdk.tribble;
 
-import htsjdk.io.IOPath;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.index.tabix.TabixFormat;
-
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -75,8 +73,8 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
 
     /**
      * Read and return the header, or null if there is no header.
-     * 
-     * Note: Implementers of this method must be careful to read exactly as much from {@link SOURCE} as needed to parse the header, and no 
+     *
+     * Note: Implementers of this method must be careful to read exactly as much from {@link SOURCE} as needed to parse the header, and no
      * more. Otherwise, data that might otherwise be fed into parsing a {@link Feature} may be lost.
      *
      * @param source the source from which to decode the header
@@ -92,7 +90,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * <p>
      * This function is used by reflections based tools, so we can know the underlying type
      * </p>
-     * 
+     *
      * @return the feature type this codec generates.
      */
     public Class<FEATURE_TYPE> getFeatureType();
@@ -108,7 +106,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * and is thus suitable for use during indexing. Like {@link #makeSourceFromStream(java.io.InputStream)}, except
      * the {@link LocationAware} compatibility is required for creating indexes.
      * </p>
-     * Implementers of this method must return a type that is both {@link LocationAware} as well as {@link SOURCE}.  Note that this 
+     * Implementers of this method must return a type that is both {@link LocationAware} as well as {@link SOURCE}.  Note that this
      * requirement cannot be enforced via the method signature due to limitations in Java's generic typing system.  Instead, consumers
      * should cast the call result into a {@link SOURCE} when applicable.
      *</p>
@@ -154,7 +152,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * @return the format to use with tabix
      * @throws TribbleException if the format is not defined
      */
-    default public TabixFormat getTabixFormat() {
+    public default TabixFormat getTabixFormat() {
         throw new TribbleException(this.getClass().getSimpleName() + "does not have defined tabix format");
     }
 
@@ -171,7 +169,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * @return the path to the data file that should be parsed by this codec to produce Features.
      * @throws TribbleException codecs may throw if they cannot decode the path.
      */
-    default String getPathToDataFile(String path){
+    default String getPathToDataFile(String path) {
         return path;
     }
 }

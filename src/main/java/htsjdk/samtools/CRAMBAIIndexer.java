@@ -49,7 +49,6 @@ import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -148,10 +147,9 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // check that it advanced properly
             if (reference != currentReference) {
-                throw new SAMException(
-                        String.format("Unexpected reference %s when constructing index for reference %d for slice",
-                                reference,
-                                currentReference));
+                throw new SAMException(String.format(
+                        "Unexpected reference %s when constructing index for reference %d for slice",
+                        reference, currentReference));
             }
         }
 
@@ -193,17 +191,18 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      * @param output File for output index file
      * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
      */
-    public static void createIndex(final SeekableStream stream,
-                                   final File output,
-                                   final Log log,
-                                   final ValidationStringency validationStringency) {
+    public static void createIndex(
+            final SeekableStream stream,
+            final File output,
+            final Log log,
+            final ValidationStringency validationStringency) {
 
         final CramHeader cramHeader = CramIO.readCramHeader(stream);
-        final SAMFileHeader samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), stream, null);
+        final SAMFileHeader samFileHeader =
+                Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), stream, null);
         if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException(String.format(
-                    "Input must be coordinate sorted (found %s) to create an index.",
-                    samFileHeader.getSortOrder()));
+                    "Input must be coordinate sorted (found %s) to create an index.", samFileHeader.getSortOrder()));
         }
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, samFileHeader);
 
@@ -233,8 +232,9 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                         sequenceName = "???";
                         break;
                     default:
-                        sequenceName = samFileHeader.getSequence(
-                                containerReferenceContext.getReferenceSequenceID()).getSequenceName();
+                        sequenceName = samFileHeader
+                                .getSequence(containerReferenceContext.getReferenceSequenceID())
+                                .getSequenceName();
                         break;
                 }
                 progressLogger.record(sequenceName, alignmentContext.getAlignmentStart());
@@ -283,7 +283,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
         private int computeIndexingBin(final BAIEntry baiEntry) {
             // regionToBin has zero-based, half-open API
-            //final AlignmentContext sliceAlignmentContext = baiEntry.getAlignmentContext();
+            // final AlignmentContext sliceAlignmentContext = baiEntry.getAlignmentContext();
             final int alignmentStart = baiEntry.getAlignmentStart() - 1;
             int alignmentEnd = baiEntry.getAlignmentStart() + baiEntry.getAlignmentSpan() - 1;
             if (alignmentEnd <= alignmentStart) {
@@ -300,21 +300,20 @@ public class CRAMBAIIndexer implements CRAMIndexer {
          * Reads these Slice fields:
          * sequenceId, alignmentStart, alignmentSpan, containerByteOffset, index
          *
-         //* @param slice CRAM slice, single ref only.
+         * //* @param slice CRAM slice, single ref only.
          */
         private void processBAIEntry(final BAIEntry baiEntry) {
             final ReferenceContext sliceContext = baiEntry.getReferenceContext();
-            if (! sliceContext.isMappedSingleRef()) {
+            if (!sliceContext.isMappedSingleRef()) {
                 return; // do nothing for records without coordinates, but count them
             }
 
             // various checks
             final int reference = sliceContext.getReferenceSequenceID();
             if (reference != currentReference) {
-                throw new SAMException(
-                        String.format("Unexpected reference %s when constructing index for reference %d for slice",
-                                reference,
-                                currentReference));
+                throw new SAMException(String.format(
+                        "Unexpected reference %s when constructing index for reference %d for slice",
+                        reference, currentReference));
             }
 
             // process bins
@@ -359,7 +358,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                 // Similar to AbstractBAMFileIndex.optimizeChunkList,
                 // but no need to copy the list, no minimumOffset, and maintain bin.lastChunk
                 if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(lastChunk.getChunkEnd(), chunkStart)) {
-                    lastChunk.setChunkEnd(chunkEnd);  // coalesced
+                    lastChunk.setChunkEnd(chunkEnd); // coalesced
                 } else {
                     oldChunks.add(newChunk);
                     bin.setLastChunk(newChunk);
@@ -374,7 +373,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             int startWindow = LinearIndex.convertToLinearIndexOffset(alignmentStart); // the 16k window
             final int endWindow;
 
-            if (alignmentEnd == SAMRecord.NO_ALIGNMENT_START) {   // assume alignment uses one position
+            if (alignmentEnd == SAMRecord.NO_ALIGNMENT_START) { // assume alignment uses one position
                 // Next line for C (samtools index) compatibility. Differs only when on a window boundary
                 startWindow = LinearIndex.convertToLinearIndexOffset(alignmentStart - 1);
                 endWindow = startWindow;
@@ -402,7 +401,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // process bins
             if (binsSeen == 0) {
-                return null;  // no bins for this reference
+                return null; // no bins for this reference
             }
 
             // process chunks
@@ -410,14 +409,16 @@ public class CRAMBAIIndexer implements CRAMIndexer {
 
             // process linear index
             // linear index will only be as long as the largest index seen
-            final long[] newIndex = new long[largestIndexSeen + 1]; // in java1.6 Arrays.copyOf(index, largestIndexSeen + 1);
+            final long[] newIndex =
+                    new long[largestIndexSeen + 1]; // in java1.6 Arrays.copyOf(index, largestIndexSeen + 1);
 
             // C (samtools index) also fills in intermediate 0's with values.  This seems unnecessary, but safe
             long lastNonZeroOffset = 0;
             for (int i = 0; i <= largestIndexSeen; i++) {
                 if (index[i] == 0) {
                     index[i] = lastNonZeroOffset; // not necessary, but C (samtools index) does this
-                    // note, if you remove the above line BAMIndexWriterTest.compareTextual and compareBinary will have to change
+                    // note, if you remove the above line BAMIndexWriterTest.compareTextual and compareBinary will have
+                    // to change
                 } else {
                     lastNonZeroOffset = index[i];
                 }

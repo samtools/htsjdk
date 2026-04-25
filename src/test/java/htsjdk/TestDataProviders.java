@@ -1,10 +1,6 @@
 package htsjdk;
 
 import htsjdk.utils.TestNGUtils;
-import org.testng.Assert;
-import org.testng.annotations.*;
-import org.testng.collections.Sets;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -12,6 +8,9 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
+import org.testng.Assert;
+import org.testng.annotations.*;
+import org.testng.collections.Sets;
 
 /**
  * This test is a mechanism to check that none of the data-providers fail to run.
@@ -30,8 +29,11 @@ public class TestDataProviders extends HtsjdkTest {
 
         Assert.assertTrue(data.hasNext(), "Found no data from testAllDataProvidersdata. Something is wrong");
 
-        Assert.assertEquals(StreamSupport.stream(Spliterators.spliteratorUnknownSize(data, 0), false)
-                        .filter(c -> ((Method) c[0]).getName().equals("testAllDataProvidersData")).count(), 1,
+        Assert.assertEquals(
+                StreamSupport.stream(Spliterators.spliteratorUnknownSize(data, 0), false)
+                        .filter(c -> ((Method) c[0]).getName().equals("testAllDataProvidersData"))
+                        .count(),
+                1,
                 "getDataProviders didn't find testAllDataProvidersData, which is in this class. Something is wrong.");
     }
 
@@ -50,13 +52,16 @@ public class TestDataProviders extends HtsjdkTest {
     // @NoInjection annotations required according to this test:
     // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
     @Test(dataProvider = "DataprovidersThatDontTestThemselves")
-    public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz) throws IllegalAccessException, InstantiationException {
+    public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz)
+            throws IllegalAccessException, InstantiationException {
 
         Object instance = clazz.newInstance();
 
-        Assert.assertTrue(HtsjdkTest.class.isAssignableFrom(clazz), "Test Classes must extend HtsJdkTest: " + clazz.getName());
+        Assert.assertTrue(
+                HtsjdkTest.class.isAssignableFrom(clazz), "Test Classes must extend HtsJdkTest: " + clazz.getName());
 
-        // Some tests assume that the @BeforeSuite methods will be called before the @DataProvidersSet<Method> methodSet = Sets.newHashSet();
+        // Some tests assume that the @BeforeSuite methods will be called before the @DataProvidersSet<Method> methodSet
+        // = Sets.newHashSet();
         Set<Method> methodSet = Sets.newHashSet();
         methodSet.addAll(Arrays.asList(clazz.getDeclaredMethods()));
         methodSet.addAll(Arrays.asList(clazz.getMethods()));
@@ -67,7 +72,11 @@ public class TestDataProviders extends HtsjdkTest {
                     otherMethod.setAccessible(true);
                     otherMethod.invoke(instance);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException(String.format("@BeforeClass threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+                    throw new IllegalStateException(
+                            String.format(
+                                    "@BeforeClass threw an exception (%s::%s). Dependent tests will be skipped. Please fix.",
+                                    clazz.getName(), method.getName()),
+                            e);
                 }
             }
 
@@ -76,7 +85,11 @@ public class TestDataProviders extends HtsjdkTest {
                     otherMethod.setAccessible(true);
                     otherMethod.invoke(instance);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException(String.format("@BeforeSuite threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+                    throw new IllegalStateException(
+                            String.format(
+                                    "@BeforeSuite threw an exception (%s::%s). Dependent tests will be skipped. Please fix.",
+                                    clazz.getName(), method.getName()),
+                            e);
                 }
             }
 
@@ -85,7 +98,11 @@ public class TestDataProviders extends HtsjdkTest {
                     otherMethod.setAccessible(true);
                     otherMethod.invoke(instance);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException(String.format("@BeforeTest threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+                    throw new IllegalStateException(
+                            String.format(
+                                    "@BeforeTest threw an exception (%s::%s). Dependent tests will be skipped. Please fix.",
+                                    clazz.getName(), method.getName()),
+                            e);
                 }
             }
         }
@@ -94,7 +111,11 @@ public class TestDataProviders extends HtsjdkTest {
             method.setAccessible(true);
             method.invoke(instance);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException(String.format("@DataProvider threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+            throw new IllegalStateException(
+                    String.format(
+                            "@DataProvider threw an exception (%s::%s). Dependent tests will be skipped. Please fix.",
+                            clazz.getName(), method.getName()),
+                    e);
         }
     }
 }

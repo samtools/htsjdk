@@ -43,7 +43,8 @@ import java.util.function.Function;
 public class CollectionUtil {
 
     /** Simple case-insensitive lexical comparator of objects using their {@link Object#toString()} value. */
-    final public static Comparator<Object> OBJECT_TOSTRING_COMPARATOR = (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString());
+    public static final Comparator<Object> OBJECT_TOSTRING_COMPARATOR =
+            (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString());
 
     public static <T> List<T> makeList(final T... list) {
         final List<T> result = new ArrayList<>();
@@ -79,7 +80,8 @@ public class CollectionUtil {
 
     public static <T> T getSoleElement(final Collection<T> items) {
         if (items.size() != 1)
-            throw new IllegalArgumentException(String.format("Expected a single element in %s, but found %s.", items, items.size()));
+            throw new IllegalArgumentException(
+                    String.format("Expected a single element in %s, but found %s.", items, items.size()));
         return items.iterator().next();
     }
 
@@ -96,8 +98,7 @@ public class CollectionUtil {
         }
 
         private void initializeKeyIfUninitialized(final K k) {
-            if (!this.containsKey(k))
-                this.put(k, new LinkedList<>());
+            if (!this.containsKey(k)) this.put(k, new LinkedList<>());
         }
     }
 
@@ -120,7 +121,7 @@ public class CollectionUtil {
      * @deprecated use Collectors.groupingBy instead
      */
     @Deprecated
-    public static abstract class Partitioner<V, K> {
+    public abstract static class Partitioner<V, K> {
         public abstract K getPartition(final V v);
     }
 
@@ -128,7 +129,8 @@ public class CollectionUtil {
      * Partitions a collection into groups based on a characteristics of that group.  Partitions are embodied in a map, whose keys are the
      * value of that characteristic, and the values are the partition of elements whose characteristic evaluate to that key.
      */
-    public static <K, V> Map<K, Collection<V>> partition(final Collection<V> collection, final Function<? super V, ? extends K> keyer) {
+    public static <K, V> Map<K, Collection<V>> partition(
+            final Collection<V> collection, final Function<? super V, ? extends K> keyer) {
         final MultiMap<K, V> partitionToValues = new MultiMap<>();
         for (final V entry : collection) {
             partitionToValues.append(keyer.apply(entry), entry);
@@ -138,12 +140,12 @@ public class CollectionUtil {
 
     /**
      * A defaulting map, which returns a default value when a value that does not exist in the map is looked up.
-     * 
+     *
      * This map supports two modes: injecting-on-default, and not injecting-on-default.  When injecting on default, when a lookup is
      * performed and a default value is returned, the default value is injected at that key, so that it now lives in the underlying map.
      * Without this mode, the value is simply returned and the underlying map is unaffected.
-     * 
-     * Note: When using injecting-on-default mode, and performing a lookup with a non-key type (the get method accepts any object), a 
+     *
+     * Note: When using injecting-on-default mode, and performing a lookup with a non-key type (the get method accepts any object), a
      * class cast exception will be thrown because a non-key type cannot be added to the map.
      * @param <K>
      * @param <V>
@@ -151,12 +153,12 @@ public class CollectionUtil {
     public static class DefaultingMap<K, V> extends HashMap<K, V> {
         final Factory<V, K> defaultGenerator;
         final boolean injectValueOnDefault;
-        
+
         /** Creates a defaulting map which defaults to the provided value and with injecting-on-default disabled. */
         public DefaultingMap(final V defaultValue) {
             this(k -> defaultValue, false);
         }
-        
+
         /**
          * Creates a defaulting map that generates defaults from the provided factory. This is useful when the default is non-static, or
          * the default is mutable, and the client wishes to get a value and mutate it and persist those changes in the map.
@@ -172,14 +174,14 @@ public class CollectionUtil {
             if (!this.containsKey(key)) {
                 final V val = this.defaultGenerator.make((K) key);
                 if (this.injectValueOnDefault) {
-                    this.put((K) key, val); 
+                    this.put((K) key, val);
                 }
                 return val;
             } else {
                 return super.get(key);
             }
         }
-        
+
         public interface Factory<V, K> {
             /**
              * @param k
@@ -187,5 +189,4 @@ public class CollectionUtil {
             V make(K k);
         }
     }
-
 }

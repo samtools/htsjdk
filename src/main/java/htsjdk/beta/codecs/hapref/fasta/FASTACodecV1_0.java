@@ -1,22 +1,21 @@
 package htsjdk.beta.codecs.hapref.fasta;
 
+import htsjdk.beta.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.io.bundle.SignatureStream;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceDecoderOptions;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoder;
-import htsjdk.beta.io.bundle.SignatureStream;
-import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoderOptions;
-import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormats;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
@@ -38,7 +37,9 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     }
 
     @Override
-    public int getSignatureLength() { return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE; }
+    public int getSignatureLength() {
+        return BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE;
+    }
 
     @Override
     public boolean canDecodeSignature(final SignatureStream signatureStream, final String sourceName) {
@@ -46,15 +47,14 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
         ValidationUtils.nonNull(sourceName, "sourceName");
 
         try {
-            final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(signatureStream) ?
-                    new GZIPInputStream(signatureStream) :
-                    signatureStream;
+            final InputStream wrappedInputStream =
+                    IOUtil.isGZIPInputStream(signatureStream) ? new GZIPInputStream(signatureStream) : signatureStream;
             int ch = wrappedInputStream.read();
             if (ch == -1) {
-                throw new HtsjdkIOException(
-                        String.format("Codec %s failed probing signature for resource %s", this.getDisplayName(), sourceName));
+                throw new HtsjdkIOException(String.format(
+                        "Codec %s failed probing signature for resource %s", this.getDisplayName(), sourceName));
             }
-            return ((char) ch) == '>';  // for FASTA, this is all we have to go on...
+            return ((char) ch) == '>'; // for FASTA, this is all we have to go on...
         } catch (IOException e) {
             throw new HtsjdkIOException(String.format("Failure reading signature from stream for %s", sourceName), e);
         }
@@ -63,13 +63,13 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
         ValidationUtils.nonNull(ioPath, "ioPath");
-        return FileExtensions.FASTA.stream().anyMatch(ext-> ioPath.hasExtension(ext));
+        return FileExtensions.FASTA.stream().anyMatch(ext -> ioPath.hasExtension(ext));
     }
 
-   @Override
+    @Override
     public HaploidReferenceDecoder getDecoder(final Bundle inputBundle, final HaploidReferenceDecoderOptions options) {
-       ValidationUtils.nonNull(inputBundle, "input bundle");
-       ValidationUtils.nonNull(options, "reference encoder options");
+        ValidationUtils.nonNull(inputBundle, "input bundle");
+        ValidationUtils.nonNull(options, "reference encoder options");
         return new FASTADecoderV1_0(inputBundle);
     }
 

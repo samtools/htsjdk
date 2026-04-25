@@ -25,11 +25,10 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
@@ -74,7 +73,7 @@ public class SeekableStreamTest extends HtsjdkTest {
         // check that available returns the length
         Assert.assertEquals(stream.available(), length);
         // consume the stream
-        for(int i = 1; i < length + 1; i++) {
+        for (int i = 1; i < length + 1; i++) {
             Assert.assertNotEquals(stream.read(), -1);
             Assert.assertEquals(stream.available(), length - i);
         }
@@ -103,6 +102,7 @@ public class SeekableStreamTest extends HtsjdkTest {
         // a long file of zeros
         return new SeekableStream() {
             long pos = 0;
+
             @Override
             public long length() {
                 return size;
@@ -124,9 +124,7 @@ public class SeekableStreamTest extends HtsjdkTest {
             }
 
             @Override
-            public void close() throws IOException {
-
-            }
+            public void close() throws IOException {}
 
             @Override
             public boolean eof() throws IOException {
@@ -144,5 +142,4 @@ public class SeekableStreamTest extends HtsjdkTest {
             }
         };
     }
-
 }

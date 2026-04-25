@@ -60,7 +60,7 @@ public final class RANSEncodingSymbol {
         // Rans4x8: xMax = ((Constants.RANS_BYTE_L_4x8 >> scaleBits) << 8) * freq = (1<< 31-scaleBits) * freq
         // RansNx16: xMax = ((Constants.RANS_BYTE_L_Nx16 >> scaleBits) << 16) * freq = (1<< 31-scaleBits) * freq
         // why freq > 4095 in Nx16?
-        xMax = (1L<< (31-scaleBits)) * freq;
+        xMax = (1L << (31 - scaleBits)) * freq;
         cmplFreq = (1 << scaleBits) - freq;
         if (freq < 2) {
             rcpFreq = (int) ~0L;

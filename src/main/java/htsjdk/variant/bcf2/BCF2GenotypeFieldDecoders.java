@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.bcf2;
 
@@ -29,7 +29,6 @@ import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +45,8 @@ import java.util.List;
  * @since 6/12
  */
 public class BCF2GenotypeFieldDecoders {
-    private final static boolean ENABLE_FASTPATH_GT = true;
-    private final static int MIN_SAMPLES_FOR_FASTPATH_GENOTYPES = 0; // TODO -- update to reasonable number
+    private static final boolean ENABLE_FASTPATH_GT = true;
+    private static final int MIN_SAMPLES_FOR_FASTPATH_GENOTYPES = 0; // TODO -- update to reasonable number
 
     // initialized once per writer to allow parallel writers to work
     private final HashMap<String, Decoder> genotypeFieldDecoder = new HashMap<String, Decoder>();
@@ -57,7 +56,8 @@ public class BCF2GenotypeFieldDecoders {
         // TODO -- fill in appropriate decoders for each FORMAT field in the header
 
         genotypeFieldDecoder.put(VCFConstants.GENOTYPE_KEY, new GTDecoder());
-        // currently the generic decoder handles FILTER values properly, in so far as we don't tolerate multiple filter field values per genotype
+        // currently the generic decoder handles FILTER values properly, in so far as we don't tolerate multiple filter
+        // field values per genotype
         genotypeFieldDecoder.put(VCFConstants.GENOTYPE_FILTER_KEY, new FTDecoder());
         genotypeFieldDecoder.put(VCFConstants.DEPTH_KEY, new DPDecoder());
         genotypeFieldDecoder.put(VCFConstants.GENOTYPE_ALLELE_DEPTHS, new ADDecoder());
@@ -97,18 +97,30 @@ public class BCF2GenotypeFieldDecoders {
      * the PL field into a int[] rather than the generic List of Integer
      */
     public interface Decoder {
-        public void decode(final List<Allele> siteAlleles,
-                           final String field,
-                           final BCF2Decoder decoder,
-                           final byte typeDescriptor,
-                           final int numElements,
-                           final GenotypeBuilder[] gbs) throws IOException;
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException;
     }
 
     private class GTDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            if ( ENABLE_FASTPATH_GT && siteAlleles.size() == 2 && numElements == 2 && gbs.length >= MIN_SAMPLES_FOR_FASTPATH_GENOTYPES )
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            if (ENABLE_FASTPATH_GT
+                    && siteAlleles.size() == 2
+                    && numElements == 2
+                    && gbs.length >= MIN_SAMPLES_FOR_FASTPATH_GENOTYPES)
                 fastBiallelicDiploidDecode(siteAlleles, decoder, typeDescriptor, gbs);
             else {
                 generalDecode(siteAlleles, numElements, decoder, typeDescriptor, gbs);
@@ -128,24 +140,26 @@ public class BCF2GenotypeFieldDecoders {
          * n + 1 options including
          */
         @SuppressWarnings({"unchecked"})
-        private final void fastBiallelicDiploidDecode(final List<Allele> siteAlleles,
-                                                      final BCF2Decoder decoder,
-                                                      final byte typeDescriptor,
-                                                      final GenotypeBuilder[] gbs) throws IOException {
+        private final void fastBiallelicDiploidDecode(
+                final List<Allele> siteAlleles,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
             final BCF2Type type = BCF2Utils.decodeType(typeDescriptor);
 
             final int nPossibleGenotypes = 3 * 3;
             final Object allGenotypes[] = new Object[nPossibleGenotypes];
 
-            for ( final GenotypeBuilder gb : gbs ) {
+            for (final GenotypeBuilder gb : gbs) {
                 final int a1 = decoder.decodeInt(type);
                 final int a2 = decoder.decodeInt(type);
 
-                if ( a1 == type.getMissingBytes() ) {
+                if (a1 == type.getMissingBytes()) {
                     assert a2 == type.getMissingBytes();
                     // no called sample GT = .
                     gb.alleles(null);
-                } else if ( a2 == type.getMissingBytes() ) {
+                } else if (a2 == type.getMissingBytes()) {
                     gb.alleles(Arrays.asList(getAlleleFromEncoded(siteAlleles, a1)));
                 } else {
                     // downshift to remove phase
@@ -153,8 +167,8 @@ public class BCF2GenotypeFieldDecoders {
                     assert offset < allGenotypes.length;
 
                     // TODO -- how can I get rid of this cast?
-                    List<Allele> gt = (List<Allele>)allGenotypes[offset];
-                    if ( gt == null ) {
+                    List<Allele> gt = (List<Allele>) allGenotypes[offset];
+                    if (gt == null) {
                         final Allele allele1 = getAlleleFromEncoded(siteAlleles, a1);
                         final Allele allele2 = getAlleleFromEncoded(siteAlleles, a2);
                         gt = Arrays.asList(allele1, allele2);
@@ -169,19 +183,21 @@ public class BCF2GenotypeFieldDecoders {
             }
         }
 
-        private final void generalDecode(final List<Allele> siteAlleles,
-                                         final int ploidy,
-                                         final BCF2Decoder decoder,
-                                         final byte typeDescriptor,
-                                         final GenotypeBuilder[] gbs) throws IOException {
+        private final void generalDecode(
+                final List<Allele> siteAlleles,
+                final int ploidy,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
             final BCF2Type type = BCF2Utils.decodeType(typeDescriptor);
 
             // a single cache for the encoded genotypes, since we don't actually need this vector
             final int[] tmp = new int[ploidy];
 
-            for ( final GenotypeBuilder gb : gbs ) {
+            for (final GenotypeBuilder gb : gbs) {
                 final int[] encoded = decoder.decodeIntArray(ploidy, type, tmp);
-                if ( encoded == null )
+                if (encoded == null)
                     // no called sample GT = .
                     gb.alleles(null);
                 else {
@@ -192,8 +208,7 @@ public class BCF2GenotypeFieldDecoders {
 
                     // note that the auto-pruning of fields magically handles different
                     // ploidy per sample at a site
-                    for ( final int encode : encoded )
-                        gt.add(getAlleleFromEncoded(siteAlleles, encode));
+                    for (final int encode : encoded) gt.add(getAlleleFromEncoded(siteAlleles, encode));
 
                     gb.alleles(gt);
                     final boolean phased = ((encoded.length > 1 ? encoded[1] : encoded[0]) & 0x01) == 1;
@@ -210,8 +225,15 @@ public class BCF2GenotypeFieldDecoders {
 
     private class DPDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            for ( final GenotypeBuilder gb : gbs ) {
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            for (final GenotypeBuilder gb : gbs) {
                 // the -1 is for missing
                 gb.DP(decoder.decodeInt(typeDescriptor, -1));
             }
@@ -220,8 +242,15 @@ public class BCF2GenotypeFieldDecoders {
 
     private class GQDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            for ( final GenotypeBuilder gb : gbs ) {
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            for (final GenotypeBuilder gb : gbs) {
                 // the -1 is for missing
                 gb.GQ(decoder.decodeInt(typeDescriptor, -1));
             }
@@ -230,8 +259,15 @@ public class BCF2GenotypeFieldDecoders {
 
     private class ADDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            for ( final GenotypeBuilder gb : gbs ) {
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            for (final GenotypeBuilder gb : gbs) {
                 gb.AD(decoder.decodeIntArray(typeDescriptor, numElements));
             }
         }
@@ -239,8 +275,15 @@ public class BCF2GenotypeFieldDecoders {
 
     private class PLDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            for ( final GenotypeBuilder gb : gbs ) {
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            for (final GenotypeBuilder gb : gbs) {
                 gb.PL(decoder.decodeIntArray(typeDescriptor, numElements));
             }
         }
@@ -248,16 +291,23 @@ public class BCF2GenotypeFieldDecoders {
 
     private class GenericDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            for ( final GenotypeBuilder gb : gbs ) {
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            for (final GenotypeBuilder gb : gbs) {
                 Object value = decoder.decodeTypedValue(typeDescriptor, numElements);
-                if ( value != null ) { // don't add missing values
-                    if ( value instanceof List && ((List)value).size() == 1) {
+                if (value != null) { // don't add missing values
+                    if (value instanceof List && ((List) value).size() == 1) {
                         // todo -- I really hate this, and it suggests that the code isn't completely right
                         // the reason it's here is that it's possible to prune down a vector to a singleton
                         // value and there we have the contract that the value comes back as an atomic value
                         // not a vector of size 1
-                        value = ((List)value).get(0);
+                        value = ((List) value).get(0);
                     }
                     gb.attribute(field, value);
                 }
@@ -267,11 +317,18 @@ public class BCF2GenotypeFieldDecoders {
 
     private class FTDecoder implements Decoder {
         @Override
-        public void decode(final List<Allele> siteAlleles, final String field, final BCF2Decoder decoder, final byte typeDescriptor, final int numElements, final GenotypeBuilder[] gbs) throws IOException {
-            for ( final GenotypeBuilder gb : gbs ) {
+        public void decode(
+                final List<Allele> siteAlleles,
+                final String field,
+                final BCF2Decoder decoder,
+                final byte typeDescriptor,
+                final int numElements,
+                final GenotypeBuilder[] gbs)
+                throws IOException {
+            for (final GenotypeBuilder gb : gbs) {
                 Object value = decoder.decodeTypedValue(typeDescriptor, numElements);
                 assert value == null || value instanceof String;
-                gb.filter((String)value);
+                gb.filter((String) value);
             }
         }
     }

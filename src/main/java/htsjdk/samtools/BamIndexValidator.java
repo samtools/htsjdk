@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,7 +35,9 @@ import java.util.List;
 public class BamIndexValidator {
 
     public enum IndexValidationStringency {
-        EXHAUSTIVE, LESS_EXHAUSTIVE, NONE
+        EXHAUSTIVE,
+        LESS_EXHAUSTIVE,
+        NONE
     }
 
     public static int exhaustivelyTestIndex(final SamReader reader) { // throws Exception {
@@ -46,7 +47,8 @@ public class BamIndexValidator {
             if (SamIndexes.BAI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
 
                 // content is from an existing bai file
-                final CachingBAMFileIndex existingIndex = (CachingBAMFileIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
+                final CachingBAMFileIndex existingIndex = (CachingBAMFileIndex)
+                        reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
                 final int numRefs = existingIndex.getNumberOfReferences();
 
                 int chunkCount = 0;
@@ -54,14 +56,18 @@ public class BamIndexValidator {
                 for (int i = 0; i < numRefs; i++) {
                     final BAMIndexContent content = existingIndex.getQueryResults(i);
                     for (final Chunk c : content.getAllChunks()) {
-                        final CloseableIterator<SAMRecord> iter = ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
+                        final CloseableIterator<SAMRecord> iter =
+                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
                         chunkCount++;
                         SAMRecord sam = null;
                         try {
                             sam = iter.next();
                             iter.close();
                         } catch (final Exception e) {
-                            throw new SAMException("Exception in BamIndexValidator. Last good record " + sam + " in chunk " + c + " chunkCount=" + chunkCount, e);
+                            throw new SAMException(
+                                    "Exception in BamIndexValidator. Last good record " + sam + " in chunk " + c
+                                            + " chunkCount=" + chunkCount,
+                                    e);
                         }
                     }
                     // also seek to every position in the linear index
@@ -72,15 +78,20 @@ public class BamIndexValidator {
                     for (final long l : linearIndex.getIndexEntries()) {
                         try {
                             if (l != 0) {
-                                final CloseableIterator<SAMRecord> iter = ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(new Chunk(l, l + 1)));
-                                final SAMRecord sam = iter.next();   // read the first record identified by the linear index
+                                final CloseableIterator<SAMRecord> iter =
+                                        ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader)
+                                                .iterator(new BAMFileSpan(new Chunk(l, l + 1)));
+                                final SAMRecord sam =
+                                        iter.next(); // read the first record identified by the linear index
                                 indexCount++;
                                 iter.close();
                             }
                         } catch (final Exception e) {
-                            throw new SAMException("Exception in BamIndexValidator. Linear index access failure " + l + " indexCount=" + indexCount, e);
+                            throw new SAMException(
+                                    "Exception in BamIndexValidator. Linear index access failure " + l + " indexCount="
+                                            + indexCount,
+                                    e);
                         }
-
                     }
                 }
                 return chunkCount;
@@ -88,21 +99,26 @@ public class BamIndexValidator {
                 // " linearIndex positions = " + indexCount);
             } else if (SamIndexes.CSI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
 
-                final CSIIndex existingIndex = (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
+                final CSIIndex existingIndex =
+                        (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
                 final int numRefs = existingIndex.getNumberOfReferences();
 
                 int chunkCount = 0;
                 for (int i = 0; i < numRefs; i++) {
                     final BAMIndexContent content = existingIndex.getQueryResults(i);
                     for (final Chunk c : content.getAllChunks()) {
-                        final CloseableIterator<SAMRecord> iter = ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
+                        final CloseableIterator<SAMRecord> iter =
+                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
                         chunkCount++;
                         SAMRecord sam = null;
                         try {
                             sam = iter.next();
                             iter.close();
                         } catch (final Exception e) {
-                            throw new SAMException("Exception in BamIndexValidator. Last good record " + sam + " in chunk " + c + " chunkCount=" + chunkCount, e);
+                            throw new SAMException(
+                                    "Exception in BamIndexValidator. Last good record " + sam + " in chunk " + c
+                                            + " chunkCount=" + chunkCount,
+                                    e);
                         }
                     }
                 }
@@ -127,7 +143,8 @@ public class BamIndexValidator {
             if (SamIndexes.BAI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
 
                 // content is from an existing bai file
-                final CachingBAMFileIndex existingIndex = (CachingBAMFileIndex) reader.indexing().getBrowseableIndex();
+                final CachingBAMFileIndex existingIndex =
+                        (CachingBAMFileIndex) reader.indexing().getBrowseableIndex();
                 final int numRefs = existingIndex.getNumberOfReferences();
 
                 int chunkCount = 0;
@@ -143,12 +160,14 @@ public class BamIndexValidator {
                         chunkCount++;
 
                         final Chunk c = chunks.get(chunkNo);
-                        final CloseableIterator<SAMRecord> iter = ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
+                        final CloseableIterator<SAMRecord> iter =
+                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
                         try {
                             final SAMRecord sam = iter.next();
                             iter.close();
                         } catch (final Exception e) {
-                            throw new SAMException("Exception querying chunk " + chunkNo + " from reference index " + i, e);
+                            throw new SAMException(
+                                    "Exception querying chunk " + chunkNo + " from reference index " + i, e);
                         }
                     }
 
@@ -159,19 +178,26 @@ public class BamIndexValidator {
                         final long l = linearIndexEntries[binNo];
                         try {
                             if (l != 0) {
-                                final CloseableIterator<SAMRecord> iter = ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(new Chunk(l, l + 1)));
-                                final SAMRecord sam = iter.next();   // read the first record identified by the linear index
+                                final CloseableIterator<SAMRecord> iter =
+                                        ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader)
+                                                .iterator(new BAMFileSpan(new Chunk(l, l + 1)));
+                                final SAMRecord sam =
+                                        iter.next(); // read the first record identified by the linear index
                                 iter.close();
                             }
                         } catch (final Exception e) {
-                            throw new SAMException("Exception in BamIndexValidator. Linear index access failure " + l + " indexCount=" + indexCount, e);
+                            throw new SAMException(
+                                    "Exception in BamIndexValidator. Linear index access failure " + l + " indexCount="
+                                            + indexCount,
+                                    e);
                         }
                     }
                 }
                 return chunkCount;
             } else if (SamIndexes.CSI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
 
-                final CSIIndex existingIndex = (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
+                final CSIIndex existingIndex =
+                        (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
                 final int numRefs = existingIndex.getNumberOfReferences();
 
                 int chunkCount = 0;
@@ -186,12 +212,14 @@ public class BamIndexValidator {
                         chunkCount++;
 
                         final Chunk c = chunks.get(chunkNo);
-                        final CloseableIterator<SAMRecord> iter = ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
+                        final CloseableIterator<SAMRecord> iter =
+                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
                         try {
                             final SAMRecord sam = iter.next();
                             iter.close();
                         } catch (final Exception e) {
-                            throw new SAMException("Exception querying chunk " + chunkNo + " from reference index " + i, e);
+                            throw new SAMException(
+                                    "Exception querying chunk " + chunkNo + " from reference index " + i, e);
                         }
                     }
                 }

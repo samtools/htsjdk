@@ -48,11 +48,17 @@ public class AlignmentBlock implements Serializable {
     }
 
     /** The first, 1-based, base in the read that is aligned to the reference reference. */
-    public int getReadStart() { return readStart; }
+    public int getReadStart() {
+        return readStart;
+    }
 
     /** The first, 1-based, position in the reference to which the read is aligned. */
-    public int getReferenceStart() { return referenceStart; }
+    public int getReferenceStart() {
+        return referenceStart;
+    }
 
     /** The number of contiguous bases aligned to the reference. */
-    public int getLength() { return length; }
+    public int getLength() {
+        return length;
+    }
 }

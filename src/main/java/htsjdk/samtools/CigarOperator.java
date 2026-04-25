@@ -28,24 +28,23 @@ package htsjdk.samtools;
  */
 public enum CigarOperator {
     /** Match or mismatch */
-    M(true, true,   'M'),
+    M(true, true, 'M'),
     /** Insertion vs. the reference. */
-    I(true, false,  'I'),
+    I(true, false, 'I'),
     /** Deletion vs. the reference. */
-    D(false, true,  'D'),
+    D(false, true, 'D'),
     /** Skipped region from the reference. */
-    N(false, true,  'N'),
+    N(false, true, 'N'),
     /** Soft clip. */
-    S(true, false,  'S'),
+    S(true, false, 'S'),
     /** Hard clip. */
     H(false, false, 'H'),
     /** Padding. */
     P(false, false, 'P'),
     /** Matches the reference. */
-    EQ(true, true,  '='),
+    EQ(true, true, '='),
     /** Mismatches the reference. */
-    X(true, true,   'X')
-    ;
+    X(true, true, 'X');
 
     // Representation of CigarOperator in BAM file
     private static final byte OP_M = 0;
@@ -81,10 +80,14 @@ public enum CigarOperator {
     }
 
     /** If true, represents that this cigar operator "consumes" bases from the read bases. */
-    public boolean consumesReadBases() { return consumesReadBases; }
+    public boolean consumesReadBases() {
+        return consumesReadBases;
+    }
 
     /** If true, represents that this cigar operator "consumes" bases from the reference sequence. */
-    public boolean consumesReferenceBases() { return consumesReferenceBases; }
+    public boolean consumesReferenceBases() {
+        return consumesReferenceBases;
+    }
 
     /**
      * @param b CIGAR operator in character form as appears in a text CIGAR string
@@ -92,26 +95,26 @@ public enum CigarOperator {
      */
     public static CigarOperator characterToEnum(final int b) {
         switch (b) {
-        case 'M':
-            return M;
-        case 'I':
-            return I;
-        case 'D':
-            return D;
-        case 'N':
-            return N;
-        case 'S':
-            return S;
-        case 'H':
-            return H;
-        case 'P':
-            return P;
-        case '=':
-            return EQ;
-        case 'X':
-            return X;
-        default:
-            throw new IllegalArgumentException("Unrecognized CigarOperator: " + b);
+            case 'M':
+                return M;
+            case 'I':
+                return I;
+            case 'D':
+                return D;
+            case 'N':
+                return N;
+            case 'S':
+                return S;
+            case 'H':
+                return H;
+            case 'P':
+                return P;
+            case '=':
+                return EQ;
+            case 'X':
+                return X;
+            default:
+                throw new IllegalArgumentException("Unrecognized CigarOperator: " + b);
         }
     }
 
@@ -120,7 +123,7 @@ public enum CigarOperator {
      * @return CigarOperator enum value corresponding to the given int value.
      */
     public static CigarOperator binaryToEnum(final int i) {
-        switch(i) {
+        switch (i) {
             case OP_M:
                 return M;
             case OP_I:
@@ -150,7 +153,7 @@ public enum CigarOperator {
      * @return CIGAR operator corresponding to the enum value in binary form as appears in a BAMRecord.
      */
     public static int enumToBinary(final CigarOperator e) {
-        switch(e) {
+        switch (e) {
             case M:
                 return OP_M;
             case I:
@@ -198,14 +201,15 @@ public enum CigarOperator {
     public boolean isAlignment() {
         return this == M || this == X || this == EQ;
     }
-    
+
     /** Returns true if the operator is a Padding operator */
     public boolean isPadding() {
         return this == P;
     }
-    
+
     /** Returns the cigar operator as it would be seen in a SAM file. */
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return this.string;
     }
 }

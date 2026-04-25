@@ -1,36 +1,35 @@
 /*===========================================================================
-*
-*                            PUBLIC DOMAIN NOTICE
-*               National Center for Biotechnology Information
-*
-*  This software/database is a "United States Government Work" under the
-*  terms of the United States Copyright Act.  It was written as part of
-*  the author's official duties as a United States Government employee and
-*  thus cannot be copyrighted.  This software/database is freely available
-*  to the public for use. The National Library of Medicine and the U.S.
-*  Government have not placed any restriction on its use or reproduction.
-*
-*  Although all reasonable efforts have been taken to ensure the accuracy
-*  and reliability of the software and data, the NLM and the U.S.
-*  Government do not and cannot warrant the performance or results that
-*  may be obtained by using this software or data. The NLM and the U.S.
-*  Government disclaim all warranties, express or implied, including
-*  warranties of performance, merchantability or fitness for any particular
-*  purpose.
-*
-*  Please cite the author in any work or product based on this material.
-*
-* ===========================================================================
-*
-*/
+ *
+ *                            PUBLIC DOMAIN NOTICE
+ *               National Center for Biotechnology Information
+ *
+ *  This software/database is a "United States Government Work" under the
+ *  terms of the United States Copyright Act.  It was written as part of
+ *  the author's official duties as a United States Government employee and
+ *  thus cannot be copyrighted.  This software/database is freely available
+ *  to the public for use. The National Library of Medicine and the U.S.
+ *  Government have not placed any restriction on its use or reproduction.
+ *
+ *  Although all reasonable efforts have been taken to ensure the accuracy
+ *  and reliability of the software and data, the NLM and the U.S.
+ *  Government do not and cannot warrant the performance or results that
+ *  may be obtained by using this software or data. The NLM and the U.S.
+ *  Government disclaim all warranties, express or implied, including
+ *  warranties of performance, merchantability or fitness for any particular
+ *  purpose.
+ *
+ *  Please cite the author in any work or product based on this material.
+ *
+ * ===========================================================================
+ *
+ */
 
 package htsjdk.samtools.sra;
 
+import gov.nih.nlm.ncbi.ngs.NGS;
 import gov.nih.nlm.ncbi.ngs.error.LibraryLoadError;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.Log;
-import gov.nih.nlm.ncbi.ngs.NGS;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,8 +50,8 @@ public class SRAAccession implements Serializable {
     private static boolean noLibraryDownload;
     private static boolean initTried = false;
     private static String appVersionString = null;
-    private final static String defaultAppVersionString = "[unknown software]";
-    private final static String htsJdkVersionString = "HTSJDK-NGS";
+    private static final String defaultAppVersionString = "[unknown software]";
+    private static final String htsJdkVersionString = "HTSJDK-NGS";
 
     static final String REMOTE_ACCESSION_PATTERN = "^[SED]RR[0-9]{6,9}$";
 
@@ -121,8 +120,8 @@ public class SRAAccession implements Serializable {
             try (InputStream is = new FileInputStream(f)) {
                 int numRead = is.read(buffer);
 
-                looksLikeSRA = numRead == buffer.length &&
-                        (Arrays.equals(buffer, signature1) || Arrays.equals(buffer, signature2));
+                looksLikeSRA = numRead == buffer.length
+                        && (Arrays.equals(buffer, signature1) || Arrays.equals(buffer, signature2));
             } catch (IOException e) {
                 looksLikeSRA = false;
             }
@@ -130,7 +129,7 @@ public class SRAAccession implements Serializable {
             // anything else local other than a file is not an SRA archive
             looksLikeSRA = false;
         } else {
-            looksLikeSRA = acc.toUpperCase().matches ( REMOTE_ACCESSION_PATTERN );
+            looksLikeSRA = acc.toUpperCase().matches(REMOTE_ACCESSION_PATTERN);
         }
 
         if (!looksLikeSRA) return false;
@@ -139,10 +138,9 @@ public class SRAAccession implements Serializable {
         if (initError != null) {
             if (noLibraryDownload && initError instanceof LibraryLoadError) {
                 throw new LinkageError(
-                        "Failed to load SRA native libraries and auto-download is disabled. " +
-                        "Please re-run with JVM argument -Dsamjdk.sra_libraries_download=true to enable auto-download of native libraries",
-                        initError
-                );
+                        "Failed to load SRA native libraries and auto-download is disabled. "
+                                + "Please re-run with JVM argument -Dsamjdk.sra_libraries_download=true to enable auto-download of native libraries",
+                        initError);
             } else {
                 throw initError;
             }

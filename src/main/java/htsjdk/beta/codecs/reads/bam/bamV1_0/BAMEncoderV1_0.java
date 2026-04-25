@@ -4,16 +4,15 @@ import htsjdk.beta.codecs.reads.bam.BAMEncoder;
 import htsjdk.beta.codecs.reads.bam.BAMEncoderOptions;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.Optional;
 
 /**
@@ -50,8 +49,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         ValidationUtils.nonNull(record, "record");
         if (samFileWriter == null) {
             throw new IllegalStateException(String.format(
-                    "A SAMFileHeader must be established before records can be written for %s",
-                    getDisplayName()));
+                    "A SAMFileHeader must be established before records can be written for %s", getDisplayName()));
         }
         samFileWriter.addAlignment(record);
     }
@@ -67,11 +65,11 @@ public class BAMEncoderV1_0 extends BAMEncoder {
      *  Propagate BAMEncoderOptions to a SAMFileWriterFactory.
      */
     private static void bamEncoderOptionsToSamWriterFactory(
-            final BAMEncoderOptions bamEncoderOptions,
-            final SAMFileWriterFactory samFileWriterFactory) {
+            final BAMEncoderOptions bamEncoderOptions, final SAMFileWriterFactory samFileWriterFactory) {
         samFileWriterFactory.setDeflaterFactory(bamEncoderOptions.getDeflaterFactory());
         samFileWriterFactory.setCompressionLevel(bamEncoderOptions.getCompressionLevel());
-        samFileWriterFactory.setTempDirectory(bamEncoderOptions.getTemporaryDirectory().toPath().toFile());
+        samFileWriterFactory.setTempDirectory(
+                bamEncoderOptions.getTemporaryDirectory().toPath().toFile());
         samFileWriterFactory.setBufferSize(bamEncoderOptions.getOutputBufferSize());
         samFileWriterFactory.setUseAsyncIo(bamEncoderOptions.isAsyncIO());
         samFileWriterFactory.setAsyncOutputBufferSize(bamEncoderOptions.getAsyncOutputBufferSize());
@@ -79,8 +77,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
     }
 
     private SAMFileWriter getBAMFileWriter(
-            final ReadsEncoderOptions readsEncoderOptions,
-            final SAMFileHeader samFileHeader) {
+            final ReadsEncoderOptions readsEncoderOptions, final SAMFileHeader samFileHeader) {
         final BAMEncoderOptions bamEncoderOptions = readsEncoderOptions.getBAMEncoderOptions();
         final SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
         bamEncoderOptionsToSamWriterFactory(bamEncoderOptions, samFileWriterFactory);
@@ -91,7 +88,7 @@ public class BAMEncoderV1_0 extends BAMEncoder {
         final Optional<BundleResource> optIndexResource = getOutputBundle().get(BundleResourceType.CT_READS_INDEX);
         final Optional<BundleResource> optMD5Resource = getOutputBundle().get(BundleResourceType.CT_MD5);
 
-        //TODO: BAMFileWriter currently only supports writing an index to a plain file, so for now
+        // TODO: BAMFileWriter currently only supports writing an index to a plain file, so for now
         // throw if an index is requested on any other type
         if (optIndexResource.isPresent()) {
             final BundleResource indexResource = optIndexResource.get();
@@ -102,25 +99,20 @@ public class BAMEncoderV1_0 extends BAMEncoder {
             }
         }
 
-        //TODO: BAMFileWriter currently only supports writing an md5 to a plain file with a name that
+        // TODO: BAMFileWriter currently only supports writing an md5 to a plain file with a name that
         // it chooses, so throw if an md5 resource is specified since we can't direct it to the specified
         // resource
         if (optMD5Resource.isPresent()) {
-            throw new HtsjdkUnsupportedOperationException(String.format(
-                    "Specifying an an MD5 resource name not yet implemented on %s", getDisplayName()));
+            throw new HtsjdkUnsupportedOperationException(
+                    String.format("Specifying an an MD5 resource name not yet implemented on %s", getDisplayName()));
         }
 
         if (readsResource.getIOPath().isPresent()) {
             return samFileWriterFactory.makeBAMWriter(
-                    samFileHeader,
-                    preSorted,
-                    readsResource.getIOPath().get().toPath());
+                    samFileHeader, preSorted, readsResource.getIOPath().get().toPath());
         } else {
             return samFileWriterFactory.makeBAMWriter(
-                    samFileHeader,
-                    preSorted,
-                    readsResource.getOutputStream().get());
+                    samFileHeader, preSorted, readsResource.getOutputStream().get());
         }
     }
-
 }

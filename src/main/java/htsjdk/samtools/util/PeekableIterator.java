@@ -62,15 +62,14 @@ public class PeekableIterator<Object> implements CloseableIterator<Object> {
      * Returns the next object but does not advance the iterator. Subsequent calls to peek()
      * and next() will return the same object.
      */
-    public Object peek(){
+    public Object peek() {
         return this.nextObject;
     }
 
-    private void advance(){
+    private void advance() {
         if (this.iterator.hasNext()) {
             this.nextObject = iterator.next();
-        }
-        else {
+        } else {
             this.nextObject = null;
         }
     }

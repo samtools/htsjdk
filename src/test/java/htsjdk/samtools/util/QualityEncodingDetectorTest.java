@@ -6,13 +6,12 @@ import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class QualityEncodingDetectorTest extends HtsjdkTest {
 
@@ -26,25 +25,40 @@ public class QualityEncodingDetectorTest extends HtsjdkTest {
         }
     }
 
-    final static List<Testcase> FASTQ_TESTCASES = Arrays.asList(
+    static final List<Testcase> FASTQ_TESTCASES = Arrays.asList(
             // Need to use full-range quality here, as Solexa and Illumina are near indistinguishable
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa_full_range_as_solexa.fastq"), FastqQualityFormat.Solexa),
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/s_1_sequence.txt"), FastqQualityFormat.Illumina),
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/5k-30BB2AAXX.3.aligned.sam.fastq"), FastqQualityFormat.Standard)
-    );
-    final static List<Testcase> BAM_TESTCASES = Arrays.asList(
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/unmapped.sam"), FastqQualityFormat.Standard),
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam"), FastqQualityFormat.Standard),
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa-as-standard.bam"), FastqQualityFormat.Solexa),
-            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"), FastqQualityFormat.Illumina)
-
-    );
+            new Testcase(
+                    new File(
+                            "./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa_full_range_as_solexa.fastq"),
+                    FastqQualityFormat.Solexa),
+            new Testcase(
+                    new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/s_1_sequence.txt"),
+                    FastqQualityFormat.Illumina),
+            new Testcase(
+                    new File(
+                            "./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/5k-30BB2AAXX.3.aligned.sam.fastq"),
+                    FastqQualityFormat.Standard));
+    static final List<Testcase> BAM_TESTCASES = Arrays.asList(
+            new Testcase(
+                    new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/unmapped.sam"),
+                    FastqQualityFormat.Standard),
+            new Testcase(
+                    new File("./src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam"),
+                    FastqQualityFormat.Standard),
+            new Testcase(
+                    new File(
+                            "./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa-as-standard.bam"),
+                    FastqQualityFormat.Solexa),
+            new Testcase(
+                    new File(
+                            "./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"),
+                    FastqQualityFormat.Illumina));
 
     Object[][] renderObjectArrayArray(final List<Testcase> testcaseList) {
         final Object[][] data = new Object[testcaseList.size()][];
         for (int i = 0; i < data.length; i++) {
             final Testcase testcase = testcaseList.get(i);
-            data[i] = new Object[]{testcase.f, testcase.q};
+            data[i] = new Object[] {testcase.f, testcase.q};
         }
         return data;
     }
@@ -59,14 +73,18 @@ public class QualityEncodingDetectorTest extends HtsjdkTest {
         return renderObjectArrayArray(FASTQ_TESTCASES);
     }
 
-    @Test(dataProvider = "FASTQ_TESTCASES", groups = {"unix"})
+    @Test(
+            dataProvider = "FASTQ_TESTCASES",
+            groups = {"unix"})
     public void testFastqQualityInference(final File input, final FastqQualityFormat expectedQualityFormat) {
         final FastqReader reader = new FastqReader(input);
         Assert.assertEquals(QualityEncodingDetector.detect(reader), expectedQualityFormat);
         reader.close();
     }
 
-    @Test(dataProvider = "BAM_TESTCASES", groups = {"unix"})
+    @Test(
+            dataProvider = "BAM_TESTCASES",
+            groups = {"unix"})
     public void testBamQualityInference(final File input, final FastqQualityFormat expectedQualityFormat) {
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
         Assert.assertEquals(QualityEncodingDetector.detect(reader), expectedQualityFormat);
@@ -75,22 +93,22 @@ public class QualityEncodingDetectorTest extends HtsjdkTest {
     @Test
     public void testSmallBamForDetectorFailure() {
         final SAMRecordSetBuilder samRecordSetBuilder = createSmallUnmappedSam();
-        Assert.assertNotSame(QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(),
-                null), FastqQualityFormat.Standard);
+        Assert.assertNotSame(
+                QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(), null), FastqQualityFormat.Standard);
     }
 
     @Test
     public void testSmallBamWithExpectedQuality() {
         final SAMRecordSetBuilder samRecordSetBuilder = createSmallUnmappedSam();
-        Assert.assertEquals(QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(),
-                FastqQualityFormat.Standard), FastqQualityFormat.Standard);
+        Assert.assertEquals(
+                QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(), FastqQualityFormat.Standard),
+                FastqQualityFormat.Standard);
     }
 
     @Test(expectedExceptions = SAMException.class)
     public void testQualitySanity() {
         final SAMRecordSetBuilder samRecordSetBuilder = createSmallUnmappedSam();
-        QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(),
-                FastqQualityFormat.Illumina);
+        QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(), FastqQualityFormat.Illumina);
     }
 
     private SAMRecordSetBuilder createSmallUnmappedSam() {

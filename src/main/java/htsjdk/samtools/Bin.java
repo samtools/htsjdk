@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -78,10 +77,10 @@ public class Bin implements Comparable<Bin> {
      */
     @Override
     public boolean equals(final Object other) {
-        if(other == null) return false;
-        if(!(other instanceof Bin)) return false;
+        if (other == null) return false;
+        if (!(other instanceof Bin)) return false;
 
-        final Bin otherBin = (Bin)other;
+        final Bin otherBin = (Bin) other;
         return this.referenceSequence == otherBin.referenceSequence && this.binNumber == otherBin.binNumber;
     }
 
@@ -91,7 +90,7 @@ public class Bin implements Comparable<Bin> {
      */
     @Override
     public int hashCode() {
-        return ((Integer)referenceSequence).hashCode() ^ ((Integer)binNumber).hashCode();
+        return ((Integer) referenceSequence).hashCode() ^ ((Integer) binNumber).hashCode();
     }
 
     /**
@@ -109,12 +108,10 @@ public class Bin implements Comparable<Bin> {
      */
     @Override
     public int compareTo(final Bin other) {
-        if(other == null)
-            throw new ClassCastException("Cannot compare to a null object");
+        if (other == null) throw new ClassCastException("Cannot compare to a null object");
 
         // Check the reference sequences first.
-        if(this.referenceSequence != other.referenceSequence)
-            return referenceSequence - other.referenceSequence;
+        if (this.referenceSequence != other.referenceSequence) return referenceSequence - other.referenceSequence;
 
         // Then check the bin ordering.
         return binNumber - other.binNumber;
@@ -123,7 +120,7 @@ public class Bin implements Comparable<Bin> {
     /**
      * Adds the first chunk to the bin
      */
-    public void addInitialChunk(final Chunk newChunk){
+    public void addInitialChunk(final Chunk newChunk) {
         final List<Chunk> oldChunks = new ArrayList<Chunk>();
         setChunkList(oldChunks);
         setLastChunk(newChunk);
@@ -146,8 +143,7 @@ public class Bin implements Comparable<Bin> {
             // Coalesce chunks that are in the same or adjacent file blocks.
             // Similar to AbstractBAMFileIndex.optimizeChunkList,
             // but no need to copy the list, no minimumOffset, and maintain bin.lastChunk
-            if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(
-                    lastChunk.getChunkEnd(), chunkStart)) {
+            if (BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(lastChunk.getChunkEnd(), chunkStart)) {
                 lastChunk.setChunkEnd(chunkEnd); // coalesced
             } else {
                 chunkList.add(newChunk);
@@ -159,7 +155,7 @@ public class Bin implements Comparable<Bin> {
     /**
      * Sets the chunks associated with this bin
      */
-    public void setChunkList(final List<Chunk> list){
+    public void setChunkList(final List<Chunk> list) {
         chunkList = list;
     }
 
@@ -167,16 +163,15 @@ public class Bin implements Comparable<Bin> {
      * Gets the list of chunks associated with this bin.
      * @return the chunks in this bin.  If no chunks are associated, an empty list will be returned.
      */
-    public List<Chunk> getChunkList(){
-        if(chunkList == null)
-            return Collections.<Chunk>emptyList();
+    public List<Chunk> getChunkList() {
+        if (chunkList == null) return Collections.<Chunk>emptyList();
         return chunkList;
     }
 
     /**
      * Optimization to keep lastChunk instead of iterating over all chunks repeatedly
      */
-    public void setLastChunk(final Chunk c){
+    public void setLastChunk(final Chunk c) {
         lastChunk = c;
     }
 
@@ -185,7 +180,7 @@ public class Bin implements Comparable<Bin> {
      * (AbstractBAMFileIndex.optimizeChunkList doesn't maintain this)
      * @return  the last Chunk of the chunkList
      */
-    public Chunk getLastChunk(){
+    public Chunk getLastChunk() {
         return lastChunk;
     }
 

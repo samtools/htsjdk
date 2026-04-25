@@ -5,11 +5,6 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
-import htsjdk.tribble.TribbleException;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -18,6 +13,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Created by farjoun on 10/12/17.
@@ -28,10 +26,18 @@ public class VCFFileReaderTest extends HtsjdkTest {
     @DataProvider(name = "queryableData")
     public Iterator<Object[]> queryableData() throws IOException {
         List<Object[]> tests = new ArrayList<>();
-        tests.add(new Object[]{new File(TEST_DATA_DIR, "NA12891.fp.vcf"), false});
-        tests.add(new Object[]{new File(TEST_DATA_DIR, "NA12891.vcf"), false});
-        tests.add(new Object[]{VCFUtils.createTemporaryIndexedVcfFromInput(new File(TEST_DATA_DIR, "NA12891.vcf"), "fingerprintcheckertest.tmp."), true});
-        tests.add(new Object[]{VCFUtils.createTemporaryIndexedVcfFromInput(new File(TEST_DATA_DIR, "NA12891.vcf.gz"), "fingerprintcheckertest.tmp."), true});
+        tests.add(new Object[] {new File(TEST_DATA_DIR, "NA12891.fp.vcf"), false});
+        tests.add(new Object[] {new File(TEST_DATA_DIR, "NA12891.vcf"), false});
+        tests.add(new Object[] {
+            VCFUtils.createTemporaryIndexedVcfFromInput(
+                    new File(TEST_DATA_DIR, "NA12891.vcf"), "fingerprintcheckertest.tmp."),
+            true
+        });
+        tests.add(new Object[] {
+            VCFUtils.createTemporaryIndexedVcfFromInput(
+                    new File(TEST_DATA_DIR, "NA12891.vcf.gz"), "fingerprintcheckertest.tmp."),
+            true
+        });
 
         return tests.iterator();
     }
@@ -45,54 +51,56 @@ public class VCFFileReaderTest extends HtsjdkTest {
     Object[][] pathsData() {
 
         final String TEST_DATA_DIR = "src/test/resources/htsjdk/variant/";
-        return new Object[][]{
-                // various ways to refer to a local file
-                {TEST_DATA_DIR + "VCF4HeaderTest.vcf", null, false, true},
+        return new Object[][] {
+            // various ways to refer to a local file
+            {TEST_DATA_DIR + "VCF4HeaderTest.vcf", null, false, true},
 
-                // this file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
-                // this fails unless the "optimistic_vcf_4_4" property is set, so it's expected to fail here
-                {TEST_DATA_DIR + "VCF4_4HeaderTest.vcf", null, false, false},
+            // this file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
+            // this fails unless the "optimistic_vcf_4_4" property is set, so it's expected to fail here
+            {TEST_DATA_DIR + "VCF4_4HeaderTest.vcf", null, false, false},
 
-//                // this is almost a vcf, but not quite it's missing the #CHROM line and it has no content...
-                {TEST_DATA_DIR + "Homo_sapiens_assembly38.tile_db_header.vcf", null, false, false},
+            //                // this is almost a vcf, but not quite it's missing the #CHROM line and it has no
+            // content...
+            {TEST_DATA_DIR + "Homo_sapiens_assembly38.tile_db_header.vcf", null, false, false},
 
-//                // test that have indexes
-                {TEST_DATA_DIR + "test.vcf.bgz", TEST_DATA_DIR + "test.vcf.bgz.tbi", true, true},
-                {TEST_DATA_DIR + "serialization_test.bcf", TEST_DATA_DIR + "serialization_test.bcf.idx", true, true},
-                {TEST_DATA_DIR + "test1.vcf", TEST_DATA_DIR + "test1.vcf.idx", true, true},
-//
-//                // test that lack indexes (should succeed)
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.gz", null, false, true},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf", null, false, true},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex but has a space.vcf", null, false, true},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.bcf", null, false, true},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, false, true},
-//
-//                // test that lack indexes should fail)
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.gz", null, true, false},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf", null, true, false},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.bcf", null, true, false},
-                {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, true, false},
-//
-//                // testing that v4.2 parses Source/Version fields, see issue #517
-                {TEST_DATA_DIR + "Vcf4.2WithSourceVersionInfoFields.vcf", null, false, true},
-//
-//                // should reject bcf v2.2 on read, see issue https://github.com/samtools/htsjdk/issues/1323
-                {TEST_DATA_DIR + "BCFVersion22Uncompressed.bcf", null, false, false}
+            //                // test that have indexes
+            {TEST_DATA_DIR + "test.vcf.bgz", TEST_DATA_DIR + "test.vcf.bgz.tbi", true, true},
+            {TEST_DATA_DIR + "serialization_test.bcf", TEST_DATA_DIR + "serialization_test.bcf.idx", true, true},
+            {TEST_DATA_DIR + "test1.vcf", TEST_DATA_DIR + "test1.vcf.idx", true, true},
+            //
+            //                // test that lack indexes (should succeed)
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.gz", null, false, true},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf", null, false, true},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex but has a space.vcf", null, false, true},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.bcf", null, false, true},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, false, true},
+            //
+            //                // test that lack indexes should fail)
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.gz", null, true, false},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf", null, true, false},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.bcf", null, true, false},
+            {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, true, false},
+            //
+            //                // testing that v4.2 parses Source/Version fields, see issue #517
+            {TEST_DATA_DIR + "Vcf4.2WithSourceVersionInfoFields.vcf", null, false, true},
+            //
+            //                // should reject bcf v2.2 on read, see issue
+            // https://github.com/samtools/htsjdk/issues/1323
+            {TEST_DATA_DIR + "BCFVersion22Uncompressed.bcf", null, false, false}
         };
     }
 
     @Test(dataProvider = "pathsData", timeOut = 60_000)
-    public void testCanOpenVCFPathReader(final String file, final String index, final boolean requiresIndex, final boolean shouldSucceed) throws Exception {
+    public void testCanOpenVCFPathReader(
+            final String file, final String index, final boolean requiresIndex, final boolean shouldSucceed)
+            throws Exception {
         try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path tribbleFileInJimfs = TestUtils.getTribbleFileInJimfs(file, index, fs);
             try (final VCFFileReader reader = new VCFFileReader(tribbleFileInJimfs, requiresIndex)) {
 
                 final VCFHeader header = reader.getFileHeader();
-                reader.iterator().stream().forEach(
-                        v->v.getGenotypes()
-                                .stream()
-                                .count());
+                reader.iterator().stream()
+                        .forEach(v -> v.getGenotypes().stream().count());
             } catch (Exception e) {
                 if (shouldSucceed) {
                     throw e;
@@ -109,7 +117,8 @@ public class VCFFileReaderTest extends HtsjdkTest {
     public void testAcceptOptimisticVCF4_4() {
         // This file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
         // This will fail unless the optimistic_vcf_4_4" property isn't set
-        try (final VCFFileReader reader = new VCFFileReader(Paths.get(TEST_DATA_DIR.getAbsolutePath(), "VCF4_4HeaderTest.vcf"), false)) {
+        try (final VCFFileReader reader =
+                new VCFFileReader(Paths.get(TEST_DATA_DIR.getAbsolutePath(), "VCF4_4HeaderTest.vcf"), false)) {
             final VCFHeader header = reader.getFileHeader();
             Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
         }
@@ -117,8 +126,8 @@ public class VCFFileReaderTest extends HtsjdkTest {
 
     @Test
     public void testTabixFileWithEmbeddedSpaces() throws IOException {
-        final File testVCF =  new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz");
-        final File testTBI =  new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz.tbi");
+        final File testVCF = new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz");
+        final File testTBI = new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz.tbi");
 
         // Copy the input files into a temporary directory with embedded spaces in the name.
         // This test needs to include the associated .tbi file because we want to force execution
@@ -136,7 +145,5 @@ public class VCFFileReaderTest extends HtsjdkTest {
         try (final VCFFileReader vcfFileReader = new VCFFileReader(inputVCF)) {
             Assert.assertNotNull(vcfFileReader.getFileHeader());
         }
-
     }
-
 }

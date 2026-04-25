@@ -34,7 +34,6 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.fastq.FastqConstants;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.File;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -51,9 +50,9 @@ public class SequenceUtil {
     /** Byte typed variables for all normal bases. */
     public static final byte a = 'a', c = 'c', g = 'g', t = 't', n = 'n', A = 'A', C = 'C', G = 'G', T = 'T', N = 'N';
 
-    public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
-    public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
-    private static final byte[] ACGTN_BASES = new byte[]{A, C, G, T, N};
+    public static final byte[] VALID_BASES_UPPER = new byte[] {A, C, G, T};
+    public static final byte[] VALID_BASES_LOWER = new byte[] {a, c, g, t};
+    private static final byte[] ACGTN_BASES = new byte[] {A, C, G, T, N};
     private static final String IUPAC_CODES_STRING = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
     /**
      * A set of bases supported by BAM in reads, see http://samtools.github.io/hts-specs/SAMv1.pdf chapter 4.2 on 'seq' field.
@@ -65,9 +64,10 @@ public class SequenceUtil {
     private static final int SHIFT_TO_LOWER_CASE = a - A;
     /** Lookup table mapping any byte to its BAM-valid upper-case equivalent (or N if invalid). */
     private static final byte[] bamReadBaseLookup = new byte[BASES_ARRAY_LENGTH];
+
     static {
         Arrays.fill(bamReadBaseLookup, N);
-        for (final byte base: BAM_READ_BASE_SET) {
+        for (final byte base : BAM_READ_BASE_SET) {
             bamReadBaseLookup[base] = base;
             bamReadBaseLookup[base + SHIFT_TO_LOWER_CASE] = base;
         }
@@ -121,8 +121,8 @@ public class SequenceUtil {
             bases[(byte) i + SHIFT_TO_LOWER_CASE] = bases[(byte) i];
         }
         bases['.'] = A_MASK | C_MASK | G_MASK | T_MASK;
-    };
-
+    }
+    ;
 
     /**
      * Calculate the reverse complement of the specified sequence
@@ -136,7 +136,6 @@ public class SequenceUtil {
         reverseComplement(bases);
         return htsjdk.samtools.util.StringUtil.bytesToString(bases);
     }
-
 
     /**
      * Efficiently compare two IUPAC base codes, simply returning true if they are equal (ignoring case),
@@ -198,7 +197,6 @@ public class SequenceUtil {
         return isValidBase(base, ACGTN_BASES);
     }
 
-
     /** Returns all IUPAC codes as a string */
     public static String getIUPACCodesString() {
         return IUPAC_CODES_STRING;
@@ -231,8 +229,7 @@ public class SequenceUtil {
 
     /** Update and return the given array of bases by upper casing and then replacing all non-BAM read bases with N */
     public static byte[] toBamReadBasesInPlace(final byte[] bases) {
-        for (int i = 0; i < bases.length; i++)
-            bases[i] = bamReadBaseLookup[bases[i]];
+        for (int i = 0; i < bases.length; i++) bases[i] = bamReadBaseLookup[bases[i]];
         return bases;
     }
 
@@ -255,7 +252,8 @@ public class SequenceUtil {
      * records of the smaller dictionary are equal to the records of the beginning of the larger dictionary, which can be useful since
      * sometimes different pipelines choose to use only the first contigs of a standard reference.
      */
-    public static void assertSequenceListsEqual(final List<SAMSequenceRecord> s1, final List<SAMSequenceRecord> s2, final boolean checkPrefixOnly) {
+    public static void assertSequenceListsEqual(
+            final List<SAMSequenceRecord> s1, final List<SAMSequenceRecord> s2, final boolean checkPrefixOnly) {
         if (s1 != null && s2 != null) {
 
             final int sizeToTest;
@@ -269,36 +267,35 @@ public class SequenceUtil {
                 sizeToTest = s1.size();
                 if (s1.size() != s2.size()) {
                     throw new SequenceListsDifferException(
-                            "Sequence dictionaries are not the same size (" + s1.size() + ", " + s2.size() +
-                                    ")");
+                            "Sequence dictionaries are not the same size (" + s1.size() + ", " + s2.size() + ")");
                 }
             }
             for (int i = 0; i < sizeToTest; ++i) {
                 if (!s1.get(i).isSameSequence(s2.get(i))) {
                     StringBuilder s1Attrs = new StringBuilder();
-                    for (final java.util.Map.Entry<String, String> entry : s1.get(i)
-                            .getAttributes()) {
+                    for (final java.util.Map.Entry<String, String> entry :
+                            s1.get(i).getAttributes()) {
                         s1Attrs.append("/").append(entry.getKey()).append("=").append(entry.getValue());
                     }
                     String s2Attrs = "";
-                    for (final java.util.Map.Entry<String, String> entry : s2.get(i)
-                            .getAttributes()) {
+                    for (final java.util.Map.Entry<String, String> entry :
+                            s2.get(i).getAttributes()) {
                         s2Attrs += "/" + entry.getKey() + "=" + entry.getValue();
                     }
-                    throw new SequenceListsDifferException(
-                            "Sequences at index " + i + " don't match: " +
-                                    s1.get(i).getSequenceIndex() + "/" + s1.get(i).getSequenceLength() +
-                                    "/" + s1.get(i).getSequenceName() + s1Attrs + " " +
-                                    s2.get(i).getSequenceIndex() + "/" + s2.get(i).getSequenceLength() +
-                                    "/" + s2.get(i).getSequenceName() + s2Attrs);
+                    throw new SequenceListsDifferException("Sequences at index " + i + " don't match: "
+                            + s1.get(i).getSequenceIndex()
+                            + "/" + s1.get(i).getSequenceLength() + "/"
+                            + s1.get(i).getSequenceName() + s1Attrs + " "
+                            + s2.get(i).getSequenceIndex()
+                            + "/" + s2.get(i).getSequenceLength() + "/"
+                            + s2.get(i).getSequenceName() + s2Attrs);
                 }
             }
         }
     }
 
     public static class SequenceListsDifferException extends SAMException {
-        public SequenceListsDifferException() {
-        }
+        public SequenceListsDifferException() {}
 
         public SequenceListsDifferException(final String s) {
             super(s);
@@ -350,7 +347,8 @@ public class SequenceUtil {
      * records of the smaller dictionary are equal to the records of the beginning of the larger dictionary, which can be useful since
      * sometimes different pipelines choose to use only the first contigs of a standard reference.
      */
-    public static void assertSequenceDictionariesEqual(final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final boolean checkPrefixOnly) {
+    public static void assertSequenceDictionariesEqual(
+            final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final boolean checkPrefixOnly) {
         if (s1 == null || s2 == null) return;
         assertSequenceListsEqual(s1.getSequences(), s2.getSequences(), checkPrefixOnly);
     }
@@ -358,12 +356,13 @@ public class SequenceUtil {
     /**
      * Throws an exception if both parameters are non-null and unequal, including the filenames.
      */
-    public static void assertSequenceDictionariesEqual(final SAMSequenceDictionary s1, final SAMSequenceDictionary s2,
-                                                       final File f1, final File f2) {
+    public static void assertSequenceDictionariesEqual(
+            final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final File f1, final File f2) {
         try {
             assertSequenceDictionariesEqual(s1, s2);
         } catch (final SequenceListsDifferException e) {
-            throw new SequenceListsDifferException("In files " + f1.getAbsolutePath() + " and " + f2.getAbsolutePath(), e);
+            throw new SequenceListsDifferException(
+                    "In files " + f1.getAbsolutePath() + " and " + f2.getAbsolutePath(), e);
         }
     }
 
@@ -373,7 +372,8 @@ public class SequenceUtil {
      * @param alignmentStart raw aligment start, which may result in read hanging off beginning or end of read
      * @return cigar string that may have S operator at beginning or end, and has M operator for the rest of the read
      */
-    public static String makeCigarStringWithPossibleClipping(final int alignmentStart, final int readLength, final int referenceSequenceLength) {
+    public static String makeCigarStringWithPossibleClipping(
+            final int alignmentStart, final int readLength, final int referenceSequenceLength) {
         int start = alignmentStart;
         int leftSoftClip = 0;
         if (start < 1) {
@@ -402,11 +402,12 @@ public class SequenceUtil {
      * @param indelLength             length of indel.  Positive for insertion, negative for deletion.
      * @return cigar string that may have S operator at beginning or end, has one or two M operators, and an I or a D.
      */
-    public static String makeCigarStringWithIndelPossibleClipping(final int alignmentStart,
-                                                                  final int readLength,
-                                                                  final int referenceSequenceLength,
-                                                                  final int indelPosition,
-                                                                  final int indelLength) {
+    public static String makeCigarStringWithIndelPossibleClipping(
+            final int alignmentStart,
+            final int readLength,
+            final int referenceSequenceLength,
+            final int indelPosition,
+            final int indelLength) {
         int start = alignmentStart;
         int leftSoftClip = 0;
         if (start < 1) {
@@ -419,8 +420,8 @@ public class SequenceUtil {
             rightSoftClip = alignmentEnd - referenceSequenceLength - 1;
         }
         if (leftSoftClip >= indelPosition) {
-            throw new IllegalStateException("Soft clipping entire pre-indel match. leftSoftClip: " + leftSoftClip +
-                    "; indelPosition: " + indelPosition);
+            throw new IllegalStateException("Soft clipping entire pre-indel match. leftSoftClip: " + leftSoftClip
+                    + "; indelPosition: " + indelPosition);
         }
         // CIGAR is trivial because there are no indels or clipping in Gerald
         final int firstMatchLength = indelPosition - leftSoftClip;
@@ -428,10 +429,9 @@ public class SequenceUtil {
         if (secondMatchLength < 1) {
             throw new SAMException("Unexpected cigar string with no M op for read.");
         }
-        return makeSoftClipCigar(leftSoftClip) + Integer.toString(firstMatchLength) + "M" +
-                Math.abs(indelLength) + (indelLength > 0 ? "I" : "D") +
-                Integer.toString(secondMatchLength) + "M" +
-                makeSoftClipCigar(rightSoftClip);
+        return makeSoftClipCigar(leftSoftClip) + Integer.toString(firstMatchLength) + "M" + Math.abs(indelLength)
+                + (indelLength > 0 ? "I" : "D") + Integer.toString(secondMatchLength)
+                + "M" + makeSoftClipCigar(rightSoftClip);
     }
 
     public static String makeSoftClipCigar(final int clipLength) {
@@ -451,8 +451,12 @@ public class SequenceUtil {
      * @param matchAmbiguousRef causes the match to return true when the read base is a subset of the possible IUPAC reference bases, but not the other way around
      * @return true if the bases match, false otherwise
      */
-    private static boolean basesMatch(final byte readBase, final byte refBase, final boolean negativeStrand,
-                                      final boolean bisulfiteSequence, final boolean matchAmbiguousRef) {
+    private static boolean basesMatch(
+            final byte readBase,
+            final byte refBase,
+            final boolean negativeStrand,
+            final boolean bisulfiteSequence,
+            final boolean matchAmbiguousRef) {
         if (bisulfiteSequence) {
             if (matchAmbiguousRef) return bisulfiteBasesMatchWithAmbiguity(negativeStrand, readBase, refBase);
             else return bisulfiteBasesEqual(negativeStrand, readBase, refBase);
@@ -483,12 +487,20 @@ public class SequenceUtil {
      *                          and C->T on the positive strand and G->A on the negative strand will not be counted
      *                          as mismatches.
      */
-    public static int countMismatches(final SAMRecord read, final byte[] referenceBases, final int referenceOffset, final boolean bisulfiteSequence) {
+    public static int countMismatches(
+            final SAMRecord read,
+            final byte[] referenceBases,
+            final int referenceOffset,
+            final boolean bisulfiteSequence) {
         return countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence, false);
     }
 
-    public static int countMismatches(final SAMRecord read, final byte[] referenceBases, final int referenceOffset,
-                                      final boolean bisulfiteSequence, final boolean matchAmbiguousRef) {
+    public static int countMismatches(
+            final SAMRecord read,
+            final byte[] referenceBases,
+            final int referenceOffset,
+            final boolean bisulfiteSequence,
+            final boolean matchAmbiguousRef) {
         try {
             int mismatches = 0;
 
@@ -500,8 +512,12 @@ public class SequenceUtil {
                 final int length = block.getLength();
 
                 for (int i = 0; i < length; ++i) {
-                    if (!basesMatch(readBases[readBlockStart + i], referenceBases[referenceBlockStart + i],
-                            read.getReadNegativeStrandFlag(), bisulfiteSequence, matchAmbiguousRef)) {
+                    if (!basesMatch(
+                            readBases[readBlockStart + i],
+                            referenceBases[referenceBlockStart + i],
+                            read.getReadNegativeStrandFlag(),
+                            bisulfiteSequence,
+                            matchAmbiguousRef)) {
                         ++mismatches;
                     }
                 }
@@ -521,7 +537,8 @@ public class SequenceUtil {
      *                          and C->T on the positive strand and G->A on the negative strand will not be counted
      *                          as mismatches.
      */
-    public static int countMismatches(final SAMRecord read, final byte[] referenceBases, final boolean bisulfiteSequence) {
+    public static int countMismatches(
+            final SAMRecord read, final byte[] referenceBases, final boolean bisulfiteSequence) {
         return countMismatches(read, referenceBases, 0, bisulfiteSequence);
     }
 
@@ -543,8 +560,8 @@ public class SequenceUtil {
      * @param referenceOffset 0-based offset of the first element of referenceBases relative to the start
      *                        of that reference sequence.
      */
-    public static int sumQualitiesOfMismatches(final SAMRecord read, final byte[] referenceBases,
-                                               final int referenceOffset) {
+    public static int sumQualitiesOfMismatches(
+            final SAMRecord read, final byte[] referenceBases, final int referenceOffset) {
         return sumQualitiesOfMismatches(read, referenceBases, referenceOffset, false);
     }
 
@@ -559,16 +576,19 @@ public class SequenceUtil {
      *                          and C->T on the positive strand and G->A on the negative strand will not be counted
      *                          as mismatches.
      */
-    public static int sumQualitiesOfMismatches(final SAMRecord read, final byte[] referenceBases,
-                                               final int referenceOffset, final boolean bisulfiteSequence) {
+    public static int sumQualitiesOfMismatches(
+            final SAMRecord read,
+            final byte[] referenceBases,
+            final int referenceOffset,
+            final boolean bisulfiteSequence) {
         int qualities = 0;
 
         final byte[] readBases = read.getReadBases();
         final byte[] readQualities = read.getBaseQualities();
 
         if (read.getAlignmentStart() <= referenceOffset) {
-            throw new IllegalArgumentException("read.getAlignmentStart(" + read.getAlignmentStart() +
-                    ") <= referenceOffset(" + referenceOffset + ")");
+            throw new IllegalArgumentException("read.getAlignmentStart(" + read.getAlignmentStart()
+                    + ") <= referenceOffset(" + referenceOffset + ")");
         }
 
         for (final AlignmentBlock block : read.getAlignmentBlocks()) {
@@ -583,7 +603,9 @@ public class SequenceUtil {
                     }
 
                 } else {
-                    if (!bisulfiteBasesEqual(read.getReadNegativeStrandFlag(), readBases[readBlockStart + i],
+                    if (!bisulfiteBasesEqual(
+                            read.getReadNegativeStrandFlag(),
+                            readBases[readBlockStart + i],
                             referenceBases[referenceBlockStart + i])) {
                         qualities += readQualities[readBlockStart + i];
                     }
@@ -635,8 +657,7 @@ public class SequenceUtil {
      * @param referenceOffset 0-based offset of the first element of referenceBases relative to the start
      *                        of that reference sequence.
      */
-    public static int calculateSamNmTag(final SAMRecord read, final byte[] referenceBases,
-                                        final int referenceOffset) {
+    public static int calculateSamNmTag(final SAMRecord read, final byte[] referenceBases, final int referenceOffset) {
         return calculateSamNmTag(read, referenceBases, referenceOffset, false);
     }
 
@@ -651,8 +672,11 @@ public class SequenceUtil {
      *                          and C->T on the positive strand and G->A on the negative strand will not be counted
      *                          as mismatches.
      */
-    public static int calculateSamNmTag(final SAMRecord read, final byte[] referenceBases,
-                                        final int referenceOffset, final boolean bisulfiteSequence) {
+    public static int calculateSamNmTag(
+            final SAMRecord read,
+            final byte[] referenceBases,
+            final int referenceOffset,
+            final boolean bisulfiteSequence) {
         int samNm = countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence, false);
         for (final CigarElement el : read.getCigar().getCigarElements()) {
             if (el.getOperator() == CigarOperator.INSERTION || el.getOperator() == CigarOperator.DELETION) {
@@ -671,9 +695,9 @@ public class SequenceUtil {
     public static int calculateSamNmTagFromCigar(final SAMRecord record) {
         int samNm = 0;
         for (final CigarElement el : record.getCigar().getCigarElements()) {
-            if ( el.getOperator() == CigarOperator.X ||
-                 el.getOperator() == CigarOperator.INSERTION ||
-                 el.getOperator() == CigarOperator.DELETION) {
+            if (el.getOperator() == CigarOperator.X
+                    || el.getOperator() == CigarOperator.INSERTION
+                    || el.getOperator() == CigarOperator.DELETION) {
                 samNm += el.getLength();
             }
         }
@@ -704,8 +728,6 @@ public class SequenceUtil {
         }
     }
 
-
-
     /**
      * Returns true if the bases are equal OR if the mismatch can be accounted for by
      * bisulfite treatment. C->T on the positive strand and G->A on the negative strand
@@ -724,8 +746,10 @@ public class SequenceUtil {
      * Note that <code>isBisulfiteConverted</code> is not affected because it only applies when the
      * reference base is non-ambiguous.
      */
-    public static boolean bisulfiteBasesMatchWithAmbiguity(final boolean negativeStrand, final byte read, final byte reference) {
-        return (readBaseMatchesRefBaseWithAmbiguity(read, reference)) || (isBisulfiteConverted(read, reference, negativeStrand));
+    public static boolean bisulfiteBasesMatchWithAmbiguity(
+            final boolean negativeStrand, final byte read, final byte reference) {
+        return (readBaseMatchesRefBaseWithAmbiguity(read, reference))
+                || (isBisulfiteConverted(read, reference, negativeStrand));
     }
 
     /**
@@ -771,7 +795,8 @@ public class SequenceUtil {
      * '-'.  If the read is soft-clipped, reference contains '0'.  If there is a skipped region and
      * includeReferenceBasesForDeletions==true, reference will have Ns for the skipped region.
      */
-    public static byte[] makeReferenceFromAlignment(final SAMRecord rec, final boolean includeReferenceBasesForDeletions) {
+    public static byte[] makeReferenceFromAlignment(
+            final SAMRecord rec, final boolean includeReferenceBasesForDeletions) {
         final String md = rec.getStringAttribute(SAMTag.MD);
         if (md == null) {
             throw new SAMException("Cannot create reference from SAMRecord with no MD tag, read: " + rec.getReadName());
@@ -796,7 +821,6 @@ public class SequenceUtil {
         for (final CigarElement cigEl : cigar.getCigarElements()) {
             final int cigElLen = cigEl.getLength();
             final CigarOperator cigElOp = cigEl.getOperator();
-
 
             if (cigElOp == CigarOperator.SKIPPED_REGION) {
                 // We've decided that MD tag will not contain bases for skipped regions, as they
@@ -857,11 +881,13 @@ public class SequenceUtil {
 
                             // Check just to make sure.
                             if (basesMatched != cigElLen) {
-                                throw new SAMException("Got a deletion in CIGAR (" + cigar + ", deletion " + cigElLen +
-                                        " length) with an unequal ref insertion in MD (" + md + ", md " + basesMatched + " length");
+                                throw new SAMException("Got a deletion in CIGAR (" + cigar + ", deletion " + cigElLen
+                                        + " length) with an unequal ref insertion in MD (" + md + ", md " + basesMatched
+                                        + " length");
                             }
                             if (cigElOp != CigarOperator.DELETION) {
-                                throw new SAMException("Got an insertion in MD (" + md + ") without a corresponding deletion in cigar (" + cigar + ")");
+                                throw new SAMException("Got an insertion in MD (" + md
+                                        + ") without a corresponding deletion in cigar (" + cigar + ")");
                             }
 
                         } else {
@@ -870,8 +896,8 @@ public class SequenceUtil {
                     }
 
                     if (!matched) {
-                        throw new SAMException("Illegal MD pattern: " + md + " for read " + rec.getReadName() +
-                                " with CIGAR " + rec.getCigarString());
+                        throw new SAMException("Illegal MD pattern: " + md + " for read " + rec.getReadName()
+                                + " with CIGAR " + rec.getCigarString());
                     }
                 }
 
@@ -885,7 +911,6 @@ public class SequenceUtil {
             } else {
                 // It's an op that consumes neither read nor reference bases.  Do we just ignore??
             }
-
         }
         if (outIndex < ret.length) {
             final byte[] shorter = new byte[outIndex];
@@ -951,7 +976,6 @@ public class SequenceUtil {
         return String.format(Locale.US, "%032x", new BigInteger(1, digest));
     }
 
-
     private static final ThreadLocal<MessageDigest> md5Digest = ThreadLocal.withInitial(() -> {
         try {
             return MessageDigest.getInstance("MD5");
@@ -1006,8 +1030,7 @@ public class SequenceUtil {
             final int blockLength = ce.getLength();
             final CigarOperator op = ce.getOperator();
 
-            if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ
-                    || op == CigarOperator.X) {
+            if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ || op == CigarOperator.X) {
                 for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
                     final int readOffset = blockReadStart + inBlockOffset;
                     final int refIdx = blockRefPos + inBlockOffset;
@@ -1063,16 +1086,15 @@ public class SequenceUtil {
      * @param calcMD A flag indicating whether to update the MD tag in the record
      * @param calcNM A flag indicating whether to update the NM tag in the record
      */
-    public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref,
-                                            final boolean calcMD, final boolean calcNM) {
-        if (!calcMD && !calcNM)
-            return;
+    public static void calculateMdAndNmTags(
+            final SAMRecord record, final byte[] ref, final boolean calcMD, final boolean calcNM) {
+        if (!calcMD && !calcNM) return;
 
         final Tuple<String, Integer> result = calculateMdAndNm(
                 record.getCigar().getCigarElements(),
                 record.getReadBases(),
                 ref,
-                0,  // ref array starts at position 1 on the contig
+                0, // ref array starts at position 1 on the contig
                 record.getAlignmentStart());
 
         if (calcMD) record.setAttribute(SAMTag.MD, result.a);
@@ -1084,8 +1106,7 @@ public class SequenceUtil {
     }
 
     public static byte[] upperCase(final byte[] bases) {
-        for (int i = 0; i < bases.length; i++)
-            bases[i] = upperCase(bases[i]);
+        for (int i = 0; i < bases.length; i++) bases[i] = upperCase(bases[i]);
         return bases;
     }
 
@@ -1132,7 +1153,7 @@ public class SequenceUtil {
     // Read names cannot contain blanks
     public static String getSamReadNameFromFastqHeader(final String fastqHeader) {
         final int idx = fastqHeader.indexOf(" ");
-        String readName = (idx == -1) ? fastqHeader : fastqHeader.substring(0,idx);
+        String readName = (idx == -1) ? fastqHeader : fastqHeader.substring(0, idx);
 
         // NOTE: the while loop isn't necessarily the most efficient way to handle this but we don't
         // expect this to ever happen more than once, just trapping pathological cases
@@ -1152,7 +1173,7 @@ public class SequenceUtil {
      * @param length How many bases to return.
      * @return an array of random DNA bases of the requested length.
      */
-    static public byte[] getRandomBases(Random random, final int length) {
+    public static byte[] getRandomBases(Random random, final int length) {
         ValidationUtils.validateArg(length >= 0, "length must be non-negative");
         final byte[] bases = new byte[length];
         getRandomBases(random, length, bases);
@@ -1169,7 +1190,7 @@ public class SequenceUtil {
      * @param length How many bases to return.
      * @param bases  Array to use for bases (from index 0)
      */
-    static public void getRandomBases(Random random, final int length, final byte[] bases) {
+    public static void getRandomBases(Random random, final int length, final byte[] bases) {
         ValidationUtils.validateArg(length >= 0, "length must be non-negative");
         ValidationUtils.validateArg(length <= bases.length, "length must no larger than size of input array");
 

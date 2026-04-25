@@ -29,14 +29,15 @@ import htsjdk.tribble.TribbleException;
  * The values in a Tabix header that define the format of the file being indexed, e.g. gff, bed, vcf
  */
 public class TabixFormat implements Cloneable {
-    public static final int ZERO_BASED    = 0x10000;
+    public static final int ZERO_BASED = 0x10000;
     public static final int GENERIC_FLAGS = 0;
-    public static final int SAM_FLAGS     = 1;
-    public static final int VCF_FLAGS     = 2;
-    public static final int UCSC_FLAGS    = GENERIC_FLAGS | ZERO_BASED;
+    public static final int SAM_FLAGS = 1;
+    public static final int VCF_FLAGS = 2;
+    public static final int UCSC_FLAGS = GENERIC_FLAGS | ZERO_BASED;
 
     /** Predefined headers for known formats */
     public static final TabixFormat GFF = new TabixFormat(GENERIC_FLAGS, 1, 4, 5, '#', 0);
+
     public static final TabixFormat BED = new TabixFormat(UCSC_FLAGS, 1, 2, 3, '#', 0);
     public static final TabixFormat PSLTBL = new TabixFormat(UCSC_FLAGS, 15, 17, 18, '#', 0);
     public static final TabixFormat SAM = new TabixFormat(SAM_FLAGS, 3, 4, 0, '@', 0);
@@ -59,10 +60,15 @@ public class TabixFormat implements Cloneable {
     /** TODO: This is written, and part of the index header, but does not appear to be used. */
     public int numHeaderLinesToSkip;
 
-    public TabixFormat() {
-    }
+    public TabixFormat() {}
 
-    public TabixFormat(final int flags, final int sequenceColumn, final int startPositionColumn, final int endPositionColumn, final char metaCharacter, final int numHeaderLinesToSkip) {
+    public TabixFormat(
+            final int flags,
+            final int sequenceColumn,
+            final int startPositionColumn,
+            final int endPositionColumn,
+            final char metaCharacter,
+            final int numHeaderLinesToSkip) {
         this.flags = flags;
         this.sequenceColumn = sequenceColumn;
         this.startPositionColumn = startPositionColumn;
@@ -74,7 +80,7 @@ public class TabixFormat implements Cloneable {
     @Override
     public TabixFormat clone() {
         try {
-            return (TabixFormat)super.clone();
+            return (TabixFormat) super.clone();
         } catch (final CloneNotSupportedException e) {
             throw new TribbleException("unpossible!");
         }

@@ -4,7 +4,6 @@ import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-
 import java.nio.ByteBuffer;
 
 public class RangeExternalCompressor extends ExternalCompressor {
@@ -13,16 +12,12 @@ public class RangeExternalCompressor extends ExternalCompressor {
     private final RangeEncode rangeEncode;
     private final RangeDecode rangeDecode;
 
-    public RangeExternalCompressor(
-            final RangeEncode rangeEncode,
-            final RangeDecode rangeDecode) {
+    public RangeExternalCompressor(final RangeEncode rangeEncode, final RangeDecode rangeDecode) {
         this(0, rangeEncode, rangeDecode);
     }
 
     public RangeExternalCompressor(
-            final int formatFlags,
-            final RangeEncode rangeEncode,
-            final RangeDecode rangeDecode) {
+            final int formatFlags, final RangeEncode rangeEncode, final RangeDecode rangeDecode) {
         super(BlockCompressionMethod.ADAPTIVE_ARITHMETIC);
         this.rangeEncode = rangeEncode;
         this.rangeDecode = rangeDecode;
@@ -44,7 +39,7 @@ public class RangeExternalCompressor extends ExternalCompressor {
 
     @Override
     public String toString() {
-        return String.format("%s(%s)", this.getMethod(),formatFlags);
+        return String.format("%s(%s)", this.getMethod(), formatFlags);
     }
 
     private byte[] toByteArray(final ByteBuffer buffer) {
@@ -56,6 +51,4 @@ public class RangeExternalCompressor extends ExternalCompressor {
         buffer.get(bytes);
         return bytes;
     }
-
-
 }

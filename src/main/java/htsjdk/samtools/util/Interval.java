@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 import htsjdk.tribble.NamedFeature;
 import htsjdk.tribble.annotation.Strand;
-
 import java.util.Collection;
 
 /**
@@ -106,7 +105,7 @@ public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
     /**
      * Return the {@link Strand} this interval is on.
      */
-    public Strand getStrand(){
+    public Strand getStrand() {
         return isNegativeStrand() ? Strand.NEGATIVE : Strand.FORWARD;
     }
 
@@ -121,8 +120,8 @@ public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
      * Returns true if this interval overlaps the other interval, otherwise false.
      */
     public boolean intersects(final Interval other) {
-        return (this.getContig().equals(other.getContig()) &&
-                CoordMath.overlaps(this.getStart(), this.getEnd(), other.getStart(), other.getEnd()));
+        return (this.getContig().equals(other.getContig())
+                && CoordMath.overlaps(this.getStart(), this.getEnd(), other.getStart(), other.getEnd()));
     }
 
     public int getIntersectionLength(final Interval other) {
@@ -137,7 +136,8 @@ public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
      */
     public Interval intersect(final Interval that) {
         if (!intersects(that)) throw new IllegalArgumentException(that + " does not intersect " + this);
-        return new Interval(this.getContig(),
+        return new Interval(
+                this.getContig(),
                 Math.max(this.getStart(), that.getStart()),
                 Math.min(this.getEnd(), that.getEnd()),
                 this.negativeStrand,
@@ -148,8 +148,8 @@ public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
      * Returns true if this interval overlaps the other interval, otherwise false.
      */
     public boolean abuts(final Interval other) {
-        return this.getContig().equals(other.getContig()) &&
-                (this.getStart() == other.getEnd() + 1 || other.getStart() == this.getEnd() + 1);
+        return this.getContig().equals(other.getContig())
+                && (this.getStart() == other.getEnd() + 1 || other.getStart() == this.getEnd() + 1);
     }
 
     /**
@@ -163,16 +163,15 @@ public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
      * Returns a new interval that is padded by the amount of bases specified on either side.
      */
     public Interval pad(final int left, final int right) {
-        return new Interval(this.getContig(), this.getStart() - left, this.getEnd() + right, this.negativeStrand, this.name);
+        return new Interval(
+                this.getContig(), this.getStart() - left, this.getEnd() + right, this.negativeStrand, this.name);
     }
 
     /**
      * Counts the total number of bases a collection of intervals.
      */
     public static long countBases(final Collection<Interval> intervals) {
-        return intervals.stream()
-                .mapToLong(Interval::length)
-                .sum();
+        return intervals.stream().mapToLong(Interval::length).sum();
     }
 
     /**
@@ -232,7 +231,8 @@ public class Interval implements Comparable<Interval>, Cloneable, NamedFeature {
     }
 
     public String toString() {
-        return getContig() + ":" + getStart() + "-" + getEnd() + "\t" + getStrand().encode() + "\t" + ((null == name) ? '.' : name);
+        return getContig() + ":" + getStart() + "-" + getEnd() + "\t"
+                + getStrand().encode() + "\t" + ((null == name) ? '.' : name);
     }
 
     @Override

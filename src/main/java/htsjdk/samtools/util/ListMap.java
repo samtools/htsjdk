@@ -34,7 +34,7 @@ import java.util.List;
  *
  * @author Tim Fennell
  */
-public class ListMap<K,V> extends HashMap<K, List<V>> {
+public class ListMap<K, V> extends HashMap<K, List<V>> {
     /** Adds a single value to the list stored under a key. */
     public void add(K key, V value) {
         List<V> values = get(key);

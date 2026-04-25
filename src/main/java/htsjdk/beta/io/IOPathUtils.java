@@ -3,8 +3,6 @@ package htsjdk.beta.io;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.utils.ValidationUtils;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -42,17 +40,14 @@ public class IOPathUtils {
     public static String getStringFromPath(final IOPath ioPath) {
         try {
             final StringWriter stringWriter = new StringWriter();
-            //TODO: the UTF-8 encoding of these should be codified somewhere else...
-            Files.lines(ioPath.toPath(), StandardCharsets.UTF_8).forEach(
-                    line -> {
-                        stringWriter.write(line);
-                        stringWriter.append("\n");
-                    });
+            // TODO: the UTF-8 encoding of these should be codified somewhere else...
+            Files.lines(ioPath.toPath(), StandardCharsets.UTF_8).forEach(line -> {
+                stringWriter.write(line);
+                stringWriter.append("\n");
+            });
             return stringWriter.toString();
         } catch (final IOException e) {
-            throw new HtsjdkIOException(
-                    String.format("Failed to read from: %s", ioPath.getRawInputString()),
-                    e);
+            throw new HtsjdkIOException(String.format("Failed to read from: %s", ioPath.getRawInputString()), e);
         }
     }
 
@@ -66,9 +61,7 @@ public class IOPathUtils {
         try (final BufferedOutputStream bos = new BufferedOutputStream(ioPath.getOutputStream())) {
             bos.write(contents.getBytes());
         } catch (final IOException e) {
-            throw new HtsjdkIOException(
-                    String.format("Failed to write to: %s", ioPath.getRawInputString()),
-                    e);
+            throw new HtsjdkIOException(String.format("Failed to write to: %s", ioPath.getRawInputString()), e);
         }
     }
 
@@ -91,19 +84,16 @@ public class IOPathUtils {
      * @return A new IOPath object with the new extension
      */
     public static <T extends IOPath> T replaceExtension(
-            final IOPath path,
-            final String newExtension,
-            final Function<String, T> ioPathConstructor){
-        final String extensionToUse = newExtension.startsWith(".") ?
-                newExtension :
-                "." + newExtension;
+            final IOPath path, final String newExtension, final Function<String, T> ioPathConstructor) {
+        final String extensionToUse = newExtension.startsWith(".") ? newExtension : "." + newExtension;
         final Optional<String> oldExtension = path.getExtension();
-        if (oldExtension.isEmpty()){
+        if (oldExtension.isEmpty()) {
             throw new RuntimeException("The original path has no extension to replace" + path.getURIString());
         }
         final String oldFileName = path.toPath().getFileName().toString();
         final String newFileName = oldFileName.replaceAll(oldExtension.get() + "$", extensionToUse);
-        return ioPathConstructor.apply(path.toPath().resolveSibling(newFileName).toUri().toString());
+        return ioPathConstructor.apply(
+                path.toPath().resolveSibling(newFileName).toUri().toString());
     }
 
     /**
@@ -123,13 +113,10 @@ public class IOPathUtils {
      * @return A new IOPath object with the new extension
      */
     public static <T extends IOPath> T appendExtension(
-            final IOPath path,
-            final String extension,
-            final Function<String, T> ioPathConstructor){
+            final IOPath path, final String extension, final Function<String, T> ioPathConstructor) {
         final String oldFileName = path.toPath().getFileName().toString();
-        final String newExtension = extension.startsWith(".") ?
-                extension :
-                "." + extension;
-        return ioPathConstructor.apply(path.toPath().resolveSibling(oldFileName + newExtension).toUri().toString());
+        final String newExtension = extension.startsWith(".") ? extension : "." + extension;
+        return ioPathConstructor.apply(
+                path.toPath().resolveSibling(oldFileName + newExtension).toUri().toString());
     }
 }

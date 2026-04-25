@@ -29,7 +29,6 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.TabixReader;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,11 +69,9 @@ public class TabixUtils {
         public long[] l; // linear index
     }
 
-
     public static class TIntv {
         public int tid, beg, end;
     }
-
 
     public static boolean less64(final long u, final long v) { // unsigned 64-bit comparison
         return (u < v) ^ (u < 0) ^ (v < 0);

@@ -33,7 +33,7 @@ public class ReadsDecoderOptionsTest extends HtsjdkTest {
         readsDecoderOptions.setDecodeEagerly(true);
         Assert.assertEquals(readsDecoderOptions.isDecodeEagerly(), true);
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
-        //TODO: need a way to verify factory propagation
+        // TODO: need a way to verify factory propagation
     }
 
     @Test
@@ -45,7 +45,7 @@ public class ReadsDecoderOptionsTest extends HtsjdkTest {
         readsDecoderOptions.setFileBasedIndexCached(true);
         Assert.assertEquals(readsDecoderOptions.isFileBasedIndexCached(), true);
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
-        //TODO: need a way to verify factory propagation
+        // TODO: need a way to verify factory propagation
     }
 
     @Test
@@ -57,7 +57,6 @@ public class ReadsDecoderOptionsTest extends HtsjdkTest {
         readsDecoderOptions.setMemoryMapIndexes(false);
         Assert.assertEquals(readsDecoderOptions.isMemoryMapIndexes(), false);
         ReadsCodecUtils.readsDecoderOptionsToSamReaderFactory(readsDecoderOptions, samReaderFactory);
-        //TODO: need a way to verify factory propagation
+        // TODO: need a way to verify factory propagation
     }
-
 }

@@ -20,7 +20,6 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.util.Log;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -38,7 +37,7 @@ import java.util.List;
  * handled for upper case) although it does not *generate* substitutions for lower case reference
  * bases.
  */
- public class SubstitutionMatrix {
+public class SubstitutionMatrix {
     private static final Log log = Log.getInstance(Substitution.class);
 
     // substitution bases, in the order in which they're stored in the substitution matrix
@@ -157,12 +156,14 @@ import java.util.List;
      */
     public byte code(final byte refBase, final byte readBase) {
         if (refBase <= 0 || Character.isLowerCase((char) refBase)) {
-            throw new IllegalArgumentException(
-                    String.format("CRAM: Attempt to generate a substitution code for invalid or lower case reference base '%c'", (char) refBase));
+            throw new IllegalArgumentException(String.format(
+                    "CRAM: Attempt to generate a substitution code for invalid or lower case reference base '%c'",
+                    (char) refBase));
         }
         if (readBase <= 0) {
-            throw new IllegalArgumentException(
-                    String.format("CRAM: Attempt to generate a substitution code for an invalid read base value '%c'", (char) readBase));
+            throw new IllegalArgumentException(String.format(
+                    "CRAM: Attempt to generate a substitution code for an invalid read base value '%c'",
+                    (char) readBase));
         }
         return codeByBase[refBase][readBase];
     }
@@ -175,13 +176,14 @@ import java.util.List;
      */
     public byte base(final byte refBase, final byte code) {
         if (refBase <= 0) {
-            throw new IllegalArgumentException(
-                    String.format("CRAM: Attempt to generate a substitution code for invalid reference base '%c'", (char) refBase));
+            throw new IllegalArgumentException(String.format(
+                    "CRAM: Attempt to generate a substitution code for invalid reference base '%c'", (char) refBase));
         }
         final byte base = baseByCode[refBase][code];
         if (base == NO_BASE) {
             // attempt to retrieve a code for a reference base that isn't in the substitution matrix
-            throw new IllegalArgumentException(String.format("CRAM: Attempt to retrieve a substitution base for invalid base '%c'", (char) refBase));
+            throw new IllegalArgumentException(String.format(
+                    "CRAM: Attempt to retrieve a substitution base for invalid base '%c'", (char) refBase));
         }
         return base;
     }
@@ -208,7 +210,7 @@ import java.util.List;
         }
         // lower case substitutions
         for (final SubstitutionBase r : BASES) {
-            char lowerCaseBase = Character.toLowerCase((char)r.getBase());
+            char lowerCaseBase = Character.toLowerCase((char) r.getBase());
             stringBuilder.append(lowerCaseBase);
             stringBuilder.append(':');
             for (int i = 0; i < CODES_PER_BASE; i++) {
@@ -230,8 +232,9 @@ import java.util.List;
                         final byte refBase = substitution.getReferenceBase();
                         final byte base = substitution.getBase();
                         if (refBase <= 0 || base <= 0) {
-                            throw new IllegalArgumentException(
-                                    String.format("CRAM: Attempt to generate a substitution code for invalid reference base with value '%d'", refBase));
+                            throw new IllegalArgumentException(String.format(
+                                    "CRAM: Attempt to generate a substitution code for invalid reference base with value '%d'",
+                                    refBase));
                         }
                         frequencies[refBase][base]++;
                     }
@@ -252,15 +255,14 @@ import java.util.List;
         }
     }
 
-    private static final Comparator<SubstitutionFrequency> COMPARATOR =
-            (o1, o2) -> {
-                // primary sort by frequency
-                if (o1.freq != o2.freq) {
-                    return (int) (o2.freq - o1.freq);
-                }
-                // same frequency; compare based on spec tie-breaking rule (use base order prescribed by the spec)
-                return o1.substituteBase.ordinal() - o2.substituteBase.ordinal();
-            };
+    private static final Comparator<SubstitutionFrequency> COMPARATOR = (o1, o2) -> {
+        // primary sort by frequency
+        if (o1.freq != o2.freq) {
+            return (int) (o2.freq - o1.freq);
+        }
+        // same frequency; compare based on spec tie-breaking rule (use base order prescribed by the spec)
+        return o1.substituteBase.ordinal() - o2.substituteBase.ordinal();
+    };
 
     // For the given base, return a packed substitution vector containing the possible
     // substitution codes given the set of substitution frequencies for that base.
@@ -307,5 +309,4 @@ import java.util.List;
 
         return codeVector;
     }
-
 }

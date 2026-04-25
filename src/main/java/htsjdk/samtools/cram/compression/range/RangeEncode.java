@@ -2,11 +2,11 @@ package htsjdk.samtools.cram.compression.range;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
+import htsjdk.samtools.cram.compression.CompressionUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
-import htsjdk.samtools.cram.compression.CompressionUtils;
 
 /**
  * Encoder for the CRAM 3.1 arithmetic (range) codec. This is an adaptive, byte-wise compression codec for use
@@ -65,7 +65,8 @@ public class RangeEncode {
 
             // skip Packing if numSymbols = 0  or numSymbols > 16
             if (numSymbols != 0 && numSymbols <= 16) {
-                inputBuffer = CompressionUtils.encodePack(inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
+                inputBuffer = CompressionUtils.encodePack(
+                        inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
             } else {
                 // unset pack flag in the first byte of the outBuffer
                 outBuffer.put(0, (byte) (outBuffer.get(0) & ~RangeParams.PACK_FLAG_MASK));
@@ -111,9 +112,7 @@ public class RangeEncode {
         return outBuffer;
     }
 
-    private void compressOrder0(
-            final ByteBuffer inBuffer,
-            final ByteBuffer outBuffer) {
+    private void compressOrder0(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
 
         int maxSymbol = 0;
         final int inSize = inBuffer.remaining();
@@ -136,9 +135,7 @@ public class RangeEncode {
         outBuffer.rewind();
     }
 
-    private void compressOrder1(
-            final ByteBuffer inBuffer,
-            final ByteBuffer outBuffer) {
+    private void compressOrder1(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         int maxSymbol = 0;
         final int inSize = inBuffer.remaining();
         for (int i = 0; i < inSize; i++) {
@@ -165,9 +162,7 @@ public class RangeEncode {
         outBuffer.rewind();
     }
 
-    private void compressRLEOrder0(
-            final ByteBuffer inBuffer,
-            final ByteBuffer outBuffer) {
+    private void compressRLEOrder0(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         int maxSymbols = 0;
         final int inSize = inBuffer.remaining();
         for (int i = 0; i < inSize; i++) {
@@ -213,9 +208,7 @@ public class RangeEncode {
         outBuffer.rewind();
     }
 
-    private void compressRLEOrder1(
-            final ByteBuffer inBuffer,
-            final ByteBuffer outBuffer) {
+    private void compressRLEOrder1(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {
         int maxSymbols = 0;
         final int inSize = inBuffer.remaining();
         for (int i = 0; i < inSize; i++) {
@@ -298,5 +291,4 @@ public class RangeEncode {
         outBuffer.limit(outBuffer.position());
         outBuffer.rewind();
     }
-
 }

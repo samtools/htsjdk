@@ -27,7 +27,7 @@ import java.util.Objects;
 
 /**
  * Represents a contiguous block of bytes in a file, defined by a start position and size (in bytes)
-*/
+ */
 public class Block {
 
     private final long startPosition;
@@ -59,11 +59,10 @@ public class Block {
      * @param endPosition Where the block ends, in bytes
      */
     public void setEndPosition(final long endPosition) {
-        if(endPosition < startPosition)
-            throw new IllegalArgumentException("Attempting to set block end position to " +
-                                                                           endPosition + " which is before the start of " + startPosition);
+        if (endPosition < startPosition)
+            throw new IllegalArgumentException("Attempting to set block end position to " + endPosition
+                    + " which is before the start of " + startPosition);
         size = endPosition - startPosition;
-
     }
 
     /**
@@ -80,8 +79,7 @@ public class Block {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Block block = (Block) o;
-        return startPosition == block.startPosition &&
-                size == block.size;
+        return startPosition == block.startPosition && size == block.size;
     }
 
     @Override

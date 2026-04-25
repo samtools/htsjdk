@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.util.zip.DeflaterFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -48,10 +47,7 @@ import java.util.zip.Deflater;
  *
  * c.f. http://samtools.sourceforge.net/SAM1.pdf for details of BGZF file format.
  */
-public class BlockCompressedOutputStream
-        extends OutputStream
-        implements LocationAware
-{
+public class BlockCompressedOutputStream extends OutputStream implements LocationAware {
 
     private static final Log log = Log.getInstance(BlockCompressedOutputStream.class);
 
@@ -93,9 +89,9 @@ public class BlockCompressedOutputStream
     private final BinaryCodec codec;
     private final byte[] uncompressedBuffer = new byte[BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE];
     private int numUncompressedBytes = 0;
-    private final byte[] compressedBuffer =
-            new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE -
-                    BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH];
+    private final byte[] compressedBuffer = new byte
+            [BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE
+                    - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH];
     private final Deflater deflater;
 
     // A second deflater is created for the very unlikely case where the regular deflation actually makes
@@ -158,7 +154,8 @@ public class BlockCompressedOutputStream
      * @param compressionLevel 1 <= compressionLevel <= 9
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
      */
-    public BlockCompressedOutputStream(final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+    public BlockCompressedOutputStream(
+            final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         this(IOUtil.toPath(file), compressionLevel, deflaterFactory);
     }
 
@@ -167,7 +164,8 @@ public class BlockCompressedOutputStream
      * @param compressionLevel 1 <= compressionLevel <= 9
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
      */
-    public BlockCompressedOutputStream(final Path path, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+    public BlockCompressedOutputStream(
+            final Path path, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         this.file = path;
         codec = new BinaryCodec(path, true);
         deflater = deflaterFactory.makeDeflater(compressionLevel, true);
@@ -219,7 +217,8 @@ public class BlockCompressedOutputStream
      * @param compressionLevel the compression level (0-9)
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
      */
-    public BlockCompressedOutputStream(final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+    public BlockCompressedOutputStream(
+            final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         this(os, IOUtil.toPath(file), compressionLevel, deflaterFactory);
     }
 
@@ -230,7 +229,8 @@ public class BlockCompressedOutputStream
      * @param compressionLevel the compression level (0-9)
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
      */
-    public BlockCompressedOutputStream(final OutputStream os, final Path file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+    public BlockCompressedOutputStream(
+            final OutputStream os, final Path file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         this.file = file;
         codec = new BinaryCodec(os);
         if (file != null) {
@@ -249,9 +249,9 @@ public class BlockCompressedOutputStream
      */
     public static BlockCompressedOutputStream maybeBgzfWrapOutputStream(final File location, OutputStream output) {
         if (!(output instanceof BlockCompressedOutputStream)) {
-           return new BlockCompressedOutputStream(output, location);
+            return new BlockCompressedOutputStream(output, location);
         } else {
-           return (BlockCompressedOutputStream)output;
+            return (BlockCompressedOutputStream) output;
         }
     }
 
@@ -263,7 +263,8 @@ public class BlockCompressedOutputStream
      */
     public void addIndexer(final OutputStream outputStream) {
         if (mBlockAddress != 0) {
-            throw new RuntimeException("Cannot add gzi indexer if this BlockCompressedOutput stream has already written Gzipped blocks");
+            throw new RuntimeException(
+                    "Cannot add gzi indexer if this BlockCompressedOutput stream has already written Gzipped blocks");
         }
         indexer = new GZIIndex.GZIIndexer(outputStream);
     }
@@ -289,14 +290,14 @@ public class BlockCompressedOutputStream
      */
     @Override
     public void write(final byte[] bytes, int startIndex, int numBytes) throws IOException {
-        assert(numUncompressedBytes < uncompressedBuffer.length);
+        assert (numUncompressedBytes < uncompressedBuffer.length);
         while (numBytes > 0) {
             final int bytesToWrite = Math.min(uncompressedBuffer.length - numUncompressedBytes, numBytes);
             System.arraycopy(bytes, startIndex, uncompressedBuffer, numUncompressedBytes, bytesToWrite);
             numUncompressedBytes += bytesToWrite;
             startIndex += bytesToWrite;
             numBytes -= bytesToWrite;
-            assert(numBytes >= 0);
+            assert (numBytes >= 0);
             if (numUncompressedBytes == uncompressedBuffer.length) {
                 deflateBlock();
             }
@@ -352,8 +353,8 @@ public class BlockCompressedOutputStream
         if (writeTerminatorBlock) {
             // Can't re-open something that is not a regular file, e.g. a named pipe or an output stream
             if (this.file == null || !Files.isRegularFile(this.file)) return;
-            if (BlockCompressedInputStream.checkTermination(this.file) !=
-                    BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
+            if (BlockCompressedInputStream.checkTermination(this.file)
+                    != BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) {
                 throw new IOException("Terminator block not found after closing BGZF file " + this.file);
             }
         }
@@ -363,7 +364,7 @@ public class BlockCompressedOutputStream
      * Upper 48 bits is the byte offset into the compressed stream of a block.
      * Lower 16 bits is the byte offset into the uncompressed stream inside the block.
      */
-    public long getFilePointer(){
+    public long getFilePointer() {
         return BlockCompressedFilePointerUtil.makeFilePointer(mBlockAddress, numUncompressedBytes);
     }
 
@@ -406,7 +407,7 @@ public class BlockCompressedOutputStream
         crc32.update(uncompressedBuffer, 0, bytesToCompress);
 
         final int totalBlockSize = writeGzipBlock(compressedSize, bytesToCompress, crc32.getValue());
-        assert(bytesToCompress <= numUncompressedBytes);
+        assert (bytesToCompress <= numUncompressedBytes);
 
         // Call out to the indexer if it exists
         if (indexer != null) {
@@ -436,13 +437,14 @@ public class BlockCompressedOutputStream
         codec.writeByte(BlockCompressedStreamConstants.BGZF_ID1);
         codec.writeByte(BlockCompressedStreamConstants.BGZF_ID2);
         codec.writeShort(BlockCompressedStreamConstants.BGZF_LEN);
-        final int totalBlockSize = compressedSize + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH +
-                BlockCompressedStreamConstants.BLOCK_FOOTER_LENGTH;
+        final int totalBlockSize = compressedSize
+                + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH
+                + BlockCompressedStreamConstants.BLOCK_FOOTER_LENGTH;
 
         // I don't know why we store block size - 1, but that is what the spec says
-        codec.writeShort((short)(totalBlockSize - 1));
+        codec.writeShort((short) (totalBlockSize - 1));
         codec.writeBytes(compressedBuffer, 0, compressedSize);
-        codec.writeInt((int)crc);
+        codec.writeInt((int) crc);
         codec.writeInt(uncompressedSize);
         return totalBlockSize;
     }

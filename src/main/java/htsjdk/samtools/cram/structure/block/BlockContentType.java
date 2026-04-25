@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.samtools.cram.CRAMException;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;

@@ -1,15 +1,14 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,7 +22,8 @@ public class CRAIIndex {
      */
     @Deprecated
     public static final String CRAI_INDEX_SUFFIX = FileExtensions.CRAM_INDEX;
-    private final  List<CRAIEntry> entries = new ArrayList<>();
+
+    private final List<CRAIEntry> entries = new ArrayList<>();
     private final CompressorCache compressorCache = new CompressorCache();
 
     /**
@@ -53,9 +53,7 @@ public class CRAIIndex {
      * @param os Stream to write index to
      */
     public void writeIndex(final OutputStream os) {
-        entries.stream()
-                .sorted()
-                .forEach(e -> e.writeToStream(os));
+        entries.stream().sorted().forEach(e -> e.writeToStream(os));
     }
 
     /**
@@ -66,16 +64,17 @@ public class CRAIIndex {
         addEntries(container.getCRAIEntries(compressorCache));
     }
 
-    public static SeekableStream openCraiFileAsBaiStream(final File cramIndexFile, final SAMSequenceDictionary dictionary) {
+    public static SeekableStream openCraiFileAsBaiStream(
+            final File cramIndexFile, final SAMSequenceDictionary dictionary) {
         try {
             return openCraiFileAsBaiStream(new FileInputStream(cramIndexFile), dictionary);
-        }
-        catch (final FileNotFoundException e) {
+        } catch (final FileNotFoundException e) {
             throw new RuntimeIOException(e);
         }
     }
 
-    public static SeekableStream openCraiFileAsBaiStream(final InputStream indexStream, final SAMSequenceDictionary dictionary) {
+    public static SeekableStream openCraiFileAsBaiStream(
+            final InputStream indexStream, final SAMSequenceDictionary dictionary) {
         final List<CRAIEntry> full = CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
         Collections.sort(full);
 
@@ -116,10 +115,7 @@ public class CRAIIndex {
             return null;
         }
 
-        return list.stream()
-                .sorted()
-                .findFirst()
-                .get();
+        return list.stream().sorted().findFirst().get();
     }
 
     /**
@@ -153,9 +149,7 @@ public class CRAIIndex {
         if (low >= list.size()) {
             return list.size() - 1;
         }
-        for (; low >= 0 && list.get(low).getSequenceId() == -1; low--) {
-        }
+        for (; low >= 0 && list.get(low).getSequenceId() == -1; low--) {}
         return low;
     }
-
 }

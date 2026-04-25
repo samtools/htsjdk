@@ -2,20 +2,18 @@ package htsjdk.samtools.util;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.google.common.jimfs.SystemJimfsFileSystemProvider;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 public class IntervalListWriterTest extends HtsjdkTest {
     private SAMSequenceDictionary dict;
@@ -37,9 +35,10 @@ public class IntervalListWriterTest extends HtsjdkTest {
 
     @Test
     public void testEndToEndOnPath() throws IOException {
-        //create an in memory file system that mimics a unix one
+        // create an in memory file system that mimics a unix one
         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-            final Path tempFile = Files.createTempFile(jimfs.getRootDirectories().iterator().next(), "IntervalListWriterTest.", ".interval_list");
+            final Path tempFile = Files.createTempFile(
+                    jimfs.getRootDirectories().iterator().next(), "IntervalListWriterTest.", ".interval_list");
             testEndToEnd(tempFile);
         }
     }

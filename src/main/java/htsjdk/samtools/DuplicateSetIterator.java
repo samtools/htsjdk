@@ -27,9 +27,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SortingCollection;
-
 import java.io.File;
-import java.util.Collections;
 
 /**
  * An iterator of sets of duplicates.  Duplicates are defined currently by the ordering in
@@ -52,16 +50,17 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
     public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator, final SAMFileHeader header) {
         this(iterator, header, false);
     }
-    public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator,
-                                final SAMFileHeader header,
-                                final boolean preSorted) {
+
+    public DuplicateSetIterator(
+            final CloseableIterator<SAMRecord> iterator, final SAMFileHeader header, final boolean preSorted) {
         this(iterator, header, preSorted, null);
     }
 
-    public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator,
-                                final SAMFileHeader header,
-                                final boolean preSorted,
-                                final SAMRecordDuplicateComparator comparator) {
+    public DuplicateSetIterator(
+            final CloseableIterator<SAMRecord> iterator,
+            final SAMFileHeader header,
+            final boolean preSorted,
+            final SAMRecordDuplicateComparator comparator) {
         this(iterator, header, preSorted, comparator, null);
     }
 
@@ -70,11 +69,12 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
      * sorted but not actually sorted in the correct order, an exception during iteration will be thrown.  Progress information will
      * be printed for sorting of the input if `log` is provided.
      */
-    public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator,
-                                final SAMFileHeader header,
-                                final boolean preSorted,
-                                final SAMRecordDuplicateComparator comparator,
-                                final Log log) {
+    public DuplicateSetIterator(
+            final CloseableIterator<SAMRecord> iterator,
+            final SAMFileHeader header,
+            final boolean preSorted,
+            final SAMRecordDuplicateComparator comparator,
+            final Log log) {
         this.comparator = (comparator == null) ? new SAMRecordDuplicateComparator(header) : comparator;
 
         if (preSorted) {
@@ -89,9 +89,8 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
             // Sort it!
             final int maxRecordsInRam = SAMFileWriterImpl.getDefaultMaxRecordsInRam();
             final File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-            final SortingCollection<SAMRecord> alignmentSorter = SortingCollection.newInstance(SAMRecord.class,
-                    new BAMRecordCodec(header), this.comparator,
-                    maxRecordsInRam, tmpDir);
+            final SortingCollection<SAMRecord> alignmentSorter = SortingCollection.newInstance(
+                    SAMRecord.class, new BAMRecordCodec(header), this.comparator, maxRecordsInRam, tmpDir);
 
             while (iterator.hasNext()) {
                 final SAMRecord record = iterator.next();
@@ -109,12 +108,11 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
         if (hasNext()) {
             this.duplicateSet.add(this.wrappedIterator.next());
         }
-
     }
 
     @Deprecated
     /** @deprecated Do not use this method as the first duplicate set will not be compared with this scoring strategy.
-      * Instead, provide a comparator to the constructor that has the scoring strategy set. */
+     * Instead, provide a comparator to the constructor that has the scoring strategy set. */
     public void setScoringStrategy(final DuplicateScoringStrategy.ScoringStrategy scoringStrategy) {
         this.comparator.setScoringStrategy(scoringStrategy);
     }
@@ -147,8 +145,8 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
                     cmp = this.duplicateSet.add(record);
 
                     if (0 < cmp) {
-                        throw new SAMException("The input records were not sorted in duplicate order:\n" +
-                                representative.getSAMString() + "\n" + record.getSAMString());
+                        throw new SAMException("The input records were not sorted in duplicate order:\n"
+                                + representative.getSAMString() + "\n" + record.getSAMString());
                     } else if (cmp < 0) {
                         duplicateSet = this.duplicateSet;
                         this.duplicateSet = new DuplicateSet(this.comparator);
@@ -162,7 +160,9 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
     }
 
     @Override
-    public void close() { wrappedIterator.close(); }
+    public void close() {
+        wrappedIterator.close();
+    }
 
     @Override
     public boolean hasNext() {
@@ -171,5 +171,5 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
 
     // Does nothing!
     @Override
-    public void remove() { }
+    public void remove() {}
 }

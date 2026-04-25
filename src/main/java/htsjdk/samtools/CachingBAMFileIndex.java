@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -34,8 +33,7 @@ import java.util.List;
  * Class for reading BAM file indices, caching each contig as it's loaded and
  * dropping values when the next contig is loaded.
  */
-class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
-{
+class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex {
     // Since null is a valid return value for this index, it's possible to have lastReferenceIndex != null and
     // lastReference == null, this is effectively caching the return value null
     private Integer lastReferenceIndex = null;
@@ -52,7 +50,8 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
         super(stream, dictionary);
     }
 
-    public CachingBAMFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+    public CachingBAMFileIndex(
+            final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
         super(file, dictionary, useMemoryMapping);
     }
 
@@ -69,8 +68,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
     public BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos) {
         final BAMIndexContent queryResults = getQueryResults(referenceIndex);
 
-        if(queryResults == null)
-            return null;
+        if (queryResults == null) return null;
 
         final List<Chunk> chunkList = queryResults.getChunksOverlapping(startPos, endPos);
         if (chunkList == null) return null;
@@ -91,7 +89,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
         if (regionBins == null) {
             return null;
         }
-        return new BinList(referenceIndex,regionBins);        
+        return new BinList(referenceIndex, regionBins);
     }
 
     /**
@@ -101,62 +99,59 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      */
     @Override
     public BAMFileSpan getSpanOverlapping(final Bin bin) {
-        if(bin == null)
-            return null;
+        if (bin == null) return null;
 
         final int referenceSequence = bin.getReferenceSequence();
         final BAMIndexContent indexQuery = getQueryResults(referenceSequence);
 
-        if(indexQuery == null)
-            return null;
+        if (indexQuery == null) return null;
 
         final int binLevel = getLevelForBin(bin);
         final int firstLocusInBin = getFirstLocusInBin(bin);
 
         // Add the specified bin to the tree if it exists.
         final List<Bin> binTree = new ArrayList<>();
-        if(indexQuery.containsBin(bin))
-            binTree.add(indexQuery.getBins().getBin(bin.getBinNumber()));
+        if (indexQuery.containsBin(bin)) binTree.add(indexQuery.getBins().getBin(bin.getBinNumber()));
 
         int currentBinLevel = binLevel;
-        while(--currentBinLevel >= 0) {
+        while (--currentBinLevel >= 0) {
             final int binStart = getFirstBinInLevel(currentBinLevel);
-            final int binWidth = getMaxAddressibleGenomicLocation()/getLevelSize(currentBinLevel);
-            final int binNumber = firstLocusInBin/binWidth + binStart;
+            final int binWidth = getMaxAddressibleGenomicLocation() / getLevelSize(currentBinLevel);
+            final int binNumber = firstLocusInBin / binWidth + binStart;
             final Bin parentBin = indexQuery.getBins().getBin(binNumber);
-            if(parentBin != null && indexQuery.containsBin(parentBin))
-                binTree.add(parentBin);
+            if (parentBin != null && indexQuery.containsBin(parentBin)) binTree.add(parentBin);
         }
 
         List<Chunk> chunkList = new ArrayList<Chunk>();
-        for(final Bin coveringBin: binTree) {
-            for(final Chunk chunk: coveringBin.getChunkList())
-                chunkList.add(chunk.clone());
+        for (final Bin coveringBin : binTree) {
+            for (final Chunk chunk : coveringBin.getChunkList()) chunkList.add(chunk.clone());
         }
 
         final int start = getFirstLocusInBin(bin);
-        chunkList = Chunk.optimizeChunkList(chunkList,indexQuery.getLinearIndex().getMinimumOffset(start));
+        chunkList =
+                Chunk.optimizeChunkList(chunkList, indexQuery.getLinearIndex().getMinimumOffset(start));
         return new BAMFileSpan(chunkList);
     }
 
     /**
      * Looks up the cached BAM query results if they're still in the cache and not expired.  Otherwise,
      * retrieves the cache results from disk.
-     * @param referenceIndex The reference to load.  CachingBAMFileIndex only stores index data for entire references. 
+     * @param referenceIndex The reference to load.  CachingBAMFileIndex only stores index data for entire references.
      * @return The index information for this reference or null if no index information is available for the given index.
      */
     @Override
     protected BAMIndexContent getQueryResults(final int referenceIndex) {
 
         // If this query is for the same reference index as the last query, return it.
-        // This compares a boxed Integer to an int with == which is ok because the Integer will be unboxed to the primitive value
-        if(lastReferenceIndex!=null && lastReferenceIndex == referenceIndex){
+        // This compares a boxed Integer to an int with == which is ok because the Integer will be unboxed to the
+        // primitive value
+        if (lastReferenceIndex != null && lastReferenceIndex == referenceIndex) {
             cacheHits++;
             return lastReference;
         }
 
         // If not attempt to load it from disk.
-        final BAMIndexContent queryResults = query(referenceIndex,1,-1);
+        final BAMIndexContent queryResults = query(referenceIndex, 1, -1);
         cacheMisses++;
         lastReferenceIndex = referenceIndex;
         lastReference = queryResults;

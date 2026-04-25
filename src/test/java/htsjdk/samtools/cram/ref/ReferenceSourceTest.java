@@ -4,15 +4,14 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.Arrays;
 
 /**
  * Created by vadim on 29/06/2017.
  */
-public class ReferenceSourceTest extends HtsjdkTest{
+public class ReferenceSourceTest extends HtsjdkTest {
 
     @Test
     public void testReferenceSourceUpperCasesBases() {
@@ -23,7 +22,8 @@ public class ReferenceSourceTest extends HtsjdkTest{
 
         InMemoryReferenceSequenceFile memoryReferenceSequenceFile = new InMemoryReferenceSequenceFile();
         memoryReferenceSequenceFile.add(sequenceName, Arrays.copyOf(originalRefBases, originalRefBases.length));
-        Assert.assertEquals(memoryReferenceSequenceFile.getSequence(sequenceName).getBases(), originalRefBases);
+        Assert.assertEquals(
+                memoryReferenceSequenceFile.getSequence(sequenceName).getBases(), originalRefBases);
 
         ReferenceSource referenceSource = new ReferenceSource(memoryReferenceSequenceFile);
         byte[] refBasesFromSource = referenceSource.getReferenceBases(sequenceRecord, false);

@@ -59,8 +59,7 @@ public class Insertion implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final Insertion insertion = (Insertion) o;
-        return position == insertion.position &&
-                Arrays.equals(sequence, insertion.sequence);
+        return position == insertion.position && Arrays.equals(sequence, insertion.sequence);
     }
 
     @Override

@@ -8,7 +8,6 @@ import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -27,36 +26,48 @@ public class NameTokenisationEncode {
     // Each row is indexed by token type constant (TOKEN_TYPE=0 through TOKEN_END=12).
     // Within each row, the encoder tries all listed flag combinations and keeps the smallest.
     private static final int[][] RANS_FLAG_SETS_BY_TOKEN_TYPE = {
-            /* TOKEN_TYPE    (0x00) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK, 0},
-            /* TOKEN_STRING  (0x01) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK, RANSNx16Params.ORDER_FLAG_MASK, 0},
-            /* TOKEN_CHAR    (0x02) */ {0},
-            /* TOKEN_DIGITS0 (0x03) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK, 0},
-            /* TOKEN_DZLEN   (0x04) */ {0},
-            /* TOKEN_DUP     (0x05) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK},
-            /* TOKEN_DIFF    (0x06) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK},
-            /* TOKEN_DIGITS  (0x07) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK},
-            /* TOKEN_DELTA   (0x08) */ {0},
-            /* TOKEN_DELTA0  (0x09) */ {RANSNx16Params.PACK_FLAG_MASK},
-            /* TOKEN_MATCH   (0x0A) */ {0},
-            /* TOKEN_NOP     (0x0B) */ {0},
-            /* TOKEN_END     (0x0C) */ {0},
+        /* TOKEN_TYPE    (0x00) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK, 0},
+        /* TOKEN_STRING  (0x01) */ {
+            RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK, RANSNx16Params.ORDER_FLAG_MASK, 0
+        },
+        /* TOKEN_CHAR    (0x02) */ {0},
+        /* TOKEN_DIGITS0 (0x03) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK, 0},
+        /* TOKEN_DZLEN   (0x04) */ {0},
+        /* TOKEN_DUP     (0x05) */ {
+            RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK
+        },
+        /* TOKEN_DIFF    (0x06) */ {RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK},
+        /* TOKEN_DIGITS  (0x07) */ {
+            RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.STRIPE_FLAG_MASK
+        },
+        /* TOKEN_DELTA   (0x08) */ {0},
+        /* TOKEN_DELTA0  (0x09) */ {RANSNx16Params.PACK_FLAG_MASK},
+        /* TOKEN_MATCH   (0x0A) */ {0},
+        /* TOKEN_NOP     (0x0B) */ {0},
+        /* TOKEN_END     (0x0C) */ {0},
     };
 
     // Per-token-type Range (arithmetic) flag sets, mirroring the rANS sets above
     private static final int[][] RANGE_FLAG_SETS_BY_TOKEN_TYPE = {
-            /* TOKEN_TYPE    (0x00) */ {RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK, 0},
-            /* TOKEN_STRING  (0x01) */ {RangeParams.PACK_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, RangeParams.ORDER_FLAG_MASK, 0},
-            /* TOKEN_CHAR    (0x02) */ {0},
-            /* TOKEN_DIGITS0 (0x03) */ {RangeParams.PACK_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK, 0},
-            /* TOKEN_DZLEN   (0x04) */ {0},
-            /* TOKEN_DUP     (0x05) */ {RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK},
-            /* TOKEN_DIFF    (0x06) */ {RangeParams.PACK_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK},
-            /* TOKEN_DIGITS  (0x07) */ {RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK},
-            /* TOKEN_DELTA   (0x08) */ {0},
-            /* TOKEN_DELTA0  (0x09) */ {RangeParams.PACK_FLAG_MASK},
-            /* TOKEN_MATCH   (0x0A) */ {0},
-            /* TOKEN_NOP     (0x0B) */ {0},
-            /* TOKEN_END     (0x0C) */ {0},
+        /* TOKEN_TYPE    (0x00) */ {RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK, 0},
+        /* TOKEN_STRING  (0x01) */ {
+            RangeParams.PACK_FLAG_MASK | RangeParams.ORDER_FLAG_MASK, RangeParams.ORDER_FLAG_MASK, 0
+        },
+        /* TOKEN_CHAR    (0x02) */ {0},
+        /* TOKEN_DIGITS0 (0x03) */ {RangeParams.PACK_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK, 0},
+        /* TOKEN_DZLEN   (0x04) */ {0},
+        /* TOKEN_DUP     (0x05) */ {
+            RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK
+        },
+        /* TOKEN_DIFF    (0x06) */ {RangeParams.PACK_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK},
+        /* TOKEN_DIGITS  (0x07) */ {
+            RangeParams.PACK_FLAG_MASK | RangeParams.RLE_FLAG_MASK | RangeParams.STRIPE_FLAG_MASK
+        },
+        /* TOKEN_DELTA   (0x08) */ {0},
+        /* TOKEN_DELTA0  (0x09) */ {RangeParams.PACK_FLAG_MASK},
+        /* TOKEN_MATCH   (0x0A) */ {0},
+        /* TOKEN_NOP     (0x0B) */ {0},
+        /* TOKEN_END     (0x0C) */ {0},
     };
 
     // Reusable encoder instance — avoids allocating 256x256 RANSEncodingSymbol matrix per trial
@@ -81,10 +92,8 @@ public class NameTokenisationEncode {
         // strictly speaking, keeping this list isn't necessary, but since the first thing that we need to write
         // to the output stream is the number of names, we have to scan the entire input anyway to count them,
         // so just extract them while we're scanning
-        final List<String> namesToEncode = extractInputNames(
-                inBuffer,
-                CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE,
-                nameSeparator);
+        final List<String> namesToEncode =
+                extractInputNames(inBuffer, CRAMEncodingStrategy.DEFAULT_READS_PER_SLICE, nameSeparator);
         final int numNames = namesToEncode.size();
         if (numNames == 0) {
             throw new CRAMException(
@@ -99,7 +108,7 @@ public class NameTokenisationEncode {
         final ByteBuffer outBuffer = CompressionUtils.allocateByteBuffer(outputLen);
         outBuffer.putInt(uncompressedDataSize);
         outBuffer.putInt(numNames);
-        outBuffer.put((byte)(useArith == true ? 1 : 0));
+        outBuffer.put((byte) (useArith == true ? 1 : 0));
 
         // note that using a map with a read name key is a little sketchy here, since read names can be duplicates;
         // but its fine since it doesn't really matter which index is recorded here - any one will suffice
@@ -109,14 +118,8 @@ public class NameTokenisationEncode {
         final List<List<EncodeToken>> encodedTokensByName = new ArrayList<>(numNames);
 
         for (int nameIndex = 0; nameIndex < numNames; nameIndex++) {
-            encodedTokensByName.add(
-                    tokeniseName(
-                            namesToEncode.get(nameIndex),
-                            nameIndex,
-                            encodedTokensByName,
-                            nameIndexMap,
-                            tokenFrequencies)
-            );
+            encodedTokensByName.add(tokeniseName(
+                    namesToEncode.get(nameIndex), nameIndex, encodedTokensByName, nameIndexMap, tokenFrequencies));
         }
 
         // Track all previously compressed streams for cross-position duplicate detection.
@@ -124,10 +127,8 @@ public class NameTokenisationEncode {
         final List<CompressedStream> compressedStreamRegistry = new ArrayList<>();
 
         for (int position = 0; position < maxPositions; position++) {
-            final List<ByteBuffer> streamsForPosition = distributeTokensForPosition(
-                    encodedTokensByName,
-                    position,
-                    numNames);
+            final List<ByteBuffer> streamsForPosition =
+                    distributeTokensForPosition(encodedTokensByName, position, numNames);
             serializeTokenStreams(streamsForPosition, outBuffer, useArith, position, compressedStreamRegistry);
         }
 
@@ -153,7 +154,8 @@ public class NameTokenisationEncode {
 
         final List<EncodeToken> encodedTokens = new ArrayList<>(NameTokenisationDecode.DEFAULT_POSITION_ALLOCATION);
 
-        encodedTokens.add(0, new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : 1)));
+        encodedTokens.add(
+                0, new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : 1)));
         nameIndexMap.put(name, nameIndex);
         final int prevNameIndex = nameIndex - 1;
 
@@ -164,14 +166,20 @@ public class NameTokenisationEncode {
             final int start = pos;
             if (isAlphanumeric(name.charAt(pos))) {
                 final int limit = Math.min(name.length(), start + 9);
-                do { pos++; } while (pos < limit && isAlphanumeric(name.charAt(pos)));
+                do {
+                    pos++;
+                } while (pos < limit && isAlphanumeric(name.charAt(pos)));
             } else {
-                do { pos++; } while (pos < name.length() && !isAlphanumeric(name.charAt(pos)));
+                do {
+                    pos++;
+                } while (pos < name.length() && !isAlphanumeric(name.charAt(pos)));
             }
             final String fragmentValue = name.substring(start, pos);
 
             byte type = TokenStreams.TOKEN_STRING;
-            String relativeValue = fragmentValue; // relative value of the token (comparing to prev name's token at the same token position)
+            String relativeValue =
+                    fragmentValue; // relative value of the token (comparing to prev name's token at the same token
+            // position)
 
             if (isAllDigitsLeadingZero(fragmentValue)) {
                 type = TokenStreams.TOKEN_DIGITS0;
@@ -183,16 +191,18 @@ public class NameTokenisationEncode {
 
             // compare the current token with the corresponding token from the previous name,
             // but ONLY if the previous name actually has a corresponding token and is not the terminal token
-            final EncodeToken prevToken = prevNameIndex >= 0 && encodedTokensByName.get(prevNameIndex).size() > i + 1?
-                    encodedTokensByName.get(prevNameIndex).get(i) :
-                    null;
+            final EncodeToken prevToken =
+                    prevNameIndex >= 0 && encodedTokensByName.get(prevNameIndex).size() > i + 1
+                            ? encodedTokensByName.get(prevNameIndex).get(i)
+                            : null;
             if (prevToken != null && prevToken.getTokenType() != TokenStreams.TOKEN_END) {
                 if (prevToken.getActualValue().equals(fragmentValue)) {
                     // identical to the previous name's token in this position
                     type = TokenStreams.TOKEN_MATCH;
                     relativeValue = null;
-                } else if (type==TokenStreams.TOKEN_DIGITS &&
-                        (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA)) {
+                } else if (type == TokenStreams.TOKEN_DIGITS
+                        && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS
+                                || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA)) {
                     final int curVal = Integer.parseInt(relativeValue);
                     final int d = curVal - Integer.parseInt(prevToken.getActualValue());
                     tokenFrequencies[i]++;
@@ -201,9 +211,10 @@ public class NameTokenisationEncode {
                         encodedTokens.add(new EncodeToken(type, fragmentValue, d));
                         continue;
                     }
-                } else if (type == TokenStreams.TOKEN_DIGITS0 &&
-                        prevToken.getActualValue().length() == relativeValue.length() &&
-                        (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0 || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
+                } else if (type == TokenStreams.TOKEN_DIGITS0
+                        && prevToken.getActualValue().length() == relativeValue.length()
+                        && (prevToken.getTokenType() == TokenStreams.TOKEN_DIGITS0
+                                || prevToken.getTokenType() == TokenStreams.TOKEN_DELTA0)) {
                     final int curVal = Integer.parseInt(relativeValue);
                     final int d = curVal - Integer.parseInt(prevToken.getActualValue());
                     tokenFrequencies[i]++;
@@ -259,17 +270,15 @@ public class NameTokenisationEncode {
 
     // extract the individual names from the input buffer and return in a list
     private static List<String> extractInputNames(
-            final ByteBuffer inBuffer,
-            final int preAllocationSize,
-            final byte nameSeparator) {
+            final ByteBuffer inBuffer, final int preAllocationSize, final byte nameSeparator) {
         final List<String> names = new ArrayList(preAllocationSize);
-        for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining();) {
+        for (int lastPosition = inBuffer.position(); inBuffer.hasRemaining(); ) {
             final byte currentByte = inBuffer.get();
             if (currentByte == nameSeparator) {
                 final int length = inBuffer.position() - lastPosition;
                 final byte[] bytes = new byte[length];
                 inBuffer.position(lastPosition);
-                inBuffer.get(bytes, 0, length);  // consume the string + the terminator
+                inBuffer.get(bytes, 0, length); // consume the string + the terminator
                 names.add(new String(
                         bytes,
                         0,
@@ -285,9 +294,7 @@ public class NameTokenisationEncode {
     // NOTE: the calling code relies on the fact that on return, the position of each ByteBuffer corresponds
     // to the location of the end of the stream
     private List<ByteBuffer> distributeTokensForPosition(
-            final List<List<EncodeToken>> tokenAccumulator,
-            final int tokenPosition,
-            final int numNames) {
+            final List<List<EncodeToken>> tokenAccumulator, final int tokenPosition, final int numNames) {
         // create a list, but don't preallocate the actual ByteBuffers until we actually need them (except
         // for the TOKEN_TYPE stream, which we'll need for sure), since this list can be quite sparse
         final List<ByteBuffer> tokenStreams = Arrays.asList(new ByteBuffer[TokenStreams.TOTAL_TOKEN_TYPES]);
@@ -331,8 +338,7 @@ public class NameTokenisationEncode {
                 case TokenStreams.TOKEN_STRING:
                     writeString(
                             getByteBufferFor(tokenStreams, TokenStreams.TOKEN_STRING, numNames * maxStringValueLength),
-                            encodeToken.getRelativeValue()
-                    );
+                            encodeToken.getRelativeValue());
                     break;
 
                 case TokenStreams.TOKEN_CHAR:
@@ -349,7 +355,7 @@ public class NameTokenisationEncode {
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DIGITS0, numNames * 4)
                             .putInt(encodeToken.getRelativeValueAsInt());
                     getByteBufferFor(tokenStreams, TokenStreams.TOKEN_DZLEN, numNames)
-                        .put((byte) encodeToken.getRelativeValue().length());
+                            .put((byte) encodeToken.getRelativeValue().length());
                     break;
 
                 case TokenStreams.TOKEN_DELTA:
@@ -386,9 +392,7 @@ public class NameTokenisationEncode {
     // since we don't want to allocate a ByteBuffer that we'll never use, allocate them just-in-time
     // as need
     private ByteBuffer getByteBufferFor(
-            final List<ByteBuffer> tokenStreams,
-            final int tokenType,
-            final int requiredSize) {
+            final List<ByteBuffer> tokenStreams, final int tokenType, final int requiredSize) {
         if (tokenStreams.get(tokenType) == null) {
             tokenStreams.set(tokenType, CompressionUtils.allocateByteBuffer(requiredSize));
         }
@@ -410,9 +414,8 @@ public class NameTokenisationEncode {
         ByteBuffer compressedByteBuffer = null;
         final int streamSize = nameTokenStream.limit();
 
-        final int[] flagSets = useArith
-                ? RANGE_FLAG_SETS_BY_TOKEN_TYPE[tokenType]
-                : RANS_FLAG_SETS_BY_TOKEN_TYPE[tokenType];
+        final int[] flagSets =
+                useArith ? RANGE_FLAG_SETS_BY_TOKEN_TYPE[tokenType] : RANS_FLAG_SETS_BY_TOKEN_TYPE[tokenType];
 
         for (final int flagSet : flagSets) {
             if ((flagSet & RANSNx16Params.ORDER_FLAG_MASK) != 0 && streamSize < 100) {
@@ -441,11 +444,13 @@ public class NameTokenisationEncode {
             // compression doesn't buy us anything; fall back to CAT (uncompressed)
             nameTokenStream.rewind();
             if (useArith) {
-                compressedByteBuffer = new RangeEncode().compress(nameTokenStream, new RangeParams(RangeParams.CAT_FLAG_MASK));
+                compressedByteBuffer =
+                        new RangeEncode().compress(nameTokenStream, new RangeParams(RangeParams.CAT_FLAG_MASK));
             } else {
                 final byte[] streamBytes = new byte[nameTokenStream.remaining()];
                 nameTokenStream.get(streamBytes);
-                final byte[] compressed = reusableRansEncoder.compress(streamBytes, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
+                final byte[] compressed =
+                        reusableRansEncoder.compress(streamBytes, new RANSNx16Params(RANSNx16Params.CAT_FLAG_MASK));
                 compressedByteBuffer = ByteBuffer.wrap(compressed);
             }
         }
@@ -524,8 +529,8 @@ public class NameTokenisationEncode {
                 CompressedStream dupSource = null;
                 if (compressedBytes.length > 4) {
                     for (final CompressedStream prev : compressedStreamRegistry) {
-                        if (prev.compressedBytes.length == compressedBytes.length &&
-                                Arrays.equals(prev.compressedBytes, compressedBytes)) {
+                        if (prev.compressedBytes.length == compressedBytes.length
+                                && Arrays.equals(prev.compressedBytes, compressedBytes)) {
                             dupSource = prev;
                             break;
                         }
@@ -542,7 +547,8 @@ public class NameTokenisationEncode {
                     outBuffer.put(headerByte);
                     CompressionUtils.writeUint7(compressedBytes.length, outBuffer);
                     outBuffer.put(compressedBytes);
-                    compressedStreamRegistry.add(new CompressedStream(compressedBytes, currentPosition, tokenStreamType));
+                    compressedStreamRegistry.add(
+                            new CompressedStream(compressedBytes, currentPosition, tokenStreamType));
                 }
             }
         }

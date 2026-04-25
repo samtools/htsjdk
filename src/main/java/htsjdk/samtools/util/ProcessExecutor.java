@@ -25,7 +25,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * Utility class that will execute sub processes via Runtime.getRuntime().exec(...) and read
  * off the output from stderr and stdout of the sub process. This implementation uses a different
- * thread to read each stream: the current thread for stdout and another, internal thread for 
+ * thread to read each stream: the current thread for stdout and another, internal thread for
  * stderr. This utility is able to handle concurrent executions, spawning as many threads as
  * are required to handle the concurrent load.
  *
@@ -55,13 +54,13 @@ public class ProcessExecutor {
             return new Thread(r, "ProcessExecutor Thread");
         }
     });
-    
+
     /**
      * Executes the command via Runtime.getRuntime().exec() then writes stderr to log.error
      * and stdout to log.info and blocks until the command is complete.
-     * 
+     *
      * @see Runtime#exec(String)
-     * 
+     *
      * @param command command string
      * @return return code of command
      */
@@ -70,16 +69,17 @@ public class ProcessExecutor {
             final Process process = Runtime.getRuntime().exec(command);
             return readStreamsAndWaitFor(process);
         } catch (Throwable t) {
-            throw new SAMException("Unexpected exception executing [" + htsjdk.samtools.util.StringUtil.join(" ", command) + "]", t);
+            throw new SAMException(
+                    "Unexpected exception executing [" + htsjdk.samtools.util.StringUtil.join(" ", command) + "]", t);
         }
     }
 
     /**
      * Executes the command via Runtime.getRuntime().exec() then writes stderr to log.error
      * and stdout to log.info and blocks until the command is complete.
-     * 
+     *
      * @see Runtime#exec(String[])
-     * 
+     *
      * @param commandParts command string
      * @return return code of command
      */
@@ -108,7 +108,9 @@ public class ProcessExecutor {
             }
             return readStreamsAndWaitFor(process);
         } catch (Throwable t) {
-            throw new SAMException("Unexpected exception executing [" + htsjdk.samtools.util.StringUtil.join(" ", commandParts) + "]", t);
+            throw new SAMException(
+                    "Unexpected exception executing [" + htsjdk.samtools.util.StringUtil.join(" ", commandParts) + "]",
+                    t);
         }
     }
 
@@ -117,7 +119,8 @@ public class ProcessExecutor {
             final Process process = Runtime.getRuntime().exec(command);
             final StringBuilderProcessOutputReader err = new StringBuilderProcessOutputReader(process.getErrorStream());
             final Future<?> stderrReader = executorService.submit(err);
-            final StringBuilderProcessOutputReader stdout = new StringBuilderProcessOutputReader(process.getInputStream());
+            final StringBuilderProcessOutputReader stdout =
+                    new StringBuilderProcessOutputReader(process.getInputStream());
             stdout.run();
             // wait for stderr reader to be done
             stderrReader.get();
@@ -126,7 +129,6 @@ public class ProcessExecutor {
         } catch (Throwable t) {
             throw new SAMException("Unexpected exception executing [" + command + "]", t);
         }
-
     }
 
     public static class ExitStatusAndOutput {
@@ -170,39 +172,38 @@ public class ProcessExecutor {
         }
     }
 
-    private static ExitStatusAndOutput interleaveProcessOutput(final Process process) throws InterruptedException, IOException {
+    private static ExitStatusAndOutput interleaveProcessOutput(final Process process)
+            throws InterruptedException, IOException {
         final BufferedReader stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         final BufferedReader stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
         final StringBuilder sb = new StringBuilder();
 
         String stdoutLine = null;
         String stderrLine = null;
-        while ((stderrLine = stderrReader.readLine()) != null ||
-                (stdoutLine = stdoutReader.readLine()) != null) {
-            if (stderrLine!= null) sb.append(stderrLine).append('\n');
-            if (stdoutLine!= null) sb.append(stdoutLine).append('\n');
+        while ((stderrLine = stderrReader.readLine()) != null || (stdoutLine = stdoutReader.readLine()) != null) {
+            if (stderrLine != null) sb.append(stderrLine).append('\n');
+            if (stdoutLine != null) sb.append(stdoutLine).append('\n');
             stderrLine = null;
             stdoutLine = null;
         }
         return new ExitStatusAndOutput(process.waitFor(), sb.toString(), null);
-
     }
 
-    private static int readStreamsAndWaitFor(final Process process)
-            throws InterruptedException, ExecutionException {
-        final Future<?> stderrReader = executorService.submit(new LogErrorProcessOutputReader(process.getErrorStream()));
+    private static int readStreamsAndWaitFor(final Process process) throws InterruptedException, ExecutionException {
+        final Future<?> stderrReader =
+                executorService.submit(new LogErrorProcessOutputReader(process.getErrorStream()));
         new LogInfoProcessOutputReader(process.getInputStream()).run();
         // wait for stderr reader to be done
         stderrReader.get();
         return process.waitFor();
     }
 
-
     /**
      * Runnable that reads off the given stream and logs it somewhere.
      */
-    private static abstract class ProcessOutputReader implements Runnable {
+    private abstract static class ProcessOutputReader implements Runnable {
         private final BufferedReader reader;
+
         public ProcessOutputReader(final InputStream stream) {
             reader = new BufferedReader(new InputStreamReader(stream));
         }
@@ -218,26 +219,46 @@ public class ProcessExecutor {
                 throw new SAMException("Unexpected exception reading from process stream", e);
             }
         }
-        
+
         protected abstract void write(String message);
     }
 
-
     private static class LogErrorProcessOutputReader extends ProcessOutputReader {
-        public LogErrorProcessOutputReader(final InputStream stream) { super(stream); }
-        @Override protected void write(final String message) { log.error(message); }
+        public LogErrorProcessOutputReader(final InputStream stream) {
+            super(stream);
+        }
+
+        @Override
+        protected void write(final String message) {
+            log.error(message);
+        }
     }
 
     private static class LogInfoProcessOutputReader extends ProcessOutputReader {
-        public LogInfoProcessOutputReader(final InputStream stream) { super(stream); }
-        @Override protected void write(final String message) { log.info(message); }
+        public LogInfoProcessOutputReader(final InputStream stream) {
+            super(stream);
+        }
+
+        @Override
+        protected void write(final String message) {
+            log.info(message);
+        }
     }
 
     private static class StringBuilderProcessOutputReader extends ProcessOutputReader {
         private final StringBuilder sb = new StringBuilder();
-        public StringBuilderProcessOutputReader(final InputStream stream) { super(stream); }
-        @Override protected void write(final String message) { sb.append(message).append('\n'); }
-        public String getOutput() { return sb.toString(); }
-    }
 
+        public StringBuilderProcessOutputReader(final InputStream stream) {
+            super(stream);
+        }
+
+        @Override
+        protected void write(final String message) {
+            sb.append(message).append('\n');
+        }
+
+        public String getOutput() {
+            return sb.toString();
+        }
+    }
 }

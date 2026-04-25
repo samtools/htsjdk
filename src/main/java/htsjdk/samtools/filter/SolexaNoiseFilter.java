@@ -44,8 +44,7 @@ public class SolexaNoiseFilter implements SamRecordFilter {
     public boolean filterOut(final SAMRecord record) {
         final byte[] sequence = record.getReadBases();
         for (final byte base : sequence) {
-            if (base != 'A' && base != 'a' &&
-                !SequenceUtil.isNoCall(base)) {
+            if (base != 'A' && base != 'a' && !SequenceUtil.isNoCall(base)) {
                 return false;
             }
         }

@@ -4,12 +4,11 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
+import java.io.ByteArrayInputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-
-public class AsciiFeatureCodecTest extends HtsjdkTest{
+public class AsciiFeatureCodecTest extends HtsjdkTest {
 
     @Test
     public void testMakeIndexableSourceFromUnknownStream() {

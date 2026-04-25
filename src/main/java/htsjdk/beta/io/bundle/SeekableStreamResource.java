@@ -3,7 +3,6 @@ package htsjdk.beta.io.bundle;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
@@ -23,7 +22,8 @@ public class SeekableStreamResource extends InputStreamResource {
      * @param displayName The display name for this resource. May not be null or 0-length.
      * @param contentType The content type for this resource. May not be null or 0-length.
      */
-    public SeekableStreamResource(final SeekableStream seekableStream, final String displayName, final String contentType) {
+    public SeekableStreamResource(
+            final SeekableStream seekableStream, final String displayName, final String contentType) {
         this(seekableStream, displayName, contentType, null);
     }
 
@@ -59,7 +59,9 @@ public class SeekableStreamResource extends InputStreamResource {
     }
 
     @Override
-    public Optional<SeekableStream> getSeekableStream() { return Optional.of(seekableStream); }
+    public Optional<SeekableStream> getSeekableStream() {
+        return Optional.of(seekableStream);
+    }
 
     /**
      * {@inheritDoc}
@@ -69,7 +71,7 @@ public class SeekableStreamResource extends InputStreamResource {
      */
     @Override
     public SignatureStream getSignatureStream(final int signatureProbeLength) {
-        //we don't want to call the super class' implementation here
+        // we don't want to call the super class' implementation here
         final byte[] signaturePrefix = new byte[signatureProbeLength];
         try {
             // for a SeekableStreamResource, we don't want this code to close the actual SeekableStream that
@@ -81,19 +83,23 @@ public class SeekableStreamResource extends InputStreamResource {
             seekableStream.seek(0);
         } catch (final IOException e) {
             throw new HtsjdkIOException(
-                    String.format("Error creating signature probe for seekable stream resource with prefix size %d",
+                    String.format(
+                            "Error creating signature probe for seekable stream resource with prefix size %d",
                             signatureProbeLength),
                     e);
         }
         return new SignatureStream(signatureProbeLength, signaturePrefix);
-
     }
 
     @Override
-    public boolean hasInputType() { return true; }
+    public boolean hasInputType() {
+        return true;
+    }
 
     @Override
-    public boolean hasSeekableStream() { return true; }
+    public boolean hasSeekableStream() {
+        return true;
+    }
 
     @Override
     public boolean equals(Object o) {

@@ -36,10 +36,10 @@ package htsjdk.tribble;
  */
 public class FeatureCodecHeader {
     /** The value of the headerEnd field when there's no header */
-    public final static long NO_HEADER_END = 0;
+    public static final long NO_HEADER_END = 0;
 
     /** A public instance representing no header */
-    public final static FeatureCodecHeader EMPTY_HEADER = new FeatureCodecHeader(null, NO_HEADER_END);
+    public static final FeatureCodecHeader EMPTY_HEADER = new FeatureCodecHeader(null, NO_HEADER_END);
 
     private final Object headerValue;
     private final long headerEnd;
@@ -55,7 +55,7 @@ public class FeatureCodecHeader {
      *                  there's no header at all
      */
     public FeatureCodecHeader(final Object headerValue, final long headerEnd) {
-        if ( headerEnd < 0 ) throw new TribbleException("Header end < 0");
+        if (headerEnd < 0) throw new TribbleException("Header end < 0");
         this.headerValue = headerValue;
         this.headerEnd = headerEnd;
     }

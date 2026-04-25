@@ -37,7 +37,8 @@ import htsjdk.samtools.SAMRecord;
 public class OverclippedReadFilter implements SamRecordFilter {
     // if the number of unclipped bases is below this threshold, the read is considered overclipped
     private final int unclippedBasesThreshold;
-    // if set to true, then reads with at least one clipped end will be filtered; if false, we require both ends to be clipped
+    // if set to true, then reads with at least one clipped end will be filtered; if false, we require both ends to be
+    // clipped
     private final boolean filterSingleEndClips;
 
     public OverclippedReadFilter(final int unclippedBasesThreshold, final boolean filterSingleEndClips) {
@@ -53,20 +54,21 @@ public class OverclippedReadFilter implements SamRecordFilter {
         int minSoftClipBlocks = filterSingleEndClips ? 1 : 2;
         CigarOperator lastOperator = null;
 
-        for ( final CigarElement element : record.getCigar().getCigarElements() ) {
-            if ( element.getOperator() == CigarOperator.S ) {
-                //Treat consecutive S blocks as a single one
-                if(lastOperator != CigarOperator.S){
+        for (final CigarElement element : record.getCigar().getCigarElements()) {
+            if (element.getOperator() == CigarOperator.S) {
+                // Treat consecutive S blocks as a single one
+                if (lastOperator != CigarOperator.S) {
                     softClipBlocks += 1;
                 }
 
-            } else if ( element.getOperator().consumesReadBases() ) {   // M, I, X, and EQ (S was already accounted for above)
+            } else if (element.getOperator()
+                    .consumesReadBases()) { // M, I, X, and EQ (S was already accounted for above)
                 alignedLength += element.getLength();
             }
             lastOperator = element.getOperator();
         }
 
-        return(alignedLength < unclippedBasesThreshold && softClipBlocks >= minSoftClipBlocks);
+        return (alignedLength < unclippedBasesThreshold && softClipBlocks >= minSoftClipBlocks);
     }
 
     @Override

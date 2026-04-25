@@ -46,7 +46,6 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
         return new IntervalCodec(dict);
     }
 
-
     /**
      * Sets the output stream that records will be written to.
      */
@@ -109,11 +108,10 @@ public class IntervalCodec implements SortingCollection.Codec<Interval> {
             return null;
         }
         return new Interval(
-            dict.getSequence(sequenceIndex).getSequenceName(),
-            binaryCodec.readInt(),
-            binaryCodec.readInt(),
-            binaryCodec.readBoolean(),
-             (binaryCodec.readBoolean()) ? binaryCodec.readNullTerminatedString() : null
-        );
+                dict.getSequence(sequenceIndex).getSequenceName(),
+                binaryCodec.readInt(),
+                binaryCodec.readInt(),
+                binaryCodec.readBoolean(),
+                (binaryCodec.readBoolean()) ? binaryCodec.readNullTerminatedString() : null);
     }
 }

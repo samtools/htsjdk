@@ -1,14 +1,13 @@
 package htsjdk.utils;
 
 import com.google.common.collect.Lists;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-import org.testng.collections.Sets;
-
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+import org.testng.collections.Sets;
 
 /**
  * Small class implementing some utility functions that are useful for test and interfacing with the TestNG framework.
@@ -43,15 +42,14 @@ public class TestNGUtils {
         for (final Class<?> testClass : classFinder.getClasses()) {
             if (Modifier.isAbstract(testClass.getModifiers()) || Modifier.isInterface(testClass.getModifiers()))
                 continue;
-            if (hasExcludedGroup(testClass, excludedGroups))
-                continue;
+            if (hasExcludedGroup(testClass, excludedGroups)) continue;
             Set<Method> methodSet = Sets.newHashSet();
             methodSet.addAll(Arrays.asList(testClass.getDeclaredMethods()));
             methodSet.addAll(Arrays.asList(testClass.getMethods()));
 
             for (final Method method : methodSet) {
                 if (method.isAnnotationPresent(DataProvider.class)) {
-                    data.add(new Object[]{method, testClass});
+                    data.add(new Object[] {method, testClass});
                 }
             }
         }
@@ -83,9 +81,7 @@ public class TestNGUtils {
                 .collect(Collectors.toList());
         final List<List<List<Object>>> product = Lists.cartesianProduct(lists);
         final List<List<Object>> mergeProduct = product.stream()
-                .map( l -> l.stream()
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList()))
+                .map(l -> l.stream().flatMap(Collection::stream).collect(Collectors.toList()))
                 .collect(Collectors.toList());
         return nestedListsToNestedArrays(mergeProduct);
     }
@@ -94,17 +90,15 @@ public class TestNGUtils {
      * @param dataProvider a nested Object array
      * @return an equivalent nested List
      */
-    public static List<List<Object>> nestedArraysToNestedLists(Object[][] dataProvider){
-        return Arrays.stream(dataProvider)
-                .map(Arrays::asList)
-                .collect(Collectors.toList());
+    public static List<List<Object>> nestedArraysToNestedLists(Object[][] dataProvider) {
+        return Arrays.stream(dataProvider).map(Arrays::asList).collect(Collectors.toList());
     }
 
     /**
      * @param lists a nested List
      * @return an equivalent nested array
      */
-    public static Object[][] nestedListsToNestedArrays(List<List<Object>> lists){
+    public static Object[][] nestedListsToNestedArrays(List<List<Object>> lists) {
         return lists.stream().map(List::toArray).toArray(Object[][]::new);
     }
 }

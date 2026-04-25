@@ -31,7 +31,6 @@ import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -96,12 +95,8 @@ public class Container {
             baseCount += slice.getBaseCount();
         }
 
-        this.containerHeader = new ContainerHeader(
-                alignmentContext,
-                blockCount,
-                recordCount,
-                globalRecordCounter,
-                baseCount);
+        this.containerHeader =
+                new ContainerHeader(alignmentContext, blockCount, recordCount, globalRecordCounter, baseCount);
 
         checkSliceReferenceContexts(commonRefContext.getReferenceContextID());
     }
@@ -151,11 +146,7 @@ public class Container {
 
         this.slices = new ArrayList<>();
         for (int sliceCounter = 0; sliceCounter < containerHeader.getLandmarks().size(); sliceCounter++) {
-            final Slice slice = new Slice(
-                    cramVersion,
-                    compressionHeader,
-                    inputStream,
-                    containerByteOffset);
+            final Slice slice = new Slice(cramVersion, compressionHeader, inputStream, containerByteOffset);
             slices.add(slice);
         }
 
@@ -194,7 +185,8 @@ public class Container {
             }
             getContainerHeader().setLandmarks(landmarks);
 
-            // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled above)
+            // compression header plus all slices, if any (EOF Containers do not; File Header Containers are handled
+            // above)
             getContainerHeader().setContainerBlocksByteSize(tempOutputStream.size());
 
             // Slices require the Container's landmarks and containerBlocksByteSize in case we're indexing
@@ -221,9 +213,8 @@ public class Container {
      * @param id id from the cram header, for error reporting
      * @return the {@link SAMFileHeader} for this CRAM stream
      */
-    public static SAMFileHeader readSAMFileHeaderContainer(final CRAMVersion cramVersion,
-                                                           final InputStream inputStream,
-                                                           final String id) {
+    public static SAMFileHeader readSAMFileHeaderContainer(
+            final CRAMVersion cramVersion, final InputStream inputStream, final String id) {
         final ContainerHeader containerHeader = new ContainerHeader(cramVersion, inputStream);
         final Block block;
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
@@ -233,8 +224,7 @@ public class Container {
             block = Block.read(cramVersion, bais);
             // ignore any remaining blocks that we may have consumed from this container (i.e., samtools adds a
             // second 10,000 byte (raw) block of 0s as expansion padding)
-        }
-        else {
+        } else {
             // The version 2.1 test files appear to have header containers that have a container block size that is
             // (2 or 4 bytes) shorter than the size of the actual embedded block containing the header. To compensate,
             // this code path relies on the block size value instead. It unclear where these files came from, or what
@@ -246,7 +236,8 @@ public class Container {
 
         // Use a temporary, single-use compressor cache for this block, since the SAMFileHeader block
         // is prescribed by the spec to be gzipped only and thus not perf sensitive.
-        try (final InputStream blockStream = new ByteArrayInputStream(block.getUncompressedContent(new CompressorCache()))) {
+        try (final InputStream blockStream =
+                new ByteArrayInputStream(block.getUncompressedContent(new CompressorCache()))) {
             final ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -262,7 +253,7 @@ public class Container {
             dataInputStream.readFully(bytes);
             final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
             try (final InputStream byteStream = new ByteArrayInputStream(bytes);
-                 final LineReader lineReader = new BufferedLineReader(byteStream)) {
+                    final LineReader lineReader = new BufferedLineReader(byteStream)) {
                 return codec.decode(lineReader, id);
             }
         } catch (final IOException e) {
@@ -277,7 +268,8 @@ public class Container {
      * @param os stream to which the header container should be written
      * @return the number of bytes written to the stream
      */
-    public static long writeSAMFileHeaderContainer(final CRAMVersion cramVersion, final SAMFileHeader samFileHeader, final OutputStream os) {
+    public static long writeSAMFileHeaderContainer(
+            final CRAMVersion cramVersion, final SAMFileHeader samFileHeader, final OutputStream os) {
         final byte[] samFileHeaderBytes = CramIO.samHeaderToByteArray(samFileHeader);
         // The spec recommends "reserving" 50% more space than is required by the header, buts not
         // clear how to do that if you compress the block. Samtools appears to add a second empty
@@ -318,8 +310,9 @@ public class Container {
         final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
             // before we convert to SAMRecord, we need to normalize the CRAMCompressionRecord in each Slice
-            final List<CRAMCompressionRecord> cramCompressionRecords = slice.deserializeCRAMRecords(compressorCache, validationStringency);
-            slice.normalizeCRAMRecords( cramCompressionRecords, cramReferenceRegion);
+            final List<CRAMCompressionRecord> cramCompressionRecords =
+                    slice.deserializeCRAMRecords(compressorCache, validationStringency);
+            slice.normalizeCRAMRecords(cramCompressionRecords, cramReferenceRegion);
 
             for (final CRAMCompressionRecord cramCompressionRecord : cramCompressionRecords) {
                 final SAMRecord samRecord = cramCompressionRecord.toSAMRecord(samFileHeader);
@@ -330,11 +323,26 @@ public class Container {
         return samRecords;
     }
 
-    public ContainerHeader getContainerHeader() { return containerHeader; }
-    public CompressionHeader getCompressionHeader() { return compressionHeader; }
-    public AlignmentContext getAlignmentContext() { return containerHeader.getAlignmentContext(); }
-    public long getContainerByteOffset() { return containerByteOffset; }
-    public List<Slice> getSlices() { return slices; }
+    public ContainerHeader getContainerHeader() {
+        return containerHeader;
+    }
+
+    public CompressionHeader getCompressionHeader() {
+        return compressionHeader;
+    }
+
+    public AlignmentContext getAlignmentContext() {
+        return containerHeader.getAlignmentContext();
+    }
+
+    public long getContainerByteOffset() {
+        return containerByteOffset;
+    }
+
+    public List<Slice> getSlices() {
+        return slices;
+    }
+
     public boolean isEOF() {
         return containerHeader.isEOF() && (getSlices() == null || getSlices().size() == 0);
     }
@@ -387,23 +395,26 @@ public class Container {
             final Slice slice = slices.get(i);
             slice.setLandmarkIndex(i);
             slice.setByteOffsetOfSliceHeaderBlock(containerHeader.getLandmarks().get(i));
-            slice.setByteSizeOfSliceBlocks(containerHeader.getLandmarks().get(i + 1) - slice.getByteOffsetOfSliceHeaderBlock());
+            slice.setByteSizeOfSliceBlocks(
+                    containerHeader.getLandmarks().get(i + 1) - slice.getByteOffsetOfSliceHeaderBlock());
         }
 
         // get the last slice in the list, and
         final Slice lastSlice = slices.get(lastSliceIndex);
         lastSlice.setLandmarkIndex(lastSliceIndex);
         lastSlice.setByteOffsetOfSliceHeaderBlock(containerHeader.getLandmarks().get(lastSliceIndex));
-        lastSlice.setByteSizeOfSliceBlocks(containerHeader.getContainerBlocksByteSize() - lastSlice.getByteOffsetOfSliceHeaderBlock());
+        lastSlice.setByteSizeOfSliceBlocks(
+                containerHeader.getContainerBlocksByteSize() - lastSlice.getByteOffsetOfSliceHeaderBlock());
     }
 
     private void checkSliceReferenceContexts(final int actualReferenceContextID) {
         if (actualReferenceContextID == ReferenceContext.MULTIPLE_REFERENCE_ID) {
             for (final Slice slice : getSlices()) {
-                if (slice.getAlignmentContext().getReferenceContext().getReferenceContextID() != ReferenceContext.MULTIPLE_REFERENCE_ID) {
-                    throw new CRAMException(
-                            String.format("Found slice with reference context (%d). Multi-reference container can only contain multi-ref slices.",
-                                    slice.getAlignmentContext().getReferenceContext().getReferenceContextID()));
+                if (slice.getAlignmentContext().getReferenceContext().getReferenceContextID()
+                        != ReferenceContext.MULTIPLE_REFERENCE_ID) {
+                    throw new CRAMException(String.format(
+                            "Found slice with reference context (%d). Multi-reference container can only contain multi-ref slices.",
+                            slice.getAlignmentContext().getReferenceContext().getReferenceContextID()));
                 }
             }
         }
@@ -423,7 +434,8 @@ public class Container {
             for (final Slice slice : slices) {
                 final AlignmentContext alignmentContext = slice.getAlignmentContext();
                 start = Math.min(start, alignmentContext.getAlignmentStart());
-                endPlusOne = Math.max(endPlusOne, alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan());
+                endPlusOne = Math.max(
+                        endPlusOne, alignmentContext.getAlignmentStart() + alignmentContext.getAlignmentSpan());
             }
             alignmentStart = start;
             alignmentSpan = endPlusOne - start;
@@ -444,8 +456,7 @@ public class Container {
                 .collect(Collectors.toSet());
         if (sliceRefContexts.isEmpty()) {
             throw new CRAMException("Cannot construct a container without any slices");
-        }
-        else if (sliceRefContexts.size() > 1) {
+        } else if (sliceRefContexts.size() > 1) {
             return ReferenceContext.MULTIPLE_REFERENCE_CONTEXT;
         }
 
@@ -454,12 +465,10 @@ public class Container {
 
     @Override
     public String toString() {
-        return String.format("%s offset %d nSlices %d",
+        return String.format(
+                "%s offset %d nSlices %d",
                 containerHeader.toString(),
                 getContainerByteOffset(),
-                getSlices() == null ?
-                        -1 :
-                        getSlices().size());
+                getSlices() == null ? -1 : getSlices().size());
     }
-
 }

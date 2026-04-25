@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.io;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 
 /**

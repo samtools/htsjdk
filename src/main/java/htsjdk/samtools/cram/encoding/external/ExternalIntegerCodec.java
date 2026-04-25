@@ -14,11 +14,17 @@ final class ExternalIntegerCodec extends ExternalCodec<Integer> {
     }
 
     @Override
-    public Integer read() { return ITF8.readUnsignedITF8(inputReader); }
+    public Integer read() {
+        return ITF8.readUnsignedITF8(inputReader);
+    }
 
     @Override
-    public void write(final Integer value) { ITF8.writeUnsignedITF8(value, outputWriter); }
+    public void write(final Integer value) {
+        ITF8.writeUnsignedITF8(value, outputWriter);
+    }
 
     @Override
-    public Integer read(final int length) { throw new RuntimeException("Not implemented."); }
+    public Integer read(final int length) {
+        throw new RuntimeException("Not implemented.");
+    }
 }

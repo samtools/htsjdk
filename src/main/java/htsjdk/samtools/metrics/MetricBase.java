@@ -26,7 +26,6 @@ package htsjdk.samtools.metrics;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
-
 import java.lang.reflect.Field;
 
 /**
@@ -46,7 +45,7 @@ public class MetricBase {
     public boolean equals(final Object o) {
         if (o == null) return false;
         if (o.getClass() != getClass()) return false;
-        
+
         final FormatUtil formatter = new FormatUtil();
         // Loop through all the fields and check that they are either
         // null in both objects or equal in both objects
@@ -58,23 +57,22 @@ public class MetricBase {
                 if (lhs == null) {
                     if (rhs == null) {
                         // keep going
-                    }
-                    else {
+                    } else {
                         return false;
                     }
-                }
-                else {
-                    if (formatter.format(lhs).equals(formatter.format(rhs))) //compare based on the serialized representation
+                } else {
+                    if (formatter
+                            .format(lhs)
+                            .equals(formatter.format(rhs))) // compare based on the serialized representation
                     {
                         // keep going
-                    }
-                    else {
+                    } else {
                         return false;
                     }
                 }
-            }
-            catch (IllegalAccessException iae) {
-                throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
+            } catch (IllegalAccessException iae) {
+                throw new SAMException("Could not read field " + f.getName() + " from a "
+                        + getClass().getSimpleName());
             }
         }
 
@@ -83,7 +81,7 @@ public class MetricBase {
     }
 
     /**
-     * Computes a hashcode by formatting each field into its on disk representation 
+     * Computes a hashcode by formatting each field into its on disk representation
      * and summing the hashcodes of all the fields.
      */
     public int hashCode() {
@@ -92,11 +90,12 @@ public class MetricBase {
         for (final Field f : getClass().getFields()) {
             try {
                 Object value = f.get(this);
-                value = formatter.format(value); //format the value the way it will be written to disk
+                value = formatter.format(value); // format the value the way it will be written to disk
                 final int fieldHash = value != null ? value.hashCode() : 0;
                 result = 31 * result + fieldHash;
             } catch (IllegalAccessException e) {
-                throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
+                throw new SAMException("Could not read field " + f.getName() + " from a "
+                        + getClass().getSimpleName());
             }
         }
         return result;
@@ -113,13 +112,12 @@ public class MetricBase {
                 buffer.append('\t');
                 buffer.append(formatter.format(f.get(this)));
                 buffer.append('\n');
-            }
-            catch (IllegalAccessException iae) {
-                throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
+            } catch (IllegalAccessException iae) {
+                throw new SAMException("Could not read field " + f.getName() + " from a "
+                        + getClass().getSimpleName());
             }
         }
 
         return buffer.toString();
     }
-
 }

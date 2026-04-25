@@ -83,7 +83,7 @@ public class OverlapDetector<T> {
         final int start = interval.getStart() + this.lhsBuffer;
         final int end = interval.getEnd() - this.lhsBuffer;
 
-        if (start <= end) {  // Don't put in sequences that have no overlappable bases
+        if (start <= end) { // Don't put in sequences that have no overlappable bases
             tree.merge(start, end, Collections.singleton(object), mergeSetsAccountingForSingletons());
         }
     }
@@ -116,10 +116,11 @@ public class OverlapDetector<T> {
             throw new IllegalArgumentException("null intervals");
         }
         if (objects.size() != intervals.size()) {
-            throw new IllegalArgumentException("Objects and intervals must be the same size but were " + objects.size() + " and " + intervals.size());
+            throw new IllegalArgumentException("Objects and intervals must be the same size but were " + objects.size()
+                    + " and " + intervals.size());
         }
 
-        for (int i=0; i<objects.size(); ++i) {
+        for (int i = 0; i < objects.size(); ++i) {
             addLhs(objects.get(i), intervals.get(i));
         }
     }
@@ -155,7 +156,7 @@ public class OverlapDetector<T> {
             return false;
         }
         final int start = locatable.getStart() + this.rhsBuffer;
-        final int end   = locatable.getEnd()   - this.rhsBuffer;
+        final int end = locatable.getEnd() - this.rhsBuffer;
 
         if (start > end) {
             return false;
@@ -175,7 +176,7 @@ public class OverlapDetector<T> {
      * Gets the Set of objects that overlap the provided locatable.
      * The returned set may not be modifiable.
      */
-    public Set<T> getOverlaps(final Locatable locatable)  {
+    public Set<T> getOverlaps(final Locatable locatable) {
         if (locatable == null) {
             throw new IllegalArgumentException("null locatable");
         }
@@ -185,7 +186,7 @@ public class OverlapDetector<T> {
             return Collections.emptySet();
         }
         final int start = locatable.getStart() + this.rhsBuffer;
-        final int end   = locatable.getEnd()   - this.rhsBuffer;
+        final int end = locatable.getEnd() - this.rhsBuffer;
 
         if (start > end) {
             return Collections.emptySet();

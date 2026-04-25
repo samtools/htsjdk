@@ -3,10 +3,9 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
+import java.util.stream.IntStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.stream.IntStream;
 
 public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
 
@@ -51,8 +50,7 @@ public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
         }
 
         @Override
-        public void close() {
-        }
+        public void close() {}
 
         @Override
         public boolean hasNext() {
@@ -74,7 +72,7 @@ public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
         }
     }
 
-    private static final Event[] wellBehavedData = new Event[]{
+    private static final Event[] wellBehavedData = new Event[] {
         new Event(new MockSAMRecord(5), 50),
         new Event(new MockSAMRecord(20), 50),
         new Event(new MockSAMRecord(5), 50),
@@ -84,35 +82,33 @@ public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
     };
 
     private static final Event[] overLimit = IntStream.range(0, 10)
-        .mapToObj(i -> new Event(new MockSAMRecord(3), 50))
-        .toArray(Event[]::new);
+            .mapToObj(i -> new Event(new MockSAMRecord(3), 50))
+            .toArray(Event[]::new);
 
-    private static final Event[] errorData = new Event[]{
-        new Event(new MockSAMRecord(5), 50),
-        new Event(new SAMException(), 10),
+    private static final Event[] errorData = new Event[] {
+        new Event(new MockSAMRecord(5), 50), new Event(new SAMException(), 10),
     };
 
-    private static final Event[] largeReads = new Event[]{
-        new Event(new MockSAMRecord(5000), 50),
-        new Event(new MockSAMRecord(5000), 50),
+    private static final Event[] largeReads = new Event[] {
+        new Event(new MockSAMRecord(5000), 50), new Event(new MockSAMRecord(5000), 50),
     };
 
-    private static final Event[] longWaits = new Event[]{
-        new Event(new MockSAMRecord(5), 1000),
-        new Event(new MockSAMRecord(25), 5000),
+    private static final Event[] longWaits = new Event[] {
+        new Event(new MockSAMRecord(5), 1000), new Event(new MockSAMRecord(25), 5000),
     };
 
     @Test()
     public void testNormalIteration() {
-        try (final SAMRecordPrefetchingIterator iter = new SAMRecordPrefetchingIterator(new TestIterator(wellBehavedData), 20)) {
-            while (iter.hasNext())
-                iter.next();
+        try (final SAMRecordPrefetchingIterator iter =
+                new SAMRecordPrefetchingIterator(new TestIterator(wellBehavedData), 20)) {
+            while (iter.hasNext()) iter.next();
         }
     }
 
     @Test
     public void testOverLimit() {
-        try (final SAMRecordPrefetchingIterator iter = new SAMRecordPrefetchingIterator(new TestIterator(overLimit), 10)) {
+        try (final SAMRecordPrefetchingIterator iter =
+                new SAMRecordPrefetchingIterator(new TestIterator(overLimit), 10)) {
             while (iter.hasNext()) {
                 Assert.assertTrue(iter.readsInQueue() <= 10);
                 iter.next();
@@ -122,7 +118,8 @@ public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
 
     @Test(expectedExceptions = SAMException.class)
     public void testExceptionForwarded() throws Throwable {
-        try (final SAMRecordPrefetchingIterator iter = new SAMRecordPrefetchingIterator(new TestIterator(errorData), 20)) {
+        try (final SAMRecordPrefetchingIterator iter =
+                new SAMRecordPrefetchingIterator(new TestIterator(errorData), 20)) {
             while (iter.hasNext()) {
                 iter.next();
             }
@@ -133,7 +130,8 @@ public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
 
     @Test()
     public void testLargeReads() {
-        try (final SAMRecordPrefetchingIterator iter = new SAMRecordPrefetchingIterator(new TestIterator(largeReads), 20)) {
+        try (final SAMRecordPrefetchingIterator iter =
+                new SAMRecordPrefetchingIterator(new TestIterator(largeReads), 20)) {
             while (iter.hasNext()) {
                 Assert.assertTrue(iter.readsInQueue() <= 5000);
                 iter.next();
@@ -150,7 +148,8 @@ public class SAMRecordPrefetchingIteratorTest extends HtsjdkTest {
 
     @Test
     public void testEmpty() {
-        try (final SAMRecordPrefetchingIterator iter = new SAMRecordPrefetchingIterator(new TestIterator(new Event[]{}), 20)) {
+        try (final SAMRecordPrefetchingIterator iter =
+                new SAMRecordPrefetchingIterator(new TestIterator(new Event[] {}), 20)) {
             Assert.assertFalse(iter.hasNext());
         }
     }

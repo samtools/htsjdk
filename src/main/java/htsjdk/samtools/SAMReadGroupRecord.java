@@ -23,10 +23,8 @@
  */
 package htsjdk.samtools;
 
-
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.SamConstants;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -38,8 +36,7 @@ import java.util.Set;
 /**
  * Header information about a read group.
  */
-public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
-{
+public class SAMReadGroupRecord extends AbstractSAMHeaderRecord {
     private String mReadGroupId = null;
     public static final String READ_GROUP_ID_TAG = "ID";
     public static final String SEQUENCING_CENTER_TAG = "CN";
@@ -56,15 +53,15 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public static final String READ_GROUP_SAMPLE_TAG = "SM";
     public static final String BARCODE_TAG = "BC";
 
-
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
         /** @deprecated Use {@linkplain PlatformValue#DNBSEQ} instead. */
-        @Deprecated BGI,
+        @Deprecated
+        BGI,
 
         /** Capillary */
         CAPILLARY,
-        
+
         /** MGI/BGI */
         DNBSEQ,
 
@@ -87,11 +84,12 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         ONT,
 
         /** @deprecated OTHER is not an official value.  It is recommended to omit PL if it is not in this list or is unknown. */
-        @Deprecated OTHER,
+        @Deprecated
+        OTHER,
 
         /** Pacific Biotechnology */
         PACBIO,
-        
+
         /** Singular Genomics */
         SINGULAR,
 
@@ -102,13 +100,25 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         ULTIMA
     }
 
-    public static final Set<String> STANDARD_TAGS =
-            new HashSet<>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
-                    DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
-                    PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
-                    PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG, BARCODE_TAG));
+    public static final Set<String> STANDARD_TAGS = new HashSet<>(Arrays.asList(
+            READ_GROUP_ID_TAG,
+            SEQUENCING_CENTER_TAG,
+            DESCRIPTION_TAG,
+            DATE_RUN_PRODUCED_TAG,
+            FLOW_ORDER_TAG,
+            KEY_SEQUENCE_TAG,
+            LIBRARY_TAG,
+            PROGRAM_GROUP_TAG,
+            PREDICTED_MEDIAN_INSERT_SIZE_TAG,
+            PLATFORM_TAG,
+            PLATFORM_MODEL_TAG,
+            PLATFORM_UNIT_TAG,
+            READ_GROUP_SAMPLE_TAG,
+            BARCODE_TAG));
 
-    public SAMReadGroupRecord(final String id) { mReadGroupId = id; }
+    public SAMReadGroupRecord(final String id) {
+        mReadGroupId = id;
+    }
 
     public SAMReadGroupRecord(final String id, final SAMReadGroupRecord srcProgramRecord) {
         mReadGroupId = id;
@@ -118,20 +128,45 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     }
 
     @Override
-    public String getId() { return getReadGroupId();  }
-    public String getReadGroupId() { return mReadGroupId; }
+    public String getId() {
+        return getReadGroupId();
+    }
 
-    public String getSample() { return getAttribute(READ_GROUP_SAMPLE_TAG); }
-    public void setSample(final String value) { setAttribute(READ_GROUP_SAMPLE_TAG, value); }
+    public String getReadGroupId() {
+        return mReadGroupId;
+    }
 
-    public String getLibrary() { return getAttribute(LIBRARY_TAG); }
-    public void setLibrary(final String value) { setAttribute(LIBRARY_TAG, value); }
+    public String getSample() {
+        return getAttribute(READ_GROUP_SAMPLE_TAG);
+    }
 
-    public String getPlatformUnit() { return getAttribute(PLATFORM_UNIT_TAG); }
-    public void setPlatformUnit(final String pu) { setAttribute(PLATFORM_UNIT_TAG, pu); }
+    public void setSample(final String value) {
+        setAttribute(READ_GROUP_SAMPLE_TAG, value);
+    }
 
-    public String getPlatform() { return getAttribute(PLATFORM_TAG); }
-    public void setPlatform(final String platform) { setAttribute(PLATFORM_TAG, platform); }
+    public String getLibrary() {
+        return getAttribute(LIBRARY_TAG);
+    }
+
+    public void setLibrary(final String value) {
+        setAttribute(LIBRARY_TAG, value);
+    }
+
+    public String getPlatformUnit() {
+        return getAttribute(PLATFORM_UNIT_TAG);
+    }
+
+    public void setPlatformUnit(final String pu) {
+        setAttribute(PLATFORM_UNIT_TAG, pu);
+    }
+
+    public String getPlatform() {
+        return getAttribute(PLATFORM_TAG);
+    }
+
+    public void setPlatform(final String platform) {
+        setAttribute(PLATFORM_TAG, platform);
+    }
 
     /**
      * @return the List of barcodes associated with this read group or null
@@ -159,7 +194,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
             if (barcodes.stream().anyMatch(String::isEmpty)) {
                 throw new IllegalArgumentException("A barcode must not be an empty String");
             }
-           setAttribute(BARCODE_TAG, String.join(SamConstants.BARCODE_SEQUENCE_DELIMITER, barcodes));
+            setAttribute(BARCODE_TAG, String.join(SamConstants.BARCODE_SEQUENCE_DELIMITER, barcodes));
         }
     }
 
@@ -172,11 +207,21 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         }
     }
 
-    public String getFlowOrder() { return getAttribute(FLOW_ORDER_TAG); }
-    public void setFlowOrder(final String flowOrder) { setAttribute(FLOW_ORDER_TAG, flowOrder); }
+    public String getFlowOrder() {
+        return getAttribute(FLOW_ORDER_TAG);
+    }
 
-    public String getKeySequence() { return getAttribute(KEY_SEQUENCE_TAG); }
-    public void setKeySequence(final String keySequence) { setAttribute(KEY_SEQUENCE_TAG, keySequence); }
+    public void setFlowOrder(final String flowOrder) {
+        setAttribute(FLOW_ORDER_TAG, flowOrder);
+    }
+
+    public String getKeySequence() {
+        return getAttribute(KEY_SEQUENCE_TAG);
+    }
+
+    public void setKeySequence(final String keySequence) {
+        setAttribute(KEY_SEQUENCE_TAG, keySequence);
+    }
 
     /**
      * Converts to Iso8601Date if not already in that form.
@@ -188,30 +233,53 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         setAttribute(DATE_RUN_PRODUCED_TAG, runDate != null ? runDate.toString() : null);
     }
 
-    public String getSequencingCenter() { return getAttribute(SEQUENCING_CENTER_TAG); }
-    public void setSequencingCenter(final String center) { setAttribute(SEQUENCING_CENTER_TAG, center); }
+    public String getSequencingCenter() {
+        return getAttribute(SEQUENCING_CENTER_TAG);
+    }
 
-    public String getDescription() { return getAttribute(DESCRIPTION_TAG); }
-    public void setDescription(final String description) { setAttribute(DESCRIPTION_TAG, description); }
+    public void setSequencingCenter(final String center) {
+        setAttribute(SEQUENCING_CENTER_TAG, center);
+    }
+
+    public String getDescription() {
+        return getAttribute(DESCRIPTION_TAG);
+    }
+
+    public void setDescription(final String description) {
+        setAttribute(DESCRIPTION_TAG, description);
+    }
 
     public Integer getPredictedMedianInsertSize() {
         final String stringRep = getAttribute(PREDICTED_MEDIAN_INSERT_SIZE_TAG);
         if (stringRep == null) {
             return null;
         }
-        return Integer.parseInt(stringRep); 
+        return Integer.parseInt(stringRep);
     }
+
     public void setPredictedMedianInsertSize(final Integer predictedMedianInsertSize) {
 
-        setAttribute(PREDICTED_MEDIAN_INSERT_SIZE_TAG, (predictedMedianInsertSize == null? null: predictedMedianInsertSize.toString())); 
+        setAttribute(
+                PREDICTED_MEDIAN_INSERT_SIZE_TAG,
+                (predictedMedianInsertSize == null ? null : predictedMedianInsertSize.toString()));
     }
 
-    public String getProgramGroup() { return getAttribute(PROGRAM_GROUP_TAG); }
-    public void setProgramGroup(final String programGroup) { setAttribute(PROGRAM_GROUP_TAG, programGroup); }
+    public String getProgramGroup() {
+        return getAttribute(PROGRAM_GROUP_TAG);
+    }
 
-    public String getPlatformModel() { return getAttribute(PLATFORM_MODEL_TAG); }
-    public void setPlatformModel(final String platformModel) { setAttribute(PLATFORM_MODEL_TAG, platformModel); }
-    
+    public void setProgramGroup(final String programGroup) {
+        setAttribute(PROGRAM_GROUP_TAG, programGroup);
+    }
+
+    public String getPlatformModel() {
+        return getAttribute(PLATFORM_MODEL_TAG);
+    }
+
+    public void setPlatformModel(final String platformModel) {
+        setAttribute(PLATFORM_MODEL_TAG, platformModel);
+    }
+
     /**
      * @return true if this == that except for the read group ID, which is arbitrary
      */
@@ -250,7 +318,6 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     @Override
     public String getSAMString() {
-      return new SAMTextHeaderCodec().getRGLine(this);
+        return new SAMTextHeaderCodec().getRGLine(this);
     }
 }
-

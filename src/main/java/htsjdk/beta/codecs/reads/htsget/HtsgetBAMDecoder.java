@@ -19,11 +19,14 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     public HtsgetBAMDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
+        this.displayName =
+                inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
     }
 
     @Override
-    public String getFileFormat() { return ReadsFormats.HTSGET_BAM; }
+    public String getFileFormat() {
+        return ReadsFormats.HTSGET_BAM;
+    }
 
     @Override
     public HtsVersion getVersion() {
@@ -31,7 +34,9 @@ public abstract class HtsgetBAMDecoder implements ReadsDecoder {
     }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     /**
      * Get the input {@link Bundle} for this decoder.

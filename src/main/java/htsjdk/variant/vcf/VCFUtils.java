@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
@@ -33,7 +33,6 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -43,11 +42,14 @@ import java.util.stream.Collectors;
 
 public class VCFUtils {
 
-    private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INF_OR_NAN_PATTERN =
+            Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
 
-    public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
+    public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings)
+            throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
-        // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
+        // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the
+        // line ordering.
         final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
         final Set<VCFHeaderVersion> headerVersions = new HashSet<>(2);
@@ -58,8 +60,7 @@ public class VCFUtils {
 
                 enforceHeaderVersionMergePolicy(headerVersions, source.getVCFHeaderVersion());
                 String key = line.getKey();
-                if (line instanceof VCFIDHeaderLine)
-                    key = key + "-" + ((VCFIDHeaderLine) line).getID();
+                if (line instanceof VCFIDHeaderLine) key = key + "-" + ((VCFIDHeaderLine) line).getID();
 
                 if (map.containsKey(key)) {
                     final VCFHeaderLine other = map.get(key);
@@ -84,24 +85,37 @@ public class VCFUtils {
                                 // number, then this value should be 1. However, if the INFO field describes a pair
                                 // of numbers, then this value should be 2 and so on. If the number of possible
                                 // values varies, is unknown, or is unbounded, then this value should be '.'.
-                                conflictWarner.warn(line, "Promoting header field Number to . due to number differences in header lines: " + line + " " + other);
+                                conflictWarner.warn(
+                                        line,
+                                        "Promoting header field Number to . due to number differences in header lines: "
+                                                + line + " " + other);
                                 compOther.setNumberToUnbounded();
-                            } else if (compLine.getType() == VCFHeaderLineType.Integer && compOther.getType() == VCFHeaderLineType.Float) {
+                            } else if (compLine.getType() == VCFHeaderLineType.Integer
+                                    && compOther.getType() == VCFHeaderLineType.Float) {
                                 // promote key to Float
                                 conflictWarner.warn(line, "Promoting Integer to Float in header: " + compOther);
                                 map.put(key, compOther);
-                            } else if (compLine.getType() == VCFHeaderLineType.Float && compOther.getType() == VCFHeaderLineType.Integer) {
+                            } else if (compLine.getType() == VCFHeaderLineType.Float
+                                    && compOther.getType() == VCFHeaderLineType.Integer) {
                                 // promote key to Float
                                 conflictWarner.warn(line, "Promoting Integer to Float in header: " + compOther);
                             } else {
-                                throw new IllegalStateException("Incompatible header types, collision between these two types: " + line + " " + other);
+                                throw new IllegalStateException(
+                                        "Incompatible header types, collision between these two types: " + line + " "
+                                                + other);
                             }
                         }
                         if (!compLine.getDescription().equals(compOther.getDescription()))
-                            conflictWarner.warn(line, "Allowing unequal description fields through: keeping " + compOther + " excluding " + compLine);
+                            conflictWarner.warn(
+                                    line,
+                                    "Allowing unequal description fields through: keeping " + compOther + " excluding "
+                                            + compLine);
                     } else {
                         // we are not equal, but we're not anything special either
-                        conflictWarner.warn(line, "Ignoring header line already in map: this header line = " + line + " already present header = " + other);
+                        conflictWarner.warn(
+                                line,
+                                "Ignoring header line already in map: this header line = " + line
+                                        + " already present header = " + other);
                     }
                 } else {
                     map.put(key, line);
@@ -115,18 +129,17 @@ public class VCFUtils {
 
     // Reject attempts to merge a VCFv4.3 header with any other version
     private static void enforceHeaderVersionMergePolicy(
-            final Set<VCFHeaderVersion> headerVersions,
-            final VCFHeaderVersion candidateVersion) {
+            final Set<VCFHeaderVersion> headerVersions, final VCFHeaderVersion candidateVersion) {
         if (candidateVersion != null) {
             headerVersions.add(candidateVersion);
             if (headerVersions.size() > 1 && headerVersions.contains(VCFHeaderVersion.VCF4_3)) {
-                throw new IllegalArgumentException(
-                        String.format("Attempt to merge version %s header with incompatible header version %s",
-                                VCFHeaderVersion.VCF4_3.getVersionString(),
-                                headerVersions.stream()
-                                        .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
-                                        .map(VCFHeaderVersion::getVersionString)
-                                        .collect(Collectors.joining(" "))));
+                throw new IllegalArgumentException(String.format(
+                        "Attempt to merge version %s header with incompatible header version %s",
+                        VCFHeaderVersion.VCF4_3.getVersionString(),
+                        headerVersions.stream()
+                                .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
+                                .map(VCFHeaderVersion::getVersionString)
+                                .collect(Collectors.joining(" "))));
             }
         }
     }
@@ -138,33 +151,40 @@ public class VCFUtils {
      * @param referenceFile the file path to the reference sequence used to generate this vcf
      * @param refDict       the SAM formatted reference sequence dictionary
      */
-    public static VCFHeader withUpdatedContigs(final VCFHeader oldHeader, final File referenceFile, final SAMSequenceDictionary refDict) {
-        return new VCFHeader(withUpdatedContigsAsLines(oldHeader.getMetaDataInInputOrder(), referenceFile, refDict), oldHeader.getGenotypeSamples());
+    public static VCFHeader withUpdatedContigs(
+            final VCFHeader oldHeader, final File referenceFile, final SAMSequenceDictionary refDict) {
+        return new VCFHeader(
+                withUpdatedContigsAsLines(oldHeader.getMetaDataInInputOrder(), referenceFile, refDict),
+                oldHeader.getGenotypeSamples());
     }
 
-    public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict) {
+    public static Set<VCFHeaderLine> withUpdatedContigsAsLines(
+            final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict) {
         return withUpdatedContigsAsLines(oldLines, referenceFile, refDict, false);
     }
 
-    public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict, final boolean referenceNameOnly) {
+    public static Set<VCFHeaderLine> withUpdatedContigsAsLines(
+            final Set<VCFHeaderLine> oldLines,
+            final File referenceFile,
+            final SAMSequenceDictionary refDict,
+            final boolean referenceNameOnly) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>(oldLines.size());
 
         for (final VCFHeaderLine line : oldLines) {
-            if (line instanceof VCFContigHeaderLine)
-                continue; // skip old contig lines
-            if (line.getKey().equals(VCFHeader.REFERENCE_KEY))
-                continue; // skip the old reference key
+            if (line instanceof VCFContigHeaderLine) continue; // skip old contig lines
+            if (line.getKey().equals(VCFHeader.REFERENCE_KEY)) continue; // skip the old reference key
             lines.add(line);
         }
 
-        for (final VCFHeaderLine contigLine : makeContigHeaderLines(refDict, referenceFile))
-            lines.add(contigLine);
+        for (final VCFHeaderLine contigLine : makeContigHeaderLines(refDict, referenceFile)) lines.add(contigLine);
 
         final String referenceValue;
         if (referenceFile != null) {
             if (referenceNameOnly) {
                 final int extensionStart = referenceFile.getName().lastIndexOf('.');
-                referenceValue = extensionStart == -1 ? referenceFile.getName() : referenceFile.getName().substring(0, extensionStart);
+                referenceValue = extensionStart == -1
+                        ? referenceFile.getName()
+                        : referenceFile.getName().substring(0, extensionStart);
             } else {
                 referenceValue = "file://" + referenceFile.getAbsolutePath();
             }
@@ -180,12 +200,11 @@ public class VCFUtils {
      * @param referenceFile for assembly name.  May be null
      * @return list of vcf contig header lines
      */
-    public static List<VCFContigHeaderLine> makeContigHeaderLines(final SAMSequenceDictionary refDict,
-                                                                  final File referenceFile) {
+    public static List<VCFContigHeaderLine> makeContigHeaderLines(
+            final SAMSequenceDictionary refDict, final File referenceFile) {
         final List<VCFContigHeaderLine> lines = new ArrayList<>();
         final String assembly = referenceFile != null ? getReferenceAssembly(referenceFile.getName()) : null;
-        for (final SAMSequenceRecord contig : refDict.getSequences())
-            lines.add(makeContigHeaderLine(contig, assembly));
+        for (final SAMSequenceRecord contig : refDict.getSequences()) lines.add(makeContigHeaderLine(contig, assembly));
         return lines;
     }
 
@@ -229,22 +248,25 @@ public class VCFUtils {
      * @param vcfFile the vcf file to index
      * @return File a vcf file (index file is created in same path).
      */
-    public static File createTemporaryIndexedVcfFromInput(final File vcfFile, final String tempFilePrefix) throws IOException {
+    public static File createTemporaryIndexedVcfFromInput(final File vcfFile, final String tempFilePrefix)
+            throws IOException {
         final String extension;
 
         if (vcfFile.getAbsolutePath().endsWith(FileExtensions.VCF)) extension = FileExtensions.VCF;
         else if (vcfFile.getAbsolutePath().endsWith(FileExtensions.COMPRESSED_VCF))
             extension = FileExtensions.COMPRESSED_VCF;
         else
-            throw new IllegalArgumentException("couldn't find a " + FileExtensions.VCF + " or " + FileExtensions.COMPRESSED_VCF + " ending for input file " + vcfFile.getAbsolutePath());
+            throw new IllegalArgumentException("couldn't find a " + FileExtensions.VCF + " or "
+                    + FileExtensions.COMPRESSED_VCF + " ending for input file " + vcfFile.getAbsolutePath());
 
         File output = createTemporaryIndexedVcfFile(tempFilePrefix, extension);
 
         try (final VCFFileReader in = new VCFFileReader(vcfFile, false);
-             final VariantContextWriter out = new VariantContextWriterBuilder().
-                     setReferenceDictionary(in.getFileHeader().getSequenceDictionary()).
-                     setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY)).
-                     setOutputFile(output).build()) {
+                final VariantContextWriter out = new VariantContextWriterBuilder()
+                        .setReferenceDictionary(in.getFileHeader().getSequenceDictionary())
+                        .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
+                        .setOutputFile(output)
+                        .build()) {
             out.writeHeader(in.getFileHeader());
             for (final VariantContext ctx : in) {
                 out.add(ctx);
@@ -282,16 +304,11 @@ public class VCFUtils {
     private static String getReferenceAssembly(final String refPath) {
         // This doesn't need to be perfect as it's not a required VCF header line, but we might as well give it a shot
         String assembly = null;
-        if (refPath.contains("b37") || refPath.contains("v37"))
-            assembly = "b37";
-        else if (refPath.contains("b36"))
-            assembly = "b36";
-        else if (refPath.contains("hg18"))
-            assembly = "hg18";
-        else if (refPath.contains("hg19"))
-            assembly = "hg19";
-        else if (refPath.contains("hg38"))
-            assembly = "hg38";
+        if (refPath.contains("b37") || refPath.contains("v37")) assembly = "b37";
+        else if (refPath.contains("b36")) assembly = "b36";
+        else if (refPath.contains("hg18")) assembly = "hg18";
+        else if (refPath.contains("hg19")) assembly = "hg19";
+        else if (refPath.contains("hg38")) assembly = "hg38";
         return assembly;
     }
 

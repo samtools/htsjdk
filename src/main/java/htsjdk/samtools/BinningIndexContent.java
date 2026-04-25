@@ -51,7 +51,6 @@ public class BinningIndexContent {
      */
     private final LinearIndex mLinearIndex;
 
-
     /**
      * @param referenceSequence Content corresponds to this reference.
      * @param binList           Array of bins represented by this content, possibly sparse
@@ -110,7 +109,6 @@ public class BinningIndexContent {
         return mLinearIndex;
     }
 
-
     /**
      *
      * @param startPos 1-based, inclusive
@@ -118,7 +116,7 @@ public class BinningIndexContent {
      * @return List of Chunks overlapping the given region.  May return null if there are none.
      */
     public List<Chunk> getChunksOverlapping(final int startPos, final int endPos) {
-        final BitSet overlappingBins = GenomicIndexUtil.regionToBins(startPos,endPos);
+        final BitSet overlappingBins = GenomicIndexUtil.regionToBins(startPos, endPos);
         if (overlappingBins == null) return null;
 
         // System.out.println("# Sequence target TID: " + referenceIndex);
@@ -147,7 +145,7 @@ public class BinningIndexContent {
 
         private final Bin[] mBinArray;
         public final int numberOfNonNullBins;
-        public final int maxBinNumber;  // invariant: maxBinNumber = mBinArray.length -1 since array is 0 based
+        public final int maxBinNumber; // invariant: maxBinNumber = mBinArray.length -1 since array is 0 based
 
         /**
          * @param binArray            a sparse array representation of the bins. The index into the array is the bin number.
@@ -207,8 +205,7 @@ public class BinningIndexContent {
              */
             @Override
             public Bin next() {
-                if (!hasNext())
-                    throw new NoSuchElementException("This BinIterator is currently empty");
+                if (!hasNext()) throw new NoSuchElementException("This BinIterator is currently empty");
                 final Bin result = getBin(nextBin);
                 nextBin++;
                 return result;

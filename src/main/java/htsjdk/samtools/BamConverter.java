@@ -15,15 +15,15 @@ import java.io.File;
  */
 public class BamConverter {
 
-    private static final String USAGE = String.join("\n",
+    private static final String USAGE = String.join(
+            "\n",
             "Usage: BamConverter <input> [output]",
             "",
             "Read and optionally convert a BAM file.",
             "",
             "Arguments:",
             "  input              Input BAM file",
-            "  output             Optional output BAM file (omit to read-only)"
-    );
+            "  output             Optional output BAM file (omit to read-only)");
 
     /**
      * Entry point. Parses command-line arguments and performs the read/conversion.
@@ -42,9 +42,8 @@ public class BamConverter {
 
         final boolean eager = hasFlag(args, "--eager");
         // Collect positional args (non-flag arguments)
-        final String[] positional = java.util.Arrays.stream(args)
-                .filter(a -> !a.startsWith("--"))
-                .toArray(String[]::new);
+        final String[] positional =
+                java.util.Arrays.stream(args).filter(a -> !a.startsWith("--")).toArray(String[]::new);
         if (positional.length < 1) {
             System.err.println(USAGE);
             System.exit(1);
@@ -58,8 +57,8 @@ public class BamConverter {
             System.err.printf("Reading %s (no output%s)%n", inputPath, eager ? ", eager decode" : "");
         }
 
-        final SamReaderFactory readerFactory = SamReaderFactory.makeDefault()
-                .validationStringency(ValidationStringency.SILENT);
+        final SamReaderFactory readerFactory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
 
         long count = 0;
         final long startTime = System.currentTimeMillis();
@@ -69,7 +68,8 @@ public class BamConverter {
 
             if (outputPath != null) {
                 final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-                try (final SAMFileWriter writer = writerFactory.makeBAMWriter(header, true, new File(outputPath).toPath())) {
+                try (final SAMFileWriter writer =
+                        writerFactory.makeBAMWriter(header, true, new File(outputPath).toPath())) {
                     for (final SAMRecord record : reader) {
                         if (eager) record.eagerDecode();
                         writer.addAlignment(record);
@@ -97,12 +97,15 @@ public class BamConverter {
 
         if (outputPath != null) {
             final long outputSize = new File(outputPath).length();
-            System.err.printf("Done. %,d records in %.1fs. Input: %,d bytes, Output: %,d bytes (%.1f%%)%n",
-                    count, elapsed / 1000.0, inputSize, outputSize,
+            System.err.printf(
+                    "Done. %,d records in %.1fs. Input: %,d bytes, Output: %,d bytes (%.1f%%)%n",
+                    count,
+                    elapsed / 1000.0,
+                    inputSize,
+                    outputSize,
                     inputSize > 0 ? (100.0 * outputSize / inputSize) : 0);
         } else {
-            System.err.printf("Done. %,d records in %.1fs. Input: %,d bytes%n",
-                    count, elapsed / 1000.0, inputSize);
+            System.err.printf("Done. %,d records in %.1fs. Input: %,d bytes%n", count, elapsed / 1000.0, inputSize);
         }
     }
 

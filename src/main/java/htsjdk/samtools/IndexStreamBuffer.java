@@ -2,7 +2,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -25,7 +24,9 @@ class IndexStreamBuffer implements IndexFileBuffer {
             if (readThisLoop == -1) break;
             read += readThisLoop;
         }
-        if (read != length) throw new RuntimeIOException("Expected to read " + length + " bytes, but expired stream after " + read + ".");
+        if (read != length)
+            throw new RuntimeIOException(
+                    "Expected to read " + length + " bytes, but expired stream after " + read + ".");
     }
 
     public IndexStreamBuffer(final SeekableStream s) {
@@ -36,8 +37,11 @@ class IndexStreamBuffer implements IndexFileBuffer {
 
     @Override
     public void close() {
-        try { in.close(); }
-        catch (final IOException e) { throw new RuntimeIOException(e); }
+        try {
+            in.close();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
@@ -47,8 +51,11 @@ class IndexStreamBuffer implements IndexFileBuffer {
 
     @Override
     public void seek(final long position) {
-        try { in.seek(position); }
-        catch (final IOException e) { throw new RuntimeIOException(e); }
+        try {
+            in.seek(position);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
@@ -66,20 +73,24 @@ class IndexStreamBuffer implements IndexFileBuffer {
     @Override
     public void skipBytes(final int count) {
         try {
-            for (int s = count; s > 0;) {
-                final int skipped = (int)in.skip(s);
+            for (int s = count; s > 0; ) {
+                final int skipped = (int) in.skip(s);
                 if (skipped <= 0) {
                     throw new RuntimeIOException("Failed to skip " + s);
                 }
                 s -= skipped;
             }
-        } catch (final IOException e) { throw new RuntimeIOException(e); }
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     @Override
     public long position() {
         try {
             return (int) in.position();
-        } catch (final IOException e) { throw new RuntimeIOException(e); }
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 }

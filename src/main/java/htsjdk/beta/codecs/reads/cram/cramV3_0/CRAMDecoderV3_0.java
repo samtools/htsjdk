@@ -27,5 +27,4 @@ public class CRAMDecoderV3_0 extends CRAMDecoder {
     public HtsVersion getVersion() {
         return CRAMCodecV3_0.VERSION_3_0;
     }
-
 }

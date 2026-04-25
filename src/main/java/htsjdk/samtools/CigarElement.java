@@ -36,7 +36,10 @@ public class CigarElement implements Serializable {
     private final CigarOperator operator;
 
     public CigarElement(final int length, final CigarOperator operator) {
-        if (length < 0) throw new IllegalArgumentException(String.format("Cigar element being constructed with negative length: %d and operation: %s" , length, operator.name()));
+        if (length < 0)
+            throw new IllegalArgumentException(String.format(
+                    "Cigar element being constructed with negative length: %d and operation: %s",
+                    length, operator.name()));
         this.length = length;
         this.operator = operator;
     }
@@ -68,9 +71,9 @@ public class CigarElement implements Serializable {
         result = 31 * result + (operator != null ? operator.hashCode() : 0);
         return result;
     }
-    
+
     @Override
     public String toString() {
-        return String.valueOf(this.length)+this.operator;
+        return String.valueOf(this.length) + this.operator;
     }
 }

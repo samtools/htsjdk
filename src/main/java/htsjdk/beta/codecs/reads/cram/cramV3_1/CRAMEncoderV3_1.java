@@ -5,7 +5,6 @@ import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
-import htsjdk.samtools.cram.CRAMException;
 
 /**
  * CRAM v3.1 encoder.
@@ -28,5 +27,4 @@ public class CRAMEncoderV3_1 extends CRAMEncoder {
     public HtsVersion getVersion() {
         return CRAMCodecV3_1.VERSION_3_1;
     }
-
 }

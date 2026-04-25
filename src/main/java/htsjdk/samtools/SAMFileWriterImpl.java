@@ -23,12 +23,12 @@
  */
 package htsjdk.samtools;
 
+import static htsjdk.samtools.SAMFileHeader.SortOrder;
+
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.SortingCollection;
-
 import java.io.File;
 import java.io.StringWriter;
-import static htsjdk.samtools.SAMFileHeader.SortOrder;
 
 /**
  * Base class for implementing SAM writer with any underlying format.
@@ -36,9 +36,8 @@ import static htsjdk.samtools.SAMFileHeader.SortOrder;
  * and produces the text version of the header, since that seems to be a popular item
  * in both text and binary file formats.
  */
-public abstract class SAMFileWriterImpl implements SAMFileWriter
-{
-    private static int DEAFULT_MAX_RECORDS_IN_RAM = 500000;      
+public abstract class SAMFileWriterImpl implements SAMFileWriter {
+    private static int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
     private int maxRecordsInRam = DEAFULT_MAX_RECORDS_IN_RAM;
     private SAMFileHeader.SortOrder sortOrder;
     private SAMFileHeader header;
@@ -60,16 +59,16 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * @param maxRecordsInRam
      */
     public static void setDefaultMaxRecordsInRam(final int maxRecordsInRam) {
-        DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;    
+        DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;
     }
-    
+
     /**
-     * When writing records that are not presorted, this number determines the 
+     * When writing records that are not presorted, this number determines the
      * number of records stored in RAM before spilling to disk.
-     * @return DEAFULT_MAX_RECORDS_IN_RAM 
+     * @return DEAFULT_MAX_RECORDS_IN_RAM
      */
     public static int getDefaultMaxRecordsInRam() {
-        return DEAFULT_MAX_RECORDS_IN_RAM;    
+        return DEAFULT_MAX_RECORDS_IN_RAM;
     }
 
     /**
@@ -87,8 +86,8 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      */
     public void setSortOrder(final SAMFileHeader.SortOrder sortOrder, final boolean presorted) {
         if (header != null) {
-            throw new IllegalStateException("Cannot call SAMFileWriterImpl.setSortOrder after setHeader for " +
-                    getFilename());
+            throw new IllegalStateException(
+                    "Cannot call SAMFileWriterImpl.setSortOrder after setHeader for " + getFilename());
         }
         this.sortOrder = sortOrder;
         this.presorted = presorted;
@@ -97,15 +96,14 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
 
     @Override
     public void setSortOrderChecking(boolean check) {
-        final boolean doCheck = check &&
-                this.presorted &&
-                this.sortOrder != SAMFileHeader.SortOrder.unsorted &&
-                this.sortOrder != SortOrder.unknown;
+        final boolean doCheck = check
+                && this.presorted
+                && this.sortOrder != SAMFileHeader.SortOrder.unsorted
+                && this.sortOrder != SortOrder.unknown;
 
         if (doCheck) {
             this.sortOrderChecker = new SAMSortOrderChecker(this.sortOrder);
-        }
-        else {
+        } else {
             this.sortOrderChecker = null;
         }
     }
@@ -134,12 +132,12 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     }
 
     /**
-     * When writing records that are not presorted, specify the path of the temporary directory 
+     * When writing records that are not presorted, specify the path of the temporary directory
      * for spilling to disk.  Must be called before setHeader().
      * @param tmpDir path to the temporary directory
      */
     protected void setTempDirectory(final File tmpDir) {
-        if (tmpDir!=null) {
+        if (tmpDir != null) {
             this.tmpDir = tmpDir;
         }
     }
@@ -151,14 +149,13 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Must be called before addAlignment. Header cannot be null.
      */
-    public void setHeader(final SAMFileHeader header)
-    {
+    public void setHeader(final SAMFileHeader header) {
         if (null == header) {
             throw new IllegalArgumentException("A non-null SAMFileHeader is required for a writer");
         }
         this.header = header;
         if (this.sortOrder == null) {
-             this.sortOrder = SAMFileHeader.SortOrder.unsorted;
+            this.sortOrder = SAMFileHeader.SortOrder.unsorted;
         }
         header.setSortOrder(this.sortOrder);
 
@@ -170,8 +167,12 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
             }
             setSortOrderChecking(true);
         } else if (!sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-            alignmentSorter = SortingCollection.newInstance(SAMRecord.class,
-                    new BAMRecordCodec(header), sortOrder.getComparatorInstance(), maxRecordsInRam, tmpDir);
+            alignmentSorter = SortingCollection.newInstance(
+                    SAMRecord.class,
+                    new BAMRecordCodec(header),
+                    sortOrder.getComparatorInstance(),
+                    maxRecordsInRam,
+                    tmpDir);
         }
     }
 
@@ -190,8 +191,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * resolved against the writer's header using the current reference and mate reference names
      */
     @Override
-    public void addAlignment(final SAMRecord alignment)
-    {
+    public void addAlignment(final SAMRecord alignment) {
         alignment.setHeaderStrict(header); // re-establish the record header and resolve reference indices
         if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
             writeAlignment(alignment);
@@ -206,10 +206,11 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     private void assertPresorted(final SAMRecord alignment) {
         if (this.sortOrderChecker != null && !sortOrderChecker.isSorted(alignment)) {
             final SAMRecord prev = sortOrderChecker.getPreviousRecord();
-            throw new IllegalArgumentException("Alignments added out of order in SAMFileWriterImpl.addAlignment for " +
-                    getFilename() + ". Sort order is " + this.sortOrder + ". Offending records are at ["
-                    + sortOrderChecker.getSortKey(prev) + "] and ["
-                    + sortOrderChecker.getSortKey(alignment) + "]");
+            throw new IllegalArgumentException(
+                    "Alignments added out of order in SAMFileWriterImpl.addAlignment for " + getFilename()
+                            + ". Sort order is " + this.sortOrder + ". Offending records are at ["
+                            + sortOrderChecker.getSortKey(prev) + "] and ["
+                            + sortOrderChecker.getSortKey(alignment) + "]");
         }
     }
 
@@ -217,16 +218,14 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * Must be called or else file will likely be defective.
      */
     @Override
-    public final void close()
-    {
+    public final void close() {
         try {
             if (!isClosed) {
                 if (alignmentSorter != null) {
                     try {
                         for (final SAMRecord alignment : alignmentSorter) {
                             writeAlignment(alignment);
-                            if (progressLogger != null)
-                                progressLogger.record(alignment);
+                            if (progressLogger != null) progressLogger.record(alignment);
                         }
                     } finally {
                         alignmentSorter.cleanup();
@@ -244,7 +243,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * this method is called. The record must hava a non-null SAMFileHeader.
      * @param alignment
      */
-    abstract protected void writeAlignment(SAMRecord alignment);
+    protected abstract void writeAlignment(SAMRecord alignment);
 
     /**
      * Write the header to disk.  Header object is available via getHeader().
@@ -252,7 +251,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * @deprecated since 06/2018. {@link #writeHeader(SAMFileHeader)} is preferred for avoid String construction if not need it.
      */
     @Deprecated
-    abstract protected void writeHeader(String textHeader);
+    protected abstract void writeHeader(String textHeader);
 
     /**
      * Write the header to disk. Header object is available via getHeader().
@@ -273,11 +272,11 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Do any required flushing here.
      */
-    abstract protected void finish();
+    protected abstract void finish();
 
     /**
      * For producing error messages.
      * @return Output filename, or null if there isn't one.
      */
-    abstract protected String getFilename();
+    protected abstract String getFilename();
 }

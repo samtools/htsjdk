@@ -33,32 +33,31 @@ import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.samtools.util.IntervalListTest;
 import htsjdk.tribble.*;
-import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class IntervalListCodecTest extends HtsjdkTest {
 
     @DataProvider()
     public Object[][] simpleDecodeData() {
-        return new Object[][]{
-                {"chr1\t1\t3\t-\thi, Mom!", new Interval("chr1", 1, 3, true, "hi, Mom!")},
-                {"chr1\t1\t3\t+\thi, Mom!", new Interval("chr1", 1, 3, false, "hi, Mom!")},
-                {"chr1\t4\t3\t-\thi, Mom!", new Interval("chr1", 4, 3, true, "hi, Mom!")},
-                {"chr2\t1\t0\t-\thi, Mom!", new Interval("chr2", 1, 0, true, "hi, Mom!")},
+        return new Object[][] {
+            {"chr1\t1\t3\t-\thi, Mom!", new Interval("chr1", 1, 3, true, "hi, Mom!")},
+            {"chr1\t1\t3\t+\thi, Mom!", new Interval("chr1", 1, 3, false, "hi, Mom!")},
+            {"chr1\t4\t3\t-\thi, Mom!", new Interval("chr1", 4, 3, true, "hi, Mom!")},
+            {"chr2\t1\t0\t-\thi, Mom!", new Interval("chr2", 1, 0, true, "hi, Mom!")},
         };
     }
 
     @Test(dataProvider = "simpleDecodeData")
     public void testSimpleDecode(final String decodeThis, final Interval expectedInterval) throws IOException {
-        final SAMSequenceDictionary dict = SAMSequenceDictionaryExtractor.extractDictionary(IOUtil.getPath(TestUtils.DATA_DIR + "interval_list/example.dict"));
+        final SAMSequenceDictionary dict = SAMSequenceDictionaryExtractor.extractDictionary(
+                IOUtil.getPath(TestUtils.DATA_DIR + "interval_list/example.dict"));
         final IntervalListCodec codec = new IntervalListCodec(dict);
         final Interval interval;
 
@@ -67,18 +66,19 @@ public class IntervalListCodecTest extends HtsjdkTest {
     }
 
     @DataProvider
-    Object[][] TribbleDecodeData(){
-        return new Object[][]{
-                {new File(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list")},
-                {new File(TestUtils.DATA_DIR, "interval_list/shortExampleWithEmptyLine.interval_list")}
+    Object[][] TribbleDecodeData() {
+        return new Object[][] {
+            {new File(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list")},
+            {new File(TestUtils.DATA_DIR, "interval_list/shortExampleWithEmptyLine.interval_list")}
         };
     }
 
     @Test(dataProvider = "TribbleDecodeData")
     public void testTribbleDecode(final File file) throws IOException {
         final IntervalList intervalListLocal = IntervalList.fromFile(file);
-        try (final FeatureReader<Interval> intervalListReader = AbstractFeatureReader.getFeatureReader(file.getAbsolutePath(), new IntervalListCodec(), false);
-             final CloseableTribbleIterator<Interval> iterator = intervalListReader.iterator()) {
+        try (final FeatureReader<Interval> intervalListReader =
+                        AbstractFeatureReader.getFeatureReader(file.getAbsolutePath(), new IntervalListCodec(), false);
+                final CloseableTribbleIterator<Interval> iterator = intervalListReader.iterator()) {
             Assert.assertEquals(intervalListLocal.getHeader(), intervalListReader.getHeader());
 
             for (final Interval interval : intervalListLocal) {
@@ -93,12 +93,12 @@ public class IntervalListCodecTest extends HtsjdkTest {
     public void testTribbleDecodeCompressed(final File file) throws IOException {
         // compress 'file' to bgzf
         File tmpGz = File.createTempFile("htsjdk.", FileExtensions.COMPRESSED_INTERVAL_LIST);
-        try(BlockCompressedOutputStream bgz = new BlockCompressedOutputStream(tmpGz);
-            FileInputStream fis = new FileInputStream(file)) {
-            IOUtil.copyStream(fis,bgz);
+        try (BlockCompressedOutputStream bgz = new BlockCompressedOutputStream(tmpGz);
+                FileInputStream fis = new FileInputStream(file)) {
+            IOUtil.copyStream(fis, bgz);
             bgz.flush();
         }
-        //test dictonary can be extracted
+        // test dictonary can be extracted
         Assert.assertNotNull(SAMSequenceDictionaryExtractor.extractDictionary(tmpGz));
         testTribbleDecode(tmpGz);
         tmpGz.delete();
@@ -107,14 +107,17 @@ public class IntervalListCodecTest extends HtsjdkTest {
     /**
      * Test reading a IntervalList file which is malformed.
      */
-    @Test(expectedExceptions = RuntimeException.class, dataProvider = "brokenFiles", dataProviderClass = IntervalListTest.class)
+    @Test(
+            expectedExceptions = RuntimeException.class,
+            dataProvider = "brokenFiles",
+            dataProviderClass = IntervalListTest.class)
     public void testDecodeIntervalListFile_bad(Path file) throws Exception {
         IntervalListCodec codec = new IntervalListCodec();
 
-        try (FeatureReader<Interval> intervalListReader = AbstractFeatureReader.getFeatureReader(IOUtil.getFullCanonicalPath(file.toFile()), codec, false);
-             CloseableTribbleIterator<Interval> iter = intervalListReader.iterator()) {
-            for (final Feature unused : iter) {
-            }
+        try (FeatureReader<Interval> intervalListReader = AbstractFeatureReader.getFeatureReader(
+                        IOUtil.getFullCanonicalPath(file.toFile()), codec, false);
+                CloseableTribbleIterator<Interval> iter = intervalListReader.iterator()) {
+            for (final Feature unused : iter) {}
         }
     }
 
@@ -125,13 +128,10 @@ public class IntervalListCodecTest extends HtsjdkTest {
     }
 
     @DataProvider
-    Object[][] Suffixes(){
-        return new Object[][]{
-                {"filename.interval_list"},
-                {"filename.interval_list.gz"}
-        };
+    Object[][] Suffixes() {
+        return new Object[][] {{"filename.interval_list"}, {"filename.interval_list.gz"}};
     }
-    
+
     @Test(dataProvider = "Suffixes")
     public void testCanDecode(final String pattern) {
         final IntervalListCodec codec = new IntervalListCodec();

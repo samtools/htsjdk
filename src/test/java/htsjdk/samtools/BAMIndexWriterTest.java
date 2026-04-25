@@ -23,18 +23,17 @@
  */
 package htsjdk.samtools;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Test BAM file index creation
@@ -57,7 +56,9 @@ public class BAMIndexWriterTest extends HtsjdkTest {
 
         final File javaBaiFile = File.createTempFile("javaBai.", "java.bai");
         final File javaBaiTxtFile = new File(javaBaiFile.getAbsolutePath() + ".txt");
-        final SamReader bam = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(BAM_FILE);
+        final SamReader bam = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(BAM_FILE);
         BAMIndexer.createIndex(bam, javaBaiFile.toPath());
         verbose("Wrote binary Java BAM Index file " + javaBaiFile);
 
@@ -76,7 +77,9 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     public void testWriteBinary() throws Exception {
         // Compare java-generated bai file with c-generated and sorted bai file
         final File javaBaiFile = File.createTempFile("javaBai.", ".bai");
-        final SamReader bam = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(BAM_FILE);
+        final SamReader bam = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(BAM_FILE);
         BAMIndexer.createIndex(bam, javaBaiFile.toPath());
         verbose("Wrote binary java BAM Index file " + javaBaiFile);
 
@@ -94,12 +97,17 @@ public class BAMIndexWriterTest extends HtsjdkTest {
 
     @Test(enabled = false, dataProvider = "linearIndexTestData")
     /** Test linear index at specific references and windows */
-    public void testLinearIndex(String testName, String filepath, int problemReference, int problemWindowStart, int problemWindowEnd, int expectedCount) {
+    public void testLinearIndex(
+            String testName,
+            String filepath,
+            int problemReference,
+            int problemWindowStart,
+            int problemWindowEnd,
+            int expectedCount) {
         final SamReader sfr = SamReaderFactory.makeDefault().open(new File(filepath));
         for (int problemWindow = problemWindowStart; problemWindow <= problemWindowEnd; problemWindow++) {
             int count = countAlignmentsInWindow(problemReference, problemWindow, sfr, expectedCount);
-            if (expectedCount != -1)
-                assertEquals(expectedCount, count);
+            if (expectedCount != -1) assertEquals(expectedCount, count);
         }
         CloserUtil.close(sfr);
     }
@@ -107,16 +115,15 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     @DataProvider(name = "linearIndexTestData")
     public Object[][] getLinearIndexTestData() {
         // Add data here for test cases, reference, and windows where linear index needs testing
-        return new Object[][]{
-                new Object[]{"index_test", BAM_FILE_LOCATION, 1, 29, 66, -1},  // 29-66
-                new Object[]{"index_test", BAM_FILE_LOCATION, 1, 68, 118, -1},  // 29-66
-
+        return new Object[][] {
+            new Object[] {"index_test", BAM_FILE_LOCATION, 1, 29, 66, -1}, // 29-66
+            new Object[] {"index_test", BAM_FILE_LOCATION, 1, 68, 118, -1}, // 29-66
         };
     }
 
     private int countAlignmentsInWindow(int reference, int window, SamReader reader, int expectedCount) {
-        final int SIXTEEN_K = 1 << 14;       // 1 << LinearIndex.BAM_LIDX_SHIFT
-        final int start = window >> 14;             // window * SIXTEEN_K;
+        final int SIXTEEN_K = 1 << 14; // 1 << LinearIndex.BAM_LIDX_SHIFT
+        final int start = window >> 14; // window * SIXTEEN_K;
         final int stop = ((window + 1) >> 14) - 1; // (window + 1 * SIXTEEN_K) - 1;
 
         final String chr = reader.getFileHeader().getSequence(reference).getSequenceName();
@@ -128,13 +135,11 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         while (iter.hasNext()) {
             rec = iter.next();
             count++;
-            if (expectedCount == -1)
-                System.err.println(rec.getReadName());
+            if (expectedCount == -1) System.err.println(rec.getReadName());
         }
         iter.close();
         return count;
     }
-
 
     @Test(enabled = false, dataProvider = "indexComparisonData")
     /** Test linear index at all references and windows, comparing with existing index */
@@ -157,14 +162,19 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         File indexFile2 = new File(bamIndexFile);
         assertTrue(indexFile2.exists(), testName + " input index file doesn't exist: " + indexFile2);
 
-        final CachingBAMFileIndex existingIndex1 = new CachingBAMFileIndex(indexFile1, null); // todo null sequence dictionary?
+        final CachingBAMFileIndex existingIndex1 =
+                new CachingBAMFileIndex(indexFile1, null); // todo null sequence dictionary?
         final CachingBAMFileIndex existingIndex2 = new CachingBAMFileIndex(indexFile2, null);
         final int n_ref = existingIndex1.getNumberOfReferences();
         assertEquals(n_ref, existingIndex2.getNumberOfReferences());
 
-        final SamReader reader1 = SamReaderFactory.makeDefault().disable(SamReaderFactory.Option.EAGERLY_DECODE).open(bam);
+        final SamReader reader1 = SamReaderFactory.makeDefault()
+                .disable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(bam);
 
-        final SamReader reader2 = SamReaderFactory.makeDefault().disable(SamReaderFactory.Option.EAGERLY_DECODE).open(bam);
+        final SamReader reader2 = SamReaderFactory.makeDefault()
+                .disable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(bam);
 
         System.out.println("Comparing " + n_ref + " references in " + indexFile1 + " and " + indexFile2);
 
@@ -185,20 +195,18 @@ public class BAMIndexWriterTest extends HtsjdkTest {
             for (int win = 0; win < baiSize; win++) {
                 counts1[win] = countAlignmentsInWindow(i, win, reader1, 0);
                 counts2[win] = countAlignmentsInWindow(i, win, reader2, counts1[win]);
-                assertEquals(counts2[win], counts1[win], "Counts don't match for reference " + i +
-                        " window " + win);
+                assertEquals(counts2[win], counts1[win], "Counts don't match for reference " + i + " window " + win);
             }
         }
 
         indexFile1.deleteOnExit();
-
     }
 
     @DataProvider(name = "indexComparisonData")
     public Object[][] getIndexComparisonData() {
         // enter bam file and alternate index file to be tested against generated bam index
-        return new Object[][]{
-                new Object[]{"index_test", BAM_FILE_LOCATION, BAI_FILE_LOCATION},
+        return new Object[][] {
+            new Object[] {"index_test", BAM_FILE_LOCATION, BAI_FILE_LOCATION},
         };
     }
 

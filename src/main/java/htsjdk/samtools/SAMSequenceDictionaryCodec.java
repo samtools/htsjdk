@@ -25,7 +25,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.LineReader;
-
 import java.io.Writer;
 
 /**
@@ -97,7 +96,7 @@ public class SAMSequenceDictionaryCodec {
      * @return complete SAMSequenceDictionary object.
      */
     public SAMSequenceDictionary decode(final LineReader reader, final String source) {
-       return codec.decode(reader, source).getSequenceDictionary();
+        return codec.decode(reader, source).getSequenceDictionary();
     }
 
     /**

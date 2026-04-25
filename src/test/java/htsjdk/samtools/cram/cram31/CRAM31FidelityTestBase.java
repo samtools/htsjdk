@@ -9,16 +9,14 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.structure.CRAMCompressionProfile;
-import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.utils.SamtoolsTestUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 
 /**
  * Base class for CRAM 3.1 fidelity tests. Each subclass tests a single compression profile
@@ -39,18 +37,18 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
     @DataProvider(name = "inputs")
     public Object[][] inputs() {
         return new Object[][] {
-                {
-                    new HtsPath(CRAM_TEST_DIR + "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram"),
-                    new HtsPath(REF_TEST_DIR + "human_g1k_v37.20.21.fasta.gz"),
-                },
-                {
-                    new HtsPath(CRAM_TEST_DIR + "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                    new HtsPath(CRAM_TEST_DIR + "human_g1k_v37.20.21.1-100.fasta"),
-                },
-                {
-                    new HtsPath(CRAM_TEST_DIR + "NA12878.unmapped.cram"),
-                    new HtsPath(CRAM_TEST_DIR + "human_g1k_v37.20.21.1-100.fasta"),
-                },
+            {
+                new HtsPath(CRAM_TEST_DIR + "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram"),
+                new HtsPath(REF_TEST_DIR + "human_g1k_v37.20.21.fasta.gz"),
+            },
+            {
+                new HtsPath(CRAM_TEST_DIR + "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                new HtsPath(CRAM_TEST_DIR + "human_g1k_v37.20.21.1-100.fasta"),
+            },
+            {
+                new HtsPath(CRAM_TEST_DIR + "NA12878.unmapped.cram"),
+                new HtsPath(CRAM_TEST_DIR + "human_g1k_v37.20.21.1-100.fasta"),
+            },
         };
     }
 
@@ -83,20 +81,21 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
 
     static void convertToCRAM31WithSamtools(
             final IOPath input, final IOPath output, final IOPath reference, final String profile) {
-        SamtoolsTestUtils.convertToCRAM(input, output, reference,
-                "--output-fmt cram,version=3.1," + profile);
+        SamtoolsTestUtils.convertToCRAM(input, output, reference, "--output-fmt cram,version=3.1," + profile);
     }
 
-    static void writeWithHTSJDK(final IOPath inputPath, final IOPath outputPath,
-                                final IOPath referencePath, final String profile) throws IOException {
+    static void writeWithHTSJDK(
+            final IOPath inputPath, final IOPath outputPath, final IOPath referencePath, final String profile)
+            throws IOException {
         final CRAMCompressionProfile cramProfile = CRAMCompressionProfile.valueOfCaseInsensitive(profile);
         try (final SamReader reader = SamReaderFactory.makeDefault()
-                .referenceSequence(referencePath.toPath())
-                .validationStringency(ValidationStringency.LENIENT)
-                .open(inputPath.toPath());
-             final SAMFileWriter writer = new SAMFileWriterFactory()
-                     .setCRAMEncodingStrategy(cramProfile.toStrategy())
-                     .makeWriter(reader.getFileHeader().clone(), true, outputPath.toPath(), referencePath.toPath())) {
+                        .referenceSequence(referencePath.toPath())
+                        .validationStringency(ValidationStringency.LENIENT)
+                        .open(inputPath.toPath());
+                final SAMFileWriter writer = new SAMFileWriterFactory()
+                        .setCRAMEncodingStrategy(cramProfile.toStrategy())
+                        .makeWriter(
+                                reader.getFileHeader().clone(), true, outputPath.toPath(), referencePath.toPath())) {
             for (final SAMRecord rec : reader) {
                 writer.addAlignment(rec);
             }
@@ -106,14 +105,13 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
     static void compareCRAMFiles(final Path path1, final Path path2, final Path referencePath) {
         int diffCount = 0;
         try (final SamReader reader1 = SamReaderFactory.makeDefault()
-                .referenceSequence(referencePath)
-                .validationStringency(ValidationStringency.SILENT)
-                .open(path1);
-             final SamReader reader2 = SamReaderFactory.makeDefault()
-                     .referenceSequence(referencePath)
-                     .validationStringency(ValidationStringency.SILENT)
-                     .open(path2);
-        ) {
+                        .referenceSequence(referencePath)
+                        .validationStringency(ValidationStringency.SILENT)
+                        .open(path1);
+                final SamReader reader2 = SamReaderFactory.makeDefault()
+                        .referenceSequence(referencePath)
+                        .validationStringency(ValidationStringency.SILENT)
+                        .open(path2); ) {
             final Iterator<SAMRecord> iterator2 = reader2.iterator();
             for (final SAMRecord rec1 : reader1) {
                 final SAMRecord rec2 = iterator2.next();
@@ -123,8 +121,7 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
                     diffCount++;
                 }
             }
-            Assert.assertFalse(iterator2.hasNext(),
-                    "Second CRAM file has more records than first");
+            Assert.assertFalse(iterator2.hasNext(), "Second CRAM file has more records than first");
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }

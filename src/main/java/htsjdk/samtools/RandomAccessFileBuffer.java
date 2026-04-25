@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -20,7 +19,7 @@ import java.io.RandomAccessFile;
  */
 class RandomAccessFileBuffer implements IndexFileBuffer {
     private static final int PAGE_SIZE = 4 * 1024;
-    private static final int PAGE_OFFSET_MASK = PAGE_SIZE-1;
+    private static final int PAGE_OFFSET_MASK = PAGE_SIZE - 1;
     private static final int PAGE_MASK = ~PAGE_OFFSET_MASK;
     private static final int INVALID_PAGE = 1;
     private final File mFile;
@@ -53,7 +52,7 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
         }
         while (resultLength > 0) {
             loadPage(mFilePointer);
-            final int pageOffset = (int)mFilePointer & PAGE_OFFSET_MASK;
+            final int pageOffset = (int) mFilePointer & PAGE_OFFSET_MASK;
             final int copyLength = Math.min(resultLength, PAGE_SIZE - pageOffset);
             System.arraycopy(mBuffer, pageOffset, bytes, resultOffset, copyLength);
             mFilePointer += copyLength;
@@ -66,12 +65,12 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     public int readInteger() {
         // This takes advantage of the fact that integers in BAM index files are always 4-byte aligned.
         loadPage(mFilePointer);
-        final int pageOffset = (int)mFilePointer & PAGE_OFFSET_MASK;
+        final int pageOffset = (int) mFilePointer & PAGE_OFFSET_MASK;
         mFilePointer += 4;
-        return((mBuffer[pageOffset + 0] & 0xFF) |
-                ((mBuffer[pageOffset + 1] & 0xFF) << 8) |
-                ((mBuffer[pageOffset + 2] & 0xFF) << 16) |
-                ((mBuffer[pageOffset + 3] & 0xFF) << 24));
+        return ((mBuffer[pageOffset + 0] & 0xFF)
+                | ((mBuffer[pageOffset + 1] & 0xFF) << 8)
+                | ((mBuffer[pageOffset + 2] & 0xFF) << 16)
+                | ((mBuffer[pageOffset + 3] & 0xFF) << 24));
     }
 
     @Override
@@ -113,7 +112,7 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     }
 
     private void loadPage(final long filePosition) {
-        final int page = (int)filePosition & PAGE_MASK;
+        final int page = (int) filePosition & PAGE_MASK;
         if (page == mCurrentPage) {
             return;
         }

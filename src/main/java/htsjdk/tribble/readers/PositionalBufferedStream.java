@@ -18,7 +18,6 @@
 package htsjdk.tribble.readers;
 
 import htsjdk.tribble.TribbleException;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -60,7 +59,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
     @Override
     public final int read() throws IOException {
         final int c = peek();
-        if ( c >= 0 ) {
+        if (c >= 0) {
             // update position and buffer offset if peek says we aren't yet done
             position++;
             nextChar++;
@@ -70,18 +69,18 @@ public final class PositionalBufferedStream extends InputStream implements Posit
 
     @Override
     public final int read(final byte[] bytes, final int start, final int len) throws IOException {
-        if ( len == 0 ) // If len is zero, then no bytes are read and 0 is returned
-            return 0;
+        if (len == 0) // If len is zero, then no bytes are read and 0 is returned
+        return 0;
         if (nChars < 0) // If no byte is available because the stream is at end of file, the value -1 is returned
-            return -1;
+        return -1;
         else {
             int nRead = 0;
             int remaining = len;
 
-            while ( remaining > 0 ) {
+            while (remaining > 0) {
                 // Try to Refill buffer if at the end of current buffer
-                if ( nChars == nextChar )
-                    if ( fill() < 0 ) { // EOF
+                if (nChars == nextChar)
+                    if (fill() < 0) { // EOF
                         break;
                     }
 
@@ -90,14 +89,14 @@ public final class PositionalBufferedStream extends InputStream implements Posit
                 System.arraycopy(buffer, nextChar, bytes, start + nRead, nCharsToCopy);
 
                 // update nextChar (pointer into buffer) and keep track of nRead and remaining
-                nextChar  += nCharsToCopy;
-                nRead     += nCharsToCopy;
+                nextChar += nCharsToCopy;
+                nRead += nCharsToCopy;
                 remaining -= nCharsToCopy;
             }
 
             // make sure we update our position tracker to reflect having advanced by nRead bytes
             position += nRead;
-            
+
             /** Conform to {@link InputStream#read(byte[], int, int)} contract by returning -1 if EOF and no data was read. */
             return nRead == 0 ? -1 : nRead;
         }
@@ -118,9 +117,9 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         // Check for EOF
         if (nChars < 0) {
             return -1;
-        } else if (nextChar == nChars){
-            //Try to Refill buffer if at the end of current buffer
-            if ( fill() < 0 ){
+        } else if (nextChar == nChars) {
+            // Try to Refill buffer if at the end of current buffer
+            if (fill() < 0) {
                 return -1;
             }
         }
@@ -143,9 +142,9 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         // When the buffer contains enough data that we have less than
         // its less left to skip we increase nextChar by the remaining
         // amount
-        while ( remainingToSkip > 0 && ! isDone() ) {
+        while (remainingToSkip > 0 && !isDone()) {
             final long bytesLeftInBuffer = nChars - nextChar;
-            if ( remainingToSkip > bytesLeftInBuffer ) {
+            if (remainingToSkip > bytesLeftInBuffer) {
                 // we need to refill the buffer and continue our skipping
                 remainingToSkip -= bytesLeftInBuffer;
                 fill();
@@ -171,7 +170,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         }
     }
 
-    private final static int byteToInt(byte b) {
+    private static final int byteToInt(byte b) {
         return b & 0xFF;
     }
 
@@ -183,20 +182,16 @@ public final class PositionalBufferedStream extends InputStream implements Posit
 
         System.out.printf("Testing %s%n", args[0]);
         for (int i = 0; i < iterations; i++) {
-            if ( includeInputStream ) {
+            if (includeInputStream) {
                 final InputStream is = new FileInputStream(testFile);
-                if ( doReadFileInChunks )
-                    readFileInChunks("InputStream", is);
-                else
-                    readFileByLine("InputStream", is);
+                if (doReadFileInChunks) readFileInChunks("InputStream", is);
+                else readFileByLine("InputStream", is);
                 is.close();
             }
 
             final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(testFile));
-            if ( doReadFileInChunks )
-                readFileInChunks("PositionalBufferedStream", pbs);
-            else
-                readFileByLine("PositionalBufferedStream", pbs);
+            if (doReadFileInChunks) readFileInChunks("PositionalBufferedStream", pbs);
+            else readFileByLine("PositionalBufferedStream", pbs);
             pbs.close();
         }
     }
@@ -227,10 +222,8 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         is.close();
     }
 
-
     private static final void printStatus(final String name, long lineCount, double rate, long dt) {
         System.out.printf("%30s: %d lines read.  Rate = %.2e lines per second.  DT = %d%n", name, lineCount, rate, dt);
         System.out.flush();
     }
 }
-

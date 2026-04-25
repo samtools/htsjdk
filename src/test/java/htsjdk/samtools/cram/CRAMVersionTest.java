@@ -16,13 +16,12 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.zip.CRC32;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Created by vadim on 18/02/2016.
@@ -85,13 +84,15 @@ public class CRAMVersionTest extends HtsjdkTest {
         // rewind to 1st container start:
         cramSeekableStream.seek(containerStart);
         // read container header bytes:
-        byte[] containerHeaderBytes = InputStreamUtils.readFully(cramSeekableStream, (int) (firstBlockStart - containerStart) - crcByteSize);
+        byte[] containerHeaderBytes =
+                InputStreamUtils.readFully(cramSeekableStream, (int) (firstBlockStart - containerStart) - crcByteSize);
 
         // test that checksum matches:
         CRC32 digester = new CRC32();
         digester.update(containerHeaderBytes);
         Assert.assertEquals(container.getContainerHeader().getChecksum(), (int) digester.getValue());
-        Assert.assertEquals(CramInt.readInt32(crcBytes), container.getContainerHeader().getChecksum());
+        Assert.assertEquals(
+                CramInt.readInt32(crcBytes), container.getContainerHeader().getChecksum());
 
         // test block's crc:
         cramSeekableStream.seek(firstBlockStart);

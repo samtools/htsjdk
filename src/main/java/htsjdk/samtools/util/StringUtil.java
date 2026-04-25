@@ -48,7 +48,7 @@ public class StringUtil {
 
         final StringBuilder ret = new StringBuilder();
         for (final Object obj : objs) {
-            if(notFirst) {
+            if (notFirst) {
                 ret.append(separator);
             }
             ret.append(obj.toString());
@@ -61,7 +61,6 @@ public class StringUtil {
         final List<T> values = Arrays.asList(objs);
         return join(separator, values);
     }
-
 
     /**
      * Split the string into tokens separated by the given delimiter.  Profiling has
@@ -80,23 +79,19 @@ public class StringUtil {
         int nTokens = 0;
         int start = 0;
         int end = aString.indexOf(delim);
-        if(end < 0) {
+        if (end < 0) {
             tokens[nTokens++] = aString;
             return nTokens;
         }
-        while ((end >= 0) && (nTokens < maxTokens))
-        {
+        while ((end >= 0) && (nTokens < maxTokens)) {
             tokens[nTokens++] = aString.substring(start, end);
             start = end + 1;
             end = aString.indexOf(delim, start);
-
         }
         // Add the trailing string,  if there is room and if it is not empty.
-        if (nTokens < maxTokens)
-        {
+        if (nTokens < maxTokens) {
             final String trailingString = aString.substring(start);
-            if (!trailingString.isEmpty())
-            {
+            if (!trailingString.isEmpty()) {
                 tokens[nTokens++] = trailingString;
             }
         }
@@ -121,21 +116,18 @@ public class StringUtil {
         int nTokens = 0;
         int start = 0;
         int end = aString.indexOf(delim);
-        if(end < 0) {
+        if (end < 0) {
             tokens[nTokens++] = aString;
             return nTokens;
         }
-        while ((end >= 0) && (nTokens < maxTokens - 1))
-        {
+        while ((end >= 0) && (nTokens < maxTokens - 1)) {
             tokens[nTokens++] = aString.substring(start, end);
             start = end + 1;
             end = aString.indexOf(delim, start);
-
         }
         // Add the trailing string,  if it is not empty.
         final String trailingString = aString.substring(start);
-        if (!trailingString.isEmpty())
-        {
+        if (!trailingString.isEmpty()) {
             tokens[nTokens++] = trailingString;
         }
         return nTokens;
@@ -149,7 +141,7 @@ public class StringUtil {
         if (b < 'A' || b > 'Z') {
             return b;
         }
-        return (byte)(b - UPPER_CASE_OFFSET);
+        return (byte) (b - UPPER_CASE_OFFSET);
     }
 
     /**
@@ -160,7 +152,7 @@ public class StringUtil {
         if (b < 'a' || b > 'z') {
             return b;
         }
-        return (byte)(b + UPPER_CASE_OFFSET);
+        return (byte) (b + UPPER_CASE_OFFSET);
     }
 
     /**
@@ -168,13 +160,12 @@ public class StringUtil {
      */
     public static void toUpperCase(final byte[] bytes) {
         final int length = bytes.length;
-        for (int i=0; i<length; ++i) {
+        for (int i = 0; i < length; ++i) {
             if (bytes[i] >= 'a' && bytes[i] <= 'z') {
                 bytes[i] = (byte) (bytes[i] + UPPER_CASE_OFFSET);
             }
         }
     }
-
 
     /**
      * Checks that a String doesn't contain one or more characters of interest.
@@ -186,9 +177,10 @@ public class StringUtil {
      */
     public static String assertCharactersNotInString(final String illegalChars, final char... chars) {
         for (final char illegalChar : illegalChars.toCharArray()) {
-            for (final char ch: chars) {
+            for (final char ch : chars) {
                 if (illegalChar == ch) {
-                    throw new IllegalArgumentException("Supplied String contains illegal character '" + illegalChar + "'.");
+                    throw new IllegalArgumentException(
+                            "Supplied String contains illegal character '" + illegalChar + "'.");
                 }
             }
         }
@@ -204,7 +196,7 @@ public class StringUtil {
     public static String wordWrap(final String s, final int maxLineLength) {
         final String[] lines = s.split("\n");
         final StringBuilder sb = new StringBuilder();
-        for (final String line: lines) {
+        for (final String line : lines) {
             if (sb.length() > 0) {
                 sb.append('\n');
             }
@@ -249,12 +241,11 @@ public class StringUtil {
         return sb.toString();
     }
 
-
     public static String intValuesToString(final int[] intVals) {
         final StringBuilder sb = new StringBuilder(intVals.length);
-        if(intVals.length > 0) {
+        if (intVals.length > 0) {
             sb.append(String.valueOf(intVals[0]));
-            for(int i = 1; i < intVals.length; i++) {
+            for (int i = 1; i < intVals.length; i++) {
                 sb.append(", ");
                 sb.append(String.valueOf(intVals[i]));
             }
@@ -265,9 +256,9 @@ public class StringUtil {
 
     public static String intValuesToString(final short[] shortVals) {
         final StringBuilder sb = new StringBuilder(shortVals.length);
-        if(shortVals.length > 0) {
+        if (shortVals.length > 0) {
             sb.append(String.valueOf(shortVals[0]));
-            for(int i = 1; i < shortVals.length; i++) {
+            for (int i = 1; i < shortVals.length; i++) {
                 sb.append(", ");
                 sb.append(String.valueOf(shortVals[i]));
             }
@@ -290,28 +281,28 @@ public class StringUtil {
 
     @SuppressWarnings("deprecation")
     public static String bytesToString(final byte[] buffer, final int offset, final int length) {
-/*
-        The non-deprecated way, that requires allocating char[]
-        final char[] charBuffer = new char[length];
-        for (int i = 0; i < length; ++i) {
-            charBuffer[i] = (char)buffer[i+offset];
-        }
-        return new String(charBuffer);
-*/
+        /*
+                The non-deprecated way, that requires allocating char[]
+                final char[] charBuffer = new char[length];
+                for (int i = 0; i < length; ++i) {
+                    charBuffer[i] = (char)buffer[i+offset];
+                }
+                return new String(charBuffer);
+        */
         return new String(buffer, 0, offset, length);
     }
 
     @SuppressWarnings("deprecation")
     public static byte[] stringToBytes(final String s) {
-/*
-        The non-deprecated way, that requires allocating char[]
-        final byte[] byteBuffer = new byte[s.length()];
-        final char[] charBuffer = s.toCharArray();
-        for (int i = 0; i < charBuffer.length; ++i) {
-            byteBuffer[i] = (byte)(charBuffer[i] & 0xff);
-        }
-        return byteBuffer;
-*/
+        /*
+                The non-deprecated way, that requires allocating char[]
+                final byte[] byteBuffer = new byte[s.length()];
+                final char[] charBuffer = s.toCharArray();
+                for (int i = 0; i < charBuffer.length; ++i) {
+                    byteBuffer[i] = (byte)(charBuffer[i] & 0xff);
+                }
+                return byteBuffer;
+        */
         if (s == null) {
             return null;
         }
@@ -335,7 +326,7 @@ public class StringUtil {
     public static String readNullTerminatedString(final BinaryCodec binaryCodec) {
         final StringBuilder ret = new StringBuilder();
         for (byte b = binaryCodec.readByte(); b != 0; b = binaryCodec.readByte()) {
-            ret.append((char)(b & 0xff));
+            ret.append((char) (b & 0xff));
         }
         return ret.toString();
     }
@@ -348,10 +339,10 @@ public class StringUtil {
      * @param bytes where to put the converted output
      * @param byteOffset where to start writing the converted output.
      */
-    public static void charsToBytes(final char[] chars, final int charOffset, final int length,
-                                    final byte[] bytes, final int byteOffset) {
+    public static void charsToBytes(
+            final char[] chars, final int charOffset, final int length, final byte[] bytes, final int byteOffset) {
         for (int i = 0; i < length; ++i) {
-            bytes[byteOffset + i] = (byte)chars[charOffset + i];
+            bytes[byteOffset + i] = (byte) chars[charOffset + i];
         }
     }
 
@@ -359,14 +350,14 @@ public class StringUtil {
      * Convert ASCII char to byte.
      */
     public static byte charToByte(final char c) {
-        return (byte)c;
+        return (byte) c;
     }
 
     /**
      * Convert ASCII byte to ASCII char.
      */
     public static char byteToChar(final byte b) {
-        return (char)(b & 0xff);
+        return (char) (b & 0xff);
     }
 
     /**
@@ -378,8 +369,8 @@ public class StringUtil {
         final char[] chars = new char[2 * data.length];
         for (int i = 0; i < data.length; i++) {
             final byte b = data[i];
-            chars[2*i] = toHexDigit((b >> 4) & 0xF);
-            chars[2*i+1] = toHexDigit(b & 0xF);
+            chars[2 * i] = toHexDigit((b >> 4) & 0xF);
+            chars[2 * i + 1] = toHexDigit(b & 0xF);
         }
         return new String(chars);
     }
@@ -391,9 +382,10 @@ public class StringUtil {
      * @return byte array with binary representation of hex string.
      * @throws NumberFormatException
      */
-    public static byte[] hexStringToBytes(final String s)  throws NumberFormatException {
+    public static byte[] hexStringToBytes(final String s) throws NumberFormatException {
         if (s.length() % 2 != 0) {
-            throw new NumberFormatException("Hex representation of byte string does not have even number of hex chars: " + s);
+            throw new NumberFormatException(
+                    "Hex representation of byte string does not have even number of hex chars: " + s);
         }
         final byte[] ret = new byte[s.length() / 2];
         for (int i = 0; i < ret.length; ++i) {
@@ -445,14 +437,14 @@ public class StringUtil {
             return true;
         }
         for (int i = 0; i < strLen; i++) {
-            if (!Character.isWhitespace(str.charAt(i)) ) {
+            if (!Character.isWhitespace(str.charAt(i))) {
                 return false;
             }
         }
         return true;
     }
 
-     /* <p>Generates a string of one character to a specified length</p>
+    /* <p>Generates a string of one character to a specified length</p>
      *
      * @param c  the Character to repeat
      * @param repeatNumber the number of times to repeat the character
@@ -466,44 +458,46 @@ public class StringUtil {
 
     /** Returns {@link Object#toString()} of the provided value if it isn't null; "" otherwise. */
     public static final String EMPTY_STRING = "";
+
     public static String asEmptyIfNull(final Object string) {
         return string == null ? EMPTY_STRING : string.toString();
     }
 
     /*
-    * This is from GIT!
-    *  This function implements the Damerau-Levenshtein algorithm to
-    * calculate a distance between strings.
-    *
-    * Basically, it says how many letters need to be swapped, substituted,
-    * deleted from, or added to string1, at least, to get string2.
-    *
-    * The idea is to build a distance matrix for the substrings of both
-    * strings.  To avoid a large space complexity, only the last three rows
-    * are kept in memory (if swaps had the same or higher cost as one deletion
-    * plus one insertion, only two rows would be needed).
-    *
-    * At any stage, "i + 1" denotes the length of the current substring of
-    * string1 that the distance is calculated for.
-    *
-    * row2 holds the current row, row1 the previous row (i.e. for the substring
-    * of string1 of length "i"), and row0 the row before that.
-    *
-    * In other words, at the start of the big loop, row2[j + 1] contains the
-    * Damerau-Levenshtein distance between the substring of string1 of length
-    * "i" and the substring of string2 of length "j + 1".
-    *
-    * All the big loop does is determine the partial minimum-cost paths.
-    *
-    * It does so by calculating the costs of the path ending in characters
-    * i (in string1) and j (in string2), respectively, given that the last
-    * operation is a substitution, a swap, a deletion, or an insertion.
-    *
-    * This implementation allows the costs to be weighted:
-    *
-    * Note that this algorithm calculates a distance _iff_ d == a.
-    */
-    public static int levenshteinDistance(final String string1, final String string2, int swap, int substitution, int insertion, int deletion) {
+     * This is from GIT!
+     *  This function implements the Damerau-Levenshtein algorithm to
+     * calculate a distance between strings.
+     *
+     * Basically, it says how many letters need to be swapped, substituted,
+     * deleted from, or added to string1, at least, to get string2.
+     *
+     * The idea is to build a distance matrix for the substrings of both
+     * strings.  To avoid a large space complexity, only the last three rows
+     * are kept in memory (if swaps had the same or higher cost as one deletion
+     * plus one insertion, only two rows would be needed).
+     *
+     * At any stage, "i + 1" denotes the length of the current substring of
+     * string1 that the distance is calculated for.
+     *
+     * row2 holds the current row, row1 the previous row (i.e. for the substring
+     * of string1 of length "i"), and row0 the row before that.
+     *
+     * In other words, at the start of the big loop, row2[j + 1] contains the
+     * Damerau-Levenshtein distance between the substring of string1 of length
+     * "i" and the substring of string2 of length "j + 1".
+     *
+     * All the big loop does is determine the partial minimum-cost paths.
+     *
+     * It does so by calculating the costs of the path ending in characters
+     * i (in string1) and j (in string2), respectively, given that the last
+     * operation is a substitution, a swap, a deletion, or an insertion.
+     *
+     * This implementation allows the costs to be weighted:
+     *
+     * Note that this algorithm calculates a distance _iff_ d == a.
+     */
+    public static int levenshteinDistance(
+            final String string1, final String string2, int swap, int substitution, int insertion, int deletion) {
         int i, j;
 
         int[] row0 = new int[(string2.length() + 1)];
@@ -526,9 +520,11 @@ public class StringUtil {
                     row2[j + 1] += substitution;
                 }
                 /* swap */
-                if (i > 0 && j > 0 && str1[i - 1] == str2[j] &&
-                        str1[i] == str2[j - 1] &&
-                        row2[j + 1] > row0[j - 1] + swap) {
+                if (i > 0
+                        && j > 0
+                        && str1[i - 1] == str2[j]
+                        && str1[i] == str2[j - 1]
+                        && row2[j + 1] > row0[j - 1] + swap) {
                     row2[j + 1] = row0[j - 1] + swap;
                 }
                 /* deletion */
@@ -565,11 +561,13 @@ public class StringUtil {
      */
     public static int hammingDistance(final String s1, final String s2) {
         if (s1.length() != s2.length()) {
-            throw new IllegalArgumentException("Attempted to determine Hamming distance of strings with differing lengths. " +
-                    "The first string has length " + s1.length() + " and the second string has length " + s2.length() + ".");
+            throw new IllegalArgumentException(
+                    "Attempted to determine Hamming distance of strings with differing lengths. "
+                            + "The first string has length " + s1.length() + " and the second string has length "
+                            + s2.length() + ".");
         }
         int measuredDistance = 0;
-        for (int i = 0;i < s1.length();i++) {
+        for (int i = 0; i < s1.length(); i++) {
             if (s1.charAt(i) != s2.charAt(i)) {
                 measuredDistance++;
             }
@@ -591,10 +589,11 @@ public class StringUtil {
      */
     public static boolean isWithinHammingDistance(final String s1, final String s2, final int maxHammingDistance) {
         if (s1.length() != s2.length()) {
-            throw new IllegalArgumentException("Attempted to determine if two strings of different length were within a specified edit distance.");
+            throw new IllegalArgumentException(
+                    "Attempted to determine if two strings of different length were within a specified edit distance.");
         }
         int measuredDistance = 0;
-        for (int i = 0;i < s1.length();i++) {
+        for (int i = 0; i < s1.length(); i++) {
             if (s1.charAt(i) != s2.charAt(i)) {
                 measuredDistance++;
                 // If the measuredDistance is larger than the maxHammingDistance we can short circuit and return

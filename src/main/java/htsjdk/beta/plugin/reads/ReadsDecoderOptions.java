@@ -1,12 +1,11 @@
 package htsjdk.beta.plugin.reads;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.codecs.reads.bam.BAMDecoderOptions;
 import htsjdk.beta.codecs.reads.cram.CRAMDecoderOptions;
 import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.nio.channels.SeekableByteChannel;
 import java.util.Optional;
 import java.util.function.Function;
@@ -15,15 +14,15 @@ import java.util.function.Function;
  * Reads decoder options (shared/common).
  */
 public class ReadsDecoderOptions implements HtsDecoderOptions {
-    private ValidationStringency validationStringency   = ValidationStringency.STRICT;
-    private boolean eagerlyDecode                       = false;  // honored by BAM and HtsGet
-    private boolean fileBasedIndexCached                = false;  // honored by BAM and CRAM
-    private boolean memoryMapIndexes                    = true;   // honored by BAM and CRAM
-    //TODO: replace these with a prefetch size args, and use a local channel wrapper implementation
+    private ValidationStringency validationStringency = ValidationStringency.STRICT;
+    private boolean eagerlyDecode = false; // honored by BAM and HtsGet
+    private boolean fileBasedIndexCached = false; // honored by BAM and CRAM
+    private boolean memoryMapIndexes = true; // honored by BAM and CRAM
+    // TODO: replace these with a prefetch size args, and use a local channel wrapper implementation
     private Function<SeekableByteChannel, SeekableByteChannel> readsChannelTransformer;
     private Function<SeekableByteChannel, SeekableByteChannel> indexChannelTransformer;
-    private BAMDecoderOptions bamDecoderOptions         = new BAMDecoderOptions();
-    private CRAMDecoderOptions cramDecoderOptions       = new CRAMDecoderOptions();
+    private BAMDecoderOptions bamDecoderOptions = new BAMDecoderOptions();
+    private CRAMDecoderOptions cramDecoderOptions = new CRAMDecoderOptions();
 
     /**
      * Get the {@link ValidationStringency} used for these options. Defaults to {@link ValidationStringency#STRICT}.
@@ -112,7 +111,9 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
      *
      * @return the {@link BAMDecoderOptions} for these options
      */
-    public BAMDecoderOptions getBAMDecoderOptions() { return bamDecoderOptions; }
+    public BAMDecoderOptions getBAMDecoderOptions() {
+        return bamDecoderOptions;
+    }
 
     /**
      * Set the {@link BAMDecoderOptions} used for these options.
@@ -131,7 +132,9 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
      *
      * @return the {@link CRAMDecoderOptions} for these options
      */
-    public CRAMDecoderOptions getCRAMDecoderOptions() { return cramDecoderOptions; }
+    public CRAMDecoderOptions getCRAMDecoderOptions() {
+        return cramDecoderOptions;
+    }
 
     /**
      * Set the {@link CRAMDecoderOptions} for these ReadsDecoderOptions.
@@ -196,5 +199,4 @@ public class ReadsDecoderOptions implements HtsDecoderOptions {
         this.indexChannelTransformer = indexChannelTransformer;
         return this;
     }
-
 }

@@ -2,9 +2,9 @@ package htsjdk.beta.plugin.registry;
 
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
@@ -25,7 +25,7 @@ import htsjdk.utils.ValidationUtils;
  * {@link ReadsCodec}s, such as {@link ReadsDecoder}, {@link ReadsEncoder},
  * {@link htsjdk.beta.plugin.reads.ReadsDecoderOptions}.
  */
-public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
+public class ReadsResolver extends HtsCodecResolver<ReadsCodec> {
 
     /**
      * Create a ReadsResolver.
@@ -64,9 +64,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      * that the registry contains an incorrectly written codec.
      */
-    public ReadsDecoder getReadsDecoder(
-            final IOPath inputPath,
-            final ReadsDecoderOptions readsDecoderOptions) {
+    public ReadsDecoder getReadsDecoder(final IOPath inputPath, final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
@@ -102,9 +100,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
-    public ReadsDecoder getReadsDecoder(
-            final Bundle inputBundle,
-            final ReadsDecoderOptions readsDecoderOptions) {
+    public ReadsDecoder getReadsDecoder(final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(readsDecoderOptions, "Decoder options");
 
@@ -143,9 +139,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      * that the registry contains an incorrectly written codec.
      */
-    public ReadsEncoder getReadsEncoder(
-            final IOPath outputPath,
-            final ReadsEncoderOptions readsEncoderOptions) {
+    public ReadsEncoder getReadsEncoder(final IOPath outputPath, final ReadsEncoderOptions readsEncoderOptions) {
         ValidationUtils.nonNull(outputPath, "Output path");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
@@ -168,9 +162,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
      * that the registry contains an incorrectly written codec.
      */
     @SuppressWarnings("unchecked")
-    public ReadsEncoder getReadsEncoder(
-            final Bundle outputBundle,
-            final ReadsEncoderOptions readsEncoderOptions) {
+    public ReadsEncoder getReadsEncoder(final Bundle outputBundle, final ReadsEncoderOptions readsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "outputBundle");
         ValidationUtils.nonNull(readsEncoderOptions, "Encoder options");
 
@@ -200,8 +192,7 @@ public class ReadsResolver extends HtsCodecResolver<ReadsCodec>{
         ValidationUtils.nonNull(readsFormat, "Reads format");
         ValidationUtils.nonNull(formatVersion, "File format version");
 
-        return (ReadsEncoder) resolveFormatAndVersion(readsFormat, formatVersion)
-                .getEncoder(outputBundle, readsEncoderOptions);
+        return (ReadsEncoder)
+                resolveFormatAndVersion(readsFormat, formatVersion).getEncoder(outputBundle, readsEncoderOptions);
     }
-
 }

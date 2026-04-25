@@ -24,16 +24,12 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Locatable;
-import htsjdk.samtools.util.StringUtil;
-
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -42,7 +38,6 @@ import java.util.stream.Collectors;
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
  */
-
 public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable, Locatable {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     public static final int UNAVAILABLE_SEQUENCE_INDEX = -1;
@@ -69,7 +64,6 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * This is not a valid sequence name, because it is reserved in the RNEXT field of SAM text format
      * to mean "same reference as RNAME field."
      */
-
     public static final String RESERVED_RNEXT_SEQUENCE_NAME = "=";
 
     /* use RESERVED_RNEXT_SEQUENCE_NAME instead. */
@@ -79,15 +73,22 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     /**
      * The standard tags are stored in text header without type information, because the type of these tags is known.
      */
-    public static final Set<String> STANDARD_TAGS =
-            new HashSet<>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, ALTERNATIVE_SEQUENCE_NAME_TAG, MD5_TAG, URI_TAG, SPECIES_TAG));
+    public static final Set<String> STANDARD_TAGS = new HashSet<>(Arrays.asList(
+            SEQUENCE_NAME_TAG,
+            SEQUENCE_LENGTH_TAG,
+            ASSEMBLY_TAG,
+            ALTERNATIVE_SEQUENCE_NAME_TAG,
+            MD5_TAG,
+            URI_TAG,
+            SPECIES_TAG));
 
     // These are the chars matched by \\s.
     private static final char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
 
     // alternative sequence name separator
     private static final String ALTERNATIVE_SEQUENCE_NAME_SEPARATOR = ",";
-    private static final Pattern LEGAL_RNAME_PATTERN = Pattern.compile("[0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*");
+    private static final Pattern LEGAL_RNAME_PATTERN =
+            Pattern.compile("[0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*");
 
     /**
      * @deprecated Use {@link #SAMSequenceRecord(String, int)} instead.
@@ -175,8 +176,10 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      */
     public Set<String> getAlternativeSequenceNames() {
         final String anTag = getAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG);
-        return (anTag == null) ? Collections.emptySet()
-                : Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(anTag.split(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR))));
+        return (anTag == null)
+                ? Collections.emptySet()
+                : Collections.unmodifiableSet(
+                        new LinkedHashSet<>(Arrays.asList(anTag.split(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR))));
     }
 
     /**
@@ -206,18 +209,23 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     private static void validateAltRegExp(final String name) {
         if (!LEGAL_RNAME_PATTERN.matcher(name).matches()) {
-            throw new IllegalArgumentException(String.format("Invalid alternative sequence name '%s': do not match the pattern %s", name, LEGAL_RNAME_PATTERN));
+            throw new IllegalArgumentException(String.format(
+                    "Invalid alternative sequence name '%s': do not match the pattern %s", name, LEGAL_RNAME_PATTERN));
         }
     }
 
     private void encodeAltSequences(final Collection<String> alternativeSequences) {
 
-        //make sure that the order in which alternate names are joined is determined
-        setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, alternativeSequences.isEmpty() ? null : alternativeSequences.stream()
-                .sorted()
-                .distinct()
-                .peek(SAMSequenceRecord::validateAltRegExp)
-                .collect(Collectors.joining(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR)));
+        // make sure that the order in which alternate names are joined is determined
+        setAttribute(
+                ALTERNATIVE_SEQUENCE_NAME_TAG,
+                alternativeSequences.isEmpty()
+                        ? null
+                        : alternativeSequences.stream()
+                                .sorted()
+                                .distinct()
+                                .peek(SAMSequenceRecord::validateAltRegExp)
+                                .collect(Collectors.joining(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR)));
     }
 
     /**
@@ -243,10 +251,13 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
             return false;
         }
         // PIC-439.  Allow undefined length.
-        if (mSequenceLength != UNKNOWN_SEQUENCE_LENGTH && that.mSequenceLength != UNKNOWN_SEQUENCE_LENGTH && mSequenceLength != that.mSequenceLength) {
+        if (mSequenceLength != UNKNOWN_SEQUENCE_LENGTH
+                && that.mSequenceLength != UNKNOWN_SEQUENCE_LENGTH
+                && mSequenceLength != that.mSequenceLength) {
             return false;
         }
-        if (this.getAttribute(SAMSequenceRecord.MD5_TAG) != null && that.getAttribute(SAMSequenceRecord.MD5_TAG) != null) {
+        if (this.getAttribute(SAMSequenceRecord.MD5_TAG) != null
+                && that.getAttribute(SAMSequenceRecord.MD5_TAG) != null) {
             final BigInteger thisMd5 = new BigInteger((String) this.getAttribute(SAMSequenceRecord.MD5_TAG), 16);
             final BigInteger thatMd5 = new BigInteger((String) that.getAttribute(SAMSequenceRecord.MD5_TAG), 16);
             if (!thisMd5.equals(thatMd5)) {
@@ -256,8 +267,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
             // Compare using == since we intern() the Strings
             if (mSequenceName != that.mSequenceName) {
                 // if they are different, they could still be the same based on the alternative sequences
-                if (getAlternativeSequenceNames().contains(that.mSequenceName) ||
-                        that.getAlternativeSequenceNames().contains(mSequenceName)) {
+                if (getAlternativeSequenceNames().contains(that.mSequenceName)
+                        || that.getAlternativeSequenceNames().contains(mSequenceName)) {
                     return true;
                 }
                 return false;
@@ -340,7 +351,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      */
     public static void validateSequenceName(final String name) {
         if (!LEGAL_RNAME_PATTERN.matcher(name).useAnchoringBounds(true).matches()) {
-            throw new SAMException(String.format("Sequence name '%s' doesn't match regex: '%s' ", name, LEGAL_RNAME_PATTERN));
+            throw new SAMException(
+                    String.format("Sequence name '%s' doesn't match regex: '%s' ", name, LEGAL_RNAME_PATTERN));
         }
     }
 
@@ -352,8 +364,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
                 getSequenceLength(),
                 getSequenceIndex(),
                 getAssembly(),
-                getAlternativeSequenceNames()
-        );
+                getAlternativeSequenceNames());
     }
 
     @Override
@@ -389,4 +400,3 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         return this.getSequenceLength();
     }
 }
-

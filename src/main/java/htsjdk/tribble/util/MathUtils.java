@@ -56,11 +56,24 @@ public class MathUtils {
             }
         }
 
-        public void clear() { recordCount = 0; }
-        public final long numDataValues() { return recordCount; }
-        public final double mean() { return (recordCount > 0) ? newMean : 0.0; }
-        public double variance() { return ((recordCount > 1) ? newStdDev / (recordCount - 1) : 0.0); }
-        public double standardDeviation() { return Math.sqrt(variance()); }
-    }
+        public void clear() {
+            recordCount = 0;
+        }
 
+        public final long numDataValues() {
+            return recordCount;
+        }
+
+        public final double mean() {
+            return (recordCount > 0) ? newMean : 0.0;
+        }
+
+        public double variance() {
+            return ((recordCount > 1) ? newStdDev / (recordCount - 1) : 0.0);
+        }
+
+        public double standardDeviation() {
+            return Math.sqrt(variance());
+        }
+    }
 }

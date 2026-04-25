@@ -49,7 +49,8 @@ public class SAMRecordQueryHashComparatorTest extends HtsjdkTest {
     // with equal names, it delegates to the SAMRecordQuerynameComparator methods
     // so this should always provide the same result
     @Test(dataProvider = "equalNameComparisonData", dataProviderClass = SAMRecordQueryNameComparatorTest.class)
-    public void testCompareEqualNames(final SAMRecord record1, final SAMRecord record2, final int sign) throws Exception {
+    public void testCompareEqualNames(final SAMRecord record1, final SAMRecord record2, final int sign)
+            throws Exception {
         final int comparisonResult = COMPARATOR.compare(record1, record2);
         Assert.assertEquals(Integer.signum(comparisonResult), sign);
     }

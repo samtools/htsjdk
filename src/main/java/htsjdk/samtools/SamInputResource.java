@@ -32,7 +32,6 @@ import htsjdk.samtools.sra.SRAAccession;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -118,15 +117,23 @@ public class SamInputResource {
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final InputStream inputStream) { return new SamInputResource(new InputStreamInputResource(inputStream)); }
+    public static SamInputResource of(final InputStream inputStream) {
+        return new SamInputResource(new InputStreamInputResource(inputStream));
+    }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final URL url) { return new SamInputResource(new UrlInputResource(url)); }
+    public static SamInputResource of(final URL url) {
+        return new SamInputResource(new UrlInputResource(url));
+    }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final SeekableStream seekableStream) { return new SamInputResource(new SeekableStreamInputResource(seekableStream)); }
+    public static SamInputResource of(final SeekableStream seekableStream) {
+        return new SamInputResource(new SeekableStreamInputResource(seekableStream));
+    }
 
-    public static SamInputResource of(final SRAAccession acc) { return new SamInputResource(new SRAInputResource(acc)); }
+    public static SamInputResource of(final SRAAccession acc) {
+        return new SamInputResource(new SRAInputResource(acc));
+    }
 
     /**
      * Creates a {@link SamInputResource} from a URI which may represent an htsget path,
@@ -147,7 +154,8 @@ public class SamInputResource {
      * This method will first attempt to treat the resource as an htsget resource, then fall back to
      * treating it as a file system path, then as a URL
      */
-    // TODO: this method can likely be replaced by one taking an HtsPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
+    // TODO: this method can likely be replaced by one taking an HtsPath once this interface is available, see
+    // https://github.com/samtools/htsjdk/pull/1496
     public static SamInputResource of(final URI uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
         // See if this is an Htsget source first
         if (uri.getScheme().equalsIgnoreCase(HtsgetBAMFileReader.HTSGET_SCHEME)) {
@@ -156,31 +164,30 @@ public class SamInputResource {
         // Check if this URI represents a path we can open
         try {
             final Path path = IOUtil.getPath(uri.toString());
-            return wrapper == null
-                ? of(path)
-                : of(path, wrapper);
+            return wrapper == null ? of(path) : of(path, wrapper);
         } catch (final ProviderNotFoundException | IOException e) {
             // If this URI cannot be opened as a path, try treating it as a URL
             try {
                 final URL url = uri.toURL();
                 return new SamInputResource(new UrlInputResource(url));
             } catch (final MalformedURLException malformedURLException) {
-                throw new RuntimeIOException("URI could not be interpreted as any known input resource type", malformedURLException);
+                throw new RuntimeIOException(
+                        "URI could not be interpreted as any known input resource type", malformedURLException);
             }
         }
     }
 
     /** Creates a {@link SamInputResource} from a string specifying *either* a url or a file path */
-    public static SamInputResource of(final String string) { 
-      try {
-        URL url = new URL(string);    // this will throw if its not a url
-        return of(url); 
-      } catch (MalformedURLException e) {
-       // ignore
-      }
-      return of(new File(string));
+    public static SamInputResource of(final String string) {
+        try {
+            URL url = new URL(string); // this will throw if its not a url
+            return of(url);
+        } catch (MalformedURLException e) {
+            // ignore
+        }
+        return of(new File(string));
     }
-    
+
     /** Updates the index to point at the provided resource, then returns itself. */
     public SamInputResource index(final File file) {
         this.index = new FileInputResource(file);
@@ -216,7 +223,6 @@ public class SamInputResource {
         this.index = new SeekableStreamInputResource(seekableStream);
         return this;
     }
-
 }
 
 /**
@@ -225,10 +231,18 @@ public class SamInputResource {
  * each of {@link InputResource.Type}.
  */
 abstract class InputResource {
-    protected InputResource(final Type type) {this.type = type;}
+    protected InputResource(final Type type) {
+        this.type = type;
+    }
 
     enum Type {
-        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION, HTSGET
+        FILE,
+        PATH,
+        URL,
+        SEEKABLE_STREAM,
+        INPUT_STREAM,
+        SRA_ACCESSION,
+        HTSGET
     }
 
     private final Type type;
@@ -301,7 +315,6 @@ class FileInputResource extends InputResource {
         }
     });
 
-
     FileInputResource(final File fileResource) {
         super(Type.FILE);
         this.fileResource = fileResource;
@@ -328,8 +341,8 @@ class FileInputResource extends InputResource {
 
     @Override
     public SeekableStream asUnbufferedSeekableStream() {
-        //if the file doesn't exist, the try to open the stream anyway because users might be expecting the exception
-        //if it not a regular file than we won't be able to seek on it, so return null
+        // if the file doesn't exist, the try to open the stream anyway because users might be expecting the exception
+        // if it not a regular file than we won't be able to seek on it, so return null
         if (!fileResource.exists() || fileResource.isFile()) {
             return lazySeekableStream.get();
         } else {
@@ -371,7 +384,6 @@ class PathInputResource extends InputResource {
             }
         }
     });
-
 
     PathInputResource(final Path pathResource) {
         this(pathResource, Function.identity());
@@ -429,8 +441,11 @@ class UrlInputResource extends InputResource {
     final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Supplier<SeekableStream>() {
         @Override
         public SeekableStream get() {
-            try { return SeekableStreamFactory.getInstance().getStreamFor(urlResource); }
-            catch (final IOException ioe) { throw new RuntimeIOException(ioe); }
+            try {
+                return SeekableStreamFactory.getInstance().getStreamFor(urlResource);
+            } catch (final IOException ioe) {
+                throw new RuntimeIOException(ioe);
+            }
         }
     });
 
@@ -448,8 +463,7 @@ class UrlInputResource extends InputResource {
     public Path asPath() {
         try {
             return IOUtil.getPath(urlResource.toExternalForm());
-        } catch (IOException | IllegalArgumentException |
-            FileSystemNotFoundException | SecurityException e) {
+        } catch (IOException | IllegalArgumentException | FileSystemNotFoundException | SecurityException e) {
             return null;
         }
     }
@@ -595,7 +609,8 @@ class SRAInputResource extends InputResource {
     }
 }
 
-// TODO: replace this with an InputResource type taking HtsPath once this interface is available, see https://github.com/samtools/htsjdk/pull/1496
+// TODO: replace this with an InputResource type taking HtsPath once this interface is available, see
+// https://github.com/samtools/htsjdk/pull/1496
 class HtsgetInputResource extends InputResource {
 
     final URI uri;

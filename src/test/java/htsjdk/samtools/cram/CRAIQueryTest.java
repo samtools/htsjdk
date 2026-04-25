@@ -8,15 +8,13 @@ import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SequenceUtil;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Tests that CRAI indexes produced by htsjdk enable correct region-based querying.
@@ -69,8 +67,8 @@ public class CRAIQueryTest extends HtsjdkTest {
                 .setMinimumSingleReferenceSliceSize(READS_PER_SLICE)
                 .setReadsPerSlice(READS_PER_SLICE);
 
-        try (final CRAMFileWriter writer = new CRAMFileWriter(
-                strategy, cramBaos, craiBaos, true, referenceSource, header, "test.cram")) {
+        try (final CRAMFileWriter writer =
+                new CRAMFileWriter(strategy, cramBaos, craiBaos, true, referenceSource, header, "test.cram")) {
             for (final SAMRecord record : allRecords) {
                 writer.addAlignment(record);
             }
@@ -128,8 +126,8 @@ public class CRAIQueryTest extends HtsjdkTest {
             Assert.assertEquals(rec.getReferenceName(), CONTIG_1);
             Assert.assertTrue(
                     rec.getAlignmentStart() <= queryEnd && rec.getAlignmentEnd() >= queryStart,
-                    "Record " + rec.getReadName() + " at " + rec.getAlignmentStart() + "-" +
-                            rec.getAlignmentEnd() + " does not overlap query " + queryStart + "-" + queryEnd);
+                    "Record " + rec.getReadName() + " at " + rec.getAlignmentStart() + "-" + rec.getAlignmentEnd()
+                            + " does not overlap query " + queryStart + "-" + queryEnd);
         }
 
         // Verify we got at least some records (our data is dense enough)
@@ -145,9 +143,8 @@ public class CRAIQueryTest extends HtsjdkTest {
 
     @Test
     public void testQueryUnmappedReads() throws IOException {
-        final List<SAMRecord> expectedUnmapped = allRecords.stream()
-                .filter(SAMRecord::getReadUnmappedFlag)
-                .collect(Collectors.toList());
+        final List<SAMRecord> expectedUnmapped =
+                allRecords.stream().filter(SAMRecord::getReadUnmappedFlag).collect(Collectors.toList());
 
         try (final CRAMFileReader reader = openReader()) {
             try (final CloseableIterator<SAMRecord> iterator = reader.queryUnmapped()) {
@@ -163,9 +160,9 @@ public class CRAIQueryTest extends HtsjdkTest {
     @Test
     public void testQueryMultipleIntervals() throws IOException {
         // Query two disjoint regions across different contigs using QueryInterval
-        final QueryInterval[] intervals = new QueryInterval[]{
-                new QueryInterval(0, 100, 200),  // chr1:100-200
-                new QueryInterval(1, 100, 200),  // chr2:100-200
+        final QueryInterval[] intervals = new QueryInterval[] {
+            new QueryInterval(0, 100, 200), // chr1:100-200
+            new QueryInterval(1, 100, 200), // chr2:100-200
         };
 
         try (final CRAMFileReader reader = openReader()) {
@@ -177,11 +174,14 @@ public class CRAIQueryTest extends HtsjdkTest {
 
                 // Every returned record should overlap one of the queried intervals
                 for (final SAMRecord rec : actual) {
-                    final boolean overlapsFirst = rec.getReferenceIndex() == 0 &&
-                            rec.getAlignmentStart() <= 200 && rec.getAlignmentEnd() >= 100;
-                    final boolean overlapsSecond = rec.getReferenceIndex() == 1 &&
-                            rec.getAlignmentStart() <= 200 && rec.getAlignmentEnd() >= 100;
-                    Assert.assertTrue(overlapsFirst || overlapsSecond,
+                    final boolean overlapsFirst = rec.getReferenceIndex() == 0
+                            && rec.getAlignmentStart() <= 200
+                            && rec.getAlignmentEnd() >= 100;
+                    final boolean overlapsSecond = rec.getReferenceIndex() == 1
+                            && rec.getAlignmentStart() <= 200
+                            && rec.getAlignmentEnd() >= 100;
+                    Assert.assertTrue(
+                            overlapsFirst || overlapsSecond,
                             "Record " + rec.getReadName() + " does not overlap either query interval");
                 }
             }
@@ -195,8 +195,9 @@ public class CRAIQueryTest extends HtsjdkTest {
 
         try (final CRAMFileReader reader = openReader()) {
             try (final CloseableIterator<SAMRecord> iterator =
-                         reader.queryAlignmentStart(CONTIG_1, target.getAlignmentStart())) {
-                Assert.assertTrue(iterator.hasNext(),
+                    reader.queryAlignmentStart(CONTIG_1, target.getAlignmentStart())) {
+                Assert.assertTrue(
+                        iterator.hasNext(),
                         "queryAlignmentStart should find records at position " + target.getAlignmentStart());
                 final SAMRecord found = iterator.next();
                 Assert.assertEquals(found.getAlignmentStart(), target.getAlignmentStart());
@@ -212,12 +213,13 @@ public class CRAIQueryTest extends HtsjdkTest {
         final List<SAMRecord> contained = queryContained(CONTIG_1, queryStart, queryEnd);
         final List<SAMRecord> overlapping = queryOverlapping(CONTIG_1, queryStart, queryEnd);
 
-        final Set<String> containedNames = contained.stream()
-                .map(SAMRecord::getReadName).collect(Collectors.toSet());
-        final Set<String> overlappingNames = overlapping.stream()
-                .map(SAMRecord::getReadName).collect(Collectors.toSet());
+        final Set<String> containedNames =
+                contained.stream().map(SAMRecord::getReadName).collect(Collectors.toSet());
+        final Set<String> overlappingNames =
+                overlapping.stream().map(SAMRecord::getReadName).collect(Collectors.toSet());
 
-        Assert.assertTrue(overlappingNames.containsAll(containedNames),
+        Assert.assertTrue(
+                overlappingNames.containsAll(containedNames),
                 "Contained results should be a subset of overlapping results");
     }
 
@@ -232,8 +234,8 @@ public class CRAIQueryTest extends HtsjdkTest {
                     iterator.next();
                     count++;
                 }
-                Assert.assertEquals(count, allRecords.size(),
-                        "Total record count via index span should match input record count");
+                Assert.assertEquals(
+                        count, allRecords.size(), "Total record count via index span should match input record count");
             }
         }
     }
@@ -256,11 +258,11 @@ public class CRAIQueryTest extends HtsjdkTest {
         return queryWithContainedFlag(contig, start, end, false);
     }
 
-    private List<SAMRecord> queryWithContainedFlag(final String contig, final int start, final int end,
-                                                   final boolean contained) throws IOException {
+    private List<SAMRecord> queryWithContainedFlag(
+            final String contig, final int start, final int end, final boolean contained) throws IOException {
         try (final CRAMFileReader reader = openReader()) {
             final int seqIdx = header.getSequenceIndex(contig);
-            final QueryInterval[] intervals = new QueryInterval[]{new QueryInterval(seqIdx, start, end)};
+            final QueryInterval[] intervals = new QueryInterval[] {new QueryInterval(seqIdx, start, end)};
             try (final CloseableIterator<SAMRecord> iterator = reader.query(intervals, contained)) {
                 final List<SAMRecord> results = new ArrayList<>();
                 while (iterator.hasNext()) {
@@ -277,9 +279,12 @@ public class CRAIQueryTest extends HtsjdkTest {
                 .collect(Collectors.toList());
     }
 
-    private void assertReadNamesEqual(final List<SAMRecord> actual, final List<SAMRecord> expected, final String label) {
-        final List<String> actualNames = actual.stream().map(SAMRecord::getReadName).collect(Collectors.toList());
-        final List<String> expectedNames = expected.stream().map(SAMRecord::getReadName).collect(Collectors.toList());
+    private void assertReadNamesEqual(
+            final List<SAMRecord> actual, final List<SAMRecord> expected, final String label) {
+        final List<String> actualNames =
+                actual.stream().map(SAMRecord::getReadName).collect(Collectors.toList());
+        final List<String> expectedNames =
+                expected.stream().map(SAMRecord::getReadName).collect(Collectors.toList());
         Assert.assertEquals(actualNames, expectedNames, label + ": read name lists differ");
     }
 

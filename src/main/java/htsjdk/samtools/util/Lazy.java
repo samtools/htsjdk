@@ -4,10 +4,10 @@ import java.util.function.Supplier;
 
 /**
  * Simple utility for building an on-demand (lazy) object-initializer.
- * 
+ *
  * Works by accepting an initializer describing how to build the on-demand object, which is only called once and only after the first
  * invocation of {@link #get()} (or it may not be called at all).
- * 
+ *
  * @author mccowan
  */
 public class Lazy<T> {
@@ -38,7 +38,7 @@ public class Lazy<T> {
         T make();
 
         @Override
-        default T get(){
+        default T get() {
             return make();
         }
     }

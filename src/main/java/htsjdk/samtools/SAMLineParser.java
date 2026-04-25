@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.File;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +61,7 @@ public class SAMLineParser {
      * Add information about the origin (reader and position) to SAM records.
      */
     private final SamReader mParentReader;
+
     private final SAMRecordFactory samRecordFactory;
     private final ValidationStringency validationStringency;
     private final SAMFileHeader mFileHeader;
@@ -84,9 +84,7 @@ public class SAMLineParser {
      */
     public SAMLineParser(final SAMFileHeader samFileHeader) {
 
-        this(new DefaultSAMRecordFactory(),
-                ValidationStringency.DEFAULT_STRINGENCY, samFileHeader,
-                null, null);
+        this(new DefaultSAMRecordFactory(), ValidationStringency.DEFAULT_STRINGENCY, samFileHeader, null, null);
     }
 
     /**
@@ -96,12 +94,14 @@ public class SAMLineParser {
      * @param samFileReader SAM file reader For passing to SAMRecord.setFileSource, may be null.
      * @param samFile       SAM file being read (for error message only, may be null)
      */
-    public SAMLineParser(final SAMFileHeader samFileHeader,
-                         final SamReader samFileReader, final File samFile) {
+    public SAMLineParser(final SAMFileHeader samFileHeader, final SamReader samFileReader, final File samFile) {
 
-        this(new DefaultSAMRecordFactory(),
-                ValidationStringency.DEFAULT_STRINGENCY, samFileHeader,
-                samFileReader, samFile);
+        this(
+                new DefaultSAMRecordFactory(),
+                ValidationStringency.DEFAULT_STRINGENCY,
+                samFileHeader,
+                samFileReader,
+                samFile);
     }
 
     /**
@@ -113,19 +113,18 @@ public class SAMLineParser {
      * @param samFileReader        SAM file reader For passing to SAMRecord.setFileSource, may be null.
      * @param samFile              SAM file being read (for error message only, may be null)
      */
-    public SAMLineParser(final SAMRecordFactory samRecordFactory,
-                         final ValidationStringency validationStringency,
-                         final SAMFileHeader samFileHeader, final SamReader samFileReader,
-                         final File samFile) {
+    public SAMLineParser(
+            final SAMRecordFactory samRecordFactory,
+            final ValidationStringency validationStringency,
+            final SAMFileHeader samFileHeader,
+            final SamReader samFileReader,
+            final File samFile) {
 
-        if (samRecordFactory == null)
-            throw new NullPointerException("The SamRecordFactory must be set");
+        if (samRecordFactory == null) throw new NullPointerException("The SamRecordFactory must be set");
 
-        if (validationStringency == null)
-            throw new NullPointerException("The validationStringency must be set");
+        if (validationStringency == null) throw new NullPointerException("The validationStringency must be set");
 
-        if (samFileHeader == null)
-            throw new NullPointerException("The mFileHeader must be set");
+        if (samFileHeader == null) throw new NullPointerException("The mFileHeader must be set");
 
         this.samRecordFactory = samRecordFactory;
         this.validationStringency = validationStringency;
@@ -175,7 +174,7 @@ public class SAMLineParser {
         }
         return ret;
     }
-    
+
     private int parseFlag(final String s, final String fieldName) {
         try {
             return samFlagField.isPresent() ? samFlagField.get().parse(s) : SamFlagField.parseDefault(s);
@@ -191,13 +190,11 @@ public class SAMLineParser {
             if (fieldName.equals("MRNM")) {
                 return;
             }
-            reportErrorParsingLine("= is not a valid value for "
-                    + fieldName + " field.");
+            reportErrorParsingLine("= is not a valid value for " + fieldName + " field.");
         }
         if (!this.mFileHeader.getSequenceDictionary().isEmpty()) {
             if (this.mFileHeader.getSequence(rname) == null) {
-                reportErrorParsingLine(fieldName
-                        + " '" + rname + "' not found in any SQ record");
+                reportErrorParsingLine(fieldName + " '" + rname + "' not found in any SQ record");
             }
         }
     }
@@ -238,11 +235,9 @@ public class SAMLineParser {
                 reportErrorParsingLine("Empty field at position " + i + " (zero-based)");
             }
         }
-        final SAMRecord samRecord =
-                samRecordFactory.createSAMRecord(this.mFileHeader);
+        final SAMRecord samRecord = samRecordFactory.createSAMRecord(this.mFileHeader);
         samRecord.setValidationStringency(this.validationStringency);
-        if (mParentReader != null)
-            samRecord.setFileSource(new SAMFileSource(mParentReader, null));
+        if (mParentReader != null) samRecord.setFileSource(new SAMFileSource(mParentReader, null));
         samRecord.setHeader(this.mFileHeader);
         samRecord.setReadName(mFields[QNAME_COL]);
 
@@ -261,8 +256,7 @@ public class SAMLineParser {
         final int pos = parseInt(mFields[POS_COL], "POS");
         final int mapq = parseInt(mFields[MAPQ_COL], "MAPQ");
         final String cigar = mFields[CIGAR_COL];
-        if (!SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord
-                .getReferenceName())) {
+        if (!SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())) {
             if (pos == 0) {
                 reportErrorParsingLine("POS must be non-zero if RNAME is specified");
             }
@@ -309,8 +303,7 @@ public class SAMLineParser {
 
         final int matePos = parseInt(mFields[MPOS_COL], "MPOS");
         final int isize = parseInt(mFields[ISIZE_COL], "ISIZE");
-        if (!samRecord.getMateReferenceName().equals(
-                SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
+        if (!samRecord.getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
             if (matePos == 0) {
                 reportErrorParsingLine("MPOS must be non-zero if MRNM is specified");
             }
@@ -362,11 +355,11 @@ public class SAMLineParser {
 
     private void validateReadBases(final String bases) {
         /*
-        * Using regex is slow, so check for invalid characters via
-        * isValidReadBase(), which hopefully the JIT will optimize. if
-        * (!VALID_BASES.matcher(bases).matches()) {
-        * reportErrorParsingLine("Invalid character in read bases"); }
-        */
+         * Using regex is slow, so check for invalid characters via
+         * isValidReadBase(), which hopefully the JIT will optimize. if
+         * (!VALID_BASES.matcher(bases).matches()) {
+         * reportErrorParsingLine("Invalid character in read bases"); }
+         */
         for (int i = 0; i < bases.length(); ++i) {
             if (!isValidReadBase(bases.charAt(i))) {
                 reportErrorParsingLine("Invalid character in read bases");
@@ -424,11 +417,9 @@ public class SAMLineParser {
         }
         if (entry != null) {
             if (entry.getValue() instanceof TagValueAndUnsignedArrayFlag) {
-                final TagValueAndUnsignedArrayFlag valueAndFlag =
-                        (TagValueAndUnsignedArrayFlag) entry.getValue();
+                final TagValueAndUnsignedArrayFlag valueAndFlag = (TagValueAndUnsignedArrayFlag) entry.getValue();
                 if (valueAndFlag.isUnsignedArray) {
-                    samRecord.setUnsignedArrayAttribute(entry.getKey(),
-                            valueAndFlag.value);
+                    samRecord.setUnsignedArrayAttribute(entry.getKey(), valueAndFlag.value);
                 } else {
                     samRecord.setAttribute(entry.getKey(), valueAndFlag.value);
                 }
@@ -456,8 +447,7 @@ public class SAMLineParser {
         if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException(errorMessage);
         } else if (validationStringency == ValidationStringency.LENIENT) {
-            System.err
-                    .println("Ignoring SAM validation error due to lenient parsing:");
+            System.err.println("Ignoring SAM validation error due to lenient parsing:");
             System.err.println(errorMessage);
         }
     }
@@ -482,5 +472,4 @@ public class SAMLineParser {
                 + (this.currentLineNumber <= 0 ? "unknown" : this.currentLineNumber)
                 + "\nLine: " + this.currentLine;
     }
-
 }

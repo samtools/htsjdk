@@ -26,32 +26,25 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SamSpecIntTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @DataProvider(name = "testSamIntegersTestCases")
     public Object[][] testSamIntegersTestCases() {
-        return new Object[][]{
-                {"inttest.sam"},
-                {"inttest_large_coordinates.sam"}
-        };
+        return new Object[][] {{"inttest.sam"}, {"inttest_large_coordinates.sam"}};
     }
 
     @DataProvider(name = "testBamIntegersTestCases")
     public Object[][] testBamIntegersTestCases() {
-        return new Object[][]{
-                {"inttest.bam"},
-                {"inttest_large_coordinates.bam"}
-        };
+        return new Object[][] {{"inttest.bam"}, {"inttest_large_coordinates.bam"}};
     }
 
     @Test(dataProvider = "testSamIntegersTestCases")
@@ -73,8 +66,10 @@ public class SamSpecIntTest extends HtsjdkTest {
     private void tryToWriteToSamAndBam(final SamReader reader) throws IOException {
         final File bamOutput = File.createTempFile("test", ".bam");
         final File samOutput = File.createTempFile("test", ".sam");
-        final SAMFileWriter samWriter = new SAMFileWriterFactory().makeWriter(reader.getFileHeader(), true, samOutput, null);
-        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeWriter(reader.getFileHeader(), true, bamOutput, null);
+        final SAMFileWriter samWriter =
+                new SAMFileWriterFactory().makeWriter(reader.getFileHeader(), true, samOutput, null);
+        final SAMFileWriter bamWriter =
+                new SAMFileWriterFactory().makeWriter(reader.getFileHeader(), true, bamOutput, null);
 
         final List<String> errorMessages = new ArrayList<>();
         for (SAMRecord rec : reader) {
@@ -94,5 +89,4 @@ public class SamSpecIntTest extends HtsjdkTest {
         bamOutput.deleteOnExit();
         samOutput.deleteOnExit();
     }
-
 }

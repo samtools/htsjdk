@@ -65,8 +65,8 @@ public class RangeCoder {
      *
      * @param inBuffer the compressed input stream
      */
-    public void rangeDecodeStart(final ByteBuffer inBuffer){
-        for (int i = 0; i < 5; i++){
+    public void rangeDecodeStart(final ByteBuffer inBuffer) {
+        for (int i = 0; i < 5; i++) {
             code = (code << 8) + (inBuffer.get() & 0xFF);
         }
         code &= Constants.MAX_RANGE;
@@ -79,11 +79,11 @@ public class RangeCoder {
      * @param cumulativeFrequency cumulative frequency of symbols before the decoded symbol
      * @param symbolFrequency frequency of the decoded symbol
      */
-    protected void rangeDecode(final ByteBuffer inBuffer, final int cumulativeFrequency, final int symbolFrequency){
+    protected void rangeDecode(final ByteBuffer inBuffer, final int cumulativeFrequency, final int symbolFrequency) {
         code -= cumulativeFrequency * range;
         range *= symbolFrequency;
 
-        while (range < (1<<24)) {
+        while (range < (1 << 24)) {
             range <<= 8;
             code = (code << 8) + (inBuffer.get() & 0xFF); // Ensure code is positive
         }
@@ -95,7 +95,7 @@ public class RangeCoder {
      * @param totalFrequency the sum of all symbol frequencies
      * @return the scaled frequency value used to identify the decoded symbol
      */
-    protected int rangeGetFrequency(final int totalFrequency){
+    protected int rangeGetFrequency(final int totalFrequency) {
         range = range / totalFrequency;
         return (int) (code / range);
     }
@@ -108,10 +108,7 @@ public class RangeCoder {
      * @param symbolFrequency frequency of the symbol being encoded
      * @param totalFrequency sum of all symbol frequencies
      */
-    protected void rangeEncode(
-            final int cumulativeFrequency,
-            final int symbolFrequency,
-            final int totalFrequency){
+    protected void rangeEncode(final int cumulativeFrequency, final int symbolFrequency, final int totalFrequency) {
         final long old_low = low;
         range = range / totalFrequency;
         low += cumulativeFrequency * range;
@@ -123,19 +120,18 @@ public class RangeCoder {
         }
 
         // Renormalise if range gets too small
-        while (range < (1<<24)) {
+        while (range < (1 << 24)) {
             range <<= 8;
             rangeShiftLow();
         }
-
     }
 
     /**
      * Flush the encoder state by emitting the final 5 bytes. Must be called after all symbols
      * have been encoded to produce a valid compressed stream.
      */
-    public void rangeEncodeEnd(){
-        for(int i = 0; i < 5; i++){
+    public void rangeEncodeEnd() {
+        for (int i = 0; i < 5; i++) {
             rangeShiftLow();
         }
     }
@@ -160,14 +156,12 @@ public class RangeCoder {
                     outBuf[outPos++] = (byte) 0x00;
                     FFnum--;
                 }
-
             }
             cache = (int) (low >>> 24); // Copy of top byte ready for next flush
             carry = false;
         } else {
             FFnum++;
         }
-        low = low<<8 & (0xFFFFFFFFL); // force low to be +ve
+        low = low << 8 & (0xFFFFFFFFL); // force low to be +ve
     }
-
 }

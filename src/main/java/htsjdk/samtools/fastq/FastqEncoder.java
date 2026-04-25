@@ -29,7 +29,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.TextTagCodec;
 import htsjdk.samtools.util.SequenceUtil;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -49,7 +48,7 @@ public final class FastqEncoder {
      */
     public static String encode(final FastqRecord record) {
         // reserve some memory based on the read length
-        int capacity = record.getReadLength() * 2 +  5;
+        int capacity = record.getReadLength() * 2 + 5;
         // reserve some memory based on the read name
         if (record.getReadName() != null) {
             capacity += record.getReadName().length();
@@ -61,17 +60,20 @@ public final class FastqEncoder {
      * Writes a FastqRecord into the Appendable output.
      * @throws SAMException if any I/O error occurs.
      */
-    public static Appendable write(final Appendable out,final FastqRecord record) {
+    public static Appendable write(final Appendable out, final FastqRecord record) {
         final String readName = record.getReadName();
         final String readString = record.getReadString();
         final String qualHeader = record.getBaseQualityHeader();
         final String qualityString = record.getBaseQualityString();
         try {
             return out.append(FastqConstants.SEQUENCE_HEADER)
-                    .append(readName == null ? "" : readName).append('\n')
-                    .append(readString == null ? "" : readString).append('\n')
+                    .append(readName == null ? "" : readName)
+                    .append('\n')
+                    .append(readString == null ? "" : readString)
+                    .append('\n')
                     .append(FastqConstants.QUALITY_HEADER)
-                    .append(qualHeader == null ? "" : qualHeader).append('\n')
+                    .append(qualHeader == null ? "" : qualHeader)
+                    .append('\n')
                     .append(qualityString == null ? "" : qualityString);
         } catch (IOException e) {
             throw new SAMException(e);
@@ -92,10 +94,11 @@ public final class FastqEncoder {
      */
     public static FastqRecord asFastqRecord(final SAMRecord record) {
         String readName = record.getReadName();
-        if(record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
+        if (record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
             readName += (record.getFirstOfPairFlag()) ? FastqConstants.FIRST_OF_PAIR : FastqConstants.SECOND_OF_PAIR;
         }
-        return new FastqRecord(readName, record.getReadString(), record.getStringAttribute(SAMTag.CO), record.getBaseQualityString());
+        return new FastqRecord(
+                readName, record.getReadString(), record.getStringAttribute(SAMTag.CO), record.getBaseQualityString());
     }
 
     /**
@@ -115,7 +118,8 @@ public final class FastqEncoder {
      * @param header    header for the returned object.
      * @param custom    function to customize encoding. Note that default information might be overriden.
      */
-    public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header, final BiConsumer<FastqRecord, SAMRecord> custom) {
+    public static SAMRecord asSAMRecord(
+            final FastqRecord record, final SAMFileHeader header, final BiConsumer<FastqRecord, SAMRecord> custom) {
         // construct the SAMRecord and set the unmapped flag
         final SAMRecord samRecord = new SAMRecord(header);
         samRecord.setReadUnmappedFlag(true);
@@ -135,13 +139,12 @@ public final class FastqEncoder {
      * <p>Note that all tabs present in the quality header are replaced by spaces.
      */
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_TO_COMMENT_TAG = (record, samRecord) ->
-        samRecord.setAttribute(SAMTag.CO, record.getBaseQualityHeader().replaceAll("\t", " "));
-
+            samRecord.setAttribute(SAMTag.CO, record.getBaseQualityHeader().replaceAll("\t", " "));
 
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_PARSE_SAM_TAGS = (record, samRecord) -> {
         final String[] tokens = record.getBaseQualityHeader().split("\t");
         final TextTagCodec codec = new TextTagCodec();
-        for (final String token: tokens) {
+        for (final String token : tokens) {
             final Map.Entry<String, Object> tagValue = codec.decode(token);
             samRecord.setAttribute(tagValue.getKey(), tagValue.getValue());
         }

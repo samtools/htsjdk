@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.util.StringUtil;
-
 import java.util.Arrays;
 
 /**
@@ -61,8 +60,7 @@ public class EncodingDescriptor {
                 "%s: (%s)",
                 getEncodingID().name(),
                 StringUtil.bytesToHexString(
-                        Arrays.copyOfRange(
-                                getEncodingParameters(),0, Math.max(20, getEncodingParameters().length))));
+                        Arrays.copyOfRange(getEncodingParameters(), 0, Math.max(20, getEncodingParameters().length))));
     }
 
     @Override
@@ -74,7 +72,6 @@ public class EncodingDescriptor {
 
         if (getEncodingID() != that.getEncodingID()) return false;
         return Arrays.equals(getEncodingParameters(), that.getEncodingParameters());
-
     }
 
     @Override
@@ -83,5 +80,4 @@ public class EncodingDescriptor {
         result = 31 * result + Arrays.hashCode(getEncodingParameters());
         return result;
     }
-
 }

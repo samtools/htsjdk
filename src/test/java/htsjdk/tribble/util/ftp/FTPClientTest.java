@@ -3,20 +3,19 @@ package htsjdk.tribble.util.ftp;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.ftp.FTPClient;
 import htsjdk.samtools.util.ftp.FTPReply;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.UnknownHostException;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.UnknownHostException;
-
 /**
-* @author Jim Robinson
-* @since 10/3/11
-*/
-@Test(groups="ftp")
+ * @author Jim Robinson
+ * @since 10/3/11
+ */
+@Test(groups = "ftp")
 public class FTPClientTest extends HtsjdkTest {
 
     static String host = "ftp.broadinstitute.org";
@@ -39,9 +38,7 @@ public class FTPClientTest extends HtsjdkTest {
     }
 
     @Test
-    public void testLogin() throws Exception {
-
-    }
+    public void testLogin() throws Exception {}
 
     @Test
     public void testPasv() throws Exception {
@@ -90,7 +87,7 @@ public class FTPClientTest extends HtsjdkTest {
             int idx = 0;
             int b;
             while ((b = is.read()) >= 0) {
-                Assert.assertEquals(expectedBytes[idx], (byte) b,"reading from stream");
+                Assert.assertEquals(expectedBytes[idx], (byte) b, "reading from stream");
                 idx++;
             }
 
@@ -195,8 +192,7 @@ public class FTPClientTest extends HtsjdkTest {
             reply = client.pasv();
             Assert.assertTrue(reply.isSuccess(), "pasv 2");
             client.closeDataStream();
-        }
-        finally {
+        } finally {
 
         }
     }
@@ -226,7 +222,7 @@ public class FTPClientTest extends HtsjdkTest {
             client.setRestPosition(restPosition);
 
             FTPReply reply = client.retr(file);
-            //assertTrue(reply.getCode() == 150);
+            // assertTrue(reply.getCode() == 150);
 
             InputStream is = client.getDataStream();
 
@@ -238,11 +234,9 @@ public class FTPClientTest extends HtsjdkTest {
                 Assert.assertEquals(expectedBytes[i + restPosition], buffer[i], "reading from stream");
             }
             System.out.println();
-        }
-
-        finally {
+        } finally {
             client.closeDataStream();
-            FTPReply reply = client.getReply();  // <== MUST READ THE REPLY
+            FTPReply reply = client.getReply(); // <== MUST READ THE REPLY
             System.out.println(reply.getReplyString());
         }
     }

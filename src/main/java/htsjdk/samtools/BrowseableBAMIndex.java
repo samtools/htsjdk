@@ -21,7 +21,7 @@ public interface BrowseableBAMIndex extends BAMIndex {
      * @return the level associated with the given bin number.
      */
     public int getLevelForBin(final Bin bin);
-    
+
     /**
      * Gets the first locus that this bin can index into.
      * @param bin The bin to test.
@@ -50,5 +50,5 @@ public interface BrowseableBAMIndex extends BAMIndex {
      * @param bin The bin over which to perform an overlapping query.
      * @return The file pointers
      */
-    BAMFileSpan getSpanOverlapping(final Bin bin);    
+    BAMFileSpan getSpanOverlapping(final Bin bin);
 }

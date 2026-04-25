@@ -1,8 +1,6 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.samtools.*;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.io.*;
 import java.util.*;
 
@@ -15,7 +13,8 @@ import java.util.*;
  */
 public class CramComparison {
 
-    private static final String USAGE = String.join("\n",
+    private static final String USAGE = String.join(
+            "\n",
             "Usage: CramComparison <file1> <file2> [options]",
             "",
             "Compare two SAM/BAM/CRAM files record by record.",
@@ -28,8 +27,7 @@ public class CramComparison {
             "  --ignore-tags <list>  Comma-separated tags to skip (e.g. MD,NM)",
             "  --help                Print this help message",
             "",
-            "Exit codes: 0 = comparison completed, 2 = error"
-    );
+            "Exit codes: 0 = comparison completed, 2 = error");
 
     // Tags that CRAM auto-generates on decode and may not be in the source
     private static final Set<String> CRAM_AUTO_TAGS = Set.of("MD", "NM");
@@ -64,10 +62,12 @@ public class CramComparison {
 
         for (int i = 2; i < args.length; i++) {
             switch (args[i]) {
-                case "--reference": case "-r":
+                case "--reference":
+                case "-r":
                     referencePath = args[++i];
                     break;
-                case "--output": case "-o":
+                case "--output":
+                case "-o":
                     outputPath = args[++i];
                     break;
                 case "--lenient":
@@ -87,15 +87,14 @@ public class CramComparison {
             }
         }
 
-        final SamReaderFactory factory = SamReaderFactory.makeDefault()
-                .validationStringency(ValidationStringency.SILENT);
+        final SamReaderFactory factory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
         if (referencePath != null) {
             factory.referenceSequence(new File(referencePath));
         }
 
-        try (final PrintWriter out = outputPath != null
-                ? new PrintWriter(new BufferedWriter(new FileWriter(outputPath)))
-                : null) {
+        try (final PrintWriter out =
+                outputPath != null ? new PrintWriter(new BufferedWriter(new FileWriter(outputPath))) : null) {
             return compareFiles(factory, file1, file2, lenient, maxDiffs, ignoreTags, out);
         } catch (final IOException e) {
             System.err.println("ERROR: " + e.getMessage());
@@ -106,14 +105,19 @@ public class CramComparison {
     /**
      * Compare two files and write results to the output writer (if non-null) and stderr.
      */
-    private static int compareFiles(final SamReaderFactory factory, final String file1, final String file2,
-                                    final boolean lenient, final int maxDiffs, final Set<String> ignoreTags,
-                                    final PrintWriter out) {
+    private static int compareFiles(
+            final SamReaderFactory factory,
+            final String file1,
+            final String file2,
+            final boolean lenient,
+            final int maxDiffs,
+            final Set<String> ignoreTags,
+            final PrintWriter out) {
         long recordCount = 0;
         int diffCount = 0;
 
         try (final SamReader reader1 = factory.open(new File(file1));
-             final SamReader reader2 = factory.open(new File(file2))) {
+                final SamReader reader2 = factory.open(new File(file2))) {
 
             final Iterator<SAMRecord> it1 = reader1.iterator();
             final Iterator<SAMRecord> it2 = reader2.iterator();
@@ -123,9 +127,7 @@ public class CramComparison {
                 final SAMRecord rec2 = it2.next();
                 recordCount++;
 
-                final String diff = lenient
-                        ? compareLenient(rec1, rec2)
-                        : compareStrict(rec1, rec2, ignoreTags);
+                final String diff = lenient ? compareLenient(rec1, rec2) : compareStrict(rec1, rec2, ignoreTags);
 
                 if (diff != null) {
                     diffCount++;
@@ -140,10 +142,19 @@ public class CramComparison {
             // Check for unequal record counts
             if (it1.hasNext() || it2.hasNext()) {
                 long extra1 = 0, extra2 = 0;
-                while (it1.hasNext()) { it1.next(); extra1++; }
-                while (it2.hasNext()) { it2.next(); extra2++; }
-                emit(out, "FAIL: Record count mismatch: file1 has %d records, file2 has %d records",
-                        recordCount + extra1, recordCount + extra2);
+                while (it1.hasNext()) {
+                    it1.next();
+                    extra1++;
+                }
+                while (it2.hasNext()) {
+                    it2.next();
+                    extra2++;
+                }
+                emit(
+                        out,
+                        "FAIL: Record count mismatch: file1 has %d records, file2 has %d records",
+                        recordCount + extra1,
+                        recordCount + extra2);
                 return 0;
             }
         } catch (final Exception e) {
@@ -178,18 +189,15 @@ public class CramComparison {
     private static String compareLenient(final SAMRecord a, final SAMRecord b) {
         if (!Objects.equals(a.getReadName(), b.getReadName()))
             return "readName: " + a.getReadName() + " vs " + b.getReadName();
-        if (a.getFlags() != b.getFlags())
-            return "flags: " + a.getFlags() + " vs " + b.getFlags();
+        if (a.getFlags() != b.getFlags()) return "flags: " + a.getFlags() + " vs " + b.getFlags();
         if (!Objects.equals(a.getReferenceName(), b.getReferenceName()))
             return "ref: " + a.getReferenceName() + " vs " + b.getReferenceName();
         if (a.getAlignmentStart() != b.getAlignmentStart())
             return "start: " + a.getAlignmentStart() + " vs " + b.getAlignmentStart();
         if (a.getAlignmentEnd() != b.getAlignmentEnd())
             return "end: " + a.getAlignmentEnd() + " vs " + b.getAlignmentEnd();
-        if (!Arrays.equals(a.getReadBases(), b.getReadBases()))
-            return "bases differ";
-        if (!Arrays.equals(a.getBaseQualities(), b.getBaseQualities()))
-            return "qualities differ";
+        if (!Arrays.equals(a.getReadBases(), b.getReadBases())) return "bases differ";
+        if (!Arrays.equals(a.getBaseQualities(), b.getBaseQualities())) return "qualities differ";
         return null;
     }
 
@@ -215,8 +223,7 @@ public class CramComparison {
         // both htsjdk and samtools emit M on decode. Normalize before comparing.
         final String cigarA = normalizeCigar(a.getCigarString());
         final String cigarB = normalizeCigar(b.getCigarString());
-        if (!Objects.equals(cigarA, cigarB))
-            return "cigar: " + a.getCigarString() + " vs " + b.getCigarString();
+        if (!Objects.equals(cigarA, cigarB)) return "cigar: " + a.getCigarString() + " vs " + b.getCigarString();
         if (!Objects.equals(a.getMateReferenceName(), b.getMateReferenceName()))
             return "mateRef: " + a.getMateReferenceName() + " vs " + b.getMateReferenceName();
         if (a.getMateAlignmentStart() != b.getMateAlignmentStart())
@@ -250,8 +257,7 @@ public class CramComparison {
             final Object valB = tagsB.get(tag);
             if (valA == null) return "tag " + tag + ": missing in file1, present in file2";
             if (valB == null) return "tag " + tag + ": present in file1, missing in file2";
-            if (!tagValuesEqual(valA, valB))
-                return "tag " + tag + ": values differ";
+            if (!tagValuesEqual(valA, valB)) return "tag " + tag + ": values differ";
         }
 
         return null;

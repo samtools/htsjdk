@@ -59,11 +59,9 @@ public final class HuffmanBitCode<T> {
 
     @Override
     public String toString() {
-        return String.format("Symbol: %d CodeWord: %d (%s) BitLength: %d",
-                symbol,
-                codeWord,
-                getBitCodeWithPrefix(),
-                codeWordBitLength);
+        return String.format(
+                "Symbol: %d CodeWord: %d (%s) BitLength: %d",
+                symbol, codeWord, getBitCodeWithPrefix(), codeWordBitLength);
     }
 
     /**
@@ -78,5 +76,4 @@ public final class HuffmanBitCode<T> {
         binaryWordBuffer.append(codeWordBinaryString);
         return binaryWordBuffer.toString();
     }
-
 }

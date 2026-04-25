@@ -3,12 +3,9 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.utils.ValidationUtils;
-import org.testng.annotations.BeforeMethod;
-
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
+import org.testng.annotations.BeforeMethod;
 
 public class CRAMRecordTestHelper {
 
@@ -53,8 +50,7 @@ public class CRAMRecordTestHelper {
                 0,
                 SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
                 SAMRecord.NO_ALIGNMENT_START,
-                -1
-        );
+                -1);
     }
 
     public static CRAMCompressionRecord getCRAMRecordWithReadFeatures(
@@ -86,8 +82,7 @@ public class CRAMRecordTestHelper {
                 0,
                 SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
                 SAMRecord.NO_ALIGNMENT_START,
-                -1
-        );
+                -1);
     }
 
     private SAMFileHeader createSAMHeaderWithTwoReadGroups(SAMFileHeader.SortOrder sortOrder) {

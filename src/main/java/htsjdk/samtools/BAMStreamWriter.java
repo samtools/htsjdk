@@ -26,11 +26,10 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import org.apache.commons.compress.utils.CountingOutputStream;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import org.apache.commons.compress.utils.CountingOutputStream;
 
 /**
  * Class for writing SAMRecords in BAM format to an output stream.
@@ -53,7 +52,12 @@ public class BAMStreamWriter {
      * @param sbiGranularity the granularity of the SBI index (reads per entry)
      * @param header the SAM header
      */
-    public BAMStreamWriter(OutputStream outputStream, OutputStream indexStream, OutputStream sbiStream, long sbiGranularity, SAMFileHeader header) {
+    public BAMStreamWriter(
+            OutputStream outputStream,
+            OutputStream indexStream,
+            OutputStream sbiStream,
+            long sbiGranularity,
+            SAMFileHeader header) {
         countingOut = new CountingOutputStream(outputStream);
         compressedOut = new BlockCompressedOutputStream(countingOut, (Path) null);
         bamRecordCodec = new BAMRecordCodec(header);
@@ -123,8 +127,7 @@ public class BAMStreamWriter {
         // If we didn't do this then we would have an invalid virtual file pointer if a BGZF file
         // were concatenated following this one.
         if (bamIndexer != null && previousSamRecord != null) {
-            previousSamRecordChunk =
-                    new Chunk(previousSamRecordChunk.getChunkStart(), finalVirtualOffset);
+            previousSamRecordChunk = new Chunk(previousSamRecordChunk.getChunkStart(), finalVirtualOffset);
             previousSamRecord.setFileSource(new SAMFileSource(null, new BAMFileSpan(previousSamRecordChunk)));
             bamIndexer.processAlignment(previousSamRecord);
         }

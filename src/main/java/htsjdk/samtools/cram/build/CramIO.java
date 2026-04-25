@@ -19,13 +19,11 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
-import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -45,17 +43,81 @@ public final class CramIO {
      * number to spell out 'EOF' in hex.
      */
     public static final byte[] ZERO_B_EOF_MARKER = new byte[] {
-            0x0b, 0x00, 0x00, 0x00, (byte) 0xff, (byte) 0xff,(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xe0,
-            0x45, 0x4f, 0x46, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x06, 0x06, 0x01, 0x00, 0x01,
-            0x00, 0x01, 0x00};
+        0x0b,
+        0x00,
+        0x00,
+        0x00,
+        (byte) 0xff,
+        (byte) 0xff,
+        (byte) 0xff,
+        (byte) 0xff,
+        (byte) 0xff,
+        (byte) 0xe0,
+        0x45,
+        0x4f,
+        0x46,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x06,
+        0x06,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x00
+    };
     /**
      * The zero-F EOF marker as per CRAM specs v3.0. This is basically a serialized empty CRAM container with sequence id set to some number
      * to spell out 'EOF' in hex.
      */
     public static final byte[] ZERO_F_EOF_MARKER = new byte[] {
-            0x0f, 0x00, 0x00, 0x00, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, 0x0f, (byte) 0xe0, 0x45,
-            0x4f, 0x46, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x05, (byte) 0xbd, (byte) 0xd9, 0x4f, 0x00, 0x01, 0x00,
-            0x06, 0x06, 0x01, 0x00, 0x01, 0x00, 0x01, 0x00, (byte) 0xee, 0x63, 0x01, 0x4b };
+        0x0f,
+        0x00,
+        0x00,
+        0x00,
+        (byte) 0xff,
+        (byte) 0xff,
+        (byte) 0xff,
+        (byte) 0xff,
+        0x0f,
+        (byte) 0xe0,
+        0x45,
+        0x4f,
+        0x46,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x05,
+        (byte) 0xbd,
+        (byte) 0xd9,
+        0x4f,
+        0x00,
+        0x01,
+        0x00,
+        0x06,
+        0x06,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        0x01,
+        0x00,
+        (byte) 0xee,
+        0x63,
+        0x01,
+        0x4b
+    };
 
     public static final int EOF_ALIGNMENT_START = 4542278;
     public static final int EOF_BLOCK_SIZE_V3 = 15; // defined by CRAM spec
@@ -163,5 +225,4 @@ public final class CramIO {
             throw new RuntimeIOException(e);
         }
     }
-
 }

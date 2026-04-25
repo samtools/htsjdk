@@ -1,8 +1,8 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.SAMFileHeader;
@@ -13,10 +13,11 @@ public class HtsTestEncoder implements ReadsEncoder {
     private final HtsVersion htsVersion;
     private final String htsFormat;
 
-    public HtsTestEncoder(final Bundle outputBundle,
-                          final ReadsEncoderOptions readsEncoderOptions,
-                          final String htsFormat,
-                          final HtsVersion htsVersion) {
+    public HtsTestEncoder(
+            final Bundle outputBundle,
+            final ReadsEncoderOptions readsEncoderOptions,
+            final String htsFormat,
+            final HtsVersion htsVersion) {
         this.htsFormat = htsFormat;
         this.htsVersion = htsVersion;
     }
@@ -50,5 +51,4 @@ public class HtsTestEncoder implements ReadsEncoder {
     public void close() {
         // no-op
     }
-
 }

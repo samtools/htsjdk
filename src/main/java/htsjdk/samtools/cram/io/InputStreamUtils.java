@@ -20,7 +20,6 @@ package htsjdk.samtools.cram.io;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -97,8 +96,8 @@ public class InputStreamUtils {
                     // use the read() method to figure out if we're at the end.
                     int b = in.read();
                     if (b == -1) {
-                        throw new RuntimeEOFException("Premature EOF from inputStream after " +
-                                "skipping " + (length - amt) + " byte(s).");
+                        throw new RuntimeEOFException(
+                                "Premature EOF from inputStream after " + "skipping " + (length - amt) + " byte(s).");
                     }
                     ret = 1;
                 }

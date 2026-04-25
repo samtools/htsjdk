@@ -30,6 +30,4 @@ package htsjdk.samtools.filter;
  * @deprecated use {@link SecondaryAlignmentFilter} instead.
  */
 @Deprecated
-public class NotPrimaryAlignmentFilter extends SecondaryAlignmentFilter {
-
-}
+public class NotPrimaryAlignmentFilter extends SecondaryAlignmentFilter {}

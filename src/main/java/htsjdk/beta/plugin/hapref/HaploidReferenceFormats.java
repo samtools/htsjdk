@@ -9,5 +9,4 @@ public class HaploidReferenceFormats {
      * Fasta format
      */
     public static final String FASTA = "FASTA";
-
 }

@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2007-2011 by The Broad Institute of MIT and Harvard.  All Rights Reserved.
  *
@@ -20,7 +19,6 @@
 package htsjdk.samtools.util.ftp;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.BufferedReader;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -46,6 +44,7 @@ public class FTPClient {
      * NOTE -- a PrintStream is used no purpose (as opposed to PrintWriter).  PrintWriter will not work!
      */
     private PrintStream commandStream = null;
+
     private BufferedReader responseReader = null;
     private InputStream dataStream;
     private String passiveHost;
@@ -72,7 +71,6 @@ public class FTPClient {
         return reply;
     }
 
-
     /**
      * Executes the given FTP command on our current connection, returning the
      * three digit response code from the server.  This method only works for
@@ -82,7 +80,6 @@ public class FTPClient {
         commandStream.println(command);
         return new FTPReply(responseReader);
     }
-
 
     /**
      * Wrapper for the commands <code>user [username]</code> and <code>pass
@@ -103,7 +100,6 @@ public class FTPClient {
         return executeCommand("TYPE I");
     }
 
-
     public FTPReply pasv() throws IOException {
 
         FTPReply reply = executeCommand("PASV");
@@ -114,7 +110,6 @@ public class FTPClient {
 
         String response = reply.getReplyString();
 
-
         int code = reply.getCode();
 
         int opening = response.indexOf('(');
@@ -123,13 +118,12 @@ public class FTPClient {
             String dataLink = response.substring(opening + 1, closing);
             StringTokenizer tokenizer = new StringTokenizer(dataLink, ",");
             try {
-                passiveHost = tokenizer.nextToken() + "." + tokenizer.nextToken() + "."
-                        + tokenizer.nextToken() + "." + tokenizer.nextToken();
-                passivePort = Integer.parseInt(tokenizer.nextToken()) * 256
-                        + Integer.parseInt(tokenizer.nextToken());
+                passiveHost = tokenizer.nextToken() + "." + tokenizer.nextToken() + "." + tokenizer.nextToken() + "."
+                        + tokenizer.nextToken();
+                passivePort = Integer.parseInt(tokenizer.nextToken()) * 256 + Integer.parseInt(tokenizer.nextToken());
             } catch (NumberFormatException e) {
                 throw new IOException("SimpleFTP received bad data link information: " + response);
-            } catch (NoSuchElementException e){
+            } catch (NoSuchElementException e) {
                 throw new IOException("SimpleFTP received bad data link information: " + response);
             }
         }
@@ -174,9 +168,7 @@ public class FTPClient {
     public FTPReply size(String file) throws IOException {
 
         return executeCommand("SIZE " + file);
-
     }
-
 
     public InputStream getDataStream() throws IOException {
         return dataStream;
@@ -191,19 +183,18 @@ public class FTPClient {
         //    } catch (InterruptedException e) {
         //
         //    }
-        if( dataStream != null) {
+        if (dataStream != null) {
             dataStream.close();
             dataStream = null;
         }
     }
-
 
     /**
      * Disconnects from the host to which we are currently connected.
      */
     public void disconnect() {
         try {
-            //quit();
+            // quit();
             if (commandStream != null) {
                 commandStream.close();
                 responseReader.close();
@@ -238,5 +229,4 @@ public class FTPClient {
             FTPClient.this.dataStream = null;
         }
     }
-
 }

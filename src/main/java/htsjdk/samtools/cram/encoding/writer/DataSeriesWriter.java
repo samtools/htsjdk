@@ -18,10 +18,10 @@
 package htsjdk.samtools.cram.encoding.writer;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
-import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
+import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingDescriptor;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 
@@ -44,9 +44,10 @@ public class DataSeriesWriter<T> {
      * @param encodingDecriptor encoding-specific parameters
      * @param sliceBlocksWriteStreams SliceBlocksWriteStreams
      */
-    public DataSeriesWriter(final DataSeriesType valueType,
-                            final EncodingDescriptor encodingDecriptor,
-                            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public DataSeriesWriter(
+            final DataSeriesType valueType,
+            final EncodingDescriptor encodingDecriptor,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
 
         final CRAMEncoding<T> encoding = EncodingFactory.createCRAMEncoding(valueType, encodingDecriptor);
         this.codec = encoding.buildWriteCodec(sliceBlocksWriteStreams);
@@ -61,4 +62,3 @@ public class DataSeriesWriter<T> {
         codec.write(value);
     }
 }
-

@@ -58,8 +58,8 @@ public class SAMBinaryTagAndValue implements Serializable {
             throw new IllegalArgumentException("SAMBinaryTagAndValue value may not be null");
         }
         if (!isAllowedAttributeValue(value)) {
-            throw new IllegalArgumentException("Attribute type " + value.getClass() + " not supported. Tag: " +
-                    SAMTag.makeStringTag(tag));
+            throw new IllegalArgumentException(
+                    "Attribute type " + value.getClass() + " not supported. Tag: " + SAMTag.makeStringTag(tag));
         }
         this.tag = tag;
         this.value = value;
@@ -77,16 +77,16 @@ public class SAMBinaryTagAndValue implements Serializable {
     // Inspect the proposed value to determine if it is an allowed value type,
     // and if the value is in range.
     protected static boolean isAllowedAttributeValue(final Object value) {
-            if (value instanceof Byte ||
-                value instanceof Short ||
-                value instanceof Integer ||
-                value instanceof String ||
-                value instanceof Character ||
-                value instanceof Float ||
-                value instanceof byte[] ||
-                value instanceof short[] ||
-                value instanceof int[] ||
-                value instanceof float[]) {
+        if (value instanceof Byte
+                || value instanceof Short
+                || value instanceof Integer
+                || value instanceof String
+                || value instanceof Character
+                || value instanceof Float
+                || value instanceof byte[]
+                || value instanceof short[]
+                || value instanceof int[]
+                || value instanceof float[]) {
             return true;
         }
 
@@ -99,7 +99,8 @@ public class SAMBinaryTagAndValue implements Serializable {
         return false;
     }
 
-    @Override public boolean equals(final Object o) {
+    @Override
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         return typeSafeEquals((SAMBinaryTagAndValue) o);
@@ -111,30 +112,21 @@ public class SAMBinaryTagAndValue implements Serializable {
         if (this.valueEquals(that)) {
             if (this.next == null) return that.next == null;
             else return this.next.equals(that.next);
-        }
-        else {
+        } else {
             return false;
         }
     }
 
     private boolean valueEquals(SAMBinaryTagAndValue that) {
         if (this.value instanceof byte[]) {
-            return that.value instanceof byte[] ?
-                Arrays.equals((byte[])this.value, (byte[])that.value) : false;
-        }
-        else if (this.value instanceof short[]) {
-            return that.value instanceof short[] ?
-                    Arrays.equals((short[])this.value, (short[])that.value) : false;
-        }
-        else if (this.value instanceof int[]) {
-            return that.value instanceof int[] ?
-                    Arrays.equals((int[])this.value, (int[])that.value) : false;
-        }
-        else if (this.value instanceof float[]) {
-            return that.value instanceof float[] ?
-                    Arrays.equals((float[])this.value, (float[])that.value) : false;
-        }
-        else {
+            return that.value instanceof byte[] ? Arrays.equals((byte[]) this.value, (byte[]) that.value) : false;
+        } else if (this.value instanceof short[]) {
+            return that.value instanceof short[] ? Arrays.equals((short[]) this.value, (short[]) that.value) : false;
+        } else if (this.value instanceof int[]) {
+            return that.value instanceof int[] ? Arrays.equals((int[]) this.value, (int[]) that.value) : false;
+        } else if (this.value instanceof float[]) {
+            return that.value instanceof float[] ? Arrays.equals((float[]) this.value, (float[]) that.value) : false;
+        } else {
             // otherwise, the api limits the remaining possible value types to
             // immutable (String or boxed primitive) types
             return this.value.equals(that.value);
@@ -145,18 +137,14 @@ public class SAMBinaryTagAndValue implements Serializable {
     public int hashCode() {
         int valueHash;
         if (this.value instanceof byte[]) {
-            valueHash = Arrays.hashCode((byte[])this.value);
-        }
-        else if (this.value instanceof short[]) {
-            valueHash = Arrays.hashCode((short[])this.value);
-        }
-        else if (this.value instanceof int[]) {
-            valueHash = Arrays.hashCode((int[])this.value);
-        }
-        else if (this.value instanceof float[]) {
-            valueHash = Arrays.hashCode((float[])this.value);
-        }
-        else {
+            valueHash = Arrays.hashCode((byte[]) this.value);
+        } else if (this.value instanceof short[]) {
+            valueHash = Arrays.hashCode((short[]) this.value);
+        } else if (this.value instanceof int[]) {
+            valueHash = Arrays.hashCode((int[]) this.value);
+        } else if (this.value instanceof float[]) {
+            valueHash = Arrays.hashCode((float[]) this.value);
+        } else {
             // otherwise, the api limits the remaining possible value types to
             // immutable (String or boxed primitive) types
             valueHash = value.hashCode();
@@ -189,17 +177,13 @@ public class SAMBinaryTagAndValue implements Serializable {
 
         if (value instanceof byte[]) {
             valueClone = ((byte[]) value).clone();
-        }
-        else if (value instanceof short[]) {
+        } else if (value instanceof short[]) {
             valueClone = ((short[]) value).clone();
-        }
-        else if (value instanceof int[]) {
+        } else if (value instanceof int[]) {
             valueClone = ((int[]) value).clone();
-        }
-        else if (value instanceof float[]) {
+        } else if (value instanceof float[]) {
             valueClone = ((float[]) value).clone();
-        }
-        else {
+        } else {
             // otherwise, the api limits the remaining possible value types to
             // immutable (String or boxed primitive) types
             valueClone = value;
@@ -209,7 +193,9 @@ public class SAMBinaryTagAndValue implements Serializable {
 
     // The methods below are for implementing a light-weight, single-direction linked list
 
-    public SAMBinaryTagAndValue getNext() { return this.next; }
+    public SAMBinaryTagAndValue getNext() {
+        return this.next;
+    }
 
     /** Inserts an item into the ordered list of attributes and returns the head of the list/sub-list */
     public SAMBinaryTagAndValue insert(final SAMBinaryTagAndValue attr) {
@@ -220,18 +206,15 @@ public class SAMBinaryTagAndValue implements Serializable {
             // attr joins the list ahead of this element
             attr.next = this;
             return attr;
-        }
-        else if (this.tag == attr.tag) {
+        } else if (this.tag == attr.tag) {
             // attr replaces this in the list
             attr.next = this.next;
             return attr;
-        }
-        else if (this.next == null) {
+        } else if (this.next == null) {
             // attr gets stuck on the end
             this.next = attr;
             return this;
-        }
-        else {
+        } else {
             // attr gets inserted somewhere in the tail
             this.next = this.next.insert(attr);
             return this;
@@ -251,7 +234,7 @@ public class SAMBinaryTagAndValue implements Serializable {
     public SAMBinaryTagAndValue find(final short tag) {
         if (this.tag == tag) return this;
         else if (this.tag > tag || this.next == null) return null;
-        else return this.next.find(tag); 
+        else return this.next.find(tag);
     }
 
     public boolean isUnsignedArray() {

@@ -22,11 +22,9 @@
  * THE SOFTWARE.
  */
 
-
 package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.Iterator;
 
 /**
@@ -38,9 +36,8 @@ import java.util.Iterator;
  *
  * @deprecated  since 2/29/16 use {@link FilteringVariantContextIterator} instead
  */
-
 @Deprecated
-public class FilteringIterator extends FilteringVariantContextIterator{
+public class FilteringIterator extends FilteringVariantContextIterator {
     public FilteringIterator(final Iterator<VariantContext> iterator, final VariantContextFilter filter) {
         super(iterator, filter);
     }

@@ -19,8 +19,8 @@ public class CRAMEncoderOptionsTest extends HtsjdkTest {
             }
 
             @Override
-            public byte[] getReferenceBasesByRegion(SAMSequenceRecord sequenceRecord, int zeroBasedStart,
-                                                    int requestedRegionLength) {
+            public byte[] getReferenceBasesByRegion(
+                    SAMSequenceRecord sequenceRecord, int zeroBasedStart, int requestedRegionLength) {
                 return null;
             }
         };
@@ -36,5 +36,4 @@ public class CRAMEncoderOptionsTest extends HtsjdkTest {
         Assert.assertTrue(cramEncoderOptions.getReferencePath().isPresent());
         Assert.assertEquals(cramEncoderOptions.getReferencePath().get(), dummyFASTAPath);
     }
-
 }

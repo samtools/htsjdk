@@ -90,13 +90,11 @@ public class Substitution implements Serializable, ReadFeature {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof Substitution))
-            return false;
+        if (!(obj instanceof Substitution)) return false;
 
         final Substitution substitution = (Substitution) obj;
 
-        if (position != substitution.position)
-            return false;
+        if (position != substitution.position) return false;
 
         if ((code != substitution.code) & (code == NO_CODE || substitution.code == NO_CODE)) {
             return false;

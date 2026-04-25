@@ -18,18 +18,15 @@
 
 package htsjdk.samtools.util.ftp;
 
-
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.UserPasswordInput;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
-
 
 /**
  * @author jrobinso
@@ -52,8 +49,7 @@ public class FTPUtils {
 
         } catch (IOException e) {
             return false;
-        }
-        finally {
+        } finally {
             if (is != null) {
                 try {
                     is.close();
@@ -71,15 +67,13 @@ public class FTPUtils {
             String sizeString = ftp.executeCommand("size " + url.getPath()).getReplyString();
             return Integer.parseInt(sizeString);
         } catch (Exception e) {
-            return -1 ;
-        }
-        finally {
-            if(ftp != null) {
+            return -1;
+        } finally {
+            if (ftp != null) {
                 ftp.disconnect();
             }
         }
     }
-
 
     /**
      * Connect to an FTP server
@@ -90,7 +84,8 @@ public class FTPUtils {
      * @return
      * @throws IOException
      */
-    public static synchronized FTPClient connect(String host, String userInfo, UserPasswordInput userPasswordInput) throws IOException {
+    public static synchronized FTPClient connect(String host, String userInfo, UserPasswordInput userPasswordInput)
+            throws IOException {
 
         FTPClient ftp = new FTPClient();
         FTPReply reply = ftp.connect(host);
@@ -114,31 +109,29 @@ public class FTPUtils {
 
         reply = ftp.login(user, password);
         if (!reply.isSuccess()) {
-        	if (userPasswordInput == null) {
+            if (userPasswordInput == null) {
                 throw new RuntimeIOException("Login failure for host: " + host);
-        	}
-        	else {
-	        	userPasswordInput.setHost(host);
-	            boolean success = false;
-	            while (!success) {
-	                if (userPasswordInput.showDialog()) {
-	                    user = userPasswordInput.getUser();
-	                    password = userPasswordInput.getPassword();
-	                    reply = ftp.login(user, password);
-	                    success = reply.isSuccess();
-	                } else {
-	                    // canceled
-	                    break;
-	                }
-	
-	            }
-	            if (success) {
-	                userInfo = user + ":" + password;
-	                userCredentials.put(host, userInfo);
-	            } else {
-	                throw new RuntimeIOException("Login failure for host: " + host);
-	            }
-        	}
+            } else {
+                userPasswordInput.setHost(host);
+                boolean success = false;
+                while (!success) {
+                    if (userPasswordInput.showDialog()) {
+                        user = userPasswordInput.getUser();
+                        password = userPasswordInput.getPassword();
+                        reply = ftp.login(user, password);
+                        success = reply.isSuccess();
+                    } else {
+                        // canceled
+                        break;
+                    }
+                }
+                if (success) {
+                    userInfo = user + ":" + password;
+                    userCredentials.put(host, userInfo);
+                } else {
+                    throw new RuntimeIOException("Login failure for host: " + host);
+                }
+            }
         }
 
         reply = ftp.binary();
@@ -147,8 +140,5 @@ public class FTPUtils {
         }
 
         return ftp;
-
     }
-
 }
-

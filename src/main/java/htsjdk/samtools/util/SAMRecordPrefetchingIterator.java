@@ -1,12 +1,10 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMRecord;
-
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 
 /**
  * Iterator that uses a dedicated background thread to prefetch SAMRecords,
@@ -35,7 +33,8 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
         this.basePrefetchLimit = basePrefetchLimit;
         this.basesAllowed = new AtomicInteger(this.basePrefetchLimit);
 
-        this.backgroundThread = new Thread(this::prefetch, SAMRecordPrefetchingIterator.class.getSimpleName() + "Thread");
+        this.backgroundThread =
+                new Thread(this::prefetch, SAMRecordPrefetchingIterator.class.getSimpleName() + "Thread");
         this.backgroundThread.setDaemon(true);
         this.backgroundThread.start();
     }
@@ -67,7 +66,8 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
                 // InterruptedException is expected if the iterator is being closed
                 return;
             } catch (final Throwable t) {
-                // All other exceptions are placed onto the queue so they can be reported when accessed by the main thread
+                // All other exceptions are placed onto the queue so they can be reported when accessed by the main
+                // thread
                 // Errors are immediately printed so their information is propagated to the user and not lost
                 // in the case that the JVM dies before the Error is passed up through the queue
                 if (t instanceof Error) {
@@ -82,16 +82,16 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
     public void close() {
         if (this.backgroundThread == null) return;
         /*
-         If prefetch thread is interrupted while awake and before acquiring permits, it will either acquire the permits
-         and pass through to the next case, or check interruption status before sleeping then exit immediately
-         If prefetch thread is interrupted while awake and after acquiring permits, it will check interruption status
-         at the beginning of the next loop, the queue is unbounded so adding will never block
-         If prefetch thread is interrupted while asleep waiting for bases, it will catch InterruptedException and exit
+        If prefetch thread is interrupted while awake and before acquiring permits, it will either acquire the permits
+        and pass through to the next case, or check interruption status before sleeping then exit immediately
+        If prefetch thread is interrupted while awake and after acquiring permits, it will check interruption status
+        at the beginning of the next loop, the queue is unbounded so adding will never block
+        If prefetch thread is interrupted while asleep waiting for bases, it will catch InterruptedException and exit
 
-         Prefetch thread cannot be interrupted while awake and acquiring permits, missing the interrupt,
-         because the interrupt occurs in a block synchronized on the same monitor as the acquire loop,
-         so the prefetch thread must be asleep for the closing thread to acquire the lock and issue the interrupt
-         */
+        Prefetch thread cannot be interrupted while awake and acquiring permits, missing the interrupt,
+        because the interrupt occurs in a block synchronized on the same monitor as the acquire loop,
+        so the prefetch thread must be asleep for the closing thread to acquire the lock and issue the interrupt
+        */
         synchronized (this.basesAllowed) {
             this.backgroundThread.interrupt();
         }

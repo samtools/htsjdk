@@ -5,7 +5,6 @@ import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-
 import java.util.Objects;
 
 /**
@@ -25,9 +24,7 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
      * @param ransEncode
      * @param ransDecode
      */
-    public RANSNx16ExternalCompressor(
-            final RANSNx16Encode ransEncode,
-            final RANSNx16Decode ransDecode) {
+    public RANSNx16ExternalCompressor(final RANSNx16Encode ransEncode, final RANSNx16Decode ransDecode) {
         this(0, ransEncode, ransDecode); // order 0
     }
 
@@ -39,9 +36,7 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
      * @param ransDecode shared decoder instance
      */
     public RANSNx16ExternalCompressor(
-            final int flags,
-            final RANSNx16Encode ransEncode,
-            final RANSNx16Decode ransDecode) {
+            final int flags, final RANSNx16Encode ransEncode, final RANSNx16Decode ransDecode) {
         super(BlockCompressionMethod.RANSNx16);
         this.ransEncode = ransEncode;
         this.ransDecode = ransDecode;
@@ -77,5 +72,4 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
     public int hashCode() {
         return Objects.hash(getMethod(), flags);
     }
-
 }

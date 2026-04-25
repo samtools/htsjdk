@@ -28,10 +28,11 @@ package htsjdk.samtools.util;
  * A set of constants defined in the sam-spec (https://github.com/samtools/hts-specs) that need
  * to be referenced in code.
  */
- public final class SamConstants {
+public final class SamConstants {
 
-    //No need to instantiate this class since all the constants should be static
-    private SamConstants(){};
+    // No need to instantiate this class since all the constants should be static
+    private SamConstants() {}
+    ;
 
     /**
      * The recommended separator to use when specifying multiple barcodes together in the same tag.

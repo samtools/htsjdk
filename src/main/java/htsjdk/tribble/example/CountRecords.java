@@ -33,7 +33,6 @@ import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -56,10 +55,9 @@ public class CountRecords {
      * @param args a single parameter, the file name to load
      */
     public static void main(String[] args) {
-        
+
         // check yourself before you wreck yourself - we require one arg, the input file
-        if (args.length > 2)
-            printUsage();
+        if (args.length > 2) printUsage();
 
         // our feature file
         File featureFile = new File(args[0]);
@@ -74,7 +72,6 @@ public class CountRecords {
         FeatureCodec codec = getFeatureCodec(featureFile);
 
         runWithIndex(featureFile, codec, optimizeIndex);
-
     }
 
     /**
@@ -88,13 +85,12 @@ public class CountRecords {
     public static long runWithIndex(File featureInput, FeatureCodec codec, int optimizeThreshold) {
         // get an index
         Index index = loadIndex(featureInput, codec);
-        if ( optimizeThreshold != -1 )
-            ((LinearIndex)index).optimize(optimizeThreshold);
+        if (optimizeThreshold != -1) ((LinearIndex) index).optimize(optimizeThreshold);
 
         // get a reader
         AbstractFeatureReader reader = null;
         try {
-            reader =   AbstractFeatureReader.getFeatureReader(featureInput.getAbsolutePath(), codec, index);
+            reader = AbstractFeatureReader.getFeatureReader(featureInput.getAbsolutePath(), codec, index);
 
             // now read iterate over the file
             long recordCount = 0l;
@@ -147,10 +143,10 @@ public class CountRecords {
         if (indexFile.canRead()) {
             System.err.println("Loading index from disk for index file -> " + indexFile);
             index = IndexFactory.loadIndex(indexFile.getAbsolutePath());
-        // else we want to make the index, and write it to disk if possible
+            // else we want to make the index, and write it to disk if possible
         } else {
             System.err.println("Creating the index and memory, then writing to disk for index file -> " + indexFile);
-            index = createAndWriteNewIndex(featureFile,indexFile,codec);
+            index = createAndWriteNewIndex(featureFile, indexFile, codec);
         }
 
         return index;
@@ -168,14 +164,15 @@ public class CountRecords {
             Index index = IndexFactory.createLinearIndex(featureFile, codec);
 
             // try to write it to disk
-            LittleEndianOutputStream stream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(indexFile)));
-            		
+            LittleEndianOutputStream stream =
+                    new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(indexFile)));
+
             index.write(stream);
             stream.close();
 
             return index;
         } catch (IOException e) {
-            throw new RuntimeIOException("Unable to create index from file " + featureFile,e);
+            throw new RuntimeIOException("Unable to create index from file " + featureFile, e);
         }
     }
 
@@ -188,8 +185,8 @@ public class CountRecords {
      */
     public static FeatureCodec getFeatureCodec(File featureFile) {
         // quickly determine the codec type
-              if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
-            return new BEDCodec();
-        throw new IllegalArgumentException("Unable to determine correct file type based on the file name, for file -> " + featureFile);
+        if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED")) return new BEDCodec();
+        throw new IllegalArgumentException(
+                "Unable to determine correct file type based on the file name, for file -> " + featureFile);
     }
 }

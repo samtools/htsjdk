@@ -27,7 +27,6 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -38,7 +37,7 @@ import java.util.NoSuchElementException;
  *
  * @author Yossi Farjoun
  */
-public class FilteringVariantContextIterator implements CloseableIterator<VariantContext>, Iterable<VariantContext>{
+public class FilteringVariantContextIterator implements CloseableIterator<VariantContext>, Iterable<VariantContext> {
     private final Iterator<VariantContext> iterator;
     private final VariantContextFilter filter;
     private VariantContext next = null;

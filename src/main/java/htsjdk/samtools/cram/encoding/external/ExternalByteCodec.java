@@ -13,11 +13,17 @@ final class ExternalByteCodec extends ExternalCodec<Byte> {
     }
 
     @Override
-    public Byte read() { return (byte) inputReader.read(); }
+    public Byte read() {
+        return (byte) inputReader.read();
+    }
 
     @Override
-    public void write(final Byte object) { outputWriter.write(object); }
+    public void write(final Byte object) {
+        outputWriter.write(object);
+    }
 
     @Override
-    public Byte read(final int length) { throw new RuntimeException("Not implemented."); }
+    public Byte read(final int length) {
+        throw new RuntimeException("Not implemented.");
+    }
 }

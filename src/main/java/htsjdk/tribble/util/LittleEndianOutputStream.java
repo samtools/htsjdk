@@ -1,21 +1,20 @@
 /*
-* Adapted from example code in
-* Title: Hardcore Java
-* Title: Java I/O
-* Second Edition: May 2006
-* ISBN 10: 0-596-52750-0
-* ISBN 13: 9780596527501
-*
-* http://www.javafaq.nu/java-example-code-1078.html
-* 
-*/
+ * Adapted from example code in
+ * Title: Hardcore Java
+ * Title: Java I/O
+ * Second Edition: May 2006
+ * ISBN 10: 0-596-52750-0
+ * ISBN 13: 9780596527501
+ *
+ * http://www.javafaq.nu/java-example-code-1078.html
+ *
+ */
 
 package htsjdk.tribble.util;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-
 
 public final class LittleEndianOutputStream extends FilterOutputStream {
 
@@ -32,8 +31,7 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
     }
 
     @Override
-    public void write(byte[] data, int offset, int length)
-            throws IOException {
+    public void write(byte[] data, int offset, int length) throws IOException {
         out.write(data, offset, length);
         written += length;
     }
@@ -67,7 +65,6 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
         out.write((i >>> 16) & 0xFF);
         out.write((i >>> 24) & 0xFF);
         written += 4;
-
     }
 
     public void writeLong(long l) throws IOException {
@@ -81,7 +78,6 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
         out.write((int) (l >>> 48) & 0xFF);
         out.write((int) (l >>> 56) & 0xFF);
         written += 8;
-
     }
 
     public final void writeFloat(float f) throws IOException {
@@ -119,4 +115,4 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
     public void setWrittenCount(long count) {
         this.written = count;
     }
-}// end LittleEndianOutputStream
+} // end LittleEndianOutputStream

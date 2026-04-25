@@ -30,10 +30,12 @@ import org.testng.annotations.Test;
 public class AsyncWriterTest extends HtsjdkTest {
     private static class MyException extends RuntimeException {
         final Integer item;
+
         public MyException(Integer item) {
             this.item = item;
         }
     }
+
     private static class TestAsyncWriter extends AbstractAsyncWriter<Integer> {
         protected TestAsyncWriter() {
             super(1); // Queue size of 1 to give us more control over the order of events
@@ -54,12 +56,14 @@ public class AsyncWriterTest extends HtsjdkTest {
             // Nothing
         }
     }
+
     @Test
     public void testNoSelfSuppression() {
         try (TestAsyncWriter t = new TestAsyncWriter()) {
             try {
                 t.write(1); // Will trigger exception in writing thread
-                t.write(2); // Will block if the above write has not been executed, but may not trigger checkAndRethrow()
+                t.write(2); // Will block if the above write has not been executed, but may not trigger
+                // checkAndRethrow()
                 t.write(3); // Will trigger checkAndRethrow() if not already done by the above write
                 Assert.fail("Expected exception");
             } catch (MyException e) {

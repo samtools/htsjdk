@@ -19,7 +19,6 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.util.Locatable;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;

@@ -12,11 +12,11 @@ public class SRAAccessionTest extends AbstractSRATest {
     @DataProvider(name = "isValidAccData")
     private Object[][] getIsValidAccData() {
         return new Object[][] {
-            { "SRR000123", true },
-            { "DRR010511", true },
-            { "src/test/resources/htsjdk/samtools/sra/test_archive.sra", true },
-            { "src/test/resources/htsjdk/samtools/compressed.bam", false },
-            { "src/test/resources/htsjdk/samtools/uncompressed.sam", false },
+            {"SRR000123", true},
+            {"DRR010511", true},
+            {"src/test/resources/htsjdk/samtools/sra/test_archive.sra", true},
+            {"src/test/resources/htsjdk/samtools/compressed.bam", false},
+            {"src/test/resources/htsjdk/samtools/uncompressed.sam", false},
         };
     }
 
@@ -24,5 +24,4 @@ public class SRAAccessionTest extends AbstractSRATest {
     public void testIsValidAcc(String accession, boolean isValid) {
         Assert.assertEquals(isValid, SRAAccession.isValid(accession));
     }
-
 }

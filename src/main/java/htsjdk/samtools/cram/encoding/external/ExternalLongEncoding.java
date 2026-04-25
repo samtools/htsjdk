@@ -40,9 +40,15 @@ public final class ExternalLongEncoding extends ExternalEncoding<Long> {
     }
 
     @Override
-    public CRAMCodec<Long> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
-        final CRAMByteReader reader = sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getExternalReader(externalBlockContentId);
-        final CRAMByteWriter writer = sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getExternalWriter(externalBlockContentId);
+    public CRAMCodec<Long> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+        final CRAMByteReader reader = sliceBlocksReadStreams == null
+                ? null
+                : sliceBlocksReadStreams.getExternalReader(externalBlockContentId);
+        final CRAMByteWriter writer = sliceBlocksWriteStreams == null
+                ? null
+                : sliceBlocksWriteStreams.getExternalWriter(externalBlockContentId);
         return new ExternalLongCodec(reader, writer);
     }
 }

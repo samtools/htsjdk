@@ -9,5 +9,4 @@ public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
     public VCFPedigreeHeaderLine(String line, VCFHeaderVersion version) {
         super(VCFConstants.PEDIGREE_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, null));
     }
-
 }

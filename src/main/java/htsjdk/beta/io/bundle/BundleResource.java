@@ -2,7 +2,6 @@ package htsjdk.beta.io.bundle;
 
 import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Optional;
@@ -130,5 +129,4 @@ public interface BundleResource {
      * @return true if this resource can be rendered as a {@link SeekableStream} (see {@link #getSeekableStream})
      */
     boolean hasSeekableStream();
-
 }

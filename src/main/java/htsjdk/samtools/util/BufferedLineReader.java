@@ -24,25 +24,25 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets; 
+import java.nio.charset.StandardCharsets;
 
 /**
  * Implementation of LineReader that is a thin wrapper around BufferedReader.  On Linux, this is faster
  * than AsciiLineReaderImpl.  If you use AsciiLineReader rather than this class, it will detect the OS
  * and delegate to the preferred implementation.
- * 
+ *
  * @author alecw@broadinstitute.org
  */
 public class BufferedLineReader extends LineNumberReader implements LineReader {
-    
-    private static final float MAX_BYTES_PER_CHAR_UTF8 = StandardCharsets.UTF_8.newEncoder().maxBytesPerChar();
+
+    private static final float MAX_BYTES_PER_CHAR_UTF8 =
+            StandardCharsets.UTF_8.newEncoder().maxBytesPerChar();
 
     private static class StringBackedInputStream extends InputStream {
         private int idx = 0;
@@ -56,7 +56,7 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
 
         @Override
         public int read() throws IOException {
-            if(idx >= len) {
+            if (idx >= len) {
                 return -1;
             }
             return (int) str.charAt(idx++);
@@ -83,8 +83,7 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
         // bytes per character to store in UTF8.
         if (s.length() * MAX_BYTES_PER_CHAR_UTF8 >= Integer.MAX_VALUE) {
             is = new StringBackedInputStream(s);
-        }
-        else {
+        } else {
             is = new ByteArrayInputStream(s.getBytes());
         }
         return new BufferedLineReader(is);
@@ -117,7 +116,7 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
             reset();
             return ret;
         } catch (IOException e) {
-                throw new RuntimeIOException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

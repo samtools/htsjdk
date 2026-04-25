@@ -32,16 +32,15 @@ import htsjdk.beta.plugin.IOUtils;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,7 +88,8 @@ public class ReferenceSequenceFileFactory {
      * @param file the reference sequence file on disk
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final File file, final boolean truncateNamesAtWhitespace) {
         return getReferenceSequenceFile(file, truncateNamesAtWhitespace, true);
     }
 
@@ -101,7 +101,8 @@ public class ReferenceSequenceFileFactory {
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
         return getReferenceSequenceFile(IOUtil.toPath(file), HtsPath::new, truncateNamesAtWhitespace, preferIndexed);
     }
 
@@ -123,7 +124,8 @@ public class ReferenceSequenceFileFactory {
      * @param path the reference sequence file on disk
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final Path path, final boolean truncateNamesAtWhitespace) {
         return getReferenceSequenceFile(path, HtsPath::new, truncateNamesAtWhitespace, true);
     }
 
@@ -135,13 +137,16 @@ public class ReferenceSequenceFileFactory {
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
         // this should thrown an exception if the fasta file is not supported
         getFastaExtension(path);
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
             try {
-                return IOUtil.isBlockCompressed(path, true) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
+                return IOUtil.isBlockCompressed(path, true)
+                        ? new BlockCompressedIndexedFastaSequenceFile(path)
+                        : new IndexedFastaSequenceFile(path);
             } catch (final IOException e) {
                 throw new SAMException("Error opening FASTA: " + path, e);
             }
@@ -185,21 +190,22 @@ public class ReferenceSequenceFileFactory {
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
     public static ReferenceSequenceFile getReferenceSequenceFileFromBundle(
-            final Bundle referenceBundle,
-            final boolean truncateNamesAtWhitespace,
-            final boolean preferIndexed) {
+            final Bundle referenceBundle, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
         ValidationUtils.nonNull(referenceBundle, "reference bundle");
 
         // required fasta path
         final BundleResource fastaResource = referenceBundle.getOrThrow(BundleResourceType.CT_HAPLOID_REFERENCE);
-        final IOPath fastaPath = fastaResource.getIOPath().orElseThrow(
-                () -> new RuntimeException("The fasta bundle resource must contain a fasta resource that is backed by an IOPath."));
+        final IOPath fastaPath = fastaResource
+                .getIOPath()
+                .orElseThrow(() -> new RuntimeException(
+                        "The fasta bundle resource must contain a fasta resource that is backed by an IOPath."));
         if (!Files.exists(fastaPath.toPath())) {
             throw new RuntimeException(String.format("FASTA file %s does not exist", fastaPath));
         }
 
         // optional dictionary path
-        IOPath dictPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_DICTIONARY, "Sequence dictionary");
+        IOPath dictPath = getSecondaryBundleResource(
+                referenceBundle, BundleResourceType.CT_REFERENCE_DICTIONARY, "Sequence dictionary");
 
         // optional index. Using faidx requires truncateNamesAtWhitespace
         IOPath indexPath = null;
@@ -208,12 +214,17 @@ public class ReferenceSequenceFileFactory {
             if (!truncateNamesAtWhitespace) {
                 throw new RuntimeException("preferIndexed option requires truncateNamesAtWhitespace");
             }
-            indexPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX, "FASTA index");
-            gziIndexPath = getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX_GZI, "GZI index");
+            indexPath =
+                    getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX, "FASTA index");
+            gziIndexPath =
+                    getSecondaryBundleResource(referenceBundle, BundleResourceType.CT_REFERENCE_INDEX_GZI, "GZI index");
         }
 
         try {
-            if (IOUtil.isBlockCompressed(fastaPath.toPath(), true) && preferIndexed && indexPath != null && gziIndexPath != null) {
+            if (IOUtil.isBlockCompressed(fastaPath.toPath(), true)
+                    && preferIndexed
+                    && indexPath != null
+                    && gziIndexPath != null) {
                 return new BlockCompressedIndexedFastaSequenceFile(
                         fastaPath,
                         dictPath,
@@ -238,7 +249,8 @@ public class ReferenceSequenceFileFactory {
                     } else {
                         throw new RuntimeException(String.format("%s file %s does not exist", description, path));
                     }
-                }).orElse(null);
+                })
+                .orElse(null);
     }
 
     /**
@@ -262,8 +274,8 @@ public class ReferenceSequenceFileFactory {
             // open the file for checking for block-compressed input
             try {
                 // if it is bgzip, it requires the .gzi index
-                return !IOUtil.isBlockCompressed(fastaFile, true) ||
-                        Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
+                return !IOUtil.isBlockCompressed(fastaFile, true)
+                        || Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
             } catch (IOException e) {
                 return false;
             }
@@ -279,7 +291,8 @@ public class ReferenceSequenceFileFactory {
      * @param in The input stream to read the fasta file from.
      * @param index The index, or null to return a non-indexed reader.
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final String source, final SeekableStream in, final FastaSequenceIndex index) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final String source, final SeekableStream in, final FastaSequenceIndex index) {
         return getReferenceSequenceFile(source, in, index, null, true);
     }
 
@@ -293,7 +306,12 @@ public class ReferenceSequenceFileFactory {
      * @param dictionary The sequence dictionary, or null if there isn't one.
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(final String source, final SeekableStream in, final FastaSequenceIndex index, final SAMSequenceDictionary dictionary, final boolean truncateNamesAtWhitespace) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final String source,
+            final SeekableStream in,
+            final FastaSequenceIndex index,
+            final SAMSequenceDictionary dictionary,
+            final boolean truncateNamesAtWhitespace) {
         if (truncateNamesAtWhitespace && index != null) {
             return new IndexedFastaSequenceFile(source, in, index, dictionary);
         }
@@ -345,8 +363,11 @@ public class ReferenceSequenceFileFactory {
      */
     public static String getFastaExtension(final Path path) {
         final String name = path.getFileName().toString();
-        return FileExtensions.FASTA.stream().filter(name::endsWith).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath()));
+        return FileExtensions.FASTA.stream()
+                .filter(name::endsWith)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "File is not a supported reference file type: " + path.toAbsolutePath()));
     }
 
     /**

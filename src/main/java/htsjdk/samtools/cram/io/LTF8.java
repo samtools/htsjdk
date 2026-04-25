@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -26,14 +25,11 @@ public class LTF8 {
     public static long readUnsignedLTF8(final InputStream inputStream) {
         try {
             final int b1 = inputStream.read();
-            if (b1 == -1)
-                throw new RuntimeEOFException();
+            if (b1 == -1) throw new RuntimeEOFException();
 
-            if ((b1 & 128) == 0)
-                return b1;
+            if ((b1 & 128) == 0) return b1;
 
-            if ((b1 & 64) == 0)
-                return ((b1 & 127) << 8) | inputStream.read();
+            if ((b1 & 64) == 0) return ((b1 & 127) << 8) | inputStream.read();
 
             if ((b1 & 32) == 0) {
                 final int b2 = inputStream.read();
@@ -113,17 +109,13 @@ public class LTF8 {
      */
     public static long readUnsignedLTF8(final CRAMByteReader reader) {
         final int b1 = reader.read();
-        if (b1 == -1)
-            throw new RuntimeEOFException();
+        if (b1 == -1) throw new RuntimeEOFException();
 
-        if ((b1 & 128) == 0)
-            return b1;
+        if ((b1 & 128) == 0) return b1;
 
-        if ((b1 & 64) == 0)
-            return ((b1 & 127) << 8) | reader.read();
+        if ((b1 & 64) == 0) return ((b1 & 127) << 8) | reader.read();
 
-        if ((b1 & 32) == 0)
-            return ((b1 & 63) << 16) | reader.read() << 8 | reader.read();
+        if ((b1 & 32) == 0) return ((b1 & 63) << 16) | reader.read() << 8 | reader.read();
 
         if ((b1 & 16) == 0) {
             long result = ((long) (b1 & 31) << 24);

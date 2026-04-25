@@ -36,7 +36,6 @@ class BAMFileConstants {
      * BAM file magic number.  This is what is present in the gunzipped version of the file,
      * which never exists on disk.
      */
-
     static final byte[] BAM_MAGIC = "BAM\1".getBytes();
     /**
      * BAM index file magic numbers.
@@ -44,6 +43,7 @@ class BAMFileConstants {
      */
     @Deprecated
     static final byte[] BAM_INDEX_MAGIC = "BAI\1".getBytes();
+
     static final byte[] BAI_INDEX_MAGIC = "BAI\1".getBytes();
     static final byte[] CSI_INDEX_MAGIC = "CSI\1".getBytes();
 
@@ -51,6 +51,7 @@ class BAMFileConstants {
      * CSI index related constants
      */
     static final int CSI_MAGIC_OFFSET = 0;
+
     static final int CSI_MINSHIFT_OFFSET = 4;
     static final int CSI_AUXDATA_OFFSET = 12;
     static final int CSI_CHUNK_SIZE = 16;

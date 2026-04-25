@@ -1,14 +1,13 @@
 package htsjdk.beta.plugin.variants;
 
-import htsjdk.beta.plugin.HtsDecoderOptions;
 import htsjdk.annotations.InternalAPI;
-
+import htsjdk.beta.plugin.HtsDecoderOptions;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Optional;
 import java.util.function.Function;
 
 public class VariantsDecoderOptions implements HtsDecoderOptions {
-    //TODO: replace these with a prefetch size args, and use a local channel wrapper implementation
+    // TODO: replace these with a prefetch size args, and use a local channel wrapper implementation
     private Function<SeekableByteChannel, SeekableByteChannel> variantsChannelTransformer;
     private Function<SeekableByteChannel, SeekableByteChannel> indexChannelTransformer;
 
@@ -63,5 +62,4 @@ public class VariantsDecoderOptions implements HtsDecoderOptions {
         this.indexChannelTransformer = indexChannelTransformer;
         return this;
     }
-
 }

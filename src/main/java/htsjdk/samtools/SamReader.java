@@ -25,9 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.Closeable;
-import java.text.MessageFormat;
 
 /**
  * Describes functionality for objects that produce {@link SAMRecord}s and associated information.
@@ -77,7 +75,9 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
             @Override
             public String toString() {
-                return String.format("TypeImpl{name='%s', fileExtension='%s', indexExtension='%s'}", name, fileExtension, indexExtension);
+                return String.format(
+                        "TypeImpl{name='%s', fileExtension='%s', indexExtension='%s'}",
+                        name, fileExtension, indexExtension);
             }
         }
 
@@ -135,7 +135,6 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
          * @return Unbounded pointer to the first record, in chunk format.
          */
         public SAMFileSpan getFilePointerSpanningReads();
-
     }
 
     public SAMFileHeader getFileHeader();
@@ -153,7 +152,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /**
      * @return true if this source can be queried by interval, regardless of whether it has an index
      */
-    default public boolean isQueryable() {
+    public default boolean isQueryable() {
         return this.hasIndex();
     }
 
@@ -306,7 +305,6 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      */
     public SAMRecordIterator queryContained(final QueryInterval[] intervals);
 
-
     public SAMRecordIterator queryUnmapped();
 
     /**
@@ -454,7 +452,8 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
                     final SAMRecord next = it.next();
                     if (!next.getReadPairedFlag()) {
                         if (rec.getReadName().equals(next.getReadName())) {
-                            throw new SAMFormatException("Paired and unpaired reads with same name: " + rec.getReadName());
+                            throw new SAMFormatException(
+                                    "Paired and unpaired reads with same name: " + rec.getReadName());
                         }
                         continue;
                     }
@@ -465,8 +464,8 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
                     }
                     if (rec.getReadName().equals(next.getReadName())) {
                         if (mateRec != null) {
-                            throw new SAMFormatException("Multiple SAMRecord with read name " + rec.getReadName() +
-                                    " for " + (firstOfPair ? "second" : "first") + " end.");
+                            throw new SAMFormatException("Multiple SAMRecord with read name " + rec.getReadName()
+                                    + " for " + (firstOfPair ? "second" : "first") + " end.");
                         }
                         mateRec = next;
                     }
@@ -552,7 +551,9 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         @Override
         public SAMRecordIterator query(final String sequence, final int start, final int end, final boolean contained) {
-            return query(new QueryInterval[]{new QueryInterval(getFileHeader().getSequenceIndex(sequence), start, end)}, contained);
+            return query(
+                    new QueryInterval[] {new QueryInterval(getFileHeader().getSequenceIndex(sequence), start, end)},
+                    contained);
         }
 
         @Override
@@ -564,7 +565,6 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         public SAMRecordIterator queryAlignmentStart(final String sequence, final int start) {
             return AssertingIterator.of(p.queryAlignmentStart(sequence, start));
         }
-
     }
 
     static class AssertingIterator implements SAMRecordIterator {
@@ -594,21 +594,26 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
                 if (!checker.isSorted(result)) {
                     throw new IllegalStateException(String.format(
                             "Record %s should come after %s when sorting with %s ordering.",
-                            previous.getSAMString(),
-                            result.getSAMString(), checker.getSortOrder()));
+                            previous.getSAMString(), result.getSAMString(), checker.getSortOrder()));
                 }
             }
             return result;
         }
 
         @Override
-        public void close() { wrappedIterator.close(); }
+        public void close() {
+            wrappedIterator.close();
+        }
 
         @Override
-        public boolean hasNext() { return wrappedIterator.hasNext(); }
+        public boolean hasNext() {
+            return wrappedIterator.hasNext();
+        }
 
         @Override
-        public void remove() { wrappedIterator.remove(); }
+        public void remove() {
+            wrappedIterator.remove();
+        }
     }
 
     /**

@@ -1,35 +1,33 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
-
 
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFUtils;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +50,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * manage inline in the Genotype object.  They must not appear in the
      * extended attributes map
      */
-    public final static Collection<String> PRIMARY_KEYS = Arrays.asList(
+    public static final Collection<String> PRIMARY_KEYS = Arrays.asList(
             VCFConstants.GENOTYPE_FILTER_KEY,
             VCFConstants.GENOTYPE_KEY,
             VCFConstants.GENOTYPE_QUALITY_KEY,
@@ -60,8 +58,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             VCFConstants.GENOTYPE_ALLELE_DEPTHS,
             VCFConstants.GENOTYPE_PL_KEY);
 
-    public final static String PHASED_ALLELE_SEPARATOR = "|";
-    public final static String UNPHASED_ALLELE_SEPARATOR = "/";
+    public static final String PHASED_ALLELE_SEPARATOR = "|";
+    public static final String UNPHASED_ALLELE_SEPARATOR = "/";
 
     private final String sampleName;
     private GenotypeType type = null;
@@ -81,15 +79,17 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @return true if any allele is REF
      */
     public boolean hasRefAllele() {
-        return getAlleles().stream().anyMatch(A->A.isReference());
-    };
+        return getAlleles().stream().anyMatch(A -> A.isReference());
+    }
+    ;
 
     /**
      * @return true if any allele is ALT, (NO_CALL are ignored)
      */
     public boolean hasAltAllele() {
-        return getAlleles().stream().anyMatch(A->!(A.isReference() || A.isNoCall()));
-    };
+        return getAlleles().stream().anyMatch(A -> !(A.isReference() || A.isNoCall()));
+    }
+    ;
 
     /**
      * Returns how many times allele appears in this genotype object?
@@ -99,9 +99,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      */
     public int countAllele(final Allele allele) {
         int c = 0;
-        for ( final Allele a : getAlleles() )
-            if ( a.equals(allele) )
-                c++;
+        for (final Allele a : getAlleles()) if (a.equals(allele)) c++;
 
         return c;
     }
@@ -199,7 +197,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @return the high-level type of this sample's genotype
      */
     public GenotypeType getType() {
-        if ( type == null ) {
+        if (type == null) {
             type = determineType();
         }
         return type;
@@ -212,79 +210,100 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     protected GenotypeType determineType() {
         // TODO -- this code is slow and could be optimized for the diploid case
         final List<Allele> alleles = getAlleles();
-        if ( alleles.isEmpty() ) {
+        if (alleles.isEmpty()) {
             return GenotypeType.UNAVAILABLE;
         }
 
         boolean sawNoCall = false, sawMultipleAlleles = false;
         Allele firstCallAllele = null;
 
-        for ( int i = 0; i < alleles.size(); i++ ) {
+        for (int i = 0; i < alleles.size(); i++) {
             final Allele allele = alleles.get(i);
-            if ( allele.isNoCall() ) {
+            if (allele.isNoCall()) {
                 sawNoCall = true;
-            } else if ( firstCallAllele == null ) {
+            } else if (firstCallAllele == null) {
                 firstCallAllele = allele;
-            } else if ( !allele.equals(firstCallAllele) )
-                sawMultipleAlleles = true;
+            } else if (!allele.equals(firstCallAllele)) sawMultipleAlleles = true;
         }
 
-        if ( sawNoCall ) {
-            if ( firstCallAllele == null )
-                return GenotypeType.NO_CALL;
+        if (sawNoCall) {
+            if (firstCallAllele == null) return GenotypeType.NO_CALL;
             return GenotypeType.MIXED;
         }
 
-        if ( firstCallAllele == null )
-            throw new IllegalStateException("BUG: there are no alleles present in this genotype but the alleles list is not null");
+        if (firstCallAllele == null)
+            throw new IllegalStateException(
+                    "BUG: there are no alleles present in this genotype but the alleles list is not null");
 
-        return sawMultipleAlleles ? GenotypeType.HET : firstCallAllele.isReference() ? GenotypeType.HOM_REF : GenotypeType.HOM_VAR;
+        return sawMultipleAlleles
+                ? GenotypeType.HET
+                : firstCallAllele.isReference() ? GenotypeType.HOM_REF : GenotypeType.HOM_VAR;
     }
 
     /**
      * @return true if all observed alleles are the same (regardless of whether they are ref or alt); if any alleles are no-calls, this method will return false.
      */
-    public boolean isHom()    { return isHomRef() || isHomVar(); }
+    public boolean isHom() {
+        return isHomRef() || isHomVar();
+    }
 
     /**
      * @return true if all observed alleles are ref; if any alleles are no-calls, this method will return false.
      */
-    public boolean isHomRef() { return getType() == GenotypeType.HOM_REF; }
+    public boolean isHomRef() {
+        return getType() == GenotypeType.HOM_REF;
+    }
 
     /**
      * @return true if all observed alleles are alt; if any alleles are no-calls, this method will return false.
      */
-    public boolean isHomVar() { return getType() == GenotypeType.HOM_VAR; }
+    public boolean isHomVar() {
+        return getType() == GenotypeType.HOM_VAR;
+    }
 
     /**
      * @return true if we're het (observed alleles differ); if the ploidy is less than 2 or if any alleles are no-calls, this method will return false.
      */
-    public boolean isHet() { return getType() == GenotypeType.HET; }
+    public boolean isHet() {
+        return getType() == GenotypeType.HET;
+    }
 
     /**
      * @return true if we're het (observed alleles differ) and neither allele is reference; if the ploidy is less than 2 or if any alleles are no-calls, this method will return false.
      */
-    public boolean isHetNonRef() { return (getType() == GenotypeType.HET && getAllele(0).isNonReference() && getAllele(1).isNonReference()); }
+    public boolean isHetNonRef() {
+        return (getType() == GenotypeType.HET
+                && getAllele(0).isNonReference()
+                && getAllele(1).isNonReference());
+    }
 
     /**
      * @return true if this genotype is not actually a genotype but a "no call" (e.g. './.' in VCF); if any alleles are not no-calls (even if some are), this method will return false.
      */
-    public boolean isNoCall() { return getType() == GenotypeType.NO_CALL; }
+    public boolean isNoCall() {
+        return getType() == GenotypeType.NO_CALL;
+    }
 
     /**
      * @return true if this genotype is comprised of any alleles that are not no-calls (even if some are).
      */
-    public boolean isCalled() { return getType() != GenotypeType.NO_CALL && getType() != GenotypeType.UNAVAILABLE; }
+    public boolean isCalled() {
+        return getType() != GenotypeType.NO_CALL && getType() != GenotypeType.UNAVAILABLE;
+    }
 
     /**
      * @return true if this genotype is comprised of both calls and no-calls.
      */
-    public boolean isMixed() { return getType() == GenotypeType.MIXED; }
+    public boolean isMixed() {
+        return getType() == GenotypeType.MIXED;
+    }
 
     /**
      * @return true if the type of this genotype is set.
      */
-    public boolean isAvailable() { return getType() != GenotypeType.UNAVAILABLE; }
+    public boolean isAvailable() {
+        return getType() != GenotypeType.UNAVAILABLE;
+    }
 
     // ------------------------------------------------------------------------------
     //
@@ -327,12 +346,10 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @return true if all samples PLs are equal and == 0
      */
     public boolean isNonInformative() {
-        if ( getPL() == null )
-            return true;
+        if (getPL() == null) return true;
         else {
-            for ( final int PL : getPL() ) {
-                if ( PL != 0 )
-                    return false;
+            for (final int PL : getPL()) {
+                if (PL != 0) return false;
             }
 
             return true;
@@ -371,17 +388,18 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @return a string representing the genotypes, or null if the type is unavailable.
      */
     public String getGenotypeString(boolean ignoreRefState) {
-        if ( getPloidy() == 0 )
-            return "NA";
+        if (getPloidy() == 0) return "NA";
 
         // Notes:
         // 1. Make sure to use the appropriate separator depending on whether the genotype is phased
         final String separator = isPhased() ? PHASED_ALLELE_SEPARATOR : UNPHASED_ALLELE_SEPARATOR;
-        // 2. If ignoreRefState is true, then we want just the bases of the Alleles (ignoring the '*' indicating a ref Allele)
+        // 2. If ignoreRefState is true, then we want just the bases of the Alleles (ignoring the '*' indicating a ref
+        // Allele)
         if (ignoreRefState) {
-          return ParsingUtils.join(separator, getAlleleStrings());
+            return ParsingUtils.join(separator, getAlleleStrings());
         }
-        // 3. So that everything is deterministic with regards to integration tests, we sort Alleles (when the genotype isn't phased, of course)
+        // 3. So that everything is deterministic with regards to integration tests, we sort Alleles (when the genotype
+        // isn't phased, of course)
         List<Allele> alleles = isPhased() ? getAlleles() : ParsingUtils.sortList(getAlleles());
         return ParsingUtils.join(separator, alleles);
     }
@@ -392,14 +410,14 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      */
     protected List<String> getAlleleStrings() {
         final List<String> al = new ArrayList<String>(getPloidy());
-        for ( Allele a : getAlleles() )
-            al.add(a.getBaseString());
+        for (Allele a : getAlleles()) al.add(a.getBaseString());
 
         return al;
     }
 
     public String toString() {
-        return String.format("[%s %s%s%s%s%s%s%s]",
+        return String.format(
+                "[%s %s%s%s%s%s%s%s]",
                 getSampleName(),
                 getGenotypeString(false),
                 toStringIfExists(VCFConstants.GENOTYPE_QUALITY_KEY, getGQ()),
@@ -435,15 +453,14 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     }
 
     public boolean sameGenotype(final Genotype other, boolean ignorePhase) {
-        if (getPloidy() != other.getPloidy())
-            return false; // gotta have the same number of allele to be equal
+        if (getPloidy() != other.getPloidy()) return false; // gotta have the same number of allele to be equal
 
         // By default, compare the elements in the lists of alleles, element-by-element
         Collection<Allele> thisAlleles = this.getAlleles();
         Collection<Allele> otherAlleles = other.getAlleles();
 
         if (ignorePhase) { // do not care about order, only identity of Alleles
-            thisAlleles = new TreeSet<Allele>(thisAlleles);   //implemented Allele.compareTo()
+            thisAlleles = new TreeSet<Allele>(thisAlleles); // implemented Allele.compareTo()
             otherAlleles = new TreeSet<Allele>(otherAlleles);
         }
 
@@ -516,31 +533,42 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         return getFilters() != null;
     }
 
-    @Deprecated public boolean hasLog10PError() { return hasGQ(); }
-    @Deprecated public double getLog10PError() { return getGQ() / -10.0; }
-    @Deprecated public int getPhredScaledQual() { return getGQ(); }
+    @Deprecated
+    public boolean hasLog10PError() {
+        return hasGQ();
+    }
+
+    @Deprecated
+    public double getLog10PError() {
+        return getGQ() / -10.0;
+    }
+
+    @Deprecated
+    public int getPhredScaledQual() {
+        return getGQ();
+    }
 
     @Deprecated
     public String getAttributeAsString(String key, String defaultValue) {
         Object x = getExtendedAttribute(key);
-        if ( x == null ) return defaultValue;
-        if ( x instanceof String ) return (String)x;
+        if (x == null) return defaultValue;
+        if (x instanceof String) return (String) x;
         return String.valueOf(x); // throws an exception if this isn't a string
     }
 
     @Deprecated
     public int getAttributeAsInt(String key, int defaultValue) {
         Object x = getExtendedAttribute(key);
-        if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
-        if ( x instanceof Integer ) return (Integer)x;
-        return Integer.parseInt((String)x); // throws an exception if this isn't a string
+        if (x == null || x == VCFConstants.MISSING_VALUE_v4) return defaultValue;
+        if (x instanceof Integer) return (Integer) x;
+        return Integer.parseInt((String) x); // throws an exception if this isn't a string
     }
 
     @Deprecated
     public double getAttributeAsDouble(String key, double defaultValue) {
         Object x = getExtendedAttribute(key);
-        if ( x == null ) return defaultValue;
-        if ( x instanceof Double ) return (Double)x;
+        if (x == null) return defaultValue;
+        if (x instanceof Double) return (Double) x;
         return VCFUtils.parseVcfDouble((String) x); // throws an exception if this isn't a string
     }
 
@@ -560,14 +588,14 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
             if (hasAD()) {
                 final List<Integer> intList = new ArrayList<Integer>(getAD().length);
-                for(int i : getAD()) intList.add(i);
+                for (int i : getAD()) intList.add(i);
                 return intList;
             }
             return Collections.EMPTY_LIST;
         } else if (key.equals(VCFConstants.GENOTYPE_PL_KEY)) {
             if (hasPL()) {
                 final List<Integer> intList = new ArrayList<Integer>(getPL().length);
-                for(int i : getPL()) intList.add(i);
+                for (int i : getPL()) intList.add(i);
                 return intList;
             }
             return Collections.EMPTY_LIST;
@@ -592,7 +620,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return hasDP();
         } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
-            return true;  //always available
+            return true; // always available
         } else {
             return hasExtendedAttribute(key);
         }
@@ -633,7 +661,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @param v the value of the field, or -1 if missing
      * @return a non-null string for display if the field is not missing
      */
-    protected final static String toStringIfExists(final String name, final int v) {
+    protected static final String toStringIfExists(final String name, final int v) {
         return v == -1 ? "" : " " + name + " " + v;
     }
 
@@ -643,7 +671,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @param v the value of the field, or null if missing
      * @return a non-null string for display if the field is not missing
      */
-    protected final static String toStringIfExists(final String name, final String v) {
+    protected static final String toStringIfExists(final String name, final String v) {
         return v == null ? "" : " " + name + " " + v;
     }
 
@@ -653,14 +681,13 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @param vs the value of the field, or null if missing
      * @return a non-null string for display if the field is not missing
      */
-    protected final static String toStringIfExists(final String name, final int[] vs) {
-        if ( vs == null )
-            return "";
+    protected static final String toStringIfExists(final String name, final int[] vs) {
+        if (vs == null) return "";
         else {
             StringBuilder b = new StringBuilder();
             b.append(' ').append(name).append(' ');
-            for ( int i = 0; i < vs.length; i++ ) {
-                if ( i != 0 ) b.append(',');
+            for (int i = 0; i < vs.length; i++) {
+                if (i != 0) b.append(',');
                 b.append(vs[i]);
             }
             return b.toString();
@@ -674,14 +701,12 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @param attributes the extended attributes key
      * @return
      */
-    protected final static boolean hasForbiddenKey(final Map<String, Object> attributes) {
-        for ( final String forbidden : PRIMARY_KEYS)
-            if ( attributes.containsKey(forbidden) )
-                return true;
+    protected static final boolean hasForbiddenKey(final Map<String, Object> attributes) {
+        for (final String forbidden : PRIMARY_KEYS) if (attributes.containsKey(forbidden)) return true;
         return false;
     }
 
-    protected final static boolean isForbiddenKey(final String key) {
+    protected static final boolean isForbiddenKey(final String key) {
         return PRIMARY_KEYS.contains(key);
     }
 }

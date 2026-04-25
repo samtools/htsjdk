@@ -38,8 +38,8 @@ import htsjdk.variant.variantcontext.VariantContext;
  */
 public class HeterozygosityFilter implements VariantContextFilter {
 
-    final private String sample;
-    final private boolean keepHets;
+    private final String sample;
+    private final boolean keepHets;
 
     /**
      * Constructor for a filter that will keep (or remove, if keepHets is false) VC for which the
@@ -73,12 +73,13 @@ public class HeterozygosityFilter implements VariantContextFilter {
         final Genotype gt = (sample == null) ? variantContext.getGenotype(0) : variantContext.getGenotype(sample);
 
         if (gt == null) {
-            throw new IllegalArgumentException((sample == null) ?
-                    "Cannot find any genotypes in VariantContext: " + variantContext :
-                    "Cannot find sample requested: " + sample);
+            throw new IllegalArgumentException(
+                    (sample == null)
+                            ? "Cannot find any genotypes in VariantContext: " + variantContext
+                            : "Cannot find sample requested: " + sample);
         }
 
-        //XOR operator to reverse behaviour if keepHets is true.
+        // XOR operator to reverse behaviour if keepHets is true.
         return gt.isHet() ^ !keepHets;
     }
 }

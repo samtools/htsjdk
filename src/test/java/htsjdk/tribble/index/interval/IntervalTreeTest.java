@@ -27,10 +27,6 @@ import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -38,6 +34,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * User: jrobinso
@@ -90,11 +89,10 @@ public class IntervalTreeTest extends HtsjdkTest {
                     int end = Integer.parseInt(tokens[2]);
                     tree.insert(new Interval(start, end));
                 }
-
             }
         }
 
-//        List iv = (List) tree.findOverlapping(new Interval(2770226, 2770300));
+        //        List iv = (List) tree.findOverlapping(new Interval(2770226, 2770300));
         Interval searchInterval = new Interval(2782632, 2782732);
         List<Interval> iv = tree.findOverlapping(searchInterval);
         for (Interval i : iv) {
@@ -102,7 +100,6 @@ public class IntervalTreeTest extends HtsjdkTest {
         }
 
         br.close();
-
     }
 
     @Test
@@ -115,27 +112,26 @@ public class IntervalTreeTest extends HtsjdkTest {
      * chr2	179266309	179266748	Hs.609465
      * chr2	179296428	179300012	Hs.623987
      * chr2	179302952	179303488	Hs.594545
-
+     *
      */
     public void testOverlappingFeatures() throws Exception {
-        //chr2:179,222,066-179,262,059<- CONTAINS TTN
+        // chr2:179,222,066-179,262,059<- CONTAINS TTN
 
-        Set<String> names = new HashSet<>(Arrays.asList("Hs.134602", "Hs.620337", "Hs.609465", "Hs.623987",
-                "Hs.594545", "LONG_FEATURE"));
+        Set<String> names = new HashSet<>(
+                Arrays.asList("Hs.134602", "Hs.620337", "Hs.609465", "Hs.623987", "Hs.594545", "LONG_FEATURE"));
 
         String bedFile = TestUtils.DATA_DIR + "/bed/Unigene.sample.bed";
         String chr = "chr2";
         int start = 179266309;
-        int end = 179303488 ;
+        int end = 179303488;
         int expectedCount = 6;
-
 
         // Interval tree index
         int batchSize = 1;
         Index idx = IndexFactory.createIntervalIndex(new File(bedFile), new BEDCodec(), batchSize);
 
         FeatureReader<BEDFeature> bfr = AbstractFeatureReader.getFeatureReader(bedFile, new BEDCodec(), idx);
-        CloseableTribbleIterator<BEDFeature>iter = bfr.query(chr, start, end);
+        CloseableTribbleIterator<BEDFeature> iter = bfr.query(chr, start, end);
         int countInterval = 0;
         while (iter.hasNext()) {
             BEDFeature feature = iter.next();
@@ -147,4 +143,3 @@ public class IntervalTreeTest extends HtsjdkTest {
         Assert.assertEquals(countInterval, expectedCount);
     }
 }
-

@@ -43,12 +43,8 @@ public class FastaSequenceIndexEntry {
      * @param basesPerLine How many bases are on each line.
      * @param bytesPerLine How many bytes are on each line (includes newline characters).
      */
-    public FastaSequenceIndexEntry( String contig,
-                                    long location,
-                                    long size,
-                                    int basesPerLine,
-                                    int bytesPerLine,
-                                    int sequenceIndex) {
+    public FastaSequenceIndexEntry(
+            String contig, long location, long size, int basesPerLine, int bytesPerLine, int sequenceIndex) {
         this.contig = contig;
         this.location = location;
         this.size = size;
@@ -68,7 +64,7 @@ public class FastaSequenceIndexEntry {
     /**
      * Sometimes contigs need to be adjusted on-the-fly to
      * match sequence dictionary entries.  Provide that capability
-     * to other classes w/i the package. 
+     * to other classes w/i the package.
      * @param contig New value for the contig.
      */
     protected void setContig(String contig) {
@@ -117,11 +113,9 @@ public class FastaSequenceIndexEntry {
      * @return A string representation of the contig line.
      */
     public String toString() {
-        return String.format("contig %s; location %d; size %d; basesPerLine %d; bytesPerLine %d", contig,
-                                                                                                  location,
-                                                                                                  size,
-                                                                                                  basesPerLine,
-                                                                                                  bytesPerLine );
+        return String.format(
+                "contig %s; location %d; size %d; basesPerLine %d; bytesPerLine %d",
+                contig, location, size, basesPerLine, bytesPerLine);
     }
 
     /**
@@ -130,14 +124,16 @@ public class FastaSequenceIndexEntry {
      * @return True if each has the same name, location, size, basesPerLine and bytesPerLine
      */
     public boolean equals(Object other) {
-        if(!(other instanceof FastaSequenceIndexEntry))
-            return false;
+        if (!(other instanceof FastaSequenceIndexEntry)) return false;
 
         if (this == other) return true;
 
-        FastaSequenceIndexEntry otherEntry = (FastaSequenceIndexEntry)other;
-        return (contig.equals(otherEntry.contig) && size == otherEntry.size && location == otherEntry.location
-        && basesPerLine == otherEntry.basesPerLine && bytesPerLine == otherEntry.bytesPerLine);
+        FastaSequenceIndexEntry otherEntry = (FastaSequenceIndexEntry) other;
+        return (contig.equals(otherEntry.contig)
+                && size == otherEntry.size
+                && location == otherEntry.location
+                && basesPerLine == otherEntry.basesPerLine
+                && bytesPerLine == otherEntry.bytesPerLine);
     }
 
     /**

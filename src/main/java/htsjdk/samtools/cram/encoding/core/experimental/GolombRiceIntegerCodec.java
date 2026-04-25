@@ -27,10 +27,11 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
     private final boolean quotientBit = true;
     private final int offset;
 
-    public GolombRiceIntegerCodec(final BitInputStream coreBlockInputStream,
-                                  final BitOutputStream coreBlockOutputStream,
-                                  final int offset,
-                                  final int log2m) {
+    public GolombRiceIntegerCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final int offset,
+            final int log2m) {
         super(coreBlockInputStream, coreBlockOutputStream);
 
         this.log2m = log2m;
@@ -88,5 +89,4 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
     public String toString() {
         return String.format("m: %d log2m: %d mask: %l quotientBit %b offset %d", m, log2m, mask, quotientBit, offset);
     }
-
 }

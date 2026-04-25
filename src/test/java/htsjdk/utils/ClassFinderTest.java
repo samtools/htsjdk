@@ -15,8 +15,11 @@ public class ClassFinderTest extends HtsjdkTest {
         finder.find("htsjdk", HtsjdkTest.class);
         Assert.assertFalse(finder.getClasses().isEmpty());
 
-        Assert.assertEquals(finder.getClasses().stream()
-                .filter(c -> c.getName().equals("htsjdk.utils.ClassFinderTest")).count(), 1);
+        Assert.assertEquals(
+                finder.getClasses().stream()
+                        .filter(c -> c.getName().equals("htsjdk.utils.ClassFinderTest"))
+                        .count(),
+                1);
     }
 
     @Test
@@ -25,7 +28,10 @@ public class ClassFinderTest extends HtsjdkTest {
         finder.find("htsjdk", Object.class);
 
         Assert.assertFalse(finder.getClasses().isEmpty());
-        Assert.assertEquals(finder.getClasses().stream()
-                .filter(c -> c.getName().equals("htsjdk.utils.ClassFinder")).count(), 1);
+        Assert.assertEquals(
+                finder.getClasses().stream()
+                        .filter(c -> c.getName().equals("htsjdk.utils.ClassFinder"))
+                        .count(),
+                1);
     }
 }

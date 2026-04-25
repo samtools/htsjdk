@@ -24,17 +24,16 @@
 
 package htsjdk.tribble.readers;
 
-
 import java.io.IOException;
 import java.io.Reader;
 
 /**
  * A variant of {@link java.io.BufferedReader} with improved performance reading files with long lines.
- * 
+ *
  * This class is almost identical to BufferedReader, but it retains a single line buffer for accumulating characters in a line, and allows
  * its size to grow. Conversely, {@link java.io.BufferedReader} assumes each new line will be approximately 80 characters and its
  * performance suffers when that is not the case.
- * 
+ *
  * Unlike {@link java.io.BufferedReader}, this class is not thread safe.
  *
  * @author mccowan
@@ -76,8 +75,7 @@ public class LongLineBufferedReader extends Reader {
      */
     public LongLineBufferedReader(Reader in, int sz) {
         super(in);
-        if (sz <= 0)
-            throw new IllegalArgumentException("Buffer size <= 0");
+        if (sz <= 0) throw new IllegalArgumentException("Buffer size <= 0");
         this.in = in;
         cb = new char[sz];
         nextChar = nChars = 0;
@@ -97,8 +95,7 @@ public class LongLineBufferedReader extends Reader {
      * Checks to make sure that the stream has not been closed
      */
     private void ensureOpen() throws IOException {
-        if (in == null)
-            throw new IOException("Stream closed");
+        if (in == null) throw new IOException("Stream closed");
     }
 
     /**
@@ -107,24 +104,24 @@ public class LongLineBufferedReader extends Reader {
     private void fill() throws IOException {
         int dst;
         if (markedChar <= UNMARKED) {
-        /* No mark */
+            /* No mark */
             dst = 0;
         } else {
-        /* Marked */
+            /* Marked */
             int delta = nextChar - markedChar;
             if (delta >= readAheadLimit) {
-        /* Gone past read-ahead limit: Invalidate mark */
+                /* Gone past read-ahead limit: Invalidate mark */
                 markedChar = INVALIDATED;
                 readAheadLimit = 0;
                 dst = 0;
             } else {
                 if (readAheadLimit <= cb.length) {
-		    /* Shuffle in the current buffer */
+                    /* Shuffle in the current buffer */
                     System.arraycopy(cb, markedChar, cb, 0, delta);
                     markedChar = 0;
                     dst = delta;
                 } else {
-		    /* Reallocate buffer to accommodate read-ahead limit */
+                    /* Reallocate buffer to accommodate read-ahead limit */
                     char ncb[] = new char[readAheadLimit];
                     System.arraycopy(cb, markedChar, ncb, 0, delta);
                     cb = ncb;
@@ -160,8 +157,7 @@ public class LongLineBufferedReader extends Reader {
             for (; ; ) {
                 if (nextChar >= nChars) {
                     fill();
-                    if (nextChar >= nChars)
-                        return -1;
+                    if (nextChar >= nChars) return -1;
                 }
                 if (skipLF) {
                     skipLF = false;
@@ -181,11 +177,11 @@ public class LongLineBufferedReader extends Reader {
      */
     private int read1(char[] cbuf, int off, int len) throws IOException {
         if (nextChar >= nChars) {
-	    /* If the requested length is at least as large as the buffer, and
-	       if there is no mark/reset activity, and if line feeds are not
-	       being skipped, do not bother to copy the characters into the
-	       local buffer.  In this way buffered streams will cascade
-	       harmlessly. */
+            /* If the requested length is at least as large as the buffer, and
+            if there is no mark/reset activity, and if line feeds are not
+            being skipped, do not bother to copy the characters into the
+            local buffer.  In this way buffered streams will cascade
+            harmlessly. */
             if (len >= cb.length && markedChar <= UNMARKED && !skipLF) {
                 return in.read(cbuf, off, len);
             }
@@ -196,10 +192,8 @@ public class LongLineBufferedReader extends Reader {
             skipLF = false;
             if (cb[nextChar] == '\n') {
                 nextChar++;
-                if (nextChar >= nChars)
-                    fill();
-                if (nextChar >= nChars)
-                    return -1;
+                if (nextChar >= nChars) fill();
+                if (nextChar >= nChars) return -1;
             }
         }
         int n = Math.min(len, nChars - nextChar);
@@ -255,8 +249,7 @@ public class LongLineBufferedReader extends Reader {
     public int read(char cbuf[], int off, int len) throws IOException {
         synchronized (lock) {
             ensureOpen();
-            if ((off < 0) || (off > cbuf.length) || (len < 0) ||
-                    ((off + len) > cbuf.length) || ((off + len) < 0)) {
+            if ((off < 0) || (off > cbuf.length) || (len < 0) || ((off + len) > cbuf.length) || ((off + len) < 0)) {
                 throw new IndexOutOfBoundsException();
             } else if (len == 0) {
                 return 0;
@@ -288,7 +281,7 @@ public class LongLineBufferedReader extends Reader {
     String readLine(boolean ignoreLF) throws IOException {
         int startChar;
         lineBuffer.setLength(0);
-        
+
         synchronized (lock) {
             ensureOpen();
             boolean omitLF = ignoreLF || skipLF;
@@ -296,21 +289,18 @@ public class LongLineBufferedReader extends Reader {
             bufferLoop:
             for (; ; ) {
 
-                if (nextChar >= nChars)
-                    fill();
-                if (nextChar >= nChars) { /* EOF */
-                    if (lineBuffer != null && lineBuffer.length() > 0)
-                        return lineBuffer.toString();
-                    else
-                        return null;
+                if (nextChar >= nChars) fill();
+                if (nextChar >= nChars) {
+                    /* EOF */
+                    if (lineBuffer != null && lineBuffer.length() > 0) return lineBuffer.toString();
+                    else return null;
                 }
                 boolean eol = false;
                 char c = 0;
                 int i;
 
                 /* Skip a leftover '\n', if necessary */
-                if (omitLF && (cb[nextChar] == '\n'))
-                    nextChar++;
+                if (omitLF && (cb[nextChar] == '\n')) nextChar++;
                 skipLF = false;
                 omitLF = false;
 
@@ -373,10 +363,8 @@ public class LongLineBufferedReader extends Reader {
             ensureOpen();
             long r = n;
             while (r > 0) {
-                if (nextChar >= nChars)
-                    fill();
-                if (nextChar >= nChars)	/* EOF */
-                    break;
+                if (nextChar >= nChars) fill();
+                if (nextChar >= nChars) /* EOF */ break;
                 if (skipLF) {
                     skipLF = false;
                     if (cb[nextChar] == '\n') {
@@ -409,20 +397,19 @@ public class LongLineBufferedReader extends Reader {
         synchronized (lock) {
             ensureOpen();
 
-	    /* 
-	     * If newline needs to be skipped and the next char to be read
-	     * is a newline character, then just skip it right away.
-	     */
+            /*
+             * If newline needs to be skipped and the next char to be read
+             * is a newline character, then just skip it right away.
+             */
             if (skipLF) {
-		/* Note that in.ready() will return true if and only if the next 
-		 * read on the stream will not block.
-		 */
+                /* Note that in.ready() will return true if and only if the next
+                 * read on the stream will not block.
+                 */
                 if (nextChar >= nChars && in.ready()) {
                     fill();
                 }
                 if (nextChar < nChars) {
-                    if (cb[nextChar] == '\n')
-                        nextChar++;
+                    if (cb[nextChar] == '\n') nextChar++;
                     skipLF = false;
                 }
             }
@@ -477,9 +464,7 @@ public class LongLineBufferedReader extends Reader {
         synchronized (lock) {
             ensureOpen();
             if (markedChar < 0)
-                throw new IOException((markedChar == INVALIDATED)
-                        ? "Mark invalid"
-                        : "Stream not marked");
+                throw new IOException((markedChar == INVALIDATED) ? "Mark invalid" : "Stream not marked");
             nextChar = markedChar;
             skipLF = markedSkipLF;
         }
@@ -488,8 +473,7 @@ public class LongLineBufferedReader extends Reader {
     @Override
     public void close() throws IOException {
         synchronized (lock) {
-            if (in == null)
-                return;
+            if (in == null) return;
             in.close();
             in = null;
             cb = null;

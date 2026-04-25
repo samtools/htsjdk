@@ -3,16 +3,15 @@ package htsjdk.beta.codecs.reads.sam.samV1_0;
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.codecs.reads.sam.SAMDecoder;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.IOException;
 import java.util.Optional;
 
@@ -56,7 +55,9 @@ public class SAMDecoderV1_0 extends SAMDecoder {
     }
 
     @Override
-    public boolean isQueryable() { return false; }
+    public boolean isQueryable() {
+        return false;
+    }
 
     @Override
     public boolean hasIndex() {

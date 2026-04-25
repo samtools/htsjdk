@@ -25,13 +25,11 @@ package htsjdk.tribble.bed;
 
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.ParsingUtils;
-
 import java.util.regex.Pattern;
 
 /**
@@ -61,7 +59,6 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         this(StartOffset.ONE);
     }
 
-
     /**
      * BED format is 0-based, but Tribble is 1-based.
      * Set desired start position at either ZERO or ONE
@@ -70,7 +67,6 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         super(BEDFeature.class);
         this.startOffsetValue = startOffset.value();
     }
-
 
     public BEDFeature decodeLoc(String line) {
         return decode(line);
@@ -121,7 +117,9 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
 
     // Return true if the candidateLine looks like a BED header line.
     private boolean isBEDHeaderLine(final String candidateLine) {
-        return candidateLine.startsWith("#") || candidateLine.startsWith("track") || candidateLine.startsWith("browser");
+        return candidateLine.startsWith("#")
+                || candidateLine.startsWith("track")
+                || candidateLine.startsWith("browser");
     }
 
     public BEDFeature decode(String[] tokens) {
@@ -172,8 +170,7 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         // Strand
         if (tokenCount > 5) {
             String strandString = tokens[5].trim();
-            char strand = (strandString.isEmpty())
-                    ? ' ' : strandString.charAt(0);
+            char strand = (strandString.isEmpty()) ? ' ' : strandString.charAt(0);
 
             if (strand == '-') {
                 feature.setStrand(Strand.NEGATIVE);
@@ -184,7 +181,7 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
             }
         }
 
-        //Color
+        // Color
         if (tokenCount > 8) {
             String colorString = tokens[8];
             feature.setColor(ParsingUtils.parseColor(colorString));
@@ -199,12 +196,12 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
     }
 
     protected boolean readHeaderLine(String line) {
-        //We don't parse BED header
+        // We don't parse BED header
         return false;
     }
 
-    private void createExons(int start, String[] tokens, FullBEDFeature gene,
-                             Strand strand) throws NumberFormatException {
+    private void createExons(int start, String[] tokens, FullBEDFeature gene, Strand strand)
+            throws NumberFormatException {
 
         int cdStart = Integer.parseInt(tokens[6]) + startOffsetValue;
         int cdEnd = Integer.parseInt(tokens[7]);

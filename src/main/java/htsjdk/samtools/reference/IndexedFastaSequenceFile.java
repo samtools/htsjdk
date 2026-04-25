@@ -30,7 +30,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -122,7 +121,8 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * @param index The fasta index.
      * @param dictionary The sequence dictionary, or null if there isn't one.
      */
-    public IndexedFastaSequenceFile(String source, final SeekableStream in, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
+    public IndexedFastaSequenceFile(
+            String source, final SeekableStream in, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
         super(source, index, dictionary);
         this.channel = new ReadableSeekableStreamByteChannel(in);
     }
@@ -144,8 +144,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
             if (IOUtil.isBlockCompressed(fastaFile, true)) {
                 return false;
             }
-            return (Files.exists(fastaFile) &&
-                    findFastaIndex(fastaFile) != null);
+            return (Files.exists(fastaFile) && findFastaIndex(fastaFile) != null);
         } catch (IOException e) {
             return false;
         }
@@ -162,7 +161,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     @Override
     protected int readFromPosition(final ByteBuffer buffer, long position) throws IOException {
         if (channel instanceof FileChannel) { // special case to take advantage of native code path
-            return ((FileChannel) channel).read(buffer,position);
+            return ((FileChannel) channel).read(buffer, position);
         } else {
             long oldPos = channel.position();
             try {

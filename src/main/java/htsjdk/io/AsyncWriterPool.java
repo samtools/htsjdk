@@ -1,7 +1,6 @@
 package htsjdk.io;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,7 +19,6 @@ import java.util.concurrent.*;
 public class AsyncWriterPool implements Closeable {
     private final ExecutorService executor;
     private final List<PooledWriter<?>> writers = new ArrayList<>();
-
 
     // The amount of time to wait on the queue in the event of catastrophic failure in the writer threads.
     private int timeoutSeconds = 5;
@@ -65,7 +63,10 @@ public class AsyncWriterPool implements Closeable {
     public void close() throws IOException {
         if (this.poolClosed) return;
         this.poolClosed = true;
-        CompletableFuture.allOf(this.writers.stream().map(PooledWriter::nonBlockingClose).toArray(CompletableFuture[]::new)).join();
+        CompletableFuture.allOf(this.writers.stream()
+                        .map(PooledWriter::nonBlockingClose)
+                        .toArray(CompletableFuture[]::new))
+                .join();
         this.executor.shutdown();
     }
 
@@ -104,7 +105,6 @@ public class AsyncWriterPool implements Closeable {
         return pooledWriter;
     }
 
-
     /**
      * Any class that implements {@link Writer} can be exchanged for a {@code PooledWriter}. The PooledWriter provides
      * the same API as {@link Writer}, but will manage buffering of writes and sending to the {@link AsyncWriterPool} it
@@ -122,7 +122,8 @@ public class AsyncWriterPool implements Closeable {
 
         private boolean isClosed = false;
 
-        // Holds the Future of the last task submitted to the AsyncWriterPools until it is checked, then it is null again.
+        // Holds the Future of the last task submitted to the AsyncWriterPools until it is checked, then it is null
+        // again.
         private Future<Void> currentTask;
 
         /**
@@ -137,7 +138,8 @@ public class AsyncWriterPool implements Closeable {
             if (writeThreshold <= 0)
                 throw new IllegalArgumentException("writeThreshold must be >= 1: " + writeThreshold);
             if (writeThreshold > queue.remainingCapacity())
-                throw new IllegalArgumentException("writeThreshold (" + writeThreshold + ") can't be larger then queue capacity (" + queue.remainingCapacity() + ").");
+                throw new IllegalArgumentException("writeThreshold (" + writeThreshold
+                        + ") can't be larger then queue capacity (" + queue.remainingCapacity() + ").");
 
             this.writer = writer;
             this.queue = queue;
@@ -208,7 +210,10 @@ public class AsyncWriterPool implements Closeable {
              * normal operations the timeout should not come into play and items will add immediately.
              */
             try {
-                while (!this.isClosed && !this.queue.offer(item, AsyncWriterPool.this.getTimeoutSeconds(), TimeUnit.SECONDS)) { /* Just wait. */ }
+                while (!this.isClosed
+                        && !this.queue.offer(item, AsyncWriterPool.this.getTimeoutSeconds(), TimeUnit.SECONDS)) {
+                    /* Just wait. */
+                }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Exception while placing item in queue", e);
             }
@@ -251,14 +256,16 @@ public class AsyncWriterPool implements Closeable {
          */
         private CompletableFuture<Void> nonBlockingClose() {
 
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    this.close();
-                    return null;
-                } catch (Exception e) {
-                    throw new RuntimeException("Caught exception while closing PooledWriter.", e);
-                }
-            }, AsyncWriterPool.this.executor);
+            return CompletableFuture.supplyAsync(
+                    () -> {
+                        try {
+                            this.close();
+                            return null;
+                        } catch (Exception e) {
+                            throw new RuntimeException("Caught exception while closing PooledWriter.", e);
+                        }
+                    },
+                    AsyncWriterPool.this.executor);
         }
 
         /**

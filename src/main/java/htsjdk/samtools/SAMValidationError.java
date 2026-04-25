@@ -35,7 +35,8 @@ public class SAMValidationError implements Serializable {
     public static final long serialVersionUID = 1L;
 
     public enum Severity {
-        WARNING, ERROR
+        WARNING,
+        ERROR
     }
 
     public enum Type {
@@ -240,7 +241,6 @@ public class SAMValidationError implements Serializable {
         /** Header tag key contains invalid characters or is not length two */
         HEADER_TAG_INVALID_KEY;
 
-
         public final Severity severity;
 
         private Type() {
@@ -305,16 +305,27 @@ public class SAMValidationError implements Serializable {
         return builder.append(message).toString();
     }
 
-    public Type getType() { return type; }
-    public String getMessage() { return message; }
+    public Type getType() {
+        return type;
+    }
+
+    public String getMessage() {
+        return message;
+    }
 
     /** may be null */
-    public String getReadName() { return readName; }
+    public String getReadName() {
+        return readName;
+    }
 
     /** 1-based.  -1 if not known. */
-    public long getRecordNumber() { return recordNumber; }
+    public long getRecordNumber() {
+        return recordNumber;
+    }
 
-    public void setRecordNumber(final long recordNumber) { this.recordNumber = recordNumber; }
+    public void setRecordNumber(final long recordNumber) {
+        this.recordNumber = recordNumber;
+    }
 
     public String getSource() {
         return source;

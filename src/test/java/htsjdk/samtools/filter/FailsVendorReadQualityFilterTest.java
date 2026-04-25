@@ -41,26 +41,23 @@ public class FailsVendorReadQualityFilterTest extends HtsjdkTest {
      * @param readQualityFlag   The read quality flag to be tested
      * @param expectedResult    The expected result (true is the sequence should match the filter, otherwise false)
      */
-    @Test(dataProvider="data")
-    public void testFailsReadQualityFilter(final String testName, final boolean readQualityFlag,
-                                           final boolean expectedResult) {
+    @Test(dataProvider = "data")
+    public void testFailsReadQualityFilter(
+            final String testName, final boolean readQualityFlag, final boolean expectedResult) {
         builder.addUnmappedFragment("testfrag");
         final SAMRecord record = builder.iterator().next();
         record.setReadFailsVendorQualityCheckFlag(readQualityFlag);
         Assert.assertEquals(filter.filterOut(record), expectedResult, testName);
     }
 
-
     /**
      * Data for various sequences which may or may not match the filter.
      */
     @DataProvider(name = "data")
-    private Object[][] getFailsReadQualityTestData()
-    {
-        return new Object[][]{
+    private Object[][] getFailsReadQualityTestData() {
+        return new Object[][] {
             {"Failed read, should be filtered out", true, true},
             {"Passing read, should not be filtered out", false, false},
         };
     }
-
 }

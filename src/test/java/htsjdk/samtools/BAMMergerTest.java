@@ -33,9 +33,6 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,10 +41,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class BAMMergerTest extends HtsjdkTest {
 
-    private final static Path BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam").toPath();
+    private static final Path BAM_FILE =
+            new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam").toPath();
 
     /**
      * Writes a <i>partitioned BAM</i>.
@@ -91,7 +91,8 @@ public class BAMMergerTest extends HtsjdkTest {
                     partNumber++;
                     String partName = String.format("part-%05d", partNumber);
                     OutputStream out = Files.newOutputStream(outputDir.resolve(partName));
-                    OutputStream indexOut = Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.BAI_INDEX));
+                    OutputStream indexOut =
+                            Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.BAI_INDEX));
                     OutputStream sbiOut = Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.SBI));
                     long sbiGranularity = 1; // set to one so we can test merging
                     samStreamWriter = new BAMStreamWriter(out, indexOut, sbiOut, sbiGranularity, header);
@@ -137,7 +138,8 @@ public class BAMMergerTest extends HtsjdkTest {
         public void merge(Path dir, Path outputBam, Path outputBai, Path outputSbi) throws IOException {
             Path headerPath = dir.resolve("header");
             List<Path> bamParts = Files.list(dir)
-                    .filter(path -> !path.toString().endsWith(FileExtensions.BAI_INDEX) && !path.toString().endsWith(FileExtensions.SBI)) // include header and terminator
+                    .filter(path -> !path.toString().endsWith(FileExtensions.BAI_INDEX)
+                            && !path.toString().endsWith(FileExtensions.SBI)) // include header and terminator
                     .sorted()
                     .collect(Collectors.toList());
             List<Path> baiParts = Files.list(dir)
@@ -151,9 +153,12 @@ public class BAMMergerTest extends HtsjdkTest {
 
             Assert.assertTrue(baiParts.size() > 1);
 
-            ValidationUtils.validateArg(bamParts.size() - 2 == baiParts.size(), "Number of BAM part files does not match number of BAI files (" + baiParts.size() + ")");
+            ValidationUtils.validateArg(
+                    bamParts.size() - 2 == baiParts.size(),
+                    "Number of BAM part files does not match number of BAI files (" + baiParts.size() + ")");
 
-            SAMFileHeader header = SamReaderFactory.makeDefault().open(headerPath).getFileHeader();
+            SAMFileHeader header =
+                    SamReaderFactory.makeDefault().open(headerPath).getFileHeader();
 
             // merge BAM parts
             try (OutputStream out = Files.newOutputStream(outputBam)) {
@@ -195,12 +200,11 @@ public class BAMMergerTest extends HtsjdkTest {
 
     // index a BAM file
     private static Path indexBam(Path bam, Path bai) throws IOException {
-        try (SamReader in =
-                     SamReaderFactory.makeDefault()
-                             .validationStringency(ValidationStringency.SILENT)
-                             .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
-                             .disable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS)
-                             .open(SamInputResource.of(bam))) {
+        try (SamReader in = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .disable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS)
+                .open(SamInputResource.of(bam))) {
 
             final BAMIndexer indexer = new BAMIndexer(bai, in.getFileHeader());
             for (final SAMRecord rec : in) {
@@ -225,7 +229,8 @@ public class BAMMergerTest extends HtsjdkTest {
         final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp");
         IOUtil.deleteOnExit(outputDir);
 
-        final Path outputBam = File.createTempFile(this.getClass().getSimpleName() + ".", ".bam").toPath();
+        final Path outputBam = File.createTempFile(this.getClass().getSimpleName() + ".", ".bam")
+                .toPath();
         IOUtil.deleteOnExit(outputBam);
 
         final Path outputBai = IOUtil.addExtension(outputBam, FileExtensions.BAI_INDEX);
@@ -234,15 +239,19 @@ public class BAMMergerTest extends HtsjdkTest {
         final Path outputSbi = IOUtil.addExtension(outputBam, FileExtensions.SBI);
         IOUtil.deleteOnExit(outputSbi);
 
-        final Path outputBaiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.BAI_INDEX).toPath();
+        final Path outputBaiMerged = File.createTempFile(
+                        this.getClass().getSimpleName() + ".", FileExtensions.BAI_INDEX)
+                .toPath();
         IOUtil.deleteOnExit(outputBaiMerged);
 
-        final Path outputSbiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.SBI).toPath();
+        final Path outputSbiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.SBI)
+                .toPath();
         IOUtil.deleteOnExit(outputBaiMerged);
 
         // 1. Read an input BAM and write it out in partitioned form (header, parts, terminator)
         try (SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-            PartitionedBAMFileWriter partitionedBAMFileWriter = new PartitionedBAMFileWriter(outputDir, samReader.getFileHeader(), 2500)) { // BAM file has 10000 reads
+                PartitionedBAMFileWriter partitionedBAMFileWriter = new PartitionedBAMFileWriter(
+                        outputDir, samReader.getFileHeader(), 2500)) { // BAM file has 10000 reads
             for (SAMRecord samRecord : samReader) {
                 partitionedBAMFileWriter.addAlignment(samRecord);
             }

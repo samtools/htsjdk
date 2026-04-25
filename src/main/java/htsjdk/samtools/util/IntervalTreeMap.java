@@ -41,9 +41,7 @@ import java.util.Set;
  *
  * @author Bob Handsaker
  */
-public class IntervalTreeMap<T>
-    extends AbstractMap<Interval, T>
-{
+public class IntervalTreeMap<T> extends AbstractMap<Interval, T> {
     private final Map<String, IntervalTree<T>> mSequenceMap = new HashMap<String, IntervalTree<T>>();
     private final EntrySet mEntrySet = new EntrySet();
 
@@ -51,8 +49,7 @@ public class IntervalTreeMap<T>
         return mSequenceMap.get(sequence);
     }
 
-    public IntervalTreeMap() {
-    }
+    public IntervalTreeMap() {}
 
     public IntervalTreeMap(final Map<? extends Interval, ? extends T> map) {
         for (final Map.Entry<? extends Interval, ? extends T> entry : map.entrySet()) {
@@ -87,11 +84,11 @@ public class IntervalTreeMap<T>
     }
 
     @SuppressWarnings("rawtypes")
-	public boolean equals(final Object o) {
+    public boolean equals(final Object o) {
         if (!(o instanceof IntervalTreeMap)) {
             return false;
         }
-        return mSequenceMap.equals(((IntervalTreeMap)o).mSequenceMap);
+        return mSequenceMap.equals(((IntervalTreeMap) o).mSequenceMap);
     }
 
     public int hashCode() {
@@ -143,7 +140,7 @@ public class IntervalTreeMap<T>
         if (!(object instanceof Interval)) {
             return null;
         }
-        return remove((Interval)object);
+        return remove((Interval) object);
     }
 
     public T remove(final Interval key) {
@@ -164,16 +161,15 @@ public class IntervalTreeMap<T>
         return size;
     }
     /**
-     * Test overlapping interval 
+     * Test overlapping interval
      * @param key the Locatable
-     * @return true if it contains an object overlapping the interval 
+     * @return true if it contains an object overlapping the interval
      */
     public boolean containsOverlapping(final Locatable key) {
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
-        return tree!=null && tree.overlappers(key.getStart(), key.getEnd()).hasNext();
-    	}
-    
-    
+        return tree != null && tree.overlappers(key.getStart(), key.getEnd()).hasNext();
+    }
+
     public Collection<T> getOverlapping(final Locatable key) {
         final List<T> result = new ArrayList<T>();
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
@@ -192,18 +188,17 @@ public class IntervalTreeMap<T>
      */
     public boolean containsContained(final Locatable key) {
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
-        if(tree==null) return false;
-            final Iterator<IntervalTree.Node<T>> iterator = tree.overlappers(key.getStart(), key.getEnd());
-            while (iterator.hasNext()) {
-                final IntervalTree.Node<T> node = iterator.next();
-                if (node.getStart() >= key.getStart() && node.getEnd() <= key.getEnd()) {
-                    return true;
-                }
+        if (tree == null) return false;
+        final Iterator<IntervalTree.Node<T>> iterator = tree.overlappers(key.getStart(), key.getEnd());
+        while (iterator.hasNext()) {
+            final IntervalTree.Node<T> node = iterator.next();
+            if (node.getStart() >= key.getStart() && node.getEnd() <= key.getEnd()) {
+                return true;
             }
+        }
         return false;
     }
-    
-    
+
     public Collection<T> getContained(final Locatable key) {
         final List<T> result = new ArrayList<T>();
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
@@ -219,15 +214,14 @@ public class IntervalTreeMap<T>
         return result;
     }
 
-    private class EntrySet
-        extends AbstractSet<Map.Entry<Interval,T>> {
+    private class EntrySet extends AbstractSet<Map.Entry<Interval, T>> {
 
         @Override
         public void clear() {
-           IntervalTreeMap.this.clear();
+            IntervalTreeMap.this.clear();
         }
 
-        public boolean contains(final Map.Entry<Interval,T> entry) {
+        public boolean contains(final Map.Entry<Interval, T> entry) {
             if (entry == null) {
                 return false;
             }
@@ -240,7 +234,7 @@ public class IntervalTreeMap<T>
         }
 
         @Override
-        public Iterator<Map.Entry<Interval,T>> iterator() {
+        public Iterator<Map.Entry<Interval, T>> iterator() {
             return new EntryIterator();
         }
 
@@ -251,10 +245,10 @@ public class IntervalTreeMap<T>
             if (!(object instanceof Map.Entry)) {
                 return false;
             }
-            return remove((Map.Entry<Interval,T>)object);
+            return remove((Map.Entry<Interval, T>) object);
         }
 
-        public boolean remove(final Map.Entry<Interval,T> entry) {
+        public boolean remove(final Map.Entry<Interval, T> entry) {
             if (this.contains(entry)) {
                 IntervalTreeMap.this.remove(entry.getKey());
                 return true;
@@ -269,8 +263,7 @@ public class IntervalTreeMap<T>
         }
     }
 
-    private class EntryIterator
-        implements Iterator<Map.Entry<Interval, T>> {
+    private class EntryIterator implements Iterator<Map.Entry<Interval, T>> {
 
         private String mSequence = null;
         private Iterator<String> mSequenceIterator = null;
@@ -287,7 +280,7 @@ public class IntervalTreeMap<T>
         }
 
         @Override
-        public Map.Entry<Interval,T> next() {
+        public Map.Entry<Interval, T> next() {
             if (!hasNext()) {
                 throw new NoSuchElementException("Iterator exhausted");
             }
@@ -320,8 +313,7 @@ public class IntervalTreeMap<T>
         }
     }
 
-    private class MapEntry
-        implements Map.Entry<Interval,T> {
+    private class MapEntry implements Map.Entry<Interval, T> {
 
         private final Interval mKey;
         private T mValue;

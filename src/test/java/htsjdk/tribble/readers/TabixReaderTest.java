@@ -1,18 +1,16 @@
 package htsjdk.tribble.readers;
 
-
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TestUtils;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Created by IntelliJ IDEA.
@@ -51,48 +49,44 @@ public class TabixReaderTest extends HtsjdkTest {
         for (String s : expectedSeqNames) {
             Assert.assertTrue(sequenceNames.contains(s));
         }
-
-
     }
-    
+
     @Test
     public void testSequenceSet() {
-        Set<String> chroms= tabixReader.getChromosomes();
+        Set<String> chroms = tabixReader.getChromosomes();
         Assert.assertFalse(chroms.isEmpty());
         Assert.assertTrue(chroms.contains("1"));
         Assert.assertFalse(chroms.contains("MT"));
-        
     }
-
 
     @Test
     public void testIterators() throws IOException {
-        TabixReader.Iterator iter=tabixReader.query("1", 1, 400);
+        TabixReader.Iterator iter = tabixReader.query("1", 1, 400);
         Assert.assertNotNull(iter);
         Assert.assertNotNull(iter.next());
         Assert.assertNull(iter.next());
-        
-        iter=tabixReader.query("UN", 1, 100);
-        Assert.assertNotNull(iter);
-        Assert.assertNull(iter.next());
-        
-        iter=tabixReader.query("UN:1-100");
+
+        iter = tabixReader.query("UN", 1, 100);
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
 
-        iter=tabixReader.query("1:10-1");
+        iter = tabixReader.query("UN:1-100");
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
 
-        iter=tabixReader.query("chr2:0-1");
+        iter = tabixReader.query("1:10-1");
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
- 
-        iter=tabixReader.query(999999,9,9);
+
+        iter = tabixReader.query("chr2:0-1");
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
-        
-        iter=tabixReader.query("1",Integer.MAX_VALUE-1,Integer.MAX_VALUE);
+
+        iter = tabixReader.query(999999, 9, 9);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+
+        iter = tabixReader.query("1", Integer.MAX_VALUE - 1, Integer.MAX_VALUE);
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
 
@@ -113,7 +107,7 @@ public class TabixReaderTest extends HtsjdkTest {
         Assert.assertNotNull(iter.next());
         Assert.assertNull(iter.next());
 
-        final int pos_snp_in_vcf_chr1=327;
+        final int pos_snp_in_vcf_chr1 = 327;
 
         iter = tabixReader.query("1:" + pos_snp_in_vcf_chr1 + "-" + pos_snp_in_vcf_chr1);
         Assert.assertNotNull(iter);
@@ -125,22 +119,20 @@ public class TabixReaderTest extends HtsjdkTest {
         Assert.assertNotNull(iter.next());
         Assert.assertNull(iter.next());
 
-        iter=tabixReader.query("1",pos_snp_in_vcf_chr1,pos_snp_in_vcf_chr1);
+        iter = tabixReader.query("1", pos_snp_in_vcf_chr1, pos_snp_in_vcf_chr1);
         Assert.assertNotNull(iter);
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
 
-        iter=tabixReader.query("1",pos_snp_in_vcf_chr1-1,pos_snp_in_vcf_chr1-1);
+        iter = tabixReader.query("1", pos_snp_in_vcf_chr1 - 1, pos_snp_in_vcf_chr1 - 1);
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
 
-        iter=tabixReader.query("1",pos_snp_in_vcf_chr1+1,pos_snp_in_vcf_chr1+1);
+        iter = tabixReader.query("1", pos_snp_in_vcf_chr1 + 1, pos_snp_in_vcf_chr1 + 1);
         Assert.assertNotNull(iter);
         Assert.assertNull(iter.next());
     }
-    
-    
-    
+
     /**
      * Test reading a local tabix file
      *
@@ -149,8 +141,8 @@ public class TabixReaderTest extends HtsjdkTest {
     @Test
     public void testLocalQuery() throws IOException {
 
-         TabixIteratorLineReader lineReader = new TabixIteratorLineReader(
-                tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
+        TabixIteratorLineReader lineReader =
+                new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
 
         int nRecords = 0;
         String nextLine;
@@ -159,8 +151,6 @@ public class TabixReaderTest extends HtsjdkTest {
             nRecords++;
         }
         Assert.assertTrue(nRecords > 0);
-
-
     }
 
     /**
@@ -170,12 +160,12 @@ public class TabixReaderTest extends HtsjdkTest {
      */
     @Test
     public void testRemoteQuery() throws IOException {
-        String tabixFile = TestUtil.BASE_URL_FOR_HTTP_TESTS +"igvdata/tabix/trioDup.vcf.gz";
+        String tabixFile = TestUtil.BASE_URL_FOR_HTTP_TESTS + "igvdata/tabix/trioDup.vcf.gz";
 
-        try(TabixReader tabixReader = new TabixReader(tabixFile)) {
-            TabixIteratorLineReader lineReader = new TabixIteratorLineReader(
-                    tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
-    
+        try (TabixReader tabixReader = new TabixReader(tabixFile)) {
+            TabixIteratorLineReader lineReader =
+                    new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
+
             int nRecords = 0;
             String nextLine;
             while ((nextLine = lineReader.readLine()) != null) {
@@ -185,7 +175,7 @@ public class TabixReaderTest extends HtsjdkTest {
             Assert.assertTrue(nRecords > 0);
         }
     }
-    
+
     /**
      * Test TabixReader.readLine
      *
@@ -193,7 +183,7 @@ public class TabixReaderTest extends HtsjdkTest {
      */
     @Test
     public void testTabixReaderReadLine() throws IOException {
-        try(TabixReader tabixReader = new TabixReader(tabixFile)) {
+        try (TabixReader tabixReader = new TabixReader(tabixFile)) {
             Assert.assertNotNull(tabixReader.readLine());
         }
     }

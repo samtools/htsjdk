@@ -1,14 +1,14 @@
 /*
-* Adapted from example code in
-* Title: Hardcore Java
-* Title: Java I/O
-* Second Edition: May 2006
-* ISBN 10: 0-596-52750-0
-* ISBN 13: 9780596527501
-*
-* http://www.javafaq.nu/java-example-code-1078.html
-*
-*/
+ * Adapted from example code in
+ * Title: Hardcore Java
+ * Title: Java I/O
+ * Second Edition: May 2006
+ * ISBN 10: 0-596-52750-0
+ * ISBN 13: 9780596527501
+ *
+ * http://www.javafaq.nu/java-example-code-1078.html
+ *
+ */
 package htsjdk.tribble.util;
 
 import java.io.ByteArrayOutputStream;
@@ -16,7 +16,6 @@ import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 
 /**
  * Input stream with methods to convert byte arrays to numeric values using "little endian" order.
@@ -30,7 +29,6 @@ public class LittleEndianInputStream extends FilterInputStream {
     public LittleEndianInputStream(InputStream in) {
         super(in);
         buffer = new byte[8];
-
     }
 
     /**
@@ -56,7 +54,6 @@ public class LittleEndianInputStream extends FilterInputStream {
         return (short) (((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24));
     }
 
-
     public int readInt() throws IOException {
         int byte1 = in.read();
         int byte2 = in.read();
@@ -65,17 +62,12 @@ public class LittleEndianInputStream extends FilterInputStream {
         if (byte4 < 0) {
             throw new EOFException();
         }
-        return (byte4 << 24)
-                + ((byte3 << 24) >>> 8)
-                + ((byte2 << 24) >>> 16)
-                + ((byte1 << 24) >>> 24);
-
+        return (byte4 << 24) + ((byte3 << 24) >>> 8) + ((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24);
     }
 
     /**
      *
      */
-
     public long readLong() throws IOException {
         readFully(buffer);
         long byte1 = (long) buffer[0];
@@ -110,12 +102,11 @@ public class LittleEndianInputStream extends FilterInputStream {
      * @return
      * @throws IOException
      */
-
     public String readString() throws IOException {
         ByteArrayOutputStream bis = new ByteArrayOutputStream(100);
         byte b;
         while ((b = (byte) in.read()) != 0) {
-            if(b < 0) {
+            if (b < 0) {
                 throw new EOFException();
             }
             bis.write(b);
@@ -123,22 +114,17 @@ public class LittleEndianInputStream extends FilterInputStream {
         return new String(bis.toByteArray());
     }
 
-
     /**
      * Keep reading until the input buffer is filled.
      */
     private void readFully(byte b[]) throws IOException {
         int len = b.length;
-        if (len < 0)
-            throw new IndexOutOfBoundsException();
+        if (len < 0) throw new IndexOutOfBoundsException();
         int n = 0;
         while (n < len) {
             int count = read(b, n, len - n);
-            if (count < 0)
-                throw new EOFException();
+            if (count < 0) throw new EOFException();
             n += count;
         }
     }
-
-
 }

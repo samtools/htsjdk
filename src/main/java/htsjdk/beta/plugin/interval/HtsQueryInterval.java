@@ -4,7 +4,7 @@ import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.utils.ValidationUtils;
 
-//TODO: wild cards 0, +, end of reference/contig
+// TODO: wild cards 0, +, end of reference/contig
 
 /**
  * An concrete query interval implementation of {@link HtsInterval} used for random access queries on
@@ -22,8 +22,8 @@ public class HtsQueryInterval implements HtsInterval {
      * @param start the integer start position
      * @param end the end position
      */
-    public HtsQueryInterval(final String queryName, final long start, final long end){
-        //validatePositions(contig, start, end);
+    public HtsQueryInterval(final String queryName, final long start, final long end) {
+        // validatePositions(contig, start, end);
         this.queryName = queryName;
         this.start = start;
         this.end = end;
@@ -37,22 +37,32 @@ public class HtsQueryInterval implements HtsInterval {
      */
     public HtsQueryInterval(final QueryInterval queryInterval, final SAMSequenceDictionary dictionary) {
         ValidationUtils.nonNull(dictionary, "a valid sequence dictionary is required");
-        ValidationUtils.nonNull(dictionary.getSequence(queryInterval.referenceIndex),
-                String.format("query index %d is not present in the provided dictionary", queryInterval.referenceIndex));
-        ValidationUtils.nonNull(dictionary.getSequence(queryInterval.referenceIndex).getContig(),
-                String.format("contig name for index %d is not present in the provided dictionary", queryInterval.referenceIndex));
+        ValidationUtils.nonNull(
+                dictionary.getSequence(queryInterval.referenceIndex),
+                String.format(
+                        "query index %d is not present in the provided dictionary", queryInterval.referenceIndex));
+        ValidationUtils.nonNull(
+                dictionary.getSequence(queryInterval.referenceIndex).getContig(),
+                String.format(
+                        "contig name for index %d is not present in the provided dictionary",
+                        queryInterval.referenceIndex));
         this.queryName = dictionary.getSequence(queryInterval.referenceIndex).getContig();
         this.start = queryInterval.start;
         this.end = queryInterval.end;
     }
 
     @Override
-    public String getQueryName() { return queryName; }
+    public String getQueryName() {
+        return queryName;
+    }
 
     @Override
-    public long getStart() { return start; }
+    public long getStart() {
+        return start;
+    }
 
     @Override
-    public long getEnd() { return end; }
-
+    public long getEnd() {
+        return end;
+    }
 }

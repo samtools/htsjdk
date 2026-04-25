@@ -11,19 +11,18 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Created by vadim on 03/07/2017.
  */
-public class CRAMSliceMD5Test extends HtsjdkTest{
+public class CRAMSliceMD5Test extends HtsjdkTest {
 
     @Test
     public void testSliceMD5() throws IOException {
@@ -32,7 +31,7 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         // read the CRAM:
         Container container;
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(test.cramData);
-             final CountingInputStream inputStream = new CountingInputStream(bais)) {
+                final CountingInputStream inputStream = new CountingInputStream(bais)) {
             final CramHeader cramHeader = CramIO.readCramHeader(inputStream);
             Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), bais, null);
             final long containerByteOffset = inputStream.getCount();
@@ -43,11 +42,16 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         Assert.assertEquals(slice.getAlignmentContext().getAlignmentStart(), 1);
         Assert.assertEquals(slice.getAlignmentContext().getAlignmentSpan(), test.referenceBases.length);
         // check the slice MD5 is the MD5 of upper-cased ref bases:
-        final byte[] ucRefMD5 = SequenceUtil.calculateMD5(test.refBasesFromUCSource, 0, test.refBasesFromUCSource.length);
+        final byte[] ucRefMD5 =
+                SequenceUtil.calculateMD5(test.refBasesFromUCSource, 0, test.refBasesFromUCSource.length);
         Assert.assertEquals(slice.getReferenceMD5(), ucRefMD5);
 
         // check the CRAM file reads:
-        final CRAMFileReader reader = new CRAMFileReader(new ByteArrayInputStream(test.cramData), (File) null, test.referenceSourceUpperCased, ValidationStringency.STRICT);
+        final CRAMFileReader reader = new CRAMFileReader(
+                new ByteArrayInputStream(test.cramData),
+                (File) null,
+                test.referenceSourceUpperCased,
+                ValidationStringency.STRICT);
         final SAMRecordIterator iterator = reader.getIterator();
         Assert.assertTrue(iterator.hasNext());
         Assert.assertEquals(iterator.next(), test.record);
@@ -58,12 +62,15 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
         final CramTestCase test = new CramTestCase();
 
         // try reading the CRAM file with the incorrect ref source that does not upper case bases:
-        final CRAMFileReader reader = new CRAMFileReader(new ByteArrayInputStream(test.cramData), (File) null, test.referenceSourceMixedCase, ValidationStringency.STRICT);
+        final CRAMFileReader reader = new CRAMFileReader(
+                new ByteArrayInputStream(test.cramData),
+                (File) null,
+                test.referenceSourceMixedCase,
+                ValidationStringency.STRICT);
         final SAMRecordIterator iterator = reader.getIterator();
         // expect an exception here due to slice MD5 mismatch:
         iterator.hasNext();
     }
-
 
     /**
      * A test case to demonstrate the effect of upper casing of reference bases.
@@ -77,11 +84,13 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
          * An invalid reference source that does not change bases:
          */
         private final CRAMReferenceSource referenceSourceMixedCase;
+
         private final InMemoryReferenceSequenceFile memoryReferenceSequenceFile;
         /**
          * A valid reference source that uppercases reference bases:
          */
         private final ReferenceSource referenceSourceUpperCased;
+
         private final byte[] refBasesFromUCSource;
         private final byte[] refBasesFromMixedCaseSource;
         private final SAMRecord record;
@@ -124,7 +133,8 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
             // check there is no lower case A:
             Assert.assertTrue(!new String(refBasesFromUCSource).contains("a"));
 
-            refBasesFromMixedCaseSource = referenceSourceMixedCase.getReferenceBases(samFileHeader.getSequence(0), true);
+            refBasesFromMixedCaseSource =
+                    referenceSourceMixedCase.getReferenceBases(samFileHeader.getSequence(0), true);
             // check the mixed case source does not change ref base casing:
             Assert.assertEquals(refBasesFromMixedCaseSource, referenceBases);
             // check the mixed case source contains lower case bases:
@@ -149,12 +159,11 @@ public class CRAMSliceMD5Test extends HtsjdkTest{
 
             // write a valid CRAM with a valid reference source:
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (final CRAMFileWriter writer = new CRAMFileWriter(baos, referenceSourceUpperCased, samFileHeader, "test")) {
+            try (final CRAMFileWriter writer =
+                    new CRAMFileWriter(baos, referenceSourceUpperCased, samFileHeader, "test")) {
                 writer.addAlignment(record);
             }
             cramData = baos.toByteArray();
         }
     }
-
-
 }

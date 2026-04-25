@@ -25,14 +25,13 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.SequenceUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests for MultiIterator
@@ -58,7 +57,6 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         final SamReader samReader2 = builder2.getSamReader();
         samReader2.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
-
         final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
@@ -67,10 +65,10 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
-        final SamFileHeaderMerger fileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, false);
+        final SamFileHeaderMerger fileHeaderMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, false);
 
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(fileHeaderMerger, readerList, false);
-
 
         int i = 0;
 
@@ -102,7 +100,6 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
 
         final SamReader samReader2 = builder2.getSamReader();
 
-
         final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
@@ -111,10 +108,10 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
-        final SamFileHeaderMerger fileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.queryname, headerList, false);
+        final SamFileHeaderMerger fileHeaderMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.queryname, headerList, false);
 
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(fileHeaderMerger, readerList, false);
-
 
         int i = 0;
 
@@ -146,7 +143,6 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
 
         final SamReader samReader2 = builder2.getSamReader();
 
-
         final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
@@ -155,10 +151,10 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
-        final SamFileHeaderMerger fileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.unsorted, headerList, false);
+        final SamFileHeaderMerger fileHeaderMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.unsorted, headerList, false);
 
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(fileHeaderMerger, readerList, false);
-
 
         int i = 0;
 
@@ -192,10 +188,9 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         final SamReader samReader2 = builder2.getSamReader();
         samReader2.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
-        //Change one of the header so they are no longer compatible
+        // Change one of the header so they are no longer compatible
         final SAMSequenceRecord sRec = new SAMSequenceRecord("BADSEQ", 0);
         samReader2.getFileHeader().addSequence(sRec);
-
 
         final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
@@ -205,12 +200,12 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
-        final SamFileHeaderMerger samFileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, false);
+        final SamFileHeaderMerger samFileHeaderMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, false);
 
         new MergingSamRecordIterator(samFileHeaderMerger, readerList, false);
         Assert.fail("This method should throw exception before getting to this point");
     }
-
 
     @Test(expectedExceptions = SAMException.class)
     public void filesNotSortedCorrectly() throws Exception {
@@ -236,7 +231,8 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
-        final SamFileHeaderMerger fileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, false);
+        final SamFileHeaderMerger fileHeaderMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, false);
 
         new MergingSamRecordIterator(fileHeaderMerger, readerList, false);
         Assert.fail("This method should throw exception before getting to this point");
@@ -259,8 +255,12 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         for (final String comment : comments2) {
             header.addComment(comment);
         }
-        final SamFileHeaderMerger merger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate,
-                Arrays.asList(builder1.getSamReader().getFileHeader(), builder2.getSamReader().getFileHeader()), false);
+        final SamFileHeaderMerger merger = new SamFileHeaderMerger(
+                SAMFileHeader.SortOrder.coordinate,
+                Arrays.asList(
+                        builder1.getSamReader().getFileHeader(),
+                        builder2.getSamReader().getFileHeader()),
+                false);
         final List<String> mergedComments = merger.getMergedHeader().getComments();
         Assert.assertEquals(mergedComments.size(), bothComments.size());
         for (final String comment : mergedComments) {
@@ -300,12 +300,13 @@ public class MergingSamRecordIteratorTest extends HtsjdkTest {
         final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
         headerList.add(samReader1.getFileHeader());
         headerList.add(samReader2.getFileHeader());
-        final SamFileHeaderMerger samFileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, true);
+        final SamFileHeaderMerger samFileHeaderMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, true);
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(samFileHeaderMerger, readerList, false);
 
         Assert.assertTrue(iterator.hasNext());
         final SAMRecord rec = iterator.next();
-        Assert.assertTrue(26  == rec.getReferenceIndex());
+        Assert.assertTrue(26 == rec.getReferenceIndex());
 
         samReader1.close();
         samReader2.close();

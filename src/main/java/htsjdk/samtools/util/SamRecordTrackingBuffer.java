@@ -28,7 +28,6 @@ import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-
 import java.io.File;
 import java.util.ArrayDeque;
 import java.util.BitSet;
@@ -72,7 +71,12 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
      * @param header the header
      * @param clazz the class that extends SamRecordWithOrdinal
      */
-    public SamRecordTrackingBuffer(final int maxRecordsInRam, final int blockSize, final List<File> tmpDirs, final SAMFileHeader header, final Class<T> clazz) {
+    public SamRecordTrackingBuffer(
+            final int maxRecordsInRam,
+            final int blockSize,
+            final List<File> tmpDirs,
+            final SAMFileHeader header,
+            final Class<T> clazz) {
         this.availableRecordsInMemory = maxRecordsInRam;
         this.blockSize = blockSize;
         this.tmpDirs = tmpDirs;
@@ -84,10 +88,14 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     }
 
     /** Returns true if we are tracking no records, false otherwise */
-    public boolean isEmpty() { return (blocks.isEmpty() || this.blocks.getFirst().isEmpty()); }
+    public boolean isEmpty() {
+        return (blocks.isEmpty() || this.blocks.getFirst().isEmpty());
+    }
 
     /** Returns true if we can return the next record (it has been examined). */
-    public boolean canEmit() { return (!this.blocks.isEmpty() && this.blocks.getFirst().canEmit()); }
+    public boolean canEmit() {
+        return (!this.blocks.isEmpty() && this.blocks.getFirst().canEmit());
+    }
 
     /**
      * Add the given SAMRecordIndex to the buffer.  The records must be added in order.
@@ -104,10 +112,12 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         }
         // If necessary, create a new block, using as much ram as available up to its total size
         if (this.blocks.isEmpty() || !this.blocks.getLast().canAdd()) {
-            // once ram is given to a block, we can't give it to another block (until some is recovered from the head of the queue)
+            // once ram is given to a block, we can't give it to another block (until some is recovered from the head of
+            // the queue)
             final int blockRam = Math.min(this.blockSize, this.availableRecordsInMemory);
             this.availableRecordsInMemory = this.availableRecordsInMemory - blockRam;
-            final BufferBlock block = new BufferBlock(this.blockSize, blockRam, this.tmpDirs, this.header, samRecordWithOrdinal.getRecordOrdinal());
+            final BufferBlock block = new BufferBlock(
+                    this.blockSize, blockRam, this.tmpDirs, this.header, samRecordWithOrdinal.getRecordOrdinal());
             this.blocks.addLast(block);
         }
         this.blocks.getLast().add(samRecordWithOrdinal);
@@ -125,10 +135,12 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
             throw new NoSuchElementException("Attempting to remove an element from an empty SamRecordTrackingBuffer");
         final BufferBlock headBlock = this.blocks.getFirst();
         if (!headBlock.canEmit())
-            throw new SAMException("Attempting to get a samRecordWithOrdinal from the SamRecordTrackingBuffer that has not been through " +
-                    "marked as examined. canEmit() must return true in order to call next()");
+            throw new SAMException(
+                    "Attempting to get a samRecordWithOrdinal from the SamRecordTrackingBuffer that has not been through "
+                            + "marked as examined. canEmit() must return true in order to call next()");
 
-        // If the samRecordWithOrdinal was stored in memory, reclaim its ram for use in additional blocks at tail of queue
+        // If the samRecordWithOrdinal was stored in memory, reclaim its ram for use in additional blocks at tail of
+        // queue
         // NB: this must be checked before calling next(), as that method updates the block-head
         if (!headBlock.headRecordIsFromDisk()) {
             this.availableRecordsInMemory++;
@@ -143,17 +155,22 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     }
 
     /** Removes the next record from this buffer */
-    public void remove() { this.next(); }
+    public void remove() {
+        this.next();
+    }
 
     /**
      * Return the total number of elements in the queue, both in memory and on disk
      */
-    public long size() { return this.queueTailRecordIndex - this.queueHeadRecordIndex + 1; }
+    public long size() {
+        return this.queueTailRecordIndex - this.queueHeadRecordIndex + 1;
+    }
 
     /** Returns the block that holds the sam record at the given index, null if no such block exists */
     private BufferBlock getBlock(final SamRecordWithOrdinal samRecordWithOrdinal) {
         for (final BufferBlock block : this.blocks) {
-            if (block.getStartIndex() <= samRecordWithOrdinal.getRecordOrdinal() && block.getEndIndex() >= samRecordWithOrdinal.getRecordOrdinal()) {
+            if (block.getStartIndex() <= samRecordWithOrdinal.getRecordOrdinal()
+                    && block.getEndIndex() >= samRecordWithOrdinal.getRecordOrdinal()) {
                 return block;
             }
         }
@@ -175,8 +192,10 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     public void setResultState(final SamRecordWithOrdinal samRecordWithOrdinal, final boolean resultState) {
         final BufferBlock block = getBlock(samRecordWithOrdinal);
         if (null == block) {
-            throw new SAMException("Attempted to set examined information on a samRecordWithOrdinal whose index is not found " +
-                    "in the SamRecordTrackingBuffer. recordIndex: " + samRecordWithOrdinal.getRecordOrdinal());
+            throw new SAMException(
+                    "Attempted to set examined information on a samRecordWithOrdinal whose index is not found "
+                            + "in the SamRecordTrackingBuffer. recordIndex: "
+                            + samRecordWithOrdinal.getRecordOrdinal());
         }
         block.setResultState(samRecordWithOrdinal, resultState);
     }
@@ -205,10 +224,14 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         private final BitSet resultStateIndexes;
 
         /** Creates an empty block buffer, with an allowable # of records in RAM */
-        public BufferBlock(final int maxBlockSize, final int maxBlockRecordsInMemory, final List<File> tmpDirs,
-                           final SAMFileHeader header,
-                           final long originalStartIndex) {
-            this.recordsQueue = DiskBackedQueue.newInstance(new BAMRecordCodec(header), maxBlockRecordsInMemory, tmpDirs);
+        public BufferBlock(
+                final int maxBlockSize,
+                final int maxBlockRecordsInMemory,
+                final List<File> tmpDirs,
+                final SAMFileHeader header,
+                final long originalStartIndex) {
+            this.recordsQueue =
+                    DiskBackedQueue.newInstance(new BAMRecordCodec(header), maxBlockRecordsInMemory, tmpDirs);
             this.maxBlockSize = maxBlockSize;
             this.currentStartIndex = 0;
             this.endIndex = -1;
@@ -222,10 +245,14 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
          * TODO - reimplement with a circular byte array buffer PROVIDED RECORDS ARE IN MEMORY
          * @return
          */
-        public boolean canAdd() { return (this.endIndex - this.originalStartIndex + 1) < this.maxBlockSize && this.recordsQueue.canAdd(); }
+        public boolean canAdd() {
+            return (this.endIndex - this.originalStartIndex + 1) < this.maxBlockSize && this.recordsQueue.canAdd();
+        }
 
         /** Returns true if the record at the front of the buffer is on disk */
-        public boolean headRecordIsFromDisk() { return this.recordsQueue.headRecordIsFromDisk(); }
+        public boolean headRecordIsFromDisk() {
+            return this.recordsQueue.headRecordIsFromDisk();
+        }
 
         /**
          * Check whether we have read all possible records from this block (and it is available to be destroyed)
@@ -233,14 +260,18 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
          */
         public boolean hasBeenDrained() {
             final long maximalIndex = (this.canAdd()) ? (this.originalStartIndex + this.maxBlockSize) : this.endIndex;
-            return this.currentStartIndex > maximalIndex;       //NB: watch out for an off by one here
+            return this.currentStartIndex > maximalIndex; // NB: watch out for an off by one here
         }
 
         /** Gets the index of the first record in this block */
-        public long getStartIndex() { return this.currentStartIndex; }
+        public long getStartIndex() {
+            return this.currentStartIndex;
+        }
 
         /** Gets the index of the last record in this block */
-        public long getEndIndex() { return this.endIndex; }
+        public long getEndIndex() {
+            return this.endIndex;
+        }
 
         /** Add a record to this block */
         public void add(final SamRecordWithOrdinal samRecordWithOrdinal) {
@@ -257,8 +288,9 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         }
 
         private int ensureIndexFitsInAnInt(final long value) {
-            if (value < Integer.MIN_VALUE || Integer.MAX_VALUE < value) throw new SAMException("Error: index out of range: " + value);
-            return (int)value;
+            if (value < Integer.MIN_VALUE || Integer.MAX_VALUE < value)
+                throw new SAMException("Error: index out of range: " + value);
+            return (int) value;
         }
 
         /**
@@ -271,8 +303,11 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
          */
         public void setResultState(final SamRecordWithOrdinal samRecordWithOrdinal, final boolean resultState) {
             // find the correct byte array index and update both metadata byte arrays
-            this.wasExaminedIndexes.set(ensureIndexFitsInAnInt(samRecordWithOrdinal.getRecordOrdinal() - this.originalStartIndex), true);
-            this.resultStateIndexes.set(ensureIndexFitsInAnInt(samRecordWithOrdinal.getRecordOrdinal() - this.originalStartIndex), resultState);
+            this.wasExaminedIndexes.set(
+                    ensureIndexFitsInAnInt(samRecordWithOrdinal.getRecordOrdinal() - this.originalStartIndex), true);
+            this.resultStateIndexes.set(
+                    ensureIndexFitsInAnInt(samRecordWithOrdinal.getRecordOrdinal() - this.originalStartIndex),
+                    resultState);
         }
 
         public boolean isEmpty() {
@@ -281,17 +316,20 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
 
         public boolean canEmit() {
             // TODO: what if isEmpty() == true?
-            return this.wasExaminedIndexes.get(ensureIndexFitsInAnInt(this.currentStartIndex - this.originalStartIndex));
+            return this.wasExaminedIndexes.get(
+                    ensureIndexFitsInAnInt(this.currentStartIndex - this.originalStartIndex));
         }
 
         public SamRecordWithOrdinal next() throws IllegalStateException {
             if (this.canEmit()) {
                 try {
-                    // create a wrapped record for the head of the queue, and set the underlying record's examined information appropriately
+                    // create a wrapped record for the head of the queue, and set the underlying record's examined
+                    // information appropriately
                     final SamRecordWithOrdinal samRecordWithOrdinal = clazz.newInstance();
                     samRecordWithOrdinal.setRecord(this.recordsQueue.poll());
                     samRecordWithOrdinal.setRecordOrdinal(this.currentStartIndex);
-                    samRecordWithOrdinal.setResultState(this.resultStateIndexes.get(ensureIndexFitsInAnInt(this.currentStartIndex - this.originalStartIndex)));
+                    samRecordWithOrdinal.setResultState(this.resultStateIndexes.get(
+                            ensureIndexFitsInAnInt(this.currentStartIndex - this.originalStartIndex)));
                     this.currentStartIndex++;
                     return samRecordWithOrdinal;
                 } catch (final Exception e) {
@@ -305,17 +343,23 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         /**
          * Remove, but do not return, the next samRecordWithOrdinal in the iterator
          */
-        public void remove() { this.next(); }
+        public void remove() {
+            this.next();
+        }
 
         /**
          * Return the total number of elements in the block, both in memory and on disk
          */
-        public long size() { return this.endIndex - this.currentStartIndex + 1; }
+        public long size() {
+            return this.endIndex - this.currentStartIndex + 1;
+        }
 
         /**
          * Close disk IO resources associated with the underlying records queue.
          * This must be called when a block is no longer needed in order to prevent memory leaks.
          */
-        public void clear() { this.recordsQueue.clear(); }
+        public void clear() {
+            this.recordsQueue.clear();
+        }
     }
 }

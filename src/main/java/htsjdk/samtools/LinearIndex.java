@@ -68,26 +68,26 @@ public class LinearIndex {
     }
 
     public long get(final int index) {
-        return mIndexEntries[index-mIndexStart];
+        return mIndexEntries[index - mIndexStart];
     }
 
     public static int convertToLinearIndexOffset(final int contigPos) {
-        final int indexPos = (contigPos <= 0) ? 0 : contigPos-1;
+        final int indexPos = (contigPos <= 0) ? 0 : contigPos - 1;
         return indexPos >> BAM_LIDX_SHIFT;
     }
 
     /**
-     * Gets the minimum offset of any alignment start appearing in this index, according to the linear index. 
+     * Gets the minimum offset of any alignment start appearing in this index, according to the linear index.
      * @param startPos Starting position for this query.
      * @return The minimum offset, in chunk format, of any read appearing in this position.
      */
     public long getMinimumOffset(final int startPos) {
-        final int start = (startPos <= 0) ? 0 : startPos-1;
+        final int start = (startPos <= 0) ? 0 : startPos - 1;
         final int regionLinearBin = start >> BAM_LIDX_SHIFT;
         // System.out.println("# regionLinearBin: " + regionLinearBin);
         long minimumOffset = 0;
-        if (regionLinearBin-mIndexStart < mIndexEntries.length)
-            minimumOffset = mIndexEntries[regionLinearBin-mIndexStart];
+        if (regionLinearBin - mIndexStart < mIndexEntries.length)
+            minimumOffset = mIndexEntries[regionLinearBin - mIndexStart];
         return minimumOffset;
     }
 
@@ -108,9 +108,9 @@ public class LinearIndex {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LinearIndex that = (LinearIndex) o;
-        return mReferenceSequence == that.mReferenceSequence &&
-                mIndexStart == that.mIndexStart &&
-                Arrays.equals(mIndexEntries, that.mIndexEntries);
+        return mReferenceSequence == that.mReferenceSequence
+                && mIndexStart == that.mIndexStart
+                && Arrays.equals(mIndexEntries, that.mIndexEntries);
     }
 
     @Override

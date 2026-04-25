@@ -10,7 +10,9 @@ public class SecondaryAlignmentFilter implements SamRecordFilter {
      * Returns true if the read is marked as secondary.
      */
     @Override
-    public boolean filterOut(final SAMRecord record) { return record.isSecondaryAlignment(); }
+    public boolean filterOut(final SAMRecord record) {
+        return record.isSecondaryAlignment();
+    }
 
     /**
      * Returns true if either read is marked as secondary.

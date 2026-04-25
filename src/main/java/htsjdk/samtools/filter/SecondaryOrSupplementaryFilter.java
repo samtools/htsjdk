@@ -8,7 +8,7 @@ import htsjdk.samtools.SAMRecord;
  * in that we did not want to change the functionality of NPSI to no longer match its name
  * $Id$
  */
-public class SecondaryOrSupplementaryFilter  implements SamRecordFilter {
+public class SecondaryOrSupplementaryFilter implements SamRecordFilter {
     /**
      * @param record the SAMRecord to evaluate
      * @return true if the SAMRecord matches the filter, otherwise false

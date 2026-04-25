@@ -8,12 +8,12 @@ import htsjdk.beta.io.bundle.BundleBuilder;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.io.bundle.SeekableStreamResource;
+import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.beta.plugin.hapref.HaploidReferenceEncoderOptions;
 import htsjdk.beta.plugin.hapref.HaploidReferenceFormats;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import htsjdk.beta.plugin.hapref.HaploidReferenceDecoder;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.CloseableIterator;
@@ -28,7 +28,7 @@ public class HtsFASTACodecTest extends HtsjdkTest {
         final IOPath inputPath = new HtsPath(TEST_DIR + "/hg19mini.fasta");
 
         try (final HaploidReferenceDecoder fastaDecoder =
-                     HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(inputPath)) {
+                HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(inputPath)) {
             Assert.assertNotNull(fastaDecoder);
 
             Assert.assertEquals(fastaDecoder.getFileFormat(), HaploidReferenceFormats.FASTA);
@@ -53,14 +53,16 @@ public class HtsFASTACodecTest extends HtsjdkTest {
     @Test
     public void testFASTADecoderFromStream() {
         final IOPath inputPath = new HtsPath(TEST_DIR + "/hg19mini.fasta");
-        final Bundle streamBundle = new BundleBuilder().addPrimary(
-                new SeekableStreamResource(
-                        new IOPathResource(inputPath, BundleResourceType.CT_HAPLOID_REFERENCE).getSeekableStream().get(),
+        final Bundle streamBundle = new BundleBuilder()
+                .addPrimary(new SeekableStreamResource(
+                        new IOPathResource(inputPath, BundleResourceType.CT_HAPLOID_REFERENCE)
+                                .getSeekableStream()
+                                .get(),
                         inputPath.toString(),
-                        BundleResourceType.CT_HAPLOID_REFERENCE)
-        ).build();
+                        BundleResourceType.CT_HAPLOID_REFERENCE))
+                .build();
         try (final HaploidReferenceDecoder fastaDecoder =
-                     HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(streamBundle)) {
+                HtsDefaultRegistry.getHaploidReferenceResolver().getHaploidReferenceDecoder(streamBundle)) {
             Assert.assertNotNull(fastaDecoder);
 
             Assert.assertEquals(fastaDecoder.getFileFormat(), HaploidReferenceFormats.FASTA);
@@ -72,7 +74,7 @@ public class HtsFASTACodecTest extends HtsjdkTest {
             // when reading from a stream, ReferenceSequenceFile doesn't have an index from which
             // to create a sequence dictionary
             final SAMSequenceDictionary sequenceDictionary = fastaDecoder.getHeader();
-             Assert.assertNull(sequenceDictionary);
+            Assert.assertNull(sequenceDictionary);
 
             for (final ReferenceSequence referenceSequence : fastaDecoder) {
                 Assert.assertNotNull(referenceSequence);
@@ -83,10 +85,11 @@ public class HtsFASTACodecTest extends HtsjdkTest {
     @Test(expectedExceptions = HtsjdkUnsupportedOperationException.class)
     public void testRejectFASTAEncoder() {
         final IOPath outPath = IOPathUtils.createTempPath("testFastEncoder", ".fasta");
-        new FASTACodecV1_0().getEncoder(
-                new BundleBuilder()
-                        .addPrimary(new IOPathResource(outPath, BundleResourceType.CT_HAPLOID_REFERENCE))
-                        .build(),
-                new HaploidReferenceEncoderOptions());
+        new FASTACodecV1_0()
+                .getEncoder(
+                        new BundleBuilder()
+                                .addPrimary(new IOPathResource(outPath, BundleResourceType.CT_HAPLOID_REFERENCE))
+                                .build(),
+                        new HaploidReferenceEncoderOptions());
     }
 }

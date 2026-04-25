@@ -9,12 +9,11 @@ import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Companion to CRAMBAIIndexerTest, for testing CRAI indices created on cram
@@ -36,7 +35,8 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
         final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/test2.cram");
 
         try (final InputStream indexStream = new ByteArrayInputStream(index.getIndex(CRAMFile))) {
-            final List<CRAIEntry> craiEntries = CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
+            final List<CRAIEntry> craiEntries =
+                    CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
             Assert.assertEquals(craiEntries.size(), 1);
         }
     }
@@ -50,18 +50,22 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
         samFileHeader.addSequence(new SAMSequenceRecord("2", 10));
         samFileHeader.addSequence(new SAMSequenceRecord("3", 10));
 
-        final ReferenceSource source = new ReferenceSource(new FakeReferenceSequenceFile(samFileHeader.getSequenceDictionary().getSequences()));
+        final ReferenceSource source = new ReferenceSource(new FakeReferenceSequenceFile(
+                samFileHeader.getSequenceDictionary().getSequences()));
 
         byte[] cramBytes;
         byte[] indexBytes;
 
         try (final ByteArrayOutputStream cramBAOS = new ByteArrayOutputStream();
-             final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
+                final ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream()) {
 
             final CRAMContainerStreamWriter containerWriter = new CRAMContainerStreamWriter(
                     // force the containers to be small to ensure there are 2
-                    // in order to set reads/slice to a small number, we must so the same for minimumSingleReferenceSliceSize
-                    new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(3).setReadsPerSlice(3),
+                    // in order to set reads/slice to a small number, we must so the same for
+                    // minimumSingleReferenceSliceSize
+                    new CRAMEncodingStrategy()
+                            .setMinimumSingleReferenceSliceSize(3)
+                            .setReadsPerSlice(3),
                     source,
                     samFileHeader,
                     cramBAOS,
@@ -85,42 +89,38 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
         // These tests all fail due to https://github.com/samtools/htsjdk/issues/531
         // (metadata is incorrect after .crai->.bai conversion)
-        //SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(
+        // SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(
         //        new ByteArrayInputStream(indexBAOS.toByteArray()), samFileHeader.getSequenceDictionary());
-        //BAMIndex index = new CachingBAMFileIndex(baiStream, samFileHeader.getSequenceDictionary());
-        //final BAMIndexMetaData metaData_0 = index.getMetaData(0);
-        //Assert.assertNotNull(metaData_0);
-        //Assert.assertEquals(metaData_0.getAlignedRecordCount(), 1);
-        //final BAMIndexMetaData metaData_1 = index.getMetaData(1);
-        //Assert.assertNotNull(metaData_1);
-        //Assert.assertEquals(metaData_1.getAlignedRecordCount(), 3);
-        //final BAMIndexMetaData metaData_2 = index.getMetaData(2);
-        //Assert.assertNotNull(metaData_2);
-        //Assert.assertEquals(metaData_2.getAlignedRecordCount(), 2);
+        // BAMIndex index = new CachingBAMFileIndex(baiStream, samFileHeader.getSequenceDictionary());
+        // final BAMIndexMetaData metaData_0 = index.getMetaData(0);
+        // Assert.assertNotNull(metaData_0);
+        // Assert.assertEquals(metaData_0.getAlignedRecordCount(), 1);
+        // final BAMIndexMetaData metaData_1 = index.getMetaData(1);
+        // Assert.assertNotNull(metaData_1);
+        // Assert.assertEquals(metaData_1.getAlignedRecordCount(), 3);
+        // final BAMIndexMetaData metaData_2 = index.getMetaData(2);
+        // Assert.assertNotNull(metaData_2);
+        // Assert.assertEquals(metaData_2.getAlignedRecordCount(), 2);
 
         try (final InputStream cramStream = new ByteArraySeekableStream(cramBytes);
-             final SeekableStream indexStream = new ByteArraySeekableStream(indexBytes)) {
+                final SeekableStream indexStream = new ByteArraySeekableStream(indexBytes)) {
 
             // NOTE: this test uses the default index format created by CRAMContainerStreamWriter
             // which is currently .bai;
 
-            CRAMFileReader cramReader = new CRAMFileReader(
-                    cramStream,
-                    indexStream,
-                    source,
-                    ValidationStringency.DEFAULT_STRINGENCY
-            );
+            CRAMFileReader cramReader =
+                    new CRAMFileReader(cramStream, indexStream, source, ValidationStringency.DEFAULT_STRINGENCY);
             Assert.assertTrue(cramReader.hasIndex());
 
-            Iterator<SAMRecord> it = cramReader.query(new QueryInterval[]{new QueryInterval(0, 0, 5)}, false);
+            Iterator<SAMRecord> it = cramReader.query(new QueryInterval[] {new QueryInterval(0, 0, 5)}, false);
             long count = getIteratorCount(it);
             Assert.assertEquals(count, 1);
 
-            it = cramReader.query(new QueryInterval[]{new QueryInterval(1, 0, 5)}, false);
+            it = cramReader.query(new QueryInterval[] {new QueryInterval(1, 0, 5)}, false);
             count = getIteratorCount(it);
             Assert.assertEquals(count, 3);
 
-            it = cramReader.query(new QueryInterval[]{new QueryInterval(2, 0, 5)}, false);
+            it = cramReader.query(new QueryInterval[] {new QueryInterval(2, 0, 5)}, false);
             count = getIteratorCount(it);
             Assert.assertEquals(count, 2);
         }
@@ -153,7 +153,7 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
     private byte[] fromContainer(final File CRAMFile) throws IOException {
         try (final FileInputStream fis = new FileInputStream(CRAMFile);
-             final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+                final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
 
             final CRAMCRAIIndexer craiIndexer = new CRAMCRAIIndexer(bos, getSamFileHeader(CRAMFile));
             final CramContainerIterator cit = new CramContainerIterator(fis);
@@ -168,7 +168,7 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
     private byte[] fromStream(final File CRAMFile) throws IOException {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             final SeekableStream sfs = new SeekableFileStream(CRAMFile)) {
+                final SeekableStream sfs = new SeekableFileStream(CRAMFile)) {
 
             CRAMCRAIIndexer.writeIndex(sfs, bos);
             return bos.toByteArray();
@@ -179,11 +179,7 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
         final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
         final File indexFile = null;
         final ReferenceSource refSource = new ReferenceSource(refFile);
-        final CRAMFileReader reader = new CRAMFileReader(
-                CRAMFile,
-                indexFile,
-                refSource,
-                ValidationStringency.STRICT);
+        final CRAMFileReader reader = new CRAMFileReader(CRAMFile, indexFile, refSource, ValidationStringency.STRICT);
         final SAMFileHeader samHeader = reader.getFileHeader();
         reader.close();
         return samHeader;
@@ -197,5 +193,4 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
         }
         return count;
     }
-
 }

@@ -18,7 +18,6 @@
 
 package htsjdk.tribble.index.interval;
 
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +50,6 @@ public class IntervalTree {
         this.root = NIL;
         this.size = 0;
     }
-
 
     public void insert(Interval interval) {
         Node node = new Node(interval);
@@ -137,7 +135,6 @@ public class IntervalTree {
         return results;
     }
 
-
     /**
      * Used for testing only.
      *
@@ -145,8 +142,7 @@ public class IntervalTree {
      * @return
      */
     private int getRealMax(Node node) {
-        if (node.isNull())
-            return Integer.MIN_VALUE;
+        if (node.isNull()) return Integer.MIN_VALUE;
         int leftMax = getRealMax(node.left);
         int rightMax = getRealMax(node.right);
         int nodeHigh = (node.interval).end;
@@ -162,8 +158,7 @@ public class IntervalTree {
      * @return
      */
     private int getRealMin(Node node) {
-        if (node.isNull())
-            return Integer.MAX_VALUE;
+        if (node.isNull()) return Integer.MAX_VALUE;
 
         int leftMin = getRealMin(node.left);
         int rightMin = getRealMin(node.right);
@@ -172,7 +167,6 @@ public class IntervalTree {
         int min1 = (leftMin < rightMin ? leftMin : rightMin);
         return (min1 < nodeLow ? min1 : nodeLow);
     }
-
 
     private void insert(Node x) {
         assert (x != null);
@@ -218,11 +212,9 @@ public class IntervalTree {
         this.root.color = Node.BLACK;
     }
 
-
     private Node root() {
         return this.root;
     }
-
 
     private void leftRotate(Node x) {
         Node y = x.right;
@@ -248,7 +240,6 @@ public class IntervalTree {
         // of x, and will be touched by applyUpdate().
     }
 
-
     private void rightRotate(Node x) {
         Node y = x.left;
         x.left = y.right;
@@ -268,12 +259,10 @@ public class IntervalTree {
         y.right = x;
         x.parent = y;
 
-
         applyUpdate(x);
         // no need to apply update on y, since it'll y is an ancestor
         // of x, and will be touched by applyUpdate().
     }
-
 
     /**
      * Note:  Does not maintain RB constraints,  this is done post insert
@@ -307,7 +296,6 @@ public class IntervalTree {
         this.applyUpdate(x);
     }
 
-
     // Applies the statistic update on the node and its ancestors.
 
     private void applyUpdate(Node node) {
@@ -331,47 +319,38 @@ public class IntervalTree {
         return _size(this.root);
     }
 
-
     private int _size(Node node) {
-        if (node.isNull())
-            return 0;
+        if (node.isNull()) return 0;
         return 1 + _size(node.left) + _size(node.right);
     }
 
-
     private boolean allRedNodesFollowConstraints(Node node) {
-        if (node.isNull())
-            return true;
+        if (node.isNull()) return true;
 
         if (node.color == Node.BLACK) {
-            return (allRedNodesFollowConstraints(node.left) &&
-                    allRedNodesFollowConstraints(node.right));
+            return (allRedNodesFollowConstraints(node.left) && allRedNodesFollowConstraints(node.right));
         }
 
         // At this point, we know we're on a RED node.
-        return (node.left.color == Node.BLACK &&
-                node.right.color == Node.BLACK &&
-                allRedNodesFollowConstraints(node.left) &&
-                allRedNodesFollowConstraints(node.right));
+        return (node.left.color == Node.BLACK
+                && node.right.color == Node.BLACK
+                && allRedNodesFollowConstraints(node.left)
+                && allRedNodesFollowConstraints(node.right));
     }
-
 
     // Check that both ends are equally balanced in terms of black height.
 
     private boolean isBalancedBlackHeight(Node node) {
-        if (node.isNull())
-            return true;
-        return (blackHeight(node.left) == blackHeight(node.right) &&
-                isBalancedBlackHeight(node.left) &&
-                isBalancedBlackHeight(node.right));
+        if (node.isNull()) return true;
+        return (blackHeight(node.left) == blackHeight(node.right)
+                && isBalancedBlackHeight(node.left)
+                && isBalancedBlackHeight(node.right));
     }
-
 
     // The black height of a node should be left/right equal.
 
     private int blackHeight(Node node) {
-        if (node.isNull())
-            return 0;
+        if (node.isNull()) return 0;
         int leftBlackHeight = blackHeight(node.left);
         if (node.color == Node.BLACK) {
             return leftBlackHeight + 1;
@@ -379,7 +358,6 @@ public class IntervalTree {
             return leftBlackHeight;
         }
     }
-
 
     /**
      * Test code: make sure that the tree has all the properties
@@ -401,44 +379,34 @@ public class IntervalTree {
      */
     public boolean isValid() {
         if (this.root.color != Node.BLACK) {
-            //logger.warn("root color is wrong");
+            // logger.warn("root color is wrong");
             return false;
         }
         if (NIL.color != Node.BLACK) {
-            //logger.warn("NIL color is wrong");
+            // logger.warn("NIL color is wrong");
             return false;
         }
         if (allRedNodesFollowConstraints(this.root) == false) {
-            //logger.warn("red node doesn't follow constraints");
+            // logger.warn("red node doesn't follow constraints");
             return false;
         }
         if (isBalancedBlackHeight(this.root) == false) {
-            //logger.warn("black height unbalanced");
+            // logger.warn("black height unbalanced");
             return false;
         }
 
-        return hasCorrectMaxFields(this.root) &&
-                hasCorrectMinFields(this.root);
+        return hasCorrectMaxFields(this.root) && hasCorrectMinFields(this.root);
     }
-
 
     private boolean hasCorrectMaxFields(Node node) {
-        if (node.isNull())
-            return true;
-        return (getRealMax(node) == (node.max) &&
-                hasCorrectMaxFields(node.left) &&
-                hasCorrectMaxFields(node.right));
+        if (node.isNull()) return true;
+        return (getRealMax(node) == (node.max) && hasCorrectMaxFields(node.left) && hasCorrectMaxFields(node.right));
     }
-
 
     private boolean hasCorrectMinFields(Node node) {
-        if (node.isNull())
-            return true;
-        return (getRealMin(node) == (node.min) &&
-                hasCorrectMinFields(node.left) &&
-                hasCorrectMinFields(node.right));
+        if (node.isNull()) return true;
+        return (getRealMin(node) == (node.min) && hasCorrectMinFields(node.left) && hasCorrectMinFields(node.right));
     }
-
 
     static class Node {
 
@@ -456,7 +424,6 @@ public class IntervalTree {
         boolean color;
         Node parent;
 
-
         private Node() {
             this.max = Integer.MIN_VALUE;
             this.min = Integer.MAX_VALUE;
@@ -467,7 +434,6 @@ public class IntervalTree {
             dos.writeInt(interval.end);
             dos.writeInt(min);
             dos.writeInt(max);
-
         }
 
         public Node(Interval interval) {
@@ -479,7 +445,6 @@ public class IntervalTree {
             this.color = RED;
         }
 
-
         static Node NIL;
 
         static {
@@ -490,11 +455,9 @@ public class IntervalTree {
             NIL.right = NIL;
         }
 
-
         public boolean isNull() {
             return this == NIL;
         }
-
 
         public String toString() {
 
@@ -540,7 +503,6 @@ public class IntervalTree {
                 keys.put(this.right.interval, rightKey);
             }
 
-
             buf.append(selfKey + " -> " + leftKey + " , " + rightKey);
             buf.append('\n');
             this.left._toString(buf, keys);
@@ -548,4 +510,3 @@ public class IntervalTree {
         }
     }
 }
-

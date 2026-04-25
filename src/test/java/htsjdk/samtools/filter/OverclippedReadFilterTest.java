@@ -24,11 +24,9 @@
 package htsjdk.samtools.filter;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -42,7 +40,8 @@ public class OverclippedReadFilterTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "data")
-    public void testOverclippedReadFilter(final String name, final String cigar, final boolean filterSingleEndClips, final boolean shouldFail) {
+    public void testOverclippedReadFilter(
+            final String name, final String cigar, final boolean filterSingleEndClips, final boolean shouldFail) {
         final OverclippedReadFilter filter = new OverclippedReadFilter(unclippedBasesThreshold, filterSingleEndClips);
         final InvertFilter invertFilter = new InvertFilter(filter);
         final SAMRecord rec = buildFrag(name, cigar);
@@ -52,35 +51,35 @@ public class OverclippedReadFilterTest extends HtsjdkTest {
 
     @DataProvider(name = "data")
     private Object[][] testData() {
-        return new Object[][]{
-                {"foo", "1S10M1S", false, true},
-                {"foo", "1S10X1S", false, true},
-                {"foo", "1H1S10M1S1H", false, true},
-                {"foo", "1S40M1S", false, false},
-                {"foo", "1S40X1S", false, false},
-                {"foo", "1H10M1S", false, false},
-                {"foo", "1S10M1H", false, false},
-                {"foo", "10M1S", false, false},
-                {"foo", "1S10M", false, false},
-                {"foo", "10M1S", true, true},
-                {"foo", "1S10M", true, true},
-                {"foo", "1S10M10D10M1S", false, true},
-                {"foo", "1S1M40I1S", false, false},
-                {"foo", "1S10I1S", false, true},
-                {"foo", "1S40I1S", false, false},
-                {"foo", "1S40I1S", true, false},
-                {"foo", "25S40I25M", true, false},
-                {"foo", "25S25M", true, true},
-                {"foo", "25S25X", true, true},
-                {"foo", "25S25H", true, true},
-                {"foo", "25S25H", false, false},
-                {"foo", "25S25M25S", false, true},
-                {"foo", "25M25S", true, true},
-                {"foo", "25S25M", true, true},
-                {"foo", "25S35S", true, true},
-                {"foo", "25S35M25S", true, false},
-                {"foo", "35M25S", true, false},
-                {"foo", "25S35M", true, false}
+        return new Object[][] {
+            {"foo", "1S10M1S", false, true},
+            {"foo", "1S10X1S", false, true},
+            {"foo", "1H1S10M1S1H", false, true},
+            {"foo", "1S40M1S", false, false},
+            {"foo", "1S40X1S", false, false},
+            {"foo", "1H10M1S", false, false},
+            {"foo", "1S10M1H", false, false},
+            {"foo", "10M1S", false, false},
+            {"foo", "1S10M", false, false},
+            {"foo", "10M1S", true, true},
+            {"foo", "1S10M", true, true},
+            {"foo", "1S10M10D10M1S", false, true},
+            {"foo", "1S1M40I1S", false, false},
+            {"foo", "1S10I1S", false, true},
+            {"foo", "1S40I1S", false, false},
+            {"foo", "1S40I1S", true, false},
+            {"foo", "25S40I25M", true, false},
+            {"foo", "25S25M", true, true},
+            {"foo", "25S25X", true, true},
+            {"foo", "25S25H", true, true},
+            {"foo", "25S25H", false, false},
+            {"foo", "25S25M25S", false, true},
+            {"foo", "25M25S", true, true},
+            {"foo", "25S25M", true, true},
+            {"foo", "25S35S", true, true},
+            {"foo", "25S35M25S", true, false},
+            {"foo", "35M25S", true, false},
+            {"foo", "25S35M", true, false}
         };
     }
 }

@@ -12,17 +12,18 @@ public interface SAMRecordFactory {
     public SAMRecord createSAMRecord(SAMFileHeader header);
 
     /** Create a new BAM Record. */
-    public BAMRecord createBAMRecord(final SAMFileHeader header,
-                                     final int referenceSequenceIndex,
-                                     final int alignmentStart,
-                                     final short readNameLength,
-                                     final short mappingQuality,
-                                     final int indexingBin,
-                                     final int cigarLen,
-                                     final int flags,
-                                     final int readLen,
-                                     final int mateReferenceSequenceIndex,
-                                     final int mateAlignmentStart,
-                                     final int insertSize,
-                                     final byte[] variableLengthBlock);
+    public BAMRecord createBAMRecord(
+            final SAMFileHeader header,
+            final int referenceSequenceIndex,
+            final int alignmentStart,
+            final short readNameLength,
+            final short mappingQuality,
+            final int indexingBin,
+            final int cigarLen,
+            final int flags,
+            final int readLen,
+            final int mateReferenceSequenceIndex,
+            final int mateAlignmentStart,
+            final int insertSize,
+            final byte[] variableLengthBlock);
 }

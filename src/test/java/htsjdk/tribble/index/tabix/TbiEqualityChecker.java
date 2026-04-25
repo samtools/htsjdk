@@ -30,10 +30,9 @@ import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.index.IndexFactory;
-import org.testng.Assert;
-
 import java.io.IOException;
 import java.nio.file.Path;
+import org.testng.Assert;
 
 public class TbiEqualityChecker {
 
@@ -52,8 +51,7 @@ public class TbiEqualityChecker {
      *                  since two virtual file pointers can point to the same physical location in a file
      * @throws IOException
      */
-    public static void assertEquals(Path vcfFile, Path tbiFile1, Path tbiFile2, boolean identical)
-            throws IOException {
+    public static void assertEquals(Path vcfFile, Path tbiFile1, Path tbiFile2, boolean identical) throws IOException {
         new TbiEqualityChecker(vcfFile, tbiFile1, tbiFile2).assertEquals(identical);
     }
 
@@ -80,21 +78,17 @@ public class TbiEqualityChecker {
     }
 
     private void assertEquals(
-            BinningIndexContent binningIndexContent1,
-            BinningIndexContent binningIndexContent2,
-            boolean identical)
+            BinningIndexContent binningIndexContent1, BinningIndexContent binningIndexContent2, boolean identical)
             throws IOException {
 
         assertEquals(binningIndexContent1.getBins(), binningIndexContent2.getBins(), identical);
         assertEquals(binningIndexContent1.getLinearIndex(), binningIndexContent2.getLinearIndex());
     }
 
-    private void assertEquals(
-            BinningIndexContent.BinList bins1, BinningIndexContent.BinList bins2, boolean identical)
+    private void assertEquals(BinningIndexContent.BinList bins1, BinningIndexContent.BinList bins2, boolean identical)
             throws IOException {
         Assert.assertEquals(bins1.maxBinNumber, bins2.maxBinNumber, "Max bin number");
-        Assert.assertEquals(
-                bins1.getNumberOfNonNullBins(), bins2.getNumberOfNonNullBins(), "Number of non-null bins");
+        Assert.assertEquals(bins1.getNumberOfNonNullBins(), bins2.getNumberOfNonNullBins(), "Number of non-null bins");
         for (int i = 0; i <= bins1.maxBinNumber; i++) {
             assertEquals(bins1.getBin(i), bins2.getBin(i), identical);
         }
@@ -114,14 +108,10 @@ public class TbiEqualityChecker {
 
     private void assertEquals(LinearIndex linearIndex1, LinearIndex linearIndex2) {
         Assert.assertEquals(
-                linearIndex1.getReferenceSequence(),
-                linearIndex2.getReferenceSequence(),
-                "Linear index ref");
+                linearIndex1.getReferenceSequence(), linearIndex2.getReferenceSequence(), "Linear index ref");
         Assert.assertEquals(linearIndex1.size(), linearIndex2.size(), "Linear index size");
-        Assert.assertEquals(
-                linearIndex1.getIndexStart(), linearIndex2.getIndexStart(), "Linear index start");
-        Assert.assertEquals(
-                linearIndex1.getIndexEntries(), linearIndex2.getIndexEntries(), "Linear index entries");
+        Assert.assertEquals(linearIndex1.getIndexStart(), linearIndex2.getIndexStart(), "Linear index start");
+        Assert.assertEquals(linearIndex1.getIndexEntries(), linearIndex2.getIndexEntries(), "Linear index entries");
     }
 
     private void assertEquals(Chunk chunk1, Chunk chunk2, boolean identical) {
@@ -134,8 +124,7 @@ public class TbiEqualityChecker {
         }
     }
 
-    private void assertEquivalent(
-            String message, long virtualFilePointer1, long virtualFilePointer2) {
+    private void assertEquivalent(String message, long virtualFilePointer1, long virtualFilePointer2) {
         // seek to the given positions check they are actually equivalent
         long norm1 = normalizeVirtualFilePointer(virtualFilePointer1);
         long norm2 = normalizeVirtualFilePointer(virtualFilePointer2);

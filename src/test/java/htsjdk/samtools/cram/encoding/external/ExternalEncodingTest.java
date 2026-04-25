@@ -9,12 +9,12 @@ public class ExternalEncodingTest extends HtsjdkTest {
     @DataProvider(name = "tests")
     public Object[][] testData() {
         return new Object[][] {
-                // positive values below the ITF8 single-byte limit (128) are encoded as-is
-                {0, new byte[] { 0 }},
-                {127, new byte[] { 127 }},
+            // positive values below the ITF8 single-byte limit (128) are encoded as-is
+            {0, new byte[] {0}},
+            {127, new byte[] {127}},
 
-                // 128 (0x80) is ITF8-encoded as (0x80, 0x80)
-                {128, new byte[] { (byte) 0x80, (byte) 0x80 }},
+            // 128 (0x80) is ITF8-encoded as (0x80, 0x80)
+            {128, new byte[] {(byte) 0x80, (byte) 0x80}},
         };
     }
 

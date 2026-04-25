@@ -15,13 +15,13 @@ import htsjdk.utils.ValidationUtils;
 public class BAMEncoderOptions {
     public static final int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
 
-    private int outputBufferSize                = Defaults.BUFFER_SIZE;
-    private boolean asyncIO                     = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
-    private int asyncOutputBufferSize           = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE;
-    private IOPath tempDirPath                  = new HtsPath(IOUtil.getDefaultTmpDirPath().toString());
-    private int compressionLevel                = BlockCompressedOutputStream.getDefaultCompressionLevel();
-    private Integer maxRecordsInRAM             = DEAFULT_MAX_RECORDS_IN_RAM;
-    private DeflaterFactory deflaterFactory     = BlockCompressedOutputStream.getDefaultDeflaterFactory();
+    private int outputBufferSize = Defaults.BUFFER_SIZE;
+    private boolean asyncIO = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
+    private int asyncOutputBufferSize = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE;
+    private IOPath tempDirPath = new HtsPath(IOUtil.getDefaultTmpDirPath().toString());
+    private int compressionLevel = BlockCompressedOutputStream.getDefaultCompressionLevel();
+    private Integer maxRecordsInRAM = DEAFULT_MAX_RECORDS_IN_RAM;
+    private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
     // SAM only ?:   private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
 
     /**
@@ -194,5 +194,4 @@ public class BAMEncoderOptions {
         this.deflaterFactory = deflaterFactory;
         return this;
     }
-
 }

@@ -23,17 +23,16 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-
 /**
  * javascript based read filter
- * 
- * 
+ *
+ *
  * The script puts the following variables in the script context:
  *
  * - 'record' a SamRecord (
@@ -41,14 +40,14 @@ import htsjdk.samtools.SAMRecord;
  * SAMRecord.java ) - 'header' (
  * https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/
  * SAMFileHeader.java )
- * 
+ *
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
 public class JavascriptSamRecordFilter extends AbstractJavascriptFilter<SAMFileHeader, SAMRecord>
         implements SamRecordFilter {
     /**
      * constructor using a javascript File
-     * 
+     *
      * @param scriptFile
      *            the javascript file to be compiled
      * @param header
@@ -60,7 +59,7 @@ public class JavascriptSamRecordFilter extends AbstractJavascriptFilter<SAMFileH
 
     /**
      * constructor using a javascript expression
-     * 
+     *
      * @param scriptExpression
      *            the javascript expression to be compiled
      * @param header
@@ -72,7 +71,7 @@ public class JavascriptSamRecordFilter extends AbstractJavascriptFilter<SAMFileH
 
     /**
      * constructor using a java.io.Reader
-     * 
+     *
      * @param scriptReader
      *            the javascript reader to be compiled. will be closed
      * @param header

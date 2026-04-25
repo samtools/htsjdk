@@ -26,7 +26,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -97,11 +96,11 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
             return;
         }
 
-        if (content.getReferenceSequence() != count){
-            throw new SAMException("Unexpectedly writing reference " + content.getReferenceSequence() +
-                ", expecting reference " + count);
+        if (content.getReferenceSequence() != count) {
+            throw new SAMException("Unexpectedly writing reference " + content.getReferenceSequence()
+                    + ", expecting reference " + count);
         }
-        count ++;
+        count++;
 
         // write bins
 
@@ -113,21 +112,19 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
             return;
         }
 
-        //final List<Chunk> chunks = content.getMetaData() == null ? null
+        // final List<Chunk> chunks = content.getMetaData() == null ? null
         //        : content.getMetaData().getMetaDataChunks();
         final BAMIndexMetaData metaData = content.getMetaData();
 
-        codec.writeInt(size + ((metaData != null)? 1 : 0 ));
+        codec.writeInt(size + ((metaData != null) ? 1 : 0));
         // codec.writeInt(size);
-        for (final Bin bin : bins) {   // note, bins will always be sorted
-            if (bin.getBinNumber() == GenomicIndexUtil.MAX_BINS)
-                continue;
+        for (final Bin bin : bins) { // note, bins will always be sorted
+            if (bin.getBinNumber() == GenomicIndexUtil.MAX_BINS) continue;
             writeBin(bin);
         }
 
-        // write metadata "bin" and chunks        
-        if (metaData != null)
-            writeChunkMetaData(metaData);
+        // write metadata "bin" and chunks
+        if (metaData != null) writeChunkMetaData(metaData);
 
         // write linear index
 
@@ -149,7 +146,8 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
         try {
             codec.getOutputStream().flush();
         } catch (final IOException e) {
-            throw new SAMException("IOException in BinaryBAMIndexWriter reference " + content.getReferenceSequence(), e);
+            throw new SAMException(
+                    "IOException in BinaryBAMIndexWriter reference " + content.getReferenceSequence(), e);
         }
     }
 
@@ -173,12 +171,12 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
 
     private void writeBin(final Bin bin) {
         final int binNumber = bin.getBinNumber();
-        if (binNumber >= GenomicIndexUtil.MAX_BINS){
+        if (binNumber >= GenomicIndexUtil.MAX_BINS) {
             throw new SAMException("Unexpected bin number when writing bam index " + binNumber);
         }
-        
+
         codec.writeInt(binNumber);
-        if (bin.getChunkList() == null){
+        if (bin.getChunkList() == null) {
             codec.writeInt(0);
             return;
         }
@@ -204,7 +202,6 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
         codec.writeLong(metaData.getLastOffset());
         codec.writeLong(metaData.getAlignedRecordCount());
         codec.writeLong(metaData.getUnalignedRecordCount());
-
     }
 
     private void writeHeader() {
@@ -215,6 +212,6 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
     }
 
     private void writeNullContent() {
-        codec.writeLong(0);  // 0 bins , 0 intv
+        codec.writeLong(0); // 0 bins , 0 intv
     }
 }

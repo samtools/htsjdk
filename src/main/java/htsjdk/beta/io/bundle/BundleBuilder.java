@@ -1,7 +1,6 @@
 package htsjdk.beta.io.bundle;
 
 import htsjdk.utils.ValidationUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +15,7 @@ public final class BundleBuilder {
     /**
      * Start a new bundle builder.
      */
-    public BundleBuilder() { }
+    public BundleBuilder() {}
 
     /**
      * Add the primary resource to the bundle. The content type of resource will be the bundle's primary key.
@@ -27,10 +26,9 @@ public final class BundleBuilder {
     public BundleBuilder addPrimary(final BundleResource resource) {
         ValidationUtils.nonNull(resource, "resource");
         if (primaryResource != null) {
-                throw new IllegalStateException(String.format(
-                        "Can't add primary resource %s to a bundle that already has primary resource %s",
-                        resource.getContentType(),
-                        primaryResource));
+            throw new IllegalStateException(String.format(
+                    "Can't add primary resource %s to a bundle that already has primary resource %s",
+                    resource.getContentType(), primaryResource));
         }
         primaryResource = resource.getContentType();
         addSecondary(resource);
@@ -66,5 +64,3 @@ public final class BundleBuilder {
         return bundle;
     }
 }
-
-

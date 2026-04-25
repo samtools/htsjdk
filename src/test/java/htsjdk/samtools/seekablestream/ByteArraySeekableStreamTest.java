@@ -24,11 +24,10 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
 
 /**
  * Created by farjoun on 5/27/17.
@@ -94,14 +93,14 @@ public class ByteArraySeekableStreamTest extends HtsjdkTest {
 
     @DataProvider(name = "abnormalReadRequests")
     public Object[][] abnormalReadRequestsProvider() {
-        return new Object[][]{
-                {new byte[10], -1, 0},
-                {new byte[10], -1, -1},
-                {new byte[10], 0, -1},
-                {new byte[10], 0, -1},
-                {new byte[10], 0, 11},
-                {new byte[10], 6, 6},
-                {new byte[10], 11, 0},
+        return new Object[][] {
+            {new byte[10], -1, 0},
+            {new byte[10], -1, -1},
+            {new byte[10], 0, -1},
+            {new byte[10], 0, -1},
+            {new byte[10], 0, 11},
+            {new byte[10], 6, 6},
+            {new byte[10], 11, 0},
         };
     }
 
@@ -111,6 +110,6 @@ public class ByteArraySeekableStreamTest extends HtsjdkTest {
         ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
         int i = byteArraySeekableStream.read(b, off, length);
 
-        Assert.assertEquals(i, -2); ///impossible
+        Assert.assertEquals(i, -2); // /impossible
     }
 }

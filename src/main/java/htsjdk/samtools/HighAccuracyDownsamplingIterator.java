@@ -52,7 +52,8 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
     private Set<String> bufferedRecordsToKeep;
 
     /** Override method to make it clear that this iterator attempts to provide a higher accuracy of downsampling. */
-    @Override public boolean isHigherAccuracy() {
+    @Override
+    public boolean isHigherAccuracy() {
         return true;
     }
 
@@ -70,22 +71,24 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
      * for 1/accuracy templates, so setting this to extremely small numbers is not advisable.
      */
     public DownsamplingIterator setTargetAccuracy(final double accuracy) {
-        if (accuracy >= 1 || accuracy <= 1d/Integer.MAX_VALUE) throw new IllegalArgumentException("Illegal value. Must be 1/MAX_INT < accuracy < 1");
+        if (accuracy >= 1 || accuracy <= 1d / Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Illegal value. Must be 1/MAX_INT < accuracy < 1");
         this.targetAccuracy = accuracy;
         return this;
     }
 
     /** Returns true if there is another record available post-downsampling, false otherwise. */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         return this.nextRecord != null || advance();
     }
 
     /** Returns the next record from the iterator, or throws an exception if there is no next record. */
-    @Override public SAMRecord next() {
+    @Override
+    public SAMRecord next() {
         if (this.nextRecord == null) {
             throw new NoSuchElementException("Call to next() when hasNext() == false");
-        }
-        else {
+        } else {
             final SAMRecord retval = this.nextRecord;
             advance();
             return retval;
@@ -107,7 +110,9 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
     protected boolean advance() {
         this.nextRecord = null;
 
-        while (this.nextRecord == null && (this.bufferedRecords.hasNext() || bufferNextChunkOfRecords(getTargetProportion(), this.targetAccuracy))) {
+        while (this.nextRecord == null
+                && (this.bufferedRecords.hasNext()
+                        || bufferNextChunkOfRecords(getTargetProportion(), this.targetAccuracy))) {
             final SAMRecord rec = this.bufferedRecords.next();
             final String key = rec.getReadName();
             final Boolean previous = decisions.get(key);
@@ -116,16 +121,14 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
             if (previous == null) {
                 keepThisRecord = this.bufferedRecordsToKeep.contains(rec.getReadName());
                 decisions.put(key, keepThisRecord);
-            }
-            else {
+            } else {
                 keepThisRecord = previous;
             }
 
             if (keepThisRecord) {
                 this.nextRecord = rec;
                 recordAcceptedRecord();
-            }
-            else {
+            } else {
                 recordDiscardedRecord();
             }
         }
@@ -154,7 +157,7 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
 
         // Randomly shuffle a list of all the template names, and then remove some from the set
         final int templatesToDiscard = templatesRead - templatesToKeep;
-        final List<String> tmp    = new ArrayList<String>(names);
+        final List<String> tmp = new ArrayList<String>(names);
         Collections.shuffle(tmp, this.random);
         for (int i = 0; i < templatesToDiscard; ++i) names.remove(tmp.get(i));
 
@@ -162,7 +165,7 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
         this.bufferedRecordsToKeep = names;
         this.bufferedRecords = recs.iterator();
         this.totalTemplates += templatesRead;
-        this.keptTemplates  += names.size();
+        this.keptTemplates += names.size();
         return !recs.isEmpty();
     }
 
@@ -176,7 +179,8 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
     protected int calculateTemplatesToKeep(final int templatesRead, final double proportion) {
         final double rawTemplatesToKeep = templatesRead * proportion;
         return (keptTemplates / (double) totalTemplates < proportion)
-                ? (int) Math.ceil(rawTemplatesToKeep) : (int) Math.floor(rawTemplatesToKeep);
+                ? (int) Math.ceil(rawTemplatesToKeep)
+                : (int) Math.floor(rawTemplatesToKeep);
     }
 
     /**
@@ -184,7 +188,8 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
      * observed, so that templatesToRead new keep/reject decisions can be made.  The records that are read are placed into recs
      * and _novel_ template names are placed into names.
      */
-    protected void readFromUnderlyingIterator(final List<SAMRecord> recs, final Set<String> names, final int templatesToRead) {
+    protected void readFromUnderlyingIterator(
+            final List<SAMRecord> recs, final Set<String> names, final int templatesToRead) {
         while (this.underlyingIterator.hasNext() && names.size() < templatesToRead) {
             final SAMRecord rec = this.underlyingIterator.next();
             recs.add(rec);

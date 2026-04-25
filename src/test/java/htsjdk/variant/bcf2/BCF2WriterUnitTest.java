@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2017 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2017 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.bcf2;
 
@@ -39,10 +39,6 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
 import htsjdk.variant.variantcontext.writer.*;
 import htsjdk.variant.vcf.*;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -54,6 +50,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * @author amila
@@ -93,7 +92,6 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         tempDir.deleteOnExit();
     }
 
-
     /**
      * test, using the writer and reader, that we can output and input BCF without problems
      */
@@ -103,15 +101,16 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         bcfOutputFile.deleteOnExit();
         final VCFHeader header = createFakeHeader();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.writeHeader(header);
             writer.add(createVC(header));
             writer.add(createVC(header));
         }
-        VariantContextTestProvider.VariantContextContainer container = VariantContextTestProvider
-                .readAllVCs(bcfOutputFile, new BCF2Codec());
+        VariantContextTestProvider.VariantContextContainer container =
+                VariantContextTestProvider.readAllVCs(bcfOutputFile, new BCF2Codec());
         int counter = 0;
         final Iterator<VariantContext> it = container.getVCs().iterator();
         while (it.hasNext()) {
@@ -119,9 +118,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             counter++;
         }
         Assert.assertEquals(counter, 2);
-
     }
-
 
     /**
      * test, with index-on-the-fly option, that we can output and input BCF without problems
@@ -133,15 +130,16 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Tribble.indexFile(bcfOutputFile).deleteOnExit();
         final VCFHeader header = createFakeHeader();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
                 .build()) {
             writer.writeHeader(header);
             writer.add(createVC(header));
             writer.add(createVC(header));
         }
-        VariantContextTestProvider.VariantContextContainer container = VariantContextTestProvider
-                .readAllVCs(bcfOutputFile, new BCF2Codec());
+        VariantContextTestProvider.VariantContextContainer container =
+                VariantContextTestProvider.readAllVCs(bcfOutputFile, new BCF2Codec());
         int counter = 0;
         final Iterator<VariantContext> it = container.getVCs().iterator();
         while (it.hasNext()) {
@@ -164,14 +162,16 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = createFakeHeader();
         // we write two files, bcfOutputFile with the header, and bcfOutputHeaderlessFile with just the body
         try (final VariantContextWriter fakeBCFFileWriter = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             fakeBCFFileWriter.writeHeader(header); // writes header
         }
 
         try (final VariantContextWriter fakeBCFBodyFileWriter = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputHeaderlessFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputHeaderlessFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             fakeBCFBodyFileWriter.setHeader(header); // does not write header
@@ -181,12 +181,15 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
 
         VariantContextTestProvider.VariantContextContainer container;
 
-        try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile));
-        final PositionalBufferedStream bodyPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputHeaderlessFile))) {
+        try (final PositionalBufferedStream headerPbs =
+                        new PositionalBufferedStream(new FileInputStream(bcfOutputFile));
+                final PositionalBufferedStream bodyPbs =
+                        new PositionalBufferedStream(new FileInputStream(bcfOutputHeaderlessFile))) {
 
             BCF2Codec codec = new BCF2Codec();
             codec.readHeader(headerPbs);
-            // we use the header information read from identical file with header+body to read just the body of second file
+            // we use the header information read from identical file with header+body to read just the body of second
+            // file
 
             int counter = 0;
             while (!bodyPbs.isDone()) {
@@ -195,7 +198,6 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             }
             Assert.assertEquals(counter, 2);
         }
-
     }
 
     /**
@@ -207,15 +209,16 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final File bcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf", tempDir);
         bcfOutputFile.deleteOnExit();
 
-        try ( VCFFileReader vcfFile = new VCFFileReader(vcfInputFile);
-
-        VariantContextWriter bcfWriter = new VariantContextWriterBuilder().setOutputFile(bcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
-
-        ) {
+        try (VCFFileReader vcfFile = new VCFFileReader(vcfInputFile);
+                VariantContextWriter bcfWriter = new VariantContextWriterBuilder()
+                        .setOutputFile(bcfOutputFile)
+                        .setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary())
+                        .build(); ) {
             bcfWriter.writeHeader(vcfFile.getFileHeader());
 
             for (VariantContext vc : vcfFile.iterator().toList()) {
-                Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
+                Assert.assertEquals(
+                        vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
                 bcfWriter.add(vc);
             }
             bcfWriter.close();
@@ -224,26 +227,38 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             final File vcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".vcf", tempDir);
             vcfOutputFile.deleteOnExit();
 
-            try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile));
-                 VariantContextWriter vcfWriter = new VariantContextWriterBuilder().setOutputFile(vcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
-                 ) {
+            try (final PositionalBufferedStream headerPbs =
+                            new PositionalBufferedStream(new FileInputStream(bcfOutputFile));
+                    VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+                            .setOutputFile(vcfOutputFile)
+                            .setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary())
+                            .build(); ) {
                 vcfWriter.writeHeader(vcfFile.getFileHeader());
 
                 BCF2Codec codec = new BCF2Codec();
                 codec.readHeader(headerPbs);
-                // we use the header information read from identical file with header+body to read just the body of second file
+                // we use the header information read from identical file with header+body to read just the body of
+                // second file
 
                 while (!headerPbs.isDone()) {
                     VariantContext vc = codec.decode(headerPbs);
-                    Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
+                    Assert.assertEquals(
+                            vc.getGenotypes().stream()
+                                    .filter(Genotype::isPhased)
+                                    .count(),
+                            2);
                     vcfWriter.add(vc);
                 }
                 vcfWriter.close();
             }
 
-            try (VCFFileReader vcfOutput = new VCFFileReader(vcfInputFile);) {
+            try (VCFFileReader vcfOutput = new VCFFileReader(vcfInputFile); ) {
                 for (VariantContext vc : vcfOutput.iterator().toList()) {
-                    Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
+                    Assert.assertEquals(
+                            vc.getGenotypes().stream()
+                                    .filter(Genotype::isPhased)
+                                    .count(),
+                            2);
                 }
             }
         }
@@ -257,7 +272,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = createFakeHeader();
         // prevent writing header twice
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.writeHeader(header);
@@ -273,7 +289,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = createFakeHeader();
         // prevent changing header if it's already written
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.writeHeader(header);
@@ -289,7 +306,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = createFakeHeader();
         // prevent changing header if part of body is already written
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
+                .setOutputFile(bcfOutputFile)
+                .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.setHeader(header);
@@ -307,21 +325,24 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     private VariantContext createVC(final VCFHeader header) {
         final List<Allele> alleles = new ArrayList<>();
         final Map<String, Object> attributes = new HashMap<>();
-        final GenotypesContext genotypes = GenotypesContext.create(header.getGenotypeSamples().size());
+        final GenotypesContext genotypes =
+                GenotypesContext.create(header.getGenotypeSamples().size());
 
         alleles.add(Allele.create("A", true));
         alleles.add(Allele.create("ACC", false));
 
         attributes.put("DP", "50");
         for (final String name : header.getGenotypeSamples()) {
-            final Genotype gt = new GenotypeBuilder(name, alleles.subList(1, 2)).GQ(0).attribute("BB", "1").phased(true)
+            final Genotype gt = new GenotypeBuilder(name, alleles.subList(1, 2))
+                    .GQ(0)
+                    .attribute("BB", "1")
+                    .phased(true)
                     .make();
             genotypes.add(gt);
         }
         return new VariantContextBuilder("RANDOM", "1", 1, 1, alleles)
-                .genotypes(genotypes).attributes(attributes).make();
+                .genotypes(genotypes)
+                .attributes(attributes)
+                .make();
     }
-
-
 }
-

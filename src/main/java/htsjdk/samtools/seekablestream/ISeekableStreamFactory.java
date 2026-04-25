@@ -45,8 +45,9 @@ public interface ISeekableStreamFactory {
      * @param wrapper a wrapper to apply to the stream
      * @return a stream opened path
      */
-    default SeekableStream getStreamFor(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
-        if(wrapper != null) {
+    default SeekableStream getStreamFor(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+            throws IOException {
+        if (wrapper != null) {
             throw new UnsupportedOperationException("This factory doesn't support adding wrappers");
         } else {
             return this.getStreamFor(path);

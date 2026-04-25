@@ -2,7 +2,6 @@ package htsjdk.samtools.cram;
 
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -27,14 +26,16 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     private static final int CRAI_INDEX_COLUMNS = 6;
     private static final String ENTRY_FORMAT = "%d\t%d\t%d\t%d\t%d\t%d";
 
-    public CRAIEntry(final int sequenceId,
-                     final int alignmentStart,
-                     final int alignmentSpan,
-                     final long containerStartByteOffset,
-                     final int sliceByteOffsetFromCompressionHeaderStart,
-                     final int sliceByteSize) {
+    public CRAIEntry(
+            final int sequenceId,
+            final int alignmentStart,
+            final int alignmentSpan,
+            final long containerStartByteOffset,
+            final int sliceByteOffsetFromCompressionHeaderStart,
+            final int sliceByteSize) {
         if (sequenceId == ReferenceContext.MULTIPLE_REFERENCE_ID) {
-            throw new CRAMException("Cannot directly index a multiref slice.  Index by its constituent references instead.");
+            throw new CRAMException(
+                    "Cannot directly index a multiref slice.  Index by its constituent references instead.");
         }
 
         this.sequenceId = sequenceId;
@@ -53,8 +54,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     public CRAIEntry(final String line) {
         final String[] chunks = line.split("\t");
         if (chunks.length != CRAI_INDEX_COLUMNS) {
-            throw new CRAMException(
-                    "Malformed CRAI index entry: expecting " + CRAI_INDEX_COLUMNS + " columns but got " + chunks.length);
+            throw new CRAMException("Malformed CRAI index entry: expecting " + CRAI_INDEX_COLUMNS + " columns but got "
+                    + chunks.length);
         }
 
         try {
@@ -77,8 +78,7 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         try {
             os.write(serializeToString().getBytes());
             os.write('\n');
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -87,13 +87,20 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
      * Format the entry as a string suitable for serialization in the CRAI index
      */
     private String serializeToString() {
-        return String.format(ENTRY_FORMAT,
-                sequenceId, alignmentStart, alignmentSpan,
-                containerStartByteOffset, sliceByteOffsetFromCompressionHeaderStart, sliceByteSize);
+        return String.format(
+                ENTRY_FORMAT,
+                sequenceId,
+                alignmentStart,
+                alignmentSpan,
+                containerStartByteOffset,
+                sliceByteOffsetFromCompressionHeaderStart,
+                sliceByteSize);
     }
 
     @Override
-    public String toString() { return serializeToString(); }
+    public String toString() {
+        return serializeToString();
+    }
 
     /**
      * Sort by numerical order of reference sequence ID, except that unmapped-unplaced reads come last
@@ -114,10 +121,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
     @Override
     public int compareTo(final CRAIEntry other) {
         if (sequenceId != other.sequenceId) {
-            if (sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
-                return 1;
-            if (other.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID)
-                return -1;
+            if (sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID) return 1;
+            if (other.sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID) return -1;
             return Integer.compare(sequenceId, other.sequenceId);
         }
 
@@ -131,7 +136,8 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         }
 
         return Long.compare(sliceByteOffsetFromCompressionHeaderStart, other.sliceByteOffsetFromCompressionHeaderStart);
-    };
+    }
+    ;
 
     public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
         if (e0.sequenceId != e1.sequenceId) {
@@ -150,7 +156,6 @@ public class CRAIEntry implements Comparable<CRAIEntry> {
         final int b1 = a1 + e1.alignmentSpan;
 
         return Math.abs(a0 + b0 - a1 - b1) < (e0.alignmentSpan + e1.alignmentSpan);
-
     }
 
     public int getSequenceId() {

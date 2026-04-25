@@ -51,8 +51,8 @@ public interface Locatable {
      * @return true if this interval overlaps other, otherwise false
      */
     default boolean withinDistanceOf(Locatable other, int distance) {
-        return contigsMatch(other) &&
-                CoordMath.overlaps(getStart(), getEnd(), other.getStart()-distance, other.getEnd()+distance);
+        return contigsMatch(other)
+                && CoordMath.overlaps(getStart(), getEnd(), other.getStart() - distance, other.getEnd() + distance);
     }
 
     /**

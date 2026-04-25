@@ -9,7 +9,7 @@ import htsjdk.utils.ValidationUtils;
  * Decoder options specific to BAM decoders.
  */
 public class BAMDecoderOptions {
-    //SAMRecordFactory isn't carried over from SAMReaderFactory as an option, since it doesn't appear to
+    // SAMRecordFactory isn't carried over from SAMReaderFactory as an option, since it doesn't appear to
     // actually be used anywhere anymore (??)
     //
     // includeInSource isn't carried over since it populates SAMRecords with a SamReader, which the plugin
@@ -19,8 +19,8 @@ public class BAMDecoderOptions {
     // (all, including splitting) index creation into htsjdk.
 
     private InflaterFactory inflaterFactory = BlockGunzipper.getDefaultInflaterFactory();
-    private boolean asyncIO                 = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
-    private boolean validateCRCChecksums    = false;
+    private boolean asyncIO = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
+    private boolean validateCRCChecksums = false;
 
     /**
      * Get the {@link InflaterFactory} used for these options. Defaults to
@@ -85,5 +85,4 @@ public class BAMDecoderOptions {
         this.validateCRCChecksums = validateCRCChecksums;
         return this;
     }
-
 }

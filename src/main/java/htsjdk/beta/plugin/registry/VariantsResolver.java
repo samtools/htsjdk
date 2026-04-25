@@ -3,11 +3,11 @@ package htsjdk.beta.plugin.registry;
 import htsjdk.beta.codecs.variants.vcf.vcfv4_2.VCFCodecV4_2;
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleBuilder;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.plugin.variants.VariantsDecoder;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
@@ -62,8 +62,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * that the registry contains an incorrectly written codec.
      */
     public VariantsDecoder getVariantsDecoder(
-            final IOPath inputPath,
-            final VariantsDecoderOptions variantsDecoderOptions) {
+            final IOPath inputPath, final VariantsDecoderOptions variantsDecoderOptions) {
         ValidationUtils.nonNull(inputPath, "Input path");
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
@@ -102,8 +101,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      */
     @SuppressWarnings("unchecked")
     public VariantsDecoder getVariantsDecoder(
-            final Bundle inputBundle,
-            final VariantsDecoderOptions variantsDecoderOptions) {
+            final Bundle inputBundle, final VariantsDecoderOptions variantsDecoderOptions) {
         ValidationUtils.nonNull(inputBundle, "Input bundle");
         ValidationUtils.nonNull(variantsDecoderOptions, "Decoder options");
 
@@ -137,8 +135,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(
-            final IOPath outputPath,
-            final VariantsEncoderOptions variantsEncoderOptions) {
+            final IOPath outputPath, final VariantsEncoderOptions variantsEncoderOptions) {
         ValidationUtils.nonNull(outputPath, "Output path");
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
 
@@ -159,12 +156,11 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
      * that the registry contains an incorrectly written codec.
      */
     public VariantsEncoder getVariantsEncoder(
-            final Bundle outputBundle,
-            final VariantsEncoderOptions variantsEncoderOptions) {
+            final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
         ValidationUtils.nonNull(outputBundle, "Output bundle");
         ValidationUtils.nonNull(variantsEncoderOptions, "Encoder options");
 
-        //NOTE: we can't allow the resolver to choose the newest registered codec when writing a
+        // NOTE: we can't allow the resolver to choose the newest registered codec when writing a
         // VCF, since the newest codec is v4.3, which has no encoder, so for now explicitly select v4.2
         final VariantsCodec variantsCodec = resolveForEncoding(outputBundle, VCFCodecV4_2.VCF_V42_VERSION);
         return (VariantsEncoder) variantsCodec.getEncoder(outputBundle, variantsEncoderOptions);
@@ -194,8 +190,7 @@ public class VariantsResolver extends HtsCodecResolver<VariantsCodec> {
         ValidationUtils.nonNull(variantsFormat, "Format");
         ValidationUtils.nonNull(formatVersion, "Format version");
 
-        return (VariantsEncoder) resolveFormatAndVersion(variantsFormat, formatVersion)
-                .getEncoder(outputBundle, variantsEncoderOptions);
+        return (VariantsEncoder)
+                resolveFormatAndVersion(variantsFormat, formatVersion).getEncoder(outputBundle, variantsEncoderOptions);
     }
-
 }

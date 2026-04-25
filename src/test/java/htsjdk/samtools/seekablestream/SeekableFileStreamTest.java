@@ -25,10 +25,9 @@ package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.io.File;
 
 /**
  * Created by IntelliJ IDEA.

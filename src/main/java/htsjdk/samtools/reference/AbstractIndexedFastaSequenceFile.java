@@ -30,7 +30,6 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -78,7 +77,8 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @param dictPath the path to the sequence dictionary. may be null.
      * @param index the associated index object; may not be null.
      */
-    protected AbstractIndexedFastaSequenceFile(final IOPath fastaPath, final IOPath dictPath, final FastaSequenceIndex index) {
+    protected AbstractIndexedFastaSequenceFile(
+            final IOPath fastaPath, final IOPath dictPath, final FastaSequenceIndex index) {
         super(fastaPath.toPath(), fastaPath.getURIString(), loadSequenceDictionary(dictPath));
         if (index == null) {
             throw new IllegalArgumentException("Null index for fasta " + index);
@@ -97,7 +97,8 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @param index The fasta index.
      * @param dictionary The sequence dictionary, or null if there isn't one.
      */
-    protected AbstractIndexedFastaSequenceFile(String source, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
+    protected AbstractIndexedFastaSequenceFile(
+            String source, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
         super(null, source, dictionary);
         this.index = index;
         reset();
@@ -105,7 +106,9 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
 
     protected static Path findRequiredFastaIndexFile(Path fastaFile) throws FileNotFoundException {
         Path ret = findFastaIndex(fastaFile);
-        if (ret == null) throw new FileNotFoundException(ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile) + " not found.");
+        if (ret == null)
+            throw new FileNotFoundException(
+                    ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile) + " not found.");
         return ret;
     }
 
@@ -121,28 +124,30 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @param sequenceDictionary sequence dictionary to check against the index.
      * @param index index file to check against the dictionary.
      */
-    protected static void sanityCheckDictionaryAgainstIndex(final String fastaFile,
-            final SAMSequenceDictionary sequenceDictionary,
-            final FastaSequenceIndex index) {
+    protected static void sanityCheckDictionaryAgainstIndex(
+            final String fastaFile, final SAMSequenceDictionary sequenceDictionary, final FastaSequenceIndex index) {
         // Make sure dictionary and index are the same size.
-        if( sequenceDictionary.getSequences().size() != index.size() )
+        if (sequenceDictionary.getSequences().size() != index.size())
             throw new SAMException("Sequence dictionary and index contain different numbers of contigs");
 
-        Iterator<SAMSequenceRecord> sequenceIterator = sequenceDictionary.getSequences().iterator();
+        Iterator<SAMSequenceRecord> sequenceIterator =
+                sequenceDictionary.getSequences().iterator();
         Iterator<FastaSequenceIndexEntry> indexIterator = index.iterator();
 
-        while(sequenceIterator.hasNext() && indexIterator.hasNext()) {
+        while (sequenceIterator.hasNext() && indexIterator.hasNext()) {
             SAMSequenceRecord sequenceEntry = sequenceIterator.next();
             FastaSequenceIndexEntry indexEntry = indexIterator.next();
 
-            if(!sequenceEntry.getSequenceName().equals(indexEntry.getContig())) {
-                throw new SAMException(String.format("Mismatch between sequence dictionary fasta index for %s, sequence '%s' != '%s'.",
-                        fastaFile, sequenceEntry.getSequenceName(),indexEntry.getContig()));
+            if (!sequenceEntry.getSequenceName().equals(indexEntry.getContig())) {
+                throw new SAMException(String.format(
+                        "Mismatch between sequence dictionary fasta index for %s, sequence '%s' != '%s'.",
+                        fastaFile, sequenceEntry.getSequenceName(), indexEntry.getContig()));
             }
 
             // Make sure sequence length matches index length.
-            if( sequenceEntry.getSequenceLength() != indexEntry.getSize())
-                throw new SAMException("Index length does not match dictionary length for contig: " + sequenceEntry.getSequenceName() );
+            if (sequenceEntry.getSequenceLength() != indexEntry.getSize())
+                throw new SAMException(
+                        "Index length does not match dictionary length for contig: " + sequenceEntry.getSequenceName());
         }
     }
 
@@ -155,10 +160,9 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @return next sequence if available, or null if not present.
      */
     @Override
-    public  ReferenceSequence nextSequence() {
-        if( !indexIterator.hasNext() )
-            return null;
-        return getSequence( indexIterator.next().getContig() );
+    public ReferenceSequence nextSequence() {
+        if (!indexIterator.hasNext()) return null;
+        return getSequence(indexIterator.next().getContig());
     }
 
     /**
@@ -180,8 +184,8 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @return The full sequence associated with this contig.
      */
     @Override
-    public ReferenceSequence getSequence( String contig ) {
-        return getSubsequenceAt( contig, 1, (int)index.getIndexEntry(contig).getSize() );
+    public ReferenceSequence getSequence(String contig) {
+        return getSubsequenceAt(contig, 1, (int) index.getIndexEntry(contig).getSize());
     }
 
     /**
@@ -192,16 +196,16 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @return The partial reference sequence associated with this range.
      */
     @Override
-    public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
-        if(start > stop + 1)
-            throw new SAMException(String.format("Malformed query; start point %d lies after end point %d",start,stop));
+    public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
+        if (start > stop + 1)
+            throw new SAMException(
+                    String.format("Malformed query; start point %d lies after end point %d", start, stop));
 
         FastaSequenceIndexEntry indexEntry = getIndex().getIndexEntry(contig);
 
-        if(stop > indexEntry.getSize())
-            throw new SAMException("Query asks for data past end of contig");
+        if (stop > indexEntry.getSize()) throw new SAMException("Query asks for data past end of contig");
 
-        int length = (int)(stop - start + 1);
+        int length = (int) (stop - start + 1);
 
         byte[] target = new byte[length];
         ByteBuffer targetBuffer = ByteBuffer.wrap(target);
@@ -210,49 +214,53 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         final int bytesPerLine = indexEntry.getBytesPerLine();
         final int terminatorLength = bytesPerLine - basesPerLine;
 
-        long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
+        long startOffset = ((start - 1) / basesPerLine) * bytesPerLine + (start - 1) % basesPerLine;
         // Cast to long so the second argument cannot overflow a signed integer.
-        final long minBufferSize = Math.min((long) Defaults.NON_ZERO_BUFFER_SIZE, (long)(length / basesPerLine + 2) * (long)bytesPerLine);
-        if (minBufferSize > Integer.MAX_VALUE) throw new SAMException("Buffer is too large: " +  minBufferSize);
+        final long minBufferSize = Math.min(
+                (long) Defaults.NON_ZERO_BUFFER_SIZE, (long) (length / basesPerLine + 2) * (long) bytesPerLine);
+        if (minBufferSize > Integer.MAX_VALUE) throw new SAMException("Buffer is too large: " + minBufferSize);
 
         // Allocate a buffer for reading in sequence data.
-        final ByteBuffer channelBuffer = ByteBuffer.allocate((int)minBufferSize);
+        final ByteBuffer channelBuffer = ByteBuffer.allocate((int) minBufferSize);
 
-        while(targetBuffer.position() < length) {
-            // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward to the next printable character.
-            startOffset += Math.max((int)(startOffset%bytesPerLine - basesPerLine + 1),0);
+        while (targetBuffer.position() < length) {
+            // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward
+            // to the next printable character.
+            startOffset += Math.max((int) (startOffset % bytesPerLine - basesPerLine + 1), 0);
 
             try {
-                startOffset += readFromPosition(channelBuffer, indexEntry.getLocation()+startOffset);
-            }
-            catch(IOException ex) {
-                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + getSource(), ex);
+                startOffset += readFromPosition(channelBuffer, indexEntry.getLocation() + startOffset);
+            } catch (IOException ex) {
+                throw new SAMException(
+                        "Unable to load " + contig + "(" + start + ", " + stop + ") from " + getSource(), ex);
             }
 
             // Reset the buffer for outbound transfers.
             channelBuffer.flip();
 
             // Calculate the size of the next run of bases based on the contents we've already retrieved.
-            final int positionInContig = (int)start-1+targetBuffer.position();
-            final int nextBaseSpan = Math.min(basesPerLine-positionInContig%basesPerLine,length-targetBuffer.position());
+            final int positionInContig = (int) start - 1 + targetBuffer.position();
+            final int nextBaseSpan =
+                    Math.min(basesPerLine - positionInContig % basesPerLine, length - targetBuffer.position());
             // Cap the bytes to transfer by limiting the nextBaseSpan to the size of the channel buffer.
-            int bytesToTransfer = Math.min(nextBaseSpan,channelBuffer.capacity());
+            int bytesToTransfer = Math.min(nextBaseSpan, channelBuffer.capacity());
 
-            channelBuffer.limit(channelBuffer.position()+bytesToTransfer);
+            channelBuffer.limit(channelBuffer.position() + bytesToTransfer);
 
-            while(channelBuffer.hasRemaining()) {
+            while (channelBuffer.hasRemaining()) {
                 targetBuffer.put(channelBuffer);
 
-                bytesToTransfer = Math.min(basesPerLine,length-targetBuffer.position());
-                channelBuffer.limit(Math.min(channelBuffer.position()+bytesToTransfer+terminatorLength,channelBuffer.capacity()));
-                channelBuffer.position(Math.min(channelBuffer.position()+terminatorLength,channelBuffer.capacity()));
+                bytesToTransfer = Math.min(basesPerLine, length - targetBuffer.position());
+                channelBuffer.limit(Math.min(
+                        channelBuffer.position() + bytesToTransfer + terminatorLength, channelBuffer.capacity()));
+                channelBuffer.position(Math.min(channelBuffer.position() + terminatorLength, channelBuffer.capacity()));
             }
 
             // Reset the buffer for inbound transfers.
             channelBuffer.flip();
         }
 
-        return new ReferenceSequence( contig, indexEntry.getSequenceIndex(), target );
+        return new ReferenceSequence(contig, indexEntry.getSequenceIndex(), target);
     }
 
     /**

@@ -25,8 +25,8 @@ import htsjdk.samtools.cram.io.BitOutputStream;
  * to encode Integers.
  */
 final class SubexponentialIntegerCodec extends CoreCodec<Integer> {
-    final private int offset;
-    final private int k;
+    private final int offset;
+    private final int k;
 
     /**
      * Construct a Subexponential Codec for Integers.
@@ -37,9 +37,11 @@ final class SubexponentialIntegerCodec extends CoreCodec<Integer> {
      *               Setting this to (-MIN) will ensure all stored values will be in the range (0 .. MAX - MIN)
      * @param k
      */
-    public SubexponentialIntegerCodec(final BitInputStream coreBlockInputStream,
-                               final BitOutputStream coreBlockOutputStream,
-                               final int offset, final int k) {
+    public SubexponentialIntegerCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final int offset,
+            final int k) {
         super(coreBlockInputStream, coreBlockOutputStream);
         this.offset = offset;
         this.k = k;
@@ -95,5 +97,4 @@ final class SubexponentialIntegerCodec extends CoreCodec<Integer> {
     public Integer read(final int length) {
         throw new RuntimeException("Not implemented.");
     }
-
 }

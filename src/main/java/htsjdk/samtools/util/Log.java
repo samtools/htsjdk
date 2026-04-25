@@ -44,7 +44,12 @@ public final class Log {
     /**
      * Enumeration for setting log levels.
      */
-    public enum LogLevel {ERROR, WARNING, INFO, DEBUG}
+    public enum LogLevel {
+        ERROR,
+        WARNING,
+        INFO,
+        DEBUG
+    }
 
     private static LogLevel globalLogLevel = LogLevel.INFO;
     private static PrintStream out = System.err;

@@ -6,20 +6,19 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
-import org.testng.Assert;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.testng.Assert;
 
 public class CRAMIndexTestHelper {
 
-    private final static byte[] BAI_MAGIC ="BAI\1".getBytes();
+    private static final byte[] BAI_MAGIC = "BAI\1".getBytes();
     // CRAI is gzipped text, so it's magic is same as {@link java.util.zip.GZIPInputStream.GZIP_MAGIC}
-    private final static byte[] CRAI_MAGIC = new byte[]{(byte) 0x1f, (byte) 0x8b};
+    private static final byte[] CRAI_MAGIC = new byte[] {(byte) 0x1f, (byte) 0x8b};
 
     // Given an input SAM/BAM/CRAM, using the supplied CRAMEncodingStrategy to create and return a temporary CRAM
     // with the same content as the input SAM/BAM/CRAM but created using the supplied CRAMEncodingStrategy, along
@@ -27,24 +26,25 @@ public class CRAMIndexTestHelper {
     public static File createCRAMWithBAIForEncodingStrategy(
             final File sourceFile,
             final CRAMReferenceSource referenceSource,
-            final CRAMEncodingStrategy cramEncodingStrategy) throws IOException
-    {
+            final CRAMEncodingStrategy cramEncodingStrategy)
+            throws IOException {
         final File temporaryCRAM = createCRAMAndIndexFiles(".bai");
         final File temporaryBAI = new File(temporaryCRAM.getAbsolutePath() + ".bai");
 
-        final SamReaderFactory samReadFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
+        final SamReaderFactory samReadFactory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
         try (final SamReader samReader = samReadFactory.open(sourceFile.toPath());
-             final FileOutputStream cramFileOutputStream = new FileOutputStream(temporaryCRAM);
-             final FileOutputStream cramIndexOutputStream = new FileOutputStream(temporaryBAI);
-             final CRAMFileWriter cramWriter = new CRAMFileWriter(
-                     cramEncodingStrategy,
-                     cramFileOutputStream,
-                     cramIndexOutputStream,
-                     true,
-                     referenceSource,
-                     samReader.getFileHeader(),
-                     temporaryCRAM.getAbsolutePath());
-             final CloseableIterator<SAMRecord> samIterator = samReader.iterator()) {
+                final FileOutputStream cramFileOutputStream = new FileOutputStream(temporaryCRAM);
+                final FileOutputStream cramIndexOutputStream = new FileOutputStream(temporaryBAI);
+                final CRAMFileWriter cramWriter = new CRAMFileWriter(
+                        cramEncodingStrategy,
+                        cramFileOutputStream,
+                        cramIndexOutputStream,
+                        true,
+                        referenceSource,
+                        samReader.getFileHeader(),
+                        temporaryCRAM.getAbsolutePath());
+                final CloseableIterator<SAMRecord> samIterator = samReader.iterator()) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             while (samIterator.hasNext()) {
                 cramWriter.addAlignment(samIterator.next());
@@ -61,8 +61,8 @@ public class CRAMIndexTestHelper {
     public static File createCRAMWithCRAIForEncodingStrategy(
             final File sourceFile,
             final CRAMReferenceSource referenceSource,
-            final CRAMEncodingStrategy cramEncodingStrategy) throws IOException
-    {
+            final CRAMEncodingStrategy cramEncodingStrategy)
+            throws IOException {
         final File temporaryCRAM = createCRAMAndIndexFiles(".crai");
         final File temporaryCRAI = new File(temporaryCRAM.getAbsolutePath() + ".crai");
 
@@ -70,16 +70,16 @@ public class CRAMIndexTestHelper {
                 .referenceSource(referenceSource)
                 .validationStringency(ValidationStringency.STRICT);
         try (final SamReader samReader = samReadFactory.open(sourceFile.toPath());
-             final FileOutputStream cramFileOutputStream = new FileOutputStream(temporaryCRAM);
-             final CRAMFileWriter cramWriter = new CRAMFileWriter(
-                    cramEncodingStrategy,
-                    cramFileOutputStream,
-                    null, // suppress BAI index creation and manually create CRAI after the fact (see below)
-                     true,
-                     referenceSource,
-                    samReader.getFileHeader(),
-                     temporaryCRAM.getAbsolutePath());
-             final CloseableIterator<SAMRecord> samIterator = samReader.iterator()) {
+                final FileOutputStream cramFileOutputStream = new FileOutputStream(temporaryCRAM);
+                final CRAMFileWriter cramWriter = new CRAMFileWriter(
+                        cramEncodingStrategy,
+                        cramFileOutputStream,
+                        null, // suppress BAI index creation and manually create CRAI after the fact (see below)
+                        true,
+                        referenceSource,
+                        samReader.getFileHeader(),
+                        temporaryCRAM.getAbsolutePath());
+                final CloseableIterator<SAMRecord> samIterator = samReader.iterator()) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             while (samIterator.hasNext()) {
                 cramWriter.addAlignment(samIterator.next());
@@ -111,16 +111,14 @@ public class CRAMIndexTestHelper {
         return temporaryCRAM;
     }
 
-    //SamFiles.findIndex(tempCRAM)
+    // SamFiles.findIndex(tempCRAM)
     public static File createBAIForCRAIAsText(
-            final File cramFile,
-            final CRAMReferenceSource referenceSource,
-            final File craiFile) throws IOException {
-        final SAMSequenceDictionary dictionary =
-                SamReaderFactory.makeDefault()
-                        .referenceSource(referenceSource)
-                        .open(cramFile)
-                        .getFileHeader().getSequenceDictionary();
+            final File cramFile, final CRAMReferenceSource referenceSource, final File craiFile) throws IOException {
+        final SAMSequenceDictionary dictionary = SamReaderFactory.makeDefault()
+                .referenceSource(referenceSource)
+                .open(cramFile)
+                .getFileHeader()
+                .getSequenceDictionary();
 
         // first, convert the crai to bai and write that out
         final InputStream is = SamIndexes.openIndexFileAsBaiOrNull(craiFile, dictionary);
@@ -141,7 +139,7 @@ public class CRAMIndexTestHelper {
         return baiOutputTextFile;
     }
 
-    //SamFiles.findIndex(tempCRAM)
+    // SamFiles.findIndex(tempCRAM)
     public static File createCRAIAsText(final File craiFile) throws IOException {
         try (final FileInputStream fis = new FileInputStream(craiFile)) {
             final CRAIIndex craiIndex = CRAMCRAIIndexer.readIndex(fis);
@@ -165,14 +163,12 @@ public class CRAMIndexTestHelper {
             final File targetCRAMFile,
             final File targetIndexFile, // .bai or .crai
             final CRAMReferenceSource referenceSource,
-            final QueryInterval[] queryIntervals) throws IOException {
+            final QueryInterval[] queryIntervals)
+            throws IOException {
         final List<String> queryResults = new ArrayList<>(); // might contain duplicates
         try (final CRAMFileReader cramReader = new CRAMFileReader(
-                targetCRAMFile,
-                targetIndexFile,
-                referenceSource,
-                ValidationStringency.STRICT);
-             final CloseableIterator<SAMRecord> cramIterator = cramReader.query(queryIntervals, true)) {
+                        targetCRAMFile, targetIndexFile, referenceSource, ValidationStringency.STRICT);
+                final CloseableIterator<SAMRecord> cramIterator = cramReader.query(queryIntervals, true)) {
             Assert.assertEquals(cramReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             while (cramIterator.hasNext()) {
                 queryResults.add(cramIterator.next().getReadName());
@@ -182,13 +178,13 @@ public class CRAMIndexTestHelper {
     }
 
     public static final List<String> getBAMResultsForQueryIntervals(
-            final File targetBAMFile,
-            final QueryInterval[] queryIntervals) throws IOException {
+            final File targetBAMFile, final QueryInterval[] queryIntervals) throws IOException {
         final List<String> queryResults = new ArrayList<>(); // might contain duplicates
-        final SamReaderFactory samReadFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
+        final SamReaderFactory samReadFactory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
 
         try (final SamReader samReader = samReadFactory.open(targetBAMFile.toPath());
-             final CloseableIterator<SAMRecord> samIterator = samReader.query(queryIntervals, true)) {
+                final CloseableIterator<SAMRecord> samIterator = samReader.query(queryIntervals, true)) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             while (samIterator.hasNext()) {
                 queryResults.add(samIterator.next().getReadName());
@@ -200,14 +196,12 @@ public class CRAMIndexTestHelper {
     public static final List<String> getCRAMResultsForUnmapped(
             final File targetCRAMFile,
             final File targetIndexFile, // .bai or .crai
-            final CRAMReferenceSource referenceSource) throws IOException {
+            final CRAMReferenceSource referenceSource)
+            throws IOException {
         final List<String> queryResults = new ArrayList<>(); // might contain duplicates
         try (final CRAMFileReader cramReader = new CRAMFileReader(
-                targetCRAMFile,
-                targetIndexFile,
-                referenceSource,
-                ValidationStringency.STRICT);
-             final CloseableIterator<SAMRecord> cramIterator = cramReader.queryUnmapped()) {
+                        targetCRAMFile, targetIndexFile, referenceSource, ValidationStringency.STRICT);
+                final CloseableIterator<SAMRecord> cramIterator = cramReader.queryUnmapped()) {
             Assert.assertEquals(cramReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             while (cramIterator.hasNext()) {
                 queryResults.add(cramIterator.next().getReadName());
@@ -218,9 +212,10 @@ public class CRAMIndexTestHelper {
 
     public static final List<String> getBAMResultsForUnmapped(final File targetBAMFile) throws IOException {
         final List<String> queryResults = new ArrayList<>(); // might contain duplicates
-        final SamReaderFactory samReadFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
+        final SamReaderFactory samReadFactory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
         try (final SamReader samReader = samReadFactory.open(targetBAMFile.toPath());
-             final CloseableIterator<SAMRecord> samIterator = samReader.queryUnmapped()) {
+                final CloseableIterator<SAMRecord> samIterator = samReader.queryUnmapped()) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             while (samIterator.hasNext()) {
                 queryResults.add(samIterator.next().getReadName());
@@ -246,5 +241,4 @@ public class CRAMIndexTestHelper {
             }
         }
     }
-
 }

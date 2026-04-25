@@ -3,7 +3,6 @@ package htsjdk.beta.plugin.interval;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -22,7 +21,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
     @Override
     CloseableIterator<RECORD> iterator();
 
-    //*******************************************
+    // *******************************************
     // Start temporary common query interface default implementations.
 
     /**
@@ -63,10 +62,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
      * @return an iterator over all records from the underlying resource that match the query arguments
      */
     default CloseableIterator<RECORD> query(
-            final String queryName,
-            final long start,
-            final long end,
-            final HtsQueryRule queryRule) {
+            final String queryName, final long start, final long end, final HtsQueryRule queryRule) {
         return query(new HtsQueryInterval(queryName, start, end), queryRule);
     }
 
@@ -160,7 +156,7 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
         return query(intervals, HtsQueryRule.CONTAINED);
     }
 
-    //TODO: match reads that have this start; we *could* just use an HtsInterval with span==1 ? do we need this ?
+    // TODO: match reads that have this start; we *could* just use an HtsInterval with span==1 ? do we need this ?
     /**
      * Get an iterator over all records from the underlying resource that overlap the start position
      *
@@ -172,5 +168,4 @@ public interface HtsQuery<RECORD> extends Iterable<RECORD> {
         ValidationUtils.validateArg(isQueryable(), "Decoder is not queryable");
         throw new HtsjdkUnsupportedOperationException("queryStart not implemented for this decoder");
     }
-
 }

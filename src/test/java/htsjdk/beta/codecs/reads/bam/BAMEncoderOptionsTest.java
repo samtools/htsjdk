@@ -84,5 +84,4 @@ public class BAMEncoderOptionsTest extends HtsjdkTest {
         bamEncoderOptions.setMaxRecordsInRAM(TEST_RECORDS_IN_RAM);
         Assert.assertEquals(bamEncoderOptions.getMaxRecordsInRAM(), TEST_RECORDS_IN_RAM);
     }
-
 }

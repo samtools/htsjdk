@@ -3,8 +3,8 @@ package htsjdk.beta.codecs.reads.cram.cramV2_1;
 import htsjdk.beta.codecs.reads.cram.CRAMCodec;
 import htsjdk.beta.codecs.reads.cram.CRAMDecoder;
 import htsjdk.beta.codecs.reads.cram.CRAMEncoder;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -44,6 +44,7 @@ public class CRAMCodecV2_1 extends CRAMCodec {
     }
 
     @Override
-    protected String getSignatureString() { return CRAM_MAGIC_2_1; }
-
+    protected String getSignatureString() {
+        return CRAM_MAGIC_2_1;
+    }
 }

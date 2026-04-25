@@ -25,7 +25,6 @@
 package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
 import htsjdk.utils.ValidationUtils;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,8 +53,7 @@ public final class HuffmanParams<T> {
         ValidationUtils.nonNull(symbols.size() > 0, "requires symbols");
         ValidationUtils.nonNull(codeWordLengths, "requires non-null codeWordLengths");
         ValidationUtils.nonNull(codeWordLengths, "requires codeWordLengths");
-        ValidationUtils.nonNull(symbols.size() == codeWordLengths.size(),
-                "symbols and codeWordLengths out of sync");
+        ValidationUtils.nonNull(symbols.size() == codeWordLengths.size(), "symbols and codeWordLengths out of sync");
 
         this.symbols = Collections.unmodifiableList(symbols);
         this.codeWordLengths = Collections.unmodifiableList(codeWordLengths);
@@ -95,7 +93,8 @@ public final class HuffmanParams<T> {
 
     @Override
     public String toString() {
-        return String.format("Symbols: %s BitLengths %s",
+        return String.format(
+                "Symbols: %s BitLengths %s",
                 symbols.stream().map(Object::toString).collect(Collectors.joining(";")),
                 codeWordLengths.stream().map(Object::toString).collect(Collectors.joining(";")));
     }

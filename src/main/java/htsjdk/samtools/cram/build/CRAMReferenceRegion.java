@@ -45,7 +45,7 @@ import htsjdk.utils.ValidationUtils;
 public class CRAMReferenceRegion {
     private static final Log log = Log.getInstance(CRAMReferenceRegion.class);
     public static final int UNINITIALIZED_START = -1;
-    public static final int  UNINITIALIZED_LENGTH = -1;
+    public static final int UNINITIALIZED_LENGTH = -1;
 
     private final CRAMReferenceSource referenceSource;
     private final SAMSequenceDictionary sequenceDictionary;
@@ -60,7 +60,8 @@ public class CRAMReferenceRegion {
      * @param cramReferenceSource {@link CRAMReferenceSource} to use to obtain reference bases
      * @param sequenceDictionary {@link SAMSequenceDictionary} to use to resolve reference contig names to reference index
      */
-    public CRAMReferenceRegion(final CRAMReferenceSource cramReferenceSource, final SAMSequenceDictionary sequenceDictionary) {
+    public CRAMReferenceRegion(
+            final CRAMReferenceSource cramReferenceSource, final SAMSequenceDictionary sequenceDictionary) {
         ValidationUtils.nonNull(cramReferenceSource, "cramReferenceSource");
         ValidationUtils.nonNull(sequenceDictionary, "sequenceDictionary");
 
@@ -116,14 +117,14 @@ public class CRAMReferenceRegion {
         // Re-resolve the reference bases if we don't have a current region or if the region we have
         // doesn't span the *entire* contig requested.
         final SAMSequenceRecord newSequenceRecord = getSAMSequenceRecord(referenceIndex);
-        if ((referenceIndex != this.referenceIndex) ||
-                regionStart != 0 ||
-                (regionLength != newSequenceRecord.getSequenceLength())) {
+        if ((referenceIndex != this.referenceIndex)
+                || regionStart != 0
+                || (regionLength != newSequenceRecord.getSequenceLength())) {
             setCurrentSequence(referenceIndex);
             referenceBases = referenceSource.getReferenceBases(newSequenceRecord, true);
             if (referenceBases == null) {
-                throw new IllegalArgumentException(
-                        String.format("A reference must be supplied (reference sequence %s not found).", newSequenceRecord));
+                throw new IllegalArgumentException(String.format(
+                        "A reference must be supplied (reference sequence %s not found).", newSequenceRecord));
             }
             regionStart = 0;
             regionLength = newSequenceRecord.getSequenceLength();
@@ -146,15 +147,13 @@ public class CRAMReferenceRegion {
      * if the requested sequence cannot be provided by the underlying referenceSource
      */
     public void fetchReferenceBasesByRegion(
-            final int referenceIndex,
-            final int zeroBasedStart,
-            final int requestedFragmentLength) {
+            final int referenceIndex, final int zeroBasedStart, final int requestedFragmentLength) {
         ValidationUtils.validateArg(referenceIndex >= 0, "reference index must be non-negative");
         ValidationUtils.validateArg(zeroBasedStart >= 0, "start must be >= 0");
 
-        if (referenceIndex == this.referenceIndex &&
-                zeroBasedStart == regionStart &&
-                requestedFragmentLength == regionLength) {
+        if (referenceIndex == this.referenceIndex
+                && zeroBasedStart == regionStart
+                && requestedFragmentLength == regionLength) {
             // exact match for what we already have
             return;
         }
@@ -164,19 +163,20 @@ public class CRAMReferenceRegion {
         }
 
         if (zeroBasedStart >= sequenceRecord.getSequenceLength()) {
-            throw new IllegalArgumentException(String.format("Requested start %d is beyond the sequence length %s",
-                    zeroBasedStart,
-                    sequenceRecord.getSequenceName()));
+            throw new IllegalArgumentException(String.format(
+                    "Requested start %d is beyond the sequence length %s",
+                    zeroBasedStart, sequenceRecord.getSequenceName()));
         }
 
-        referenceBases = referenceSource.getReferenceBasesByRegion(sequenceRecord, zeroBasedStart, requestedFragmentLength);
+        referenceBases =
+                referenceSource.getReferenceBasesByRegion(sequenceRecord, zeroBasedStart, requestedFragmentLength);
         if (referenceBases == null) {
             throw new IllegalArgumentException(
                     String.format("Failure getting reference bases for sequence %s", sequenceRecord.getSequenceName()));
         } else if (referenceBases.length < requestedFragmentLength) {
-            log.warn("The bases of length " + referenceBases.length +
-                    " returned by the reference source do not satisfy the requested fragment length " +
-                    (zeroBasedStart + requestedFragmentLength));
+            log.warn("The bases of length " + referenceBases.length
+                    + " returned by the reference source do not satisfy the requested fragment length "
+                    + (zeroBasedStart + requestedFragmentLength));
         }
         regionStart = zeroBasedStart;
         regionLength = Math.min(requestedFragmentLength, referenceBases.length);
@@ -206,9 +206,7 @@ public class CRAMReferenceRegion {
      * @param zeroBasedStart the zero based reference start of the first base in the embedded reference bases
      */
     public void setEmbeddedReferenceBases(
-            final byte[] embeddedReferenceBases,
-            final int embeddedReferenceIndex,
-            final int zeroBasedStart) {
+            final byte[] embeddedReferenceBases, final int embeddedReferenceIndex, final int zeroBasedStart) {
         ValidationUtils.nonNull(embeddedReferenceBases, "embeddedReferenceBases");
         setCurrentSequence(embeddedReferenceIndex);
         referenceBases = embeddedReferenceBases;
@@ -226,17 +224,15 @@ public class CRAMReferenceRegion {
     }
 
     private void setCurrentSequence(final int referenceIndex) {
-        this.referenceIndex= referenceIndex;
+        this.referenceIndex = referenceIndex;
         this.sequenceRecord = getSAMSequenceRecord(referenceIndex);
     }
 
     private SAMSequenceRecord getSAMSequenceRecord(final int referenceIndex) {
         final SAMSequenceRecord samSequenceRecord = sequenceDictionary.getSequence(referenceIndex);
         if (samSequenceRecord == null) {
-            throw new IllegalArgumentException(
-                    String.format("Reference sequence index %d not found", referenceIndex));
+            throw new IllegalArgumentException(String.format("Reference sequence index %d not found", referenceIndex));
         }
         return samSequenceRecord;
     }
-
 }

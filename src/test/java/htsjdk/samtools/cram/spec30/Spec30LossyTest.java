@@ -1,11 +1,10 @@
 package htsjdk.samtools.cram.spec30;
 
 import htsjdk.samtools.SAMRecord;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests lossy compression modes from the hts-specs 3.0 test suite.
@@ -61,9 +60,12 @@ public class Spec30LossyTest extends HtsSpecsComplianceTestBase {
             Assert.assertEquals(c.getReadBases(), s.getReadBases(), "1003_qual record " + i + " bases");
             // Paired records (FLAG 0x1 set) should preserve mate info
             if (c.getReadPairedFlag()) {
-                Assert.assertEquals(c.getMateReferenceName(), s.getMateReferenceName(), "1003_qual record " + i + " mateRef");
-                Assert.assertEquals(c.getMateAlignmentStart(), s.getMateAlignmentStart(), "1003_qual record " + i + " mateStart");
-                Assert.assertEquals(c.getInferredInsertSize(), s.getInferredInsertSize(), "1003_qual record " + i + " tlen");
+                Assert.assertEquals(
+                        c.getMateReferenceName(), s.getMateReferenceName(), "1003_qual record " + i + " mateRef");
+                Assert.assertEquals(
+                        c.getMateAlignmentStart(), s.getMateAlignmentStart(), "1003_qual record " + i + " mateStart");
+                Assert.assertEquals(
+                        c.getInferredInsertSize(), s.getInferredInsertSize(), "1003_qual record " + i + " tlen");
             }
         }
     }

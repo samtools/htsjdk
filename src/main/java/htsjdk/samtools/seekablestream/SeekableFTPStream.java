@@ -31,6 +31,7 @@ import java.net.URL;
 public class SeekableFTPStream extends SeekableStream {
 
     SeekableFTPStreamHelper helper;
+
     public SeekableFTPStream(URL url) throws IOException {
         this(url, null);
     }
@@ -56,7 +57,7 @@ public class SeekableFTPStream extends SeekableStream {
 
     @Override
     public String getSource() {
-        return null; //TODO
+        return null; // TODO
     }
 
     @Override
@@ -64,18 +65,15 @@ public class SeekableFTPStream extends SeekableStream {
         return helper.length();
     }
 
-
     @Override
     public long skip(long n) throws IOException {
         return helper.skip(n);
     }
 
-
     @Override
     public int read(byte[] buffer, int offset, int len) throws IOException {
         return helper.read(buffer, offset, len);
     }
-
 
     @Override
     public void close() throws IOException {
@@ -87,12 +85,15 @@ public class SeekableFTPStream extends SeekableStream {
         return helper.read();
     }
 
-//    private static final String EXPECTED = "Apache Software Foundation";
+    //    private static final String EXPECTED = "Apache Software Foundation";
     private static final String EXPECTED1 = "\u00cf\u00ac\u00c9\u0075\u0043\u00d4\u00d5\u0079";
     private static final String EXPECTED2 = "\u00e4\u006c\u0077\u000c\u0016\u00f1\u0030\u008f";
+
     public static void main(String[] args) throws IOException {
-//    	String testURL = (args.length < 1) ? "ftp://apache.cs.utah.edu/apache.org/HEADER.html" : args[0];
-    	String testURL = (args.length < 1) ? "ftp://hgdownload.cse.ucsc.edu/goldenPath/panTro3/vsHg19/panTro3.hg19.all.chain.gz" : args[0];
+        //    	String testURL = (args.length < 1) ? "ftp://apache.cs.utah.edu/apache.org/HEADER.html" : args[0];
+        String testURL = (args.length < 1)
+                ? "ftp://hgdownload.cse.ucsc.edu/goldenPath/panTro3/vsHg19/panTro3.hg19.all.chain.gz"
+                : args[0];
         long startPosition = (args.length < 2) ? 0x0b66c78l : Long.parseLong(args[1]);
         int len = (args.length < 3) ? 8 : Integer.parseInt(args[2]);
         int skipLen = (args.length < 4) ? 0x18 : Integer.parseInt(args[3]);
@@ -101,7 +102,7 @@ public class SeekableFTPStream extends SeekableStream {
         s.seek(startPosition);
         s.read(buffer, 0, len);
         if (s.position() != startPosition + len && s.position() != s.length()) {
-        	System.out.println("1) updated position is incorrect");
+            System.out.println("1) updated position is incorrect");
         }
         String data = new String(buffer);
         System.out.println("1) read:" + data);
@@ -112,7 +113,7 @@ public class SeekableFTPStream extends SeekableStream {
         s.skip(skipLen);
         s.read(buffer, 0, len);
         if (s.position() != startPosition + 2 * len + skipLen && s.position() != s.length()) {
-        	System.out.println("2) updated position is incorrect");
+            System.out.println("2) updated position is incorrect");
         }
         String data2 = new String(buffer);
         System.out.println("2) read:" + data2);

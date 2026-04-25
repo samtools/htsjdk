@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,14 +49,11 @@ public class ITF8 {
     public static int readUnsignedITF8(final InputStream inputStream) {
         try {
             final int b1 = inputStream.read();
-            if (b1 == -1)
-                throw new RuntimeEOFException();
+            if (b1 == -1) throw new RuntimeEOFException();
 
-            if ((b1 & 128) == 0)
-                return b1;
+            if ((b1 & 128) == 0) return b1;
 
-            if ((b1 & 64) == 0)
-                return ((b1 & 127) << 8) | inputStream.read();
+            if ((b1 & 64) == 0) return ((b1 & 127) << 8) | inputStream.read();
 
             if ((b1 & 32) == 0) {
                 final int b2 = inputStream.read();
@@ -68,9 +64,12 @@ public class ITF8 {
             if ((b1 & 16) == 0)
                 return ((b1 & 31) << 24) | inputStream.read() << 16 | inputStream.read() << 8 | inputStream.read();
 
-            return ((b1 & 15) << 28) | inputStream.read() << 20 | inputStream.read() << 12 | inputStream.read() << 4 | (15 & inputStream.read());
-        }
-        catch (IOException e) {
+            return ((b1 & 15) << 28)
+                    | inputStream.read() << 20
+                    | inputStream.read() << 12
+                    | inputStream.read() << 4
+                    | (15 & inputStream.read());
+        } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -84,11 +83,9 @@ public class ITF8 {
     public static int readUnsignedITF8(final ByteBuffer buffer) {
         final int b1 = 0xFF & buffer.get();
 
-        if ((b1 & 128) == 0)
-            return b1;
+        if ((b1 & 128) == 0) return b1;
 
-        if ((b1 & 64) == 0)
-            return ((b1 & 127) << 8) | (0xFF & buffer.get());
+        if ((b1 & 64) == 0) return ((b1 & 127) << 8) | (0xFF & buffer.get());
 
         if ((b1 & 32) == 0) {
             final int b2 = 0xFF & buffer.get();
@@ -99,7 +96,10 @@ public class ITF8 {
         if ((b1 & 16) == 0)
             return ((b1 & 31) << 24) | (0xFF & buffer.get()) << 16 | (0xFF & buffer.get()) << 8 | (0xFF & buffer.get());
 
-        return ((b1 & 15) << 28) | (0xFF & buffer.get()) << 20 | (0xFF & buffer.get()) << 12 | (0xFF & buffer.get()) << 4
+        return ((b1 & 15) << 28)
+                | (0xFF & buffer.get()) << 20
+                | (0xFF & buffer.get()) << 12
+                | (0xFF & buffer.get()) << 4
                 | (15 & buffer.get());
     }
 
@@ -223,14 +223,11 @@ public class ITF8 {
      */
     public static int readUnsignedITF8(final CRAMByteReader reader) {
         final int b1 = reader.read();
-        if (b1 == -1)
-            throw new RuntimeEOFException();
+        if (b1 == -1) throw new RuntimeEOFException();
 
-        if ((b1 & 128) == 0)
-            return b1;
+        if ((b1 & 128) == 0) return b1;
 
-        if ((b1 & 64) == 0)
-            return ((b1 & 127) << 8) | reader.read();
+        if ((b1 & 64) == 0) return ((b1 & 127) << 8) | reader.read();
 
         if ((b1 & 32) == 0) {
             final int b2 = reader.read();
@@ -238,10 +235,13 @@ public class ITF8 {
             return ((b1 & 63) << 16) | b2 << 8 | b3;
         }
 
-        if ((b1 & 16) == 0)
-            return ((b1 & 31) << 24) | reader.read() << 16 | reader.read() << 8 | reader.read();
+        if ((b1 & 16) == 0) return ((b1 & 31) << 24) | reader.read() << 16 | reader.read() << 8 | reader.read();
 
-        return ((b1 & 15) << 28) | reader.read() << 20 | reader.read() << 12 | reader.read() << 4 | (15 & reader.read());
+        return ((b1 & 15) << 28)
+                | reader.read() << 20
+                | reader.read() << 12
+                | reader.read() << 4
+                | (15 & reader.read());
     }
 
     /**
@@ -300,5 +300,4 @@ public class ITF8 {
         buffer.clear();
         return array;
     }
-
 }

@@ -2,14 +2,13 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.DownsamplingIteratorFactory.Strategy;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests for the downsampling iterator class.
@@ -17,15 +16,17 @@ import java.util.Random;
  */
 public class DownsamplingIteratorTests extends HtsjdkTest {
     final int NUM_TEMPLATES = 50000;
-    final EnumMap<Strategy, Double> ACCURACY = new EnumMap<Strategy,Double>(Strategy.class){{
-        put(Strategy.HighAccuracy, 0.001);
-        put(Strategy.Chained, 0.005);
-        put(Strategy.ConstantMemory, 0.01);
-    }};
+    final EnumMap<Strategy, Double> ACCURACY = new EnumMap<Strategy, Double>(Strategy.class) {
+        {
+            put(Strategy.HighAccuracy, 0.001);
+            put(Strategy.Chained, 0.005);
+            put(Strategy.ConstantMemory, 0.01);
+        }
+    };
 
-    private static Random getRandom(){
-        //this test is probably too strict in it's tolerances
-        //not every random seed works, 10000 for example is rejected
+    private static Random getRandom() {
+        // this test is probably too strict in it's tolerances
+        // not every random seed works, 10000 for example is rejected
         return new Random(10001);
     }
 
@@ -33,7 +34,7 @@ public class DownsamplingIteratorTests extends HtsjdkTest {
     public void testBasicFunction() {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         final Random r = getRandom();
-        for (int i=0; i<NUM_TEMPLATES; ++i) {
+        for (int i = 0; i < NUM_TEMPLATES; ++i) {
             builder.addPair("pair" + r.nextInt(), r.nextInt(24), r.nextInt(1000000), r.nextInt(1000000));
         }
         final Collection<SAMRecord> recs = builder.getRecords();
@@ -45,8 +46,9 @@ public class DownsamplingIteratorTests extends HtsjdkTest {
         for (final DownsamplingIteratorFactory.Strategy strategy : DownsamplingIteratorFactory.Strategy.values()) {
             final double accuracy = ACCURACY.get(strategy);
 
-            for (final double p : new double[]{0, 0.01, 0.1, 0.5, 0.9, 1}) {
-                final DownsamplingIterator iterator = DownsamplingIteratorFactory.make(recs.iterator(), strategy, p, accuracy, 42);
+            for (final double p : new double[] {0, 0.01, 0.1, 0.5, 0.9, 1}) {
+                final DownsamplingIterator iterator =
+                        DownsamplingIteratorFactory.make(recs.iterator(), strategy, p, accuracy, 42);
                 final List<SAMRecord> out = new ArrayList<SAMRecord>();
                 while (iterator.hasNext()) out.add(iterator.next());
 
@@ -54,7 +56,9 @@ public class DownsamplingIteratorTests extends HtsjdkTest {
 
                 final double readFraction = iterator.getAcceptedFraction();
                 Assert.assertEquals(out.size(), iterator.getAcceptedCount(), "Mismatched sizes with " + testcase);
-                Assert.assertTrue(readFraction > p - accuracy && readFraction < p + accuracy, "Read fraction " + readFraction + " out of bounds in " + testcase);
+                Assert.assertTrue(
+                        readFraction > p - accuracy && readFraction < p + accuracy,
+                        "Read fraction " + readFraction + " out of bounds in " + testcase);
             }
         }
     }
@@ -63,7 +67,7 @@ public class DownsamplingIteratorTests extends HtsjdkTest {
     public void testMixOfPairsAndFrags() {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         final Random r = getRandom();
-        for (int i=0; i<NUM_TEMPLATES; ++i) {
+        for (int i = 0; i < NUM_TEMPLATES; ++i) {
             builder.addFrag("frag" + r.nextInt(), r.nextInt(24), r.nextInt(1000000), false);
             builder.addPair("pair" + r.nextInt(), r.nextInt(24), r.nextInt(1000000), r.nextInt(1000000));
         }
@@ -76,10 +80,24 @@ public class DownsamplingIteratorTests extends HtsjdkTest {
     public void testSecondaryAlignments() {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         final Random r = getRandom();
-        for (int i=0; i<NUM_TEMPLATES; ++i) {
+        for (int i = 0; i < NUM_TEMPLATES; ++i) {
             final int x = r.nextInt();
             builder.addPair("pair" + x, r.nextInt(24), r.nextInt(1000000), r.nextInt(1000000));
-            builder.addPair("pair" + x, r.nextInt(24), r.nextInt(24), r.nextInt(1000000), r.nextInt(1000000), false, false, "50M", "50M", false, true, true, true, 20);
+            builder.addPair(
+                    "pair" + x,
+                    r.nextInt(24),
+                    r.nextInt(24),
+                    r.nextInt(1000000),
+                    r.nextInt(1000000),
+                    false,
+                    false,
+                    "50M",
+                    "50M",
+                    false,
+                    true,
+                    true,
+                    true,
+                    20);
         }
 
         final Collection<SAMRecord> recs = builder.getRecords();

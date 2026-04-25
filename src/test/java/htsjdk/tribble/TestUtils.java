@@ -15,13 +15,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 package htsjdk.tribble;
-
-import htsjdk.utils.TestNGUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -29,8 +23,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * User: jacob
@@ -50,7 +42,6 @@ public class TestUtils {
      * @throws IOException if there an error with copying into the FileSystem
      * @throws URISyntaxException if the provided strings cannot be understoos as Uris.
      */
-
     public static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException {
         final FileSystem fs = fileSystem;
         final Path root = fs.getPath("/");
@@ -59,7 +50,9 @@ public class TestUtils {
         final Path vcfDestination = root.resolve(vcfPath.getFileName().toString());
         if (index != null) {
             final Path idxPath = Paths.get(index);
-            final Path idxDestination = AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexPath(vcfDestination) : Tribble.indexPath(vcfDestination);
+            final Path idxDestination = AbstractFeatureReader.isTabix(vcf, index)
+                    ? Tribble.tabixIndexPath(vcfDestination)
+                    : Tribble.indexPath(vcfDestination);
             Files.copy(idxPath, idxDestination);
         }
         return Files.copy(vcfPath, vcfDestination);

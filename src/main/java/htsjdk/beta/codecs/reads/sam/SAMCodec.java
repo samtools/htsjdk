@@ -1,14 +1,13 @@
 package htsjdk.beta.codecs.reads.sam;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.SignatureStream;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.io.IOPath;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -23,7 +22,9 @@ public abstract class SAMCodec implements ReadsCodec {
     private static String SAM_EXTENSION = ".sam";
 
     @Override
-    public String getFileFormat() { return ReadsFormats.SAM; }
+    public String getFileFormat() {
+        return ReadsFormats.SAM;
+    }
 
     @Override
     public String getDisplayName() {
@@ -31,7 +32,9 @@ public abstract class SAMCodec implements ReadsCodec {
     }
 
     @Override
-    public boolean ownsURI(IOPath ioPath) { return false; }
+    public boolean ownsURI(IOPath ioPath) {
+        return false;
+    }
 
     @Override
     public boolean canDecodeURI(IOPath ioPath) {
@@ -53,11 +56,12 @@ public abstract class SAMCodec implements ReadsCodec {
     }
 
     @Override
-    public int getSignatureProbeLength() { return SAM_HEADER_SENTINEL.length(); }
+    public int getSignatureProbeLength() {
+        return SAM_HEADER_SENTINEL.length();
+    }
 
     @Override
     public int getSignatureLength() {
         return SAM_HEADER_SENTINEL.length();
     }
-
 }

@@ -8,7 +8,6 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -30,6 +29,7 @@ import java.util.function.Function;
 public class VariantsBundle extends Bundle implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
+
     private static final Log LOG = Log.getInstance(VariantsBundle.class);
 
     /**
@@ -108,8 +108,8 @@ public class VariantsBundle extends Bundle implements Serializable {
      * @param ioPathConstructor a function that takes a string and returns an IOPath-derived class of type {@code T}
      * @return a {@link VariantsBundle} created from jsonPath
      */
-    public static <T extends IOPath> VariantsBundle getVariantsBundleFromPath(final IOPath jsonPath,
-                                                                                 final Function<String, T> ioPathConstructor) {
+    public static <T extends IOPath> VariantsBundle getVariantsBundleFromPath(
+            final IOPath jsonPath, final Function<String, T> ioPathConstructor) {
         return getVariantsBundleFromString(IOPathUtils.getStringFromPath(jsonPath), ioPathConstructor);
     }
 
@@ -133,9 +133,9 @@ public class VariantsBundle extends Bundle implements Serializable {
      * @return a newly created {@link htsjdk.beta.plugin.variants.VariantsBundle}
      */
     public static <T extends IOPath> VariantsBundle getVariantsBundleFromString(
-            final String jsonString,
-            final Function<String, T> ioPathConstructor) {
-        return new VariantsBundle(BundleJSON.toBundle(jsonString, ioPathConstructor).getResources());
+            final String jsonString, final Function<String, T> ioPathConstructor) {
+        return new VariantsBundle(
+                BundleJSON.toBundle(jsonString, ioPathConstructor).getResources());
     }
 
     /**
@@ -166,8 +166,7 @@ public class VariantsBundle extends Bundle implements Serializable {
      * if it can be found
      */
     public static <T extends IOPath> Optional<T> resolveIndex(
-            final T variantsHtsPath,
-            final Function<String, T> ioPathConstructor) {
+            final T variantsHtsPath, final Function<String, T> ioPathConstructor) {
         final Set<String> indexExtensions = Set.of(FileExtensions.TRIBBLE_INDEX, FileExtensions.TABIX_INDEX);
         for (final String extension : indexExtensions) {
             final T putativeIndexPath = IOPathUtils.appendExtension(variantsHtsPath, extension, ioPathConstructor);
@@ -185,9 +184,7 @@ public class VariantsBundle extends Bundle implements Serializable {
             if (providedContentType != null && !typePair.get().a.equals(providedContentType)) {
                 LOG.warn(String.format(
                         "Provided content type \"%s\" for \"%s\" doesn't match derived content type \"%s\"",
-                        providedContentType,
-                        ioPath.getRawInputString(),
-                        typePair.get().a));
+                        providedContentType, ioPath.getRawInputString(), typePair.get().a));
             }
         }
         return new IOPathResource(ioPath, providedContentType);
@@ -206,9 +203,11 @@ public class VariantsBundle extends Bundle implements Serializable {
         if (extension.isPresent()) {
             final String ext = extension.get();
             if (ext.equals(FileExtensions.VCF)) {
-                return Optional.of(new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
+                return Optional.of(
+                        new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
             } else if (ext.equals(FileExtensions.COMPRESSED_VCF) || ext.equals(FileExtensions.COMPRESSED_VCF_BGZ)) {
-                return Optional.of(new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
+                return Optional.of(
+                        new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
             }
         }
         return Optional.empty();

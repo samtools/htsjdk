@@ -66,8 +66,7 @@ public class SAMRecordCoordinateComparator implements SAMRecordComparator, Seria
             cmp = compareInts(samRecord1.getInferredInsertSize(), samRecord2.getInferredInsertSize());
             return cmp;
 
-        }
-        else return (samRecord1.getReadNegativeStrandFlag()? 1: -1);
+        } else return (samRecord1.getReadNegativeStrandFlag() ? 1 : -1);
     }
 
     private int compareInts(int i1, int i2) {
@@ -94,7 +93,7 @@ public class SAMRecordCoordinateComparator implements SAMRecordComparator, Seria
         final int refIndex1 = samRecord1.getReferenceIndex();
         final int refIndex2 = samRecord2.getReferenceIndex();
         if (refIndex1 == -1) {
-            return (refIndex2 == -1? 0: 1);
+            return (refIndex2 == -1 ? 0 : 1);
         } else if (refIndex2 == -1) {
             return -1;
         }

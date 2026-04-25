@@ -36,9 +36,10 @@ final class CanonicalHuffmanByteCodec extends CoreCodec<Byte> {
      * @param coreBlockOutputStream the output bitstream to write to
      * @param huffmanParams HuffmanByteParams for this codex
      */
-    CanonicalHuffmanByteCodec(final BitInputStream coreBlockInputStream,
-                                     final BitOutputStream coreBlockOutputStream,
-                                     final HuffmanParams<Byte> huffmanParams) {
+    CanonicalHuffmanByteCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final HuffmanParams<Byte> huffmanParams) {
         super(coreBlockInputStream, coreBlockOutputStream);
         helper = new HuffmanCanoncialCodeGenerator(huffmanParams);
     }

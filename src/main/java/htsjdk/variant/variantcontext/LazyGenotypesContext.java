@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -83,12 +82,13 @@ public class LazyGenotypesContext extends GenotypesContext {
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
 
-        if ( ! loaded || unparsedGenotypeData != null ) {
-            throw new IllegalStateException("Deserialized LazyGenotypesContext is not fully decoded, but is required to have been fully decoded before serialization");
+        if (!loaded || unparsedGenotypeData != null) {
+            throw new IllegalStateException(
+                    "Deserialized LazyGenotypesContext is not fully decoded, but is required to have been fully decoded before serialization");
         }
     }
 
-    private final static ArrayList<Genotype> EMPTY = new ArrayList<Genotype>(0);
+    private static final ArrayList<Genotype> EMPTY = new ArrayList<Genotype>(0);
 
     /**
      * Simple lazy parser interface.  Provide an object implementing this
@@ -111,9 +111,10 @@ public class LazyGenotypesContext extends GenotypesContext {
         final Map<String, Integer> sampleNameToOffset;
         final List<String> sampleNamesInOrder;
 
-        public LazyData(final ArrayList<Genotype> genotypes,
-                        final List<String> sampleNamesInOrder,
-                        final Map<String, Integer> sampleNameToOffset) {
+        public LazyData(
+                final ArrayList<Genotype> genotypes,
+                final List<String> sampleNamesInOrder,
+                final Map<String, Integer> sampleNameToOffset) {
             this.genotypes = genotypes;
             this.sampleNamesInOrder = sampleNamesInOrder;
             this.sampleNameToOffset = sampleNameToOffset;
@@ -128,7 +129,8 @@ public class LazyGenotypesContext extends GenotypesContext {
      * @param unparsedGenotypeData the encoded genotypes data that we will decode if necessary
      * @param nUnparsedGenotypes the number of genotypes that will be produced if / when we actually decode the genotypes data
      */
-    public LazyGenotypesContext(final LazyParser parser, final Object unparsedGenotypeData, final int nUnparsedGenotypes) {
+    public LazyGenotypesContext(
+            final LazyParser parser, final Object unparsedGenotypeData, final int nUnparsedGenotypes) {
         super(EMPTY);
         this.parser = parser;
         this.unparsedGenotypeData = unparsedGenotypeData;
@@ -153,8 +155,8 @@ public class LazyGenotypesContext extends GenotypesContext {
      * Force us to decode the genotypes, if not already done
      */
     public void decode() {
-        if ( ! loaded ) {
-            //System.out.printf("Loading genotypes... %s:%d%n", contig, start);
+        if (!loaded) {
+            // System.out.printf("Loading genotypes... %s:%d%n", contig, start);
             LazyData parsed = parser.parse(unparsedGenotypeData);
             notToBeDirectlyAccessedGenotypes = parsed.genotypes;
             sampleNamesInOrder = parsed.sampleNamesInOrder;
@@ -176,7 +178,7 @@ public class LazyGenotypesContext extends GenotypesContext {
      */
     @Override
     protected synchronized void ensureSampleNameMap() {
-        if ( ! loaded ) {
+        if (!loaded) {
             decode(); // will load up all of the necessary data
         } else {
             super.ensureSampleNameMap();
@@ -185,7 +187,7 @@ public class LazyGenotypesContext extends GenotypesContext {
 
     @Override
     protected synchronized void ensureSampleOrdering() {
-        if ( ! loaded ) {
+        if (!loaded) {
             decode(); // will load up all of the necessary data
         } else {
             super.ensureSampleOrdering();
@@ -195,14 +197,14 @@ public class LazyGenotypesContext extends GenotypesContext {
     @Override
     protected void invalidateSampleNameMap() {
         // if the cache is invalidated, and we haven't loaded our data yet, do so
-        if ( ! loaded ) decode();
+        if (!loaded) decode();
         super.invalidateSampleNameMap();
     }
 
     @Override
     protected void invalidateSampleOrdering() {
         // if the cache is invalidated, and we haven't loaded our data yet, do so
-        if ( ! loaded ) decode();
+        if (!loaded) decode();
         super.invalidateSampleOrdering();
     }
 

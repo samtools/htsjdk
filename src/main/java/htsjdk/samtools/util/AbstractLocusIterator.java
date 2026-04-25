@@ -24,7 +24,6 @@
 
 package htsjdk.samtools.util;
 
-
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -38,7 +37,6 @@ import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FilteringSamIterator;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -54,16 +52,16 @@ import java.util.List;
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
-
-public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K extends AbstractLocusInfo<T>> implements Iterable<K>, CloseableIterator<K> {
+public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K extends AbstractLocusInfo<T>>
+        implements Iterable<K>, CloseableIterator<K> {
 
     static final Log LOG = Log.getInstance(AbstractLocusIterator.class);
 
     private final SamReader samReader;
-    final private ReferenceSequenceMask referenceSequenceMask;
+    private final ReferenceSequenceMask referenceSequenceMask;
     private PeekableIterator<SAMRecord> samIterator;
-    private List<SamRecordFilter> samFilters = Arrays.asList(new SecondaryOrSupplementaryFilter(),
-            new DuplicateReadFilter());
+    private List<SamRecordFilter> samFilters =
+            Arrays.asList(new SecondaryOrSupplementaryFilter(), new DuplicateReadFilter());
     final List<Interval> intervals;
 
     /**
@@ -142,12 +140,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
     private final LocusComparator<Locus> locusComparator = new LocusComparator<>();
 
-
-
     public SAMFileHeader getHeader() {
         return this.samReader.getFileHeader();
     }
-
 
     /**
      * Prepare to iterate through the given SAM records, skipping non-primary alignments
@@ -160,9 +155,11 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      */
     public AbstractLocusIterator(final SamReader samReader, final IntervalList intervalList, final boolean useIndex) {
         final String className = this.getClass().getSimpleName();
-        if (samReader.getFileHeader().getSortOrder() == null || samReader.getFileHeader().getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
-            LOG.warn(className + " constructed with samReader that has SortOrder == unsorted.  ", "" +
-                    "Assuming SAM is coordinate sorted, but exceptions may occur if it is not.");
+        if (samReader.getFileHeader().getSortOrder() == null
+                || samReader.getFileHeader().getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
+            LOG.warn(
+                    className + " constructed with samReader that has SortOrder == unsorted.  ",
+                    "" + "Assuming SAM is coordinate sorted, but exceptions may occur if it is not.");
         } else if (samReader.getFileHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException(className + " cannot operate on a SAM file that is not coordinate sorted.");
         }
@@ -170,10 +167,15 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         this.useIndex = useIndex;
         if (intervalList != null) {
             try {
-                SequenceUtil.assertSequenceDictionariesEqual(intervalList.getHeader().getSequenceDictionary(), getHeader().getSequenceDictionary());
+                SequenceUtil.assertSequenceDictionariesEqual(
+                        intervalList.getHeader().getSequenceDictionary(),
+                        getHeader().getSequenceDictionary());
             } catch (final SequenceUtil.SequenceListsDifferException ex) {
-                throw new SequenceUtil.SequenceListsDifferException("The sequence dictionary of the interval list file " +
-                        "differs from the sequence dictionary of the input SAM file: (" + samReader.getResourceDescription() + ")", ex);
+                throw new SequenceUtil.SequenceListsDifferException(
+                        "The sequence dictionary of the interval list file "
+                                + "differs from the sequence dictionary of the input SAM file: ("
+                                + samReader.getResourceDescription() + ")",
+                        ex);
             }
             final IntervalList uniquedIntervalList = intervalList.uniqued();
             this.intervals = uniquedIntervalList.getIntervals();
@@ -184,7 +186,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         }
     }
 
-
     /**
      * @return iterator over all/all covered locus position in reference according to <code>emitUncoveredLoci</code>
      * value.
@@ -192,11 +193,13 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
     @Override
     public Iterator<K> iterator() {
         if (samIterator != null) {
-            throw new IllegalStateException("Cannot call iterator() more than once on " + this.getClass().getSimpleName());
+            throw new IllegalStateException("Cannot call iterator() more than once on "
+                    + this.getClass().getSimpleName());
         }
         CloseableIterator<SAMRecord> tempIterator;
         if (intervals != null) {
-            tempIterator = new SamRecordIntervalIteratorFactory().makeSamRecordIntervalIterator(samReader, intervals, useIndex);
+            tempIterator = new SamRecordIntervalIteratorFactory()
+                    .makeSamRecordIntervalIterator(samReader, intervals, useIndex);
         } else {
             tempIterator = samReader.iterator();
         }
@@ -253,9 +256,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
             // If not emitting uncovered loci, this check is irrelevant
             return false;
         }
-        return (lastReferenceSequence < referenceSequenceMask.getMaxSequenceIndex() ||
-                (lastReferenceSequence == referenceSequenceMask.getMaxSequenceIndex() &&
-                        lastPosition < referenceSequenceMask.nextPosition(lastReferenceSequence, lastPosition)));
+        return (lastReferenceSequence < referenceSequenceMask.getMaxSequenceIndex()
+                || (lastReferenceSequence == referenceSequenceMask.getMaxSequenceIndex()
+                        && lastPosition < referenceSequenceMask.nextPosition(lastReferenceSequence, lastPosition)));
     }
 
     /**
@@ -277,7 +280,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
             if (rec.getReferenceIndex() == -1) {
                 this.finishedAlignedReads = true;
                 continue;
-
             }
             // Skip over an unaligned read that has been forced to be sorted with the aligned reads
             if (rec.getReadUnmappedFlag()
@@ -291,8 +293,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
             // emit everything that is before the start of the current read by 2 positions, because we know no more
             // coverage and insertions will be accumulated for those loci.
-            while (!accumulator.isEmpty() && (locusComparator.compare(accumulator.get(0), alignmentStart) < -1
-                    || accumulator.get(0).getSequenceIndex() != alignmentStart.getSequenceIndex())) {
+            while (!accumulator.isEmpty()
+                    && (locusComparator.compare(accumulator.get(0), alignmentStart) < -1
+                            || accumulator.get(0).getSequenceIndex() != alignmentStart.getSequenceIndex())) {
                 final K first = accumulator.get(0);
                 populateCompleteQueue(alignmentStart);
                 if (!complete.isEmpty()) {
@@ -332,8 +335,8 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         if (!complete.isEmpty()) {
             return complete.remove(0);
         } else if (emitUncoveredLoci) {
-            final Locus afterLastMaskPositionLocus = new LocusImpl(referenceSequenceMask.getMaxSequenceIndex(),
-                    referenceSequenceMask.getMaxPosition() + 1);
+            final Locus afterLastMaskPositionLocus = new LocusImpl(
+                    referenceSequenceMask.getMaxSequenceIndex(), referenceSequenceMask.getMaxPosition() + 1);
             // In this case... we're past the last read from SAM so see if we can
             // fill out any more (zero coverage) entries from the mask
             return createNextUncoveredLocusInfo(afterLastMaskPositionLocus);
@@ -348,20 +351,23 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         if (!accumulator.isEmpty()) {
             if (accumulator.get(0).getSequenceIndex() != rec.getReferenceIndex()
                     || rec.getAlignmentStart() - accumulator.get(0).getPosition() > 1) {
-                throw new IllegalStateException("Accumulator should be empty or aligned with current or previous SAMRecord");
+                throw new IllegalStateException(
+                        "Accumulator should be empty or aligned with current or previous SAMRecord");
             }
         }
     }
 
-
     /**
      * @return true if we have surpassed the maximum accumulation threshold for the first locus in the accumulator, false otherwise
      */
-
     private boolean surpassedAccumulationThreshold() {
-        final boolean surpassesThreshold = !accumulator.isEmpty() && accumulator.get(0).getRecordAndOffsets().size() >= maxReadsToAccumulatePerLocus;
+        final boolean surpassesThreshold = !accumulator.isEmpty()
+                && accumulator.get(0).getRecordAndOffsets().size() >= maxReadsToAccumulatePerLocus;
         if (surpassesThreshold && !enforcedAccumulationLimit) {
-            LOG.warn("We have encountered greater than " + maxReadsToAccumulatePerLocus + " reads at position " + accumulator.get(0).toString() + " and will ignore the remaining reads at this position.  Note that further warnings will be suppressed.");
+            LOG.warn(
+                    "We have encountered greater than " + maxReadsToAccumulatePerLocus + " reads at position "
+                            + accumulator.get(0).toString()
+                            + " and will ignore the remaining reads at this position.  Note that further warnings will be suppressed.");
             enforcedAccumulationLimit = true;
         }
         return surpassesThreshold;
@@ -374,7 +380,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * @param rec record to add to accumulator
      */
     abstract void accumulateSamRecord(final SAMRecord rec);
-
 
     /**
      * Requires that the accumulator for the record is previously fill with
@@ -399,11 +404,11 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * @return a zero-coverage AbstractLocusInfo<T>, or null if there is none before the stopBefore locus
      */
     private K createNextUncoveredLocusInfo(final Locus stopBeforeLocus) {
-        while (lastReferenceSequence <= stopBeforeLocus.getSequenceIndex() &&
-                lastReferenceSequence <= referenceSequenceMask.getMaxSequenceIndex()) {
+        while (lastReferenceSequence <= stopBeforeLocus.getSequenceIndex()
+                && lastReferenceSequence <= referenceSequenceMask.getMaxSequenceIndex()) {
 
-            if (lastReferenceSequence == stopBeforeLocus.getSequenceIndex() &&
-                    lastPosition + 1 >= stopBeforeLocus.getPosition()) {
+            if (lastReferenceSequence == stopBeforeLocus.getSequenceIndex()
+                    && lastPosition + 1 >= stopBeforeLocus.getPosition()) {
                 return null;
             }
 
@@ -418,7 +423,8 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
                 }
                 lastReferenceSequence++;
                 lastPosition = 0;
-            } else if (lastReferenceSequence < stopBeforeLocus.getSequenceIndex() || nextbit < stopBeforeLocus.getPosition()) {
+            } else if (lastReferenceSequence < stopBeforeLocus.getSequenceIndex()
+                    || nextbit < stopBeforeLocus.getPosition()) {
                 lastPosition = nextbit;
                 return createLocusInfo(getReferenceSequence(lastReferenceSequence), lastPosition);
             } else if (nextbit >= stopBeforeLocus.getPosition()) {
@@ -472,7 +478,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         // fill in any gaps based on our genome mask
         final int sequenceIndex = locusInfo.getSequenceIndex();
 
-
         // only add to the complete queue if it's in the mask (or we have no mask!)
         if (referenceSequenceMask.get(locusInfo.getSequenceIndex(), locusInfo.getPosition())) {
             complete.add(locusInfo);
@@ -484,11 +489,12 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
     private void removeSkippedRegion(Locus stopBeforeLocus) {
         int i = 0;
-        while (i < accumulator.size() && accumulator.get(i).isEmpty() &&
-                locusComparator.compare(accumulator.get(i), stopBeforeLocus) < 0) {
+        while (i < accumulator.size()
+                && accumulator.get(i).isEmpty()
+                && locusComparator.compare(accumulator.get(i), stopBeforeLocus) < 0) {
             i++;
         }
-        if (i > 0){
+        if (i > 0) {
             accumulator.subList(0, i).clear();
         }
     }

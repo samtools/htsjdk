@@ -43,7 +43,9 @@ public class DuplicateScoringStrategy {
     private static final Murmur3 hasher = new Murmur3(1);
 
     /** An enum to use for storing temporary attributes on SAMRecords. */
-    private static enum Attr { DuplicateScore }
+    private static enum Attr {
+        DuplicateScore
+    }
 
     /** Calculates a score for the read which is the sum of scores over Q15. */
     private static int getSumOfBaseQualities(final SAMRecord rec) {
@@ -70,11 +72,12 @@ public class DuplicateScoringStrategy {
      * If true is given to assumeMateCigar, then any score that can use the mate cigar to compute the mate's score will return the score
      * computed on both ends.
      */
-    public static short computeDuplicateScore(final SAMRecord record, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
+    public static short computeDuplicateScore(
+            final SAMRecord record, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
         Short storedScore = (Short) record.getTransientAttribute(Attr.DuplicateScore);
 
         if (storedScore == null) {
-            short score=0;
+            short score = 0;
             switch (scoringStrategy) {
                 case SUM_OF_BASE_QUALITIES:
                     // two (very) long reads worth of high-quality bases can go over Short.MAX_VALUE/2
@@ -87,7 +90,8 @@ public class DuplicateScoringStrategy {
                         score = (short) Math.min(record.getCigar().getReferenceLength(), Short.MAX_VALUE / 2);
                     }
                     if (assumeMateCigar && record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
-                        score += (short) Math.min(SAMUtils.getMateCigar(record).getReferenceLength(), Short.MAX_VALUE / 2);
+                        score += (short)
+                                Math.min(SAMUtils.getMateCigar(record).getReferenceLength(), Short.MAX_VALUE / 2);
                     }
                     break;
                 // The RANDOM score gives the same score to both reads so that they get filtered together.
@@ -124,13 +128,18 @@ public class DuplicateScoringStrategy {
      *
      * We allow different scoring strategies. We return <0 if rec1 has a better strategy than rec2.
      */
-    public static int compare(final SAMRecord rec1, final SAMRecord rec2, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
+    public static int compare(
+            final SAMRecord rec1,
+            final SAMRecord rec2,
+            final ScoringStrategy scoringStrategy,
+            final boolean assumeMateCigar) {
         int cmp;
 
         // always prefer paired over non-paired
         if (rec1.getReadPairedFlag() != rec2.getReadPairedFlag()) return rec1.getReadPairedFlag() ? -1 : 1;
 
-        cmp = computeDuplicateScore(rec2, scoringStrategy, assumeMateCigar) - computeDuplicateScore(rec1, scoringStrategy, assumeMateCigar);
+        cmp = computeDuplicateScore(rec2, scoringStrategy, assumeMateCigar)
+                - computeDuplicateScore(rec1, scoringStrategy, assumeMateCigar);
 
         /**
          * Finally, use library ID and read name
@@ -152,5 +161,4 @@ public class DuplicateScoringStrategy {
     public static int compare(final SAMRecord rec1, final SAMRecord rec2, final ScoringStrategy scoringStrategy) {
         return compare(rec1, rec2, scoringStrategy, false);
     }
-
 }

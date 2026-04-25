@@ -24,7 +24,6 @@ import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,9 +42,8 @@ public final class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
         for (final byte b : symbols) {
             symbolList.add(b);
         }
-        huffmanParams = new HuffmanParams(
-                symbolList,
-                Arrays.stream(bitLengths).boxed().collect(Collectors.toList()));
+        huffmanParams =
+                new HuffmanParams(symbolList, Arrays.stream(bitLengths).boxed().collect(Collectors.toList()));
     }
 
     /**
@@ -71,8 +69,9 @@ public final class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
 
     @Override
     public byte[] toSerializedEncodingParams() {
-        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES *
-                (huffmanParams.getSymbols().size() + huffmanParams.getCodeWordLengths().size()));
+        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES
+                * (huffmanParams.getSymbols().size()
+                        + huffmanParams.getCodeWordLengths().size()));
         ITF8.writeUnsignedITF8(huffmanParams.getSymbols().size(), buf);
         for (final byte value : huffmanParams.getSymbols()) {
             buf.put(value);
@@ -91,7 +90,9 @@ public final class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
     }
 
     @Override
-    public CRAMCodec<Byte> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<Byte> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new CanonicalHuffmanByteCodec(
                 sliceBlocksReadStreams == null ? null : sliceBlocksReadStreams.getCoreBlockInputStream(),
                 sliceBlocksWriteStreams == null ? null : sliceBlocksWriteStreams.getCoreOutputStream(),

@@ -3,7 +3,6 @@ package htsjdk.tribble.util;
 import htsjdk.samtools.util.ftp.FTPClient;
 import htsjdk.samtools.util.ftp.FTPStream;
 import htsjdk.samtools.util.ftp.FTPUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -19,7 +18,8 @@ public class FTPHelper implements URLHelper {
 
     public FTPHelper(URL url) {
         if (!url.getProtocol().toLowerCase().equals("ftp")) {
-            throw new IllegalArgumentException("FTPHelper can only be used with ftp protocol, not " + url.getProtocol());
+            throw new IllegalArgumentException(
+                    "FTPHelper can only be used with ftp protocol, not " + url.getProtocol());
         }
         this.url = url;
     }

@@ -9,12 +9,11 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.ProcessExecutor;
+import java.io.File;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 public class SamtoolsTestUtilsTest extends HtsjdkTest {
 
@@ -43,7 +42,7 @@ public class SamtoolsTestUtilsTest extends HtsjdkTest {
     }
 
     @Test
-    public void testCRAMConversion()throws IOException {
+    public void testCRAMConversion() throws IOException {
         if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
             throw new SkipException("Samtools not available on local device");
         }
@@ -62,9 +61,9 @@ public class SamtoolsTestUtilsTest extends HtsjdkTest {
                 .validationStringency(ValidationStringency.LENIENT)
                 .referenceSequence(cramReference);
         try (final SamReader originalReader = factory.open(sourceFile);
-             final SamReader samtoolsCopyReader = factory.open(tempSamtoolsPath.toPath());
-             final CloseableIterator<SAMRecord> originalIt = originalReader.iterator();
-             final CloseableIterator<SAMRecord> samtoolsIt = samtoolsCopyReader.iterator()) {
+                final SamReader samtoolsCopyReader = factory.open(tempSamtoolsPath.toPath());
+                final CloseableIterator<SAMRecord> originalIt = originalReader.iterator();
+                final CloseableIterator<SAMRecord> samtoolsIt = samtoolsCopyReader.iterator()) {
             while (originalIt.hasNext() && samtoolsIt.hasNext()) {
                 Assert.assertEquals(originalIt.next(), samtoolsIt.next());
             }

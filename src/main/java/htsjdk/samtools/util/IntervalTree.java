@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.utils.ValidationUtils;
-
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -41,22 +40,19 @@ import java.util.function.BiFunction;
  *
  * @author tsharpe
  */
-public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
-{
+public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>> {
     /**
      * Return the number of intervals in the tree.
      * @return The number of intervals.
      */
-    public int size()
-    {
+    public int size() {
         return mRoot == null ? 0 : mRoot.getSize();
     }
 
     /**
      * Remove all entries.
      */
-    public void clear()
-    {
+    public void clear() {
         mRoot = null;
     }
 
@@ -68,48 +64,36 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param value The associated value.
      * @return The old value associated with that interval, or the sentinel.
      */
-    public V put( final int start, final int end, final V value )
-    {
-        if ( start > end )
+    public V put(final int start, final int end, final V value) {
+        if (start > end)
             throw new IllegalArgumentException("Start cannot exceed end. (start=" + start + ", end=" + end + ")");
 
         V result = mSentinel;
 
-        if ( mRoot == null )
-        {
-            mRoot = new Node<V>(start,end,value);
-        }
-        else
-        {
+        if (mRoot == null) {
+            mRoot = new Node<V>(start, end, value);
+        } else {
             Node<V> parent = null;
             Node<V> node = mRoot;
             int cmpVal = 0;
 
-            while ( node != null )
-            {
+            while (node != null) {
                 parent = node; // last non-null node
-                cmpVal = node.compare(start,end);
-                if ( cmpVal == 0 )
-                {
+                cmpVal = node.compare(start, end);
+                if (cmpVal == 0) {
                     break;
                 }
 
                 node = cmpVal < 0 ? node.getLeft() : node.getRight();
             }
 
-            if ( cmpVal == 0 )
-            {
+            if (cmpVal == 0) {
                 result = parent.setValue(value);
-            }
-            else
-            {
-                if ( cmpVal < 0 )
-                {
-                    mRoot = parent.insertLeft(start,end,value,mRoot);
-                }
-                else
-                {
-                    mRoot = parent.insertRight(start,end,value,mRoot);
+            } else {
+                if (cmpVal < 0) {
+                    mRoot = parent.insertLeft(start, end, value, mRoot);
+                } else {
+                    mRoot = parent.insertRight(start, end, value, mRoot);
                 }
             }
         }
@@ -132,8 +116,9 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @return the updated value that is stored in the tree after the completion of this merge operation, this will
      * be the sentinel value if nothing ended up being stored
      */
-    public V merge(int start, int end, V value, BiFunction<? super V,  ? super V, ? extends V> remappingFunction) {
-        ValidationUtils.validateArg(!Objects.equals(value, mSentinel), "Values equal to the sentinel value may not be merged");
+    public V merge(int start, int end, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+        ValidationUtils.validateArg(
+                !Objects.equals(value, mSentinel), "Values equal to the sentinel value may not be merged");
         final V alreadyPresent = put(start, end, value);
         if (!Objects.equals(alreadyPresent, mSentinel)) {
             final V newComputedValue = remappingFunction.apply(value, alreadyPresent);
@@ -154,16 +139,13 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The interval's end.
      * @return The value associated with that interval, or the sentinel.
      */
-    public V remove( final int start, final int end )
-    {
+    public V remove(final int start, final int end) {
         V result = mSentinel;
         Node<V> node = mRoot;
 
-        while ( node != null )
-        {
-            final int cmpVal = node.compare(start,end);
-            if ( cmpVal == 0 )
-            {
+        while (node != null) {
+            final int cmpVal = node.compare(start, end);
+            if (cmpVal == 0) {
                 result = node.getValue();
                 mRoot = node.remove(mRoot);
                 break;
@@ -181,15 +163,12 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The interval's end.
      * @return The Node that represents that interval, or null.
      */
-    public Node<V> find( final int start, final int end )
-    {
+    public Node<V> find(final int start, final int end) {
         Node<V> node = mRoot;
 
-        while ( node != null )
-        {
-            final int cmpVal = node.compare(start,end);
-            if ( cmpVal == 0 )
-            {
+        while (node != null) {
+            final int cmpVal = node.compare(start, end);
+            if (cmpVal == 0) {
                 break;
             }
 
@@ -204,9 +183,8 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param idx The rank of the interval sought (from 0 to size()-1).
      * @return The Node that represents the nth interval.
      */
-    public Node<V> findByIndex( final int idx )
-    {
-        return Node.findByRank(mRoot,idx+1);
+    public Node<V> findByIndex(final int idx) {
+        return Node.findByRank(mRoot, idx + 1);
     }
 
     /**
@@ -216,22 +194,19 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The interval's end.
      * @return The rank of that interval, or -1.
      */
-    public int getIndex( final int start, final int end )
-    {
-        return Node.getRank(mRoot,start,end) - 1;
+    public int getIndex(final int start, final int end) {
+        return Node.getRank(mRoot, start, end) - 1;
     }
 
     /**
      * Find the least interval in the tree.
      * @return The earliest interval, or null if the tree is empty.
      */
-    public Node<V> min()
-    {
+    public Node<V> min() {
         Node<V> result = null;
         Node<V> node = mRoot;
 
-        while ( node != null )
-        {
+        while (node != null) {
             result = node;
             node = node.getLeft();
         }
@@ -246,26 +221,22 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @return The earliest >= interval, or null if there is none.
      */
     @SuppressWarnings("null")
-    public Node<V> min( final int start, final int end )
-    {
+    public Node<V> min(final int start, final int end) {
         Node<V> result = null;
         Node<V> node = mRoot;
         int cmpVal = 0;
 
-        while ( node != null )
-        {
+        while (node != null) {
             result = node;
-            cmpVal = node.compare(start,end);
-            if ( cmpVal == 0 )
-            {
+            cmpVal = node.compare(start, end);
+            if (cmpVal == 0) {
                 break;
             }
 
             node = cmpVal < 0 ? node.getLeft() : node.getRight();
         }
 
-        if ( cmpVal > 0 )
-        {
+        if (cmpVal > 0) {
             result = result.getNext();
         }
 
@@ -278,37 +249,29 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The interval's end.
      * @return The earliest overlapping interval, or null if there is none.
      */
-    public Node<V> minOverlapper( final int start, final int end )
-    {
+    public Node<V> minOverlapper(final int start, final int end) {
         Node<V> result = null;
         Node<V> node = mRoot;
 
-        if ( node != null && node.getMaxEnd() >= start )
-        {
-            while ( true )
-            {
-                if ( node.getStart() <= end && start <= node.getEnd() )
-                { // this node overlaps.  there might be a lesser overlapper down the left sub-tree.
-                  // no need to consider the right sub-tree:  even if there's an overlapper, if won't be minimal
+        if (node != null && node.getMaxEnd() >= start) {
+            while (true) {
+                if (node.getStart() <= end
+                        && start <= node.getEnd()) { // this node overlaps.  there might be a lesser overlapper down the
+                    // left sub-tree.
+                    // no need to consider the right sub-tree:  even if there's an overlapper, if won't be minimal
                     result = node;
                     node = node.getLeft();
-                    if ( node == null || node.getMaxEnd() < start )
-                        break; // no left sub-tree or all nodes end too early
-                }
-                else
-                { // no overlap.  if there might be a left sub-tree overlapper, consider the left sub-tree.
+                    if (node == null || node.getMaxEnd() < start) break; // no left sub-tree or all nodes end too early
+                } else { // no overlap.  if there might be a left sub-tree overlapper, consider the left sub-tree.
                     final Node<V> left = node.getLeft();
-                    if ( left != null && left.getMaxEnd() >= start )
-                    {
+                    if (left != null && left.getMaxEnd() >= start) {
                         node = left;
-                    }
-                    else
-                    { // left sub-tree cannot contain an overlapper.  consider the right sub-tree.
-                        if ( node.getStart() > end )
+                    } else { // left sub-tree cannot contain an overlapper.  consider the right sub-tree.
+                        if (node.getStart() > end)
                             break; // everything in the right sub-tree is past the end of the query interval
 
                         node = node.getRight();
-                        if ( node == null || node.getMaxEnd() < start )
+                        if (node == null || node.getMaxEnd() < start)
                             break; // no right sub-tree or all nodes end too early
                     }
                 }
@@ -322,13 +285,11 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * Find the greatest interval in the tree.
      * @return The latest interval, or null if the tree is empty.
      */
-    public Node<V> max()
-    {
+    public Node<V> max() {
         Node<V> result = null;
         Node<V> node = mRoot;
 
-        while ( node != null )
-        {
+        while (node != null) {
             result = node;
             node = node.getRight();
         }
@@ -343,26 +304,22 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @return The latest >= interval, or null if there is none.
      */
     @SuppressWarnings("null")
-    public Node<V> max( final int start, final int end )
-    {
+    public Node<V> max(final int start, final int end) {
         Node<V> result = null;
         Node<V> node = mRoot;
         int cmpVal = 0;
 
-        while ( node != null )
-        {
+        while (node != null) {
             result = node;
-            cmpVal = node.compare(start,end);
-            if ( cmpVal == 0 )
-            {
+            cmpVal = node.compare(start, end);
+            if (cmpVal == 0) {
                 break;
             }
 
             node = cmpVal < 0 ? node.getLeft() : node.getRight();
         }
 
-        if ( cmpVal < 0 )
-        {
+        if (cmpVal < 0) {
             result = result.getPrev();
         }
 
@@ -374,8 +331,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @return An iterator.
      */
     @Override
-    public Iterator<Node<V>> iterator()
-    {
+    public Iterator<Node<V>> iterator() {
         return new FwdIterator(min());
     }
 
@@ -385,9 +341,8 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The interval's end.
      * @return An iterator.
      */
-    public Iterator<Node<V>> iterator( final int start, final int end )
-    {
-        return new FwdIterator(min(start,end));
+    public Iterator<Node<V>> iterator(final int start, final int end) {
+        return new FwdIterator(min(start, end));
     }
 
     /**
@@ -396,17 +351,15 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The range end.
      * @return An iterator.
      */
-    public Iterator<Node<V>> overlappers( final int start, final int end )
-    {
-        return new OverlapIterator(start,end);
+    public Iterator<Node<V>> overlappers(final int start, final int end) {
+        return new OverlapIterator(start, end);
     }
 
     /**
      * Return an iterator over the entire tree that returns intervals in reverse order.
      * @return An iterator.
      */
-    public Iterator<Node<V>> reverseIterator()
-    {
+    public Iterator<Node<V>> reverseIterator() {
         return new RevIterator(max());
     }
 
@@ -416,9 +369,8 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param end The interval's end.
      * @return An iterator.
      */
-    public Iterator<Node<V>> reverseIterator( final int start, final int end )
-    {
-        return new RevIterator(max(start,end));
+    public Iterator<Node<V>> reverseIterator(final int start, final int end) {
+        return new RevIterator(max(start, end));
     }
 
     /**
@@ -426,8 +378,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * into the tree, or to signal "not found" when removing an interval.  This is null by default.
      * @return The sentinel value.
      */
-    public V getSentinel()
-    {
+    public V getSentinel() {
         return mSentinel;
     }
 
@@ -437,8 +388,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * @param sentinel The new sentinel value.
      * @return The old sentinel value.
      */
-    public V setSentinel( final V sentinel )
-    {
+    public V setSentinel(final V sentinel) {
         final V result = mSentinel;
         mSentinel = sentinel;
         return result;
@@ -461,16 +411,14 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         if (mRoot != null) mRoot.printNode();
     }
 
-    void removeNode( final Node<V> node )
-    {
+    void removeNode(final Node<V> node) {
         mRoot = node.remove(mRoot);
     }
 
     private Node<V> mRoot;
     private V mSentinel;
 
-    public static class Node<V1>
-    {
+    public static class Node<V1> {
         // bit-wise definitions from which the other constants are composed
         public static final int HAS_LESSER_PART = 1;
         public static final int HAS_OVERLAPPING_PART = 2;
@@ -484,8 +432,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         public static final int IS_RIGHT_OVERHANGING_OVERLAPPER = HAS_GREATER_PART | HAS_OVERLAPPING_PART; // 6
         public static final int IS_SUPERSET = HAS_LESSER_PART | HAS_OVERLAPPING_PART | HAS_GREATER_PART; // 7
 
-        Node( final int start, final int end, final V1 value )
-        {
+        Node(final int start, final int end, final V1 value) {
             mStart = start;
             mEnd = end;
             mValue = value;
@@ -494,8 +441,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             mIsBlack = true;
         }
 
-        Node( final Node<V1> parent, final int start, final int end, final V1 value )
-        {
+        Node(final Node<V1> parent, final int start, final int end, final V1 value) {
             mParent = parent;
             mStart = start;
             mEnd = end;
@@ -504,100 +450,78 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             mSize = 1;
         }
 
-        public int getStart()
-        {
+        public int getStart() {
             return mStart;
         }
 
-        public int getEnd()
-        {
+        public int getEnd() {
             return mEnd;
         }
 
-        public int getLength()
-        {
-            return mEnd - mStart + 1 ;
+        public int getLength() {
+            return mEnd - mStart + 1;
         }
 
-        public int getRelationship( final Node<V1> interval )
-        {
+        public int getRelationship(final Node<V1> interval) {
             int result = 0;
-            if ( mStart < interval.getStart() )
-                result = HAS_LESSER_PART;
-            if ( mEnd > interval.getEnd() )
-                result |= HAS_GREATER_PART;
-            if ( mStart <= interval.getEnd() && interval.getStart() <= mEnd )
-                result |= HAS_OVERLAPPING_PART;
+            if (mStart < interval.getStart()) result = HAS_LESSER_PART;
+            if (mEnd > interval.getEnd()) result |= HAS_GREATER_PART;
+            if (mStart <= interval.getEnd() && interval.getStart() <= mEnd) result |= HAS_OVERLAPPING_PART;
             return result;
         }
 
-        public boolean isAdjacent( final Node<V1> interval )
-        {
+        public boolean isAdjacent(final Node<V1> interval) {
             return mStart == interval.getEnd() + 1 || mEnd + 1 == interval.getStart();
         }
 
-        public V1 getValue()
-        {
+        public V1 getValue() {
             return mValue;
         }
 
-        public V1 setValue( final V1 value )
-        {
+        public V1 setValue(final V1 value) {
             final V1 result = mValue;
             mValue = value;
             return result;
         }
 
-        int getSize()
-        {
+        int getSize() {
             return mSize;
         }
 
-        int getMaxEnd()
-        {
+        int getMaxEnd() {
             return mMaxEnd;
         }
 
-        Node<V1> getLeft()
-        {
+        Node<V1> getLeft() {
             return mLeft;
         }
 
-        Node<V1> insertLeft( final int start, final int end, final V1 value, final Node<V1> root )
-        {
-            mLeft = new Node<V1>(this,start,end,value);
-            return insertFixup(mLeft,root);
+        Node<V1> insertLeft(final int start, final int end, final V1 value, final Node<V1> root) {
+            mLeft = new Node<V1>(this, start, end, value);
+            return insertFixup(mLeft, root);
         }
 
-        Node<V1> getRight()
-        {
+        Node<V1> getRight() {
             return mRight;
         }
 
-        Node<V1> insertRight( final int start, final int end, final V1 value, final Node<V1> root )
-        {
-            mRight = new Node<V1>(this,start,end,value);
-            return insertFixup(mRight,root);
+        Node<V1> insertRight(final int start, final int end, final V1 value, final Node<V1> root) {
+            mRight = new Node<V1>(this, start, end, value);
+            return insertFixup(mRight, root);
         }
 
-        Node<V1> getNext()
-        {
+        Node<V1> getNext() {
             Node<V1> result;
 
-            if ( mRight != null )
-            {
+            if (mRight != null) {
                 result = mRight;
-                while ( result.mLeft != null )
-                {
+                while (result.mLeft != null) {
                     result = result.mLeft;
                 }
-            }
-            else
-            {
+            } else {
                 Node<V1> node = this;
                 result = mParent;
-                while ( result != null && node == result.mRight )
-                {
+                while (result != null && node == result.mRight) {
                     node = result;
                     result = result.mParent;
                 }
@@ -606,24 +530,18 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return result;
         }
 
-        Node<V1> getPrev()
-        {
+        Node<V1> getPrev() {
             Node<V1> result;
 
-            if ( mLeft != null )
-            {
+            if (mLeft != null) {
                 result = mLeft;
-                while ( result.mRight != null )
-                {
+                while (result.mRight != null) {
                     result = result.mRight;
                 }
-            }
-            else
-            {
+            } else {
                 Node<V1> node = this;
                 result = mParent;
-                while ( result != null && node == result.mLeft )
-                {
+                while (result != null && node == result.mLeft) {
                     node = result;
                     result = result.mParent;
                 }
@@ -632,72 +550,49 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return result;
         }
 
-        boolean wasRemoved()
-        {
+        boolean wasRemoved() {
             return mSize == 0;
         }
 
-        Node<V1> remove( Node<V1> root )
-        {
-            if ( mSize == 0 )
-            {
+        Node<V1> remove(Node<V1> root) {
+            if (mSize == 0) {
                 throw new IllegalStateException("Entry was already removed.");
             }
 
-            if ( mLeft == null )
-            {
-                if ( mRight == null )
-                { // no children
-                    if ( mParent == null )
-                    {
+            if (mLeft == null) {
+                if (mRight == null) { // no children
+                    if (mParent == null) {
                         root = null;
-                    }
-                    else if ( mParent.mLeft == this )
-                    {
+                    } else if (mParent.mLeft == this) {
                         mParent.mLeft = null;
                         fixup(mParent);
 
-                        if ( mIsBlack )
-                            root = removeFixup(mParent,null,root);
-                    }
-                    else
-                    {
+                        if (mIsBlack) root = removeFixup(mParent, null, root);
+                    } else {
                         mParent.mRight = null;
                         fixup(mParent);
 
-                        if ( mIsBlack )
-                            root = removeFixup(mParent,null,root);
+                        if (mIsBlack) root = removeFixup(mParent, null, root);
                     }
+                } else { // single child on right
+                    root = spliceOut(mRight, root);
                 }
-                else
-                { // single child on right
-                    root = spliceOut(mRight,root);
-                }
-            }
-            else if ( mRight == null )
-            { // single child on left
-                root = spliceOut(mLeft,root);
-            }
-            else
-            { // two children
+            } else if (mRight == null) { // single child on left
+                root = spliceOut(mLeft, root);
+            } else { // two children
                 final Node<V1> next = getNext();
                 root = next.remove(root);
 
                 // put next into tree in same position as this, effectively removing this
-                if ( (next.mParent = mParent) == null )
-                    root = next;
-                else if ( mParent.mLeft == this )
-                    mParent.mLeft = next;
-                else
-                    mParent.mRight = next;
+                if ((next.mParent = mParent) == null) root = next;
+                else if (mParent.mLeft == this) mParent.mLeft = next;
+                else mParent.mRight = next;
 
-                if ( (next.mLeft = mLeft) != null )
-                {
+                if ((next.mLeft = mLeft) != null) {
                     mLeft.mParent = next;
                 }
 
-                if ( (next.mRight = mRight) != null )
-                {
+                if ((next.mRight = mRight) != null) {
                     mRight.mParent = next;
                 }
 
@@ -713,63 +608,43 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         }
 
         // backwards comparison!  compares start+end to this.
-        int compare( final int start, final int end )
-        {
+        int compare(final int start, final int end) {
             int result = 0;
 
-            if ( start > mStart )
-                result = 1;
-            else if ( start < mStart )
-                result = -1;
-            else if ( end > mEnd )
-                result = 1;
-            else if ( end < mEnd )
-                result = -1;
+            if (start > mStart) result = 1;
+            else if (start < mStart) result = -1;
+            else if (end > mEnd) result = 1;
+            else if (end < mEnd) result = -1;
 
             return result;
         }
 
         @SuppressWarnings("null")
-        static <V1> Node<V1> getNextOverlapper( Node<V1> node, final int start, final int end )
-        {
-            do
-            {
+        static <V1> Node<V1> getNextOverlapper(Node<V1> node, final int start, final int end) {
+            do {
                 Node<V1> nextNode = node.mRight;
-                if ( nextNode != null && nextNode.mMaxEnd >= start )
-                {
+                if (nextNode != null && nextNode.mMaxEnd >= start) {
                     node = nextNode;
-                    while ( (nextNode = node.mLeft) != null && nextNode.mMaxEnd >= start )
-                        node = nextNode;
-                }
-                else
-                {
+                    while ((nextNode = node.mLeft) != null && nextNode.mMaxEnd >= start) node = nextNode;
+                } else {
                     nextNode = node;
-                    while ( (node = nextNode.mParent) != null && node.mRight == nextNode )
-                        nextNode = node;
+                    while ((node = nextNode.mParent) != null && node.mRight == nextNode) nextNode = node;
                 }
 
-                if ( node != null && node.mStart > end )
-                    node = null;
-            }
-            while ( node != null && !(node.mStart <= end && start <= node.mEnd) );
+                if (node != null && node.mStart > end) node = null;
+            } while (node != null && !(node.mStart <= end && start <= node.mEnd));
 
             return node;
         }
 
-        static <V1> Node<V1> findByRank( Node<V1> node, int rank )
-        {
-            while ( node != null )
-            {
+        static <V1> Node<V1> findByRank(Node<V1> node, int rank) {
+            while (node != null) {
                 final int nodeRank = node.getRank();
-                if ( rank == nodeRank )
-                    break;
+                if (rank == nodeRank) break;
 
-                if ( rank < nodeRank )
-                {
+                if (rank < nodeRank) {
                     node = node.mLeft;
-                }
-                else
-                {
+                } else {
                     node = node.mRight;
                     rank -= nodeRank;
                 }
@@ -778,22 +653,16 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return node;
         }
 
-        static <V1> int getRank( Node<V1> node, final int start, final int end )
-        {
+        static <V1> int getRank(Node<V1> node, final int start, final int end) {
             int rank = 0;
 
-            while ( node != null )
-            {
-                final int cmpVal = node.compare(start,end);
-                if ( cmpVal < 0 )
-                {
+            while (node != null) {
+                final int cmpVal = node.compare(start, end);
+                if (cmpVal < 0) {
                     node = node.mLeft;
-                }
-                else
-                {
+                } else {
                     rank += node.getRank();
-                    if ( cmpVal == 0 )
-                        return rank; // EARLY RETURN!!!
+                    if (cmpVal == 0) return rank; // EARLY RETURN!!!
 
                     node = node.mRight;
                 }
@@ -802,56 +671,42 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return 0;
         }
 
-        private int getRank()
-        {
+        private int getRank() {
             int result = 1;
-            if ( mLeft != null )
-                result = mLeft.mSize + 1;
+            if (mLeft != null) result = mLeft.mSize + 1;
             return result;
         }
 
-        private Node<V1> spliceOut( final Node<V1> child, Node<V1> root )
-        {
-            if ( (child.mParent = mParent) == null )
-            {
+        private Node<V1> spliceOut(final Node<V1> child, Node<V1> root) {
+            if ((child.mParent = mParent) == null) {
                 root = child;
                 child.mIsBlack = true;
-            }
-            else
-            {
-                if ( mParent.mLeft == this )
-                    mParent.mLeft = child;
-                else
-                    mParent.mRight = child;
+            } else {
+                if (mParent.mLeft == this) mParent.mLeft = child;
+                else mParent.mRight = child;
                 fixup(mParent);
 
-                if ( mIsBlack )
-                    root = removeFixup(mParent,child,root);
+                if (mIsBlack) root = removeFixup(mParent, child, root);
             }
 
             return root;
         }
 
-        private Node<V1> rotateLeft( Node<V1> root )
-        {
+        private Node<V1> rotateLeft(Node<V1> root) {
             final Node<V1> child = mRight;
 
             final int childSize = child.mSize;
             child.mSize = mSize;
             mSize -= childSize;
 
-            if ( (mRight = child.mLeft) != null )
-            {
+            if ((mRight = child.mLeft) != null) {
                 mRight.mParent = this;
                 mSize += mRight.mSize;
             }
 
-            if ( (child.mParent = mParent) == null )
-                root = child;
-            else if ( this == mParent.mLeft )
-                mParent.mLeft = child;
-            else
-                mParent.mRight = child;
+            if ((child.mParent = mParent) == null) root = child;
+            else if (this == mParent.mLeft) mParent.mLeft = child;
+            else mParent.mRight = child;
 
             child.mLeft = this;
             mParent = child;
@@ -862,26 +717,21 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return root;
         }
 
-        private Node<V1> rotateRight( Node<V1> root )
-        {
+        private Node<V1> rotateRight(Node<V1> root) {
             final Node<V1> child = mLeft;
 
             final int childSize = child.mSize;
             child.mSize = mSize;
             mSize -= childSize;
 
-            if ( (mLeft = child.mRight) != null )
-            {
+            if ((mLeft = child.mRight) != null) {
                 mLeft.mParent = this;
                 mSize += mLeft.mSize;
             }
 
-            if ( (child.mParent = mParent) == null )
-                root = child;
-            else if ( this == mParent.mLeft )
-                mParent.mLeft = child;
-            else
-                mParent.mRight = child;
+            if ((child.mParent = mParent) == null) root = child;
+            else if (this == mParent.mLeft) mParent.mLeft = child;
+            else mParent.mRight = child;
 
             child.mRight = this;
             mParent = child;
@@ -892,58 +742,43 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return root;
         }
 
-        private void setMaxEnd()
-        {
+        private void setMaxEnd() {
             mMaxEnd = mEnd;
-            if ( mLeft != null )
-                mMaxEnd = Math.max(mMaxEnd,mLeft.mMaxEnd);
-            if ( mRight != null )
-                mMaxEnd = Math.max(mMaxEnd,mRight.mMaxEnd);
+            if (mLeft != null) mMaxEnd = Math.max(mMaxEnd, mLeft.mMaxEnd);
+            if (mRight != null) mMaxEnd = Math.max(mMaxEnd, mRight.mMaxEnd);
         }
 
-        private static <V1> void fixup( Node<V1> node )
-        {
-            do
-            {
+        private static <V1> void fixup(Node<V1> node) {
+            do {
                 node.mSize = 1;
                 node.mMaxEnd = node.mEnd;
-                if ( node.mLeft != null )
-                {
+                if (node.mLeft != null) {
                     node.mSize += node.mLeft.mSize;
-                    node.mMaxEnd = Math.max(node.mMaxEnd,node.mLeft.mMaxEnd);
+                    node.mMaxEnd = Math.max(node.mMaxEnd, node.mLeft.mMaxEnd);
                 }
-                if ( node.mRight != null )
-                {
+                if (node.mRight != null) {
                     node.mSize += node.mRight.mSize;
-                    node.mMaxEnd = Math.max(node.mMaxEnd,node.mRight.mMaxEnd);
+                    node.mMaxEnd = Math.max(node.mMaxEnd, node.mRight.mMaxEnd);
                 }
-            }
-            while ( (node = node.mParent) != null );
+            } while ((node = node.mParent) != null);
         }
 
-        private static <V1> Node<V1> insertFixup( Node<V1> daughter, Node<V1> root )
-        {
+        private static <V1> Node<V1> insertFixup(Node<V1> daughter, Node<V1> root) {
             Node<V1> mom = daughter.mParent;
             fixup(mom);
 
-            while( mom != null && !mom.mIsBlack )
-            {
+            while (mom != null && !mom.mIsBlack) {
                 final Node<V1> gramma = mom.mParent;
                 Node<V1> auntie = gramma.mLeft;
-                if ( auntie == mom )
-                {
+                if (auntie == mom) {
                     auntie = gramma.mRight;
-                    if ( auntie != null && !auntie.mIsBlack )
-                    {
+                    if (auntie != null && !auntie.mIsBlack) {
                         mom.mIsBlack = true;
                         auntie.mIsBlack = true;
                         gramma.mIsBlack = false;
                         daughter = gramma;
-                    }
-                    else
-                    {
-                        if ( daughter == mom.mRight )
-                        {
+                    } else {
+                        if (daughter == mom.mRight) {
                             root = mom.rotateLeft(root);
                             mom = daughter;
                         }
@@ -952,20 +787,14 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
                         root = gramma.rotateRight(root);
                         break;
                     }
-                }
-                else
-                {
-                    if ( auntie != null && !auntie.mIsBlack )
-                    {
+                } else {
+                    if (auntie != null && !auntie.mIsBlack) {
                         mom.mIsBlack = true;
                         auntie.mIsBlack = true;
                         gramma.mIsBlack = false;
                         daughter = gramma;
-                    }
-                    else
-                    {
-                        if ( daughter == mom.mLeft )
-                        {
+                    } else {
+                        if (daughter == mom.mLeft) {
                             root = mom.rotateRight(root);
                             mom = daughter;
                         }
@@ -981,29 +810,22 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return root;
         }
 
-        private static <V1> Node<V1> removeFixup( Node<V1> parent, Node<V1> node, Node<V1> root )
-        {
-            do
-            {
-                if ( node == parent.mLeft )
-                {
+        private static <V1> Node<V1> removeFixup(Node<V1> parent, Node<V1> node, Node<V1> root) {
+            do {
+                if (node == parent.mLeft) {
                     Node<V1> sister = parent.mRight;
-                    if ( !sister.mIsBlack )
-                    {
+                    if (!sister.mIsBlack) {
                         sister.mIsBlack = true;
                         parent.mIsBlack = false;
                         root = parent.rotateLeft(root);
                         sister = parent.mRight;
                     }
-                    if ( (sister.mLeft == null || sister.mLeft.mIsBlack) && (sister.mRight == null || sister.mRight.mIsBlack) )
-                    {
+                    if ((sister.mLeft == null || sister.mLeft.mIsBlack)
+                            && (sister.mRight == null || sister.mRight.mIsBlack)) {
                         sister.mIsBlack = false;
                         node = parent;
-                    }
-                    else
-                    {
-                        if ( sister.mRight == null || sister.mRight.mIsBlack )
-                        {
+                    } else {
+                        if (sister.mRight == null || sister.mRight.mIsBlack) {
                             sister.mLeft.mIsBlack = true;
                             sister.mIsBlack = false;
                             root = sister.rotateRight(root);
@@ -1015,26 +837,20 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
                         root = parent.rotateLeft(root);
                         node = root;
                     }
-                }
-                else
-                {
+                } else {
                     Node<V1> sister = parent.mLeft;
-                    if ( !sister.mIsBlack )
-                    {
+                    if (!sister.mIsBlack) {
                         sister.mIsBlack = true;
                         parent.mIsBlack = false;
                         root = parent.rotateRight(root);
                         sister = parent.mLeft;
                     }
-                    if ( (sister.mLeft == null || sister.mLeft.mIsBlack) && (sister.mRight == null || sister.mRight.mIsBlack) )
-                    {
+                    if ((sister.mLeft == null || sister.mLeft.mIsBlack)
+                            && (sister.mRight == null || sister.mRight.mIsBlack)) {
                         sister.mIsBlack = false;
                         node = parent;
-                    }
-                    else
-                    {
-                        if ( sister.mLeft == null || sister.mLeft.mIsBlack )
-                        {
+                    } else {
+                        if (sister.mLeft == null || sister.mLeft.mIsBlack) {
                             sister.mRight.mIsBlack = true;
                             sister.mIsBlack = false;
                             root = sister.rotateLeft(root);
@@ -1048,8 +864,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
                     }
                 }
                 parent = node.mParent;
-            }
-            while ( parent != null && node.mIsBlack );
+            } while (parent != null && node.mIsBlack);
 
             node.mIsBlack = true;
             return root;
@@ -1095,33 +910,27 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         private boolean mIsBlack;
     }
 
-    public class FwdIterator
-        implements Iterator<Node<V>>
-    {
-        public FwdIterator( final Node<V> node )
-        {
+    public class FwdIterator implements Iterator<Node<V>> {
+        public FwdIterator(final Node<V> node) {
             mNext = node;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return mNext != null;
         }
 
         @Override
-        public Node<V> next()
-        {
-            if ( mNext == null )
-            {
+        public Node<V> next() {
+            if (mNext == null) {
                 throw new NoSuchElementException("No next element.");
             }
 
-            if ( mNext.wasRemoved() )
-            {
-                mNext = min(mNext.getStart(),mNext.getEnd());
-                if ( mNext == null )
-                    throw new ConcurrentModificationException("Current element was removed, and there are no more elements.");
+            if (mNext.wasRemoved()) {
+                mNext = min(mNext.getStart(), mNext.getEnd());
+                if (mNext == null)
+                    throw new ConcurrentModificationException(
+                            "Current element was removed, and there are no more elements.");
             }
             mLast = mNext;
             mNext = mNext.getNext();
@@ -1129,10 +938,8 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         }
 
         @Override
-        public void remove()
-        {
-            if ( mLast == null )
-            {
+        public void remove() {
+            if (mLast == null) {
                 throw new IllegalStateException("No entry to remove.");
             }
 
@@ -1144,30 +951,24 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         private Node<V> mLast;
     }
 
-    public class RevIterator
-        implements Iterator<Node<V>>
-    {
-        public RevIterator( final Node<V> node )
-        {
+    public class RevIterator implements Iterator<Node<V>> {
+        public RevIterator(final Node<V> node) {
             mNext = node;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return mNext != null;
         }
 
         @Override
-        public Node<V> next()
-        {
-            if ( mNext == null )
-                throw new NoSuchElementException("No next element.");
-            if ( mNext.wasRemoved() )
-            {
-                mNext = max(mNext.getStart(),mNext.getEnd());
-                if ( mNext == null )
-                    throw new ConcurrentModificationException("Current element was removed, and there are no more elements.");
+        public Node<V> next() {
+            if (mNext == null) throw new NoSuchElementException("No next element.");
+            if (mNext.wasRemoved()) {
+                mNext = max(mNext.getStart(), mNext.getEnd());
+                if (mNext == null)
+                    throw new ConcurrentModificationException(
+                            "Current element was removed, and there are no more elements.");
             }
             mLast = mNext;
             mNext = mNext.getPrev();
@@ -1175,10 +976,8 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         }
 
         @Override
-        public void remove()
-        {
-            if ( mLast == null )
-            {
+        public void remove() {
+            if (mLast == null) {
                 throw new IllegalStateException("No entry to remove.");
             }
 
@@ -1190,45 +989,36 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         private Node<V> mLast;
     }
 
-    public class OverlapIterator
-        implements Iterator<Node<V>>
-    {
-        public OverlapIterator( final int start, final int end )
-        {
-            mNext = minOverlapper(start,end);
+    public class OverlapIterator implements Iterator<Node<V>> {
+        public OverlapIterator(final int start, final int end) {
+            mNext = minOverlapper(start, end);
             mStart = start;
             mEnd = end;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return mNext != null;
         }
 
         @Override
-        public Node<V> next()
-        {
-            if ( mNext == null )
-            {
+        public Node<V> next() {
+            if (mNext == null) {
                 throw new NoSuchElementException("No next element.");
             }
 
-            if ( mNext.wasRemoved() )
-            {
+            if (mNext.wasRemoved()) {
                 throw new ConcurrentModificationException("Current element was removed.");
             }
 
             mLast = mNext;
-            mNext = Node.getNextOverlapper(mNext,mStart,mEnd);
+            mNext = Node.getNextOverlapper(mNext, mStart, mEnd);
             return mLast;
         }
 
         @Override
-        public void remove()
-        {
-            if ( mLast == null )
-            {
+        public void remove() {
+            if (mLast == null) {
                 throw new IllegalStateException("No entry to remove.");
             }
 
@@ -1242,29 +1032,23 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
         private final int mEnd;
     }
 
-    public static class ValuesIterator<V1>
-        implements Iterator<V1>
-    {
-        public ValuesIterator( final Iterator<Node<V1>> itr )
-        {
+    public static class ValuesIterator<V1> implements Iterator<V1> {
+        public ValuesIterator(final Iterator<Node<V1>> itr) {
             mItr = itr;
         }
 
         @Override
-        public boolean hasNext()
-        {
+        public boolean hasNext() {
             return mItr.hasNext();
         }
 
         @Override
-        public V1 next()
-        {
+        public V1 next() {
             return mItr.next().getValue();
         }
 
         @Override
-        public void remove()
-        {
+        public void remove() {
             mItr.remove();
         }
 

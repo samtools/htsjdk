@@ -4,7 +4,6 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
-
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-
 /**
  * A class to write out gff3 files.  Features are added using {@link #addFeature(Gff3Feature)}, directives using {@link #addDirective(Gff3Codec.Gff3Directive)},
  * and comments using {@link #addComment(String)}.  Note that the version 3 directive is automatically added at creation, so should not be added separately.
@@ -27,16 +25,18 @@ import java.util.function.Consumer;
 public class Gff3Writer implements Closeable {
 
     private final OutputStream out;
-    private final static String version = "3.1.25";
+    private static final String version = "3.1.25";
 
     public Gff3Writer(final Path path) throws IOException {
         if (FileExtensions.GFF3.stream().noneMatch(e -> path.toString().endsWith(e))) {
             throw new TribbleException("File " + path + " does not have extension consistent with gff3");
         }
 
-        final OutputStream outputStream = IOUtil.hasGzipFileExtension(path)? new BlockCompressedOutputStream(path.toFile()) : Files.newOutputStream(path);
+        final OutputStream outputStream = IOUtil.hasGzipFileExtension(path)
+                ? new BlockCompressedOutputStream(path.toFile())
+                : Files.newOutputStream(path);
         out = new BufferedOutputStream(outputStream);
-        //start with version directive
+        // start with version directive
         initialize();
     }
 
@@ -67,17 +67,22 @@ public class Gff3Writer implements Closeable {
     }
 
     private void writeFirstEightFields(final Gff3Feature feature) throws IOException {
-        writeJoinedByDelimiter(Gff3Constants.FIELD_DELIMITER, this::tryToWrite, Arrays.asList(
-                escapeString(feature.getContig()),
-                escapeString(feature.getSource()),
-                escapeString(feature.getType()),
-                Integer.toString(feature.getStart()),
-                Integer.toString(feature.getEnd()),
-                feature.getScore() < 0 ? Gff3Constants.UNDEFINED_FIELD_VALUE : Double.toString(feature.getScore()),
-                feature.getStrand().toString(),
-                feature.getPhase() < 0 ? Gff3Constants.UNDEFINED_FIELD_VALUE : Integer.toString(feature.getPhase())
-                )
-        );
+        writeJoinedByDelimiter(
+                Gff3Constants.FIELD_DELIMITER,
+                this::tryToWrite,
+                Arrays.asList(
+                        escapeString(feature.getContig()),
+                        escapeString(feature.getSource()),
+                        escapeString(feature.getType()),
+                        Integer.toString(feature.getStart()),
+                        Integer.toString(feature.getEnd()),
+                        feature.getScore() < 0
+                                ? Gff3Constants.UNDEFINED_FIELD_VALUE
+                                : Double.toString(feature.getScore()),
+                        feature.getStrand().toString(),
+                        feature.getPhase() < 0
+                                ? Gff3Constants.UNDEFINED_FIELD_VALUE
+                                : Integer.toString(feature.getPhase())));
     }
 
     void writeAttributes(final Map<String, List<String>> attributes) throws IOException {
@@ -85,7 +90,10 @@ public class Gff3Writer implements Closeable {
             out.write(Gff3Constants.UNDEFINED_FIELD_VALUE.getBytes());
         }
 
-        writeJoinedByDelimiter(Gff3Constants.ATTRIBUTE_DELIMITER, e ->  writeKeyValuePair(e.getKey(), e.getValue()), attributes.entrySet());
+        writeJoinedByDelimiter(
+                Gff3Constants.ATTRIBUTE_DELIMITER,
+                e -> writeKeyValuePair(e.getKey(), e.getValue()),
+                attributes.entrySet());
     }
 
     void writeKeyValuePair(final String key, final List<String> values) {
@@ -98,7 +106,8 @@ public class Gff3Writer implements Closeable {
         }
     }
 
-    private <T> void writeJoinedByDelimiter(final char delimiter, final Consumer<T> consumer, final Collection<T> fields) throws IOException {
+    private <T> void writeJoinedByDelimiter(
+            final char delimiter, final Consumer<T> consumer, final Collection<T> fields) throws IOException {
         boolean isNotFirstField = false;
         for (final T field : fields) {
             if (isNotFirstField) {
@@ -135,8 +144,9 @@ public class Gff3Writer implements Closeable {
 
     static String encodeString(final String s) {
         try {
-            //URLEncoder.encode is hardcoded to change all spaces to +, but we want spaces left unchanged so have to do this
-            //+ is escaped to %2B, so no loss of information
+            // URLEncoder.encode is hardcoded to change all spaces to +, but we want spaces left unchanged so have to do
+            // this
+            // + is escaped to %2B, so no loss of information
             return URLEncoder.encode(s, "UTF-8").replace("+", " ");
         } catch (final UnsupportedEncodingException ex) {
             throw new TribbleException("Encoding failure", ex);

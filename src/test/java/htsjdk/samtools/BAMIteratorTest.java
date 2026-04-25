@@ -26,11 +26,10 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.File;
 
 /**
  * @author alecw@broadinstitute.org
@@ -64,9 +63,6 @@ public class BAMIteratorTest extends HtsjdkTest {
 
     @DataProvider(name = "dataProvider")
     public Object[][] bams() {
-        return new Object[][]{
-                {"empty.bam"},
-                {"empty_no_empty_gzip_block.bam"}
-        };
+        return new Object[][] {{"empty.bam"}, {"empty_no_empty_gzip_block.bam"}};
     }
 }

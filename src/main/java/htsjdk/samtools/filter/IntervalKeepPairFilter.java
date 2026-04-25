@@ -27,7 +27,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.OverlapDetector;
-
 import java.util.Collection;
 import java.util.List;
 
@@ -68,7 +67,7 @@ public class IntervalKeepPairFilter implements SamRecordFilter {
     @Override
     public boolean filterOut(final SAMRecord record) {
         if (record.isSecondaryOrSupplementary() || !record.getReadPairedFlag()) {
-           return true;
+            return true;
         }
 
         if (!record.getReadUnmappedFlag()
@@ -76,8 +75,11 @@ public class IntervalKeepPairFilter implements SamRecordFilter {
             return false;
         }
 
-        return record.getMateUnmappedFlag() || !hasOverlaps(record.getMateReferenceName(),
-                record.getMateAlignmentStart(), SAMUtils.getMateAlignmentEnd(record));
+        return record.getMateUnmappedFlag()
+                || !hasOverlaps(
+                        record.getMateReferenceName(),
+                        record.getMateAlignmentStart(),
+                        SAMUtils.getMateAlignmentEnd(record));
     }
 
     /**

@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -27,8 +26,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
     private static final byte[] bitMasks = new byte[8];
 
     static {
-        for (byte i = 0; i < 8; i++)
-            bitMasks[i] = (byte) (~(0xFF >>> i));
+        for (byte i = 0; i < 8; i++) bitMasks[i] = (byte) (~(0xFF >>> i));
     }
 
     private final OutputStream out;
@@ -59,20 +57,17 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
 
     @Override
     public String toString() {
-        return "DefaultBitOutputStream: "
-                + Integer.toBinaryString(bufferByte).substring(0, bufferedNumberOfBits);
+        return "DefaultBitOutputStream: " + Integer.toBinaryString(bufferByte).substring(0, bufferedNumberOfBits);
     }
 
     @Override
     public void write(final long bitContainer, final int nofBits) {
-        if (nofBits == 0)
-            return;
+        if (nofBits == 0) return;
 
         if (nofBits < 1 || nofBits > 64)
             throw new RuntimeIOException("Expecting 1 to 64 bits, got: value=" + bitContainer + ", nofBits=" + nofBits);
 
-        if (nofBits <= 8)
-            write((byte) bitContainer, nofBits);
+        if (nofBits <= 8) write((byte) bitContainer, nofBits);
         else {
             for (int i = nofBits - 8; i >= 0; i -= 8) {
                 final byte v = (byte) (bitContainer >>> i);
@@ -86,14 +81,11 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
     }
 
     void write_int_LSB_0(final int value, final int nofBitsToWrite) {
-        if (nofBitsToWrite == 0)
-            return;
+        if (nofBitsToWrite == 0) return;
 
-        if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
-            throw new RuntimeIOException("Expecting 1 to 32 bits.");
+        if (nofBitsToWrite < 1 || nofBitsToWrite > 32) throw new RuntimeIOException("Expecting 1 to 32 bits.");
 
-        if (nofBitsToWrite <= 8)
-            write((byte) value, nofBitsToWrite);
+        if (nofBitsToWrite <= 8) write((byte) value, nofBitsToWrite);
         else {
             for (int i = nofBitsToWrite - 8; i >= 0; i -= 8) {
                 final byte v = (byte) (value >>> i);
@@ -113,8 +105,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
 
     private void writeByte(final int value) {
         try {
-            if (bufferedNumberOfBits == 0)
-                out.write(value);
+            if (bufferedNumberOfBits == 0) out.write(value);
             else {
                 bufferByte = ((value & 0xFF) >>> bufferedNumberOfBits) | bufferByte;
                 out.write(bufferByte);
@@ -127,11 +118,9 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
 
     @Override
     public void write(byte bitContainer, final int nofBits) {
-        if (nofBits < 0 || nofBits > 8)
-            throw new RuntimeIOException("Expecting 0 to 8 bits.");
+        if (nofBits < 0 || nofBits > 8) throw new RuntimeIOException("Expecting 0 to 8 bits.");
 
-        if (nofBits == 8)
-            writeByte(bitContainer);
+        if (nofBits == 8) writeByte(bitContainer);
         else {
             if (bufferedNumberOfBits == 0) {
                 bufferByte = (bitContainer << (8 - nofBits)) & 0xFF;
@@ -168,8 +157,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
 
     @Override
     public void write(final boolean bit, final long repeat) {
-        for (long i = 0; i < repeat; i++)
-            write(bit);
+        for (long i = 0; i < repeat; i++) write(bit);
     }
 
     @Override
@@ -185,8 +173,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
     @Override
     public void flush() {
         try {
-            if (bufferedNumberOfBits > 0)
-                out.write(bufferByte);
+            if (bufferedNumberOfBits > 0) out.write(bufferByte);
 
             bufferedNumberOfBits = 0;
             out.flush();
@@ -212,5 +199,4 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
             throw new RuntimeIOException(e);
         }
     }
-
 }

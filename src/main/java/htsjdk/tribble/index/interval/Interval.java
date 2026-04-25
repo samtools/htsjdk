@@ -20,7 +20,6 @@ package htsjdk.tribble.index.interval;
 
 import htsjdk.tribble.index.Block;
 
-
 /**
  *  Quick and dirty interval class
  *  Describes a genomic interval and where in a file information for that
@@ -31,13 +30,13 @@ public class Interval implements Comparable {
      * Start of the interval in genomic coordinates -- this is exposed on purpose, getters have a significant
      * performance penalty for this field.
      */
-     final int start;
+    final int start;
 
     /**
      * End of the interval in genomic coordinates -- this is exposed on purpose, getters have a significant
      * performance penalty for this field.
      */
-     final int end;
+    final int end;
 
     /**
      * File block  (position, size) containing the data for this interval
@@ -50,7 +49,6 @@ public class Interval implements Comparable {
         this.end = end;
     }
 
-
     public Interval(int start, int end, Block block) {
         assert start <= end;
         this.start = start;
@@ -58,36 +56,27 @@ public class Interval implements Comparable {
         this.block = block;
     }
 
-
     public boolean equals(Object other) {
-        if (this == other)
-            return true;
+        if (this == other) return true;
         if (this.getClass().equals(other.getClass())) {
             Interval otherInterval = (Interval) other;
-            return (this.start == otherInterval.start &&
-                    this.end == otherInterval.end);
+            return (this.start == otherInterval.start && this.end == otherInterval.end);
         }
         return false;
     }
-
 
     public int hashCode() {
         return start;
     }
 
-
     @Override
     public int compareTo(Object o) {
         Interval other = (Interval) o;
-        if (this.start < other.start)
-            return -1;
-        if (this.start > other.start)
-            return 1;
+        if (this.start < other.start) return -1;
+        if (this.start > other.start) return 1;
 
-        if (this.end < other.end)
-            return -1;
-        if (this.end > other.end)
-            return 1;
+        if (this.end < other.end) return -1;
+        if (this.end > other.end) return 1;
 
         return 0;
     }
@@ -96,15 +85,12 @@ public class Interval implements Comparable {
         return "Interval[" + this.start + ", " + this.end + "]";
     }
 
-
     /**
      * @return whether this interval overlaps the other.
      */
     public boolean overlaps(Interval other) {
-        return (this.start <= other.end &&
-                other.start <= this.end);
+        return (this.start <= other.end && other.start <= this.end);
     }
-
 
     /**
      * @return The file block for this interval
@@ -113,4 +99,3 @@ public class Interval implements Comparable {
         return block;
     }
 }
-

@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
@@ -31,7 +31,6 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.*;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,7 +46,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 
+ *
  * <h3> High-level overview </h3>
  *
  * The VariantContext object is a single general class system for representing genetic variation data composed of:
@@ -89,7 +88,7 @@ import java.util.stream.Collectors;
  *<p>
  * A [ref] / T at 10
  *</p>
- *<pre> 
+ *<pre>
  * GenomeLoc snpLoc = GenomeLocParser.createGenomeLoc("chr1", 10, 10);
  *</pre>
  *<p>
@@ -208,7 +207,7 @@ import java.util.stream.Collectors;
  *
  * <!-- comment by jdenvir: not sure what this tag is supposed to do:-->
  * <!-- <s3> -->
- *     <h3>Fully decoding.</h3>  
+ *     <h3>Fully decoding.</h3>
  *     Currently <code>VariantContext</code>s support some fields, particularly those
  *     stored as generic attributes, to be of any type.  For example, a field AB might
  *     be naturally a floating point number, 0.51, but when it's read into a VC its
@@ -236,6 +235,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     /** The location of this VariantContext */
     protected final String contig;
+
     protected final long start;
     protected final long stop;
     private final String ID;
@@ -282,19 +282,19 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         boolean sawPL = false;
         for (final Genotype g : this.getGenotypes()) {
             keys.addAll(g.getExtendedAttributes().keySet());
-            if ( g.isAvailable() ) sawGoodGT = true;
-            if ( g.hasGQ() ) sawGoodQual = true;
-            if ( g.hasDP() ) sawDP = true;
-            if ( g.hasAD() ) sawAD = true;
-            if ( g.hasPL() ) sawPL = true;
+            if (g.isAvailable()) sawGoodGT = true;
+            if (g.hasGQ()) sawGoodQual = true;
+            if (g.hasDP()) sawDP = true;
+            if (g.hasAD()) sawAD = true;
+            if (g.hasPL()) sawPL = true;
             if (g.isFiltered()) sawGenotypeFilter = true;
         }
 
-        if ( sawGoodQual ) keys.add(VCFConstants.GENOTYPE_QUALITY_KEY);
-        if ( sawDP ) keys.add(VCFConstants.DEPTH_KEY);
-        if ( sawAD ) keys.add(VCFConstants.GENOTYPE_ALLELE_DEPTHS);
-        if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
-        if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
+        if (sawGoodQual) keys.add(VCFConstants.GENOTYPE_QUALITY_KEY);
+        if (sawDP) keys.add(VCFConstants.DEPTH_KEY);
+        if (sawAD) keys.add(VCFConstants.GENOTYPE_ALLELE_DEPTHS);
+        if (sawPL) keys.add(VCFConstants.GENOTYPE_PL_KEY);
+        if (sawGenotypeFilter) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
         List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
 
@@ -314,14 +314,13 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
     }
 
-
     // ---------------------------------------------------------------------------------------------------------
     //
     // validation mode
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    //no controls and white-spaces characters, no semicolon.
+    // no controls and white-spaces characters, no semicolon.
     public static final Pattern VALID_FILTER = Pattern.compile("^[!-:<-~]+$");
 
     public enum Validation {
@@ -343,7 +342,6 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
         abstract void validate(VariantContext variantContext);
 
-
         private static void validateAlleles(final VariantContext vc) {
 
             boolean alreadySeenRef = false;
@@ -352,13 +350,16 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 // make sure there's only one reference allele
                 if (allele.isReference()) {
                     if (alreadySeenRef) {
-                        throw new IllegalArgumentException("BUG: Received two reference tagged alleles in VariantContext " + vc.alleles + " vc=" + vc);
+                        throw new IllegalArgumentException(
+                                "BUG: Received two reference tagged alleles in VariantContext " + vc.alleles + " vc="
+                                        + vc);
                     }
                     alreadySeenRef = true;
                 }
 
                 if (allele.isNoCall()) {
-                    throw new IllegalArgumentException("BUG: Cannot add a no call allele to a variant context " + vc.alleles + " vc=" + vc);
+                    throw new IllegalArgumentException(
+                            "BUG: Cannot add a no call allele to a variant context " + vc.alleles + " vc=" + vc);
                 }
             }
 
@@ -383,7 +384,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                     for (int j = 0, size = alleles.size(); j < size; j++) {
                         final Allele gAllele = alleles.get(j);
                         if (!variantContext.hasAllele(gAllele) && gAllele.isCalled()) {
-                            throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + variantContext.getAlleles());
+                            throw new IllegalStateException("Allele in genotype " + gAllele
+                                    + " not in the variant context " + variantContext.getAlleles());
                         }
                     }
                 }
@@ -397,12 +399,12 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             }
 
             for (String filter : filters) {
-                if ( filter == null) {
+                if (filter == null) {
                     throw new IllegalStateException("'null' is not a valid filter string.");
                 }
                 if (!VALID_FILTER.matcher(filter).matches()) {
-                    throw new IllegalStateException("Filter '" + filter +
-                            "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
+                    throw new IllegalStateException("Filter '" + filter
+                            + "' contains an illegal character. It must conform to the regex ;'" + VALID_FILTER);
                 }
             }
         }
@@ -422,11 +424,19 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param other the VariantContext to copy
      */
     protected VariantContext(VariantContext other) {
-        this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
-                other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
+        this(
+                other.getSource(),
+                other.getID(),
+                other.getContig(),
+                other.getStart(),
+                other.getEnd(),
+                other.getAlleles(),
+                other.getGenotypes(),
+                other.getLog10PError(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
-                other.fullyDecoded, NO_VALIDATION);
+                other.fullyDecoded,
+                NO_VALIDATION);
     }
 
     /**
@@ -443,35 +453,41 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param attributes      attributes
      * @param validationToPerform     set of validation steps to take
      */
-    protected VariantContext(final String source,
-                             final String ID,
-                             final String contig,
-                             final long start,
-                             final long stop,
-                             final Collection<Allele> alleles,
-                             final GenotypesContext genotypes,
-                             final double log10PError,
-                             final Set<String> filters,
-                             final Map<String, Object> attributes,
-                             final boolean fullyDecoded,
-                             final EnumSet<Validation> validationToPerform ) {
-        if ( contig == null ) { throw new IllegalArgumentException("Contig cannot be null"); }
+    protected VariantContext(
+            final String source,
+            final String ID,
+            final String contig,
+            final long start,
+            final long stop,
+            final Collection<Allele> alleles,
+            final GenotypesContext genotypes,
+            final double log10PError,
+            final Set<String> filters,
+            final Map<String, Object> attributes,
+            final boolean fullyDecoded,
+            final EnumSet<Validation> validationToPerform) {
+        if (contig == null) {
+            throw new IllegalArgumentException("Contig cannot be null");
+        }
         this.contig = contig;
         this.start = start;
         this.stop = stop;
 
         // intern for efficiency.  equals calls will generate NPE if ID is inappropriately passed in as null
-        if ( ID == null || ID.equals("") ) throw new IllegalArgumentException("ID field cannot be the null or the empty string");
+        if (ID == null || ID.equals(""))
+            throw new IllegalArgumentException("ID field cannot be the null or the empty string");
         this.ID = ID.equals(VCFConstants.EMPTY_ID_FIELD) ? VCFConstants.EMPTY_ID_FIELD : ID;
 
         this.commonInfo = new CommonInfo(source, log10PError, filters, attributes);
 
-        if ( alleles == null ) { throw new IllegalArgumentException("Alleles cannot be null"); }
+        if (alleles == null) {
+            throw new IllegalArgumentException("Alleles cannot be null");
+        }
 
         // we need to make this a LinkedHashSet in case the user prefers a given ordering of alleles
         this.alleles = makeAlleles(alleles);
 
-        if ( genotypes == null || genotypes == NO_GENOTYPES ) {
+        if (genotypes == null || genotypes == NO_GENOTYPES) {
             this.genotypes = NO_GENOTYPES;
         } else {
             this.genotypes = genotypes.immutable();
@@ -479,17 +495,17 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
         // cache the REF and ALT alleles
         int nAlleles = alleles.size();
-        for ( Allele a : alleles ) {
-            if ( a.isReference() ) {
+        for (Allele a : alleles) {
+            if (a.isReference()) {
                 REF = a;
-            } else if ( nAlleles == 2 ) { // only cache ALT when biallelic
+            } else if (nAlleles == 2) { // only cache ALT when biallelic
                 ALT = a;
             }
         }
 
         this.fullyDecoded = fullyDecoded;
 
-        if ( ! validationToPerform.isEmpty() ) {
+        if (!validationToPerform.isEmpty()) {
             validate(validationToPerform);
         }
     }
@@ -514,25 +530,22 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param rederiveAllelesFromGenotypes if true, returns the alleles to just those in use by the samples, true should be default
      * @return new VariantContext subsetting to just the given samples
      */
-    public VariantContext subContextFromSamples(Set<String> sampleNames, final boolean rederiveAllelesFromGenotypes ) {
-        if ( sampleNames.containsAll(getSampleNames()) && ! rederiveAllelesFromGenotypes ) {
+    public VariantContext subContextFromSamples(Set<String> sampleNames, final boolean rederiveAllelesFromGenotypes) {
+        if (sampleNames.containsAll(getSampleNames()) && !rederiveAllelesFromGenotypes) {
             return this; // fast path when you don't have any work to do
         } else {
             VariantContextBuilder builder = new VariantContextBuilder(this);
             GenotypesContext newGenotypes = genotypes.subsetToSamples(sampleNames);
 
-            if ( rederiveAllelesFromGenotypes ) {
+            if (rederiveAllelesFromGenotypes) {
                 Set<Allele> allelesFromGenotypes = allelesOfGenotypes(newGenotypes);
 
                 // ensure original order of genotypes
                 List<Allele> rederivedAlleles = new ArrayList<>(allelesFromGenotypes.size());
-                for (Allele allele : alleles)
-                    if (allelesFromGenotypes.contains(allele))
-                        rederivedAlleles.add(allele);
+                for (Allele allele : alleles) if (allelesFromGenotypes.contains(allele)) rederivedAlleles.add(allele);
 
                 builder.alleles(rederivedAlleles);
-            }
-            else {
+            } else {
                 builder.alleles(alleles);
             }
 
@@ -563,14 +576,13 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         final Set<Allele> alleles = new HashSet<>();
 
         boolean addedref = false;
-        for ( final Genotype g : genotypes ) {
-            for ( final Allele a : g.getAlleles() ) {
+        for (final Genotype g : genotypes) {
+            for (final Allele a : g.getAlleles()) {
                 addedref = addedref || a.isReference();
-                if ( a.isCalled() )
-                    alleles.add(a);
+                if (a.isCalled()) alleles.add(a);
             }
         }
-        if ( ! addedref ) alleles.add(getReference());
+        if (!addedref) alleles.add(getReference());
 
         return alleles;
     }
@@ -617,7 +629,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * <li><strong>Mixed</strong></li>
      * <li>Mix of other classes</li>
      * </ul>
-     * 
+     *
      * Also supports NO_VARIATION type, used to indicate that the site isn't polymorphic in the population
      *
      *
@@ -657,7 +669,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     public enum Type {
         NO_VARIATION,
         SNP,
-        MNP,    // a multi-nucleotide polymorphism
+        MNP, // a multi-nucleotide polymorphism
         INDEL,
         SYMBOLIC,
         MIXED,
@@ -699,29 +711,36 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      *
      * @return true if this is a SNP, false otherwise
      */
-    public boolean isSNP() { return getType() == Type.SNP; }
-
+    public boolean isSNP() {
+        return getType() == Type.SNP;
+    }
 
     /**
      * convenience method for variants
      *
      * @return true if this is a variant allele, false if it's reference
      */
-    public boolean isVariant() { return getType() != Type.NO_VARIATION; }
+    public boolean isVariant() {
+        return getType() != Type.NO_VARIATION;
+    }
 
     /**
      * convenience method for point events
      *
      * @return true if this is a SNP or ref site, false if it's an indel or mixed event
      */
-    public boolean isPointEvent() { return isSNP() || !isVariant(); }
+    public boolean isPointEvent() {
+        return isSNP() || !isVariant();
+    }
 
     /**
      * convenience method for indels
      *
      * @return true if this is an indel, false otherwise
      */
-    public boolean isIndel() { return getType() == Type.INDEL; }
+    public boolean isIndel() {
+        return getType() == Type.INDEL;
+    }
 
     /**
      * @return true if the alleles indicate a simple insertion (i.e., the reference allele is Null)
@@ -743,11 +762,12 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return true if the alleles indicate a simple indel, false otherwise.
      */
     public boolean isSimpleIndel() {
-        return getType() == Type.INDEL                   // allelic lengths differ
-                && isBiallelic()                         // exactly 2 alleles
-                && getReference().length() > 0           // ref is not null or symbolic
-                && getAlternateAllele(0).length() > 0    // alt is not null or symbolic
-                && getReference().getBases()[0] == getAlternateAllele(0).getBases()[0]    // leading bases match for both alleles
+        return getType() == Type.INDEL // allelic lengths differ
+                && isBiallelic() // exactly 2 alleles
+                && getReference().length() > 0 // ref is not null or symbolic
+                && getAlternateAllele(0).length() > 0 // alt is not null or symbolic
+                && getReference().getBases()[0]
+                        == getAlternateAllele(0).getBases()[0] // leading bases match for both alleles
                 && (getReference().length() == 1 || getAlternateAllele(0).length() == 1);
     }
 
@@ -763,11 +783,11 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     public boolean isStructuralIndel() {
-        if ( getType() == Type.INDEL ) {
+        if (getType() == Type.INDEL) {
             List<Integer> sizes = getIndelLengths();
-            if ( sizes != null ) {
-                for ( Integer length : sizes ) {
-                    if ( length > MAX_ALLELE_SIZE_FOR_NON_SV ) {
+            if (sizes != null) {
+                for (Integer length : sizes) {
+                    if (length > MAX_ALLELE_SIZE_FOR_NON_SV) {
                         return true;
                     }
                 }
@@ -793,8 +813,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      *
      * @return true if this is an mixed variation, false otherwise
      */
-    public boolean isMixed() { return getType() == Type.MIXED; }
-
+    public boolean isMixed() {
+        return getType() == Type.MIXED;
+    }
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -807,48 +828,104 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     public boolean emptyID() {
-        return ! hasID();
+        return !hasID();
     }
 
     public String getID() {
         return ID;
     }
 
-
     // ---------------------------------------------------------------------------------------------------------
     //
     // get routines to access context info fields
     //
     // ---------------------------------------------------------------------------------------------------------
-    public String getSource()                   { return commonInfo.getName(); }
-    public Set<String> getFiltersMaybeNull()    { return commonInfo.getFiltersMaybeNull(); }
-    public Set<String> getFilters()             { return commonInfo.getFilters(); }
-    public boolean isFiltered()                 { return commonInfo.isFiltered(); }
-    public boolean isNotFiltered()              { return commonInfo.isNotFiltered(); }
-    public boolean filtersWereApplied()         { return commonInfo.filtersWereApplied(); }
-    public boolean hasLog10PError()             { return commonInfo.hasLog10PError(); }
-    public double getLog10PError()              { return commonInfo.getLog10PError(); }
-    public double getPhredScaledQual()          { return commonInfo.getPhredScaledQual(); }
+    public String getSource() {
+        return commonInfo.getName();
+    }
 
-    public Map<String, Object>  getAttributes() { return commonInfo.getAttributes(); }
-    public boolean hasAttribute(String key)     { return commonInfo.hasAttribute(key); }
-    public Object getAttribute(String key)      { return commonInfo.getAttribute(key); }
+    public Set<String> getFiltersMaybeNull() {
+        return commonInfo.getFiltersMaybeNull();
+    }
+
+    public Set<String> getFilters() {
+        return commonInfo.getFilters();
+    }
+
+    public boolean isFiltered() {
+        return commonInfo.isFiltered();
+    }
+
+    public boolean isNotFiltered() {
+        return commonInfo.isNotFiltered();
+    }
+
+    public boolean filtersWereApplied() {
+        return commonInfo.filtersWereApplied();
+    }
+
+    public boolean hasLog10PError() {
+        return commonInfo.hasLog10PError();
+    }
+
+    public double getLog10PError() {
+        return commonInfo.getLog10PError();
+    }
+
+    public double getPhredScaledQual() {
+        return commonInfo.getPhredScaledQual();
+    }
+
+    public Map<String, Object> getAttributes() {
+        return commonInfo.getAttributes();
+    }
+
+    public boolean hasAttribute(String key) {
+        return commonInfo.hasAttribute(key);
+    }
+
+    public Object getAttribute(String key) {
+        return commonInfo.getAttribute(key);
+    }
 
     public Object getAttribute(String key, Object defaultValue) {
         return commonInfo.getAttribute(key, defaultValue);
     }
 
-    public String getAttributeAsString(String key, String defaultValue)   { return commonInfo.getAttributeAsString(key, defaultValue); }
-    public int getAttributeAsInt(String key, int defaultValue)            { return commonInfo.getAttributeAsInt(key, defaultValue); }
-    public double getAttributeAsDouble(String key, double  defaultValue)  { return commonInfo.getAttributeAsDouble(key, defaultValue); }
-    public boolean getAttributeAsBoolean(String key, boolean  defaultValue)  { return commonInfo.getAttributeAsBoolean(key, defaultValue); }
+    public String getAttributeAsString(String key, String defaultValue) {
+        return commonInfo.getAttributeAsString(key, defaultValue);
+    }
+
+    public int getAttributeAsInt(String key, int defaultValue) {
+        return commonInfo.getAttributeAsInt(key, defaultValue);
+    }
+
+    public double getAttributeAsDouble(String key, double defaultValue) {
+        return commonInfo.getAttributeAsDouble(key, defaultValue);
+    }
+
+    public boolean getAttributeAsBoolean(String key, boolean defaultValue) {
+        return commonInfo.getAttributeAsBoolean(key, defaultValue);
+    }
     /** returns the value as an empty list if the key was not found,
-        as a java.util.List if the value is a List or an Array,
-        as a Collections.singletonList if there is only one value */
-    public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
-    public List<String> getAttributeAsStringList(String key, String defaultValue) { return commonInfo.getAttributeAsStringList(key, defaultValue); }
-    public List<Integer> getAttributeAsIntList(String key, int defaultValue) { return commonInfo.getAttributeAsIntList(key, defaultValue); }
-    public List<Double> getAttributeAsDoubleList(String key, double defaultValue) { return commonInfo.getAttributeAsDoubleList(key, defaultValue); }
+     * as a java.util.List if the value is a List or an Array,
+     * as a Collections.singletonList if there is only one value */
+    public List<Object> getAttributeAsList(String key) {
+        return commonInfo.getAttributeAsList(key);
+    }
+
+    public List<String> getAttributeAsStringList(String key, String defaultValue) {
+        return commonInfo.getAttributeAsStringList(key, defaultValue);
+    }
+
+    public List<Integer> getAttributeAsIntList(String key, int defaultValue) {
+        return commonInfo.getAttributeAsIntList(key, defaultValue);
+    }
+
+    public List<Double> getAttributeAsDoubleList(String key, double defaultValue) {
+        return commonInfo.getAttributeAsDoubleList(key, defaultValue);
+    }
+
     public CommonInfo getCommonInfo() {
         return commonInfo;
     }
@@ -864,11 +941,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      */
     public Allele getReference() {
         Allele ref = REF;
-        if ( ref == null )
-            throw new IllegalStateException("BUG: no reference allele found at " + this);
+        if (ref == null) throw new IllegalStateException("BUG: no reference allele found at " + this);
         return ref;
     }
-
 
     /**
      * @return true if the context is strictly bi-allelic
@@ -911,8 +986,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         if (Allele.NO_CALL.basesMatch(allele)) {
             return Allele.NO_CALL;
         } else {
-            for ( Allele a : getAlleles() ) {
-                if ( a.basesMatch(allele) ) {
+            for (Allele a : getAlleles()) {
+                if (a.basesMatch(allele)) {
                     return a;
                 }
             }
@@ -940,19 +1015,17 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     private boolean hasAllele(final Allele allele, final boolean ignoreRefState, final boolean considerRefAllele) {
-        if ( (considerRefAllele && allele == REF) || allele == ALT ) // optimization for cached cases
-            return true;
+        if ((considerRefAllele && allele == REF) || allele == ALT) // optimization for cached cases
+        return true;
 
         final List<Allele> allelesToConsider = considerRefAllele ? getAlleles() : getAlternateAlleles();
         for (int i = 0, allelesToConsiderSize = allelesToConsider.size(); i < allelesToConsiderSize; i++) {
             Allele anAllelesToConsider = allelesToConsider.get(i);
-            if (anAllelesToConsider.equals(allele, ignoreRefState))
-                return true;
+            if (anAllelesToConsider.equals(allele, ignoreRefState)) return true;
         }
 
         return false;
     }
-
 
     /**
      * Gets the alleles.  This method should return all of the alleles present at the location,
@@ -961,7 +1034,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      *
      * @return the set of alleles
      */
-    public List<Allele> getAlleles() { return alleles; }
+    public List<Allele> getAlleles() {
+        return alleles;
+    }
 
     /**
      * Gets the alternate alleles.  This method should return all the alleles present at the location,
@@ -980,12 +1055,12 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return a list of indel lengths ( null if not of type indel or mixed )
      */
     public List<Integer> getIndelLengths() {
-        if ( getType() != Type.INDEL && getType() != Type.MIXED ) {
+        if (getType() != Type.INDEL && getType() != Type.MIXED) {
             return null;
         }
 
         List<Integer> lengths = new ArrayList<>();
-        for ( Allele a : getAlternateAlleles() ) {
+        for (Allele a : getAlternateAlleles()) {
             lengths.add(a.length() - getReference().length());
         }
 
@@ -998,7 +1073,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @throws IllegalArgumentException if i is invalid
      */
     public Allele getAlternateAllele(int i) {
-        return alleles.get(i+1);
+        return alleles.get(i + 1);
     }
 
     /**
@@ -1006,7 +1081,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return true if this VariantContext has the same alleles (both ref and alts) as other,
      *         regardless of ordering. Otherwise returns false.
      */
-    public boolean hasSameAllelesAs ( final VariantContext other ) {
+    public boolean hasSameAllelesAs(final VariantContext other) {
         return hasSameAlternateAllelesAs(other) && other.getReference().equals(getReference(), false);
     }
 
@@ -1015,16 +1090,16 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return true if this VariantContext has the same alternate alleles as other,
      *         regardless of ordering. Otherwise returns false.
      */
-    public boolean hasSameAlternateAllelesAs ( final VariantContext other ) {
+    public boolean hasSameAlternateAllelesAs(final VariantContext other) {
         List<Allele> thisAlternateAlleles = getAlternateAlleles();
         List<Allele> otherAlternateAlleles = other.getAlternateAlleles();
 
-        if ( thisAlternateAlleles.size() != otherAlternateAlleles.size() ) {
+        if (thisAlternateAlleles.size() != otherAlternateAlleles.size()) {
             return false;
         }
 
-        for ( Allele allele : thisAlternateAlleles ) {
-            if ( ! otherAlternateAlleles.contains(allele) ) {
+        for (Allele allele : thisAlternateAlleles) {
+            if (!otherAlternateAlleles.contains(allele)) {
                 return false;
             }
         }
@@ -1049,7 +1124,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return true if the context has associated genotypes
      */
     public boolean hasGenotypes() {
-        return ! genotypes.isEmpty();
+        return !genotypes.isEmpty();
     }
 
     public boolean hasGenotypes(Collection<String> sampleNames) {
@@ -1101,7 +1176,6 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return getGenotypes().subsetToSamples(sampleNames);
     }
 
-
     /**
      * @return the set of all sample names in this context, not ordered
      */
@@ -1142,7 +1216,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      */
     public int getCalledChrCount() {
         final Set<String> noSamples = Collections.emptySet();
-        return  getCalledChrCount(noSamples);
+        return getCalledChrCount(noSamples);
     }
 
     /**
@@ -1155,10 +1229,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         int n = 0;
         GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
 
-        for ( final Genotype g : genotypes) {
+        for (final Genotype g : genotypes) {
             if (!g.isFiltered()) {
-                for ( final Allele a : g.getAlleles() )
-                    n += a.isNoCall() ? 0 : 1;
+                for (final Allele a : g.getAlleles()) n += a.isNoCall() ? 0 : 1;
             }
         }
 
@@ -1186,7 +1259,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         int n = 0;
         GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
 
-        for ( final Genotype g : genotypes ) {
+        for (final Genotype g : genotypes) {
             if (!g.isFiltered()) {
                 n += g.countAllele(a);
             }
@@ -1202,8 +1275,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return true if it's monomorphic
      */
     public boolean isMonomorphicInSamples() {
-        if ( monomorphic == null )
-            monomorphic = ! isVariant() || (hasGenotypes() && getCalledChrCount(getReference()) == getCalledChrCount());
+        if (monomorphic == null)
+            monomorphic = !isVariant() || (hasGenotypes() && getCalledChrCount(getReference()) == getCalledChrCount());
         return monomorphic;
     }
 
@@ -1214,14 +1287,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return true if it's polymorphic
      */
     public boolean isPolymorphicInSamples() {
-        return ! isMonomorphicInSamples();
+        return !isMonomorphicInSamples();
     }
 
     private void calculateGenotypeCounts() {
-        if ( genotypeCounts == null ) {
+        if (genotypeCounts == null) {
             genotypeCounts = new int[GenotypeType.values().length];
 
-            for ( final Genotype g : getGenotypes() ) {
+            for (final Genotype g : getGenotypes()) {
                 genotypeCounts[g.getType().ordinal()]++;
             }
         }
@@ -1290,7 +1363,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @param observedReference     the observed reference allele
      * @param rsIDs               the true dbSNP IDs
      */
-    public void extraStrictValidation(final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
+    public void extraStrictValidation(
+            final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
         // validate the reference
         validateReferenceBases(reportedReference, observedReference);
 
@@ -1304,67 +1378,74 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         validateChromosomeCounts();
 
         // TODO: implement me
-        //checkReferenceTrack();
+        // checkReferenceTrack();
     }
 
     public void validateReferenceBases(final Allele reportedReference, final Allele observedReference) {
-        if ( reportedReference != null && !reportedReference.basesMatch(observedReference) ) {
-            throw new TribbleException.InternalCodecException(String.format("the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s", getContig(), getStart(), observedReference.getBaseString(), reportedReference.getBaseString()));
+        if (reportedReference != null && !reportedReference.basesMatch(observedReference)) {
+            throw new TribbleException.InternalCodecException(String.format(
+                    "the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s",
+                    getContig(), getStart(), observedReference.getBaseString(), reportedReference.getBaseString()));
         }
     }
 
     public void validateRSIDs(Set<String> rsIDs) {
-        if ( rsIDs != null && hasID() ) {
-            for ( String id : getID().split(VCFConstants.ID_FIELD_SEPARATOR) ) {
-                if ( id.startsWith("rs") && !rsIDs.contains(id) )
-                    throw new TribbleException.InternalCodecException(String.format("the rsID %s for the record at position %s:%d is not in dbSNP", id, getContig(), getStart()));
+        if (rsIDs != null && hasID()) {
+            for (String id : getID().split(VCFConstants.ID_FIELD_SEPARATOR)) {
+                if (id.startsWith("rs") && !rsIDs.contains(id))
+                    throw new TribbleException.InternalCodecException(String.format(
+                            "the rsID %s for the record at position %s:%d is not in dbSNP",
+                            id, getContig(), getStart()));
             }
         }
     }
 
     public void validateAlternateAlleles() {
-        if ( !hasGenotypes() )
-            return;
+        if (!hasGenotypes()) return;
 
         // maintain a list of non-symbolic alleles expected in the REF and ALT fields of the record
-        // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
+        // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g.
+        // with GATK gVCFs)
         final List<Allele> reportedAlleles = new ArrayList<>();
-        for ( final Allele allele : getAlleles() ) {
-            if ( !allele.isSymbolic() )
-                reportedAlleles.add(allele);
+        for (final Allele allele : getAlleles()) {
+            if (!allele.isSymbolic()) reportedAlleles.add(allele);
         }
 
         // maintain a list of non-symbolic alleles observed in the genotypes
         final Set<Allele> observedAlleles = new HashSet<>();
         observedAlleles.add(getReference());
-        for ( final Genotype g : getGenotypes() ) {
-            if ( g.isCalled() ) {
-                for ( final Allele allele : g.getAlleles() ) {
-                    if ( !allele.isSymbolic() )
-                        observedAlleles.add(allele);
+        for (final Genotype g : getGenotypes()) {
+            if (g.isCalled()) {
+                for (final Allele allele : g.getAlleles()) {
+                    if (!allele.isSymbolic()) observedAlleles.add(allele);
                 }
             }
         }
-        if ( observedAlleles.contains(Allele.NO_CALL) )
-            observedAlleles.remove(Allele.NO_CALL);
+        if (observedAlleles.contains(Allele.NO_CALL)) observedAlleles.remove(Allele.NO_CALL);
 
-        if ( reportedAlleles.size() != observedAlleles.size() )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
+        if (reportedAlleles.size() != observedAlleles.size())
+            throw new TribbleException.InternalCodecException(String.format(
+                    "one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes",
+                    getContig(), getStart()));
 
         int originalSize = reportedAlleles.size();
         // take the intersection and see if things change
         observedAlleles.retainAll(reportedAlleles);
-        if ( observedAlleles.size() != originalSize )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
+        if (observedAlleles.size() != originalSize)
+            throw new TribbleException.InternalCodecException(String.format(
+                    "one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes",
+                    getContig(), getStart()));
     }
 
-    private void validateAttributeIsExpectedSize(final String attributeKey, final int numAlternateAlleles ) {
+    private void validateAttributeIsExpectedSize(final String attributeKey, final int numAlternateAlleles) {
         final List<Object> actualValues = getAttributeAsList(attributeKey);
         if (!actualValues.isEmpty()) {
             // always have at least one actual value
             final int expectedValuesSize = numAlternateAlleles > 0 ? numAlternateAlleles : 1;
             if (actualValues.size() != expectedValuesSize) {
-                throw new TribbleException.InternalCodecException(String.format("the %s tag has the incorrect number of records at position %s:%d, %d vs. %d", attributeKey, getContig(), getStart(), actualValues.size(), expectedValuesSize));
+                throw new TribbleException.InternalCodecException(String.format(
+                        "the %s tag has the incorrect number of records at position %s:%d, %d vs. %d",
+                        attributeKey, getContig(), getStart(), actualValues.size(), expectedValuesSize));
             }
         }
     }
@@ -1374,15 +1455,17 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
         validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
 
-        if (!hasGenotypes())
-            return;
+        if (!hasGenotypes()) return;
 
         // AN
         if (hasAttribute(VCFConstants.ALLELE_NUMBER_KEY)) {
-            final int reportedAN = Integer.parseInt(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
+            final int reportedAN = Integer.parseInt(
+                    getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
             final int observedAN = getCalledChrCount();
-            if ( reportedAN != observedAN )
-                throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAN, observedAN));
+            if (reportedAN != observedAN)
+                throw new TribbleException.InternalCodecException(String.format(
+                        "the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d",
+                        getContig(), getStart(), reportedAN, observedAN));
         }
 
         // AC
@@ -1394,8 +1477,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 for (Allele allele : getAlternateAlleles()) {
                     observedACs.add(getCalledChrCount(allele));
                 }
-            }
-            else { // otherwise, set them to 0
+            } else { // otherwise, set them to 0
                 observedACs.add(0);
             }
 
@@ -1405,7 +1487,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
                 final int reportedAC = Integer.parseInt(reportedACs.get(i).toString());
                 if (reportedAC != observedACs.get(i))
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
+                    throw new TribbleException.InternalCodecException(String.format(
+                            "the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d",
+                            getContig(), getStart(), reportedAC, observedACs.get(i)));
             }
         }
     }
@@ -1418,21 +1502,21 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     private void validate(final EnumSet<Validation> validationsToPerform) {
         validateStop();
-        validationsToPerform.forEach(v->v.validate(this));
+        validationsToPerform.forEach(v -> v.validate(this));
     }
 
     /**
      * Check that getEnd() == END from the info field, if it's present
      */
     private void validateStop() {
-        if ( hasAttribute(VCFConstants.END_KEY) ) {
+        if (hasAttribute(VCFConstants.END_KEY)) {
             final int end = getAttributeAsInt(VCFConstants.END_KEY, -1);
             assert end != -1;
-            if ( end != getEnd() ) {
+            if (end != getEnd()) {
                 final String message = "Badly formed variant context at location " + getContig() + ":"
                         + getStart() + "; getEnd() was " + getEnd()
                         + " but this VariantContext contains an END key with value " + end;
-                if ( GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END ) {
+                if (GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END) {
                     System.err.println(message);
                 } else {
                     throw new TribbleException(message);
@@ -1441,7 +1525,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         } else {
             final long length = (stop - start) + 1;
             if (!hasSymbolicAlleles() && length != getReference().length()) {
-                throw new IllegalStateException("BUG: GenomeLoc " + contig + ":" + start + "-" + stop + " has a size == " + length + " but the variation reference allele has length " + getReference().length() + " this = " + this);
+                throw new IllegalStateException("BUG: GenomeLoc " + contig + ":" + start + "-" + stop
+                        + " has a size == " + length + " but the variation reference allele has length "
+                        + getReference().length() + " this = " + this);
             }
         }
     }
@@ -1453,9 +1539,10 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     // ---------------------------------------------------------------------------------------------------------
 
     private Type determineType(final boolean ignoreNonRef) {
-        switch ( getNAlleles() ) {
+        switch (getNAlleles()) {
             case 0:
-                throw new IllegalStateException("Unexpected error: requested type of VariantContext with no alleles!" + this);
+                throw new IllegalStateException(
+                        "Unexpected error: requested type of VariantContext with no alleles!" + this);
             case 1:
                 // note that this doesn't require a reference allele.  You can be monomorphic independent of having a
                 // reference allele
@@ -1470,9 +1557,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         boolean nonRefAlleleFound = false;
 
         // do a pairwise comparison of all alleles against the reference allele
-        for ( Allele allele : alleles ) {
-            if ( allele == REF )
-                continue;
+        for (Allele allele : alleles) {
+            if (allele == REF) continue;
 
             // If we see a NON_REF allele and need to ignore it, skip this allele, but signal that we have seen one
             if (ignoreNonRef && allele.isNonRefAllele()) {
@@ -1484,11 +1570,11 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             Type biallelicType = typeOfBiallelicVariant(REF, allele);
 
             // for the first alternate allele, set the type to be that one
-            if ( type == null ) {
+            if (type == null) {
                 type = biallelicType;
             }
             // if the type of this allele is different from that of a previous one, assign it the MIXED type and quit
-            else if ( biallelicType != type ) {
+            else if (biallelicType != type) {
                 return Type.MIXED;
             }
         }
@@ -1501,26 +1587,26 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     private static Type typeOfBiallelicVariant(Allele ref, Allele allele) {
-        if ( ref.isSymbolic() )
+        if (ref.isSymbolic())
             throw new IllegalStateException("Unexpected error: encountered a record with a symbolic reference allele");
 
-        if ( allele.isSymbolic() )
-            return Type.SYMBOLIC;
+        if (allele.isSymbolic()) return Type.SYMBOLIC;
 
-        if ( ref.length() == allele.length() ) {
-            if ( allele.length() == 1 )
-                return Type.SNP;
-            else
-                return Type.MNP;
+        if (ref.length() == allele.length()) {
+            if (allele.length() == 1) return Type.SNP;
+            else return Type.MNP;
         }
 
-        // Important note: previously we were checking that one allele is the prefix of the other.  However, that's not an
+        // Important note: previously we were checking that one allele is the prefix of the other.  However, that's not
+        // an
         // appropriate check as can be seen from the following example:
         // REF = CTTA and ALT = C,CT,CA
         // This should be assigned the INDEL type but was being marked as a MIXED type because of the prefix check.
         // In truth, it should be absolutely impossible to return a MIXED type from this method because it simply
-        // performs a pairwise comparison of a single alternate allele against the reference allele (whereas the MIXED type
-        // is reserved for cases of multiple alternate alleles of different types).  Therefore, if we've reached this point
+        // performs a pairwise comparison of a single alternate allele against the reference allele (whereas the MIXED
+        // type
+        // is reserved for cases of multiple alternate alleles of different types).  Therefore, if we've reached this
+        // point
         // in the code (so we're not a SNP, MNP, or symbolic allele), we absolutely must be an INDEL.
 
         return Type.INDEL;
@@ -1540,8 +1626,10 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     public String toStringDecodeGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
-                getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+        return String.format(
+                "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
+                getSource(),
+                contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
@@ -1551,19 +1639,23 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     private String toStringUnparsedGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
-                getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+        return String.format(
+                "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
+                getSource(),
+                contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData(),
+                ((LazyGenotypesContext) this.genotypes).getUnparsedGenotypeData(),
                 String.join(",", commonInfo.getFilters()));
     }
 
     public String toStringWithoutGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
-                getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+        return String.format(
+                "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
+                getSource(),
+                contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
@@ -1576,7 +1668,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         final List<Allele> alleleList = new ArrayList<>(alleles.size());
 
         boolean sawRef = false;
-        for ( final Allele a : alleles ) {
+        for (final Allele a : alleles) {
             for (int i = 0, alleleListSize = alleleList.size(); i < alleleListSize; i++) {
                 if (a.equals(alleleList.get(i), true)) {
                     throw new IllegalArgumentException("Duplicate allele added to VariantContext: " + a);
@@ -1584,21 +1676,21 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             }
 
             // deal with the case where the first allele isn't the reference
-            if ( a.isReference() ) {
-                if ( sawRef )
-                    throw new IllegalArgumentException("Alleles for a VariantContext must contain at most one reference allele: " + alleles);
+            if (a.isReference()) {
+                if (sawRef)
+                    throw new IllegalArgumentException(
+                            "Alleles for a VariantContext must contain at most one reference allele: " + alleles);
                 alleleList.add(0, a);
                 sawRef = true;
-            }
-            else
-                alleleList.add(a);
+            } else alleleList.add(a);
         }
 
-        if ( alleleList.isEmpty() )
+        if (alleleList.isEmpty())
             throw new IllegalArgumentException("Cannot create a VariantContext with an empty allele list");
 
-        if ( alleleList.get(0).isNonReference() )
-            throw new IllegalArgumentException("Alleles for a VariantContext must contain at least one reference allele: " + alleles);
+        if (alleleList.get(0).isNonReference())
+            throw new IllegalArgumentException(
+                    "Alleles for a VariantContext must contain at least one reference allele: " + alleles);
 
         return alleleList;
     }
@@ -1618,8 +1710,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * @return a fully decoded version of this VC
      */
     public VariantContext fullyDecode(final VCFHeader header, final boolean lenientDecoding) {
-        if ( isFullyDecoded() )
-            return this;
+        if (isFullyDecoded()) return this;
         else {
             // TODO -- warning this is potentially very expensive as it creates copies over and over
             final VariantContextBuilder builder = new VariantContextBuilder(this);
@@ -1638,35 +1729,35 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return fullyDecoded;
     }
 
-    private final void fullyDecodeInfo(final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
+    private final void fullyDecodeInfo(
+            final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
         builder.attributes(fullyDecodeAttributes(getAttributes(), header, lenientDecoding));
     }
 
-    private final Map<String, Object> fullyDecodeAttributes(final Map<String, Object> attributes,
-                                                            final VCFHeader header,
-                                                            final boolean lenientDecoding) {
+    private final Map<String, Object> fullyDecodeAttributes(
+            final Map<String, Object> attributes, final VCFHeader header, final boolean lenientDecoding) {
         final Map<String, Object> newAttributes = new HashMap<>(10);
 
-        for ( final Map.Entry<String, Object> attr : attributes.entrySet() ) {
+        for (final Map.Entry<String, Object> attr : attributes.entrySet()) {
             final String field = attr.getKey();
 
-            if ( field.equals(VCFConstants.GENOTYPE_FILTER_KEY) )
+            if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY))
                 continue; // gross, FT is part of the extended attributes
 
             final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
             final Object decoded = decodeValue(field, attr.getValue(), format);
 
-            if ( decoded != null &&
-                    ! lenientDecoding
+            if (decoded != null
+                    && !lenientDecoding
                     && format.getCountType() != VCFHeaderLineCount.UNBOUNDED
-                    && format.getType() != VCFHeaderLineType.Flag ) { // we expect exactly the right number of elements
+                    && format.getType() != VCFHeaderLineType.Flag) { // we expect exactly the right number of elements
                 final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
                 final int expSize = format.getCount(this);
-                if ( obsSize != expSize ) {
-                    throw new TribbleException.InvalidHeader("Discordant field size detected for field " +
-                            field + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values " +
-                            "but the header says this should have " + expSize + " values based on header record " +
-                            format);
+                if (obsSize != expSize) {
+                    throw new TribbleException.InvalidHeader("Discordant field size detected for field " + field
+                            + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values "
+                            + "but the header says this should have "
+                            + expSize + " values based on header record " + format);
                 }
             }
             newAttributes.put(field, decoded);
@@ -1676,25 +1767,22 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
-        if ( value instanceof String ) {
-            if ( field.equals(VCFConstants.GENOTYPE_PL_KEY) )
-                return GenotypeLikelihoods.fromPLField((String)value);
+        if (value instanceof String) {
+            if (field.equals(VCFConstants.GENOTYPE_PL_KEY)) return GenotypeLikelihoods.fromPLField((String) value);
 
-            final String string = (String)value;
-            if ( string.indexOf(',') != -1 ) {
+            final String string = (String) value;
+            if (string.indexOf(',') != -1) {
                 final String[] splits = string.split(",");
                 final List<Object> values = new ArrayList<>(splits.length);
-                for ( int i = 0; i < splits.length; i++ )
-                    values.add(decodeOne(field, splits[i], format));
+                for (int i = 0; i < splits.length; i++) values.add(decodeOne(field, splits[i], format));
                 return values;
             } else {
                 return decodeOne(field, string, format);
             }
-        } else if ( value instanceof List && (((List) value).get(0)) instanceof String ) {
-            final List<String> asList = (List<String>)value;
+        } else if (value instanceof List && (((List) value).get(0)) instanceof String) {
+            final List<String> asList = (List<String>) value;
             final List<Object> values = new ArrayList<>(asList.size());
-            for ( final String s : asList )
-                values.add(decodeOne(field, s, format));
+            for (final String s : asList) values.add(decodeOne(field, s, format));
             return values;
         } else {
             return value;
@@ -1705,31 +1793,36 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     private final Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format) {
         try {
-            if ( string.equals(VCFConstants.MISSING_VALUE_v4) )
-                return null;
+            if (string.equals(VCFConstants.MISSING_VALUE_v4)) return null;
             else {
-                switch ( format.getType() ) {
-                    case Character: return string;
+                switch (format.getType()) {
+                    case Character:
+                        return string;
                     case Flag:
                         final boolean b = Boolean.valueOf(string) || string.equals("1");
-                        if ( b == false )
-                            throw new TribbleException("VariantContext FLAG fields " + field + " cannot contain false values"
-                                    + " as seen at " + getContig() + ":" + getStart());
+                        if (b == false)
+                            throw new TribbleException("VariantContext FLAG fields " + field
+                                    + " cannot contain false values" + " as seen at " + getContig() + ":" + getStart());
                         return b;
-                    case String:    return string;
-                    case Integer:   return Integer.valueOf(string);
-                    case Float:     return VCFUtils.parseVcfDouble(string);
-                    default: throw new TribbleException("Unexpected type for field" + field);
+                    case String:
+                        return string;
+                    case Integer:
+                        return Integer.valueOf(string);
+                    case Float:
+                        return VCFUtils.parseVcfDouble(string);
+                    default:
+                        throw new TribbleException("Unexpected type for field" + field);
                 }
             }
         } catch (NumberFormatException e) {
-            throw new TribbleException("Could not decode field " + field + " with value " + string + " of declared type " + format.getType());
+            throw new TribbleException("Could not decode field " + field + " with value " + string
+                    + " of declared type " + format.getType());
         }
     }
 
     private final void fullyDecodeGenotypes(final VariantContextBuilder builder, final VCFHeader header) {
         final GenotypesContext gc = new GenotypesContext();
-        for ( final Genotype g : getGenotypes() ) {
+        for (final Genotype g : getGenotypes()) {
             gc.add(fullyDecodeGenotypes(g, header));
         }
         builder.genotypesNoValidation(gc);
@@ -1778,7 +1871,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      */
     @Override
     public int getStart() {
-        return (int)start;
+        return (int) start;
     }
 
     /**
@@ -1789,7 +1882,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      */
     @Override
     public int getEnd() {
-        return (int)stop;
+        return (int) stop;
     }
 
     /**
@@ -1807,8 +1900,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return hasSymbolicAlleles(getAlleles());
     }
 
-    public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
-        for (int i = 0, size = alleles.size(); i < size; i++ ) {
+    public static boolean hasSymbolicAlleles(final List<Allele> alleles) {
+        for (int i = 0, size = alleles.size(); i < size; i++) {
             if (alleles.get(i).isSymbolic()) {
                 return true;
             }
@@ -1818,8 +1911,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     public Allele getAltAlleleWithHighestAlleleCount() {
         // optimization: for bi-allelic sites, just return the only alt allele
-        if ( isBiallelic() )
-            return getAlternateAllele(0);
+        if (isBiallelic()) return getAlternateAllele(0);
 
         return getAlternateAlleles().stream()
                 .max(Comparator.comparing(this::getCalledChrCount))
@@ -1853,18 +1945,19 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      */
     @Deprecated
     public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
-       return getGLIndicesOfAlternateAllele(targetAllele);
+        return getGLIndicesOfAlternateAllele(targetAllele);
     }
 
     public int[] getGLIndicesOfAlternateAllele(Allele targetAllele) {
         final int index = getAlleleIndex(targetAllele);
-        if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
+        if (index == -1)
+            throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
         return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
 
-    /** 
-     * Search for the INFO=SVTYPE and return the type of Structural Variant 
-     * @return the StructuralVariantType of null if there is no property SVTYPE 
+    /**
+     * Search for the INFO=SVTYPE and return the type of Structural Variant
+     * @return the StructuralVariantType of null if there is no property SVTYPE
      * */
     public StructuralVariantType getStructuralVariantType() {
         final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);

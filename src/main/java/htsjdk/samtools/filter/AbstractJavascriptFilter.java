@@ -23,12 +23,13 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.RuntimeScriptException;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -37,16 +38,13 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.script.SimpleBindings;
 
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.RuntimeScriptException;
-
 /**
  * Javascript filter with HEADER type containing TYPE records. contains two
  * static method to get a SAM Read filter or a VariantFilter.
- * 
+ *
  * warning: tools, like galaxy, using this class are not safe because a script
  * can access the filesystem.
- * 
+ *
  * @author Pierre Lindenbaum PhD
  */
 public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
@@ -75,7 +73,7 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
 
     /**
      * Constructor, compiles script, put header in the bindings
-     * 
+     *
      * @param scriptReader
      *            reader containing the script. will be closed.
      * @param header
@@ -93,7 +91,7 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
         if (scriptReader == null) {
             throw new RuntimeScriptException("missing ScriptReader.");
         }
-        
+
         try {
             final Compilable compilingEngine = getCompilable(engine);
             this.script = compilingEngine.compile(scriptReader);
@@ -130,7 +128,7 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
 
     /**
      * Evaluates this predicate on the given argument
-     * 
+     *
      * @param record
      *            the record to test. It will be inject in the javascript
      *            context using getRecordKey()

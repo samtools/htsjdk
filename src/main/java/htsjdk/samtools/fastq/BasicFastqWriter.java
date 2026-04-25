@@ -25,7 +25,6 @@ package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.File;
 import java.io.Flushable;
 import java.io.OutputStream;
@@ -35,7 +34,7 @@ import java.io.PrintStream;
  * In general FastqWriterFactory should be used so that AsyncFastqWriter can be enabled, but there are some
  * cases in which that behavior is explicitly not wanted.
  */
-public class BasicFastqWriter implements FastqWriter,Flushable {
+public class BasicFastqWriter implements FastqWriter, Flushable {
     private final String path;
     private final PrintStream writer;
 
@@ -48,7 +47,7 @@ public class BasicFastqWriter implements FastqWriter,Flushable {
     }
 
     private BasicFastqWriter(final File file, final PrintStream writer) {
-        this.path = (file != null? file.getAbsolutePath(): "");
+        this.path = (file != null ? file.getAbsolutePath() : "");
         this.writer = writer;
     }
 

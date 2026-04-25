@@ -2,7 +2,6 @@ package htsjdk.tribble.readers;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloserUtil;
-
 import java.io.IOException;
 
 /**
@@ -11,7 +10,7 @@ import java.io.IOException;
  */
 class BlockCompressedAsciiLineReader extends AsciiLineReader {
 
-    final private BlockCompressedInputStream bcs;
+    private final BlockCompressedInputStream bcs;
 
     public BlockCompressedAsciiLineReader(final BlockCompressedInputStream inputBlockCompressedStream) {
         bcs = inputBlockCompressedStream;
@@ -23,11 +22,13 @@ class BlockCompressedAsciiLineReader extends AsciiLineReader {
     @Override
     public String readLine() throws IOException {
         return bcs.readLine();
-    };
+    }
+    ;
 
     @Override
     public String readLine(final PositionalBufferedStream stream) {
-        throw new UnsupportedOperationException("A BlockCompressedAsciiLineReader class cannot be used to read from a PositionalBufferedStream");
+        throw new UnsupportedOperationException(
+                "A BlockCompressedAsciiLineReader class cannot be used to read from a PositionalBufferedStream");
     }
 
     @Override

@@ -40,7 +40,8 @@ public class HtsVersion implements Comparable<HtsVersion> {
         ValidationUtils.nonNull(versionString);
         final String[] parts = versionString.split("\\.");
         if (parts.length != 3) {
-            throw new IllegalArgumentException(String.format("Unable parse version string as major.minor.patch: '%s'", versionString));
+            throw new IllegalArgumentException(
+                    String.format("Unable parse version string as major.minor.patch: '%s'", versionString));
         }
         try {
             majorVersion = Integer.parseInt(parts[0]);
@@ -108,7 +109,7 @@ public class HtsVersion implements Comparable<HtsVersion> {
         ValidationUtils.nonNull(o);
         if (this.majorVersion == o.majorVersion) {
             if (this.minorVersion == o.minorVersion) {
-                if (this.patchVersion == o.patchVersion){
+                if (this.patchVersion == o.patchVersion) {
                     return 0;
                 }
                 return this.patchVersion - o.patchVersion;

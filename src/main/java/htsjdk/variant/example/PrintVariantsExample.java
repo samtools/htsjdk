@@ -33,7 +33,6 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -51,8 +50,7 @@ import java.util.stream.Collectors;
  * - the second argument is optional and is the name of the output file (nothing gets written if this argument is missing)
  */
 public final class PrintVariantsExample {
-    private PrintVariantsExample() {
-    }
+    private PrintVariantsExample() {}
 
     private static final Log log = Log.getInstance(PrintVariantsExample.class);
 
@@ -69,8 +67,15 @@ public final class PrintVariantsExample {
         log.info("Start with args:" + Arrays.toString(args));
         printConfigurationInfo();
 
-        try (final VariantContextWriter writer = outputFile == null ? null : new VariantContextWriterBuilder().setOutputFile(outputFile).setOutputFileType(VariantContextWriterBuilder.OutputType.VCF).unsetOption(Options.INDEX_ON_THE_FLY).build();
-             final AbstractFeatureReader<VariantContext, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), false)) {
+        try (final VariantContextWriter writer = outputFile == null
+                        ? null
+                        : new VariantContextWriterBuilder()
+                                .setOutputFile(outputFile)
+                                .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
+                                .unsetOption(Options.INDEX_ON_THE_FLY)
+                                .build();
+                final AbstractFeatureReader<VariantContext, LineIterator> reader =
+                        AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), false)) {
 
             log.info(reader.getClass().getSimpleName() + " hasIndex " + reader.hasIndex());
             if (writer != null) {
@@ -92,12 +97,14 @@ public final class PrintVariantsExample {
     }
 
     private static void printConfigurationInfo() throws IOException {
-        log.info("Executing as " +
-                System.getProperty("user.name") + '@' + InetAddress.getLocalHost().getHostName() +
-                " on " + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
-                ' ' + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") +
-                ' ' + System.getProperty("java.runtime.version"));
+        log.info("Executing as " + System.getProperty("user.name")
+                + '@' + InetAddress.getLocalHost().getHostName() + " on "
+                + System.getProperty("os.name") + ' ' + System.getProperty("os.version") + ' '
+                + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") + ' '
+                + System.getProperty("java.runtime.version"));
 
-        log.info(Defaults.allDefaults().entrySet().stream().map(e -> e.getKey() + ':' + e.getValue()).collect(Collectors.<String>joining(" ")));
+        log.info(Defaults.allDefaults().entrySet().stream()
+                .map(e -> e.getKey() + ':' + e.getValue())
+                .collect(Collectors.<String>joining(" ")));
     }
 }

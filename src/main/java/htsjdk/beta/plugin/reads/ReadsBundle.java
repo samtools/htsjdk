@@ -1,20 +1,19 @@
 package htsjdk.beta.plugin.reads;
 
 import htsjdk.beta.io.IOPathUtils;
-import htsjdk.beta.io.bundle.BundleJSON;
-import htsjdk.io.HtsPath;
-import htsjdk.io.IOPath;
-import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleBuilder;
-import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.beta.io.bundle.BundleJSON;
 import htsjdk.beta.io.bundle.BundleResource;
+import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.io.bundle.IOPathResource;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -77,11 +76,11 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
         super(BundleResourceType.CT_ALIGNED_READS, resources);
     }
 
-   /**
-    * return the {@link BundleResourceType#CT_ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
-    *
-    * @return the {@link BundleResourceType#CT_ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
-    */
+    /**
+     * return the {@link BundleResourceType#CT_ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
+     *
+     * @return the {@link BundleResourceType#CT_ALIGNED_READS} {@link BundleResource} for this {@link ReadsBundle}
+     */
     public BundleResource getReads() {
         return getOrThrow(BundleResourceType.CT_ALIGNED_READS);
     }
@@ -127,9 +126,9 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * @return a newly created {@link ReadsBundle}
      */
     public static <T extends IOPath> ReadsBundle<T> getReadsBundleFromString(
-            final String jsonString,
-            final Function<String, T> ioPathConstructor) {
-        return new ReadsBundle<>(BundleJSON.toBundle(jsonString, ioPathConstructor).getResources());
+            final String jsonString, final Function<String, T> ioPathConstructor) {
+        return new ReadsBundle<>(
+                BundleJSON.toBundle(jsonString, ioPathConstructor).getResources());
     }
 
     /**
@@ -157,14 +156,14 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
      * @return a {@link ReadsBundle} containing reads and companion index, if it can be found
      */
     public static <T extends IOPath> ReadsBundle<T> resolveIndex(
-            final T reads,
-            final Function<String, T> ioPathConstructor) {
+            final T reads, final Function<String, T> ioPathConstructor) {
         if (reads.hasFileSystemProvider()) {
             final Path index = SamFiles.findIndex(reads.toPath());
             if (index == null) {
                 return new ReadsBundle<>(reads);
             } else {
-                return new ReadsBundle<T>(reads, ioPathConstructor.apply(index.toUri().toString()));
+                return new ReadsBundle<T>(
+                        reads, ioPathConstructor.apply(index.toUri().toString()));
             }
         }
         return new ReadsBundle<>(reads);
@@ -177,9 +176,7 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
             if (providedContentType != null && !typePair.get().a.equals(providedContentType)) {
                 LOG.warn(String.format(
                         "Provided content type \"%s\" for \"%s\" doesn't match derived content type \"%s\"",
-                        providedContentType,
-                        ioPath.getRawInputString(),
-                        typePair.get().a));
+                        providedContentType, ioPath.getRawInputString(), typePair.get().a));
             }
         }
         return new IOPathResource(ioPath, providedContentType);
@@ -204,9 +201,8 @@ public class ReadsBundle<T extends IOPath> extends Bundle implements Serializabl
             } else if (ext.equals((FileExtensions.SAM))) {
                 return Optional.of(new Tuple<>(BundleResourceType.CT_ALIGNED_READS, BundleResourceType.FMT_READS_SAM));
             }
-            //TODO: finish this, else SRA, htsget,...
+            // TODO: finish this, else SRA, htsget,...
         }
         return Optional.empty();
     }
-
 }

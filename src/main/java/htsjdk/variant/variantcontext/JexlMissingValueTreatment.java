@@ -19,11 +19,13 @@ public enum JexlMissingValueTreatment {
     /**
      * Treat expressions with a missing value as an error and throw an {@link IllegalArgumentException}
      */
-    THROW(() -> {throw new IllegalArgumentException("Jexl Expression couldn't be evaluated because there was a missing value.");});
+    THROW(() -> {
+        throw new IllegalArgumentException("Jexl Expression couldn't be evaluated because there was a missing value.");
+    });
 
     private final Supplier<Boolean> resultSupplier;
 
-    JexlMissingValueTreatment(final Supplier<Boolean> resultSupplier){
+    JexlMissingValueTreatment(final Supplier<Boolean> resultSupplier) {
         this.resultSupplier = resultSupplier;
     }
 
@@ -32,8 +34,7 @@ public enum JexlMissingValueTreatment {
      * @return the value that should be used in case of a missing value
      * @throws IllegalArgumentException if this should be treated as an error
      */
-    boolean getMissingValueOrExplode(){
+    boolean getMissingValueOrExplode() {
         return resultSupplier.get();
     }
-
 }

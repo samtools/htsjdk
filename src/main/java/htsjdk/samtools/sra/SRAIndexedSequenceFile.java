@@ -4,13 +4,12 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
+import java.io.IOException;
+import java.util.Iterator;
 import ngs.ErrorMsg;
 import ngs.ReadCollection;
 import ngs.Reference;
 import ngs.ReferenceIterator;
-
-import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * Allows reading Reference data from SRA
@@ -67,7 +66,8 @@ public class SRAIndexedSequenceFile implements ReferenceSequenceFile {
 
     @Override
     public ReferenceSequence getSequence(String contig) {
-        return getSubsequenceAt(contig, 1L, sequenceDictionary.getSequence(contig).getSequenceLength());
+        return getSubsequenceAt(
+                contig, 1L, sequenceDictionary.getSequence(contig).getSequenceLength());
     }
 
     @Override
@@ -80,12 +80,15 @@ public class SRAIndexedSequenceFile implements ReferenceSequenceFile {
         try {
             Reference reference;
             synchronized (this) {
-                if (cachedReference == null || !cachedReference.getCanonicalName().equals(contig)) {
+                if (cachedReference == null
+                        || !cachedReference.getCanonicalName().equals(contig)) {
                     cachedReference = run.getReference(contig);
                 }
                 reference = cachedReference;
 
-                bases = reference.getReferenceBases(start - 1, stop - (start - 1)).getBytes();
+                bases = reference
+                        .getReferenceBases(start - 1, stop - (start - 1))
+                        .getBytes();
             }
         } catch (ErrorMsg e) {
             throw new RuntimeException(e);

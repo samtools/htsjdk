@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,20 +51,25 @@ public class SnappyLoader {
         } else {
             boolean tmpAvailable;
             try {
-                //This triggers trying to import Snappy code, which causes an exception if the library is missing.
+                // This triggers trying to import Snappy code, which causes an exception if the library is missing.
                 tmpAvailable = SnappyLoaderInternal.tryToLoadSnappy();
-            } catch (NoClassDefFoundError e){
+            } catch (NoClassDefFoundError e) {
                 tmpAvailable = false;
-                logger.error(e, "Snappy java library was requested but not found. If Snappy is " +
-                        "intentionally missing, this message may be suppressed by setting " +
-                        "-D"+ Defaults.SAMJDK_PREFIX + Defaults.DISABLE_SNAPPY_PROPERTY_NAME + "=true " );
+                logger.error(
+                        e,
+                        "Snappy java library was requested but not found. If Snappy is "
+                                + "intentionally missing, this message may be suppressed by setting "
+                                + "-D"
+                                + Defaults.SAMJDK_PREFIX + Defaults.DISABLE_SNAPPY_PROPERTY_NAME + "=true ");
             }
             snappyAvailable = tmpAvailable;
         }
     }
 
     /** Returns true if Snappy is available, false otherwise. */
-    public boolean isSnappyAvailable() { return snappyAvailable; }
+    public boolean isSnappyAvailable() {
+        return snappyAvailable;
+    }
 
     /**
      * Wrap an InputStream in a SnappyInputStream.
@@ -86,11 +90,11 @@ public class SnappyLoader {
     /**
      * Function which can throw IOExceptions
      */
-    interface IOFunction<T,R> {
+    interface IOFunction<T, R> {
         R apply(T input) throws IOException;
     }
 
-    private <T,R> R wrapWithSnappyOrThrow(T stream, IOFunction<T, R> wrapper){
+    private <T, R> R wrapWithSnappyOrThrow(T stream, IOFunction<T, R> wrapper) {
         if (isSnappyAvailable()) {
             try {
                 return wrapper.apply(stream);
@@ -100,10 +104,9 @@ public class SnappyLoader {
         } else {
             final String errorMessage = Defaults.DISABLE_SNAPPY_COMPRESSOR
                     ? "Cannot wrap stream with snappy compressor because snappy was disabled via the "
-                    + Defaults.DISABLE_SNAPPY_PROPERTY_NAME + " system property."
+                            + Defaults.DISABLE_SNAPPY_PROPERTY_NAME + " system property."
                     : "Cannot wrap stream with snappy compressor because we could not load the snappy library.";
             throw new SAMException(errorMessage);
         }
     }
-
 }

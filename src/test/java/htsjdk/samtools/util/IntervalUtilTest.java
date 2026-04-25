@@ -3,15 +3,14 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class IntervalUtilTest extends HtsjdkTest {
 
@@ -35,17 +34,22 @@ public class IntervalUtilTest extends HtsjdkTest {
 
         IntervalList result1 = new IntervalList(header);
         result1.add(new Interval("1", 1, 5, true, "tiny_at_1|tiny_at_2|tiny_at_4"));
-        tests.add(new Object[]{true, true, true, result1});
+        tests.add(new Object[] {true, true, true, result1});
 
         return tests.iterator();
     }
 
     @Test(dataProvider = "testMergeDifferentlyData")
-    public void testMergeDifferently(final boolean mergeAbutting, final boolean concatNames, final boolean requireSameStrand, final IntervalList expectedResult) {
+    public void testMergeDifferently(
+            final boolean mergeAbutting,
+            final boolean concatNames,
+            final boolean requireSameStrand,
+            final IntervalList expectedResult) {
         IntervalUtil.IntervalCombiner combiner = new IntervalUtil.IntervalCombiner();
 
-        combiner.setCombineAbutting(mergeAbutting).setConcatenateNames(concatNames).setEnforceSameStrand(requireSameStrand);
+        combiner.setCombineAbutting(mergeAbutting)
+                .setConcatenateNames(concatNames)
+                .setEnforceSameStrand(requireSameStrand);
         Assert.assertEquals(expectedResult, combiner.combine(intervalList));
-
     }
 }

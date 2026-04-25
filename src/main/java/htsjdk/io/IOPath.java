@@ -2,7 +2,6 @@ package htsjdk.io;
 
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
@@ -91,7 +90,8 @@ public interface IOPath {
     default Optional<String> getExtension() {
         final String hierarchicalPath = getURI().getPath();
         if (hierarchicalPath != null) {
-            final int indexOfLastComponent = hierarchicalPath.lastIndexOf(FileSystems.getDefault().getSeparator());
+            final int indexOfLastComponent =
+                    hierarchicalPath.lastIndexOf(FileSystems.getDefault().getSeparator());
             if (indexOfLastComponent != -1 && indexOfLastComponent < hierarchicalPath.length() - 1) {
                 final String lastComponent = hierarchicalPath.substring(indexOfLastComponent + 1);
                 if (lastComponent.length() > 0) {
@@ -127,9 +127,7 @@ public interface IOPath {
         // We don't want to use {@code #getExtension} here, since it won't work correctly if we're comparing an
         // extension that uses multiple . chars, such as .fasta.gz.
         final String hierarchicalPath = getURI().getPath();
-        return hierarchicalPath == null ?
-                false :
-                hierarchicalPath.toLowerCase().endsWith(extension.toLowerCase());
+        return hierarchicalPath == null ? false : hierarchicalPath.toLowerCase().endsWith(extension.toLowerCase());
     }
 
     /**
@@ -140,7 +138,8 @@ public interface IOPath {
      */
     default Optional<String> getBaseName() {
         final String hierarchicalPath = getURI().getPath();
-        final int indexOfLastComponent = hierarchicalPath.lastIndexOf(FileSystems.getDefault().getSeparator());
+        final int indexOfLastComponent =
+                hierarchicalPath.lastIndexOf(FileSystems.getDefault().getSeparator());
         if (indexOfLastComponent != -1 && indexOfLastComponent < hierarchicalPath.length() - 1) {
             final String lastComponent = hierarchicalPath.substring(indexOfLastComponent + 1);
             if (lastComponent.length() > 0) {

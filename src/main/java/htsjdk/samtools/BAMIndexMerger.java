@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,8 +77,9 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
             sequenceDictionary = index.getBamDictionary();
         }
         if (index.getNumberOfReferences() != numReferences) {
-            throw new IllegalArgumentException(
-                    String.format("Cannot merge BAI files with different number of references, %s and %s.", numReferences, index.getNumberOfReferences()));
+            throw new IllegalArgumentException(String.format(
+                    "Cannot merge BAI files with different number of references, %s and %s.",
+                    numReferences, index.getNumberOfReferences()));
         }
         index.getBamDictionary().assertSameDictionary(sequenceDictionary);
         // just store the indexes rather than computing the BAMIndexContent for each ref,
@@ -99,7 +99,8 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
         try (BinaryBAMIndexWriter writer = new BinaryBAMIndexWriter(numReferences, out)) {
             for (int ref = 0; ref < numReferences; ref++) {
                 final int r = ref;
-                List<BAMIndexContent> bamIndexContentList = indexes.stream().map(index -> index.getQueryResults(r)).collect(Collectors.toList());
+                List<BAMIndexContent> bamIndexContentList =
+                        indexes.stream().map(index -> index.getQueryResults(r)).collect(Collectors.toList());
                 final BAMIndexContent bamIndexContent = mergeBAMIndexContent(ref, bamIndexContentList, offsets);
                 writer.writeReference(bamIndexContent);
             }
@@ -111,8 +112,8 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
         return new CachingBamFileIndexOptimizedForMerging(stream, dictionary);
     }
 
-    private static BAMIndexContent mergeBAMIndexContent(final int referenceSequence,
-                                                        final List<BAMIndexContent> bamIndexContentList, final long[] offsets) {
+    private static BAMIndexContent mergeBAMIndexContent(
+            final int referenceSequence, final List<BAMIndexContent> bamIndexContentList, final long[] offsets) {
         final List<BinningIndexContent.BinList> binLists = new ArrayList<>();
         final List<BAMIndexMetaData> metaDataList = new ArrayList<>();
         final List<LinearIndex> linearIndexes = new ArrayList<>();
@@ -140,9 +141,14 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
      * @param offsets bin <i>i</i> will be shifted by offset <i>i</i>
      * @return the merged bins
      */
-    public static BinningIndexContent.BinList mergeBins(final List<BinningIndexContent.BinList> binLists, final long[] offsets) {
+    public static BinningIndexContent.BinList mergeBins(
+            final List<BinningIndexContent.BinList> binLists, final long[] offsets) {
         final List<Bin> mergedBins = new ArrayList<>();
-        final int maxBinNumber = binLists.stream().filter(Objects::nonNull).mapToInt(bl -> bl.maxBinNumber).max().orElse(0);
+        final int maxBinNumber = binLists.stream()
+                .filter(Objects::nonNull)
+                .mapToInt(bl -> bl.maxBinNumber)
+                .max()
+                .orElse(0);
         int commonNonNullBins = 0;
         for (int i = 0; i <= maxBinNumber; i++) {
             final List<Bin> nonNullBins = new ArrayList<>();
@@ -161,8 +167,11 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
                 commonNonNullBins += nonNullBins.size() - 1;
             }
         }
-        final int numberOfNonNullBins =
-                binLists.stream().filter(Objects::nonNull).mapToInt(BinningIndexContent.BinList::getNumberOfNonNullBins).sum() - commonNonNullBins;
+        final int numberOfNonNullBins = binLists.stream()
+                        .filter(Objects::nonNull)
+                        .mapToInt(BinningIndexContent.BinList::getNumberOfNonNullBins)
+                        .sum()
+                - commonNonNullBins;
         return new BinningIndexContent.BinList(mergedBins.toArray(new Bin[0]), numberOfNonNullBins);
     }
 
@@ -178,10 +187,13 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
         final List<Chunk> allChunks = new ArrayList<>();
         for (Bin b : bins) {
             if (b.getReferenceSequence() != referenceSequence) {
-                throw new IllegalArgumentException(String.format("Bins have different reference sequences, %s and %s.", b.getReferenceSequence(), referenceSequence));
+                throw new IllegalArgumentException(String.format(
+                        "Bins have different reference sequences, %s and %s.",
+                        b.getReferenceSequence(), referenceSequence));
             }
             if (b.getBinNumber() != binNumber) {
-                throw new IllegalArgumentException(String.format("Bins have different numbers, %s and %s.", b.getBinNumber(), binNumber));
+                throw new IllegalArgumentException(
+                        String.format("Bins have different numbers, %s and %s.", b.getBinNumber(), binNumber));
             }
             allChunks.addAll(b.getChunkList());
         }
@@ -241,7 +253,8 @@ public final class BAMIndexMerger extends IndexMerger<AbstractBAMFileIndex> {
      * @param offsets linear index <i>i</i> will be shifted by offset <i>i</i>
      * @return the merged linear index
      */
-    public static LinearIndex mergeLinearIndexes(final int referenceSequence, final List<LinearIndex> linearIndexes, final long[] offsets) {
+    public static LinearIndex mergeLinearIndexes(
+            final int referenceSequence, final List<LinearIndex> linearIndexes, final long[] offsets) {
         int maxIndex = -1;
         for (LinearIndex li : linearIndexes) {
             if (li == null) {

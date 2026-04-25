@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import htsjdk.samtools.util.zip.InflaterFactory;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.zip.CRC32;
@@ -53,7 +52,10 @@ import java.util.zip.Inflater;
 public class GzipCodec {
 
     /** The output format for compression. */
-    public enum Format { GZIP, BGZF }
+    public enum Format {
+        GZIP,
+        BGZF
+    }
 
     // Standard GZIP header: 10 bytes (RFC 1952)
     private static final int GZIP_HEADER_SIZE = 10;
@@ -70,10 +72,10 @@ public class GzipCodec {
     private static final byte GZIP_CM_DEFLATE = BlockCompressedStreamConstants.GZIP_CM_DEFLATE;
 
     // GZIP FLG bits
-    private static final int FTEXT    = 1;
-    private static final int FHCRC    = 2;
-    private static final int FEXTRA   = 4;
-    private static final int FNAME    = 8;
+    private static final int FTEXT = 1;
+    private static final int FHCRC = 2;
+    private static final int FEXTRA = 4;
+    private static final int FNAME = 8;
     private static final int FCOMMENT = 16;
 
     private final Deflater deflater;
@@ -104,8 +106,11 @@ public class GzipCodec {
      * @param deflaterFactory  factory for creating Deflater instances
      * @param inflaterFactory  factory for creating Inflater instances
      */
-    public GzipCodec(final int compressionLevel, final int deflateStrategy,
-                     final DeflaterFactory deflaterFactory, final InflaterFactory inflaterFactory) {
+    public GzipCodec(
+            final int compressionLevel,
+            final int deflateStrategy,
+            final DeflaterFactory deflaterFactory,
+            final InflaterFactory inflaterFactory) {
         // nowrap=true: we produce raw deflate and handle GZIP framing ourselves
         this.deflater = deflaterFactory.makeDeflater(compressionLevel, true);
         this.deflater.setStrategy(deflateStrategy);
@@ -172,7 +177,8 @@ public class GzipCodec {
         deflater.setInput(inputBytes, inputOff, inputSize);
         deflater.finish();
         while (!deflater.finished()) {
-            final int n = deflater.deflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
+            final int n =
+                    deflater.deflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
             output.position(output.position() + n);
         }
 
@@ -185,8 +191,8 @@ public class GzipCodec {
         if (format == Format.BGZF) {
             final int totalBlockSize = output.position() - outputStart;
             output.order(ByteOrder.LITTLE_ENDIAN);
-            output.putShort(outputStart + BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET,
-                    (short) (totalBlockSize - 1));
+            output.putShort(
+                    outputStart + BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET, (short) (totalBlockSize - 1));
         }
 
         return output.position() - outputStart;
@@ -226,25 +232,25 @@ public class GzipCodec {
             output.put(GZIP_ID1);
             output.put(GZIP_ID2);
             output.put(GZIP_CM_DEFLATE);
-            output.put((byte) FEXTRA);  // FLG: FEXTRA set
-            output.putInt(0);           // MTIME
-            output.put((byte) 0);       // XFL
-            output.put((byte) 0xFF);    // OS: unknown
+            output.put((byte) FEXTRA); // FLG: FEXTRA set
+            output.putInt(0); // MTIME
+            output.put((byte) 0); // XFL
+            output.put((byte) 0xFF); // OS: unknown
             output.order(ByteOrder.LITTLE_ENDIAN);
-            output.putShort(BlockCompressedStreamConstants.GZIP_XLEN);  // XLEN = 6
-            output.put(BlockCompressedStreamConstants.BGZF_ID1);        // SI1 = 'B'
-            output.put(BlockCompressedStreamConstants.BGZF_ID2);        // SI2 = 'C'
-            output.putShort(BlockCompressedStreamConstants.BGZF_LEN);   // SLEN = 2
+            output.putShort(BlockCompressedStreamConstants.GZIP_XLEN); // XLEN = 6
+            output.put(BlockCompressedStreamConstants.BGZF_ID1); // SI1 = 'B'
+            output.put(BlockCompressedStreamConstants.BGZF_ID2); // SI2 = 'C'
+            output.putShort(BlockCompressedStreamConstants.BGZF_LEN); // SLEN = 2
             output.putShort((short) 0); // BSIZE placeholder — patched after deflation
             return BGZF_HEADER_SIZE;
         } else {
             output.put(GZIP_ID1);
             output.put(GZIP_ID2);
             output.put(GZIP_CM_DEFLATE);
-            output.put((byte) 0);       // FLG: no optional fields
-            output.putInt(0);           // MTIME
-            output.put((byte) 0);       // XFL
-            output.put((byte) 0xFF);    // OS: unknown
+            output.put((byte) 0); // FLG: no optional fields
+            output.putInt(0); // MTIME
+            output.put((byte) 0); // XFL
+            output.put((byte) 0xFF); // OS: unknown
             return GZIP_HEADER_SIZE;
         }
     }
@@ -322,7 +328,8 @@ public class GzipCodec {
         try {
             int totalInflated = 0;
             while (!inflater.finished() && output.hasRemaining()) {
-                final int n = inflater.inflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
+                final int n =
+                        inflater.inflate(output.array(), output.arrayOffset() + output.position(), output.remaining());
                 output.position(output.position() + n);
                 totalInflated += n;
             }
@@ -346,9 +353,8 @@ public class GzipCodec {
                 outputSlice.position(output.position() - totalInflated);
                 crc32.update(outputSlice);
                 if ((int) crc32.getValue() != expectedCrc) {
-                    throw new IllegalStateException(
-                            String.format("GZIP CRC32 mismatch: expected %08x, got %08x",
-                                    expectedCrc, (int) crc32.getValue()));
+                    throw new IllegalStateException(String.format(
+                            "GZIP CRC32 mismatch: expected %08x, got %08x", expectedCrc, (int) crc32.getValue()));
                 }
             }
 
@@ -368,7 +374,10 @@ public class GzipCodec {
     public ByteBuffer decompress(final ByteBuffer input) {
         // Read ISIZE from the last 4 bytes of the GZIP block to size the output
         final int isizeOffset = input.limit() - 4;
-        final int isize = input.duplicate().order(ByteOrder.LITTLE_ENDIAN).position(isizeOffset).getInt();
+        final int isize = input.duplicate()
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .position(isizeOffset)
+                .getInt();
         final ByteBuffer output = ByteBuffer.allocate(isize);
         decompress(input, output);
         output.flip();

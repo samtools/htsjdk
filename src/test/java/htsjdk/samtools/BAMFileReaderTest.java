@@ -3,25 +3,24 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 public class BAMFileReaderTest extends HtsjdkTest {
-    private final static File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final static File baiFileIndex = new File(bamFile.getPath() + ".bai");
-    private final static File csiFileIndex = new File(bamFile.getPath() + ".csi");
-    private final static File iiiFileIndex = new File(bamFile.getPath() + ".iii");
-    private final static int nofMappedReads = 9721;
-    private final static int nofUnmappedReads = 279 ;
-    private final static int noChrMReads = 23;
-    private final static int noChrMReadsContained = 9;
-    private final static int noChrMReadsOverlapped = 10;
+    private static final File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final File baiFileIndex = new File(bamFile.getPath() + ".bai");
+    private static final File csiFileIndex = new File(bamFile.getPath() + ".csi");
+    private static final File iiiFileIndex = new File(bamFile.getPath() + ".iii");
+    private static final int nofMappedReads = 9721;
+    private static final int nofUnmappedReads = 279;
+    private static final int noChrMReads = 23;
+    private static final int noChrMReadsContained = 9;
+    private static final int noChrMReadsOverlapped = 10;
 
     private static BAMFileReader bamFileReaderBAI;
     private static BAMFileReader bamFileReaderCSI;
@@ -30,10 +29,34 @@ public class BAMFileReaderTest extends HtsjdkTest {
 
     @BeforeMethod
     public void init() throws IOException {
-        bamFileReaderBAI = new BAMFileReader(bamFile, baiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
-        bamFileReaderCSI = new BAMFileReader(bamFile, csiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
-        bamFileReaderWrong = new BAMFileReader(bamFile, iiiFileIndex, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
-        bamFileReaderNull = new BAMFileReader(bamFile, null, true, false, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
+        bamFileReaderBAI = new BAMFileReader(
+                bamFile,
+                baiFileIndex,
+                true,
+                false,
+                ValidationStringency.DEFAULT_STRINGENCY,
+                DefaultSAMRecordFactory.getInstance());
+        bamFileReaderCSI = new BAMFileReader(
+                bamFile,
+                csiFileIndex,
+                true,
+                false,
+                ValidationStringency.DEFAULT_STRINGENCY,
+                DefaultSAMRecordFactory.getInstance());
+        bamFileReaderWrong = new BAMFileReader(
+                bamFile,
+                iiiFileIndex,
+                true,
+                false,
+                ValidationStringency.DEFAULT_STRINGENCY,
+                DefaultSAMRecordFactory.getInstance());
+        bamFileReaderNull = new BAMFileReader(
+                bamFile,
+                null,
+                true,
+                false,
+                ValidationStringency.DEFAULT_STRINGENCY,
+                DefaultSAMRecordFactory.getInstance());
     }
 
     @Test
@@ -42,13 +65,13 @@ public class BAMFileReaderTest extends HtsjdkTest {
         final URL bamURL = Paths.get(bamFile.toURI()).toUri().toURL();
         final URL csiURL = Paths.get(csiFileIndex.toURI()).toUri().toURL();
         final SamInputResource resource = SamInputResource.of(bamURL).index(csiURL);
-        final SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
+        final SamReaderFactory factory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
         try (final SamReader samReader = factory.open(resource)) {
             Assert.assertTrue(samReader.hasIndex());
             final BAMIndex index = samReader.indexing().getIndex();
             Assert.assertTrue(index instanceof CSIIndex);
-            try (final SAMRecordIterator unusedIterator =
-                         samReader.queryAlignmentStart("chr1_random", 1)) {}
+            try (final SAMRecordIterator unusedIterator = samReader.queryAlignmentStart("chr1_random", 1)) {}
             try (final SAMRecordIterator unusedIterator = samReader.queryUnmapped()) {}
         }
     }
@@ -60,7 +83,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
         Assert.assertTrue(bamFileReaderCSI.getIndexType().equals(SamIndexes.CSI));
     }
 
-    @Test (expectedExceptions = SAMFormatException.class)
+    @Test(expectedExceptions = SAMFormatException.class)
     public static void testGetIndexTypeException() {
         Assert.assertTrue(bamFileReaderWrong.getIndexType().equals(SamIndexes.BAI));
     }
@@ -80,7 +103,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
         Assert.assertNotNull(bamFileReaderNull.getIndex());
     }
 
-    @Test (expectedExceptions = SAMFormatException.class)
+    @Test(expectedExceptions = SAMFormatException.class)
     public static void testGetIndexException() {
         Assert.assertNotNull(bamFileReaderWrong.getIndex());
     }
@@ -88,8 +111,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
     @Test
     public static void testQueryMapped() throws IOException {
         try (SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
-             SAMRecordIterator samRecordIterator = samReader.iterator())
-        {
+                SAMRecordIterator samRecordIterator = samReader.iterator()) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
 
             int counter = 0;
@@ -104,8 +126,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
                 String sam1 = samRecord.getSAMString();
 
                 CloseableIterator<SAMRecord> iterator = bamFileReaderBAI.queryAlignmentStart(
-                        samRecord.getReferenceName(),
-                        samRecord.getAlignmentStart());
+                        samRecord.getReferenceName(), samRecord.getAlignmentStart());
 
                 Assert.assertTrue(iterator.hasNext(), counter + ": " + sam1);
                 SAMRecord bamRecord = iterator.next();
@@ -113,11 +134,12 @@ public class BAMFileReaderTest extends HtsjdkTest {
                 Assert.assertEquals(samRecord.getReferenceName(), bamRecord.getReferenceName(), sam1 + sam2);
 
                 // default 'overlap' is true, so test records intersect the query:
-                Assert.assertTrue(CoordMath.overlaps(
-                        bamRecord.getAlignmentStart(),
-                        bamRecord.getAlignmentEnd(),
-                        samRecord.getAlignmentStart(),
-                        samRecord.getAlignmentEnd()),
+                Assert.assertTrue(
+                        CoordMath.overlaps(
+                                bamRecord.getAlignmentStart(),
+                                bamRecord.getAlignmentEnd(),
+                                samRecord.getAlignmentStart(),
+                                samRecord.getAlignmentEnd()),
                         sam1 + sam2);
 
                 iterator.close();
@@ -127,8 +149,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
 
         // test the reader with the CSI index
         try (SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
-             SAMRecordIterator samRecordIterator = samReader.iterator())
-        {
+                SAMRecordIterator samRecordIterator = samReader.iterator()) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
 
             int counter = 0;
@@ -143,8 +164,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
                 String sam1 = samRecord.getSAMString();
 
                 CloseableIterator<SAMRecord> iterator = bamFileReaderCSI.queryAlignmentStart(
-                        samRecord.getReferenceName(),
-                        samRecord.getAlignmentStart());
+                        samRecord.getReferenceName(), samRecord.getAlignmentStart());
 
                 Assert.assertTrue(iterator.hasNext(), counter + ": " + sam1);
                 SAMRecord bamRecord = iterator.next();
@@ -152,11 +172,12 @@ public class BAMFileReaderTest extends HtsjdkTest {
                 Assert.assertEquals(samRecord.getReferenceName(), bamRecord.getReferenceName(), sam1 + sam2);
 
                 // default 'overlap' is true, so test records intersect the query:
-                Assert.assertTrue(CoordMath.overlaps(
-                        bamRecord.getAlignmentStart(),
-                        bamRecord.getAlignmentEnd(),
-                        samRecord.getAlignmentStart(),
-                        samRecord.getAlignmentEnd()),
+                Assert.assertTrue(
+                        CoordMath.overlaps(
+                                bamRecord.getAlignmentStart(),
+                                bamRecord.getAlignmentEnd(),
+                                samRecord.getAlignmentStart(),
+                                samRecord.getAlignmentEnd()),
                         sam1 + sam2);
 
                 iterator.close();
@@ -191,7 +212,8 @@ public class BAMFileReaderTest extends HtsjdkTest {
 
     @Test
     public static void testQueryInterval() {
-        QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
+        QueryInterval[] query =
+                new QueryInterval[] {new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
         final CloseableIterator<SAMRecord> baiIterator = bamFileReaderBAI.query(query, false);
         final CloseableIterator<SAMRecord> csiIterator = bamFileReaderCSI.query(query, false);
 
@@ -307,7 +329,6 @@ public class BAMFileReaderTest extends HtsjdkTest {
         Assert.assertEquals(r1.getReadName(), r2.getReadName());
         Assert.assertEquals(r1.getBaseQualityString(), r2.getBaseQualityString());
 
-
         Assert.assertFalse(baiIterator.hasNext());
         Assert.assertFalse(csiIterator.hasNext());
 
@@ -319,5 +340,4 @@ public class BAMFileReaderTest extends HtsjdkTest {
     public static void testFindVirtualOffsetOfFirstRecord() throws IOException {
         Assert.assertEquals(BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile), 8384);
     }
-
 }

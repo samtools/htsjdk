@@ -34,9 +34,9 @@ import java.util.Map;
  * @author alecw@broadinstitute.org
  */
 public class ResourceLimitedMap<Key, Value> {
-    private static final float   hashTableLoadFactor = 0.75f;
+    private static final float hashTableLoadFactor = 0.75f;
 
-    private final LinkedHashMap<Key,Value> map;
+    private final LinkedHashMap<Key, Value> map;
     private final int cacheSize;
     private final ResourceLimitedMapFunctor<Key, Value> functor;
 
@@ -50,17 +50,18 @@ public class ResourceLimitedMap<Key, Value> {
         this.cacheSize = cacheSize;
         this.functor = functor;
         // Make hash table big enough so that it never gets resized.
-        final int hashTableCapacity = (int)Math.ceil(cacheSize / hashTableLoadFactor) + 1;
+        final int hashTableCapacity = (int) Math.ceil(cacheSize / hashTableLoadFactor) + 1;
 
         // Created LinkedHashMap in LRU mode
-        map = new LinkedHashMap<Key,Value>(hashTableCapacity, hashTableLoadFactor, true) {
-            @Override protected boolean removeEldestEntry (final Map.Entry<Key,Value> eldest) {
-               if (size() > ResourceLimitedMap.this.cacheSize) {
-                   ResourceLimitedMap.this.functor.finalizeValue(eldest.getKey(), eldest.getValue());
-                   return true;
-               } else {
-                   return false;
-               }
+        map = new LinkedHashMap<Key, Value>(hashTableCapacity, hashTableLoadFactor, true) {
+            @Override
+            protected boolean removeEldestEntry(final Map.Entry<Key, Value> eldest) {
+                if (size() > ResourceLimitedMap.this.cacheSize) {
+                    ResourceLimitedMap.this.functor.finalizeValue(eldest.getKey(), eldest.getValue());
+                    return true;
+                } else {
+                    return false;
+                }
             }
         };
     }

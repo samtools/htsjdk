@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble;
 
-
 import htsjdk.samtools.util.Locatable;
 
 /**
@@ -37,8 +36,7 @@ public interface Feature extends Locatable {
      * @deprecated on 03/2015. Use getContig() instead.
      */
     @Deprecated
-    default public String getChr() {
+    public default String getChr() {
         return getContig();
     }
-
 }

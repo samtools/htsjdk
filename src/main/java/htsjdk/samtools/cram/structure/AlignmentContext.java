@@ -29,7 +29,6 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.Log;
-
 import java.util.Objects;
 
 /**
@@ -47,22 +46,15 @@ public class AlignmentContext {
     public static final int NO_ALIGNMENT_END = SAMRecord.NO_ALIGNMENT_START; // SAMRecord uses this for alignmentEnd...
 
     public static final AlignmentContext MULTIPLE_REFERENCE_CONTEXT =
-            new AlignmentContext(
-                ReferenceContext.MULTIPLE_REFERENCE_CONTEXT,
-                    NO_ALIGNMENT_START,
-                    NO_ALIGNMENT_SPAN);
+            new AlignmentContext(ReferenceContext.MULTIPLE_REFERENCE_CONTEXT, NO_ALIGNMENT_START, NO_ALIGNMENT_SPAN);
 
     public static final AlignmentContext UNMAPPED_UNPLACED_CONTEXT =
-            new AlignmentContext(
-                    ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                    NO_ALIGNMENT_START,
-                    NO_ALIGNMENT_SPAN);
+            new AlignmentContext(ReferenceContext.UNMAPPED_UNPLACED_CONTEXT, NO_ALIGNMENT_START, NO_ALIGNMENT_SPAN);
 
-    public static final AlignmentContext EOF_CONTAINER_CONTEXT =
-            new AlignmentContext(
-                    ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
-                    CramIO.EOF_ALIGNMENT_START, // defined by the spec...
-                    CramIO.EOF_ALIGNMENT_SPAN); // defined by the spec...
+    public static final AlignmentContext EOF_CONTAINER_CONTEXT = new AlignmentContext(
+            ReferenceContext.UNMAPPED_UNPLACED_CONTEXT,
+            CramIO.EOF_ALIGNMENT_START, // defined by the spec...
+            CramIO.EOF_ALIGNMENT_SPAN); // defined by the spec...
 
     private final ReferenceContext referenceContext;
     // minimum alignment start of the reads represented here, using a 1-based coordinate system
@@ -83,9 +75,8 @@ public class AlignmentContext {
      * @param alignmentStart the 1-based alignment start
      * @param alignmentSpan the alignment span
      */
-    public AlignmentContext(final ReferenceContext referenceContext,
-                            final int alignmentStart,
-                            final int alignmentSpan) {
+    public AlignmentContext(
+            final ReferenceContext referenceContext, final int alignmentStart, final int alignmentSpan) {
         this.referenceContext = referenceContext;
         this.alignmentStart = alignmentStart;
         this.alignmentSpan = alignmentSpan;
@@ -129,9 +120,7 @@ public class AlignmentContext {
                 if (alignmentStart < 0) {
                     final String errorString = String.format(
                             "Single-reference alignment context with an invalid start detected (index %d/start %d/span %d)",
-                            referenceContext.getReferenceSequenceID(),
-                            alignmentStart,
-                            alignmentSpan);
+                            referenceContext.getReferenceSequenceID(), alignmentStart, alignmentSpan);
                     if (isStrict) {
                         throw new CRAMException(errorString);
                     } else {
@@ -143,12 +132,12 @@ public class AlignmentContext {
             case UNMAPPED_UNPLACED_TYPE:
                 // the spec requires start==0 and span==0 for unmapped, but also make a special exception
                 // for EOF Containers
-                if (!(alignmentStart == NO_ALIGNMENT_START && alignmentSpan == NO_ALIGNMENT_SPAN) &&
-                        !(alignmentStart == CramIO.EOF_ALIGNMENT_START && alignmentSpan == CramIO.EOF_ALIGNMENT_SPAN)) {
+                if (!(alignmentStart == NO_ALIGNMENT_START && alignmentSpan == NO_ALIGNMENT_SPAN)
+                        && !(alignmentStart == CramIO.EOF_ALIGNMENT_START
+                                && alignmentSpan == CramIO.EOF_ALIGNMENT_SPAN)) {
                     final String errorString = String.format(
                             "Unmapped/unplaced alignment context with invalid start/span detected (%d/%d)",
-                            alignmentStart,
-                            alignmentSpan);
+                            alignmentStart, alignmentSpan);
                     if (isStrict) {
                         throw new CRAMException(errorString);
                     } else {
@@ -161,8 +150,7 @@ public class AlignmentContext {
                 if (alignmentStart != NO_ALIGNMENT_START || alignmentSpan != NO_ALIGNMENT_SPAN) {
                     final String errorString = String.format(
                             "Multi-reference alignment context with invalid start/span detected (%d/%d)",
-                            alignmentStart,
-                            alignmentSpan);
+                            alignmentStart, alignmentSpan);
                     if (isStrict) {
                         throw new CRAMException(errorString);
                     } else {
@@ -172,20 +160,14 @@ public class AlignmentContext {
                 break;
 
             default:
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Alignment context with unknown reference context type: %s",
-                                referenceContext.getType()));
+                throw new IllegalArgumentException(String.format(
+                        "Alignment context with unknown reference context type: %s", referenceContext.getType()));
         }
     }
 
     @Override
     public String toString() {
-            return String.format(
-                    "sequenceId=%s, start=%d, span=%d",
-                    referenceContext,
-                    alignmentStart,
-                    alignmentSpan);
+        return String.format("sequenceId=%s, start=%d, span=%d", referenceContext, alignmentStart, alignmentSpan);
     }
 
     @Override
@@ -193,9 +175,9 @@ public class AlignmentContext {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AlignmentContext that = (AlignmentContext) o;
-        return alignmentStart == that.alignmentStart &&
-                alignmentSpan == that.alignmentSpan &&
-                Objects.equals(referenceContext, that.referenceContext);
+        return alignmentStart == that.alignmentStart
+                && alignmentSpan == that.alignmentSpan
+                && Objects.equals(referenceContext, that.referenceContext);
     }
 
     @Override

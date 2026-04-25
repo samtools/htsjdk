@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.HashMap;
 
 /**
@@ -25,9 +24,7 @@ public class HuffmanParamsCalculator<T> {
         ValidationUtils.validateArg(numberOfObservations > 0, "number of observations must be > 0");
         symbolFrequencies.compute(
                 symbol,
-                (s, f) -> f == null ?
-                        new MutableInt(numberOfObservations) :
-                        f.incrementValue(numberOfObservations));
+                (s, f) -> f == null ? new MutableInt(numberOfObservations) : f.incrementValue(numberOfObservations));
     }
 
     /**
@@ -38,5 +35,4 @@ public class HuffmanParamsCalculator<T> {
         final HuffmanTree<T> tree = HuffmanTree.buildTree(symbolFrequencies);
         return tree.getHuffmanParams();
     }
-
 }

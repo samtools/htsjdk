@@ -33,12 +33,13 @@ import htsjdk.samtools.*;
  * By default duplicate reads and non-primary alignments are filtered out.  Filtering may be changed
  * via setSamFilters(). Difference from SamLocusIterator is that this implementation accumulates data
  * only about start and end of alignment blocks from reads, not about each aligned base.
- * 
+ *
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
- * 
+ *
  */
-public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffset, AbstractLocusInfo<EdgingRecordAndOffset>> {
+public class EdgeReadIterator
+        extends AbstractLocusIterator<EdgingRecordAndOffset, AbstractLocusInfo<EdgingRecordAndOffset>> {
     // These variables are required to perform the detection of overlap between reads and intervals
     private Interval currentInterval = null;
     private final PeekableIterator<Interval> intervalListIterator;
@@ -106,15 +107,16 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
      * @param rec The record we want to consider
      * @return True, if rec is fully contained in the current interval, otherwise false
      */
-     protected boolean advanceCurrentIntervalAndCheckIfIntervalContainsRead(final SAMRecord rec) {
-         // currentInterval should never be null when calling this method, but we have to check it just to make sure,
-         // so that we don't get a NullPointerException in the return statement.
-         if (currentInterval == null) {
-             return false;
-         }
+    protected boolean advanceCurrentIntervalAndCheckIfIntervalContainsRead(final SAMRecord rec) {
+        // currentInterval should never be null when calling this method, but we have to check it just to make sure,
+        // so that we don't get a NullPointerException in the return statement.
+        if (currentInterval == null) {
+            return false;
+        }
         // Here we need to update the currentInterval. We have to do this using an
         // IntervalCoordinateComparator to take factor in the order in the sequence dictionary.
-        while (intervalListIterator.peek() != null && intervalCoordinateComparator.compare(new Interval(rec), intervalListIterator.peek()) > 0) {
+        while (intervalListIterator.peek() != null
+                && intervalCoordinateComparator.compare(new Interval(rec), intervalListIterator.peek()) > 0) {
             currentInterval = intervalListIterator.next();
         }
         return currentInterval.contains(rec);
@@ -133,7 +135,8 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
         // In the case that no intervals are passed, or that the current interval completely contains
         // the current read (which is the most common case for WGS), set needToConsiderIntervals to false, so we don't
         // have to find intersections and can later emit the read right away.
-        final boolean needToConsiderIntervals = intervals != null && !advanceCurrentIntervalAndCheckIfIntervalContainsRead(rec);
+        final boolean needToConsiderIntervals =
+                intervals != null && !advanceCurrentIntervalAndCheckIfIntervalContainsRead(rec);
 
         // interpret the CIGAR string and add the base info
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
@@ -141,8 +144,10 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
             //
             // Example: Read (or more accurately, AlignmentBlock) from position 101 to 108
             //
-            // accumulator (ArrayList<LocusInfo>)     30  31  32  33  34  35  36  37  38 (has one LocusInfo at each position, corresponding to the genomic position)
-            // LocusInfo objects (with genomic pos.) 100 101 102 103 104 105 106 107 108 (the LocusInfo objects can contain EdgingRecordAndOffset objects, if a record starts or ends there)
+            // accumulator (ArrayList<LocusInfo>)     30  31  32  33  34  35  36  37  38 (has one LocusInfo at each
+            // position, corresponding to the genomic position)
+            // LocusInfo objects (with genomic pos.) 100 101 102 103 104 105 106 107 108 (the LocusInfo objects can
+            // contain EdgingRecordAndOffset objects, if a record starts or ends there)
             //                                            ^                           ^
             //                                            |                           |
             // EdgingRecordAndOffset objects              B                           E
@@ -167,52 +172,78 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
 
             // Here we add the first entry to the accumulator, which is the start of this AlignmentBlock.
             if (accumulator.isEmpty()) {
-                accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()), rec.getAlignmentStart()));
+                accumulator.add(
+                        createLocusInfo(getReferenceSequence(rec.getReferenceIndex()), rec.getAlignmentStart()));
             }
 
             // The accumulator should always have LocusInfos that correspond to one consecutive segment of loci from
             // one reference sequence. So
-            // accumulator.get(0).getPosition() + accumulator.size() == accumulator.get(accumulator.size()-1).getPosition()+1
+            // accumulator.get(0).getPosition() + accumulator.size() ==
+            // accumulator.get(accumulator.size()-1).getPosition()+1
             final int accumulatorNextPosition = accumulator.get(0).getPosition() + accumulator.size();
 
-            if (accumulatorNextPosition != accumulator.get(accumulator.size() - 1).getPosition() + 1) {
+            if (accumulatorNextPosition
+                    != accumulator.get(accumulator.size() - 1).getPosition() + 1) {
                 throw new IllegalStateException("The accumulator has gotten into a funk. Cannot continue");
             }
 
             // Ensure there are consecutive AbstractLocusInfos up to and including the end of the AlignmentBlock
-            for (int locusPos = accumulatorNextPosition; locusPos <= referencePositionStartOfAlignmentBlock + alignmentBlock.getLength(); ++locusPos) {
+            for (int locusPos = accumulatorNextPosition;
+                    locusPos <= referencePositionStartOfAlignmentBlock + alignmentBlock.getLength();
+                    ++locusPos) {
                 accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()), locusPos));
             }
 
             // Let's assume an alignment block starts in some locus.
             // We put two records to the accumulator. The first one has the "begin" type which corresponds to the locus
-            // where the block starts. The second one has the "end" type which corresponds to the other locus where the block ends.
+            // where the block starts. The second one has the "end" type which corresponds to the other locus where the
+            // block ends.
 
             // 0-based offset from the aligned position of the first base in the read to the aligned position
             // of the current base.
-            final int offsetStartOfAlignmentBlockOnReference = referencePositionStartOfAlignmentBlock - rec.getAlignmentStart();
+            final int offsetStartOfAlignmentBlockOnReference =
+                    referencePositionStartOfAlignmentBlock - rec.getAlignmentStart();
             // Similar for the end of the alignment block. We can simply add the length of the block, since by
             // definition all bases in an AlignmentBlock match the reference alignment
-            final int offsetEndOfAlignmentBlockOnReference = offsetStartOfAlignmentBlockOnReference + alignmentBlock.getLength();
+            final int offsetEndOfAlignmentBlockOnReference =
+                    offsetStartOfAlignmentBlockOnReference + alignmentBlock.getLength();
 
             if (needToConsiderIntervals) {
-                // If the read isn't fully contained within the currentInterval, we need to manually handle each of the overlaps.
+                // If the read isn't fully contained within the currentInterval, we need to manually handle each of the
+                // overlaps.
 
-                for (final Interval interval : overlapDetector.getOverlaps(new Interval(rec.getContig(), referencePositionStartOfAlignmentBlock, referencePositionStartOfAlignmentBlock + alignmentBlock.getLength()))) {
-                    // In case the start position is smaller than the start of the interval, we need to determine the offset (we need this later)...
-                    final int offsetStartOfIntervalInAlignmentBlock = referencePositionStartOfAlignmentBlock < interval.getStart() ? interval.getStart() - referencePositionStartOfAlignmentBlock : 0;
+                for (final Interval interval : overlapDetector.getOverlaps(new Interval(
+                        rec.getContig(),
+                        referencePositionStartOfAlignmentBlock,
+                        referencePositionStartOfAlignmentBlock + alignmentBlock.getLength()))) {
+                    // In case the start position is smaller than the start of the interval, we need to determine the
+                    // offset (we need this later)...
+                    final int offsetStartOfIntervalInAlignmentBlock =
+                            referencePositionStartOfAlignmentBlock < interval.getStart()
+                                    ? interval.getStart() - referencePositionStartOfAlignmentBlock
+                                    : 0;
                     // ... and add it to the start position to get the actual position from where we want to count.
-                    final int offsetStartOfActualSequenceOnReference = offsetStartOfAlignmentBlockOnReference + offsetStartOfIntervalInAlignmentBlock;
+                    final int offsetStartOfActualSequenceOnReference =
+                            offsetStartOfAlignmentBlockOnReference + offsetStartOfIntervalInAlignmentBlock;
 
                     // Similarly, we need to determine the actual end of the sequence we want to consider.
-                    final int referencePositionEndOfAlignmentBlock = referencePositionStartOfAlignmentBlock + alignmentBlock.getLength();
-                    // For that, we find the difference between the end position of the AlignmentBlock and the end of the interval, and subtract it from the offset of end of the AlignmentBlock
-                    final int offsetEndOfActualSequenceOnReference = offsetEndOfAlignmentBlockOnReference - (referencePositionEndOfAlignmentBlock > interval.getEnd() ? referencePositionEndOfAlignmentBlock - interval.getEnd() - 1 : 0);
+                    final int referencePositionEndOfAlignmentBlock =
+                            referencePositionStartOfAlignmentBlock + alignmentBlock.getLength();
+                    // For that, we find the difference between the end position of the AlignmentBlock and the end of
+                    // the interval, and subtract it from the offset of end of the AlignmentBlock
+                    final int offsetEndOfActualSequenceOnReference = offsetEndOfAlignmentBlockOnReference
+                            - (referencePositionEndOfAlignmentBlock > interval.getEnd()
+                                    ? referencePositionEndOfAlignmentBlock - interval.getEnd() - 1
+                                    : 0);
 
                     final int length = offsetEndOfActualSequenceOnReference - offsetStartOfActualSequenceOnReference;
 
                     // accumulate start of the overlap block
-                    final EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(rec, offsetStartOfAlignmentBlockInRead + offsetStartOfIntervalInAlignmentBlock, length, referencePositionStartOfAlignmentBlock + offsetStartOfIntervalInAlignmentBlock);
+                    final EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(
+                            rec,
+                            offsetStartOfAlignmentBlockInRead + offsetStartOfIntervalInAlignmentBlock,
+                            length,
+                            referencePositionStartOfAlignmentBlock + offsetStartOfIntervalInAlignmentBlock);
                     accumulator.get(offsetStartOfActualSequenceOnReference).add(recordAndOffset);
 
                     // accumulate end of the overlap block
@@ -226,7 +257,8 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
                 final int length = offsetEndOfAlignmentBlockOnReference - offsetStartOfAlignmentBlockOnReference;
 
                 // accumulate start of the alignment block
-                final EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(rec, offsetStartOfAlignmentBlockInRead, length, referencePositionStartOfAlignmentBlock);
+                final EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(
+                        rec, offsetStartOfAlignmentBlockInRead, length, referencePositionStartOfAlignmentBlock);
                 accumulator.get(offsetStartOfAlignmentBlockOnReference).add(recordAndOffset);
 
                 // accumulate end of the alignment block
@@ -238,7 +270,8 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
 
     @Override
     void accumulateIndels(SAMRecord rec) {
-        throw new UnsupportedOperationException("Indels accumulation is not supported for " + getClass().getSimpleName() + ".");
+        throw new UnsupportedOperationException(
+                "Indels accumulation is not supported for " + getClass().getSimpleName() + ".");
     }
 
     /**
@@ -278,7 +311,8 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
     @Override
     public void setMaxReadsToAccumulatePerLocus(int maxReadsToAccumulatePerLocus) {
         if (getMaxReadsToAccumulatePerLocus() != 0) {
-            throw new UnsupportedOperationException("Locus cap is not supported for " + getClass().getSimpleName() + ".");
+            throw new UnsupportedOperationException(
+                    "Locus cap is not supported for " + getClass().getSimpleName() + ".");
         }
     }
 
@@ -289,7 +323,8 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
      */
     @Override
     public void setQualityScoreCutoff(int qualityScoreCutoff) {
-        throw new UnsupportedOperationException("Quality filtering is not supported for " + getClass().getSimpleName() + ".");
+        throw new UnsupportedOperationException(
+                "Quality filtering is not supported for " + getClass().getSimpleName() + ".");
     }
 
     /**
@@ -301,15 +336,16 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
     @Override
     public void setEmitUncoveredLoci(boolean emitUncoveredLoci) {
         if (isEmitUncoveredLoci() != emitUncoveredLoci) {
-            throw new UnsupportedOperationException(getClass().getSimpleName() + " doesn't support work with skipping " +
-                    "uncovered bases.");
+            throw new UnsupportedOperationException(
+                    getClass().getSimpleName() + " doesn't support work with skipping " + "uncovered bases.");
         }
     }
 
     @Override
     public void setIncludeIndels(boolean includeIndels) {
         if (isIncludeIndels() != includeIndels) {
-            throw new UnsupportedOperationException("Indels accumulation is not supported for " + getClass().getSimpleName() + ".");
+            throw new UnsupportedOperationException(
+                    "Indels accumulation is not supported for " + getClass().getSimpleName() + ".");
         }
     }
 }

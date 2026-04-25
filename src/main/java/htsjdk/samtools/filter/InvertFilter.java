@@ -25,8 +25,6 @@ package htsjdk.samtools.filter;
 
 import htsjdk.samtools.SAMRecord;
 
-import java.util.List;
-
 /**
  * Wraps an existing filter and inverts it.  If the wrapped
  * filter would have filtered something out this will keep it and vice versa.
@@ -64,6 +62,6 @@ public class InvertFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        return !filter.filterOut(first,second);
+        return !filter.filterOut(first, second);
     }
 }

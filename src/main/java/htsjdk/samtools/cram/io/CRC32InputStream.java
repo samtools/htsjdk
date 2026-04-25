@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.CRC32;
@@ -27,8 +26,7 @@ public class CRC32InputStream extends InputStream {
     public int read() {
         try {
             final int value = delegate.read();
-            if (value != -1)
-                crc32.update(value);
+            if (value != -1) crc32.update(value);
             return value;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -39,8 +37,7 @@ public class CRC32InputStream extends InputStream {
     public int read(final byte[] b) {
         try {
             final int result = delegate.read(b);
-            if (result != -1)
-                crc32.update(b, 0, result);
+            if (result != -1) crc32.update(b, 0, result);
             return result;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
@@ -103,5 +100,4 @@ public class CRC32InputStream extends InputStream {
     public boolean markSupported() {
         return delegate.markSupported();
     }
-
 }

@@ -24,5 +24,4 @@ public class VCFDecoderV4_2 extends VCFDecoder {
     public HtsVersion getVersion() {
         return VCFCodecV4_2.VCF_V42_VERSION;
     }
-
 }

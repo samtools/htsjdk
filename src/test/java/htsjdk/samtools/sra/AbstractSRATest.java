@@ -3,14 +3,13 @@ package htsjdk.samtools.sra;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import java.lang.reflect.Method;
+import java.util.NoSuchElementException;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.lang.reflect.Method;
-import java.util.NoSuchElementException;
 
 @Test(groups = "sra")
 public abstract class AbstractSRATest extends HtsjdkTest {
@@ -27,7 +26,7 @@ public abstract class AbstractSRATest extends HtsjdkTest {
 
     @BeforeMethod(groups = "sra")
     public final void assertSRAIsSupported() {
-        if(SRAAccession.checkIfInitialized() != null){
+        if (SRAAccession.checkIfInitialized() != null) {
             throw new SkipException("Skipping SRA Test because SRA native code is unavailable.");
         }
     }
@@ -39,16 +38,17 @@ public abstract class AbstractSRATest extends HtsjdkTest {
         if (params.length > 0) {
             Object firstParam = params[0];
             if (firstParam instanceof String) {
-                accession = (String)firstParam;
+                accession = (String) firstParam;
             } else if (firstParam instanceof SRAAccession) {
                 accession = firstParam.toString();
             }
         }
 
-        if (accession != null &&
-                accession.matches(SRAAccession.REMOTE_ACCESSION_PATTERN) && !canResolveNetworkAccession) {
-            throw new SkipException("Skipping network SRA Test because cannot resolve remote SRA accession '" +
-                    checkAccession + "'.");
+        if (accession != null
+                && accession.matches(SRAAccession.REMOTE_ACCESSION_PATTERN)
+                && !canResolveNetworkAccession) {
+            throw new SkipException(
+                    "Skipping network SRA Test because cannot resolve remote SRA accession '" + checkAccession + "'.");
         }
     }
 
@@ -58,8 +58,8 @@ public abstract class AbstractSRATest extends HtsjdkTest {
      * @param expectedNumMapped expected number of mapped reads, specify -1 to skip this check
      * @param expectedNumUnmapped expected number of unmapped reads, specify -1 to skip this check
      */
-    static void assertCorrectCountsOfMappedAndUnmappedRecords(SAMRecordIterator samRecordIterator,
-                                                                        int expectedNumMapped, int expectedNumUnmapped) {
+    static void assertCorrectCountsOfMappedAndUnmappedRecords(
+            SAMRecordIterator samRecordIterator, int expectedNumMapped, int expectedNumUnmapped) {
         int numMapped = 0, numUnmapped = 0;
         while (true) {
             boolean hasRecord = samRecordIterator.hasNext();

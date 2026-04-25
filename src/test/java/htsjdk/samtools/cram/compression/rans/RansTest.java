@@ -5,9 +5,6 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +12,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Tests for rANS 4x8 and Nx16 codecs.
@@ -36,40 +36,43 @@ public class RansTest extends HtsjdkTest {
     private final RANSNx16Decode ransNx16Decoder = new RANSNx16Decode();
 
     // Shared test data — allocated once and referenced (not copied) by all DataProvider rows.
-    private final TestDataEnvelope EMPTY = new TestDataEnvelope(new byte[]{});
+    private final TestDataEnvelope EMPTY = new TestDataEnvelope(new byte[] {});
     private final TestDataEnvelope[] testData = {
-            new TestDataEnvelope(new byte[] {0}),
-            new TestDataEnvelope(new byte[] {0, 1}),
-            new TestDataEnvelope(new byte[] {0, 1, 2}),
-            new TestDataEnvelope(new byte[] {0, 1, 2, 3}),
-            new TestDataEnvelope(new byte[] {1, 2, 3, 4}),
-            new TestDataEnvelope(new byte[] {1, 2, 3, 4, 5}),
-            new TestDataEnvelope(new byte[1000]),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)),
-            new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(10, 0.1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(31, 0.1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(32, 0.1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(33, 0.1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)),
-            new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 1, 0.01)),
+        new TestDataEnvelope(new byte[] {0}),
+        new TestDataEnvelope(new byte[] {0, 1}),
+        new TestDataEnvelope(new byte[] {0, 1, 2}),
+        new TestDataEnvelope(new byte[] {0, 1, 2, 3}),
+        new TestDataEnvelope(new byte[] {1, 2, 3, 4}),
+        new TestDataEnvelope(new byte[] {1, 2, 3, 4, 5}),
+        new TestDataEnvelope(new byte[1000]),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) 1)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MIN_VALUE)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> Byte.MAX_VALUE)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> (byte) index.intValue())),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n / 2 ? (byte) 0 : (byte) 1)),
+        new TestDataEnvelope(getNBytesWithValues(1000, (n, index) -> index < n % 2 ? (byte) 0 : (byte) 1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(10, 0.1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(31, 0.1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(32, 0.1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(33, 0.1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.1)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01)),
+        new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 1, 0.01)),
     };
-    private final TestDataEnvelope tinyData  = new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1));
+    private final TestDataEnvelope tinyData = new TestDataEnvelope(randomBytesFromGeometricDistribution(100, 0.1));
     private final TestDataEnvelope smallData = new TestDataEnvelope(randomBytesFromGeometricDistribution(1000, 0.01));
-    private final TestDataEnvelope largeData = new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01));
+    private final TestDataEnvelope largeData =
+            new TestDataEnvelope(randomBytesFromGeometricDistribution(100 * 1000 + 3, 0.01));
 
     // Since some of our test cases use very large byte arrays, enclose them in a wrapper class since
     // otherwise IntelliJ serializes them to strings for display in the test output, which is *super*-slow.
     private static class TestDataEnvelope {
         public final byte[] testArray;
+
         public TestDataEnvelope(final byte[] testdata) {
             this.testArray = testdata;
         }
+
         public String toString() {
             return String.format("Array of size %d", testArray.length);
         }
@@ -92,24 +95,23 @@ public class RansTest extends HtsjdkTest {
             RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK,
             RANSNx16Params.RLE_FLAG_MASK | RANSNx16Params.PACK_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK,
             RANSNx16Params.STRIPE_FLAG_MASK,
-            RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK
-    );
+            RANSNx16Params.STRIPE_FLAG_MASK | RANSNx16Params.ORDER_FLAG_MASK);
 
-    @DataProvider(name="rans4x8")
+    @DataProvider(name = "rans4x8")
     public Object[][] getRans4x8Codecs() {
-        return new Object[][]{
-                {rans4x8Encoder, rans4x8Decoder, new RANS4x8Params(RANSParams.ORDER.ZERO)},
-                {rans4x8Encoder, rans4x8Decoder, new RANS4x8Params(RANSParams.ORDER.ONE)}
+        return new Object[][] {
+            {rans4x8Encoder, rans4x8Decoder, new RANS4x8Params(RANSParams.ORDER.ZERO)},
+            {rans4x8Encoder, rans4x8Decoder, new RANS4x8Params(RANSParams.ORDER.ONE)}
         };
     }
 
-    @DataProvider(name="ransNx16")
+    @DataProvider(name = "ransNx16")
     public Object[][] getRansNx16Codecs() {
         final List<Object[]> testCases = new ArrayList<>();
         for (final int formatFlag : RANS_NX16_FORMAT_FLAGS) {
-            testCases.add(new Object[]{ransNx16Encoder, ransNx16Decoder, new RANSNx16Params(formatFlag)});
+            testCases.add(new Object[] {ransNx16Encoder, ransNx16Decoder, new RANSNx16Params(formatFlag)});
         }
-        return testCases.toArray(new Object[][]{});
+        return testCases.toArray(new Object[][] {});
     }
 
     private Object[][] getAllRansCodecs() {
@@ -120,25 +122,25 @@ public class RansTest extends HtsjdkTest {
     private Object[][] getTestDataRows() {
         final Object[][] rows = new Object[testData.length][];
         for (int i = 0; i < testData.length; i++) {
-            rows[i] = new Object[]{ testData[i] };
+            rows[i] = new Object[] {testData[i]};
         }
         return rows;
     }
 
-    @DataProvider(name="allRansAndData")
+    @DataProvider(name = "allRansAndData")
     public Object[][] getAllRansAndData() {
         return Stream.concat(
-                Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), getTestDataRows())),
-                Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), new Object[][]{{ EMPTY }})))
+                        Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), getTestDataRows())),
+                        Arrays.stream(TestNGUtils.cartesianProduct(getAllRansCodecs(), new Object[][] {{EMPTY}})))
                 .toArray(Object[][]::new);
     }
 
-    @DataProvider(name="allRansAndDataForTinySmallLarge")
+    @DataProvider(name = "allRansAndDataForTinySmallLarge")
     public Object[][] getAllRansAndDataForTinySmallLarge() {
         final Object[][] tslData = {
-                { tinyData,  1, 100 },
-                { smallData, 4, 1000 },
-                { largeData, 100 * 1000 + 3 - 4, 100 * 1000 + 3 },
+            {tinyData, 1, 100},
+            {smallData, 4, 1000},
+            {largeData, 100 * 1000 + 3 - 4, 100 * 1000 + 3},
         };
         return TestNGUtils.cartesianProduct(getAllRansCodecs(), tslData);
     }
@@ -150,7 +152,7 @@ public class RansTest extends HtsjdkTest {
             final RANSParams params,
             final TestDataEnvelope td,
             final Integer lowerLimit,
-            final Integer upperLimit){
+            final Integer upperLimit) {
         final ByteBuffer in = CompressionUtils.wrap(td.testArray);
         for (int rawSize = lowerLimit; rawSize < upperLimit; rawSize++) {
             in.position(0);
@@ -161,13 +163,13 @@ public class RansTest extends HtsjdkTest {
 
     @Test(dataProvider = "rans4x8")
     public void testRans4x8BuffersMeetBoundaryExpectations(
-            final RANS4x8Encode ransEncode,
-            final RANS4x8Decode ransDecode,
-            final RANS4x8Params params) {
+            final RANS4x8Encode ransEncode, final RANS4x8Decode ransDecode, final RANS4x8Params params) {
         final int rawSize = 1001;
         final ByteBuffer rawData = CompressionUtils.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
-        final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode, ransDecode,params);
-        Assert.assertTrue(compressed.limit() > Constants.RANS_4x8_PREFIX_BYTE_LENGTH); // minimum prefix len when input is not Empty
+        final ByteBuffer compressed =
+                ransBufferMeetBoundaryExpectations(rawSize, rawData, ransEncode, ransDecode, params);
+        Assert.assertTrue(compressed.limit()
+                > Constants.RANS_4x8_PREFIX_BYTE_LENGTH); // minimum prefix len when input is not Empty
         Assert.assertEquals(compressed.get(), (byte) params.getOrder().ordinal());
         Assert.assertEquals(compressed.getInt(), compressed.limit() - Constants.RANS_4x8_PREFIX_BYTE_LENGTH);
         Assert.assertEquals(compressed.getInt(), rawSize);
@@ -175,12 +177,11 @@ public class RansTest extends HtsjdkTest {
 
     @Test(dataProvider = "ransNx16")
     public void testRansNx16BuffersMeetBoundaryExpectations(
-            final RANSNx16Encode ransEncode,
-            final RANSNx16Decode ransDecode,
-            final RANSNx16Params params) {
+            final RANSNx16Encode ransEncode, final RANSNx16Decode ransDecode, final RANSNx16Params params) {
         final int rawSize = 1001;
         final ByteBuffer rawData = CompressionUtils.wrap(randomBytesFromGeometricDistribution(rawSize, 0.01));
-        final ByteBuffer compressed = ransBufferMeetBoundaryExpectations(rawSize,rawData,ransEncode,ransDecode,params);
+        final ByteBuffer compressed =
+                ransBufferMeetBoundaryExpectations(rawSize, rawData, ransEncode, ransDecode, params);
         rawData.rewind();
         Assert.assertTrue(compressed.limit() > 1); // minimum prefix len when input is not Empty
         final int FormatFlags = compressed.get() & 0xFF; // first byte of compressed data is the formatFlags
@@ -192,12 +193,12 @@ public class RansTest extends HtsjdkTest {
 
         final int[] frequencies = new int[Constants.NUMBER_OF_SYMBOLS];
         final int inSize = rawData.remaining();
-        for (int i = 0; i < inSize; i ++) {
+        for (int i = 0; i < inSize; i++) {
             frequencies[rawData.get(i) & 0xFF]++;
         }
         int numSym = 0;
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            if (frequencies[i]>0) {
+            if (frequencies[i] > 0) {
                 numSym++;
             }
         }
@@ -209,12 +210,12 @@ public class RansTest extends HtsjdkTest {
             Assert.assertEquals(FormatFlags, params.getFormatFlags());
         }
         // if nosz flag is not set, then the uncompressed size is recorded
-        if (!params.isNosz()){
+        if (!params.isNosz()) {
             Assert.assertEquals(CompressionUtils.readUint7(compressed), rawSize);
         }
     }
 
-    @Test(dataProvider="allRansAndData")
+    @Test(dataProvider = "allRansAndData")
     public void testRoundTrip(
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
@@ -224,22 +225,19 @@ public class RansTest extends HtsjdkTest {
     }
 
     @Test(
-            description = "RANSNx16 Decoding with Pack Flag if (numSymbols > 16 or numSymbols==0) " +
-                    "should throw CRAMException",
-            expectedExceptions = { CRAMException.class },
-            expectedExceptionsMessageRegExp = "Bit Packing is not permitted when number " +
-                    "of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: 0")
-    public void testRANSNx16RejectDecodePack(){
-        final byte[] compressedData = new byte[]{(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00};
+            description = "RANSNx16 Decoding with Pack Flag if (numSymbols > 16 or numSymbols==0) "
+                    + "should throw CRAMException",
+            expectedExceptions = {CRAMException.class},
+            expectedExceptionsMessageRegExp = "Bit Packing is not permitted when number "
+                    + "of distinct symbols is greater than 16 or equal to 0. Number of distinct symbols: 0")
+    public void testRANSNx16RejectDecodePack() {
+        final byte[] compressedData = new byte[] {(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00};
         final RANSNx16Decode ransDecode = new RANSNx16Decode();
         ransDecode.uncompress(compressedData);
     }
 
     private static void ransRoundTrip(
-            final RANSEncode ransEncode,
-            final RANSDecode ransDecode,
-            final RANSParams params,
-            final ByteBuffer data) {
+            final RANSEncode ransEncode, final RANSDecode ransDecode, final RANSParams params, final ByteBuffer data) {
         final byte[] inputBytes = new byte[data.remaining()];
         data.get(inputBytes);
         final byte[] compressed = ransEncode.compress(inputBytes, params);
@@ -252,7 +250,7 @@ public class RansTest extends HtsjdkTest {
             final ByteBuffer raw,
             final RANSEncode ransEncode,
             final RANSDecode ransDecode,
-            final RANSParams params){
+            final RANSParams params) {
         final byte[] inputBytes = new byte[raw.remaining()];
         raw.get(inputBytes);
         final byte[] compressed = ransEncode.compress(inputBytes, params);

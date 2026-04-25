@@ -29,7 +29,6 @@ import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockContentType;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
@@ -83,7 +82,8 @@ public class SliceBlocks {
                     break;
 
                 default:
-                    throw new RuntimeException("Not a slice block, content type id " + block.getContentType().name());
+                    throw new RuntimeException("Not a slice block, content type id "
+                            + block.getContentType().name());
             }
         }
         if (getCoreBlock() == null) {
@@ -94,9 +94,11 @@ public class SliceBlocks {
     /**
      * Return the core block for this Slice. May be null.
      */
-    public Block getCoreBlock() { return coreBlock; }
+    public Block getCoreBlock() {
+        return coreBlock;
+    }
 
-   /**
+    /**
      * Get the external block corresponding to a contentID.
      * @param contentID contentID identifying the external block
      * @return external block for the contentID. May be null.
@@ -118,7 +120,9 @@ public class SliceBlocks {
      * Number of external locks present in this SliceBlocks object (does not include the core block).
      * @return number of external blocks, including any embedded reference block, but excluding the core block
      */
-    public int getNumberOfExternalBlocks() { return externalBlocks.size(); }
+    public int getNumberOfExternalBlocks() {
+        return externalBlocks.size();
+    }
 
     /**
      * Write the coreBlock and each external block out to a CRAM stream. There is no predefined
@@ -156,17 +160,16 @@ public class SliceBlocks {
      * @param externalBlock An external block. May not be null, and must not already be present in this SliceBlocks.
      */
     private void addExternalBlock(final Block externalBlock) {
-        ValidationUtils.validateArg(externalBlock.getContentType() == BlockContentType.EXTERNAL, "Invalid external block");
+        ValidationUtils.validateArg(
+                externalBlock.getContentType() == BlockContentType.EXTERNAL, "Invalid external block");
         if (externalBlocks.containsKey(externalBlock.getContentId())) {
-            throw new CRAMException(
-                    String.format(
-                            "Attempt to add a duplicate block (id %d of type %s) to compression header encoding map. " +
-                                    "Existing block is of type %s.",
-                            externalBlock.getContentId(),
-                            externalBlock.getContentType(),
-                            externalBlocks.get(externalBlock.getContentId()).getContentType()));
+            throw new CRAMException(String.format(
+                    "Attempt to add a duplicate block (id %d of type %s) to compression header encoding map. "
+                            + "Existing block is of type %s.",
+                    externalBlock.getContentId(),
+                    externalBlock.getContentType(),
+                    externalBlocks.get(externalBlock.getContentId()).getContentType()));
         }
         externalBlocks.put(externalBlock.getContentId(), externalBlock);
     }
-
 }

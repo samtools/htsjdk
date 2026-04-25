@@ -4,13 +4,12 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.CloseableIterator;
-import org.testng.Assert;
-
 import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.testng.Assert;
 
 /**
  * Shared utilities for tests that validate htsjdk against the hts-specs CRAM test suite.
@@ -18,14 +17,11 @@ import java.util.List;
  */
 public class HtsSpecsComplianceTestBase extends HtsjdkTest {
 
-    protected static final Path SPEC_30_DIR =
-            Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.0/passed");
+    protected static final Path SPEC_30_DIR = Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.0/passed");
     protected static final Path SPEC_30_FAILED_DIR =
             Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.0/failed");
-    protected static final Path SPEC_31_DIR =
-            Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.1/passed");
-    protected static final File REFERENCE =
-            new File("src/test/resources/htsjdk/hts-specs/test/cram/ce.fa");
+    protected static final Path SPEC_31_DIR = Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.1/passed");
+    protected static final File REFERENCE = new File("src/test/resources/htsjdk/hts-specs/test/cram/ce.fa");
 
     /**
      * Decode a CRAM file from the 3.0/passed directory and return its records.
@@ -39,8 +35,8 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
      */
     protected List<SAMRecord> decodeCramFile(final File cramFile) throws IOException {
         final ReferenceSource source = new ReferenceSource(REFERENCE);
-        try (final CRAMFileReader reader = new CRAMFileReader(
-                new FileInputStream(cramFile), (File) null, source, ValidationStringency.SILENT)) {
+        try (final CRAMFileReader reader =
+                new CRAMFileReader(new FileInputStream(cramFile), (File) null, source, ValidationStringency.SILENT)) {
             return drainIterator(reader.getIterator());
         }
     }
@@ -84,10 +80,9 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
      * - Uses field-by-field comparison to tolerate CRAM's loss of signed/unsigned distinction
      *   in B-array tags (CRAM stores all integer arrays as signed)
      */
-    protected void assertRecordsMatch(final List<SAMRecord> actual, final List<SAMRecord> expected,
-                                      final String label) {
-        Assert.assertEquals(actual.size(), expected.size(),
-                label + ": record count mismatch");
+    protected void assertRecordsMatch(
+            final List<SAMRecord> actual, final List<SAMRecord> expected, final String label) {
+        Assert.assertEquals(actual.size(), expected.size(), label + ": record count mismatch");
         for (int i = 0; i < expected.size(); i++) {
             final SAMRecord act = actual.get(i);
             final SAMRecord exp = expected.get(i);
@@ -131,8 +126,11 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
         // Compare attributes with deep array equality (tolerates signed/unsigned type mismatch)
         final List<SAMRecord.SAMTagAndValue> actAttrs = actual.getAttributes();
         final List<SAMRecord.SAMTagAndValue> expAttrs = expected.getAttributes();
-        Assert.assertEquals(actAttrs.size(), expAttrs.size(),
-                label + " attribute count (actual tags: " + tagNames(actAttrs) + ", expected: " + tagNames(expAttrs) + ")");
+        Assert.assertEquals(
+                actAttrs.size(),
+                expAttrs.size(),
+                label + " attribute count (actual tags: " + tagNames(actAttrs) + ", expected: " + tagNames(expAttrs)
+                        + ")");
 
         for (int j = 0; j < expAttrs.size(); j++) {
             final SAMRecord.SAMTagAndValue a = actAttrs.get(j);
@@ -177,9 +175,8 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
 
         final ReferenceSource source = new ReferenceSource(REFERENCE);
         final SAMFileHeader header;
-        try (final SamReader reader = SamReaderFactory.makeDefault()
-                .referenceSequence(REFERENCE)
-                .open(samFile)) {
+        try (final SamReader reader =
+                SamReaderFactory.makeDefault().referenceSequence(REFERENCE).open(samFile)) {
             header = reader.getFileHeader();
         }
 

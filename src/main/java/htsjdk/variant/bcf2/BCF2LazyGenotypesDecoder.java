@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.bcf2;
 
@@ -30,7 +30,6 @@ import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,8 +50,12 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
     private final int nFields;
     private final GenotypeBuilder[] builders;
 
-    BCF2LazyGenotypesDecoder(final BCF2Codec codec, final List<Allele> alleles, final int nSamples,
-                             final int nFields, final GenotypeBuilder[] builders) {
+    BCF2LazyGenotypesDecoder(
+            final BCF2Codec codec,
+            final List<Allele> alleles,
+            final int nSamples,
+            final int nFields,
+            final GenotypeBuilder[] builders) {
         this.codec = codec;
         this.siteAlleles = alleles;
         this.nSamples = nSamples;
@@ -65,12 +68,11 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
         try {
 
             // load our byte[] data into the decoder
-            final BCF2Decoder decoder = new BCF2Decoder(((BCF2Codec.LazyData)data).bytes);
+            final BCF2Decoder decoder = new BCF2Decoder(((BCF2Codec.LazyData) data).bytes);
 
-            for ( int i = 0; i < nSamples; i++ )
-                builders[i].reset(true);
+            for (int i = 0; i < nSamples; i++) builders[i].reset(true);
 
-            for ( int i = 0; i < nFields; i++ ) {
+            for (int i = 0; i < nFields; i++) {
                 // get the field name
                 final int offset = (Integer) decoder.decodeTypedValue();
                 final String field = codec.getDictionaryString(offset);
@@ -81,18 +83,20 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
                 final BCF2GenotypeFieldDecoders.Decoder fieldDecoder = codec.getGenotypeFieldDecoder(field);
                 try {
                     fieldDecoder.decode(siteAlleles, field, decoder, typeDescriptor, numElements, builders);
-                } catch ( ClassCastException e ) {
+                } catch (ClassCastException e) {
                     throw new TribbleException("BUG: expected encoding of field " + field
                             + " inconsistent with the value observed in the decoded value");
                 }
             }
 
             final ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nSamples);
-            for ( final GenotypeBuilder gb : builders )
-                genotypes.add(gb.make());
+            for (final GenotypeBuilder gb : builders) genotypes.add(gb.make());
 
-            return new LazyGenotypesContext.LazyData(genotypes, codec.getHeader().getSampleNamesInOrder(), codec.getHeader().getSampleNameToOffset());
-        } catch ( IOException e ) {
+            return new LazyGenotypesContext.LazyData(
+                    genotypes,
+                    codec.getHeader().getSampleNamesInOrder(),
+                    codec.getHeader().getSampleNameToOffset());
+        } catch (IOException e) {
             throw new TribbleException("Unexpected IOException parsing already read genotypes data block", e);
         }
     }

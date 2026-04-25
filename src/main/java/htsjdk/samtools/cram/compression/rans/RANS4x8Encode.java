@@ -1,10 +1,6 @@
 package htsjdk.samtools.cram.compression.rans;
 
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.compression.rans.Constants;
-import htsjdk.samtools.cram.compression.rans.RANSEncode;
-import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
-import htsjdk.samtools.cram.compression.rans.RANSParams;
 
 /**
  * Encoder for the CRAM 3.0 rANS 4x8 codec. Supports Order-0 and Order-1 encoding
@@ -67,10 +63,14 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         // Remainder
         int i;
         switch (i = inputSize & 3) {
-            case 3: rans2 = syms[in[inputSize - (i - 2)] & 0xFF].putSymbol4x8(rans2, compressedData, writePos);
-            case 2: rans1 = syms[in[inputSize - (i - 1)] & 0xFF].putSymbol4x8(rans1, compressedData, writePos);
-            case 1: rans0 = syms[in[inputSize - i] & 0xFF].putSymbol4x8(rans0, compressedData, writePos);
-            case 0: break;
+            case 3:
+                rans2 = syms[in[inputSize - (i - 2)] & 0xFF].putSymbol4x8(rans2, compressedData, writePos);
+            case 2:
+                rans1 = syms[in[inputSize - (i - 1)] & 0xFF].putSymbol4x8(rans1, compressedData, writePos);
+            case 1:
+                rans0 = syms[in[inputSize - i] & 0xFF].putSymbol4x8(rans0, compressedData, writePos);
+            case 0:
+                break;
         }
 
         // Main loop
@@ -88,7 +88,14 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         flushState4x8(rans0, compressedData, writePos);
 
         final int compressedSize = maxCompressedSize - writePos[0];
-        return assembleOutput(RANSParams.ORDER.ZERO, inputSize, freqTable, frequencyTableSize, compressedData, writePos[0], compressedSize);
+        return assembleOutput(
+                RANSParams.ORDER.ZERO,
+                inputSize,
+                freqTable,
+                frequencyTableSize,
+                compressedData,
+                writePos[0],
+                compressedSize);
     }
 
     private byte[] compressOrder1Way4(final byte[] in) {
@@ -137,7 +144,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             rans2 = syms[in[i2] & 0xFF][l2 & 0xFF].putSymbol4x8(rans2, compressedData, writePos);
             rans1 = syms[in[i1] & 0xFF][l1 & 0xFF].putSymbol4x8(rans1, compressedData, writePos);
             rans0 = syms[in[i0] & 0xFF][l0 & 0xFF].putSymbol4x8(rans0, compressedData, writePos);
-            l0 = in[i0]; l1 = in[i1]; l2 = in[i2]; l3 = in[i3];
+            l0 = in[i0];
+            l1 = in[i1];
+            l2 = in[i2];
+            l3 = in[i3];
         }
 
         // Final context=0 symbols
@@ -153,7 +163,14 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         flushState4x8(rans0, compressedData, writePos);
 
         final int compressedSize = maxCompressedSize - writePos[0];
-        return assembleOutput(RANSParams.ORDER.ONE, inSize, freqTable, frequencyTableSize, compressedData, writePos[0], compressedSize);
+        return assembleOutput(
+                RANSParams.ORDER.ONE,
+                inSize,
+                freqTable,
+                frequencyTableSize,
+                compressedData,
+                writePos[0],
+                compressedSize);
     }
 
     /** Write a 4-byte LE state backwards into the compressed data array. */
@@ -167,20 +184,32 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
     /** Assemble the final output: [order(1)] [compressedLen(4)] [uncompressedLen(4)] [freqTable] [compressedData] */
     private static byte[] assembleOutput(
-            final RANSParams.ORDER order, final int uncompressedSize,
-            final byte[] freqTable, final int freqTableSize,
-            final byte[] compressedData, final int compDataOffset, final int compDataSize) {
+            final RANSParams.ORDER order,
+            final int uncompressedSize,
+            final byte[] freqTable,
+            final int freqTableSize,
+            final byte[] compressedData,
+            final int compDataOffset,
+            final int compDataSize) {
         final int totalCompressed = freqTableSize + compDataSize;
         final byte[] result = new byte[Constants.RANS_4x8_PREFIX_BYTE_LENGTH + totalCompressed];
 
         // Prefix: order(1) + compressedLen(4 LE) + uncompressedLen(4 LE)
         result[0] = (byte) (order == RANSParams.ORDER.ZERO ? 0 : 1);
         writeLittleEndianInt(result, Constants.RANS_4x8_ORDER_BYTE_LENGTH, totalCompressed);
-        writeLittleEndianInt(result, Constants.RANS_4x8_ORDER_BYTE_LENGTH + Constants.RANS_4x8_COMPRESSED_BYTE_LENGTH, uncompressedSize);
+        writeLittleEndianInt(
+                result,
+                Constants.RANS_4x8_ORDER_BYTE_LENGTH + Constants.RANS_4x8_COMPRESSED_BYTE_LENGTH,
+                uncompressedSize);
 
         // Frequency table + compressed data
         System.arraycopy(freqTable, 0, result, Constants.RANS_4x8_PREFIX_BYTE_LENGTH, freqTableSize);
-        System.arraycopy(compressedData, compDataOffset, result, Constants.RANS_4x8_PREFIX_BYTE_LENGTH + freqTableSize, compDataSize);
+        System.arraycopy(
+                compressedData,
+                compDataOffset,
+                result,
+                Constants.RANS_4x8_PREFIX_BYTE_LENGTH + freqTableSize,
+                compDataSize);
         return result;
     }
 
@@ -200,7 +229,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
 
         int m = 0, M = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-            if (m < F[j]) { m = F[j]; M = j; }
+            if (m < F[j]) {
+                m = F[j];
+                M = j;
+            }
         }
 
         final long tr = ((long) Constants.TOTAL_FREQ << 31) / T + (1 << 30) / T;
@@ -237,7 +269,10 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             int t2 = 0, m = 0, M = 0;
             for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
                 if (F[i][j] == 0) continue;
-                if (m < F[i][j]) { m = F[i][j]; M = j; }
+                if (m < F[i][j]) {
+                    m = F[i][j];
+                    M = j;
+                }
                 if ((F[i][j] *= p) == 0) F[i][j] = 1;
                 t2 += F[i][j];
             }
@@ -251,10 +286,13 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
         int rle = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if (F[j] != 0) {
-                if (rle != 0) { rle--; } else {
+                if (rle != 0) {
+                    rle--;
+                } else {
                     out[pos[0]++] = (byte) j;
                     if (j != 0 && F[j - 1] != 0) {
-                        for (rle = j + 1; rle < Constants.NUMBER_OF_SYMBOLS && F[rle] != 0; rle++) ;
+                        for (rle = j + 1; rle < Constants.NUMBER_OF_SYMBOLS && F[rle] != 0; rle++)
+                            ;
                         rle -= j + 1;
                         out[pos[0]++] = (byte) rle;
                     }
@@ -273,16 +311,18 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
     private static void writeFrequenciesOrder1(final byte[] out, final int[] pos, final int[][] F) {
         final int[] T = new int[Constants.NUMBER_OF_SYMBOLS];
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++)
-            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++)
-                T[i] += F[i][j];
+            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) T[i] += F[i][j];
 
         int rle_i = 0;
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
             if (T[i] == 0) continue;
-            if (rle_i != 0) { rle_i--; } else {
+            if (rle_i != 0) {
+                rle_i--;
+            } else {
                 out[pos[0]++] = (byte) i;
                 if (i != 0 && T[i - 1] != 0) {
-                    for (rle_i = i + 1; rle_i < Constants.NUMBER_OF_SYMBOLS && T[rle_i] != 0; rle_i++) ;
+                    for (rle_i = i + 1; rle_i < Constants.NUMBER_OF_SYMBOLS && T[rle_i] != 0; rle_i++)
+                        ;
                     rle_i -= i + 1;
                     out[pos[0]++] = (byte) rle_i;
                 }
@@ -292,10 +332,13 @@ public class RANS4x8Encode extends RANSEncode<RANS4x8Params> {
             int rle_j = 0;
             for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
                 if (F_i[j] != 0) {
-                    if (rle_j != 0) { rle_j--; } else {
+                    if (rle_j != 0) {
+                        rle_j--;
+                    } else {
                         out[pos[0]++] = (byte) j;
                         if (j != 0 && F_i[j - 1] != 0) {
-                            for (rle_j = j + 1; rle_j < Constants.NUMBER_OF_SYMBOLS && F_i[rle_j] != 0; rle_j++) ;
+                            for (rle_j = j + 1; rle_j < Constants.NUMBER_OF_SYMBOLS && F_i[rle_j] != 0; rle_j++)
+                                ;
                             rle_j -= j + 1;
                             out[pos[0]++] = (byte) rle_j;
                         }

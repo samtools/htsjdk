@@ -10,9 +10,7 @@ public class BAMQueryMultipleIntervalsIteratorFilter implements BAMIteratorFilte
     final boolean contained;
     int intervalIndex = 0;
 
-
-    public BAMQueryMultipleIntervalsIteratorFilter(final QueryInterval[] intervals,
-                                                   final boolean contained) {
+    public BAMQueryMultipleIntervalsIteratorFilter(final QueryInterval[] intervals, final boolean contained) {
         this.contained = contained;
         this.intervals = intervals;
     }
@@ -23,14 +21,20 @@ public class BAMQueryMultipleIntervalsIteratorFilter implements BAMIteratorFilte
             final IntervalComparison comparison = compareIntervalToRecord(intervals[intervalIndex], record);
             switch (comparison) {
                 // Interval is before SAMRecord.  Try next interval;
-                case BEFORE: ++intervalIndex; break;
+                case BEFORE:
+                    ++intervalIndex;
+                    break;
                 // Interval is after SAMRecord.  Keep scanning forward in SAMRecords
-                case AFTER: return FilteringIteratorState.CONTINUE_ITERATION;
+                case AFTER:
+                    return FilteringIteratorState.CONTINUE_ITERATION;
                 // Found a good record
-                case CONTAINED: return FilteringIteratorState.MATCHES_FILTER;
+                case CONTAINED:
+                    return FilteringIteratorState.MATCHES_FILTER;
                 // Either found a good record, or else keep scanning SAMRecords
-                case OVERLAPPING: return
-                        (contained ? FilteringIteratorState.CONTINUE_ITERATION : FilteringIteratorState.MATCHES_FILTER);
+                case OVERLAPPING:
+                    return (contained
+                            ? FilteringIteratorState.CONTINUE_ITERATION
+                            : FilteringIteratorState.MATCHES_FILTER);
             }
         }
         // Went past the last interval
@@ -39,7 +43,7 @@ public class BAMQueryMultipleIntervalsIteratorFilter implements BAMIteratorFilte
 
     public static IntervalComparison compareIntervalToRecord(final QueryInterval interval, final SAMRecord record) {
         // interval.end <= 0 implies the end of the reference sequence.
-        final int intervalEnd = (interval.end <= 0? Integer.MAX_VALUE: interval.end);
+        final int intervalEnd = (interval.end <= 0 ? Integer.MAX_VALUE : interval.end);
         final int alignmentEnd;
         if (record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
             // Unmapped read with coordinate of mate.

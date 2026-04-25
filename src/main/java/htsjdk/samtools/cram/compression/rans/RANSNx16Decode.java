@@ -2,11 +2,6 @@ package htsjdk.samtools.cram.compression.rans;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
-import htsjdk.samtools.cram.compression.rans.Constants;
-import htsjdk.samtools.cram.compression.rans.RANSDecode;
-import htsjdk.samtools.cram.compression.rans.RANSDecodingSymbol;
-import htsjdk.samtools.cram.compression.rans.Utils;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -32,7 +27,7 @@ public class RANSNx16Decode extends RANSDecode {
         if (input.length == 0) {
             return new byte[0];
         }
-        return uncompressInternal(input, new int[]{0}, 0);
+        return uncompressInternal(input, new int[] {0}, 0);
     }
 
     /**
@@ -67,8 +62,9 @@ public class RANSNx16Decode extends RANSDecode {
                 inPos[0] += numSymbols;
                 uncompressedSize = CompressionUtils.readUint7(in, inPos);
             } else {
-                throw new CRAMException("Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. " +
-                        "Number of distinct symbols: " + numSymbols);
+                throw new CRAMException(
+                        "Bit Packing is not permitted when number of distinct symbols is greater than 16 or equal to 0. "
+                                + "Number of distinct symbols: " + numSymbols);
             }
         }
 
@@ -82,8 +78,9 @@ public class RANSNx16Decode extends RANSDecode {
             final int uncompressedRLEMetaDataLength = CompressionUtils.readUint7(in, inPos);
             uncompressedRLEOutputLength = uncompressedSize;
             uncompressedSize = CompressionUtils.readUint7(in, inPos);
-            rleMetaPos = new int[]{0};
-            rleMetaData = decodeRLEMeta(in, inPos, uncompressedRLEMetaDataLength, rleSymbols, rleMetaPos, ransNx16Params);
+            rleMetaPos = new int[] {0};
+            rleMetaData =
+                    decodeRLEMeta(in, inPos, uncompressedRLEMetaDataLength, rleSymbols, rleMetaPos, ransNx16Params);
         }
 
         byte[] out;
@@ -116,7 +113,8 @@ public class RANSNx16Decode extends RANSDecode {
         if (ransNx16Params.isPack()) {
             // decodePack still uses ByteBuffer — bridge at this boundary
             final ByteBuffer packed = ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN);
-            final ByteBuffer unpacked = CompressionUtils.decodePack(packed, packMappingTable, numSymbols, packDataLength);
+            final ByteBuffer unpacked =
+                    CompressionUtils.decodePack(packed, packMappingTable, numSymbols, packDataLength);
             out = new byte[unpacked.remaining()];
             unpacked.get(out);
         }
@@ -124,8 +122,10 @@ public class RANSNx16Decode extends RANSDecode {
     }
 
     private void uncompressOrder0WayN(
-            final byte[] in, final int[] inPos,
-            final byte[] out, final int outSize,
+            final byte[] in,
+            final int[] inPos,
+            final byte[] out,
+            final int outSize,
             final RANSNx16Params ransNx16Params) {
         resetDecoderState();
         readFrequencyTableOrder0(in, inPos);
@@ -144,7 +144,8 @@ public class RANSNx16Decode extends RANSDecode {
 
         for (int i = 0; i < out_end; i += Nway) {
             for (int r = 0; r < Nway; r++) {
-                final byte decodedSymbol = reverseLookup0[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
+                final byte decodedSymbol =
+                        reverseLookup0[Utils.RANSGetCumulativeFrequency(rans[r], Constants.TOTAL_FREQ_SHIFT)];
                 out[i + r] = decodedSymbol;
                 rans[r] = syms[0xFF & decodedSymbol].advanceSymbolStep(rans[r], Constants.TOTAL_FREQ_SHIFT);
                 rans[r] = Utils.RANSDecodeRenormalizeNx16(rans[r], in, inPos);
@@ -154,8 +155,10 @@ public class RANSNx16Decode extends RANSDecode {
         int reverseIndex = 0;
         int outIdx = out_end;
         while (remSize > 0) {
-            final byte remainingSymbol = reverseLookup0[Utils.RANSGetCumulativeFrequency(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT)];
-            rans[reverseIndex] = syms[0xFF & remainingSymbol].advanceSymbolStep(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT);
+            final byte remainingSymbol =
+                    reverseLookup0[Utils.RANSGetCumulativeFrequency(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT)];
+            rans[reverseIndex] =
+                    syms[0xFF & remainingSymbol].advanceSymbolStep(rans[reverseIndex], Constants.TOTAL_FREQ_SHIFT);
             rans[reverseIndex] = Utils.RANSDecodeRenormalizeNx16(rans[reverseIndex], in, inPos);
             out[outIdx++] = remainingSymbol;
             remSize--;
@@ -164,8 +167,10 @@ public class RANSNx16Decode extends RANSDecode {
     }
 
     private void uncompressOrder1WayN(
-            final byte[] in, final int[] inPos,
-            final byte[] out, final int outputSize,
+            final byte[] in,
+            final int[] inPos,
+            final byte[] out,
+            final int outputSize,
             final RANSNx16Params ransNx16Params) {
 
         final int frequencyTableFirstByte = in[inPos[0]++] & 0xFF;
@@ -182,10 +187,14 @@ public class RANSNx16Decode extends RANSDecode {
 
             // Decompress freq table using raw Order-0 (no format-flags framing)
             freqTableBytes = new byte[uncompressedLength];
-            final int[] compPos = new int[]{0};
-            uncompressOrder0WayN(compressedFreqTable, compPos, freqTableBytes, uncompressedLength,
+            final int[] compPos = new int[] {0};
+            uncompressOrder0WayN(
+                    compressedFreqTable,
+                    compPos,
+                    freqTableBytes,
+                    uncompressedLength,
                     new RANSNx16Params(~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK)));
-            freqTablePos = new int[]{0};
+            freqTablePos = new int[] {0};
         } else {
             freqTableBytes = in;
             freqTablePos = inPos;
@@ -230,7 +239,8 @@ public class RANSNx16Decode extends RANSDecode {
 
         // Remainder
         for (; interleaveStreamIndex[Nway - 1] < outputSize; interleaveStreamIndex[Nway - 1]++) {
-            symbol[Nway - 1] = 0xFF & reverseLookup[context[Nway - 1]][Utils.RANSGetCumulativeFrequency(rans[Nway - 1], shift)];
+            symbol[Nway - 1] =
+                    0xFF & reverseLookup[context[Nway - 1]][Utils.RANSGetCumulativeFrequency(rans[Nway - 1], shift)];
             out[interleaveStreamIndex[Nway - 1]] = (byte) symbol[Nway - 1];
             rans[Nway - 1] = syms[context[Nway - 1]][symbol[Nway - 1]].advanceSymbolStep(rans[Nway - 1], shift);
             rans[Nway - 1] = Utils.RANSDecodeRenormalizeNx16(rans[Nway - 1], in, inPos);
@@ -322,7 +332,8 @@ public class RANSNx16Decode extends RANSDecode {
      * the run-length data within the returned byte array.
      */
     private byte[] decodeRLEMeta(
-            final byte[] in, final int[] inPos,
+            final byte[] in,
+            final int[] inPos,
             final int uncompressedRLEMetaDataLength,
             final int[] rleSymbols,
             final int[] rleMetaPos,
@@ -342,8 +353,12 @@ public class RANSNx16Decode extends RANSDecode {
             // Decompress using raw Order-0 (not through uncompressInternal, since the data
             // doesn't have format-flags framing — it was compressed with compressOrder0WayN directly)
             uncompressedRLEMetaData = new byte[uncompressedRLEMetaDataLength / 2];
-            final int[] compPos = new int[]{0};
-            uncompressOrder0WayN(compressed, compPos, uncompressedRLEMetaData, uncompressedRLEMetaDataLength / 2,
+            final int[] compPos = new int[] {0};
+            uncompressOrder0WayN(
+                    compressed,
+                    compPos,
+                    uncompressedRLEMetaData,
+                    uncompressedRLEMetaDataLength / 2,
                     new RANSNx16Params(0x00 | ransNx16Params.getFormatFlags() & RANSNx16Params.N32_FLAG_MASK));
         }
 

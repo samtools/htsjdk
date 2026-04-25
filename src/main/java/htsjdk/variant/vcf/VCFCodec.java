@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
@@ -29,7 +29,6 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,10 +73,11 @@ import java.util.List;
  * @since 2010
  */
 public class VCFCodec extends AbstractVCFCodec {
-    private final static Log log = Log.getInstance(VCFCodec.class);
+    private static final Log log = Log.getInstance(VCFCodec.class);
 
-    // Our aim is to read in the records and convert to VariantContext as quickly as possible, relying on VariantContext to do the validation of any contradictory (or malformed) record parameters.
-    public final static String VCF4_MAGIC_HEADER = "##fileformat=VCFv4";
+    // Our aim is to read in the records and convert to VariantContext as quickly as possible, relying on VariantContext
+    // to do the validation of any contradictory (or malformed) record parameters.
+    public static final String VCF4_MAGIC_HEADER = "##fileformat=VCFv4";
 
     /**
      * Reads all of the header from the provided iterator, but no reads no further.
@@ -95,34 +95,39 @@ public class VCFCodec extends AbstractVCFCodec {
             lineNo++;
             if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
                 final String[] lineFields = line.substring(2).split("=");
-                if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0]) ) {
-                    if ( !VCFHeaderVersion.isVersionString(lineFields[1]) )
+                if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0])) {
+                    if (!VCFHeaderVersion.isVersionString(lineFields[1]))
                         throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
                     foundHeaderVersion = true;
                     version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if (Defaults.OPTIMISTIC_VCF_4_4 == true && version == VCFHeaderVersion.VCF4_4 ) {
-                        // if optimistic VCFv4.4 is enabled, accept VCFv4.4 as input, but treat it as VCFv4.3, and hope for the best
-                        log.warn("********** VCFv4.4 is not yet fully supported - processing VCFv4.4 input as VCFv4.3!  **********");
+                    if (Defaults.OPTIMISTIC_VCF_4_4 == true && version == VCFHeaderVersion.VCF4_4) {
+                        // if optimistic VCFv4.4 is enabled, accept VCFv4.4 as input, but treat it as VCFv4.3, and hope
+                        // for the best
+                        log.warn(
+                                "********** VCFv4.4 is not yet fully supported - processing VCFv4.4 input as VCFv4.3!  **********");
                         version = VCFHeaderVersion.VCF4_3;
-                    } else if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 && version != VCFHeaderVersion.VCF4_3)
-                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4 and does not support " + lineFields[1]);
+                    } else if (version != VCFHeaderVersion.VCF4_0
+                            && version != VCFHeaderVersion.VCF4_1
+                            && version != VCFHeaderVersion.VCF4_2
+                            && version != VCFHeaderVersion.VCF4_3)
+                        throw new TribbleException.InvalidHeader(
+                                "This codec is strictly for VCFv4 and does not support " + lineFields[1]);
                 }
                 headerStrings.add(lineIterator.next());
-            }
-            else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
+            } else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
                 if (!foundHeaderVersion) {
                     throw new TribbleException.InvalidHeader("We never saw a header line specifying VCF version");
                 }
                 headerStrings.add(lineIterator.next());
                 super.parseHeaderFromLines(headerStrings, version);
                 return this.header;
+            } else {
+                throw new TribbleException.InvalidHeader(
+                        "We never saw the required CHROM header line (starting with one #) for the input VCF file");
             }
-            else {
-                throw new TribbleException.InvalidHeader("We never saw the required CHROM header line (starting with one #) for the input VCF file");
-            }
-
         }
-        throw new TribbleException.InvalidHeader("We never saw the required CHROM header line (starting with one #) for the input VCF file");
+        throw new TribbleException.InvalidHeader(
+                "We never saw the required CHROM header line (starting with one #) for the input VCF file");
     }
 
     /**
@@ -134,27 +139,23 @@ public class VCFCodec extends AbstractVCFCodec {
     @Override
     protected List<String> parseFilters(final String filterString) {
         // null for unfiltered
-        if ( filterString.equals(VCFConstants.UNFILTERED) )
-            return null;
+        if (filterString.equals(VCFConstants.UNFILTERED)) return null;
 
-        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) )
-            return Collections.emptyList();
-        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
+        if (filterString.equals(VCFConstants.PASSES_FILTERS_v4)) return Collections.emptyList();
+        if (filterString.equals(VCFConstants.PASSES_FILTERS_v3))
             generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
         if (filterString.isEmpty())
-            generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
+            generateException(
+                    "The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
 
         // do we have the filter string cached?
-        if ( filterHash.containsKey(filterString) )
-            return filterHash.get(filterString);
+        if (filterHash.containsKey(filterString)) return filterHash.get(filterString);
 
         // empty set for passes filters
         final List<String> fFields = new LinkedList<String>();
         // otherwise we have to parse and cache the value
-        if ( !filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR) )
-            fFields.add(filterString);
-        else
-            fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
+        if (!filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR)) fFields.add(filterString);
+        else fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
 
         filterHash.put(filterString, Collections.unmodifiableList(fFields));
 

@@ -25,14 +25,12 @@ package htsjdk.tribble.index;
 
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.IOException;
 import java.util.List;
 
 /**
  * Represents an index on a specific chromosome
  */
-
 public interface ChrIndex {
 
     public String getName();

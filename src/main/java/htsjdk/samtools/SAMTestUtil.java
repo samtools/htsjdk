@@ -51,8 +51,7 @@ public class SAMTestUtil {
         assertFalse(secondEnd.getFirstOfPairFlag());
         assertFalse(firstEnd.getSecondOfPairFlag());
         if (!firstEnd.getReadUnmappedFlag() && !secondEnd.getReadUnmappedFlag()) {
-            assertNotSame(firstEnd.getReadNegativeStrandFlag(),
-                    secondEnd.getReadNegativeStrandFlag());
+            assertNotSame(firstEnd.getReadNegativeStrandFlag(), secondEnd.getReadNegativeStrandFlag());
         }
     }
 
@@ -68,7 +67,7 @@ public class SAMTestUtil {
         }
 
         final List<SAMValidationError> errors = read.isValid(false);
-        if ( errors != null) {
+        if (errors != null) {
             errors.forEach(v -> System.out.println(v.toString()));
         }
         assertTrue(errors.isEmpty());

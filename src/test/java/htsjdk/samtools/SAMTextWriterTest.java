@@ -24,13 +24,12 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SAMTextWriterTest extends HtsjdkTest {
 
@@ -90,9 +89,12 @@ public class SAMTextWriterTest extends HtsjdkTest {
         tagMap.put("XF", 1.2345f);
         tagMap.put("XS", "Hi,Mom!");
         for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
-            inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
+            inputSAM.getFileHeader()
+                    .setAttribute(entry.getKey(), entry.getValue().toString());
         }
-        final SAMFileWriter samWriter = new SAMFileWriterFactory().setSamFlagFieldOutput(samFlagField).makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
+        final SAMFileWriter samWriter = new SAMFileWriterFactory()
+                .setSamFlagFieldOutput(samFlagField)
+                .makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
         for (final SAMRecord samRecord : inputSAM) {
             samWriter.addAlignment(samRecord);
         }
@@ -102,7 +104,8 @@ public class SAMTextWriterTest extends HtsjdkTest {
         inputSAM = recordSetBuilder.getSamReader();
         // Stuff in the attributes again since this has been created again.
         for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
-            inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
+            inputSAM.getFileHeader()
+                    .setAttribute(entry.getKey(), entry.getValue().toString());
         }
 
         final SamReader newSAM = SamReaderFactory.makeDefault().open(samFile);
@@ -127,7 +130,7 @@ public class SAMTextWriterTest extends HtsjdkTest {
     }
 
     @Test
-    public void testEmptyArrayAttributeHasNoCommaWhenWrittenToSAM(){
+    public void testEmptyArrayAttributeHasNoCommaWhenWrittenToSAM() {
         final SAMFileHeader header = new SAMFileHeader();
         final SAMRecord record = new SAMRecord(header);
         record.setAttribute("xa", new int[0]);

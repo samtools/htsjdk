@@ -28,11 +28,6 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -42,6 +37,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Confirm that integer tag types are stored and retrieved properly.
@@ -50,9 +49,9 @@ import java.util.Map;
  */
 public class SAMIntegerTagTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest");
-    private static final File REF_FILE = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
+    private static final File REF_FILE =
+            new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
     private SAMSequenceDictionary DICTIONARY_BACKED_BY_REF_FILE;
-
 
     private static final String BYTE_TAG = "BY";
     private static final String SHORT_TAG = "SH";
@@ -62,10 +61,14 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     private static final long TOO_LARGE_UNSIGNED_INT_VALUE = BinaryCodec.MAX_UINT + 1L;
 
-    enum Format {SAM, BAM, CRAM}
+    enum Format {
+        SAM,
+        BAM,
+        CRAM
+    }
 
     @BeforeMethod
-    public void loadDictionaryFromFasta () throws IOException {
+    public void loadDictionaryFromFasta() throws IOException {
         final IndexedFastaSequenceFile ff = new IndexedFastaSequenceFile(REF_FILE);
         DICTIONARY_BACKED_BY_REF_FILE = ff.getSequenceDictionary();
         ff.close();
@@ -100,7 +103,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
         rec.setAttribute(UNSIGNED_INTEGER_TAG, val);
         final Object roundTripValue = rec.getAttribute(UNSIGNED_INTEGER_TAG);
         Assert.assertTrue(roundTripValue instanceof Long);
-        Assert.assertEquals(((Long)roundTripValue).longValue(), val);
+        Assert.assertEquals(((Long) roundTripValue).longValue(), val);
     }
 
     @Test
@@ -111,50 +114,48 @@ public class SAMIntegerTagTest extends HtsjdkTest {
         Assert.assertEquals(rec.getIntegerAttribute(INTEGER_TAG).intValue(), 1);
     }
 
-
     @DataProvider
-    public Object[][] formatsAndValues(){
-        return new Object[][]{
-                new Object[]{"sam","Hello World!"},
-                new Object[]{"bam","Hello World!"},
-                new Object[]{"cram","Hello World!"},
-                new Object[]{"cram",""},
-                new Object[]{"bam",""},
-                new Object[]{"sam",""},
+    public Object[][] formatsAndValues() {
+        return new Object[][] {
+            new Object[] {"sam", "Hello World!"},
+            new Object[] {"bam", "Hello World!"},
+            new Object[] {"cram", "Hello World!"},
+            new Object[] {"cram", ""},
+            new Object[] {"bam", ""},
+            new Object[] {"sam", ""},
         };
     }
     /**
      * Should be able to write empty and non-empty strings
      */
     @Test(dataProvider = "formatsAndValues")
-    public void testWriteAndReadStrings(final String format,final String value) throws Exception {
+    public void testWriteAndReadStrings(final String format, final String value) throws Exception {
         final SAMRecord rec = createSamRecord();
         rec.setAttribute(STRING_TAG, value);
         writeAndReadSamRecord(format, rec);
-        Assert.assertEquals(rec.getStringAttribute(STRING_TAG),value);
+        Assert.assertEquals(rec.getStringAttribute(STRING_TAG), value);
     }
 
-
     @DataProvider
-    public Object[][] formatsAndValues2(){
-        return new Object[][]{
-                new Object[]{"sam",'a'},
-                new Object[]{"bam",'a'},
-                new Object[]{"cram",'a'},
-                new Object[]{"cram",null},
-                new Object[]{"bam",null},
-                new Object[]{"sam",null},
+    public Object[][] formatsAndValues2() {
+        return new Object[][] {
+            new Object[] {"sam", 'a'},
+            new Object[] {"bam", 'a'},
+            new Object[] {"cram", 'a'},
+            new Object[] {"cram", null},
+            new Object[] {"bam", null},
+            new Object[] {"sam", null},
         };
     }
     /**
      * Should be able to write empty and non-empty strings
      */
     @Test(dataProvider = "formatsAndValues2")
-    public void testWriteAndReadCharacters(final String format,final Character value) throws Exception {
+    public void testWriteAndReadCharacters(final String format, final Character value) throws Exception {
         final SAMRecord rec = createSamRecord();
         rec.setAttribute(STRING_TAG, value);
         writeAndReadSamRecord(format, rec);
-        Assert.assertEquals(rec.getCharacterAttribute(STRING_TAG),value);
+        Assert.assertEquals(rec.getCharacterAttribute(STRING_TAG), value);
     }
 
     /**
@@ -221,12 +222,15 @@ public class SAMIntegerTagTest extends HtsjdkTest {
      */
     private SAMRecord writeAndReadSamRecord(final String format, SAMRecord rec) throws IOException {
         final File bamFile = File.createTempFile("htsjdk-writeAndReadSamRecord.", "." + format);
-        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeWriter(rec.getHeader(), false, bamFile, REF_FILE);
+        final SAMFileWriter bamWriter =
+                new SAMFileWriterFactory().makeWriter(rec.getHeader(), false, bamFile, REF_FILE);
         bamWriter.addAlignment(rec);
         bamWriter.close();
 
-        try(final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REF_FILE).open(bamFile);
-            final SAMRecordIterator iterator = reader.iterator()) {
+        try (final SamReader reader = SamReaderFactory.makeDefault()
+                        .referenceSequence(REF_FILE)
+                        .open(bamFile);
+                final SAMRecordIterator iterator = reader.iterator()) {
             Assert.assertTrue(iterator.hasNext());
             rec = iterator.next();
         }
@@ -254,26 +258,63 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     @Test
     public void testGoodSamStrict() throws IOException {
-        final SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
+        final SamReaderFactory factory =
+                SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT);
 
-        Assert.assertEquals(0, ((Number) factory.open(createSamForIntAttr(0)).iterator().next().getAttribute("UI")).intValue());
-        Assert.assertEquals(-1, ((Number) factory.open(createSamForIntAttr(-1)).iterator().next().getAttribute("UI")).intValue());
-        Assert.assertEquals(Integer.MIN_VALUE, ((Number) factory.open(createSamForIntAttr(Integer.MIN_VALUE)).iterator().next().getAttribute("UI")).intValue());
-        Assert.assertEquals(Integer.MAX_VALUE, ((Number) factory.open(createSamForIntAttr(Integer.MAX_VALUE)).iterator().next().getAttribute("UI")).intValue());
-        Assert.assertEquals(1L + (long) Integer.MAX_VALUE, ((Number) factory.open(createSamForIntAttr(1L + (long) Integer.MAX_VALUE)).iterator().next().getAttribute("UI")).longValue());
-        Assert.assertEquals(BinaryCodec.MAX_UINT, ((Number) factory.open(createSamForIntAttr(BinaryCodec.MAX_UINT)).iterator().next().getAttribute("UI")).longValue());
+        Assert.assertEquals(
+                0,
+                ((Number) factory.open(createSamForIntAttr(0)).iterator().next().getAttribute("UI")).intValue());
+        Assert.assertEquals(
+                -1,
+                ((Number) factory.open(createSamForIntAttr(-1))
+                                .iterator()
+                                .next()
+                                .getAttribute("UI"))
+                        .intValue());
+        Assert.assertEquals(
+                Integer.MIN_VALUE,
+                ((Number) factory.open(createSamForIntAttr(Integer.MIN_VALUE))
+                                .iterator()
+                                .next()
+                                .getAttribute("UI"))
+                        .intValue());
+        Assert.assertEquals(
+                Integer.MAX_VALUE,
+                ((Number) factory.open(createSamForIntAttr(Integer.MAX_VALUE))
+                                .iterator()
+                                .next()
+                                .getAttribute("UI"))
+                        .intValue());
+        Assert.assertEquals(
+                1L + (long) Integer.MAX_VALUE,
+                ((Number) factory.open(createSamForIntAttr(1L + (long) Integer.MAX_VALUE))
+                                .iterator()
+                                .next()
+                                .getAttribute("UI"))
+                        .longValue());
+        Assert.assertEquals(
+                BinaryCodec.MAX_UINT,
+                ((Number) factory.open(createSamForIntAttr(BinaryCodec.MAX_UINT))
+                                .iterator()
+                                .next()
+                                .getAttribute("UI"))
+                        .longValue());
     }
 
     @Test(expectedExceptions = SAMException.class)
     public void testBadSamStrict() throws IOException {
-        try(final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT).open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L))) {
+        try (final SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.STRICT)
+                .open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L))) {
             reader.iterator().next();
         }
     }
 
     @Test
     public void testBadSamSilent() throws IOException {
-        try(final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L))) {
+        try (final SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L))) {
             reader.iterator().next();
         }
     }
@@ -281,13 +322,12 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     @DataProvider(name = "legalIntegerAttributesFiles")
     public Object[][] getLegalIntegerAttributesFiles() {
         return new Object[][] {
-                { new File(TEST_DATA_DIR, "variousAttributes.sam") },
-                { new File(TEST_DATA_DIR, "variousAttributes.bam") }
+            {new File(TEST_DATA_DIR, "variousAttributes.sam")}, {new File(TEST_DATA_DIR, "variousAttributes.bam")}
         };
     }
 
     @Test(dataProvider = "legalIntegerAttributesFiles")
-    public void testLegalIntegerAttributesFilesStrict( final File inputFile ) {
+    public void testLegalIntegerAttributesFilesStrict(final File inputFile) {
         final SamReader reader = SamReaderFactory.makeDefault()
                 .enable(SamReaderFactory.Option.EAGERLY_DECODE)
                 .validationStringency(ValidationStringency.STRICT)
@@ -312,18 +352,18 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     @DataProvider(name = "valid_set")
     public static Object[][] valid_set() {
         final List<Object[]> params = new ArrayList<Object[]>();
-        for (Format format: Format.values()) {
-            for (ValidationStringency stringency:ValidationStringency.values()) {
-                params.add(new Object[]{0, format, stringency});
-                params.add(new Object[]{1, format, stringency});
-                params.add(new Object[]{-1, format, stringency});
-                params.add(new Object[]{Integer.MIN_VALUE, format, stringency});
-                params.add(new Object[]{Integer.MAX_VALUE, format, stringency});
+        for (Format format : Format.values()) {
+            for (ValidationStringency stringency : ValidationStringency.values()) {
+                params.add(new Object[] {0, format, stringency});
+                params.add(new Object[] {1, format, stringency});
+                params.add(new Object[] {-1, format, stringency});
+                params.add(new Object[] {Integer.MIN_VALUE, format, stringency});
+                params.add(new Object[] {Integer.MAX_VALUE, format, stringency});
 
-                params.add(new Object[]{1L, format, stringency});
-                params.add(new Object[]{-1L, format, stringency});
-                params.add(new Object[]{(long)Integer.MAX_VALUE+1L, format, stringency});
-                params.add(new Object[]{BinaryCodec.MAX_UINT, format, stringency});
+                params.add(new Object[] {1L, format, stringency});
+                params.add(new Object[] {-1L, format, stringency});
+                params.add(new Object[] {(long) Integer.MAX_VALUE + 1L, format, stringency});
+                params.add(new Object[] {BinaryCodec.MAX_UINT, format, stringency});
             }
         }
 
@@ -333,10 +373,10 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     @DataProvider(name = "invalid_set")
     public static Object[][] invalid_set() {
         final List<Object[]> params = new ArrayList<Object[]>();
-        for (Format format: Format.values()) {
-            for (ValidationStringency stringency:ValidationStringency.values()) {
-                params.add(new Object[]{(long)Integer.MIN_VALUE -1L, format, stringency});
-                params.add(new Object[]{TOO_LARGE_UNSIGNED_INT_VALUE, format, stringency});
+        for (Format format : Format.values()) {
+            for (ValidationStringency stringency : ValidationStringency.values()) {
+                params.add(new Object[] {(long) Integer.MIN_VALUE - 1L, format, stringency});
+                params.add(new Object[] {TOO_LARGE_UNSIGNED_INT_VALUE, format, stringency});
             }
         }
 
@@ -344,16 +384,19 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "valid_set")
-    public void testValidIntegerAttributeRoundtrip(final long value, final Format format, ValidationStringency validationStringency) throws IOException {
+    public void testValidIntegerAttributeRoundtrip(
+            final long value, final Format format, ValidationStringency validationStringency) throws IOException {
         testRoundtripIntegerAttribute(value, format, validationStringency);
     }
 
     @Test(dataProvider = "invalid_set", expectedExceptions = RuntimeException.class)
-    public void testInvalidIntegerAttributeRoundtrip(final long value, final Format format, ValidationStringency validationStringency) throws IOException {
+    public void testInvalidIntegerAttributeRoundtrip(
+            final long value, final Format format, ValidationStringency validationStringency) throws IOException {
         testRoundtripIntegerAttribute(value, format, validationStringency);
     }
 
-    private void testRoundtripIntegerAttribute(final Number value, final Format format, ValidationStringency validationStringency) throws IOException {
+    private void testRoundtripIntegerAttribute(
+            final Number value, final Format format, ValidationStringency validationStringency) throws IOException {
         final SAMFileHeader header = new SAMFileHeader();
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -383,8 +426,10 @@ public class SAMIntegerTagTest extends HtsjdkTest {
         w.addAlignment(record);
         w.close();
 
-        final SamReader reader = SamReaderFactory.make().validationStringency(validationStringency).referenceSource(new ReferenceSource((File)null)).
-                open(SamInputResource.of(new ByteArrayInputStream(baos.toByteArray())));
+        final SamReader reader = SamReaderFactory.make()
+                .validationStringency(validationStringency)
+                .referenceSource(new ReferenceSource((File) null))
+                .open(SamInputResource.of(new ByteArrayInputStream(baos.toByteArray())));
         final SAMRecordIterator iterator = reader.iterator();
         Assert.assertTrue(iterator.hasNext());
         final SAMRecord record2 = iterator.next();

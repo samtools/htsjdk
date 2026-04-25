@@ -4,23 +4,24 @@ import htsjdk.HtsjdkTest;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.example.ExampleBinaryCodec;
 import htsjdk.tribble.readers.LineIterator;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class BinaryFeaturesTest extends HtsjdkTest {
     @DataProvider(name = "BinaryFeatureSources")
     public Object[][] createData1() {
         return new Object[][] {
-                { new File(TestUtils.DATA_DIR + "test.bed"),  new BEDCodec() },
-                { new File(TestUtils.DATA_DIR + "bed/Unigene.sample.bed"),  new BEDCodec() },
-                { new File(TestUtils.DATA_DIR + "bed/NA12878.deletions.10kbp.het.gq99.hand_curated.hg19_fixed.bed"),  new BEDCodec() },
+            {new File(TestUtils.DATA_DIR + "test.bed"), new BEDCodec()},
+            {new File(TestUtils.DATA_DIR + "bed/Unigene.sample.bed"), new BEDCodec()},
+            {
+                new File(TestUtils.DATA_DIR + "bed/NA12878.deletions.10kbp.het.gq99.hand_curated.hg19_fixed.bed"),
+                new BEDCodec()
+            },
         };
     }
 
@@ -30,8 +31,10 @@ public class BinaryFeaturesTest extends HtsjdkTest {
         ExampleBinaryCodec.convertToBinaryTest(source, tmpFile, codec);
         tmpFile.deleteOnExit();
 
-        final FeatureReader<Feature> originalReader = AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false);
-        final FeatureReader<Feature> binaryReader = AbstractFeatureReader.getFeatureReader(tmpFile.getAbsolutePath(), new ExampleBinaryCodec(), false);
+        final FeatureReader<Feature> originalReader =
+                AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false);
+        final FeatureReader<Feature> binaryReader =
+                AbstractFeatureReader.getFeatureReader(tmpFile.getAbsolutePath(), new ExampleBinaryCodec(), false);
 
         // make sure the header is what we expect
         final List<String> header = (List<String>) binaryReader.getHeader();
@@ -40,17 +43,18 @@ public class BinaryFeaturesTest extends HtsjdkTest {
 
         final Iterator<Feature> oit = originalReader.iterator();
         final Iterator<Feature> bit = binaryReader.iterator();
-        while ( oit.hasNext() ) {
+        while (oit.hasNext()) {
             final Feature of = oit.next();
 
-            Assert.assertTrue(bit.hasNext(), "Original iterator has items, but there's no items left in binary iterator");
+            Assert.assertTrue(
+                    bit.hasNext(), "Original iterator has items, but there's no items left in binary iterator");
             final Feature bf = bit.next();
 
             Assert.assertEquals(bf.getContig(), of.getContig(), "Chr not equal between original and binary encoding");
             Assert.assertEquals(bf.getStart(), of.getStart(), "Start not equal between original and binary encoding");
             Assert.assertEquals(bf.getEnd(), of.getEnd(), "End not equal between original and binary encoding");
         }
-        Assert.assertTrue(! bit.hasNext(), "Original iterator is done, but there's still some data in binary iterator");
+        Assert.assertTrue(!bit.hasNext(), "Original iterator is done, but there's still some data in binary iterator");
 
         originalReader.close();
         binaryReader.close();

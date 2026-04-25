@@ -34,15 +34,23 @@ public class SequenceRegion implements Locatable {
     }
 
     @Override
-    public String getContig(){return contig;}
+    public String getContig() {
+        return contig;
+    }
 
     @Override
-    public int getStart(){return start;}
+    public int getStart() {
+        return start;
+    }
 
     @Override
-    public int getEnd(){return end;}
+    public int getEnd() {
+        return end;
+    }
 
-    public boolean isCircular(){return  isCircular;}
+    public boolean isCircular() {
+        return isCircular;
+    }
 
     @Override
     public boolean equals(Object other) {
@@ -55,7 +63,10 @@ public class SequenceRegion implements Locatable {
         }
 
         final SequenceRegion otherSequenceRegion = (SequenceRegion) other;
-        return otherSequenceRegion.start == start && otherSequenceRegion.end==end && otherSequenceRegion.contig.equals(contig) && otherSequenceRegion.isCircular == isCircular;
+        return otherSequenceRegion.start == start
+                && otherSequenceRegion.end == end
+                && otherSequenceRegion.contig.equals(contig)
+                && otherSequenceRegion.isCircular == isCircular;
     }
 
     private int computeHashCode() {
@@ -67,5 +78,7 @@ public class SequenceRegion implements Locatable {
     }
 
     @Override
-    public int hashCode() { return hashCode;}
+    public int hashCode() {
+        return hashCode;
+    }
 }

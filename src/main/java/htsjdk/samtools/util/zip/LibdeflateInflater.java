@@ -24,7 +24,6 @@
 package htsjdk.samtools.util.zip;
 
 import com.fulcrumgenomics.jlibdeflate.LibdeflateDecompressor;
-
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;

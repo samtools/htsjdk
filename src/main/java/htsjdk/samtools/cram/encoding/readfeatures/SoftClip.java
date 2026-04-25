@@ -64,8 +64,7 @@ public class SoftClip implements Serializable, ReadFeature {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final SoftClip softClip = (SoftClip) o;
-        return position == softClip.position &&
-                Arrays.equals(sequence, softClip.sequence);
+        return position == softClip.position && Arrays.equals(sequence, softClip.sequence);
     }
 
     @Override

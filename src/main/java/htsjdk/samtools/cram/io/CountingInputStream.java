@@ -18,7 +18,6 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 

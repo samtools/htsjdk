@@ -5,5 +5,4 @@ import htsjdk.beta.plugin.HtsDecoderOptions;
 /**
  * Class for haploid reference decoder options.
  */
-public class HaploidReferenceDecoderOptions implements HtsDecoderOptions {
-}
+public class HaploidReferenceDecoderOptions implements HtsDecoderOptions {}

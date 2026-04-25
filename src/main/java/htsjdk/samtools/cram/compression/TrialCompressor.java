@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
-
 import java.util.List;
 
 /**
@@ -136,8 +135,7 @@ public class TrialCompressor extends ExternalCompressor {
 
             // Return the winner's result for this block (even if not the smallest for this block)
             return results[winnerIdx];
-        }
-        else {
+        } else {
             // Still mid-trial — return the smallest result for this block
             int bestIdx = 0;
             for (int i = 1; i < results.length; i++) {

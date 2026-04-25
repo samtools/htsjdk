@@ -4,7 +4,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -22,7 +21,7 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
             mCompressedStream = new BlockCompressedInputStream(file);
             binaryCodec = new BinaryCodec(mCompressedStream);
         } catch (IOException ioe) {
-            throw(new RuntimeIOException("Construction error of CSI compressed stream: " + ioe));
+            throw (new RuntimeIOException("Construction error of CSI compressed stream: " + ioe));
         }
     }
 
@@ -55,7 +54,7 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
         try {
             mCompressedStream.skip(count);
         } catch (IOException ioe) {
-            throw(new RuntimeIOException("Skip error in CSI compressed stream: " + ioe));
+            throw (new RuntimeIOException("Skip error in CSI compressed stream: " + ioe));
         }
     }
 
@@ -68,7 +67,7 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
         try {
             mCompressedStream.seek(position);
         } catch (IOException ioe) {
-            throw(new RuntimeIOException("Seek error in CSI compressed stream: " + ioe));
+            throw (new RuntimeIOException("Seek error in CSI compressed stream: " + ioe));
         }
     }
 
@@ -90,8 +89,7 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
         try {
             mCompressedStream.close();
         } catch (IOException ioe) {
-            throw(new RuntimeIOException("Close error in CSI compressed stream: " + ioe));
+            throw (new RuntimeIOException("Close error in CSI compressed stream: " + ioe));
         }
     }
-
 }

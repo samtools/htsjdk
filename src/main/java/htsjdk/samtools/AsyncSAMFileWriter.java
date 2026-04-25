@@ -33,16 +33,25 @@ class AsyncSAMFileWriter extends AbstractAsyncWriter<SAMRecord> implements SAMFi
         this.underlyingWriter = out;
     }
 
-    @Override protected void synchronouslyWrite(final SAMRecord item) { this.underlyingWriter.addAlignment(item); }
+    @Override
+    protected void synchronouslyWrite(final SAMRecord item) {
+        this.underlyingWriter.addAlignment(item);
+    }
 
-    @Override protected void synchronouslyClose() { this.underlyingWriter.close();  }
+    @Override
+    protected void synchronouslyClose() {
+        this.underlyingWriter.close();
+    }
 
-    @Override protected final String getThreadNamePrefix() { return "SAMFileWriterThread-"; }
+    @Override
+    protected final String getThreadNamePrefix() {
+        return "SAMFileWriterThread-";
+    }
 
-	@Override
-	public void setProgressLogger(final ProgressLoggerInterface progress) {
-		this.underlyingWriter.setProgressLogger(progress);
-	}
+    @Override
+    public void setProgressLogger(final ProgressLoggerInterface progress) {
+        this.underlyingWriter.setProgressLogger(progress);
+    }
 
     @Override
     public void setSortOrderChecking(boolean check) {

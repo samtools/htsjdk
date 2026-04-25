@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
-
 import java.util.BitSet;
 import java.util.List;
 
@@ -83,8 +82,8 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
 
     private void ensureSequenceLoaded(final int sequenceIndex) {
         if (sequenceIndex < this.currentSequenceIndex) {
-            throw new IllegalArgumentException("Cannot look at an earlier sequence.  Current: " +
-                    this.currentSequenceIndex + "; requested: " + sequenceIndex);
+            throw new IllegalArgumentException("Cannot look at an earlier sequence.  Current: "
+                    + this.currentSequenceIndex + "; requested: " + sequenceIndex);
         }
         if (sequenceIndex > currentSequenceIndex) {
             currentBitSet.clear();

@@ -23,9 +23,8 @@
  */
 package htsjdk.samtools;
 
-import java.io.Closeable;
-
 import htsjdk.samtools.util.FileExtensions;
+import java.io.Closeable;
 
 /**
  * A basic interface for querying BAM indices.
@@ -55,7 +54,7 @@ public interface BAMIndex extends Closeable {
      * Gets the compressed chunks which should be searched for the contents of records contained by the span
      * referenceIndex:startPos-endPos, inclusive.  See the BAM spec for more information on how a chunk is
      * represented.
-     * 
+     *
      * @param referenceIndex The contig.
      * @param startPos Genomic start of query.
      * @param endPos Genomic end of query.

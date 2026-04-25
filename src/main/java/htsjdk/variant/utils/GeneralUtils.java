@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.utils;
 
@@ -46,7 +46,7 @@ public class GeneralUtils {
      * The smallest log10 value we'll emit from normalizeFromLog10 and other functions
      * where the real-space value is 0.0.
      */
-    public final static double LOG10_P_OF_ZERO = -1000000.0;
+    public static final double LOG10_P_OF_ZERO = -1000000.0;
 
     /**
      * Returns a string of the form elt1.toString() [sep elt2.toString() ... sep elt.toString()] for a collection of
@@ -65,11 +65,11 @@ public class GeneralUtils {
             final Iterator<T> iter = objects.iterator();
             final T first = iter.next();
 
-            if ( ! iter.hasNext() ) // fast path for singleton collections
-                return first.toString();
+            if (!iter.hasNext()) // fast path for singleton collections
+            return first.toString();
             else { // full path for 2+ collection that actually need a join
                 final StringBuilder ret = new StringBuilder(first.toString());
-                while(iter.hasNext()) {
+                while (iter.hasNext()) {
                     ret.append(separator);
                     ret.append(iter.next().toString());
                 }
@@ -124,19 +124,16 @@ public class GeneralUtils {
         // default case: go to linear space
         double[] normalized = new double[array.length];
 
-        for (int i = 0; i < array.length; i++)
-            normalized[i] = Math.pow(10, array[i] - maxValue);
+        for (int i = 0; i < array.length; i++) normalized[i] = Math.pow(10, array[i] - maxValue);
 
         // normalize
         double sum = 0.0;
-        for (int i = 0; i < array.length; i++)
-            sum += normalized[i];
+        for (int i = 0; i < array.length; i++) sum += normalized[i];
         for (int i = 0; i < array.length; i++) {
             double x = normalized[i] / sum;
             if (takeLog10OfOutput) {
                 x = Math.log10(x);
-                if ( x < LOG10_P_OF_ZERO || Double.isInfinite(x) )
-                    x = array[i] - maxValue;
+                if (x < LOG10_P_OF_ZERO || Double.isInfinite(x)) x = array[i] - maxValue;
             }
 
             normalized[i] = x;
@@ -154,13 +151,11 @@ public class GeneralUtils {
     }
 
     public static int maxElementIndex(final double[] array, final int endIndex) {
-        if (array == null || array.length == 0)
-            throw new IllegalArgumentException("Array cannot be null!");
+        if (array == null || array.length == 0) throw new IllegalArgumentException("Array cannot be null!");
 
         int maxI = 0;
         for (int i = 1; i < endIndex; i++) {
-            if (array[i] > array[maxI])
-                maxI = i;
+            if (array[i] > array[maxI]) maxI = i;
         }
 
         return maxI;
@@ -186,20 +181,19 @@ public class GeneralUtils {
      * @param withReplacement if false, the resulting permutations will only contain unique objects from objects
      * @return
      */
-    public static <T> List<List<T>> makePermutations(final List<T> objects, final int n, final boolean withReplacement) {
+    public static <T> List<List<T>> makePermutations(
+            final List<T> objects, final int n, final boolean withReplacement) {
         final List<List<T>> combinations = new ArrayList<List<T>>();
 
-        if ( n <= 0 )
+        if (n <= 0)
             ;
-        else if ( n == 1 ) {
-            for ( final T o : objects )
-                combinations.add(Collections.singletonList(o));
+        else if (n == 1) {
+            for (final T o : objects) combinations.add(Collections.singletonList(o));
         } else {
             final List<List<T>> sub = makePermutations(objects, n - 1, withReplacement);
-            for ( List<T> subI : sub ) {
-                for ( final T a : objects ) {
-                    if ( withReplacement || ! subI.contains(a) )
-                        combinations.add(cons(a, subI));
+            for (List<T> subI : sub) {
+                for (final T a : objects) {
+                    if (withReplacement || !subI.contains(a)) combinations.add(cons(a, subI));
                 }
             }
         }
@@ -236,11 +230,9 @@ public class GeneralUtils {
         return 1;
     }
 
-    static public final <T> List<T> reverse(final List<T> l) {
+    public static final <T> List<T> reverse(final List<T> l) {
         final List<T> newL = new ArrayList<T>(l);
         Collections.reverse(newL);
         return newL;
     }
 }
-
-

@@ -9,6 +9,7 @@ import htsjdk.beta.plugin.HtsContentType;
 public interface VariantsCodec extends HtsCodec<VariantsDecoderOptions, VariantsEncoderOptions> {
 
     @Override
-    default HtsContentType getContentType() { return HtsContentType.VARIANT_CONTEXTS; }
-
+    default HtsContentType getContentType() {
+        return HtsContentType.VARIANT_CONTEXTS;
+    }
 }

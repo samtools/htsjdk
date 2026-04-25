@@ -35,5 +35,4 @@ public class BAMDecoderOptionsTest extends HtsjdkTest {
         // test reference equality
         Assert.assertTrue(bamDecoderOptions.getInflaterFactory() == inflaterFactory);
     }
-
 }

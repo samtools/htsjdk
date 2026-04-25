@@ -36,8 +36,8 @@ public final class QualityUtil {
 
     static {
         errorProbabilityByPhredScore = new double[101];
-        for (int i=0; i<errorProbabilityByPhredScore.length; ++i) {
-            errorProbabilityByPhredScore[i] = 1d/Math.pow(10d, i/10d);
+        for (int i = 0; i < errorProbabilityByPhredScore.length; ++i) {
+            errorProbabilityByPhredScore[i] = 1d / Math.pow(10d, i / 10d);
         }
     }
 
@@ -67,7 +67,7 @@ public final class QualityUtil {
 
         double sum = 0;
 
-        for (int i=0; i<bases.length; ++i) {
+        for (int i = 0; i < bases.length; ++i) {
             if (SequenceUtil.isNoCall(bases[i])) ++sum;
             else sum += QualityUtil.getErrorProbabilityFromPhredScore(quals[i]);
         }

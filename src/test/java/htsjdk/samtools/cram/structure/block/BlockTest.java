@@ -2,26 +2,23 @@ package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CompressorCache;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class BlockTest extends HtsjdkTest {
 
-    private void contentCheck(final Block actual,
-                             final byte[] expectedRaw,
-                             final byte[] expectedCompressed) {
+    private void contentCheck(final Block actual, final byte[] expectedRaw, final byte[] expectedCompressed) {
 
         // raw and compressed data are equal to what was given
 
@@ -59,9 +56,9 @@ public class BlockTest extends HtsjdkTest {
 
     @DataProvider(name = "RoundTripTest")
     public static Object[][] rtProvider() {
-        return new Object[][]{
-                {"TEST STRING".getBytes(), CramVersions.CRAM_v2_1},
-                {"TEST STRING".getBytes(), CramVersions.CRAM_v3}
+        return new Object[][] {
+            {"TEST STRING".getBytes(), CramVersions.CRAM_v2_1},
+            {"TEST STRING".getBytes(), CramVersions.CRAM_v3}
         };
     }
 
@@ -73,14 +70,16 @@ public class BlockTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "RoundTripTest")
-    public void testCompressionHeaderBlockRoundTrips(final byte[] testData, final CRAMVersion cramVersion) throws IOException {
+    public void testCompressionHeaderBlockRoundTrips(final byte[] testData, final CRAMVersion cramVersion)
+            throws IOException {
         final Block chBlock = Block.createRawCompressionHeaderBlock(testData);
         final Block rtBlock = roundTrip(chBlock, cramVersion);
         contentCheck(rtBlock, testData, testData);
     }
 
     @Test(dataProvider = "RoundTripTest")
-    public void testSliceHeaderBlockRoundTrips(final byte[] testData, final CRAMVersion cramVersion) throws IOException {
+    public void testSliceHeaderBlockRoundTrips(final byte[] testData, final CRAMVersion cramVersion)
+            throws IOException {
         final Block shBlock = Block.createRawSliceHeaderBlock(testData);
         final Block rtBlock = roundTrip(shBlock, cramVersion);
         contentCheck(rtBlock, testData, testData);
@@ -96,13 +95,15 @@ public class BlockTest extends HtsjdkTest {
     @Test
     public void testExternalBlockRoundTrips() throws IOException {
         // arbitrary values
-        final ExternalCompressor compressor = new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel());
+        final ExternalCompressor compressor =
+                new GZIPExternalCompressor(new CRAMEncodingStrategy().getGZIPCompressionLevel());
         final int contentID = 5;
 
         final byte[] uncompressedData = "A TEST STRING WITH REDUNDANCY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".getBytes();
-        final byte[] compressedData = compressor.compress(uncompressedData,null);
+        final byte[] compressedData = compressor.compress(uncompressedData, null);
 
-        final Block extBlock = Block.createExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
+        final Block extBlock =
+                Block.createExternalBlock(compressor.getMethod(), contentID, compressedData, uncompressedData.length);
 
         final Block rtBlock2 = roundTrip(extBlock, CramVersions.CRAM_v2_1);
         contentCheck(rtBlock2, uncompressedData, compressedData);
@@ -114,11 +115,11 @@ public class BlockTest extends HtsjdkTest {
     @DataProvider(name = "nonExternalTypes")
     private Object[][] nonExternalTypes() {
         return new Object[][] {
-                {BlockContentType.COMPRESSION_HEADER},
-                {BlockContentType.CORE},
-                {BlockContentType.MAPPED_SLICE},
-                {BlockContentType.FILE_HEADER},
-                {BlockContentType.RESERVED},
+            {BlockContentType.COMPRESSION_HEADER},
+            {BlockContentType.CORE},
+            {BlockContentType.MAPPED_SLICE},
+            {BlockContentType.FILE_HEADER},
+            {BlockContentType.RESERVED},
         };
     }
 

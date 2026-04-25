@@ -1,47 +1,46 @@
 /*===========================================================================
-*
-*                            PUBLIC DOMAIN NOTICE
-*               National Center for Biotechnology Information
-*
-*  This software/database is a "United States Government Work" under the
-*  terms of the United States Copyright Act.  It was written as part of
-*  the author's official duties as a United States Government employee and
-*  thus cannot be copyrighted.  This software/database is freely available
-*  to the public for use. The National Library of Medicine and the U.S.
-*  Government have not placed any restriction on its use or reproduction.
-*
-*  Although all reasonable efforts have been taken to ensure the accuracy
-*  and reliability of the software and data, the NLM and the U.S.
-*  Government do not and cannot warrant the performance or results that
-*  may be obtained by using this software or data. The NLM and the U.S.
-*  Government disclaim all warranties, express or implied, including
-*  warranties of performance, merchantability or fitness for any particular
-*  purpose.
-*
-*  Please cite the author in any work or product based on this material.
-*
-* ===========================================================================
-*
-*/
+ *
+ *                            PUBLIC DOMAIN NOTICE
+ *               National Center for Biotechnology Information
+ *
+ *  This software/database is a "United States Government Work" under the
+ *  terms of the United States Copyright Act.  It was written as part of
+ *  the author's official duties as a United States Government employee and
+ *  thus cannot be copyrighted.  This software/database is freely available
+ *  to the public for use. The National Library of Medicine and the U.S.
+ *  Government have not placed any restriction on its use or reproduction.
+ *
+ *  Although all reasonable efforts have been taken to ensure the accuracy
+ *  and reliability of the software and data, the NLM and the U.S.
+ *  Government do not and cannot warrant the performance or results that
+ *  may be obtained by using this software or data. The NLM and the U.S.
+ *  Government disclaim all warranties, express or implied, including
+ *  warranties of performance, merchantability or fitness for any particular
+ *  purpose.
+ *
+ *  Please cite the author in any work or product based on this material.
+ *
+ * ===========================================================================
+ *
+ */
 
 package htsjdk.samtools.sra;
 
 import gov.nih.nlm.ncbi.ngs.NGS;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
-import ngs.ReadCollection;
-import ngs.AlignmentIterator;
-import ngs.Alignment;
-import ngs.ReadIterator;
-import ngs.Read;
-import ngs.Fragment;
-import ngs.ErrorMsg;
-
 import java.util.EnumSet;
-import java.util.Set;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import ngs.Alignment;
+import ngs.AlignmentIterator;
+import ngs.ErrorMsg;
+import ngs.Fragment;
+import ngs.Read;
+import ngs.ReadCollection;
+import ngs.ReadIterator;
 
 /**
  * Extends SAMRecord so that any of the fields will be loaded only when needed.
@@ -63,7 +62,6 @@ public class SRALazyRecord extends SAMRecord {
     private String sraReadId;
     private String sraAlignmentId;
     private int unalignedReadFragmentIndex = -1;
-
 
     private Set<LazyField> initializedFields = EnumSet.noneOf(LazyField.class);
     private Set<LazyFlag> initializedFlags = EnumSet.noneOf(LazyFlag.class);
@@ -184,7 +182,9 @@ public class SRALazyRecord extends SAMRecord {
             this.canCallOnNotPaired = canCallOnNotPaired;
         }
 
-        public boolean canCallOnNotPaired() { return canCallOnNotPaired; }
+        public boolean canCallOnNotPaired() {
+            return canCallOnNotPaired;
+        }
 
         public abstract boolean getFlag(SRALazyRecord self);
     }
@@ -201,20 +201,32 @@ public class SRALazyRecord extends SAMRecord {
     }
 
     private static Map<Short, LazyAttribute> lazyAttributeTags;
-    static
-    {
+
+    static {
         lazyAttributeTags = new HashMap<Short, LazyAttribute>();
         lazyAttributeTags.put(SAMTag.RG.getBinaryTag(), LazyAttribute.RG);
     }
 
-    public SRALazyRecord(final SAMFileHeader header, SRAAccession accession, ReadCollection run, AlignmentIterator alignmentIterator, String readId, String alignmentId) {
+    public SRALazyRecord(
+            final SAMFileHeader header,
+            SRAAccession accession,
+            ReadCollection run,
+            AlignmentIterator alignmentIterator,
+            String readId,
+            String alignmentId) {
         this(header, accession, readId, alignmentId);
 
         this.run = run;
         this.alignmentIterator = alignmentIterator;
     }
 
-    public SRALazyRecord(final SAMFileHeader header, SRAAccession accession, ReadCollection run, ReadIterator unalignmentIterator, String readId, int unalignedReadFragmentIndex) {
+    public SRALazyRecord(
+            final SAMFileHeader header,
+            SRAAccession accession,
+            ReadCollection run,
+            ReadIterator unalignmentIterator,
+            String readId,
+            int unalignedReadFragmentIndex) {
         this(header, accession, readId, unalignedReadFragmentIndex);
 
         this.run = run;
@@ -227,7 +239,8 @@ public class SRALazyRecord extends SAMRecord {
         this.sraAlignmentId = alignmentId;
     }
 
-    protected SRALazyRecord(final SAMFileHeader header, SRAAccession accession, String readId, int unalignedReadFragmentIndex) {
+    protected SRALazyRecord(
+            final SAMFileHeader header, SRAAccession accession, String readId, int unalignedReadFragmentIndex) {
         this(header, accession, readId, false);
 
         this.unalignedReadFragmentIndex = unalignedReadFragmentIndex;
@@ -602,7 +615,6 @@ public class SRALazyRecord extends SAMRecord {
         super.setSecondOfPairFlag(flag);
     }
 
-
     // ===== attributes =====
 
     @Override
@@ -687,7 +699,7 @@ public class SRALazyRecord extends SAMRecord {
     @Override
     public boolean equals(final Object o) {
         if (o instanceof SRALazyRecord) {
-            SRALazyRecord otherRecord = (SRALazyRecord)o;
+            SRALazyRecord otherRecord = (SRALazyRecord) o;
             otherRecord.getReferenceIndex();
             otherRecord.getAlignmentStart();
         }
@@ -716,7 +728,7 @@ public class SRALazyRecord extends SAMRecord {
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        SRALazyRecord newObject = (SRALazyRecord)super.clone();
+        SRALazyRecord newObject = (SRALazyRecord) super.clone();
         newObject.initializedFields = EnumSet.copyOf(this.initializedFields);
         newObject.initializedFlags = EnumSet.copyOf(this.initializedFlags);
         newObject.initializedAttributes = EnumSet.copyOf(this.initializedAttributes);
@@ -771,7 +783,8 @@ public class SRALazyRecord extends SAMRecord {
         }
 
         if (unalignmentIterator == null) {
-            log.debug("Recovering SAM record after detaching from iterator. Read id: " + sraReadId + ", fragment index: " + unalignedReadFragmentIndex);
+            log.debug("Recovering SAM record after detaching from iterator. Read id: " + sraReadId
+                    + ", fragment index: " + unalignedReadFragmentIndex);
             if (sraReadId == null) {
                 throw new RuntimeException("Cannot recover SAM object after detaching from iterator: no read id");
             }
@@ -863,7 +876,8 @@ public class SRALazyRecord extends SAMRecord {
                 fragment = getCurrentUnalignedRead();
             }
 
-            // quals are being taken from PRIMARY_ALIGNMENT.SAM_QUALITY column which reverse automatically them if needed
+            // quals are being taken from PRIMARY_ALIGNMENT.SAM_QUALITY column which reverse automatically them if
+            // needed
             return SAMUtils.fastqToPhred(fragment.getFragmentQualities());
         } catch (ErrorMsg e) {
             throw new RuntimeException(e);

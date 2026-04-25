@@ -35,7 +35,7 @@ public class BlockCompressedFilePointerUtil {
 
     public static final long MAX_BLOCK_ADDRESS = ADDRESS_MASK;
     public static final int MAX_OFFSET = OFFSET_MASK;
-    
+
     /**
      * @param vfp1
      * @param vfp2
@@ -57,7 +57,7 @@ public class BlockCompressedFilePointerUtil {
     public static boolean areInSameOrAdjacentBlocks(final long vfp1, final long vfp2) {
         final long block1 = getBlockAddress(vfp1);
         final long block2 = getBlockAddress(vfp2);
-        return (block1 == block2 || block1 + 1 == block2);        
+        return (block1 == block2 || block1 + 1 == block2);
     }
 
     /**
@@ -122,7 +122,8 @@ public class BlockCompressedFilePointerUtil {
     }
 
     public static String asString(final long vfp) {
-        return String.format("%d(0x%x): (block address: %d, offset: %d)", vfp, vfp, getBlockAddress(vfp), getBlockOffset(vfp));
+        return String.format(
+                "%d(0x%x): (block address: %d, offset: %d)", vfp, vfp, getBlockAddress(vfp), getBlockOffset(vfp));
     }
 
     /**
@@ -131,7 +132,9 @@ public class BlockCompressedFilePointerUtil {
      * @return {@code vfp} formatted as string in address:offset form
      */
     public static String asAddressOffsetString(final long vfp) {
-        return String.format(Locale.US,"%d:%d",
+        return String.format(
+                Locale.US,
+                "%d:%d",
                 BlockCompressedFilePointerUtil.getBlockAddress(vfp),
                 BlockCompressedFilePointerUtil.getBlockOffset(vfp));
     }

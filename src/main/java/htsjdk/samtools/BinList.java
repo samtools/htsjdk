@@ -107,11 +107,10 @@ public class BinList implements Iterable<Bin> {
          */
         @Override
         public Bin next() {
-            if(!hasNext())
-                throw new NoSuchElementException("This BinIterator is currently empty");
+            if (!hasNext()) throw new NoSuchElementException("This BinIterator is currently empty");
             int currentBin = nextBin;
-            nextBin = bins.nextSetBit(nextBin+1);
-            return new Bin(referenceSequence,currentBin);
+            nextBin = bins.nextSetBit(nextBin + 1);
+            return new Bin(referenceSequence, currentBin);
         }
 
         @Override
@@ -120,4 +119,3 @@ public class BinList implements Iterable<Bin> {
         }
     }
 }
-

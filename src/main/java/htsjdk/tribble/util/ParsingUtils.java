@@ -28,15 +28,12 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
-
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.util.*;
@@ -79,8 +76,7 @@ public class ParsingUtils {
      * @return an input stream from the given path
      * @throws IOException
      */
-    public static InputStream openInputStream(String path)
-            throws IOException {
+    public static InputStream openInputStream(String path) throws IOException {
         return openInputStream(path, null);
     }
 
@@ -96,19 +92,19 @@ public class ParsingUtils {
      * @return An inputStream appropriately created from uri and conditionally wrapped with wrapper (only in certain cases)
      * @throws IOException when stream cannot be opened against uri
      */
-    public static InputStream openInputStream(final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
-            throws IOException {
+    public static InputStream openInputStream(
+            final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
         final IOPath path = new HtsPath(uri);
-        if(path.hasFileSystemProvider()){
-            if(path.isPath()) {
+        if (path.hasFileSystemProvider()) {
+            if (path.isPath()) {
                 return path.getScheme().equals("file")
                         ? Files.newInputStream(path.toPath())
                         : new SeekablePathStream(path.toPath(), wrapper);
             } else {
-                throw new IOException("FileSystemProvider for path " + path.getRawInputString() + " exits but failed to " +
-                        " create path. \n" + path.getToPathFailureReason());
+                throw new IOException("FileSystemProvider for path " + path.getRawInputString()
+                        + " exits but failed to " + " create path. \n" + path.getToPathFailureReason());
             }
-        } else if( SeekableStreamFactory.canBeHandledByLegacyUrlSupport(uri)){
+        } else if (SeekableStreamFactory.canBeHandledByLegacyUrlSupport(uri)) {
             return getURLHelper(new URL(uri)).openInputStream();
         } else {
             throw new IOException("No FileSystemProvider available to handle path: " + path.getRawInputString());
@@ -187,7 +183,6 @@ public class ParsingUtils {
         return ret.toString();
     }
 
-
     /**
      * Split the string into tokens separated by the given delimiter. This looks
      * suspiciously like what String.split should do. It is here because
@@ -204,15 +199,12 @@ public class ParsingUtils {
         if (input.isEmpty()) return Arrays.asList("");
         final ArrayList<String> output = new ArrayList<>(1 + input.length() / 2);
         int from = -1, to;
-        for (to = input.indexOf(delim);
-             to >= 0;
-             from = to, to = input.indexOf(delim, from+1)) {
-            output.add(input.substring(from+1, to));
+        for (to = input.indexOf(delim); to >= 0; from = to, to = input.indexOf(delim, from + 1)) {
+            output.add(input.substring(from + 1, to));
         }
-        output.add(input.substring(from+1));
+        output.add(input.substring(from + 1));
         return output;
     }
-
 
     /**
      * Split the string into tokesn separated by the given delimiter.  Profiling has
@@ -280,22 +272,18 @@ public class ParsingUtils {
         return nTokens;
     }
 
-
     // trim a string for the given character (i.e. not just whitespace)
 
     public static String trim(String str, char ch) {
         char[] array = str.toCharArray();
         int start = 0;
-        while (start < array.length && array[start] == ch)
-            start++;
+        while (start < array.length && array[start] == ch) start++;
 
         int end = array.length - 1;
-        while (end > start && array[end] == ch)
-            end--;
+        while (end > start && array[end] == ch) end--;
 
         return str.substring(start, end + 1);
     }
-
 
     /**
      * Split the string into tokens separated by tab or space(s).  This method
@@ -316,7 +304,8 @@ public class ParsingUtils {
         int spaceEnd = aString.indexOf(' ');
         int end = tabEnd < 0 ? spaceEnd : spaceEnd < 0 ? tabEnd : Math.min(spaceEnd, tabEnd);
         while ((end > 0) && (nTokens < maxTokens)) {
-            //tokens[nTokens++] = new String(aString.toCharArray(), start, end-start); //  aString.substring(start, end);
+            // tokens[nTokens++] = new String(aString.toCharArray(), start, end-start); //  aString.substring(start,
+            // end);
             tokens[nTokens++] = aString.substring(start, end);
 
             start = end + 1;
@@ -328,7 +317,6 @@ public class ParsingUtils {
             tabEnd = aString.indexOf('\t', start);
             spaceEnd = aString.indexOf(' ', start);
             end = tabEnd < 0 ? spaceEnd : spaceEnd < 0 ? tabEnd : Math.min(spaceEnd, tabEnd);
-
         }
 
         // Add the trailing string
@@ -341,14 +329,12 @@ public class ParsingUtils {
 
     public static <T extends Comparable<? super T>> boolean isSorted(Iterable<T> iterable) {
         Iterator<T> iter = iterable.iterator();
-        if (!iter.hasNext())
-            return true;
+        if (!iter.hasNext()) return true;
 
         T t = iter.next();
         while (iter.hasNext()) {
             T t2 = iter.next();
-            if (t.compareTo(t2) > 0)
-                return false;
+            if (t.compareTo(t2) > 0) return false;
 
             t = t2;
         }
@@ -389,11 +375,10 @@ public class ParsingUtils {
             return c;
 
         } catch (NumberFormatException numberFormatException) {
-            //TODO Throw this exception?
+            // TODO Throw this exception?
             return Color.black;
         }
     }
-
 
     private static Color hexToColor(String string) {
         if (string.length() == 6) {
@@ -404,10 +389,9 @@ public class ParsingUtils {
         } else {
             return null;
         }
-
     }
 
-    public static boolean resourceExists(String resource) throws IOException{
+    public static boolean resourceExists(String resource) throws IOException {
         boolean remoteFile = SeekableStreamFactory.isBeingHandledByLegacyUrlSupport(resource);
         if (remoteFile) {
             URL url;
@@ -428,13 +412,13 @@ public class ParsingUtils {
 
     /**
      * Return a URLHelper from the current URLHelperFactory
-     * @see #setURLHelperFactory(URLHelperFactory) 
+     * @see #setURLHelperFactory(URLHelperFactory)
      *
      * @param url
      * @return
      */
     public static URLHelper getURLHelper(URL url) {
-            return urlHelperFactory.getHelper(url);
+        return urlHelperFactory.getHelper(url);
     }
 
     /**
@@ -443,7 +427,7 @@ public class ParsingUtils {
      * @param factory
      */
     public static void setURLHelperFactory(URLHelperFactory factory) {
-        if(factory == null) {
+        if (factory == null) {
             throw new NullPointerException("Null URLHelperFactory");
         }
         urlHelperFactory = factory;
@@ -466,10 +450,10 @@ public class ParsingUtils {
     public static String appendToPath(String filepath, String indexExtension) {
         String tabxIndex = null;
         URL url = null;
-        try{
+        try {
             url = new URL(filepath);
-        }catch (MalformedURLException e){
-            //pass
+        } catch (MalformedURLException e) {
+            // pass
         }
         if (url != null) {
             String path = url.getPath();

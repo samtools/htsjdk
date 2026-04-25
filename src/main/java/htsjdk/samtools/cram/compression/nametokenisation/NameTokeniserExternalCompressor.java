@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.compression.nametokenisation;
 
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
-
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
@@ -12,8 +11,7 @@ public class NameTokeniserExternalCompressor extends ExternalCompressor {
     private final NameTokenisationDecode nameTokDecoder;
 
     public NameTokeniserExternalCompressor(
-            final NameTokenisationEncode nameTokEncoder,
-            final NameTokenisationDecode nameTokDecoder) {
+            final NameTokenisationEncode nameTokEncoder, final NameTokenisationDecode nameTokDecoder) {
         super(BlockCompressionMethod.NAME_TOKENISER);
         this.nameTokEncoder = nameTokEncoder;
         this.nameTokDecoder = nameTokDecoder;
@@ -31,5 +29,4 @@ public class NameTokeniserExternalCompressor extends ExternalCompressor {
     public byte[] uncompress(byte[] data) {
         return nameTokDecoder.uncompress(CompressionUtils.wrap(data), NameTokenisationDecode.NAME_SEPARATOR);
     }
-
 }

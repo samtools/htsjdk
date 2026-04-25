@@ -1,12 +1,10 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.samtools.cram.build.CramContainerIterator;
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-
 import java.io.File;
 import java.util.*;
 
@@ -37,7 +35,7 @@ public class CramStats {
         System.out.printf("=== %s ===%n", path);
 
         // Track per-contentID totals: compressed size, uncompressed size, method
-        final Map<Integer, long[]> compressedByContentId = new TreeMap<>();   // contentId -> [compressed, uncompressed]
+        final Map<Integer, long[]> compressedByContentId = new TreeMap<>(); // contentId -> [compressed, uncompressed]
         final Map<Integer, Map<BlockCompressionMethod, Integer>> methodsByContentId = new TreeMap<>();
         long totalCompressed = 0;
         long totalUncompressed = 0;
@@ -75,8 +73,10 @@ public class CramStats {
         }
 
         System.out.printf("Containers: %d, Slices: %d, Records: %,d%n", containerCount, sliceCount, recordCount);
-        System.out.printf("Total: compressed=%,d  uncompressed=%,d  ratio=%.1f%%%n%n",
-                totalCompressed, totalUncompressed,
+        System.out.printf(
+                "Total: compressed=%,d  uncompressed=%,d  ratio=%.1f%%%n%n",
+                totalCompressed,
+                totalUncompressed,
                 totalUncompressed > 0 ? (100.0 * totalCompressed / totalUncompressed) : 0);
 
         // Map content IDs to data series names
@@ -87,19 +87,19 @@ public class CramStats {
         contentIdNames.put(-1, "CORE");
 
         // Print per-content-ID stats
-        System.out.printf("%-6s %-14s %12s %12s %7s  %s%n",
-                "ID", "Series", "Compressed", "Uncompressed", "Ratio", "Methods");
+        System.out.printf(
+                "%-6s %-14s %12s %12s %7s  %s%n", "ID", "Series", "Compressed", "Uncompressed", "Ratio", "Methods");
         System.out.println("-".repeat(80));
 
         for (final Map.Entry<Integer, long[]> entry : compressedByContentId.entrySet()) {
             final int id = entry.getKey();
             final long[] sizes = entry.getValue();
             final String name = contentIdNames.getOrDefault(id, "TAG:" + id);
-            final String methods = methodsByContentId.getOrDefault(id, Collections.emptyMap()).toString();
-            System.out.printf("%-6d %-14s %,12d %,12d %6.1f%%  %s%n",
-                    id, name, sizes[0], sizes[1],
-                    sizes[1] > 0 ? (100.0 * sizes[0] / sizes[1]) : 0,
-                    methods);
+            final String methods =
+                    methodsByContentId.getOrDefault(id, Collections.emptyMap()).toString();
+            System.out.printf(
+                    "%-6d %-14s %,12d %,12d %6.1f%%  %s%n",
+                    id, name, sizes[0], sizes[1], sizes[1] > 0 ? (100.0 * sizes[0] / sizes[1]) : 0, methods);
         }
     }
 

@@ -29,14 +29,8 @@ import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 import htsjdk.samtools.util.SequenceUtil;
-import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class CRAMFileWriterTest extends HtsjdkTest {
 
@@ -134,7 +130,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         }
     }
 
-    private void validateRecords(final List<SAMRecord> expectedRecords, ByteArrayInputStream is, ReferenceSource referenceSource) {
+    private void validateRecords(
+            final List<SAMRecord> expectedRecords, ByteArrayInputStream is, ReferenceSource referenceSource) {
         // CRAM decode regenerates missing NM/MD tags (matching htslib behavior), so add them
         // to expected records before comparison
         addMissingNmMd(expectedRecords, referenceSource);
@@ -152,21 +149,19 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                 Assert.assertEquals(actualRecord.getAlignmentStart(), expectedRecord.getAlignmentStart());
                 Assert.assertEquals(actualRecord.getAlignmentEnd(), expectedRecord.getAlignmentEnd());
                 Assert.assertEquals(actualRecord.getReferenceName(), expectedRecord.getReferenceName());
-                Assert.assertEquals(actualRecord.getMateAlignmentStart(),
-                        expectedRecord.getMateAlignmentStart());
-                Assert.assertEquals(actualRecord.getMateReferenceName(),
-                        expectedRecord.getMateReferenceName());
+                Assert.assertEquals(actualRecord.getMateAlignmentStart(), expectedRecord.getMateAlignmentStart());
+                Assert.assertEquals(actualRecord.getMateReferenceName(), expectedRecord.getMateReferenceName());
                 Assert.assertEquals(actualRecord.getReadBases(), expectedRecord.getReadBases());
                 Assert.assertEquals(actualRecord.getBaseQualities(), expectedRecord.getBaseQualities());
 
                 Assert.assertEquals(
                         actualRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
-                        expectedRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()), expectedRecord.getReadName());
+                        expectedRecord.getAttributes().stream().map(s -> s.tag).collect(Collectors.toSet()),
+                        expectedRecord.getReadName());
 
                 actualRecord.getAttributes().forEach(tv -> {
                     Assert.assertEquals(tv.value, expectedRecord.getAttribute(tv.tag));
                 });
-
             }
         }
     }
@@ -175,8 +170,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     private static void addMissingNmMd(final List<SAMRecord> records, final ReferenceSource refSource) {
         for (final SAMRecord rec : records) {
             if (!rec.getReadUnmappedFlag() && rec.getReferenceIndex() >= 0 && rec.getAttribute(SAMTag.MD) == null) {
-                final byte[] refBases = refSource.getReferenceBases(
-                        rec.getHeader().getSequence(rec.getReferenceIndex()), false);
+                final byte[] refBases =
+                        refSource.getReferenceBases(rec.getHeader().getSequence(rec.getReferenceIndex()), false);
                 if (refBases != null) {
                     SequenceUtil.calculateMdAndNmTags(rec, refBases, true, true);
                 }
@@ -232,31 +227,32 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         Assert.assertTrue(indexStream.size() != 0);
     }
 
-    @Test(description = "Test CRAMWriter constructor reference required 1", expectedExceptions = IllegalArgumentException.class)
+    @Test(
+            description = "Test CRAMWriter constructor reference required 1",
+            expectedExceptions = IllegalArgumentException.class)
     public void testCRAMWriterConstructorRequiredReference_1() {
         final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        try (CRAMFileWriter ignored = new CRAMFileWriter(outStream, null, header, null)) {
-        }
+        try (CRAMFileWriter ignored = new CRAMFileWriter(outStream, null, header, null)) {}
     }
 
-    @Test(description = "Test CRAMWriter constructor reference required 2", expectedExceptions = IllegalArgumentException.class)
+    @Test(
+            description = "Test CRAMWriter constructor reference required 2",
+            expectedExceptions = IllegalArgumentException.class)
     public void testCRAMWriterConstructorRequiredReference_2() {
         final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        try (CRAMFileWriter ignored = new CRAMFileWriter(outStream, null, null, header, null)) {
-        }
+        try (CRAMFileWriter ignored = new CRAMFileWriter(outStream, null, null, header, null)) {}
     }
 
-    @Test(description = "Test CRAMWriter constructor reference required 3", expectedExceptions = IllegalArgumentException.class)
+    @Test(
+            description = "Test CRAMWriter constructor reference required 3",
+            expectedExceptions = IllegalArgumentException.class)
     public void testCRAMWriterConstructorRequiredReference_3() {
         final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
         final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-        try (CRAMFileWriter ignored = new CRAMFileWriter(outStream, null, true, null, header, null)) {
-        }
+        try (CRAMFileWriter ignored = new CRAMFileWriter(outStream, null, true, null, header, null)) {}
     }
-
-
 
     @Test
     public void test_roundtrip_tlen_preserved() throws IOException {
@@ -264,25 +260,27 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final ReferenceSource source = new ReferenceSource(new File(SAM_TOOLS_TEST_DIR, "cram_tlen.fasta"));
         final List<SAMRecord> records = new ArrayList<>();
 
-        try (SamReader reader = SamReaderFactory.make().open(new File(SAM_TOOLS_TEST_DIR, "cram_tlen_reads.sorted.sam"));
-             CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram")) {
+        try (SamReader reader =
+                        SamReaderFactory.make().open(new File(SAM_TOOLS_TEST_DIR, "cram_tlen_reads.sorted.sam"));
+                CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram")) {
             for (final SAMRecord record : reader) {
                 writer.addAlignment(record);
                 records.add(record);
             }
-
         }
 
         // CRAM decode regenerates NM/MD, so add them to expected records
         addMissingNmMd(records, source);
 
-        try (CRAMFileReader cramReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT)) {
+        try (CRAMFileReader cramReader = new CRAMFileReader(
+                new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT)) {
             final SAMRecordIterator iterator = cramReader.getIterator();
             int i = 0;
             while (iterator.hasNext()) {
                 final SAMRecord record1 = iterator.next();
                 final SAMRecord record2 = records.get(i++);
-                Assert.assertEquals(record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
+                Assert.assertEquals(
+                        record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
                 Assert.assertEquals(record1, record2, record1.getReadName());
             }
             Assert.assertEquals(records.size(), i);
@@ -293,7 +291,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     public void test_roundtrip_many_reads() throws IOException {
 
         // Create the input file
-        final File outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp").toFile();
+        final File outputDir =
+                IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp").toFile();
         outputDir.deleteOnExit();
         final Path output = new File(outputDir, "input.cram").toPath();
         IOUtil.deleteOnExit(output);
@@ -305,12 +304,14 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         IOUtil.deleteOnExit(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(newFasta));
 
         final SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder();
-        samRecordSetBuilder.setHeader(SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate, 10_000, true));
+        samRecordSetBuilder.setHeader(
+                SAMRecordSetBuilder.makeDefaultHeader(SAMFileHeader.SortOrder.coordinate, 10_000, true));
         samRecordSetBuilder.writeRandomReference(newFasta);
 
         final List<SAMRecord> records = new ArrayList<>();
 
-        try (SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(samRecordSetBuilder.getHeader(), true, output, newFasta)) {
+        try (SAMFileWriter writer =
+                new SAMFileWriterFactory().makeWriter(samRecordSetBuilder.getHeader(), true, output, newFasta)) {
 
             // make sure we don't write reads that go off the end of the reference, which is 10,000 bases
             for (int position = 1; position <= 9900; position += 1) {
@@ -326,13 +327,15 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final ReferenceSource refSourceForValidation = new ReferenceSource(newFasta);
         addMissingNmMd(records, refSourceForValidation);
 
-        try (SamReader cramReader = SamReaderFactory.make().referenceSequence(newFasta).open(output)) {
+        try (SamReader cramReader =
+                SamReaderFactory.make().referenceSequence(newFasta).open(output)) {
             final SAMRecordIterator iterator = cramReader.iterator();
             int i = 0;
             while (iterator.hasNext()) {
                 final SAMRecord record1 = iterator.next();
                 final SAMRecord record2 = records.get(i++);
-                Assert.assertEquals(record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
+                Assert.assertEquals(
+                        record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
                 Assert.assertEquals(record1, record2, record1.getReadName());
             }
             Assert.assertEquals(records.size(), i);
@@ -347,7 +350,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault().referenceSequence(reference);
 
         try (final SamReader reader = samReaderFactory.open(input);
-             final SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(reader.getFileHeader().clone(), false, outputFile, reference)) {
+                final SAMFileWriter writer = new SAMFileWriterFactory()
+                        .makeWriter(reader.getFileHeader().clone(), false, outputFile, reference)) {
             for (final SAMRecord rec : reader) {
                 writer.addAlignment(rec);
             }
@@ -396,12 +400,13 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
         try (CRAMFileReader reader = new CRAMFileReader(null, new ByteArrayInputStream(os.toByteArray()), refSource)) {
             final SAMRecord decoded = reader.getIterator().next();
-            Assert.assertEquals(decoded.getIntegerAttribute(SAMTag.NM), Integer.valueOf(0),
+            Assert.assertEquals(
+                    decoded.getIntegerAttribute(SAMTag.NM),
+                    Integer.valueOf(0),
                     "NM should be regenerated during CRAM decode");
-            Assert.assertEquals(decoded.getStringAttribute(SAMTag.MD), "10",
-                    "MD should be regenerated during CRAM decode");
-            Assert.assertNull(decoded.getAttribute("cF"),
-                    "Internal cF tag should be stripped during decode");
+            Assert.assertEquals(
+                    decoded.getStringAttribute(SAMTag.MD), "10", "MD should be regenerated during CRAM decode");
+            Assert.assertNull(decoded.getAttribute("cF"), "Internal cF tag should be stripped during decode");
         }
     }
 
@@ -412,9 +417,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     public void testStoreNmMdVerbatim() {
         final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
         final ReferenceSource refSource = createReferenceSource();
-        final CRAMEncodingStrategy strategy = new CRAMEncodingStrategy()
-                .setStoreNM(true)
-                .setStoreMD(true);
+        final CRAMEncodingStrategy strategy =
+                new CRAMEncodingStrategy().setStoreNM(true).setStoreMD(true);
 
         // Create a mapped record with NM and MD
         final SAMRecord record = new SAMRecord(header);
@@ -437,12 +441,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
         try (CRAMFileReader reader = new CRAMFileReader(null, new ByteArrayInputStream(os.toByteArray()), refSource)) {
             final SAMRecord decoded = reader.getIterator().next();
-            Assert.assertEquals(decoded.getIntegerAttribute(SAMTag.NM), Integer.valueOf(0),
-                    "NM should be preserved verbatim");
-            Assert.assertEquals(decoded.getStringAttribute(SAMTag.MD), "10",
-                    "MD should be preserved verbatim");
-            Assert.assertNull(decoded.getAttribute("cF"),
-                    "cF tag should not exist when NM/MD are stored verbatim");
+            Assert.assertEquals(
+                    decoded.getIntegerAttribute(SAMTag.NM), Integer.valueOf(0), "NM should be preserved verbatim");
+            Assert.assertEquals(decoded.getStringAttribute(SAMTag.MD), "10", "MD should be preserved verbatim");
+            Assert.assertNull(decoded.getAttribute("cF"), "cF tag should not exist when NM/MD are stored verbatim");
         }
     }
 }

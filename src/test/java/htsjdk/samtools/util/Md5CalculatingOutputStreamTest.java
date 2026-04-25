@@ -25,22 +25,21 @@ package htsjdk.samtools.util;
 
 import com.google.common.base.Charsets;
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class Md5CalculatingOutputStreamTest extends HtsjdkTest {
     @DataProvider(name = "fileContents")
     public Object[][] createDBQTestData() {
-        return new Object[][]{
-                {"", "d41d8cd98f00b204e9800998ecf8427e"}, // No zeroes at the start
-                {"a", "0cc175b9c0f1b6a831c399e269772661"}, // One zero
-                {"jk8ssl", "0000000018e6137ac2caab16074784a6"}, // Many zeroes, thanks @delta14 at StackOverflow
+        return new Object[][] {
+            {"", "d41d8cd98f00b204e9800998ecf8427e"}, // No zeroes at the start
+            {"a", "0cc175b9c0f1b6a831c399e269772661"}, // One zero
+            {"jk8ssl", "0000000018e6137ac2caab16074784a6"}, // Many zeroes, thanks @delta14 at StackOverflow
         };
     }
 

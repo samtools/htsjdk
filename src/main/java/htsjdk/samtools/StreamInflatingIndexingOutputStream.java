@@ -1,9 +1,7 @@
 package htsjdk.samtools;
 
-
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -93,8 +91,10 @@ class Indexer implements Runnable {
     /** Runnable implementation that reads the entire stream and writes the index. */
     @Override
     public void run() {
-        final SamReader in = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
-                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).disable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS)
+        final SamReader in = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .disable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS)
                 .open(SamInputResource.of(this.stream));
 
         final BAMIndexer indexer = new BAMIndexer(this.index, in.getFileHeader());

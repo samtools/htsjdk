@@ -25,7 +25,6 @@ package htsjdk.tribble.index;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-
 import java.util.LinkedHashMap;
 
 /**
@@ -47,7 +46,7 @@ public abstract class TribbleIndexCreator implements IndexCreator {
         for (final SAMSequenceRecord seq : dict.getSequences()) {
             final String contig = SEQUENCE_DICTIONARY_PROPERTY_PREDICATE + seq.getSequenceName();
             final String length = String.valueOf(seq.getSequenceLength());
-            addProperty(contig,length);
+            addProperty(contig, length);
         }
     }
 }

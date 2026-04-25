@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMSequenceRecord;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +52,7 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
     /**
      * Initial size for the list of <code>AbstractRecordAndOffset</code> objects
      **/
-    private final static int INITIAL_LIST_SIZE = 100;
+    private static final int INITIAL_LIST_SIZE = 100;
 
     /**
      * List of aligned to current position reads
@@ -132,11 +131,11 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
         return referenceSequence.getSequenceLength();
     }
 
-    /** 
+    /**
      * @return the number of records overlapping the position
      */
-    public int size() { 
-        return this.recordAndOffsets.size(); 
+    public int size() {
+        return this.recordAndOffsets.size();
     }
 
     /**

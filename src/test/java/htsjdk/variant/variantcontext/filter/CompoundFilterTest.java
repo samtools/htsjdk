@@ -4,14 +4,13 @@ import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Created by farjoun on 9/9/15.
@@ -36,38 +35,38 @@ public class CompoundFilterTest extends HtsjdkTest {
             compoundFilter.add(pass);
             compoundFilter.add(pass);
             compoundFilter.add(pass);
-            filters.add(new Object[]{compoundFilter, true});
+            filters.add(new Object[] {compoundFilter, true});
         }
         { // one fail
             final CompoundFilter compoundFilter = new CompoundFilter(true);
             compoundFilter.add(pass);
             compoundFilter.add(fail);
             compoundFilter.add(pass);
-            filters.add(new Object[]{compoundFilter, false});
+            filters.add(new Object[] {compoundFilter, false});
         }
         { // empty
             final CompoundFilter compoundFilter = new CompoundFilter(true);
-            filters.add(new Object[]{compoundFilter, true});
+            filters.add(new Object[] {compoundFilter, true});
         }
 
-        //requireAll = FALSE
+        // requireAll = FALSE
         { // all fail
             final CompoundFilter compoundFilter = new CompoundFilter(false);
             compoundFilter.add(fail);
             compoundFilter.add(fail);
             compoundFilter.add(fail);
-            filters.add(new Object[]{compoundFilter, false});
+            filters.add(new Object[] {compoundFilter, false});
         }
         { // one fail
             final CompoundFilter compoundFilter = new CompoundFilter(false);
             compoundFilter.add(pass);
             compoundFilter.add(fail);
             compoundFilter.add(pass);
-            filters.add(new Object[]{compoundFilter, true});
+            filters.add(new Object[] {compoundFilter, true});
         }
         { // empty
             final CompoundFilter compoundFilter = new CompoundFilter(false);
-            filters.add(new Object[]{compoundFilter, true});
+            filters.add(new Object[] {compoundFilter, true});
         }
         return filters.iterator();
     }

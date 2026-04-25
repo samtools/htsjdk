@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
@@ -33,7 +33,6 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContextComparator;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-
 /**
  * A class to represent a VCF header
  *
@@ -61,7 +59,14 @@ public class VCFHeader implements HtsHeader, Serializable {
 
     // the mandatory header fields
     public enum HEADER_FIELDS {
-        CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO
+        CHROM,
+        POS,
+        ID,
+        REF,
+        ALT,
+        QUAL,
+        FILTER,
+        INFO
     }
 
     /**
@@ -151,7 +156,10 @@ public class VCFHeader implements HtsHeader, Serializable {
      * @param metaData            the meta data associated with this header
      * @param genotypeSampleNames the sample names
      */
-    public VCFHeader(final VCFHeaderVersion vcfHeaderVersion, final Set<VCFHeaderLine> metaData, final Set<String> genotypeSampleNames) {
+    public VCFHeader(
+            final VCFHeaderVersion vcfHeaderVersion,
+            final Set<VCFHeaderLine> metaData,
+            final Set<String> genotypeSampleNames) {
         this(metaData, new ArrayList(genotypeSampleNames));
         ValidationUtils.nonNull(vcfHeaderVersion);
         setVCFHeaderVersion(vcfHeaderVersion);
@@ -160,7 +168,7 @@ public class VCFHeader implements HtsHeader, Serializable {
     public VCFHeader(final Set<VCFHeaderLine> metaData, final List<String> genotypeSampleNames) {
         this(metaData);
 
-        if ( genotypeSampleNames.size() != new HashSet<String>(genotypeSampleNames).size() )
+        if (genotypeSampleNames.size() != new HashSet<String>(genotypeSampleNames).size())
             throw new TribbleException.InvalidHeader("BUG: VCF header has duplicate sample names");
 
         mGenotypeSampleNames.addAll(genotypeSampleNames);
@@ -234,7 +242,6 @@ public class VCFHeader implements HtsHeader, Serializable {
         Collections.sort(sampleNamesInOrder);
     }
 
-
     /**
      * Adds a new line to the VCFHeader. If there is an existing header line of the
      * same type with the same key, the new line is not added and the existing line
@@ -246,7 +253,7 @@ public class VCFHeader implements HtsHeader, Serializable {
         // Try to create a lookup entry for the new line. If this succeeds (because there was
         // no line of this type with the same key), add the line to our master list of header
         // lines in mMetaData.
-        if ( addMetadataLineLookupEntry(headerLine) ) {
+        if (addMetadataLineLookupEntry(headerLine)) {
             mMetaData.add(headerLine);
             checkForDeprecatedGenotypeLikelihoodsKey();
         }
@@ -308,8 +315,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     public List<VCFFilterHeaderLine> getFilterLines() {
         final List<VCFFilterHeaderLine> filters = new ArrayList<VCFFilterHeaderLine>();
         for (final VCFHeaderLine line : mMetaData) {
-            if ( line instanceof VCFFilterHeaderLine )  {
-                filters.add((VCFFilterHeaderLine)line);
+            if (line instanceof VCFFilterHeaderLine) {
+                filters.add((VCFFilterHeaderLine) line);
             }
         }
         return filters;
@@ -321,8 +328,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     public List<VCFIDHeaderLine> getIDHeaderLines() {
         final List<VCFIDHeaderLine> lines = new ArrayList<VCFIDHeaderLine>();
         for (final VCFHeaderLine line : mMetaData) {
-            if (line instanceof VCFIDHeaderLine)  {
-                lines.add((VCFIDHeaderLine)line);
+            if (line instanceof VCFIDHeaderLine) {
+                lines.add((VCFIDHeaderLine) line);
             }
         }
         return lines;
@@ -331,7 +338,7 @@ public class VCFHeader implements HtsHeader, Serializable {
     /**
      * Remove all lines with a VCF version tag from the provided set of header lines
      */
-    private void removeVCFVersionLines( final Set<VCFHeaderLine> headerLines ) {
+    private void removeVCFVersionLines(final Set<VCFHeaderLine> headerLines) {
         final List<VCFHeaderLine> toRemove = new ArrayList<VCFHeaderLine>();
         for (final VCFHeaderLine line : headerLines) {
             if (VCFHeaderVersion.isFormatString(line.getKey())) {
@@ -363,16 +370,16 @@ public class VCFHeader implements HtsHeader, Serializable {
      *         line with the same key and the new line was not added
      */
     private boolean addMetadataLineLookupEntry(final VCFHeaderLine line) {
-        if ( line instanceof VCFInfoHeaderLine )  {
-            final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine)line;
+        if (line instanceof VCFInfoHeaderLine) {
+            final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine) line;
             return addMetaDataLineMapLookupEntry(mInfoMetaData, infoLine.getID(), infoLine);
-        } else if ( line instanceof VCFFormatHeaderLine ) {
-            final VCFFormatHeaderLine formatLine = (VCFFormatHeaderLine)line;
+        } else if (line instanceof VCFFormatHeaderLine) {
+            final VCFFormatHeaderLine formatLine = (VCFFormatHeaderLine) line;
             return addMetaDataLineMapLookupEntry(mFormatMetaData, formatLine.getID(), formatLine);
-        } else if ( line instanceof VCFFilterHeaderLine ) {
-            final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine)line;
+        } else if (line instanceof VCFFilterHeaderLine) {
+            final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine) line;
             return addMetaDataLineMapLookupEntry(mFilterMetaData, filterLine.getID(), filterLine);
-        } else if ( line instanceof VCFContigHeaderLine ) {
+        } else if (line instanceof VCFContigHeaderLine) {
             return addContigMetaDataLineLookupEntry((VCFContigHeaderLine) line);
         } else {
             return addMetaDataLineMapLookupEntry(mOtherMetaData, line.getKey(), line);
@@ -392,8 +399,9 @@ public class VCFHeader implements HtsHeader, Serializable {
     private boolean addContigMetaDataLineLookupEntry(final VCFContigHeaderLine line) {
         // if we are trying to add a contig for the same ID
         if (contigMetaData.containsKey(line.getID())) {
-            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                System.err.println("Found duplicate VCF contig header lines for " + line.getID() + "; keeping the first only" );
+            if (GeneralUtils.DEBUG_MODE_ENABLED) {
+                System.err.println(
+                        "Found duplicate VCF contig header lines for " + line.getID() + "; keeping the first only");
             }
             // do not add this contig if it exists
             return false;
@@ -416,10 +424,11 @@ public class VCFHeader implements HtsHeader, Serializable {
      * @param <T> a type of vcf header line that extends VCFHeaderLine
      * @return true if the line was added to the map, false if it was not added because there's already a line with that key
      */
-    private <T extends VCFHeaderLine> boolean addMetaDataLineMapLookupEntry(final Map<String, T> map, final String key, final T line) {
-        if ( map.containsKey(key) ) {
-            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                System.err.println("Found duplicate VCF header lines for " + key + "; keeping the first only" );
+    private <T extends VCFHeaderLine> boolean addMetaDataLineMapLookupEntry(
+            final Map<String, T> map, final String key, final T line) {
+        if (map.containsKey(key)) {
+            if (GeneralUtils.DEBUG_MODE_ENABLED) {
+                System.err.println("Found duplicate VCF header lines for " + key + "; keeping the first only");
             }
             return false;
         }
@@ -434,13 +443,17 @@ public class VCFHeader implements HtsHeader, Serializable {
      * a new format line with the key {@link VCFConstants#GENOTYPE_PL_KEY}.
      */
     private void checkForDeprecatedGenotypeLikelihoodsKey() {
-        if ( hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && ! hasFormatLine(VCFConstants.GENOTYPE_PL_KEY) ) {
-            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+        if (hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && !hasFormatLine(VCFConstants.GENOTYPE_PL_KEY)) {
+            if (GeneralUtils.DEBUG_MODE_ENABLED) {
                 System.err.println("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
                         + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
                         + " automatically adding a corresponding PL field to your VCF header");
             }
-            addMetaDataLine(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY, VCFHeaderLineCount.G, VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
+            addMetaDataLine(new VCFFormatHeaderLine(
+                    VCFConstants.GENOTYPE_PL_KEY,
+                    VCFHeaderLineCount.G,
+                    VCFHeaderLineType.Integer,
+                    "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         }
     }
 
@@ -471,9 +484,11 @@ public class VCFHeader implements HtsHeader, Serializable {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>();
         if (vcfHeaderVersion != null && vcfHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
             // always propagate version 4.3+ to prevent these header lines from magically being back-versioned to < 4.3
-            lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_3.getFormatString(), VCFHeaderVersion.VCF4_3.getVersionString()));
+            lines.add(new VCFHeaderLine(
+                    VCFHeaderVersion.VCF4_3.getFormatString(), VCFHeaderVersion.VCF4_3.getVersionString()));
         } else {
-            lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+            lines.add(new VCFHeaderLine(
+                    VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
         }
         lines.addAll(headerLinesInSomeOrder);
         return Collections.unmodifiableSet(lines);
@@ -485,9 +500,8 @@ public class VCFHeader implements HtsHeader, Serializable {
      * @return
      */
     public VCFHeaderLine getMetaDataLine(final String key) {
-        for (final VCFHeaderLine line: mMetaData) {
-            if ( line.getKey().equals(key) )
-                return line;
+        for (final VCFHeaderLine line : mMetaData) {
+            if (line.getKey().equals(key)) return line;
         }
 
         return null;
@@ -642,8 +656,7 @@ public class VCFHeader implements HtsHeader, Serializable {
     public String toString() {
         final StringBuilder b = new StringBuilder();
         b.append("[VCFHeader:");
-        for ( final VCFHeaderLine line : mMetaData )
-            b.append("\n\t").append(line);
+        for (final VCFHeaderLine line : mMetaData) b.append("\n\t").append(line);
         return b.append("\n]").toString();
     }
 }

@@ -33,7 +33,6 @@ import org.testng.annotations.Test;
 /**
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
-
 public class EdgingRecordAndOffsetTest extends HtsjdkTest {
     private final byte[] qualities = {30, 50, 50, 60, 60, 70, 70, 70, 80, 90};
     private final byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};

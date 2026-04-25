@@ -35,7 +35,6 @@ import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -142,10 +141,8 @@ public class VCFFileReader implements VCFReader {
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
      */
     public VCFFileReader(final Path path, final boolean requireIndex) {
-        this.reader = AbstractFeatureReader.getFeatureReader(
-                path.toUri().toString(),
-                getCodecForPath(path),
-                requireIndex);
+        this.reader =
+                AbstractFeatureReader.getFeatureReader(path.toUri().toString(), getCodecForPath(path), requireIndex);
     }
 
     /**
@@ -153,10 +150,7 @@ public class VCFFileReader implements VCFReader {
      */
     public VCFFileReader(final Path path, final Path indexPath, final boolean requireIndex) {
         this.reader = AbstractFeatureReader.getFeatureReader(
-                path.toUri().toString(),
-                indexPath.toUri().toString(),
-                getCodecForPath(path),
-                requireIndex);
+                path.toUri().toString(), indexPath.toUri().toString(), getCodecForPath(path), requireIndex);
     }
 
     /**
@@ -246,7 +240,6 @@ public class VCFFileReader implements VCFReader {
         return toIntervalList(vcf, false);
     }
 
-
     /**
      * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals.
@@ -288,21 +281,21 @@ public class VCFFileReader implements VCFReader {
      */
     public static Iterator<Interval> toIntervals(final VCFFileReader vcf, final boolean includeFiltered) {
 
-        //intervalCount is used and incremented inside the lambda function, so it needs to be a final mutable object.
+        // intervalCount is used and incremented inside the lambda function, so it needs to be a final mutable object.
         final AtomicInteger intervalCount = new AtomicInteger(0);
 
-        return vcf.iterator()
-                .stream()
+        return vcf.iterator().stream()
                 .filter(vc -> includeFiltered || !vc.isFiltered())
                 .map(vc -> {
                     String name = vc.getID();
                     final int intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
                     if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null) {
-                        name = "interval-" + intervalCount.incrementAndGet();;
+                        name = "interval-" + intervalCount.incrementAndGet();
+                        ;
                     }
                     return new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name);
-
-                }).iterator();
+                })
+                .iterator();
     }
 
     /**
@@ -312,7 +305,7 @@ public class VCFFileReader implements VCFReader {
     public VCFHeader getHeader() {
         return (VCFHeader) reader.getHeader();
     }
- 
+
     /**
      * Synonym of {@link #getHeader()}
      */

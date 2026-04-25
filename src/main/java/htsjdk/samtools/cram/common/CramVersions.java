@@ -8,11 +8,13 @@ public final class CramVersions {
     public static final CRAMVersion CRAM_v3 = new CRAMVersion(3, 0);
     public static final CRAMVersion CRAM_v3_1 = new CRAMVersion(3, 1);
 
-    final static Set<CRAMVersion> supportedCRAMVersions = new HashSet<CRAMVersion>() {{
-        add(CRAM_v2_1);
-        add(CRAM_v3);
-        add(CRAM_v3_1);
-    }};
+    static final Set<CRAMVersion> supportedCRAMVersions = new HashSet<CRAMVersion>() {
+        {
+            add(CRAM_v2_1);
+            add(CRAM_v3);
+            add(CRAM_v3_1);
+        }
+    };
 
     /**
      * The default CRAM version when creating a new CRAM output file or stream.
@@ -27,5 +29,4 @@ public final class CramVersions {
     public static boolean isSupportedVersion(final CRAMVersion candidateVersion) {
         return supportedCRAMVersions.contains(candidateVersion);
     }
-
 }

@@ -20,7 +20,6 @@ package htsjdk.samtools.cram.encoding.writer;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.Slice;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * associated with a Slice. It is the inverse of CramRecordReader.
  */
 public class CramRecordWriter {
-    //NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are
+    // NOTE: these are all named with a "Codec" suffix, but they're really DataSeriesWriters, which are
     // generic-typed wrappers around a CRAMCodec.
     private final DataSeriesWriter<Integer> bitFlagsCodec;
     private final DataSeriesWriter<Integer> cramBitFlagsCodec;
@@ -64,7 +63,7 @@ public class CramRecordWriter {
     private final DataSeriesWriter<Integer> refIdCodec;
     private final DataSeriesWriter<Integer> refSkipCodec;
 
-    private final static Charset charset = StandardCharsets.UTF_8;
+    private static final Charset charset = StandardCharsets.UTF_8;
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;
@@ -75,40 +74,39 @@ public class CramRecordWriter {
      *
      * @param slice the target slice to which the records will be written
      */
-    public CramRecordWriter(final Slice slice)
-    {
+    public CramRecordWriter(final Slice slice) {
         this.slice = slice;
         this.compressionHeader = slice.getCompressionHeader();
         sliceBlocksWriteStreams = new SliceBlocksWriteStreams(compressionHeader);
 
         // NOTE that this implementation doesn't generate BB or QQ data series, so no writer
         // or codec is created for those.
-        bitFlagsCodec =                 createDataWriter(DataSeries.BF_BitFlags);
-        cramBitFlagsCodec =             createDataWriter(DataSeries.CF_CompressionBitFlags);
-        readLengthCodec =               createDataWriter(DataSeries.RL_ReadLength);
-        alignmentStartCodec =                  createDataWriter(DataSeries.AP_AlignmentPositionOffset);
-        readGroupCodec =                createDataWriter(DataSeries.RG_ReadGroup);
-        readNameCodec =                 createDataWriter(DataSeries.RN_ReadName);
-        distanceToNextFragmentCodec =                 createDataWriter(DataSeries.NF_RecordsToNextFragment);
+        bitFlagsCodec = createDataWriter(DataSeries.BF_BitFlags);
+        cramBitFlagsCodec = createDataWriter(DataSeries.CF_CompressionBitFlags);
+        readLengthCodec = createDataWriter(DataSeries.RL_ReadLength);
+        alignmentStartCodec = createDataWriter(DataSeries.AP_AlignmentPositionOffset);
+        readGroupCodec = createDataWriter(DataSeries.RG_ReadGroup);
+        readNameCodec = createDataWriter(DataSeries.RN_ReadName);
+        distanceToNextFragmentCodec = createDataWriter(DataSeries.NF_RecordsToNextFragment);
         numberOfReadFeaturesCodec = createDataWriter(DataSeries.FN_NumberOfReadFeatures);
-        featurePositionCodec =      createDataWriter(DataSeries.FP_FeaturePosition);
-        featuresCodeCodec =         createDataWriter(DataSeries.FC_FeatureCode);
-        baseCodec =                 createDataWriter(DataSeries.BA_Base);
-        qualityScoreCodec =         createDataWriter(DataSeries.QS_QualityScore);
+        featurePositionCodec = createDataWriter(DataSeries.FP_FeaturePosition);
+        featuresCodeCodec = createDataWriter(DataSeries.FC_FeatureCode);
+        baseCodec = createDataWriter(DataSeries.BA_Base);
+        qualityScoreCodec = createDataWriter(DataSeries.QS_QualityScore);
         baseSubstitutionCodeCodec = createDataWriter(DataSeries.BS_BaseSubstitutionCode);
-        insertionCodec =            createDataWriter(DataSeries.IN_Insertion);
-        softClipCodec =             createDataWriter(DataSeries.SC_SoftClip);
-        hardClipCodec =             createDataWriter(DataSeries.HC_HardClip);
-        paddingCodec =              createDataWriter(DataSeries.PD_padding);
-        deletionLengthCodec =       createDataWriter(DataSeries.DL_DeletionLength);
-        mappingQualityScoreCodec =  createDataWriter(DataSeries.MQ_MappingQualityScore);
-        mateBitFlagsCodec =         createDataWriter(DataSeries.MF_MateBitFlags);
+        insertionCodec = createDataWriter(DataSeries.IN_Insertion);
+        softClipCodec = createDataWriter(DataSeries.SC_SoftClip);
+        hardClipCodec = createDataWriter(DataSeries.HC_HardClip);
+        paddingCodec = createDataWriter(DataSeries.PD_padding);
+        deletionLengthCodec = createDataWriter(DataSeries.DL_DeletionLength);
+        mappingQualityScoreCodec = createDataWriter(DataSeries.MQ_MappingQualityScore);
+        mateBitFlagsCodec = createDataWriter(DataSeries.MF_MateBitFlags);
         nextFragmentReferenceSequenceIDCodec = createDataWriter(DataSeries.NS_NextFragmentReferenceSequenceID);
         nextFragmentAlignmentStart = createDataWriter(DataSeries.NP_NextFragmentAlignmentStart);
-        templateSize =              createDataWriter(DataSeries.TS_InsertSize);
-        tagIdListCodec =            createDataWriter(DataSeries.TL_TagIdList);
-        refIdCodec =                createDataWriter(DataSeries.RI_RefId);
-        refSkipCodec =              createDataWriter(DataSeries.RS_RefSkip);
+        templateSize = createDataWriter(DataSeries.TS_InsertSize);
+        tagIdListCodec = createDataWriter(DataSeries.TL_TagIdList);
+        refIdCodec = createDataWriter(DataSeries.RI_RefId);
+        refSkipCodec = createDataWriter(DataSeries.RS_RefSkip);
 
         // special case: re-encodes QS as a byte array
         // This appears to split the QS_QualityScore series into a second codec that uses BYTE_ARRAY so that arrays of
@@ -120,14 +118,11 @@ public class CramRecordWriter {
                 compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(DataSeries.QS_QualityScore),
                 sliceBlocksWriteStreams);
 
-        tagValueCodecs = compressionHeader.getTagEncodingMap().entrySet()
-                .stream()
+        tagValueCodecs = compressionHeader.getTagEncodingMap().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         mapEntry -> new DataSeriesWriter<>(
-                                DataSeriesType.BYTE_ARRAY,
-                                mapEntry.getValue(),
-                                sliceBlocksWriteStreams)));
+                                DataSeriesType.BYTE_ARRAY, mapEntry.getValue(), sliceBlocksWriteStreams)));
     }
 
     /**
@@ -137,7 +132,10 @@ public class CramRecordWriter {
      * @param initialAlignmentStart the alignmentStart of the enclosing {@link Slice}, for delta calculation
      * @return a {@link SliceBlocks} object
      */
-    public SliceBlocks writeToSliceBlocks(final CRAMCodecModelContext contextModel, final List<CRAMCompressionRecord> records, final int initialAlignmentStart) {
+    public SliceBlocks writeToSliceBlocks(
+            final CRAMCodecModelContext contextModel,
+            final List<CRAMCompressionRecord> records,
+            final int initialAlignmentStart) {
         int prevAlignmentStart = initialAlignmentStart;
         for (final CRAMCompressionRecord record : records) {
             writeCRAMRecord(record, prevAlignmentStart);
@@ -154,16 +152,14 @@ public class CramRecordWriter {
      * @return a Data Writer for the given Data Series, or null if it's not in the encoding map
      */
     private <T> DataSeriesWriter<T> createDataWriter(final DataSeries dataSeries) {
-        final EncodingDescriptor encodingDescriptor = compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(dataSeries);
+        final EncodingDescriptor encodingDescriptor =
+                compressionHeader.getEncodingMap().getEncodingDescriptorForDataSeries(dataSeries);
         if (encodingDescriptor == null) {
-            throw new IllegalArgumentException(
-                    String.format("Attempt to create data series writer for data series %s for which no encoding can be found",
-                            dataSeries));
+            throw new IllegalArgumentException(String.format(
+                    "Attempt to create data series writer for data series %s for which no encoding can be found",
+                    dataSeries));
         }
-        return new DataSeriesWriter<>(
-                dataSeries.getType(),
-                encodingDescriptor,
-                sliceBlocksWriteStreams);
+        return new DataSeriesWriter<>(dataSeries.getType(), encodingDescriptor, sliceBlocksWriteStreams);
     }
 
     /**
@@ -215,14 +211,16 @@ public class CramRecordWriter {
         tagIdListCodec.writeData(r.getTagIdsIndex().value);
         if (r.getTags() != null) {
             for (int i = 0; i < r.getTags().size(); i++) {
-                final DataSeriesWriter<byte[]> writer = tagValueCodecs.get(r.getTags().get(i).keyType3BytesAsInt);
+                final DataSeriesWriter<byte[]> writer =
+                        tagValueCodecs.get(r.getTags().get(i).keyType3BytesAsInt);
                 writer.writeData(r.getTags().get(i).getValueAsByteArray());
             }
         }
 
         if (!r.isSegmentUnmapped()) {
             // writing read features:
-            final int featuresSize = r.getReadFeatures() == null ? 0 : r.getReadFeatures().size();
+            final int featuresSize =
+                    r.getReadFeatures() == null ? 0 : r.getReadFeatures().size();
             numberOfReadFeaturesCodec.writeData(featuresSize);
             if (featuresSize != 0) {
                 int prevPos = 0;
@@ -241,10 +239,10 @@ public class CramRecordWriter {
                         case Substitution.operator:
                             final Substitution sv = (Substitution) f;
                             if (sv.getCode() < 0)
-                                baseSubstitutionCodeCodec.writeData(
-                                        compressionHeader.getSubstitutionMatrix().code(sv.getReferenceBase(), sv.getBase()));
-                            else
-                                baseSubstitutionCodeCodec.writeData(sv.getCode());
+                                baseSubstitutionCodeCodec.writeData(compressionHeader
+                                        .getSubstitutionMatrix()
+                                        .code(sv.getReferenceBase(), sv.getBase()));
+                            else baseSubstitutionCodeCodec.writeData(sv.getCode());
                             break;
                         case Insertion.operator:
                             final Insertion iv = (Insertion) f;
@@ -275,7 +273,7 @@ public class CramRecordWriter {
                             baseCodec.writeData(ib.getBase());
                             break;
                         case BaseQualityScore.operator:
-                            //Note: htsjdk never generates these, it only consumes them
+                            // Note: htsjdk never generates these, it only consumes them
                             final BaseQualityScore bqs = (BaseQualityScore) f;
                             qualityScoreCodec.writeData(bqs.getQualityScore());
                             break;

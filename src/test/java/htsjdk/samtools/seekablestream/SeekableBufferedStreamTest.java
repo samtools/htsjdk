@@ -24,20 +24,19 @@
 
 package htsjdk.samtools.seekablestream;
 
-import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
 
+import htsjdk.HtsjdkTest;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
-
-import static org.testng.Assert.assertEquals;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SeekableBufferedStreamTest extends HtsjdkTest {
 
-//    private final File BAM_INDEX_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    //    private final File BAM_INDEX_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final String BAM_URL_STRING = "http://broadinstitute.github.io/picard/testdata/index_test.bam";
     private static File TestFile = new File("src/test/resources/htsjdk/samtools/seekablestream/megabyteZeros.dat");
@@ -71,7 +70,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
     @Test
     public void testReadExactlyOneByteAtEndOfFile() throws IOException {
-        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))){
+        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))) {
             byte[] buff = new byte[1];
             long length = stream.length();
             stream.seek(length - 1);
@@ -81,7 +80,6 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
             Assert.assertEquals(stream.read(buff), -1);
         }
     }
-
 
     /**
      * Test an attempt to read past the end of the file.  The test file is 594,149 bytes in length.  The test
@@ -97,7 +95,6 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
         long startPosition = fileLength - remainder;
         int length = 1000;
 
-
         byte[] buffer = new byte[length];
         SeekableStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(new URL(BAM_URL_STRING)));
         bufferedStream.seek(startPosition);
@@ -111,7 +108,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
     @Test
     public void testSkip() throws IOException {
-        final int[] BUFFER_SIZES = new int[]{8, 96, 1024, 8*1024, 16*1024, 96*1024, 48*1024};
+        final int[] BUFFER_SIZES = new int[] {8, 96, 1024, 8 * 1024, 16 * 1024, 96 * 1024, 48 * 1024};
 
         for (final int bufferSize : BUFFER_SIZES) {
             final SeekableBufferedStream in1 = new SeekableBufferedStream(new SeekableFileStream(BAM_FILE), bufferSize);
@@ -149,6 +146,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
             LimitedSeekableFileStream(File file) throws FileNotFoundException {
                 super(file);
             }
+
             @Override
             public int read(byte[] buffer, int offset, int length) throws IOException {
                 // only return a fraction of the buffer size (this is allowed by the read contract) to ensure that
@@ -157,12 +155,27 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
             }
         }
 
-        final int[] RELATIVE_SEEK_OFFSET = new int[]{-bufferSize*2, -bufferSize, -bufferSize/2, -length, -length/2, -1,
-                0, 1, length/2, length, bufferSize/2, bufferSize-1, bufferSize, bufferSize*2};
+        final int[] RELATIVE_SEEK_OFFSET = new int[] {
+            -bufferSize * 2,
+            -bufferSize,
+            -bufferSize / 2,
+            -length,
+            -length / 2,
+            -1,
+            0,
+            1,
+            length / 2,
+            length,
+            bufferSize / 2,
+            bufferSize - 1,
+            bufferSize,
+            bufferSize * 2
+        };
 
         for (final int seekOffset : RELATIVE_SEEK_OFFSET) {
             try (SeekableStream unBufferedStream = new SeekableFileStream(BAM_FILE);
-                 SeekableBufferedStream bufferedStream = new SeekableBufferedStream(new LimitedSeekableFileStream(BAM_FILE), bufferSize)) {
+                    SeekableBufferedStream bufferedStream =
+                            new SeekableBufferedStream(new LimitedSeekableFileStream(BAM_FILE), bufferSize)) {
                 byte[] buffer1 = new byte[length];
                 unBufferedStream.seek(startPosition);
                 int bytesRead = unBufferedStream.read(buffer1, 0, length);
@@ -184,11 +197,15 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
                 bytesRead = bufferedStream.read(buffer2, 0, length);
                 Assert.assertEquals(length, bytesRead);
                 Object newInternalBuffer = bufferedStream.bufferedStream;
-                if (seekOffset >=0 && seekOffset < filledBufferSize) {
-                    Assert.assertSame(internalBuffer, newInternalBuffer,
+                if (seekOffset >= 0 && seekOffset < filledBufferSize) {
+                    Assert.assertSame(
+                            internalBuffer,
+                            newInternalBuffer,
                             "Internal buffer should have been reused for seek offset " + seekOffset);
                 } else {
-                    Assert.assertNotSame(internalBuffer, newInternalBuffer,
+                    Assert.assertNotSame(
+                            internalBuffer,
+                            newInternalBuffer,
                             "Internal buffer should not have been reused for seek offset " + seekOffset);
                 }
 
@@ -200,16 +217,15 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
     private int reallyRead(final byte[] bytes, final SeekableBufferedStream in) throws IOException {
         int read = 0, total = 0;
         do {
-            read = in.read(bytes, total, bytes.length-total);
+            read = in.read(bytes, total, bytes.length - total);
             total += read;
         } while (total != bytes.length && read > 0);
 
         return total;
     }
 
-
     @Test
-    public void testDivisableReads()throws IOException{
+    public void testDivisableReads() throws IOException {
 
         testReadsLength(1);
         testReadsLength(2);
@@ -219,19 +235,18 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
         testReadsLength(20);
         testReadsLength(50);
         testReadsLength(100);
-
     }
 
     private void testReadsLength(final int length) throws IOException {
 
         final int BUFFERED_STREAM_BUFFER_SIZE = 100;
-        final byte buffer[]=new byte[BUFFERED_STREAM_BUFFER_SIZE*10];
+        final byte buffer[] = new byte[BUFFERED_STREAM_BUFFER_SIZE * 10];
         final SeekableFileStream fileStream = new SeekableFileStream(TestFile);
-        final SeekableBufferedStream  bufferedStream = new SeekableBufferedStream(fileStream,BUFFERED_STREAM_BUFFER_SIZE);
+        final SeekableBufferedStream bufferedStream =
+                new SeekableBufferedStream(fileStream, BUFFERED_STREAM_BUFFER_SIZE);
 
-        for( int i=0; i<10*BUFFERED_STREAM_BUFFER_SIZE/length ; ++i ){
+        for (int i = 0; i < 10 * BUFFERED_STREAM_BUFFER_SIZE / length; ++i) {
             assertEquals(bufferedStream.read(buffer, 0, length), length);
         }
     }
-
 }

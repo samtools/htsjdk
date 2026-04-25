@@ -30,7 +30,6 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeEOFException;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -52,7 +51,8 @@ public final class BAMSBIIndexer {
      */
     public static void createIndex(final Path bamFile, final long granularity) throws IOException {
         final Path splittingBaiFile = IOUtil.addExtension(bamFile, FileExtensions.SBI);
-        try (SeekableStream in = new SeekablePathStream(bamFile); OutputStream out = Files.newOutputStream(splittingBaiFile)) {
+        try (SeekableStream in = new SeekablePathStream(bamFile);
+                OutputStream out = Files.newOutputStream(splittingBaiFile)) {
             createIndex(in, out, granularity);
         }
     }
@@ -65,7 +65,8 @@ public final class BAMSBIIndexer {
      * @param granularity write the offset of every n-th alignment to the index
      * @throws IOException as per java IO contract
      */
-    public static void createIndex(final SeekableStream in, final OutputStream out, final long granularity) throws IOException {
+    public static void createIndex(final SeekableStream in, final OutputStream out, final long granularity)
+            throws IOException {
         long recordStart = SAMUtils.findVirtualOffsetOfFirstRecordInBam(in);
         try (BlockCompressedInputStream blockIn = new BlockCompressedInputStream(in)) {
             blockIn.seek(recordStart);

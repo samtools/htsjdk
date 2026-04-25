@@ -1,31 +1,30 @@
 package htsjdk.beta.codecs.reads.bam;
 
+import static org.testng.Assert.*;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleBuilder;
-import htsjdk.beta.plugin.reads.ReadsBundle;
-import htsjdk.beta.plugin.reads.ReadsDecoder;
-import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
-import htsjdk.io.HtsPath;
-import htsjdk.io.IOPath;
 import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
+import htsjdk.beta.plugin.reads.ReadsBundle;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
+import htsjdk.io.HtsPath;
+import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.util.CloseableIterator;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import static org.testng.Assert.*;
-
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Test BAM file index queries.
@@ -37,44 +36,54 @@ import java.util.stream.StreamSupport;
  */
 public class HtsBAMDecoderQueryTest extends HtsjdkTest {
     private final IOPath TEST_BAM = new HtsPath("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final IOPath TEST_BAI = new HtsPath(SamFiles.findIndex(TEST_BAM.toPath().toFile()).toString());
+    private final IOPath TEST_BAI =
+            new HtsPath(SamFiles.findIndex(TEST_BAM.toPath().toFile()).toString());
     private final boolean mVerbose = false;
 
-    @DataProvider(name="queryMethodsCases")
+    @DataProvider(name = "queryMethodsCases")
     private Object[][] queryMethodsCases() {
         return new Object[][] {
-                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryStart("chr1", 202160268) },
-                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.query("chr1", 202661637, 202661812, HtsQueryRule.CONTAINED) },
-                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryContained("chr1", 202661637, 202661812) },
-                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryOverlapping("chr1", 202661637, 202661812) },
-                { (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryUnmapped() },
+            {(Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryStart("chr1", 202160268)},
+            {
+                (Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) ->
+                        bamDecoder.query("chr1", 202661637, 202661812, HtsQueryRule.CONTAINED)
+            },
+            {
+                (Function<BAMDecoder, ?>)
+                        (BAMDecoder bamDecoder) -> bamDecoder.queryContained("chr1", 202661637, 202661812)
+            },
+            {
+                (Function<BAMDecoder, ?>)
+                        (BAMDecoder bamDecoder) -> bamDecoder.queryOverlapping("chr1", 202661637, 202661812)
+            },
+            {(Function<BAMDecoder, ?>) (BAMDecoder bamDecoder) -> bamDecoder.queryUnmapped()},
         };
     }
 
-    @Test(dataProvider="queryMethodsCases")
+    @Test(dataProvider = "queryMethodsCases")
     public void testAcceptIndexInBundle(final Function<BAMDecoder, ?> queryFunction) {
         // use a bam that is known to have an on-disk companion index to ensure that attempts to make
         // index queries are rejected if the index is not explicitly included in the input bundle
         final ReadsBundle readsBundle = ReadsBundle.resolveIndex(TEST_BAM);
         Assert.assertTrue(readsBundle.getIndex().isPresent());
 
-        try (final BAMDecoder bamDecoder = (BAMDecoder)
-                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
+        try (final BAMDecoder bamDecoder =
+                (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
             Assert.assertTrue(bamDecoder.hasIndex());
             Assert.assertTrue(bamDecoder.isQueryable());
             queryFunction.apply(bamDecoder);
         }
     }
 
-    @Test(dataProvider="queryMethodsCases", expectedExceptions = IllegalArgumentException.class)
+    @Test(dataProvider = "queryMethodsCases", expectedExceptions = IllegalArgumentException.class)
     public void testRejectIndexNotIncludedInBundle(final Function<BAMDecoder, ?> queryFunction) {
         // use a bam that is known to have an on-disk companion index to ensure that attempts to make
         // index queries are rejected if the index is not explicitly included in the input bundle
         final ReadsBundle readsBundle = new ReadsBundle(TEST_BAM);
         Assert.assertFalse(readsBundle.getIndex().isPresent());
 
-        try (final BAMDecoder bamDecoder = (BAMDecoder)
-                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
+        try (final BAMDecoder bamDecoder =
+                (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle)) {
 
             Assert.assertFalse(bamDecoder.hasIndex());
             Assert.assertFalse(bamDecoder.isQueryable());
@@ -99,7 +108,8 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
 
     @Test
     public void testQueryAlignmentStart() {
-        try (final BAMDecoder bamDecoder = (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(TEST_BAM)) {
+        try (final BAMDecoder bamDecoder =
+                (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(TEST_BAM)) {
             try (final CloseableIterator<SAMRecord> it = bamDecoder.queryStart("chr1", 202160268)) {
                 Assert.assertEquals(countElements(it), 2);
             }
@@ -118,37 +128,34 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "queryIntervalsData")
-    public Object[][] queryIntervalsData(){
+    public Object[][] queryIntervalsData() {
         return new Object[][] {
-                {HtsQueryRule.CONTAINED, 1},
-                {HtsQueryRule.OVERLAPPING, 2}
+            {HtsQueryRule.CONTAINED, 1},
+            {HtsQueryRule.OVERLAPPING, 2}
         };
     }
 
     @Test(dataProvider = "queryIntervalsData")
     public void testQueryIntervals(final HtsQueryRule queryRule, final int expected) {
-        final Bundle readsBundle =
-                new BundleBuilder()
-                        .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.CT_ALIGNED_READS))
-                        .addSecondary(new IOPathResource(TEST_BAI, BundleResourceType.CT_READS_INDEX))
-                        .build();
+        final Bundle readsBundle = new BundleBuilder()
+                .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.CT_ALIGNED_READS))
+                .addSecondary(new IOPathResource(TEST_BAI, BundleResourceType.CT_READS_INDEX))
+                .build();
         try (final ReadsDecoder bamDecoder =
-                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle, new ReadsDecoderOptions());
-             final CloseableIterator<SAMRecord> it =
-                    bamDecoder.query("chr1", 202661637, 202661812, queryRule)) {
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle, new ReadsDecoderOptions());
+                final CloseableIterator<SAMRecord> it = bamDecoder.query("chr1", 202661637, 202661812, queryRule)) {
             Assert.assertEquals(countElements(it), expected);
         }
     }
 
     @DataProvider(name = "testMultiIntervalQueryDataProvider")
     private Object[][] testMultiIntervalQueryDataProvider() {
-        return new Object[][]{{true}, {false}};
+        return new Object[][] {{true}, {false}};
     }
 
     private long countElements(final Iterator<SAMRecord> it) {
-        return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED),
-                false).count();
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false)
+                .count();
     }
 
     private void checkChromosome(final String name, final int expectedCount) {
@@ -158,13 +165,18 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
         assertEquals(count, expectedCount);
     }
 
-    private int runQueryTest(final IOPath bamFile, final String sequence, final int startPos, final int endPos, final HtsQueryRule queryRule) {
+    private int runQueryTest(
+            final IOPath bamFile,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final HtsQueryRule queryRule) {
 
         final ReadsBundle readsBundleWithIndex = ReadsBundle.resolveIndex(bamFile);
-        try (final BAMDecoder bamDecoder = (BAMDecoder)
-                HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundleWithIndex);
-             final BAMDecoder bamDecoder2 = (BAMDecoder)
-                     HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundleWithIndex)) {
+        try (final BAMDecoder bamDecoder =
+                        (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundleWithIndex);
+                final BAMDecoder bamDecoder2 =
+                        (BAMDecoder) HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundleWithIndex)) {
             final Iterator<SAMRecord> iter1 = bamDecoder.query(sequence, startPos, endPos, queryRule);
             final Iterator<SAMRecord> iter2 = bamDecoder2.iterator();
             // Compare ordered iterators.
@@ -207,14 +219,25 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
         }
     }
 
-    private static void checkPassesFilter(final boolean expected, final SAMRecord record, final String sequence, final int startPos, final int endPos, final HtsQueryRule queryRule) {
+    private static void checkPassesFilter(
+            final boolean expected,
+            final SAMRecord record,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final HtsQueryRule queryRule) {
         final boolean passes = passesFilter(record, sequence, startPos, endPos, queryRule);
         if (passes != expected) {
             assertEquals(passes, expected);
         }
     }
 
-    private static boolean passesFilter(final SAMRecord record, final String sequence, final int startPos, final int endPos, final HtsQueryRule queryRule) {
+    private static boolean passesFilter(
+            final SAMRecord record,
+            final String sequence,
+            final int startPos,
+            final int endPos,
+            final HtsQueryRule queryRule) {
         if (record == null) {
             return false;
         }
@@ -275,5 +298,4 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
             return o1.equals(o2);
         }
     }
-
 }

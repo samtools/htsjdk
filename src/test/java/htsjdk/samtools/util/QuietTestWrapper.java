@@ -45,6 +45,8 @@ public class QuietTestWrapper<T> implements Supplier<T> {
         return cached;
     }
 
-    @Override public String toString() { return "Output suppressed by QuietWrapper"; }
+    @Override
+    public String toString() {
+        return "Output suppressed by QuietWrapper";
+    }
 }
-

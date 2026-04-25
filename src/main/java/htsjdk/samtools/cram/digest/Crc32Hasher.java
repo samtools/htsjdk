@@ -38,5 +38,4 @@ final class Crc32Hasher extends AbstractSerialDigest<Integer> {
         }
         return array;
     }
-
 }

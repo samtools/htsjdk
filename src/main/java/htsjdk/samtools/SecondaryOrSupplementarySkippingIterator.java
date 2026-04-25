@@ -22,7 +22,7 @@ public class SecondaryOrSupplementarySkippingIterator {
     }
 
     public SAMRecord getCurrent() {
-        assert(hasCurrent());
+        assert (hasCurrent());
         return it.peek();
     }
 
@@ -37,5 +37,4 @@ public class SecondaryOrSupplementarySkippingIterator {
             it.next();
         }
     }
-
 }

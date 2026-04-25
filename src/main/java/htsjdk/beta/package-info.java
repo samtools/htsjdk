@@ -9,5 +9,3 @@ import htsjdk.annotations.BetaAPI;
  * {@link htsjdk.annotations.BetaAPI}. Subpackages may be subsequently released as part of the public API,
  * at which time they will be moved out of the {@link htsjdk.beta} package.
  */
-
-

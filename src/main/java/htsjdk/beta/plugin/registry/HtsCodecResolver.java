@@ -1,18 +1,17 @@
 package htsjdk.beta.plugin.registry;
 
+import htsjdk.annotations.InternalAPI;
+import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.plugin.HtsCodec;
-import htsjdk.beta.plugin.HtsVersion;
+import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.SignatureStream;
-import htsjdk.beta.exception.HtsjdkException;
-import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.plugin.HtsCodec;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.Log;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,8 +36,8 @@ import java.util.stream.Collectors;
 public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     private static final Log LOG = Log.getInstance(HtsCodecResolver.class);
 
-    final static String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
-    final static String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
+    static final String NO_SUPPORTING_CODEC_ERROR = "No registered codec accepts the provided resource";
+    static final String MULTIPLE_SUPPORTING_CODECS_ERROR = "Multiple codecs accept the provided resource";
 
     private final String requiredContentType;
     private final Map<String, Map<HtsVersion, C>> codecs = new HashMap<>();
@@ -75,9 +74,9 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             // update the version map for this codec
             final C oldCodec = versionMap.put(codec.getVersion(), codec);
             if (oldCodec != null) {
-                LOG.warn(String.format("A previously registered HTS codec (%s) was replaced with the (%s) codec ",
-                        oldCodec.getDisplayName(),
-                        codec.getDisplayName()));
+                LOG.warn(String.format(
+                        "A previously registered HTS codec (%s) was replaced with the (%s) codec ",
+                        oldCodec.getDisplayName(), codec.getDisplayName()));
             }
             return oldCodec;
         }
@@ -149,15 +148,14 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         final Optional<String> optFormatString = bundleResource.getFileFormat();
         final List<C> candidateCodecs = resolveForFormat(optFormatString);
 
-        final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent() ?
-                resolveForDecodingIOPath(bundleResource, candidateCodecs) :
-                resolveForDecodingStream(bundleResource, candidateCodecs);
+        final List<C> resolvedCodecs = bundleResource.getIOPath().isPresent()
+                ? resolveForDecodingIOPath(bundleResource, candidateCodecs)
+                : resolveForDecodingStream(bundleResource, candidateCodecs);
 
         return getOneOrThrow(
                 resolvedCodecs,
-                () -> String.format("%s/%s",
-                        optFormatString.isPresent () ? optFormatString.get() : "(NONE)",
-                        bundleResource));
+                () -> String.format(
+                        "%s/%s", optFormatString.isPresent() ? optFormatString.get() : "(NONE)", bundleResource));
     }
 
     /**
@@ -180,7 +178,9 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @throws HtsjdkPluginException if more than one codec claims to handle the resource. this usually indicates
      * that the registry contains an incorrectly written codec.
      */
-    public C resolveForEncoding(final Bundle bundle) { return resolveForEncoding(bundle, HtsVersion.NEWEST_VERSION); }
+    public C resolveForEncoding(final Bundle bundle) {
+        return resolveForEncoding(bundle, HtsVersion.NEWEST_VERSION);
+    }
 
     /**
      * Inspect a bundle and find a codec that can encode to the primary resource using the format version
@@ -208,16 +208,15 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         final List<C> candidateCodecs = resolveForFormat(optFormatString);
 
         final Optional<IOPath> ioPath = bundleResource.getIOPath();
-        final List<C> filteredCodecs = bundleResource.getIOPath().isPresent() ?
-                resolveForEncodingIOPath(ioPath.get(), candidateCodecs) :
-                candidateCodecs; // there isn't anything else to probe when the output is to a stream
+        final List<C> filteredCodecs = bundleResource.getIOPath().isPresent()
+                ? resolveForEncodingIOPath(ioPath.get(), candidateCodecs)
+                : candidateCodecs; // there isn't anything else to probe when the output is to a stream
         final List<C> resolvedCodecs = filterByVersion(filteredCodecs, htsVersion);
 
         return getOneOrThrow(
                 resolvedCodecs,
-                () ->  String.format("%s/%s",
-                        optFormatString.isPresent () ? optFormatString.get() : "(NONE)",
-                        bundleResource));
+                () -> String.format(
+                        "%s/%s", optFormatString.isPresent() ? optFormatString.get() : "(NONE)", bundleResource));
     }
 
     /**
@@ -245,9 +244,9 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      * @throws HtsjdkException if no registered codecs can handle the resource
      */
     public C resolveFormatAndVersion(final String format, final HtsVersion formatVersion) {
-        final List<C> matchingCodecs = resolveForFormat(format)
-                .stream()
-                .filter(codec -> codec.getFileFormat().equals(format) && codec.getVersion().equals(formatVersion))
+        final List<C> matchingCodecs = resolveForFormat(format).stream()
+                .filter(codec -> codec.getFileFormat().equals(format)
+                        && codec.getVersion().equals(formatVersion))
                 .collect(Collectors.toList());
         return getOneOrThrow(matchingCodecs, () -> String.format("%s/%s", format, formatVersion));
     }
@@ -259,11 +258,8 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
      */
     public List<C> getCodecs() {
         // flatten out the codecs into a single list
-        final List<C> codecList = codecs
-                .values()
-                .stream()
-                .flatMap(map -> map.values().stream())
-                .collect(Collectors.toList());
+        final List<C> codecList =
+                codecs.values().stream().flatMap(map -> map.values().stream()).collect(Collectors.toList());
         return codecList;
     }
 
@@ -296,35 +292,28 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         final byte[] signatureBuffer = getSignatureProbeBuffer(bundleResource, candidateCodecs);
         return candidateCodecs.stream()
                 .filter(codec -> codec.canDecodeSignature(
-                        new SignatureStream(signatureBuffer.length, signatureBuffer),
-                        bundleResource.getDisplayName()))
+                        new SignatureStream(signatureBuffer.length, signatureBuffer), bundleResource.getDisplayName()))
                 .collect(Collectors.toList());
     }
 
-    private final byte[] getSignatureProbeBuffer(
-            final BundleResource bundleResource,
-            final List<C> candidateCodecs) {
+    private final byte[] getSignatureProbeBuffer(final BundleResource bundleResource, final List<C> candidateCodecs) {
         final int maxSignatureProbeLength = getMaxSignatureProbeLength(candidateCodecs);
-        try (final SignatureStream probingStream =
-                bundleResource.getIOPath().isPresent() ?
-                        getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength) :
-                        bundleResource.getSignatureStream(maxSignatureProbeLength)) {
+        try (final SignatureStream probingStream = bundleResource.getIOPath().isPresent()
+                ? getIOPathSignatureProbingStream(bundleResource, maxSignatureProbeLength)
+                : bundleResource.getSignatureStream(maxSignatureProbeLength)) {
             // we need to recreate a stream over the underlying signature for each codec,
             // since some implementations may use their own mark/reset pairs
             final byte[] signatureBytes = new byte[probingStream.getSignaturePrefixLength()];
             final int readSize = probingStream.read(signatureBytes);
             if (readSize != maxSignatureProbeLength) {
-                throw new HtsjdkPluginException(
-                        String.format("Failure to read %d bytes from signature stream for %s (only read %d)",
-                                maxSignatureProbeLength,
-                                bundleResource,
-                                readSize));
+                throw new HtsjdkPluginException(String.format(
+                        "Failure to read %d bytes from signature stream for %s (only read %d)",
+                        maxSignatureProbeLength, bundleResource, readSize));
             }
             return signatureBytes;
         } catch (IOException e) {
             throw new HtsjdkIOException(
-                    String.format("error closing signature stream for %s", bundleResource.getDisplayName()),
-                    e);
+                    String.format("error closing signature stream for %s", bundleResource.getDisplayName()), e);
         }
     }
 
@@ -339,21 +328,19 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         final List<C> filteredCodecs = uriHandlers.isEmpty() ? candidateCodecs : uriHandlers;
 
         // reduce our candidates based on uri and IOPath
-        return filteredCodecs.stream()
-                .filter(c -> c.canDecodeURI(ioPath))
-                .collect(Collectors.toList());
+        return filteredCodecs.stream().filter(c -> c.canDecodeURI(ioPath)).collect(Collectors.toList());
     }
 
     private int getMaxSignatureProbeLength(final List<C> candidateCodecs) {
         // find the longest signature probe length of any candidate
         return candidateCodecs.stream()
                 .map(codec -> codec.getSignatureProbeLength())
-                .max(Integer::compare).orElse(0);
+                .max(Integer::compare)
+                .orElse(0);
     }
 
     private SignatureStream getIOPathSignatureProbingStream(
-            final BundleResource bundleResource,
-            final int streamPrefixSize) {
+            final BundleResource bundleResource, final int streamPrefixSize) {
         ValidationUtils.validateArg(bundleResource.getIOPath().isPresent(), "an IOPath resource is required");
         final IOPath inputPath = bundleResource.getIOPath().get();
         if (!inputPath.hasFileSystemProvider()) {
@@ -364,11 +351,10 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             // "claimURI" implementations, or else it would be a known protocol such as "gs://" for
             // which the user expected a file system to be present. It likely represents user error
             // (a user entered "hdf://" instead of "hdfs://"), and it will fail anyway, so throw.
-            throw new IllegalArgumentException(
-                    String.format("The resource (%s) specifies a custom protocol (%s) " +
-                                    "which no registered codec claims, and for which no NIO file system provider is available",
-                            bundleResource,
-                            inputPath.getURI().getScheme()));
+            throw new IllegalArgumentException(String.format(
+                    "The resource (%s) specifies a custom protocol (%s) "
+                            + "which no registered codec claims, and for which no NIO file system provider is available",
+                    bundleResource, inputPath.getURI().getScheme()));
         }
         return bundleResource.getSignatureStream(streamPrefixSize);
     }
@@ -387,10 +373,12 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             // version (since there still can be more than one)
             final HtsVersion newestVersion = candidateCodecs.stream()
                     .map(c -> c.getVersion())
-                    .reduce(candidateCodecs.get(0).getVersion(),
+                    .reduce(
+                            candidateCodecs.get(0).getVersion(),
                             (HtsVersion a, HtsVersion b) -> a.compareTo(b) > 0 ? a : b);
-            return candidateCodecs.stream().filter(
-                    c -> c.getVersion().equals(newestVersion)).collect(Collectors.toList());
+            return candidateCodecs.stream()
+                    .filter(c -> c.getVersion().equals(newestVersion))
+                    .collect(Collectors.toList());
         } else {
             return candidateCodecs.stream()
                     .filter(c -> c.getVersion().equals(htsVersion))
@@ -402,17 +390,13 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
     // or otherwise all registered codecs for this codec format.
     private List<C> resolveForFormat(final Optional<String> optFormatString) {
         final List<C> candidateCodecs =
-                optFormatString.isPresent() ?
-                        resolveForFormat(optFormatString.get()) :
-                        getCodecs();
+                optFormatString.isPresent() ? resolveForFormat(optFormatString.get()) : getCodecs();
         if (optFormatString.isPresent() && candidateCodecs.isEmpty()) {
             // warn if the resource format string is present, but doesn't map to any codec registered
             // with this resolver (/content type).
             LOG.warn(String.format(
                     "The specified format string (%s) does not correspond to any registered codec for content type (%s)",
-                    optFormatString.get(),
-                    requiredContentType));
-
+                    optFormatString.get(), requiredContentType));
         }
         return candidateCodecs;
     }
@@ -426,14 +410,13 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         if (isCustomURI) {
             // ensure that all codecs that claim to own this URI honor the contract that says if canDecodeURI
             // returns true, ownsURI must also return true for the same IOPath
-            uriHandlers.stream().forEach(
-                    codec -> {
-                        if (!codec.canDecodeURI(ioPath)) {
-                            throw new HtsjdkPluginException(
-                                    String.format("The %s codec returned true for ownsURI but false for canDecodeURI for path: %s",
-                                            codec,
-                                            ioPath.getURI()));
-                        }});
+            uriHandlers.stream().forEach(codec -> {
+                if (!codec.canDecodeURI(ioPath)) {
+                    throw new HtsjdkPluginException(String.format(
+                            "The %s codec returned true for ownsURI but false for canDecodeURI for path: %s",
+                            codec, ioPath.getURI()));
+                }
+            });
         }
         return uriHandlers;
     }
@@ -446,21 +429,18 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
         if (!requiredContentType.equals(bundlePrimaryContentType)) {
             throw new IllegalArgumentException(String.format(
                     "The primary content type (%s) for the resource does not match the requested content type (%s).",
-                    bundlePrimaryContentType,
-                    requiredContentType));
+                    bundlePrimaryContentType, requiredContentType));
         }
 
         // Make sure the resource type is appropriate for encoding or decoding, as requested by the caller
         if (forEncoding && !bundleResource.hasInputType()) {
-            throw new IllegalArgumentException(
-                    String.format("The %s resource found (%s) cannot be used as an input resource",
-                            requiredContentType,
-                            bundleResource));
+            throw new IllegalArgumentException(String.format(
+                    "The %s resource found (%s) cannot be used as an input resource",
+                    requiredContentType, bundleResource));
         } else if (!forEncoding && !bundleResource.hasOutputType()) { // for decoding
-            throw new IllegalArgumentException(
-                    String.format("The %s resource found (%s) cannot be used as an output resource",
-                            requiredContentType,
-                            bundleResource));
+            throw new IllegalArgumentException(String.format(
+                    "The %s resource found (%s) cannot be used as an output resource",
+                    requiredContentType, bundleResource));
         }
 
         return bundleResource;
@@ -468,13 +448,9 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
 
     @InternalAPI
     static <C extends HtsCodec<?, ?>> C getOneOrThrow(
-            final List<C> resolvedCodecs,
-            final Supplier<String> contextMessage) {
+            final List<C> resolvedCodecs, final Supplier<String> contextMessage) {
         if (resolvedCodecs.size() == 0) {
-            throw new HtsjdkException(String.format(
-                    "%s %s",
-                    NO_SUPPORTING_CODEC_ERROR,
-                    contextMessage.get()));
+            throw new HtsjdkException(String.format("%s %s", NO_SUPPORTING_CODEC_ERROR, contextMessage.get()));
         } else if (resolvedCodecs.size() > 1) {
             final String multipleCodecsMessage = String.format(
                     "%s (%s)\n%s\nThis indicates an internal error in one or more of the codecs:",
@@ -486,5 +462,4 @@ public class HtsCodecResolver<C extends HtsCodec<?, ?>> {
             return resolvedCodecs.get(0);
         }
     }
-
 }

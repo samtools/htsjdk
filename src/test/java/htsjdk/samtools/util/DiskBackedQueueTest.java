@@ -24,36 +24,40 @@
 
 package htsjdk.samtools.util;
 
+import java.util.Collections;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.Collections;
 
 public class DiskBackedQueueTest extends SortingCollectionTest {
     @DataProvider(name = "diskBackedQueueProvider")
     public Object[][] createDBQTestData() {
         return new Object[][] {
-                {"empty", 0, 100},
-                {"singleton", 1, 100},
-                {"no ram records", 10, 0},
-                {"less than threshold", 100, 200},
-                {"threshold minus 1", 99, 100},
-                {"greater than threshold", 550, 100},
-                {"threshold multiple", 600, 100},
-                {"threshold multiple plus one", 101, 100},
-                {"exactly threshold", 100, 100},
+            {"empty", 0, 100},
+            {"singleton", 1, 100},
+            {"no ram records", 10, 0},
+            {"less than threshold", 100, 200},
+            {"threshold minus 1", 99, 100},
+            {"greater than threshold", 550, 100},
+            {"threshold multiple", 600, 100},
+            {"threshold multiple plus one", 101, 100},
+            {"exactly threshold", 100, 100},
         };
     }
 
     @Override
-    @BeforeMethod void setup() { resetTmpDir(); }
+    @BeforeMethod
+    void setup() {
+        resetTmpDir();
+    }
+
     @Override
-    @AfterMethod void tearDown() { resetTmpDir(); }
+    @AfterMethod
+    void tearDown() {
+        resetTmpDir();
+    }
 
     /**
      * Generate some strings, put into SortingCollection, confirm that the right number of

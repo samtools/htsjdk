@@ -89,7 +89,6 @@ public class ValidationUtils {
             throw new IllegalArgumentException(nameOfObject + " cannot be empty");
         }
         return collection;
-
     }
 
     /**
@@ -118,7 +117,6 @@ public class ValidationUtils {
             throw new IllegalArgumentException("The string is empty: " + nameOfObject);
         }
         return string;
-
     }
 
     /**

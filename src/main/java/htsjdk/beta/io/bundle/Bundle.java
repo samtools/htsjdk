@@ -2,7 +2,6 @@ package htsjdk.beta.io.bundle;
 
 import htsjdk.io.IOPath;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.Serializable;
 import java.util.*;
 
@@ -50,8 +49,8 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
      */
     public Bundle(final String primaryContentType, final Collection<BundleResource> resources) {
         ValidationUtils.nonNull(primaryContentType, "primary content type");
-        ValidationUtils.validateArg(primaryContentType.length() > 0,
-                "A non-zero length primary resource content type must be provided");
+        ValidationUtils.validateArg(
+                primaryContentType.length() > 0, "A non-zero length primary resource content type must be provided");
         ValidationUtils.nonNull(resources, "resource collection");
         if (resources.isEmpty()) {
             throw new IllegalArgumentException("A bundle must contain at least one resource");
@@ -67,9 +66,8 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
 
         // validate that the primary resource actually exists in the resources
         if (!this.resources.containsKey(primaryContentType)) {
-            throw new IllegalArgumentException(
-                    String.format("Primary resource content type %s is not present in the bundle's resources",
-                            primaryContentType));
+            throw new IllegalArgumentException(String.format(
+                    "Primary resource content type %s is not present in the bundle's resources", primaryContentType));
         }
     }
 
@@ -94,12 +92,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
      */
     public BundleResource getOrThrow(final String requiredContentType) {
         ValidationUtils.nonNull(requiredContentType, "target content string");
-        return get(requiredContentType).orElseThrow(
-                        () -> new IllegalArgumentException(
-                                String.format("No resource found in bundle %s with content type %s",
-                                        this,
-                                        requiredContentType
-                                        )));
+        return get(requiredContentType)
+                .orElseThrow(() -> new IllegalArgumentException(String.format(
+                        "No resource found in bundle %s with content type %s", this, requiredContentType)));
     }
 
     /**
@@ -107,7 +102,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
      *
      * @return the primary content type for this bundle
      */
-    public String getPrimaryContentType() { return primaryContentType; }
+    public String getPrimaryContentType() {
+        return primaryContentType;
+    }
 
     /**
      * Get the primary {@link BundleResource} for this bundle.
@@ -131,7 +128,9 @@ public class Bundle implements Iterable<BundleResource>, Serializable {
      * @return iterator of BundleResources for this bundle.
      */
     @Override
-    public Iterator<BundleResource> iterator() { return resources.values().iterator(); }
+    public Iterator<BundleResource> iterator() {
+        return resources.values().iterator();
+    }
 
     @Override
     public boolean equals(Object o) {

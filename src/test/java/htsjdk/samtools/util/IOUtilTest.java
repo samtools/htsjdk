@@ -23,10 +23,13 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-
+import htsjdk.HtsjdkTest;
+import htsjdk.beta.exception.HtsjdkException;
+import htsjdk.samtools.BamFileIoUtils;
+import htsjdk.samtools.HtsjdkTestUtils;
+import htsjdk.samtools.SAMException;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -34,40 +37,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
-
-import htsjdk.beta.exception.HtsjdkException;
-import htsjdk.samtools.BAMFileWriter;
-import htsjdk.samtools.BamFileIoUtils;
-import htsjdk.samtools.HtsjdkTestUtils;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SamReaderFactory;
-import org.apache.commons.compress.compressors.FileNameUtil;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.lang.IllegalArgumentException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.Random;
-import java.util.zip.GZIPOutputStream;
-
-
 public class IOUtilTest extends HtsjdkTest {
 
-
-    private static final Path TEST_DATA_DIR = Paths.get ("src/test/resources/htsjdk/samtools/io/");
+    private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools/io/");
     private static final Path TEST_VARIANT_DIR = Paths.get("src/test/resources/htsjdk/variant/");
     private static final Path SLURP_TEST_FILE = TEST_DATA_DIR.resolve("slurptest.txt");
     private static final Path EMPTY_FILE = TEST_DATA_DIR.resolve("empty.txt");
     private static final Path FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = TEST_DATA_DIR.resolve("5newline5.txt");
-    private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
+    private static final List<String> SLURP_TEST_LINES =
+            Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
     private static final String[] TEST_FILE_EXTENSIONS = {".txt", ".txt.gz"};
@@ -85,15 +76,17 @@ public class IOUtilTest extends HtsjdkTest {
         existingTempFile.deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
         final File tmpDir = new File(systemTempDir);
-        inMemoryFileSystem = Jimfs.newFileSystem(Configuration.unix());;
+        inMemoryFileSystem = Jimfs.newFileSystem(Configuration.unix());
+        ;
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
         systemUser = System.getProperty("user.name");
-        //build long file of random words for compression testing
+        // build long file of random words for compression testing
         WORDS_LONG = Files.createTempFile("words_long", ".txt");
         WORDS_LONG.toFile().deleteOnExit();
-        final List<String> wordsList = Files.lines(TEST_DATA_DIR.resolve("dictionary_english_short.dic")).collect(Collectors.toList());
+        final List<String> wordsList = Files.lines(TEST_DATA_DIR.resolve("dictionary_english_short.dic"))
+                .collect(Collectors.toList());
         final int numberOfWords = 300000;
         final int seed = 345987345;
         final Random rand = new Random(seed);
@@ -145,13 +138,13 @@ public class IOUtilTest extends HtsjdkTest {
         tmpDir.deleteOnExit();
         File actual = new File(tmpDir, "actual.txt");
         actual.deleteOnExit();
-        ProcessExecutor.execute(new String[]{"touch", actual.getAbsolutePath()});
+        ProcessExecutor.execute(new String[] {"touch", actual.getAbsolutePath()});
         File symlink = new File(tmpDir, "symlink.txt");
         symlink.deleteOnExit();
-        ProcessExecutor.execute(new String[]{"ln", "-s", actual.getAbsolutePath(), symlink.getAbsolutePath()});
+        ProcessExecutor.execute(new String[] {"ln", "-s", actual.getAbsolutePath(), symlink.getAbsolutePath()});
         File lnDir = new File(tmpDir, "symLinkDir");
         lnDir.deleteOnExit();
-        ProcessExecutor.execute(new String[]{"ln", "-s", tmpDir.getAbsolutePath(), lnDir.getAbsolutePath()});
+        ProcessExecutor.execute(new String[] {"ln", "-s", tmpDir.getAbsolutePath(), lnDir.getAbsolutePath()});
         File lnToActual = new File(lnDir, "actual.txt");
         lnToActual.deleteOnExit();
         File lnToSymlink = new File(lnDir, "symlink.txt");
@@ -165,7 +158,8 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void testUtfWriting() throws IOException {
-        final String utf8 = new StringWriter().append((char) 168).append((char) 197).toString();
+        final String utf8 =
+                new StringWriter().append((char) 168).append((char) 197).toString();
         for (String ext : TEST_FILE_EXTENSIONS) {
             final File f = File.createTempFile(TEST_FILE_PREFIX, ext);
             f.deleteOnExit();
@@ -179,7 +173,6 @@ public class IOUtilTest extends HtsjdkTest {
             Assert.assertEquals(utf8, line, f.getAbsolutePath());
 
             CloserUtil.close(reader);
-
         }
     }
 
@@ -200,7 +193,9 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void slurpTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE.toFile()), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
+        Assert.assertEquals(
+                IOUtil.slurp(SLURP_TEST_FILE.toFile()),
+                CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
     }
 
     @Test(dataProvider = "fileTypeTestCases")
@@ -210,7 +205,9 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
     }
 
-    @Test(dataProvider = "unixFileTypeTestCases", groups = {"unix"})
+    @Test(
+            dataProvider = "unixFileTypeTestCases",
+            groups = {"unix"})
     public void testFileTypeUnix(final String path, boolean expectedIsRegularFile) {
         final File file = new File(path);
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
@@ -253,46 +250,41 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertEquals(paths, expectedPaths);
     }
 
-
     @DataProvider(name = "fileTypeTestCases")
     private Object[][] fileTypeTestCases() {
-        return new Object[][]{
-                {existingTempFile.getAbsolutePath(), Boolean.TRUE},
-                {systemTempDir, Boolean.FALSE}
-
+        return new Object[][] {
+            {existingTempFile.getAbsolutePath(), Boolean.TRUE},
+            {systemTempDir, Boolean.FALSE}
         };
     }
 
     @DataProvider(name = "unixFileTypeTestCases")
     private Object[][] unixFileTypeTestCases() {
-        return new Object[][]{
-                {"/dev/null", Boolean.FALSE},
-                {"/dev/stdout", Boolean.FALSE},
-                {"/non/existent/file", Boolean.TRUE},
+        return new Object[][] {
+            {"/dev/null", Boolean.FALSE},
+            {"/dev/stdout", Boolean.FALSE},
+            {"/non/existent/file", Boolean.TRUE},
         };
     }
 
     @DataProvider
-    public Object[][] getFiles(){
+    public Object[][] getFiles() {
         final File file = new File("someFile");
         return new Object[][] {
-                {null, null},
-                {file, file.toPath()}
+            {null, null},
+            {file, file.toPath()}
         };
     }
 
     @Test(dataProvider = "getFiles")
-    public void testToPath(final File file, final Path expected){
+    public void testToPath(final File file, final Path expected) {
         Assert.assertEquals(IOUtil.toPath(file), expected);
     }
-
 
     @DataProvider(name = "fileNamesForDelete")
     public Object[][] fileNamesForDelete() {
         return new Object[][] {
-                {Collections.emptyList()},
-                {Collections.singletonList("file1")},
-                {Arrays.asList("file1", "file2")}
+            {Collections.emptyList()}, {Collections.singletonList("file1")}, {Arrays.asList("file1", "file2")}
         };
     }
 
@@ -300,15 +292,18 @@ public class IOUtilTest extends HtsjdkTest {
     public void testGetDefaultTmpDirPath() throws Exception {
         try {
             Path testPath = IOUtil.getDefaultTmpDirPath();
-            Assert.assertEquals(testPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + systemUser);
+            Assert.assertEquals(
+                    testPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + systemUser);
 
             // change the properties to test others
-            final String newTempPath = Files.createTempDirectory("testGetDefaultTmpDirPath").toString();
+            final String newTempPath =
+                    Files.createTempDirectory("testGetDefaultTmpDirPath").toString();
             final String newUser = "my_user";
             System.setProperty("java.io.tmpdir", newTempPath);
             System.setProperty("user.name", newUser);
             testPath = IOUtil.getDefaultTmpDirPath();
-            Assert.assertEquals(testPath.toFile().getAbsolutePath(), new File(newTempPath).getAbsolutePath() + "/" + newUser);
+            Assert.assertEquals(
+                    testPath.toFile().getAbsolutePath(), new File(newTempPath).getAbsolutePath() + "/" + newUser);
 
         } finally {
             // reset system properties
@@ -326,7 +321,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void testDeleteSinglePath() throws Exception {
-        final Path toDelete = Files.createTempFile("file",".bad");
+        final Path toDelete = Files.createTempFile("file", ".bad");
         Assert.assertTrue(Files.exists(toDelete));
         IOUtil.deletePath(toDelete);
         Assert.assertFalse(Files.exists(toDelete));
@@ -334,7 +329,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void testDeleteSingleWithDeletePaths() throws Exception {
-        final Path toDelete = Files.createTempFile("file",".bad");
+        final Path toDelete = Files.createTempFile("file", ".bad");
         Assert.assertTrue(Files.exists(toDelete));
         IOUtil.deletePaths(toDelete);
         Assert.assertFalse(Files.exists(toDelete));
@@ -359,7 +354,6 @@ public class IOUtilTest extends HtsjdkTest {
         testDeletePathArray(paths);
     }
 
-
     private static void testDeletePaths(final List<Path> paths) {
         paths.forEach(p -> Assert.assertTrue(Files.exists(p)));
         IOUtil.deletePaths(paths);
@@ -374,7 +368,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     private static List<Path> createLocalFiles(final Path tmpDir, final List<String> fileNames) throws Exception {
         final List<Path> paths = new ArrayList<>(fileNames.size());
-        for (final String f: fileNames) {
+        for (final String f : fileNames) {
             final Path file = Files.createFile(tmpDir.resolve(f));
             paths.add(file);
         }
@@ -386,7 +380,7 @@ public class IOUtilTest extends HtsjdkTest {
         final Path folder = inMemoryFileSystem.getPath(folderName);
         if (Files.notExists(folder)) Files.createDirectory(folder);
 
-        for (final String f: fileNames) {
+        for (final String f : fileNames) {
             final Path p = inMemoryFileSystem.getPath(folderName, f);
             Files.createFile(p);
             paths.add(p);
@@ -398,13 +392,13 @@ public class IOUtilTest extends HtsjdkTest {
     @DataProvider
     public Object[][] pathsForWritableDirectory() throws Exception {
         return new Object[][] {
-                // non existent
-                {inMemoryFileSystem.getPath("no_exists"), false},
-                // non directory
-                {Files.createFile(inMemoryFileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
-                // TODO - how to do in inMemoryFileSystem a non-writable directory?
-                // writable directory
-                {Files.createDirectory(inMemoryFileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
+            // non existent
+            {inMemoryFileSystem.getPath("no_exists"), false},
+            // non directory
+            {Files.createFile(inMemoryFileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
+            // TODO - how to do in inMemoryFileSystem a non-writable directory?
+            // writable directory
+            {Files.createDirectory(inMemoryFileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
         };
     }
 
@@ -426,14 +420,14 @@ public class IOUtilTest extends HtsjdkTest {
         nonWritableFile.setWritable(false);
 
         return new Object[][] {
-                // non existent
-                {new File("no_exists"), false},
-                // non directory
-                {existingTempFile, false},
-                // non-writable directory
-                {nonWritableFile, false},
-                // writable directory
-                {new File(systemTempDir), true},
+            // non existent
+            {new File("no_exists"), false},
+            // non directory
+            {existingTempFile, false},
+            // non-writable directory
+            {nonWritableFile, false},
+            // writable directory
+            {new File(systemTempDir), true},
         };
     }
 
@@ -464,20 +458,22 @@ public class IOUtilTest extends HtsjdkTest {
         Path withHttpPath = inMemoryFileSystem.getPath(fofnHttpQueryParams);
         Files.copy(TEST_DATA_DIR.resolve(fofnHttpQueryParams), withHttpPath);
 
-        return new Object[][]{
-                {TEST_DATA_DIR + "/" + level1, new String[]{".vcf", ".vcf.gz"}, 2},
-                {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 4},
-                {fofnPath1.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 2},
-                {fofnPath2.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4},
-                //test http links with query parameters are handled correctly
-                //test disabled until NIO http provider is integrated
-                //see https://github.com/samtools/htsjdk/issues/1689
-                //{withHttpPath.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
+        return new Object[][] {
+            {TEST_DATA_DIR + "/" + level1, new String[] {".vcf", ".vcf.gz"}, 2},
+            {TEST_DATA_DIR + "/" + level2, new String[] {".vcf", ".vcf.gz"}, 4},
+            {fofnPath1.toUri().toString(), new String[] {".vcf", ".vcf.gz"}, 2},
+            {fofnPath2.toUri().toString(), new String[] {".vcf", ".vcf.gz"}, 4},
+            // test http links with query parameters are handled correctly
+            // test disabled until NIO http provider is integrated
+            // see https://github.com/samtools/htsjdk/issues/1689
+            // {withHttpPath.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
         };
     }
 
     @Test(dataProvider = "fofnData")
-    public void testUnrollPaths(final String pathUri, final String[] extensions, final int expectedNumberOfUnrolledPaths) throws IOException {
+    public void testUnrollPaths(
+            final String pathUri, final String[] extensions, final int expectedNumberOfUnrolledPaths)
+            throws IOException {
         Path p = IOUtil.getPath(pathUri);
         List<Path> paths = IOUtil.unrollPaths(Collections.singleton(p), extensions);
 
@@ -487,11 +483,11 @@ public class IOUtilTest extends HtsjdkTest {
     @DataProvider(name = "blockCompressedExtensionExtensionStrings")
     public static Object[][] createBlockCompressedExtensionStrings() {
         return new Object[][] {
-                { "testzip.gz", true },
-                { "test.gzip", true },
-                { "test.bgz", true },
-                { "test.bgzf", true },
-                { "test.bzip2", false }
+            {"testzip.gz", true},
+            {"test.gzip", true},
+            {"test.bgz", true},
+            {"test.bgzf", true},
+            {"test.bzip2", false}
         };
     }
 
@@ -507,29 +503,27 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider(name = "blockCompressedExtensionExtensionURIStrings")
     public static Object[][] createBlockCompressedExtensionURIs() {
-        return new Object[][]{
-                {"testzip.gz", true},
-                {"test.gzip", true},
-                {"test.bgz", true},
-                {"test.bgzf", true},
-                {"test", false},
-                {"test.bzip2", false},
-
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2", false},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877", false},
-
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2?alt=media", false},
-
-                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.gz", true},
-                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.bed", false}
+        return new Object[][] {
+            {"testzip.gz", true},
+            {"test.gzip", true},
+            {"test.bgz", true},
+            {"test.bgzf", true},
+            {"test", false},
+            {"test.bzip2", false},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2", false},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877", false},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz?alt=media", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip?alt=media", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz?alt=media", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf?alt=media", true},
+            {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2?alt=media", false
+            },
+            {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.gz", true},
+            {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.bed", false}
         };
     }
 
@@ -546,19 +540,19 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public static Object[][] blockCompressedFiles() {
-        return new Object[][]{
-                {TEST_DATA_DIR.resolve("ipsum.txt"), true, false},
-                {TEST_DATA_DIR.resolve("ipsum.txt"), false, false},
-                {TEST_DATA_DIR.resolve("ipsum.txt.gz"), true, false},
-                {TEST_DATA_DIR.resolve("ipsum.txt.gz"), false, false},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), true, true},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), false, true},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), true, false},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), false, true},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), true, true},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), false, true},
-                {TEST_DATA_DIR.resolve("example.bam"), true, false},
-                {TEST_DATA_DIR.resolve("example.bam"), false, true}
+        return new Object[][] {
+            {TEST_DATA_DIR.resolve("ipsum.txt"), true, false},
+            {TEST_DATA_DIR.resolve("ipsum.txt"), false, false},
+            {TEST_DATA_DIR.resolve("ipsum.txt.gz"), true, false},
+            {TEST_DATA_DIR.resolve("ipsum.txt.gz"), false, false},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), true, true},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), false, true},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), true, false},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), false, true},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), true, true},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), false, true},
+            {TEST_DATA_DIR.resolve("example.bam"), true, false},
+            {TEST_DATA_DIR.resolve("example.bam"), false, true}
         };
     }
 
@@ -569,25 +563,27 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "blockCompressedFiles")
     public void testIsBlockCompressedOnJimfs(Path file, boolean checkExtension, boolean expected) throws IOException {
-         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
-             final Path jimfsRoot = jimfs.getRootDirectories().iterator().next();
-             final Path jimfsFile = Files.copy(file, jimfsRoot.resolve(file.getFileName().toString()));
-             Assert.assertEquals(IOUtil.isBlockCompressed(jimfsFile, checkExtension), expected);
-         }
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsRoot = jimfs.getRootDirectories().iterator().next();
+            final Path jimfsFile =
+                    Files.copy(file, jimfsRoot.resolve(file.getFileName().toString()));
+            Assert.assertEquals(IOUtil.isBlockCompressed(jimfsFile, checkExtension), expected);
+        }
     }
 
     @DataProvider
     public static Object[][] filesToCompress() {
-        return new Object[][]{
-                {WORDS_LONG, ".gz", 8},
-                {WORDS_LONG, ".bfq", 8},
-                {TEST_VARIANT_DIR.resolve("test1.vcf"), ".gz", 7},
-                {TEST_VARIANT_DIR.resolve("test1.vcf"), ".bfq", 7}
+        return new Object[][] {
+            {WORDS_LONG, ".gz", 8},
+            {WORDS_LONG, ".bfq", 8},
+            {TEST_VARIANT_DIR.resolve("test1.vcf"), ".gz", 7},
+            {TEST_VARIANT_DIR.resolve("test1.vcf"), ".bfq", 7}
         };
     }
 
     @Test(dataProvider = "filesToCompress")
-    public void testCompressionLevel(final Path file, final String extension, final int lastDifference) throws IOException {
+    public void testCompressionLevel(final Path file, final String extension, final int lastDifference)
+            throws IOException {
         final long origSize = Files.size(file);
         long previousSize = origSize;
         for (int compressionLevel = 1; compressionLevel <= 9; compressionLevel++) {
@@ -610,11 +606,12 @@ public class IOUtilTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] getExtensions(){
-        return new Object[][]{
-                {".gz", true},
-                {".bfq", true},
-                {".txt", false}};
+    public Object[][] getExtensions() {
+        return new Object[][] {
+            {".gz", true},
+            {".bfq", true},
+            {".txt", false}
+        };
     }
 
     @Test(dataProvider = "getExtensions")
@@ -622,15 +619,15 @@ public class IOUtilTest extends HtsjdkTest {
         final Path jmfsRoot = inMemoryFileSystem.getRootDirectories().iterator().next();
         final Path tmp = Files.createTempFile(jmfsRoot, "test", extension);
         final String expected = "lorem ipswitch, nantucket, bucket";
-        try (Writer out = IOUtil.openFileForBufferedWriting(tmp)){
+        try (Writer out = IOUtil.openFileForBufferedWriting(tmp)) {
             out.write(expected);
         }
 
-        try (InputStream in = new BufferedInputStream(Files.newInputStream(tmp))){
-               Assert.assertEquals(IOUtil.isGZIPInputStream(in), gzipped);
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(tmp))) {
+            Assert.assertEquals(IOUtil.isGZIPInputStream(in), gzipped);
         }
 
-        try (BufferedReader in = IOUtil.openFileForBufferedReading(tmp)){
+        try (BufferedReader in = IOUtil.openFileForBufferedReading(tmp)) {
             final String actual = in.readLine();
             Assert.assertEquals(actual, expected);
         }
@@ -638,23 +635,19 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public static Object[][] badCompressionLevels() {
-        return new Object[][]{
-                {-1},
-                {10}
-        };
+        return new Object[][] {{-1}, {10}};
     }
 
-    @Test(dataProvider = "badCompressionLevels", expectedExceptions = {IllegalArgumentException.class})
+    @Test(
+            dataProvider = "badCompressionLevels",
+            expectedExceptions = {IllegalArgumentException.class})
     public void testCompressionLevelExceptions(final int compressionLevel) {
         IOUtil.setCompressionLevel(compressionLevel);
     }
 
     @DataProvider
     public static Object[][] filesToCopy() {
-        return new Object[][]{
-                {TEST_VARIANT_DIR.resolve("test1.vcf")},
-                {TEST_DATA_DIR.resolve("ipsum.txt")}
-        };
+        return new Object[][] {{TEST_VARIANT_DIR.resolve("test1.vcf")}, {TEST_DATA_DIR.resolve("ipsum.txt")}};
     }
 
     @Test(dataProvider = "filesToCopy")
@@ -662,22 +655,28 @@ public class IOUtilTest extends HtsjdkTest {
         final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
         IOUtil.copyFile(file.toFile(), outFile.toFile());
-        Assert.assertEquals(Files.lines(file).collect(Collectors.toList()), Files.lines(outFile).collect(Collectors.toList()));
+        Assert.assertEquals(
+                Files.lines(file).collect(Collectors.toList()),
+                Files.lines(outFile).collect(Collectors.toList()));
     }
 
-    @Test(dataProvider = "filesToCopy", expectedExceptions = {SAMException.class})
+    @Test(
+            dataProvider = "filesToCopy",
+            expectedExceptions = {SAMException.class})
     public void testCopyFileReadException(final Path file) throws IOException {
         final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
         file.toFile().setReadable(false);
         try {
             IOUtil.copyFile(file.toFile(), outFile.toFile());
-        } finally { //need to set input file permission back to readable so other unit tests can access it
+        } finally { // need to set input file permission back to readable so other unit tests can access it
             file.toFile().setReadable(true);
         }
     }
 
-    @Test(dataProvider = "filesToCopy", expectedExceptions = {SAMException.class})
+    @Test(
+            dataProvider = "filesToCopy",
+            expectedExceptions = {SAMException.class})
     public void testCopyFileWriteException(final Path file) throws IOException {
         final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
@@ -687,12 +686,12 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public static Object[][] baseNameTests() {
-        return new Object[][]{
-                {TEST_DATA_DIR.resolve("ipsum.txt"), "ipsum"},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), "ipsum.txt.bgz"},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), "ipsum.txt.bgzipped_with_gzextension"},
-                {TEST_VARIANT_DIR.resolve("utils"), "utils"},
-                {TEST_VARIANT_DIR.resolve("not_real_file.txt"), "not_real_file"}
+        return new Object[][] {
+            {TEST_DATA_DIR.resolve("ipsum.txt"), "ipsum"},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), "ipsum.txt.bgz"},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), "ipsum.txt.bgzipped_with_gzextension"},
+            {TEST_VARIANT_DIR.resolve("utils"), "utils"},
+            {TEST_VARIANT_DIR.resolve("not_real_file.txt"), "not_real_file"}
         };
     }
 
@@ -704,16 +703,28 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public static Object[][] regExpTests() {
-        return new Object[][]{
-                {"\\w+\\.txt", new String[]{"5newline5.txt", "empty.txt", "ipsum.txt", "slurptest.txt"}},
-                {"^((?!txt).)*$", new String[]{"Level1.fofn", "Level2.fofn", "example.bam"}},
-                {"^\\d+.*", new String[]{"5newline5.txt"}}
+        return new Object[][] {
+            {"\\w+\\.txt", new String[] {"5newline5.txt", "empty.txt", "ipsum.txt", "slurptest.txt"}},
+            {"^((?!txt).)*$", new String[] {"Level1.fofn", "Level2.fofn", "example.bam"}},
+            {"^\\d+.*", new String[] {"5newline5.txt"}}
         };
     }
 
     @Test(dataProvider = "regExpTests")
     public void testRegExp(final String regexp, final String[] expected) throws IOException {
-        final String[] allNames = {"5newline5.txt", "Level2.fofn", "example.bam", "ipsum.txt.bgz", "ipsum.txt.bgzipped_with_gzextension.gz", "slurptest.txt", "Level1.fofn", "empty.txt", "ipsum.txt", "ipsum.txt.bgz.wrongextension", "ipsum.txt.gz"};
+        final String[] allNames = {
+            "5newline5.txt",
+            "Level2.fofn",
+            "example.bam",
+            "ipsum.txt.bgz",
+            "ipsum.txt.bgzipped_with_gzextension.gz",
+            "slurptest.txt",
+            "Level1.fofn",
+            "empty.txt",
+            "ipsum.txt",
+            "ipsum.txt.bgz.wrongextension",
+            "ipsum.txt.gz"
+        };
         final Path regExpDir = Files.createTempDirectory("regExpDir");
         regExpDir.toFile().deleteOnExit();
         final List<String> listExpected = Arrays.asList(expected);
@@ -752,10 +763,10 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public static Object[][] fileSuffixTests() {
-        return new Object[][]{
-                {TEST_DATA_DIR.resolve("ipsum.txt"), ".txt"},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), ".bgz"},
-                {TEST_DATA_DIR, null}
+        return new Object[][] {
+            {TEST_DATA_DIR.resolve("ipsum.txt"), ".txt"},
+            {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), ".bgz"},
+            {TEST_DATA_DIR, null}
         };
     }
 
@@ -770,8 +781,14 @@ public class IOUtilTest extends HtsjdkTest {
         final Path copyToDir = Files.createTempDirectory("copyToDir");
         copyToDir.toFile().deleteOnExit();
         IOUtil.copyDirectoryTree(TEST_VARIANT_DIR.toFile(), copyToDir.toFile());
-        final List<Path> collect = Files.walk(TEST_VARIANT_DIR).filter(f -> !f.equals(TEST_VARIANT_DIR)).map(p -> p.getFileName()).collect(Collectors.toList());
-        final List<Path> collectCopy = Files.walk(copyToDir).filter(f -> !f.equals(copyToDir)).map(p -> p.getFileName()).collect(Collectors.toList());
+        final List<Path> collect = Files.walk(TEST_VARIANT_DIR)
+                .filter(f -> !f.equals(TEST_VARIANT_DIR))
+                .map(p -> p.getFileName())
+                .collect(Collectors.toList());
+        final List<Path> collectCopy = Files.walk(copyToDir)
+                .filter(f -> !f.equals(copyToDir))
+                .map(p -> p.getFileName())
+                .collect(Collectors.toList());
         Assert.assertEqualsNoOrder(collect.toArray(), collectCopy.toArray());
     }
 
@@ -794,17 +811,17 @@ public class IOUtilTest extends HtsjdkTest {
         final byte[] gzippedMessage = gzipMessage(message);
         final byte[] gzippedEmptyMessage = gzipMessage(emptyMessage);
 
-        return new Object[][]{
-                {emptyMessage, false},
-                {message, false},
-                {gzippedMessage, true},
-                {gzippedEmptyMessage, true}
+        return new Object[][] {
+            {emptyMessage, false},
+            {message, false},
+            {gzippedMessage, true},
+            {gzippedEmptyMessage, true}
         };
     }
 
     @Test(dataProvider = "gzipTests")
     public void isGZIPInputStreamTest(byte[] data, boolean isGzipped) throws IOException {
-        try(ByteArrayInputStream inputStream = new ByteArrayInputStream(data)) {
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data)) {
             // test string without compression
             Assert.assertEquals(IOUtil.isGZIPInputStream(inputStream), isGzipped);
             // call twice to verify 'in.reset()' was called
@@ -816,7 +833,7 @@ public class IOUtilTest extends HtsjdkTest {
     public void testOpenFileForMd5CalculatingWriting() throws IOException {
         Path output = Files.createTempFile("test", FileExtensions.BAM);
 
-        try (final OutputStream outputStream = IOUtil.openFileForMd5CalculatingWriting(output)){
+        try (final OutputStream outputStream = IOUtil.openFileForMd5CalculatingWriting(output)) {
             // tsato: perhaps BamFileIoUtils is a better place for this test
             BamFileIoUtils.blockCopyBamFile(IOUtil.toPath(HtsjdkTestUtils.NA12878_8000), outputStream, false, false);
         } catch (IOException e) {
@@ -828,4 +845,3 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertTrue(Files.exists(output.resolveSibling(md5FileName)));
     }
 }
-

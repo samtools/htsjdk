@@ -23,12 +23,10 @@
  */
 package htsjdk.samtools;
 
-
 import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
-
 import java.io.StringWriter;
 import java.util.*;
 import java.util.function.Supplier;
@@ -36,13 +34,13 @@ import java.util.function.Supplier;
 /**
  * Header information from a SAM or BAM file.
  */
-public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
-{
+public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader {
     public static final String VERSION_TAG = "VN";
     public static final String SORT_ORDER_TAG = "SO";
     public static final String GROUP_ORDER_TAG = "GO";
     public static final String CURRENT_VERSION = "1.6";
-    public static final Set<String> ACCEPTABLE_VERSIONS = CollectionUtil.makeSet("1.0", "1.3", "1.4", "1.5", CURRENT_VERSION );
+    public static final Set<String> ACCEPTABLE_VERSIONS =
+            CollectionUtil.makeSet("1.0", "1.3", "1.4", "1.5", CURRENT_VERSION);
 
     private SortOrder sortOrder = null;
     private GroupOrder groupOrder = null;
@@ -93,7 +91,9 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
     }
 
     public enum GroupOrder {
-        none, query, reference
+        none,
+        query,
+        reference
     }
 
     private List<SAMReadGroupRecord> mReadGroups = new ArrayList<>();
@@ -101,7 +101,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
     private final Map<String, SAMReadGroupRecord> mReadGroupMap = new HashMap<>();
     private final Map<String, SAMProgramRecord> mProgramRecordMap = new HashMap<>();
     private SAMSequenceDictionary mSequenceDictionary = new SAMSequenceDictionary();
-    final private List<String> mComments = new ArrayList<>();
+    private final List<String> mComments = new ArrayList<>();
     private final List<SAMValidationError> mValidationErrors = new ArrayList<>();
 
     public SAMFileHeader() {
@@ -186,8 +186,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
 
     public void addReadGroup(final SAMReadGroupRecord readGroup) {
         if (mReadGroupMap.containsKey(readGroup.getReadGroupId())) {
-            throw new IllegalArgumentException("Read group with group id " +
-                readGroup.getReadGroupId() + " already exists in SAMFileHeader!");
+            throw new IllegalArgumentException(
+                    "Read group with group id " + readGroup.getReadGroupId() + " already exists in SAMFileHeader!");
         }
         mReadGroups.add(readGroup);
         mReadGroupMap.put(readGroup.getReadGroupId(), readGroup);
@@ -199,8 +199,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
 
     public void addProgramRecord(final SAMProgramRecord programRecord) {
         if (mProgramRecordMap.containsKey(programRecord.getProgramGroupId())) {
-            throw new IllegalArgumentException("Program record with group id " +
-                programRecord.getProgramGroupId() + " already exists in SAMFileHeader!");
+            throw new IllegalArgumentException("Program record with group id " + programRecord.getProgramGroupId()
+                    + " already exists in SAMFileHeader!");
         }
         this.mProgramRecords.add(programRecord);
         this.mProgramRecordMap.put(programRecord.getProgramGroupId(), programRecord);
@@ -281,7 +281,6 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
         super.setAttribute(GROUP_ORDER_TAG, go.name());
     }
 
-
     /**
      * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
      * If value is null, the attribute is removed.
@@ -323,10 +322,14 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
     }
 
     /** @deprecated since May 1st 2019 - text version of header is no longer stored. */
-    @Deprecated public String getTextHeader() {  return null; }
+    @Deprecated
+    public String getTextHeader() {
+        return null;
+    }
 
     /** @deprecated since May 1st 2019 - text version of header is no longer stored. */
-    @Deprecated public void setTextHeader(final String textHeader) { }
+    @Deprecated
+    public void setTextHeader(final String textHeader) {}
 
     public List<String> getComments() {
         return Collections.unmodifiableList(mComments);
@@ -338,7 +341,6 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
         }
         mComments.add(comment);
     }
-
 
     /**
      * Replace existing comments with the contents of the given collection.
@@ -377,8 +379,9 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
         if (mProgramRecords != null ? !mProgramRecords.equals(that.mProgramRecords) : that.mProgramRecords != null)
             return false;
         if (mReadGroups != null ? !mReadGroups.equals(that.mReadGroups) : that.mReadGroups != null) return false;
-        if (mSequenceDictionary != null ? !mSequenceDictionary.equals(that.mSequenceDictionary) : that.mSequenceDictionary != null)
-            return false;
+        if (mSequenceDictionary != null
+                ? !mSequenceDictionary.equals(that.mSequenceDictionary)
+                : that.mSequenceDictionary != null) return false;
 
         return true;
     }
@@ -432,7 +435,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader
                 // our old process of just counting from 0 upward and adding that to the previous id led to 1000s of
                 // calls idsThatAreAlreadyTaken.contains() just to resolve 1 collision when merging 1000s of similarly
                 // processed bams.
-                while (idsThatAreAlreadyTaken.contains(newId = recordId + "." + SamFileHeaderMerger.positiveFourDigitBase36Str(recordCounter++)))
+                while (idsThatAreAlreadyTaken.contains(
+                        newId = recordId + "." + SamFileHeaderMerger.positiveFourDigitBase36Str(recordCounter++)))
                     ;
 
                 idsThatAreAlreadyTaken.add(newId);

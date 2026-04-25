@@ -14,7 +14,7 @@ import java.nio.file.Paths;
  */
 public class SamtoolsTestUtils {
     private static final String SAMTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_SAMTOOLS_BIN";
-    public final static String expectedSamtoolsVersion = "1.21";
+    public static final String expectedSamtoolsVersion = "1.21";
 
     /**
      * @return true if samtools is available, otherwise false
@@ -30,11 +30,10 @@ public class SamtoolsTestUtils {
      */
     public static void assertSamtoolsAvailable() {
         if (!isSamtoolsAvailable()) {
-            throw new RuntimeException(
-                    String.format(
-                            "No samtools executable can be found." +
-                                    " The %s environment variable must be set to the name of the local samtools executable.",
-                            SAMTOOLS_BINARY_ENV_VARIABLE));
+            throw new RuntimeException(String.format(
+                    "No samtools executable can be found."
+                            + " The %s environment variable must be set to the name of the local samtools executable.",
+                    SAMTOOLS_BINARY_ENV_VARIABLE));
         }
     }
 
@@ -96,12 +95,12 @@ public class SamtoolsTestUtils {
                 ProcessExecutor.executeAndReturnInterleavedOutput(commandString);
         if (processStatus.exitStatus != 0) {
             // samtools seems to write some errors to stdout
-            throw new RuntimeException(
-                    String.format("Failure code %d returned from samtools command %s\n (stderr: %.500s)\n (stdout: %.500s)\n",
-                            processStatus.exitStatus,
-                            commandString,
-                            processStatus.stderr == null ? "" : processStatus.stderr,
-                            processStatus.stdout == null ? "" : processStatus.stdout));
+            throw new RuntimeException(String.format(
+                    "Failure code %d returned from samtools command %s\n (stderr: %.500s)\n (stdout: %.500s)\n",
+                    processStatus.exitStatus,
+                    commandString,
+                    processStatus.stderr == null ? "" : processStatus.stderr,
+                    processStatus.stdout == null ? "" : processStatus.stdout));
         }
         return processStatus;
     }
@@ -117,14 +116,12 @@ public class SamtoolsTestUtils {
      * @return a temporary file containing the samtools-generated results.
      */
     public static final IOPath convertToCRAM(
-            final IOPath inputSAMBAMCRAMPath,
-            final IOPath referencePath,
-            final String commandLineOptions) {
+            final IOPath inputSAMBAMCRAMPath, final IOPath referencePath, final String commandLineOptions) {
         final IOPath tempCRAMPath = IOUtils.createTempPath("samtoolsTemporaryCRAM", FileExtensions.CRAM);
         tempCRAMPath.toPath().toFile().deleteOnExit();
         convertToCRAM(inputSAMBAMCRAMPath, tempCRAMPath, referencePath, commandLineOptions);
         return tempCRAMPath;
-}
+    }
 
     public static final void convertToCRAM(
             final IOPath inputSAMBAMCRAMPath,
@@ -132,7 +129,8 @@ public class SamtoolsTestUtils {
             final IOPath referencePath,
             final String commandLineOptions) {
         assertSamtoolsAvailable();
-        final String commandString = String.format("view -h -C -T %s %s %s -o %s",
+        final String commandString = String.format(
+                "view -h -C -T %s %s %s -o %s",
                 referencePath.toPath().toAbsolutePath(),
                 commandLineOptions == null ? "" : commandLineOptions,
                 inputSAMBAMCRAMPath.toPath().toAbsolutePath(),

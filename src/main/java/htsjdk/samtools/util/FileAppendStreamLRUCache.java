@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -51,16 +50,14 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, OutputStr
         public OutputStream makeValue(final File file) {
             try {
                 return IOUtil.maybeBufferOutputStream(new FileOutputStream(file, true));
-            }
-            catch (final FileNotFoundException e) {
+            } catch (final FileNotFoundException e) {
                 // In case the file could not be opened because of too many file handles, try to force
                 // file handles to be closed.
                 System.gc();
                 System.runFinalization();
                 try {
                     return IOUtil.maybeBufferOutputStream(new FileOutputStream(file, true));
-                }
-                catch (final FileNotFoundException e2) {
+                } catch (final FileNotFoundException e2) {
                     throw new SAMException(file + "not found", e2);
                 }
             }
@@ -71,8 +68,7 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, OutputStr
             try {
                 out.flush();
                 out.close();
-            }
-            catch (final IOException e) {
+            } catch (final IOException e) {
                 throw new SAMException("Exception closing FileOutputStream for " + file, e);
             }
         }

@@ -85,9 +85,9 @@ public class ReferenceContext implements Comparable<ReferenceContext> {
      */
     public int getReferenceSequenceID() {
         if (type != ReferenceContextType.SINGLE_REFERENCE_TYPE) {
-            throw new CRAMException(
-                    String.format("This ReferenceContext does not have a valid reference sequence ID because its type is %s",
-                            type.toString()));
+            throw new CRAMException(String.format(
+                    "This ReferenceContext does not have a valid reference sequence ID because its type is %s",
+                    type.toString()));
         }
 
         return referenceContextID;

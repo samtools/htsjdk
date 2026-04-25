@@ -1,32 +1,31 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -52,31 +51,30 @@ public class SimpleAllele implements Allele {
     // no public way to create an allele
     protected SimpleAllele(final byte[] bases, final boolean isRef) {
         // null alleles are no longer allowed
-        if ( Allele.wouldBeNullAllele(bases) ) {
+        if (Allele.wouldBeNullAllele(bases)) {
             throw new IllegalArgumentException("Null alleles are not supported");
         }
 
         // no-calls are represented as no bases
-        if ( Allele.wouldBeNoCallAllele(bases) ) {
+        if (Allele.wouldBeNoCallAllele(bases)) {
             this.bases = EMPTY_ALLELE_BASES;
             isNoCall = true;
-            if ( isRef ) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
+            if (isRef) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
             return;
         }
 
-        if ( Allele.wouldBeSymbolicAllele(bases) ) {
+        if (Allele.wouldBeSymbolicAllele(bases)) {
             isSymbolic = true;
-            if ( isRef ) throw new IllegalArgumentException("Cannot tag a symbolic allele as the reference allele");
-        }
-        else {
+            if (isRef) throw new IllegalArgumentException("Cannot tag a symbolic allele as the reference allele");
+        } else {
             StringUtil.toUpperCase(bases);
         }
 
         this.isRef = isRef;
         this.bases = bases;
 
-        if ( ! Allele.acceptableAlleleBases(bases, isRef) )
-            throw new IllegalArgumentException("Unexpected base in allele bases '" + new String(bases)+"'");
+        if (!Allele.acceptableAlleleBases(bases, isRef))
+            throw new IllegalArgumentException("Unexpected base in allele bases '" + new String(bases) + "'");
     }
 
     protected SimpleAllele(final String bases, final boolean isRef) {
@@ -121,30 +119,44 @@ public class SimpleAllele implements Allele {
     }
 
     @Override
-    public boolean isNoCall()           { return isNoCall; }
+    public boolean isNoCall() {
+        return isNoCall;
+    }
 
     @Override
-    public boolean isCalled()           { return ! isNoCall(); }
+    public boolean isCalled() {
+        return !isNoCall();
+    }
 
     @Override
-    public boolean isReference()        { return isRef; }
+    public boolean isReference() {
+        return isRef;
+    }
 
     @Override
-    public boolean isNonReference()     { return ! isReference(); }
+    public boolean isNonReference() {
+        return !isReference();
+    }
 
     @Override
-    public boolean isSymbolic()         { return isSymbolic; }
+    public boolean isSymbolic() {
+        return isSymbolic;
+    }
 
     @Override
-    public boolean isBreakpoint()         { return Allele.wouldBeBreakpoint(bases); }
+    public boolean isBreakpoint() {
+        return Allele.wouldBeBreakpoint(bases);
+    }
 
     @Override
-    public boolean isSingleBreakend()         { return Allele.wouldBeSingleBreakend(bases); }
+    public boolean isSingleBreakend() {
+        return Allele.wouldBeSingleBreakend(bases);
+    }
 
     // Returns a nice string representation of this object
     @Override
     public String toString() {
-        return ( isNoCall() ? NO_CALL_STRING : getDisplayString() ) + (isReference() ? "*" : "");
+        return (isNoCall() ? NO_CALL_STRING : getDisplayString()) + (isReference() ? "*" : "");
     }
 
     /**
@@ -154,7 +166,9 @@ public class SimpleAllele implements Allele {
      * @return the segregating bases
      */
     @Override
-    public byte[] getBases() { return isSymbolic ? EMPTY_ALLELE_BASES : bases; }
+    public byte[] getBases() {
+        return isSymbolic ? EMPTY_ALLELE_BASES : bases;
+    }
 
     /**
      * Return the DNA bases segregating in this allele in String format.
@@ -163,7 +177,9 @@ public class SimpleAllele implements Allele {
      * @return the segregating bases
      */
     @Override
-    public String getBaseString() { return isNoCall() ? NO_CALL_STRING : new String(getBases(), StandardCharsets.UTF_8); }
+    public String getBaseString() {
+        return isNoCall() ? NO_CALL_STRING : new String(getBases(), StandardCharsets.UTF_8);
+    }
 
     /**
      * Return the printed representation of this allele.
@@ -173,7 +189,9 @@ public class SimpleAllele implements Allele {
      * @return the allele string representation
      */
     @Override
-    public String getDisplayString() { return new String(bases, StandardCharsets.UTF_8); }
+    public String getDisplayString() {
+        return new String(bases, StandardCharsets.UTF_8);
+    }
 
     /**
      * Same as #getDisplayString() but returns the result as byte[].
@@ -183,7 +201,9 @@ public class SimpleAllele implements Allele {
      * @return the allele string representation
      */
     @Override
-    public byte[] getDisplayBases() { return bases; }
+    public byte[] getDisplayBases() {
+        return bases;
+    }
 
     /**
      * @param other  the other allele
@@ -228,7 +248,9 @@ public class SimpleAllele implements Allele {
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
     @Override
-    public boolean basesMatch(final byte[] test) { return bases == test || Arrays.equals(bases, test); }
+    public boolean basesMatch(final byte[] test) {
+        return bases == test || Arrays.equals(bases, test);
+    }
 
     /**
      * @param test  bases to test against
@@ -236,8 +258,9 @@ public class SimpleAllele implements Allele {
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
     @Override
-    public boolean basesMatch(final String test) { return basesMatch(test.toUpperCase().getBytes()); }
-
+    public boolean basesMatch(final String test) {
+        return basesMatch(test.toUpperCase().getBytes());
+    }
 
     /**
      * @param test  allele to test against
@@ -245,7 +268,9 @@ public class SimpleAllele implements Allele {
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
     @Override
-    public boolean basesMatch(final Allele test) { return basesMatch(test.getBases()); }
+    public boolean basesMatch(final Allele test) {
+        return basesMatch(test.getBases());
+    }
 
     /**
      * @return the length of this allele.  Null and NO_CALL alleles have 0 length.
@@ -257,10 +282,8 @@ public class SimpleAllele implements Allele {
 
     @Override
     public int compareTo(final Allele other) {
-        if ( isReference() && other.isNonReference() )
-            return -1;
-        else if ( isNonReference() && other.isReference() ) 
-            return 1;
+        if (isReference() && other.isNonReference()) return -1;
+        else if (isNonReference() && other.isReference()) return 1;
         else if (other instanceof SimpleAllele) {
             final SimpleAllele baOther = (SimpleAllele) other;
             return compareBases(baOther.bases);

@@ -1,5 +1,6 @@
 package htsjdk.beta.codecs.reads.cram;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.codecs.reads.ReadsCodecUtils;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.beta.io.bundle.Bundle;
@@ -7,9 +8,9 @@ import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
+import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
-import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFormatException;
@@ -20,9 +21,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -57,17 +56,22 @@ public abstract class CRAMDecoder implements ReadsDecoder {
 
         this.inputBundle = inputBundle;
         this.readsDecoderOptions = readsDecoderOptions;
-        this.displayName = inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
+        this.displayName =
+                inputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS).getDisplayName();
 
         samReader = getSamReaderForCRAM(inputBundle, readsDecoderOptions);
         samFileHeader = samReader.getFileHeader();
     }
 
     @Override
-    final public String getFileFormat() { return ReadsFormats.CRAM; }
+    public final String getFileFormat() {
+        return ReadsFormats.CRAM;
+    }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     @Override
     public SAMFileHeader getHeader() {
@@ -84,7 +88,9 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     }
 
     @Override
-    public CloseableIterator<SAMRecord> iterator() { return getIteratorMonitor(() -> samReader.iterator()); }
+    public CloseableIterator<SAMRecord> iterator() {
+        return getIteratorMonitor(() -> samReader.iterator());
+    }
 
     @Override
     public boolean isQueryable() {
@@ -101,16 +107,16 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         ValidationUtils.nonNull(intervals, "intervals");
         ValidationUtils.nonNull(queryRule, "queryRule");
 
-        final QueryInterval[] queryIntervals = HtsIntervalUtils.toQueryIntervalArray(
-                intervals,
-                samFileHeader.getSequenceDictionary());
+        final QueryInterval[] queryIntervals =
+                HtsIntervalUtils.toQueryIntervalArray(intervals, samFileHeader.getSequenceDictionary());
         return getIteratorMonitor(() -> samReader.query(queryIntervals, queryRule == HtsQueryRule.CONTAINED));
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryStart(final String queryName, final long start) {
         ValidationUtils.nonNull(queryName, "queryName");
-        return getIteratorMonitor(() -> samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start)));
+        return getIteratorMonitor(
+                () -> samReader.queryAlignmentStart(queryName, HtsIntervalUtils.toIntegerSafe(start)));
     }
 
     @Override
@@ -126,27 +132,28 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         ValidationUtils.nonNull(rec, "rec");
 
         if (!rec.getReadPairedFlag()) {
-            throw new IllegalArgumentException(String.format("queryMate called for unpaired read on %s.", getDisplayName()));
+            throw new IllegalArgumentException(
+                    String.format("queryMate called for unpaired read on %s.", getDisplayName()));
         }
         if (rec.getFirstOfPairFlag() == rec.getSecondOfPairFlag()) {
-            throw new IllegalArgumentException(String.format("SAMRecord must be either first and second of pair, but not both (%s).",
-                    getDisplayName()));
+            throw new IllegalArgumentException(String.format(
+                    "SAMRecord must be either first and second of pair, but not both (%s).", getDisplayName()));
         }
         final boolean firstOfPair = rec.getFirstOfPairFlag();
         // its important that this method closes the iterators it creates, since otherwise the caller
         // will never be able to create another iterator after calling this method
         try (final CloseableIterator<SAMRecord> it =
-                     rec.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX ?
-                             queryUnmapped() :
-                             queryStart(rec.getMateReferenceName(), rec.getMateAlignmentStart())) {
+                rec.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX
+                        ? queryUnmapped()
+                        : queryStart(rec.getMateReferenceName(), rec.getMateAlignmentStart())) {
             SAMRecord mateRec = null;
             while (it.hasNext()) {
                 final SAMRecord next = it.next();
                 if (!next.getReadPairedFlag()) {
                     if (rec.getReadName().equals(next.getReadName())) {
-                        throw new SAMFormatException(String.format("Paired and unpaired reads with same name: %s (on %s)",
-                                rec.getReadName(),
-                                getInputBundle()));
+                        throw new SAMFormatException(String.format(
+                                "Paired and unpaired reads with same name: %s (on %s)",
+                                rec.getReadName(), getInputBundle()));
                     }
                     continue;
                 }
@@ -157,11 +164,9 @@ public abstract class CRAMDecoder implements ReadsDecoder {
                 }
                 if (rec.getReadName().equals(next.getReadName())) {
                     if (mateRec != null) {
-                        throw new SAMFormatException(
-                                String.format("Multiple SAMRecord with read name %s for %s end on %s.",
-                                        rec.getReadName(),
-                                        (firstOfPair ? "second" : "first"),
-                                        getInputBundle()));
+                        throw new SAMFormatException(String.format(
+                                "Multiple SAMRecord with read name %s for %s end on %s.",
+                                rec.getReadName(), (firstOfPair ? "second" : "first"), getInputBundle()));
                     }
                     mateRec = next;
                 }
@@ -190,7 +195,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
 
     // TODO: If we've been handed a CRAMReferenceSource from the caller, then we don't want to close it
     // when the decoder is closed, but if we create it, then we need to close it.
-    //TODO: creation of the source should be separate from the getting of the source, and the result
+    // TODO: creation of the source should be separate from the getting of the source, and the result
     // cached, so we don't create multiple reference Sources
     @InternalAPI
     public static CRAMReferenceSource getCRAMReferenceSource(final CRAMDecoderOptions cramDecoderOptions) {
@@ -199,7 +204,8 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         if (cramDecoderOptions.getReferenceSource().isPresent()) {
             return cramDecoderOptions.getReferenceSource().get();
         } else if (cramDecoderOptions.getReferencePath().isPresent()) {
-            return CRAMCodec.getCRAMReferenceSource(cramDecoderOptions.getReferencePath().get());
+            return CRAMCodec.getCRAMReferenceSource(
+                    cramDecoderOptions.getReferencePath().get());
         }
         // if none is specified, get the default "lazy" reference source that throws when queried, to allow
         // operations that don't require a reference
@@ -220,7 +226,8 @@ public abstract class CRAMDecoder implements ReadsDecoder {
                         "The previous iterator must be closed before starting a new iterator on %s", getDisplayName()));
             } else {
                 // this indicates a problem with this codec
-                throw new IllegalStateException(String.format("No outstanding iterator exists for %s", getDisplayName()));
+                throw new IllegalStateException(
+                        String.format("No outstanding iterator exists for %s", getDisplayName()));
             }
         }
         // reset the iterator monitor
@@ -244,7 +251,9 @@ public abstract class CRAMDecoder implements ReadsDecoder {
         }
 
         @Override
-        public boolean hasNext() { return wrappedIterator.hasNext(); }
+        public boolean hasNext() {
+            return wrappedIterator.hasNext();
+        }
 
         @Override
         public T next() {
@@ -255,8 +264,7 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     // Propagate all reads decoder options and all bam decoder options to either a SamReaderFactory
     // or a SamInputResource, and return the resulting SamReader
     private static SamReader getSamReaderForCRAM(
-            final Bundle inputBundle,
-            final ReadsDecoderOptions readsDecoderOptions) {
+            final Bundle inputBundle, final ReadsDecoderOptions readsDecoderOptions) {
         // note that some reads decoder options, such as cloud wrapper values, need to be propagated
         // to the samInputResource, not to the SamReaderFactory
         final SamInputResource samInputResource =
@@ -269,11 +277,9 @@ public abstract class CRAMDecoder implements ReadsDecoder {
     }
 
     private static void cramDecoderOptionsToSamReaderFactory(
-            final SamReaderFactory samReaderFactory,
-            final CRAMDecoderOptions cramDecoderOptions) {
-        //TODO: CRAMFileReader doesn't honor the requested inflater, but it should
-        //samReaderFactory.inflaterFactory(cramDecoderOptions.getInflaterFactory());
+            final SamReaderFactory samReaderFactory, final CRAMDecoderOptions cramDecoderOptions) {
+        // TODO: CRAMFileReader doesn't honor the requested inflater, but it should
+        // samReaderFactory.inflaterFactory(cramDecoderOptions.getInflaterFactory());
         samReaderFactory.referenceSource(getCRAMReferenceSource(cramDecoderOptions));
     }
-
 }

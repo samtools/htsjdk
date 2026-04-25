@@ -29,7 +29,6 @@ import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.io.*;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -64,6 +63,7 @@ public class ContainerHeader {
      * - Slice 1 has offset 109000 and size 14456 (123456 - 109000)
      */
     private List<Integer> landmarks;
+
     private int checksum = 0;
     private int containerBlocksByteSize;
 
@@ -113,14 +113,7 @@ public class ContainerHeader {
             final int recordCount,
             final long globalRecordCounter,
             final int baseCount) {
-        this(alignmentContext,
-                blockCount,
-                0,
-                recordCount,
-                globalRecordCounter,
-                baseCount,
-                new ArrayList<>(),
-                0);
+        this(alignmentContext, blockCount, 0, recordCount, globalRecordCounter, baseCount, new ArrayList<>(), 0);
     }
 
     /**
@@ -149,16 +142,16 @@ public class ContainerHeader {
      * @param containerBlocksByteSize size of the SAMFileHeader block to be embedded in this container
      */
     public static ContainerHeader makeSAMFileHeaderContainer(final int containerBlocksByteSize) {
-         return new ContainerHeader(
-                 // we need to assign SOME alignment context for this bogus/special header container...
-                 AlignmentContext.UNMAPPED_UNPLACED_CONTEXT,
-                 1, // block count
-                 containerBlocksByteSize,
-                 0, // record count
-                 0, // global record count
-                 0, // base count
-                 Collections.emptyList(), // landmarks
-                 0); // checksum
+        return new ContainerHeader(
+                // we need to assign SOME alignment context for this bogus/special header container...
+                AlignmentContext.UNMAPPED_UNPLACED_CONTEXT,
+                1, // block count
+                containerBlocksByteSize,
+                0, // record count
+                0, // global record count
+                0, // base count
+                Collections.emptyList(), // landmarks
+                0); // checksum
     }
 
     public int getContainerBlocksByteSize() {
@@ -169,7 +162,9 @@ public class ContainerHeader {
         this.containerBlocksByteSize = containerBlocksByteSize;
     }
 
-    public AlignmentContext getAlignmentContext() { return alignmentContext; }
+    public AlignmentContext getAlignmentContext() {
+        return alignmentContext;
+    }
 
     public int getNumberOfRecords() {
         return recordCount;
@@ -209,7 +204,10 @@ public class ContainerHeader {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
         int length = (CramInt.writeInt32(getContainerBlocksByteSize(), crc32OutputStream) + 7) / 8;
-        length += (ITF8.writeUnsignedITF8(alignmentContext.getReferenceContext().getReferenceContextID(), crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(
+                                alignmentContext.getReferenceContext().getReferenceContextID(), crc32OutputStream)
+                        + 7)
+                / 8;
         length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentStart(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(alignmentContext.getAlignmentSpan(), crc32OutputStream) + 7) / 8;
         length += (ITF8.writeUnsignedITF8(getNumberOfRecords(), crc32OutputStream) + 7) / 8;
@@ -224,7 +222,7 @@ public class ContainerHeader {
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
             }
-            length += 4 ;
+            length += 4;
         }
 
         return length;
@@ -234,19 +232,22 @@ public class ContainerHeader {
     public String toString() {
         return String.format(
                 "%s, nRecords=%d, nBlocks=%d, nBases=%d, globalCounter=%d",
-                        alignmentContext, recordCount, blockCount, baseCount, globalRecordCounter);
+                alignmentContext, recordCount, blockCount, baseCount, globalRecordCounter);
     }
 
     public boolean isEOF() {
-        final boolean v3 = containerBlocksByteSize == CramIO.EOF_BLOCK_SIZE_V3 && alignmentContext.getReferenceContext().isUnmappedUnplaced()
-                && alignmentContext.getAlignmentStart() == CramIO.EOF_ALIGNMENT_START && blockCount == 1
+        final boolean v3 = containerBlocksByteSize == CramIO.EOF_BLOCK_SIZE_V3
+                && alignmentContext.getReferenceContext().isUnmappedUnplaced()
+                && alignmentContext.getAlignmentStart() == CramIO.EOF_ALIGNMENT_START
+                && blockCount == 1
                 && recordCount == 0;
 
-        final boolean v2 = containerBlocksByteSize == CramIO.EOF_BLOCK_SIZE_V2 && alignmentContext.getReferenceContext().isUnmappedUnplaced()
-                && alignmentContext.getAlignmentStart() == CramIO.EOF_ALIGNMENT_START && blockCount == 1
+        final boolean v2 = containerBlocksByteSize == CramIO.EOF_BLOCK_SIZE_V2
+                && alignmentContext.getReferenceContext().isUnmappedUnplaced()
+                && alignmentContext.getAlignmentStart() == CramIO.EOF_ALIGNMENT_START
+                && blockCount == 1
                 && recordCount == 0;
 
         return v3 || v2;
     }
-
 }

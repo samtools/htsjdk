@@ -60,5 +60,4 @@ public class SeekableMemoryStream extends SeekableStream {
     public long position() throws IOException {
         return buf.position();
     }
-
 }

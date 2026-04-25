@@ -8,10 +8,6 @@ import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +15,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * Created by vadim on 23/03/2015.
@@ -30,13 +29,19 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
     private ReferenceSource source;
     private SAMFileHeader header;
 
-    static private Random random = new Random(TestUtil.RANDOM_SEED);
+    private static Random random = new Random(TestUtil.RANDOM_SEED);
 
     @Test
     public void test() throws IOException {
-        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(indexBytes), source, ValidationStringency.SILENT);
-        for (SAMSequenceRecord sequenceRecord : reader.getFileHeader().getSequenceDictionary().getSequences()) {
-            final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(sequenceRecord.getSequenceName(), 1);
+        CRAMFileReader reader = new CRAMFileReader(
+                new ByteArraySeekableStream(cramBytes),
+                new ByteArraySeekableStream(indexBytes),
+                source,
+                ValidationStringency.SILENT);
+        for (SAMSequenceRecord sequenceRecord :
+                reader.getFileHeader().getSequenceDictionary().getSequences()) {
+            final CloseableIterator<SAMRecord> iterator =
+                    reader.queryAlignmentStart(sequenceRecord.getSequenceName(), 1);
             Assert.assertNotNull(iterator);
             Assert.assertTrue(iterator.hasNext());
             SAMRecord record = iterator.next();
@@ -114,9 +119,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         }
     }
 
-    private static class TabuError extends RuntimeException {
-
-    }
+    private static class TabuError extends RuntimeException {}
 
     /**
      * This is to check that the indexing actually works and not just skips records. The approach is to forbid reading of the first
@@ -126,18 +129,22 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
      */
     @Test
     public void testUnnecessaryIO() throws IOException {
-        final SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
+        final SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(
+                new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
 
         BAMIndex index = new CachingBAMFileIndex(baiStream, header.getSequenceDictionary());
         int refID = 0;
         long start = index.getSpanOverlapping(refID, 1, Integer.MAX_VALUE).getFirstOffset();
         long end = index.getSpanOverlapping(refID + 1, 1, Integer.MAX_VALUE).getFirstOffset();
-        TabuRegionInputStream tabuIS = new TabuRegionInputStream(Arrays.asList(new Chunk[]{new Chunk(start, end)}), new ByteArraySeekableStream(cramBytes));
+        TabuRegionInputStream tabuIS = new TabuRegionInputStream(
+                Arrays.asList(new Chunk[] {new Chunk(start, end)}), new ByteArraySeekableStream(cramBytes));
 
-        CRAMFileReader reader = new CRAMFileReader(tabuIS, new ByteArraySeekableStream(indexBytes), source, ValidationStringency.SILENT);
+        CRAMFileReader reader = new CRAMFileReader(
+                tabuIS, new ByteArraySeekableStream(indexBytes), source, ValidationStringency.SILENT);
         try {
             // the attempt to read 1st container, which will happen when the iterator is initialized, must throw
-            CloseableIterator<SAMRecord> it = reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
+            CloseableIterator<SAMRecord> it =
+                    reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
             Assert.fail();
         } catch (TabuError e) {
 
@@ -145,7 +152,8 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
 
         // reading after the 1st container should be ok:
         refID = 2;
-        final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
+        final CloseableIterator<SAMRecord> iterator =
+                reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
         Assert.assertNotNull(iterator);
         Assert.assertTrue(iterator.hasNext());
     }
@@ -159,8 +167,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         rsf = new InMemoryReferenceSequenceFile();
         int nofSequencesInDictionary = 3;
         int sequenceLength = 1024 * 1024;
-        for (int i = 0; i < nofSequencesInDictionary; i++)
-            addRandomSequence(header, sequenceLength, rsf);
+        for (int i = 0; i < nofSequencesInDictionary; i++) addRandomSequence(header, sequenceLength, rsf);
 
         source = new ReferenceSource(rsf);
 
@@ -179,7 +186,8 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         for (SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
             int alignmentStart = 1;
             for (int i = 0; i < readPairsPerSequence / 2; i++) {
-                builder.addPair(Integer.toString(i), sequenceRecord.getSequenceIndex(), alignmentStart, alignmentStart + 2);
+                builder.addPair(
+                        Integer.toString(i), sequenceRecord.getSequenceIndex(), alignmentStart, alignmentStart + 2);
                 alignmentStart++;
             }
         }
@@ -188,8 +196,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         list.addAll(builder.getRecords());
         Collections.sort(list, new SAMRecordCoordinateComparator());
 
-        for (SAMRecord record : list)
-            writer.addAlignment(record);
+        for (SAMRecord record : list) writer.addAlignment(record);
 
         list.clear();
         writer.close();
@@ -202,8 +209,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         header.addSequence(new SAMSequenceRecord(name, length));
         byte[] refBases = new byte[length];
         byte[] alphabet = "ACGTN".getBytes();
-        for (int i = 0; i < refBases.length; i++)
-            refBases[i] = alphabet[random.nextInt(alphabet.length)];
+        for (int i = 0; i < refBases.length; i++) refBases[i] = alphabet[random.nextInt(alphabet.length)];
 
         rsf.add(name, refBases);
     }

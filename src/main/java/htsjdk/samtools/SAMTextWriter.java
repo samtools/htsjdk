@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.AsciiWriter;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -45,7 +44,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     private final TextTagCodec tagCodec = new TextTagCodec();
 
     private final SamFlagField samFlagFieldOutput;
-    
+
     /**
      * Constructs a SAMTextWriter that outputs to a Writer.
      * @param out Writer.
@@ -66,13 +65,13 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      * Returns the Writer used by this instance.  Useful for flushing the output.
      */
     public Writer getWriter() {
-	return out;
+        return out;
     }
 
     /**
      * Constructs a SAMTextWriter that writes to an OutputStream.  The OutputStream
      * is wrapped in an AsciiWriter, which can be retrieved with getWriter().
-     * @param stream Need not be buffered because this class provides buffering. 
+     * @param stream Need not be buffered because this class provides buffering.
      */
     public SAMTextWriter(final OutputStream stream) {
         this(stream, SamFlagField.DECIMAL);
@@ -148,8 +147,8 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             out.write(FIELD_SEPARATOR);
 
             //  == is OK here because these strings are interned
-            if (alignment.getReferenceName() == alignment.getMateReferenceName() &&
-                    SAMRecord.NO_ALIGNMENT_REFERENCE_NAME != alignment.getReferenceName()) {
+            if (alignment.getReferenceName() == alignment.getMateReferenceName()
+                    && SAMRecord.NO_ALIGNMENT_REFERENCE_NAME != alignment.getReferenceName()) {
                 out.write("=");
             } else {
                 out.write(alignment.getMateReferenceName());

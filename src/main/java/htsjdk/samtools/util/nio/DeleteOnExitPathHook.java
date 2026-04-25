@@ -1,8 +1,6 @@
 package htsjdk.samtools.util.nio;
 
 import htsjdk.samtools.util.Log;
-
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,6 +18,7 @@ import java.util.LinkedHashSet;
 public class DeleteOnExitPathHook {
     private static final Log LOG = Log.getInstance(DeleteOnExitPathHook.class);
     private static LinkedHashSet<Path> paths = new LinkedHashSet<>();
+
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(DeleteOnExitPathHook::runHooks));
     }
@@ -34,7 +33,7 @@ public class DeleteOnExitPathHook {
      * @throws IllegalStateException if the shutdown hook is in progress.
      */
     public static synchronized void add(Path path) {
-        if(paths == null) {
+        if (paths == null) {
             // DeleteOnExitHook is running. Too late to add a file
             throw new IllegalStateException("Shutdown in progress");
         }

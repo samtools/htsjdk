@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.utils.ValidationUtils;
-
 import java.util.*;
 
 /**
@@ -111,10 +110,7 @@ public final class ContainerFactory {
 
         // get the updated reference context to determine if we should emit a slice with the accumulated records...
         final int updatedReferenceContextID = sliceFactory.getUpdatedReferenceContext(
-                currentReferenceContextID,
-                nextRecordIndex,
-                sliceSAMRecords.size(),
-                accumulatedBases);
+                currentReferenceContextID, nextRecordIndex, sliceSAMRecords.size(), accumulatedBases);
 
         if (shouldEmitSlice(updatedReferenceContextID)) {
             sliceFactory.createNewSliceEntry(currentReferenceContextID, sliceSAMRecords);
@@ -122,9 +118,7 @@ public final class ContainerFactory {
             accumulatedBases = 0;
 
             if (shouldEmitContainer(
-                    currentReferenceContextID,
-                    nextRecordIndex,
-                    sliceFactory.getNumberOfSliceEntries())) {
+                    currentReferenceContextID, nextRecordIndex, sliceFactory.getNumberOfSliceEntries())) {
                 container = makeContainer(containerByteOffset);
             }
             currentReferenceContextID = nextRecordIndex;
@@ -179,12 +173,10 @@ public final class ContainerFactory {
      * @return true if a {@link Container}should be emitted, otherwise false
      */
     public boolean shouldEmitContainer(
-            final int currentReferenceContextID,
-            final int nextRecordIndex,
-            final int numberOfSliceEntries) {
-        return numberOfSliceEntries >= encodingStrategy.getSlicesPerContainer() ||
-            currentReferenceContextID == ReferenceContext.MULTIPLE_REFERENCE_ID ||
-            currentReferenceContextID != nextRecordIndex;
+            final int currentReferenceContextID, final int nextRecordIndex, final int numberOfSliceEntries) {
+        return numberOfSliceEntries >= encodingStrategy.getSlicesPerContainer()
+                || currentReferenceContextID == ReferenceContext.MULTIPLE_REFERENCE_ID
+                || currentReferenceContextID != nextRecordIndex;
     }
 
     /**
@@ -206,15 +198,13 @@ public final class ContainerFactory {
      */
     private final Container makeContainer(final long containerByteOffset) {
         ValidationUtils.validateArg(
-                sliceFactory.getNumberOfSliceEntries() != 0,
-                "must have slice entries to create a container");
+                sliceFactory.getNumberOfSliceEntries() != 0, "must have slice entries to create a container");
 
         // Create the compression header, then convert to slices. The compression header  must
         // be presented with ALL reads that will be included in the container, no matter how
         // they may be distributed across slices.
         final CompressionHeader compressionHeader = compressionHeaderFactory.createCompressionHeader(
-                sliceFactory.getCRAMRecordsForAllSlices(),
-                coordinateSorted);
+                sliceFactory.getCRAMRecordsForAllSlices(), coordinateSorted);
         final Container container = new Container(
                 compressionHeader,
                 sliceFactory.createSlices(compressionHeader, containerByteOffset),
@@ -223,5 +213,4 @@ public final class ContainerFactory {
         globalRecordCounter += container.getContainerHeader().getNumberOfRecords();
         return container;
     }
-
 }

@@ -25,11 +25,10 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.File;
 
 /**
  * Test new functionality that truncates sequence names at first whitespace in order to deal
@@ -40,7 +39,9 @@ import java.io.File;
 public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
-    @Test(expectedExceptions = {SAMException.class}, dataProvider = "badSequenceNames")
+    @Test(
+            expectedExceptions = {SAMException.class},
+            dataProvider = "badSequenceNames")
     public void testSequenceRecordThrowsWhenInvalid(final String sequenceName) {
         new SAMSequenceRecord(sequenceName, 123);
         Assert.fail("Should not reach here. Sequence " + sequenceName + " should have failed.");
@@ -48,18 +49,18 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
 
     @DataProvider(name = "badSequenceNames")
     public Object[][] badSequenceNames() {
-        return new Object[][]{
-                {" "},
-                {"\t"},
-                {"\n"},
-                {"="},
-                {"Hi: Mom!"},
-                {"=Hi:Mom!"},
-                {"Hi:'Mom!"},
-                {"Hi:\"Mom!"},
-                {"Hi:)Mom!"},
-                {"Hi:(Mom!"},
-                {"Hi,@Mom!"}
+        return new Object[][] {
+            {" "},
+            {"\t"},
+            {"\n"},
+            {"="},
+            {"Hi: Mom!"},
+            {"=Hi:Mom!"},
+            {"Hi:'Mom!"},
+            {"Hi:\"Mom!"},
+            {"Hi:)Mom!"},
+            {"Hi:(Mom!"},
+            {"Hi,@Mom!"}
         };
     }
 
@@ -70,16 +71,14 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
 
     @DataProvider(name = "goodSequenceNames")
     public Object[][] goodSequenceNames() {
-        return new Object[][]{
-                {"Hi:@Mom!"},
-                {"Hi:=Mom!"}
-        };
+        return new Object[][] {{"Hi:@Mom!"}, {"Hi:=Mom!"}};
     }
 
     @Test(dataProvider = "samFilesWithSpaceInSequenceName")
     public void testSamSequenceTruncation(final String filename) {
         final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, filename));
-        for (final SAMSequenceRecord sequence : reader.getFileHeader().getSequenceDictionary().getSequences()) {
+        for (final SAMSequenceRecord sequence :
+                reader.getFileHeader().getSequenceDictionary().getSequences()) {
             Assert.assertFalse(sequence.getSequenceName().contains(" "), sequence.getSequenceName());
         }
         for (final SAMRecord rec : reader) {
@@ -90,17 +89,13 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
 
     @DataProvider(name = "samFilesWithSpaceInSequenceName")
     public Object[][] samFilesWithSpaceInSequenceName() {
-        return new Object[][]{
-                {"sequenceWithSpace.sam"},
-                {"sequenceWithSpace.bam"}
-        };
+        return new Object[][] {{"sequenceWithSpace.sam"}, {"sequenceWithSpace.bam"}};
     }
 
     @Test(expectedExceptions = {SAMFormatException.class})
     public void testBadRname() {
         final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, "readWithBadRname.sam"));
-        for (final SAMRecord rec : reader) {
-        }
+        for (final SAMRecord rec : reader) {}
         Assert.fail("Should not reach here.");
     }
 }

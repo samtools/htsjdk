@@ -38,6 +38,7 @@ public class SAMProgramRecordTest extends HtsjdkTest {
         r.setProgramName("telnet");
         r.setProgramVersion("0.17-40");
         r.setCommandLine("telnet towel.blinkenlights.nl");
-        Assert.assertEquals("@PG\tID:SW-eIV\tPN:telnet\tVN:0.17-40\tCL:telnet towel.blinkenlights.nl", r.getSAMString());
+        Assert.assertEquals(
+                "@PG\tID:SW-eIV\tPN:telnet\tVN:0.17-40\tCL:telnet towel.blinkenlights.nl", r.getSAMString());
     }
 }

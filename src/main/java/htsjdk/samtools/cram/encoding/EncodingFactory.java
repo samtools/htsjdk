@@ -39,12 +39,9 @@ public class EncodingFactory {
      * @return
      */
     public static <T> CRAMEncoding<T> createCRAMEncoding(
-            final DataSeriesType valueType,
-            final EncodingDescriptor encodingDescriptor) {
+            final DataSeriesType valueType, final EncodingDescriptor encodingDescriptor) {
         return createCRAMEncoding(
-                valueType,
-                encodingDescriptor.getEncodingID(),
-                encodingDescriptor.getEncodingParameters());
+                valueType, encodingDescriptor.getEncodingID(), encodingDescriptor.getEncodingParameters());
     }
 
     /**
@@ -55,9 +52,8 @@ public class EncodingFactory {
      * @param <T> encoding object type, like Integer or String.
      * @return a new encoding with the requested parameters
      */
-    public static <T> CRAMEncoding<T> createCRAMEncoding(final DataSeriesType valueType,
-                                                         final EncodingID encodingID,
-                                                         final byte[] params) {
+    public static <T> CRAMEncoding<T> createCRAMEncoding(
+            final DataSeriesType valueType, final EncodingID encodingID, final byte[] params) {
         switch (valueType) {
             case BYTE:
                 switch (encodingID) {
@@ -106,7 +102,7 @@ public class EncodingFactory {
                 }
         }
 
-        throw new IllegalArgumentException("Encoding not found: value type="
-                + valueType.name() + ", encoding id=" + encodingID.name());
+        throw new IllegalArgumentException(
+                "Encoding not found: value type=" + valueType.name() + ", encoding id=" + encodingID.name());
     }
 }

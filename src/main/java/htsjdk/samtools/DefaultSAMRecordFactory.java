@@ -8,9 +8,9 @@ package htsjdk.samtools;
 public class DefaultSAMRecordFactory implements SAMRecordFactory {
 
     private static final DefaultSAMRecordFactory INSTANCE = new DefaultSAMRecordFactory();
-    
+
     public static DefaultSAMRecordFactory getInstance() {
-        return INSTANCE;   
+        return INSTANCE;
     }
 
     /** Create a new SAMRecord to be filled in */
@@ -25,32 +25,34 @@ public class DefaultSAMRecordFactory implements SAMRecordFactory {
      * dictionary in the header argument.
      */
     @Override
-    public BAMRecord createBAMRecord (final SAMFileHeader header,
-                                      final int referenceSequenceIndex,
-                                      final int alignmentStart,
-                                      final short readNameLength,
-                                      final short mappingQuality,
-                                      final int indexingBin,
-                                      final int cigarLen,
-                                      final int flags,
-                                      final int readLen,
-                                      final int mateReferenceSequenceIndex,
-                                      final int mateAlignmentStart,
-                                      final int insertSize,
-                                      final byte[] variableLengthBlock) {
+    public BAMRecord createBAMRecord(
+            final SAMFileHeader header,
+            final int referenceSequenceIndex,
+            final int alignmentStart,
+            final short readNameLength,
+            final short mappingQuality,
+            final int indexingBin,
+            final int cigarLen,
+            final int flags,
+            final int readLen,
+            final int mateReferenceSequenceIndex,
+            final int mateAlignmentStart,
+            final int insertSize,
+            final byte[] variableLengthBlock) {
 
-        return new BAMRecord(header,
-                             referenceSequenceIndex,
-                             alignmentStart,
-                             readNameLength,
-                             mappingQuality,
-                             indexingBin,
-                             cigarLen,
-                             flags,
-                             readLen,
-                             mateReferenceSequenceIndex,
-                             mateAlignmentStart,
-                             insertSize,
-                             variableLengthBlock);
+        return new BAMRecord(
+                header,
+                referenceSequenceIndex,
+                alignmentStart,
+                readNameLength,
+                mappingQuality,
+                indexingBin,
+                cigarLen,
+                flags,
+                readLen,
+                mateReferenceSequenceIndex,
+                mateAlignmentStart,
+                insertSize,
+                variableLengthBlock);
     }
 }

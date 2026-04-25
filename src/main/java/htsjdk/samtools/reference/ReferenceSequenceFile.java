@@ -26,7 +26,6 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Locatable;
-
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -58,7 +57,6 @@ public interface ReferenceSequenceFile extends Closeable {
      */
     public void reset();
 
-
     /**
      * @return true if getSequence and getSubsequenceAt methods are allowed.
      */
@@ -70,7 +68,7 @@ public interface ReferenceSequenceFile extends Closeable {
      * @return The full sequence associated with this contig.
      * @throws UnsupportedOperationException if !sIndexed.
      */
-    public ReferenceSequence getSequence( String contig );
+    public ReferenceSequence getSequence(String contig);
 
     /**
      * Gets the subsequence of the contig in the range [start,stop]
@@ -80,7 +78,7 @@ public interface ReferenceSequenceFile extends Closeable {
      * @return The partial reference sequence associated with this range.
      * @throws UnsupportedOperationException if !sIndexed.
      */
-    public ReferenceSequence getSubsequenceAt( String contig, long start, long stop );
+    public ReferenceSequence getSubsequenceAt(String contig, long start, long stop);
 
     /**
      * Gets the subsequence of the contig in the locatable. Shortcut to <code>getSubsequenceAt(locatable.getContig(), locatable.getStart(), locatable.getEnd());</code>
@@ -88,7 +86,7 @@ public interface ReferenceSequenceFile extends Closeable {
      * @return The partial reference sequence associated with this location.
      * @throws UnsupportedOperationException if !sIndexed.
      */
-    public default ReferenceSequence getSubsequenceAt(final Locatable locatable ) {
+    public default ReferenceSequence getSubsequenceAt(final Locatable locatable) {
         return getSubsequenceAt(locatable.getContig(), locatable.getStart(), locatable.getEnd());
     }
 

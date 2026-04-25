@@ -24,5 +24,4 @@ public class ReadsFormats {
      * GA4GH htsget BAM format.
      */
     public static final String HTSGET_BAM = "HTSGET_BAM";
-
 }

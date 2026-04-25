@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.util.Iterator;
 
 /**
@@ -35,14 +34,14 @@ public class IntervalUtil {
 
     /** Return true if the sequence/position lie in the provided interval. */
     public static boolean contains(final Interval interval, final String sequenceName, final long position) {
-        return interval.getContig().equals(sequenceName) && (position >= interval.getStart() && position <= interval.getEnd());
+        return interval.getContig().equals(sequenceName)
+                && (position >= interval.getStart() && position <= interval.getEnd());
     }
 
     /** Return true if the sequence/position lie in the provided interval list. */
     public static boolean contains(final IntervalList intervalList, final String sequenceName, final long position) {
         for (final Interval interval : intervalList.uniqued().getIntervals()) {
-            if (contains(interval, sequenceName, position))
-                return true;
+            if (contains(interval, sequenceName, position)) return true;
         }
         return false;
     }
@@ -53,7 +52,8 @@ public class IntervalUtil {
      * @param intervals
      * @param sequenceDictionary used to determine order of sequences
      */
-    public static void assertOrderedNonOverlapping(final Iterator<Interval> intervals, final SAMSequenceDictionary sequenceDictionary) {
+    public static void assertOrderedNonOverlapping(
+            final Iterator<Interval> intervals, final SAMSequenceDictionary sequenceDictionary) {
         if (!intervals.hasNext()) {
             return;
         }
@@ -65,8 +65,8 @@ public class IntervalUtil {
                 throw new SAMException("Intervals should not overlap: " + prevInterval + "; " + interval);
             }
             final int thisSequenceIndex = sequenceDictionary.getSequenceIndex(interval.getContig());
-            if (prevSequenceIndex > thisSequenceIndex ||
-                    (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
+            if (prevSequenceIndex > thisSequenceIndex
+                    || (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
                 throw new SAMException("Intervals not in order: " + prevInterval + "; " + interval);
             }
             prevInterval = interval;
@@ -107,9 +107,10 @@ public class IntervalUtil {
 
         private boolean enforceSameStrand = false;
 
-        public IntervalList combine(final IntervalList intervalList){
+        public IntervalList combine(final IntervalList intervalList) {
             IntervalList retVal = new IntervalList(intervalList.getHeader());
-            retVal.addall(IntervalList.getUniqueIntervals(intervalList, combineAbutting, concatenateNames, enforceSameStrand));
+            retVal.addall(IntervalList.getUniqueIntervals(
+                    intervalList, combineAbutting, concatenateNames, enforceSameStrand));
             return retVal;
         }
     }

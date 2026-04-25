@@ -24,7 +24,6 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,13 +75,13 @@ public abstract class SeekableStream extends InputStream {
      */
     public void readFully(byte b[]) throws IOException {
         int len = b.length;
-        if (len < 0){
+        if (len < 0) {
             throw new IndexOutOfBoundsException();
         }
         int n = 0;
         while (n < len) {
             int count = read(b, n, len - n);
-            if (count < 0){
+            if (count < 0) {
                 throw new EOFException();
             }
             n += count;
@@ -109,7 +108,8 @@ public abstract class SeekableStream extends InputStream {
         final long remaining = length() - position();
         if (remaining < 0) { // remaining might be negative if the length is not available (0)
             return 0;
-        } else if (remaining > Integer.MAX_VALUE) { // remaining might be bigger than Integer.MAX_VALUE for very large files
+        } else if (remaining
+                > Integer.MAX_VALUE) { // remaining might be bigger than Integer.MAX_VALUE for very large files
             return Integer.MAX_VALUE;
         } else {
             return (int) remaining;
@@ -153,5 +153,4 @@ public abstract class SeekableStream extends InputStream {
     public final boolean markSupported() {
         return true;
     }
-
 }

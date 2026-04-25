@@ -1,15 +1,12 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
-import htsjdk.samtools.util.TestUtil;
+import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.*;
 
 /**
  * Created by vadim on 25/08/2015.
@@ -32,7 +29,9 @@ public class CRAIEntryTest extends HtsjdkTest {
         final int sliceOffset = counter++;
         final int sliceSize = counter++;
 
-        final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
+        final String line = String.format(
+                "%d\t%d\t%d\t%d\t%d\t%d",
+                sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
         final CRAIEntry entry = new CRAIEntry(line);
         assertEntryForSlice(entry, sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSize);
     }
@@ -51,22 +50,20 @@ public class CRAIEntryTest extends HtsjdkTest {
         // start and span values are invalid here: show that they are ignored
         final CRAIEntry unmapped = craiEntryForIntersectionTests(ReferenceContext.UNMAPPED_UNPLACED_ID, 1, 2);
 
-        return new Object[][]{
-                {basic, basic, true},
-                {basic, overlapBasic, true},
-                {basic, insideBasic, true},
+        return new Object[][] {
+            {basic, basic, true},
+            {basic, overlapBasic, true},
+            {basic, insideBasic, true},
+            {basic, otherSeq1, false},
+            {basic, otherSeq2, false},
+            {otherSeq1, otherSeq2, true},
+            {basic, zerospan, false},
+            {zerospan, zerospan, false},
 
-                {basic, otherSeq1, false},
-                {basic, otherSeq2, false},
-                {otherSeq1, otherSeq2, true},
+            // intersections with Unmapped entries are always false, even with themselves
 
-                {basic, zerospan, false},
-                {zerospan, zerospan, false},
-
-                // intersections with Unmapped entries are always false, even with themselves
-
-                {basic, unmapped, false},
-                {unmapped, unmapped, false},
+            {basic, unmapped, false},
+            {unmapped, unmapped, false},
         };
     }
 
@@ -76,7 +73,8 @@ public class CRAIEntryTest extends HtsjdkTest {
         Assert.assertEquals(CRAIEntry.intersect(b, a), expectation);
     }
 
-    private CRAIEntry craiEntryForIntersectionTests(final int sequenceId, final int alignmentStart, final int alignmentSpan) {
+    private CRAIEntry craiEntryForIntersectionTests(
+            final int sequenceId, final int alignmentStart, final int alignmentSpan) {
         final int dummy = -1;
         return new CRAIEntry(sequenceId, alignmentStart, alignmentSpan, dummy, dummy, dummy);
     }
@@ -102,10 +100,14 @@ public class CRAIEntryTest extends HtsjdkTest {
     // first-order sorting within unmapped is by container offset -> [3 and 4], 1, 2
     // next-order sorting is by slice offset, so 4 comes first -> 4, 3, 1, 2
 
-    private final CRAIEntry unmapped1 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 3, dummyValue, 100, 100, dummyValue);
-    private final CRAIEntry unmapped2 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 2, dummyValue, 120, 200, dummyValue);
-    private final CRAIEntry unmapped3 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 4, dummyValue, 90, 100, dummyValue);
-    private final CRAIEntry unmapped4 = new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 5, dummyValue, 90, 50, dummyValue);
+    private final CRAIEntry unmapped1 =
+            new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 3, dummyValue, 100, 100, dummyValue);
+    private final CRAIEntry unmapped2 =
+            new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 2, dummyValue, 120, 200, dummyValue);
+    private final CRAIEntry unmapped3 =
+            new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 4, dummyValue, 90, 100, dummyValue);
+    private final CRAIEntry unmapped4 =
+            new CRAIEntry(ReferenceContext.UNMAPPED_UNPLACED_ID, 5, dummyValue, 90, 50, dummyValue);
 
     // these placed CRAIEntries should sort per sequenceId as: 4, 2, 1, 5, 3
     // reasoning:
@@ -135,57 +137,62 @@ public class CRAIEntryTest extends HtsjdkTest {
 
     @Test
     public void testCompareTo() {
-        final List<CRAIEntry> testEntries = new ArrayList<CRAIEntry>() {{
-            add(unmapped1);
-            add(unmapped2);
-            add(unmapped3);
-            add(unmapped4);
-            add(placed1ForId(1));
-            add(placed2ForId(1));
-            add(placed3ForId(1));
-            add(placed4ForId(1));
-            add(placed5ForId(1));
-            add(placed1ForId(0));
-            add(placed2ForId(0));
-            add(placed3ForId(0));
-            add(placed4ForId(0));
-            add(placed5ForId(0));
-        }};
+        final List<CRAIEntry> testEntries = new ArrayList<CRAIEntry>() {
+            {
+                add(unmapped1);
+                add(unmapped2);
+                add(unmapped3);
+                add(unmapped4);
+                add(placed1ForId(1));
+                add(placed2ForId(1));
+                add(placed3ForId(1));
+                add(placed4ForId(1));
+                add(placed5ForId(1));
+                add(placed1ForId(0));
+                add(placed2ForId(0));
+                add(placed3ForId(0));
+                add(placed4ForId(0));
+                add(placed5ForId(0));
+            }
+        };
 
         // ref ID 0, then ref ID 1, then unmapped
         // within valid ref ID = 4, 2, 1, 5, 3 (see above)
         // within unmapped = 4, 3, 1, 2 (see above)
 
-        final List<CRAIEntry> expected = new ArrayList<CRAIEntry>() {{
-            add(placed4ForId(0));
-            add(placed2ForId(0));
-            add(placed1ForId(0));
-            add(placed5ForId(0));
-            add(placed3ForId(0));
+        final List<CRAIEntry> expected = new ArrayList<CRAIEntry>() {
+            {
+                add(placed4ForId(0));
+                add(placed2ForId(0));
+                add(placed1ForId(0));
+                add(placed5ForId(0));
+                add(placed3ForId(0));
 
-            add(placed4ForId(1));
-            add(placed2ForId(1));
-            add(placed1ForId(1));
-            add(placed5ForId(1));
-            add(placed3ForId(1));
+                add(placed4ForId(1));
+                add(placed2ForId(1));
+                add(placed1ForId(1));
+                add(placed5ForId(1));
+                add(placed3ForId(1));
 
-            add(unmapped4);
-            add(unmapped3);
-            add(unmapped1);
-            add(unmapped2);
-        }};
+                add(unmapped4);
+                add(unmapped3);
+                add(unmapped1);
+                add(unmapped2);
+            }
+        };
 
         Collections.sort(testEntries);
         Assert.assertEquals(testEntries, expected);
     }
 
-    private void assertEntryForSlice(final CRAIEntry entry,
-                                     final int sequenceId,
-                                     final int alignmentStart,
-                                     final int alignmentSpan,
-                                     final long containerOffset,
-                                     final int sliceByteOffset,
-                                     final int sliceByteSize) {
+    private void assertEntryForSlice(
+            final CRAIEntry entry,
+            final int sequenceId,
+            final int alignmentStart,
+            final int alignmentSpan,
+            final long containerOffset,
+            final int sliceByteOffset,
+            final int sliceByteSize) {
         Assert.assertEquals(entry.getSequenceId(), sequenceId);
         Assert.assertEquals(entry.getAlignmentStart(), alignmentStart);
         Assert.assertEquals(entry.getAlignmentSpan(), alignmentSpan);

@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
@@ -95,15 +95,16 @@ public final class FastGenotype extends Genotype {
      * @param PL
      * @param extendedAttributes
      */
-    protected FastGenotype(final String sampleName,
-                           final List<Allele> alleles,
-                           final boolean isPhased,
-                           final int GQ,
-                           final int DP,
-                           final int[] AD,
-                           final int[] PL,
-                           final String filters,
-                           final Map<String, Object> extendedAttributes) {
+    protected FastGenotype(
+            final String sampleName,
+            final List<Allele> alleles,
+            final boolean isPhased,
+            final int GQ,
+            final int DP,
+            final int[] AD,
+            final int[] PL,
+            final String filters,
+            final Map<String, Object> extendedAttributes) {
         super(sampleName, filters);
         this.alleles = alleles;
         this.isPhased = isPhased;
@@ -120,36 +121,43 @@ public final class FastGenotype extends Genotype {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    @Override public List<Allele> getAlleles() {
+    @Override
+    public List<Allele> getAlleles() {
         return alleles;
     }
 
-    @Override public Allele getAllele(int i) {
+    @Override
+    public Allele getAllele(int i) {
         return alleles.get(i);
     }
 
-    @Override public boolean isPhased() {
+    @Override
+    public boolean isPhased() {
         return isPhased;
     }
 
-    @Override public int getDP() {
+    @Override
+    public int getDP() {
         return DP;
     }
 
-    @Override public int[] getAD() {
+    @Override
+    public int[] getAD() {
         return AD;
     }
 
-    @Override public int getGQ()  {
+    @Override
+    public int getGQ() {
         return GQ;
     }
 
-    @Override public int[] getPL() {
+    @Override
+    public int[] getPL() {
         return PL;
     }
 
     // ---------------------------------------------------------------------------------------------------------
-    // 
+    //
     // get routines for extended attributes
     //
     // ---------------------------------------------------------------------------------------------------------
@@ -165,10 +173,7 @@ public final class FastGenotype extends Genotype {
      * @return
      */
     private static boolean validADorPLField(final int[] values) {
-        if ( values != null )
-            for ( int v : values )
-                if ( v < 0 )
-                    return false;
+        if (values != null) for (int v : values) if (v < 0) return false;
         return true;
     }
 }

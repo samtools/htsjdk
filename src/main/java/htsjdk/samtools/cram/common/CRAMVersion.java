@@ -69,8 +69,7 @@ public final class CRAMVersion implements Comparable<CRAMVersion> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CRAMVersion cramVersion = (CRAMVersion) o;
-        return major == cramVersion.major &&
-                minor == cramVersion.minor;
+        return major == cramVersion.major && minor == cramVersion.minor;
     }
 
     @Override

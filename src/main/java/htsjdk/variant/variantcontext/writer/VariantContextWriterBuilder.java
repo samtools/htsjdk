@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2014 The Broad Institute
-*
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-*
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2014 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
@@ -30,13 +30,12 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -54,7 +53,7 @@ import java.util.EnumSet;
  */
 /**
  * @author thibault
- * 
+ *
  * <p>
  * Provides methods for creating <code>VariantContextWriter</code>s using the Builder pattern.
  * </p>
@@ -67,43 +66,43 @@ import java.util.EnumSet;
  * Example: Create a series of files with buffering and indexing on the fly.
  * Determine the appropriate file type based on filename.
  * </p>
-
-   <pre>
-   VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-       .setReferenceDictionary(refDict)
-       .setOption(Options.INDEX_ON_THE_FLY)
-       .setBuffer(8192);
- 
-   VariantContextWriter sample1_writer = builder
-       .setOutputFile("sample1.vcf")
-       .build();
-   VariantContextWriter sample2_writer = builder
-       .setOutputFile("sample2.bcf")
-       .build();
-   VariantContextWriter sample3_writer = builder
-       .setOutputFile("sample3.vcf.bgzf")
-       .build();
-   </pre>
-   
-   <p>
+ *
+ * <pre>
+ * VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+ * .setReferenceDictionary(refDict)
+ * .setOption(Options.INDEX_ON_THE_FLY)
+ * .setBuffer(8192);
+ *
+ * VariantContextWriter sample1_writer = builder
+ * .setOutputFile("sample1.vcf")
+ * .build();
+ * VariantContextWriter sample2_writer = builder
+ * .setOutputFile("sample2.bcf")
+ * .build();
+ * VariantContextWriter sample3_writer = builder
+ * .setOutputFile("sample3.vcf.bgzf")
+ * .build();
+ * </pre>
+ *
+ * <p>
  * Example: Explicitly turn off buffering and explicitly set the file type
  * </p>
- * 
+ *
  * <pre>
-   VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-       .setReferenceDictionary(refDict)
-       .setOption(Options.INDEX_ON_THE_FLY)
-       .unsetBuffering();
- 
-   VariantContextWriter sample1_writer = builder
-       .setOutputFile("sample1.custom_extension")
-       .setOutputFileType(OutputType.VCF)
-       .build();
-   VariantContextWriter sample2_writer = builder
-       .setOutputFile("sample2.custom_extension")
-       .setOutputFileType(OutputType.BLOCK_COMPRESSED_VCF)
-       .build();
-   </pre>
+ * VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+ * .setReferenceDictionary(refDict)
+ * .setOption(Options.INDEX_ON_THE_FLY)
+ * .unsetBuffering();
+ *
+ * VariantContextWriter sample1_writer = builder
+ * .setOutputFile("sample1.custom_extension")
+ * .setOutputFileType(OutputType.VCF)
+ * .build();
+ * VariantContextWriter sample2_writer = builder
+ * .setOutputFile("sample2.custom_extension")
+ * .setOutputFileType(OutputType.BLOCK_COMPRESSED_VCF)
+ * .build();
+ * </pre>
  */
 public class VariantContextWriterBuilder {
     public static final EnumSet<Options> DEFAULT_OPTIONS = EnumSet.of(Options.INDEX_ON_THE_FLY);
@@ -120,7 +119,8 @@ public class VariantContextWriterBuilder {
         BCF_STREAM
     }
 
-    public static final EnumSet<OutputType> FILE_TYPES = EnumSet.of(OutputType.VCF, OutputType.BCF, OutputType.BLOCK_COMPRESSED_VCF);
+    public static final EnumSet<OutputType> FILE_TYPES =
+            EnumSet.of(OutputType.VCF, OutputType.BCF, OutputType.BLOCK_COMPRESSED_VCF);
     public static final EnumSet<OutputType> STREAM_TYPES = EnumSet.of(OutputType.VCF_STREAM, OutputType.BCF_STREAM);
 
     private SAMSequenceDictionary refDict = null;
@@ -401,7 +401,6 @@ public class VariantContextWriterBuilder {
         return this.options.contains(option);
     }
 
-
     /**
      * Validate and build the <code>VariantContextWriter</code>.
      *
@@ -434,52 +433,50 @@ public class VariantContextWriterBuilder {
         OutputType typeToBuild = this.outType;
 
         if (this.options.contains(Options.FORCE_BCF)) {
-            if (FILE_TYPES.contains(this.outType))
-                typeToBuild = OutputType.BCF;
-            else if (STREAM_TYPES.contains(this.outType))
-                typeToBuild = OutputType.BCF_STREAM;
+            if (FILE_TYPES.contains(this.outType)) typeToBuild = OutputType.BCF;
+            else if (STREAM_TYPES.contains(this.outType)) typeToBuild = OutputType.BCF_STREAM;
         }
 
         // If we are writing to a file, or a special file type (ex. pipe) where the stream is not yet open.
         OutputStream outStreamFromFile = this.outStream;
         if (FILE_TYPES.contains(this.outType) || (STREAM_TYPES.contains(this.outType) && this.outStream == null)) {
             try {
-                outStreamFromFile = IOUtil.maybeBufferOutputStream(Files.newOutputStream(outPath, openOptions), bufferSize);
+                outStreamFromFile =
+                        IOUtil.maybeBufferOutputStream(Files.newOutputStream(outPath, openOptions), bufferSize);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeIOException("File not found: " + outPath, e);
             } catch (final IOException e) {
                 throw new RuntimeIOException("File not found: " + outPath, e);
             }
             if (createMD5)
-                outStreamFromFile = new Md5CalculatingOutputStream(outStreamFromFile, IOUtil.addExtension(outPath, ".md5"));
+                outStreamFromFile =
+                        new Md5CalculatingOutputStream(outStreamFromFile, IOUtil.addExtension(outPath, ".md5"));
         }
 
         switch (typeToBuild) {
             case UNSPECIFIED:
                 throw new IllegalArgumentException(
-                     "Output format type is not set, or could not be inferred from the output path. "
-                     + "If a path was used, does it have a valid VCF extension ("
-                     + String.join(", ", FileExtensions.VCF_LIST)
-                     + ")?"
-                );
+                        "Output format type is not set, or could not be inferred from the output path. "
+                                + "If a path was used, does it have a valid VCF extension ("
+                                + String.join(", ", FileExtensions.VCF_LIST)
+                                + ")?");
             case VCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
-                    throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
+                    throw new IllegalArgumentException(
+                            "A reference dictionary is required for creating Tribble indices on the fly");
 
                 writer = createVCFWriter(outPath, outStreamFromFile);
                 break;
             case BLOCK_COMPRESSED_VCF:
-                if (refDict == null)
-                    idxCreator = new TabixIndexCreator(TabixFormat.VCF);
-                else
-                    idxCreator = new TabixIndexCreator(refDict, TabixFormat.VCF);
+                if (refDict == null) idxCreator = new TabixIndexCreator(TabixFormat.VCF);
+                else idxCreator = new TabixIndexCreator(refDict, TabixFormat.VCF);
 
-                writer = createVCFWriter(
-                    outPath, new BlockCompressedOutputStream(outStreamFromFile, outPath));
+                writer = createVCFWriter(outPath, new BlockCompressedOutputStream(outStreamFromFile, outPath));
                 break;
             case BCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
-                    throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
+                    throw new IllegalArgumentException(
+                            "A reference dictionary is required for creating Tribble indices on the fly");
 
                 writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
@@ -500,7 +497,7 @@ public class VariantContextWriterBuilder {
             writer = new AsyncVariantContextWriter(writer, AsyncVariantContextWriter.DEFAULT_QUEUE_SIZE);
 
         return writer;
-     }
+    }
 
     /**
      * Attempts to determine the type of file/data to write based on the File path being
@@ -511,9 +508,9 @@ public class VariantContextWriterBuilder {
      * @param file A file whose {@link OutputType} we want to infer
      * @return The file's {@link OutputType}. Never {@code null}.
      */
-     public static OutputType determineOutputTypeFromFile(final File file) {
+    public static OutputType determineOutputTypeFromFile(final File file) {
         return determineOutputTypeFromFile(file.toPath());
-     }
+    }
 
     /**
      * Attempts to determine the type of file/data to write based on the File path being
@@ -531,8 +528,7 @@ public class VariantContextWriterBuilder {
             return OutputType.BLOCK_COMPRESSED_VCF;
         } else if (isVCF(path)) {
             return OutputType.VCF;
-        }
-        else {
+        } else {
             // See if we have a special file (device, named pipe, etc.)
             try {
                 final Path canonicalPath = path.toRealPath();
@@ -562,22 +558,27 @@ public class VariantContextWriterBuilder {
     }
 
     private static boolean isCompressedVCF(final Path outPath) {
-        if (outPath == null)
-            return false;
+        if (outPath == null) return false;
 
         return IOUtil.hasBlockCompressedExtension(outPath);
     }
 
     private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
         if (idxCreator == null) {
-            return new VCFWriter(writerPath, writerStream, refDict,
+            return new VCFWriter(
+                    writerPath,
+                    writerStream,
+                    refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
                     options.contains(Options.WRITE_FULL_FORMAT_FIELD));
-        }
-        else {
-            return new VCFWriter(writerPath, writerStream, refDict, idxCreator,
+        } else {
+            return new VCFWriter(
+                    writerPath,
+                    writerStream,
+                    refDict,
+                    idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
@@ -587,12 +588,18 @@ public class VariantContextWriterBuilder {
 
     private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {
         if (idxCreator == null) {
-            return new BCF2Writer(writerPath, writerStream, refDict,
+            return new BCF2Writer(
+                    writerPath,
+                    writerStream,
+                    refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES));
-        }
-        else {
-            return new BCF2Writer(writerPath, writerStream, refDict, idxCreator,
+        } else {
+            return new BCF2Writer(
+                    writerPath,
+                    writerStream,
+                    refDict,
+                    idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES));
         }

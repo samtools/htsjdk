@@ -39,15 +39,14 @@ public class ProfileIndexReading {
     public static void main(String[] args) {
 
         // check yourself before you wreck yourself - we require one arg, the input file
-        if (args.length < 2)
-            printUsage();
+        if (args.length < 2) printUsage();
 
         int iterations = Integer.parseInt(args[0]);
-        for ( int j = 1; j < args.length; j++  ) {
+        for (int j = 1; j < args.length; j++) {
             String indexFile = args[j];
             System.out.printf("Reading %s%n", indexFile);
             long startTime = System.currentTimeMillis();
-            for ( int i = 0; i < iterations; i++ ) {
+            for (int i = 0; i < iterations; i++) {
                 System.out.printf("  iteration %d%n", i);
                 Index index = IndexFactory.loadIndex(indexFile);
             }

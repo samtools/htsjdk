@@ -27,7 +27,6 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.StringUtil;
-
 import java.lang.reflect.Array;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -71,14 +70,15 @@ public class TextTagCodec {
         }
         if (tagType == 'H') {
             // H should never happen anymore.
-            value = StringUtil.bytesToHexString((byte[])value);
+            value = StringUtil.bytesToHexString((byte[]) value);
         } else if (tagType == 'B') {
             value = getArrayType(value, false) + encodeArrayValue(value);
         } else if (tagType == 'i') {
             final long longVal = ((Number) value).longValue();
             // as the spec says: [-2^31, 2^32)
             if (longVal < Integer.MIN_VALUE || longVal > BinaryCodec.MAX_UINT) {
-                throw new IllegalArgumentException("Value for tag " + tagName + " cannot be stored in either a signed or unsigned 32-bit integer: " + longVal);
+                throw new IllegalArgumentException("Value for tag " + tagName
+                        + " cannot be stored in either a signed or unsigned 32-bit integer: " + longVal);
             }
         }
         sb.append(tagType).append(':').append(value.toString());
@@ -91,12 +91,11 @@ public class TextTagCodec {
         if (componentType == Float.TYPE) {
             if (isUnsigned) throw new IllegalArgumentException("float array cannot be unsigned");
             return 'f';
-        }
-        else if (componentType == Byte.TYPE)    type = 'c';
-        else if (componentType == Short.TYPE)   type = 's';
+        } else if (componentType == Byte.TYPE) type = 'c';
+        else if (componentType == Short.TYPE) type = 's';
         else if (componentType == Integer.TYPE) type = 'i';
         else throw new IllegalArgumentException("Unrecognized array type " + componentType);
-        return (isUnsigned? Character.toUpperCase(type): type);
+        return (isUnsigned ? Character.toUpperCase(type) : type);
     }
 
     private static String encodeArrayValue(final Object value) {
@@ -107,14 +106,13 @@ public class TextTagCodec {
             ret.append(Array.get(value, i).toString());
         }
         return ret.toString();
-
     }
 
     private static long[] widenToUnsigned(final Object array) {
         final Class<?> componentType = array.getClass().getComponentType();
         final long mask;
-        if (componentType == Byte.TYPE)    mask = 0xffL;
-        else if (componentType == Short.TYPE)   mask = 0xffffL;
+        if (componentType == Byte.TYPE) mask = 0xffL;
+        else if (componentType == Short.TYPE) mask = 0xffffL;
         else if (componentType == Integer.TYPE) mask = 0xffffffffL;
         else throw new IllegalArgumentException("Unrecognized unsigned array type " + componentType);
         final long[] ret = new long[Array.getLength(array)];
@@ -140,8 +138,7 @@ public class TextTagCodec {
      * @return Colon-separated text representation suitable for a SAM header, i.e. name:value.
      */
     public String encodeUntypedTag(final String tagName, final Object value) {
-        return new StringBuilder(tagName).append(':')
-                .append(value.toString()).toString();
+        return new StringBuilder(tagName).append(':').append(value.toString()).toString();
     }
 
     /**
@@ -195,12 +192,11 @@ public class TextTagCodec {
 
             if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
                 return (int) lValue;
-            }
-            else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+            } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
                 return lValue;
-            }
-            else {
-                throw new SAMFormatException("Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
+            } else {
+                throw new SAMFormatException(
+                        "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
             }
         } else if (type.equals("f")) {
             try {
@@ -232,14 +228,16 @@ public class TextTagCodec {
 
         final char elementType = elementTypeAndValue[0].charAt(0);
 
-        final String[] stringValues = elementTypeAndValue[1] != null ? elementTypeAndValue[1].split(",") : EMPTY_STRING_ARRAY;
+        final String[] stringValues =
+                elementTypeAndValue[1] != null ? elementTypeAndValue[1].split(",") : EMPTY_STRING_ARRAY;
         if (elementType == 'f') {
             final float[] ret = new float[stringValues.length];
             for (int i = 0; i < stringValues.length; ++i) {
                 try {
                     ret[i] = Float.parseFloat(stringValues[i]);
                 } catch (NumberFormatException e) {
-                    throw new SAMFormatException("Array tag of type f should have single-precision floating point value");
+                    throw new SAMFormatException(
+                            "Array tag of type f should have single-precision floating point value");
                 }
             }
             return ret;
@@ -289,8 +287,8 @@ public class TextTagCodec {
                 throw new SAMFormatException("Array tag of type " + elementType + " should have integral value");
             }
             if (longValue < minValue || longValue > maxValue) {
-                throw new SAMFormatException("Value for element of array tag of type " + elementType +
-                " is out of allowed range: " + longValue);
+                throw new SAMFormatException("Value for element of array tag of type " + elementType
+                        + " is out of allowed range: " + longValue);
             }
             longValues[i] = longValue;
         }
@@ -298,19 +296,19 @@ public class TextTagCodec {
         switch (Character.toLowerCase(elementType)) {
             case 'c': {
                 final byte[] array = new byte[longValues.length];
-                for (int i = 0; i < longValues.length; ++i) array[i] = (byte)longValues[i];
+                for (int i = 0; i < longValues.length; ++i) array[i] = (byte) longValues[i];
                 if (isUnsigned) return new TagValueAndUnsignedArrayFlag(array, true);
                 else return array;
             }
             case 's': {
                 final short[] array = new short[longValues.length];
-                for (int i = 0; i < longValues.length; ++i) array[i] = (short)longValues[i];
+                for (int i = 0; i < longValues.length; ++i) array[i] = (short) longValues[i];
                 if (isUnsigned) return new TagValueAndUnsignedArrayFlag(array, true);
                 else return array;
             }
-            case 'i':{
+            case 'i': {
                 final int[] array = new int[longValues.length];
-                for (int i = 0; i < longValues.length; ++i) array[i] = (int)longValues[i];
+                for (int i = 0; i < longValues.length; ++i) array[i] = (int) longValues[i];
                 if (isUnsigned) return new TagValueAndUnsignedArrayFlag(array, true);
                 else return array;
             }

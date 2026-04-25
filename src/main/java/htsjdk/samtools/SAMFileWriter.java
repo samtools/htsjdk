@@ -23,9 +23,8 @@
  */
 package htsjdk.samtools;
 
-import java.io.Closeable;
-
 import htsjdk.samtools.util.ProgressLoggerInterface;
+import java.io.Closeable;
 
 /**
  * Interface for SAMText and BAM file writers.  Clients need not care which they write to,
@@ -33,23 +32,24 @@ import htsjdk.samtools.util.ProgressLoggerInterface;
  */
 public interface SAMFileWriter extends Closeable {
 
-	void addAlignment(SAMRecord alignment);
+    void addAlignment(SAMRecord alignment);
 
     SAMFileHeader getFileHeader();
 
-	/**
-	 * Sets a ProgressLogger on this writer. This is useful when pulling, for instance, from a
-	 * SortingCollection.
-	 */
-	void setProgressLogger(final ProgressLoggerInterface progress);
+    /**
+     * Sets a ProgressLogger on this writer. This is useful when pulling, for instance, from a
+     * SortingCollection.
+     */
+    void setProgressLogger(final ProgressLoggerInterface progress);
 
-	/** If true writers that are writing pre-sorted records should check the order during writing. */
-	default void setSortOrderChecking(final boolean check) {
-		throw new UnsupportedOperationException("Operation not supported on " + getClass().getName());
-	}
+    /** If true writers that are writing pre-sorted records should check the order during writing. */
+    default void setSortOrderChecking(final boolean check) {
+        throw new UnsupportedOperationException(
+                "Operation not supported on " + getClass().getName());
+    }
 
     /**
-     * Must be called to flush or file will likely be defective. 
+     * Must be called to flush or file will likely be defective.
      */
     @Override
     void close();

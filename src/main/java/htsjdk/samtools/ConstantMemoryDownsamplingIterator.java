@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.Murmur3;
 import htsjdk.samtools.util.PeekableIterator;
-
 import java.util.Iterator;
 
 /**
@@ -46,7 +45,6 @@ class ConstantMemoryDownsamplingIterator extends DownsamplingIterator {
     private final int maxHashValue;
     private final Murmur3 hasher;
 
-
     /** Constructs a downsampling iterator upon the supplied iterator, using the Random as the source of randomness. */
     ConstantMemoryDownsamplingIterator(final Iterator<SAMRecord> iterator, final double proportion, final int seed) {
         super(proportion);
@@ -60,7 +58,8 @@ class ConstantMemoryDownsamplingIterator extends DownsamplingIterator {
     }
 
     /** Returns true if there is another record available post-downsampling, false otherwise. */
-    @Override public boolean hasNext() {
+    @Override
+    public boolean hasNext() {
         // The underlying iterator is always left at the next return-able read, so if it has a next read, so do we
         return this.underlyingIterator.hasNext();
     }
@@ -70,7 +69,8 @@ class ConstantMemoryDownsamplingIterator extends DownsamplingIterator {
      * @return true if there is at least one emittable record ready for emission, false otherwise
      */
     private boolean advanceToNextAcceptedRead() {
-        while (this.underlyingIterator.hasNext() && this.hasher.hashUnencodedChars(this.underlyingIterator.peek().getReadName()) > this.maxHashValue) {
+        while (this.underlyingIterator.hasNext()
+                && this.hasher.hashUnencodedChars(this.underlyingIterator.peek().getReadName()) > this.maxHashValue) {
             this.underlyingIterator.next();
             recordDiscardedRecord();
         }
@@ -79,7 +79,8 @@ class ConstantMemoryDownsamplingIterator extends DownsamplingIterator {
     }
 
     /** Returns the next record from the iterator, or throws an exception if there is no next record. */
-    @Override public SAMRecord next() {
+    @Override
+    public SAMRecord next() {
         final SAMRecord rec = this.underlyingIterator.next();
         recordAcceptedRecord();
         advanceToNextAcceptedRead();

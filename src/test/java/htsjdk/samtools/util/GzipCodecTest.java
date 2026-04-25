@@ -1,10 +1,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,30 +9,33 @@ import java.util.Random;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class GzipCodecTest extends HtsjdkTest {
 
     @DataProvider(name = "compressionLevels")
     public Object[][] compressionLevels() {
-        return new Object[][] { {0}, {1}, {5}, {6} };
+        return new Object[][] {{0}, {1}, {5}, {6}};
     }
 
     @DataProvider(name = "inputSizes")
     public Object[][] inputSizes() {
-        return new Object[][] { {0}, {1}, {100}, {1000}, {65536} };
+        return new Object[][] {{0}, {1}, {100}, {1000}, {65536}};
     }
 
     @DataProvider(name = "formatsAndSizes")
     public Object[][] formatsAndSizes() {
         return new Object[][] {
-                {GzipCodec.Format.GZIP, 0},
-                {GzipCodec.Format.GZIP, 1},
-                {GzipCodec.Format.GZIP, 100},
-                {GzipCodec.Format.GZIP, 65536},
-                {GzipCodec.Format.BGZF, 0},
-                {GzipCodec.Format.BGZF, 1},
-                {GzipCodec.Format.BGZF, 100},
-                {GzipCodec.Format.BGZF, 10000},
+            {GzipCodec.Format.GZIP, 0},
+            {GzipCodec.Format.GZIP, 1},
+            {GzipCodec.Format.GZIP, 100},
+            {GzipCodec.Format.GZIP, 65536},
+            {GzipCodec.Format.BGZF, 0},
+            {GzipCodec.Format.BGZF, 1},
+            {GzipCodec.Format.BGZF, 100},
+            {GzipCodec.Format.BGZF, 10000},
         };
     }
 

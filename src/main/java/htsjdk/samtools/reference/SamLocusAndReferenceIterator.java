@@ -23,13 +23,12 @@
  */
 package htsjdk.samtools.reference;
 
+import static htsjdk.samtools.util.SamLocusIterator.*;
+
 import htsjdk.samtools.util.IterableOnceIterator;
 import htsjdk.samtools.util.SamLocusIterator;
 import htsjdk.samtools.util.SequenceUtil;
-
 import java.util.List;
-
-import static htsjdk.samtools.util.SamLocusIterator.*;
 
 /**
  * Iterator that traverses a SAM File and a ReferenceFile, accumulating information on a per-locus basis.
@@ -39,10 +38,11 @@ import static htsjdk.samtools.util.SamLocusIterator.*;
  *
  * @author Yossi Farjoun
  */
-public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusAndReferenceIterator.SAMLocusAndReference> {
+public class SamLocusAndReferenceIterator
+        extends IterableOnceIterator<SamLocusAndReferenceIterator.SAMLocusAndReference> {
 
     /** The base to use to indicate the locus is prior to the reference start (i.e. position zero). */
-    final static byte BASE_BEFORE_REFERENCE_START = (byte) '-';
+    static final byte BASE_BEFORE_REFERENCE_START = (byte) '-';
 
     private final ReferenceSequenceFileWalker referenceSequenceFileWalker;
     private final SamLocusIterator locusIterator;
@@ -57,14 +57,14 @@ public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusA
      *
      * @throws IllegalArgumentException if arguments have non-equal {@link htsjdk.samtools.SAMSequenceDictionary SAMSequenceDictionary}s
      */
-    public SamLocusAndReferenceIterator(final ReferenceSequenceFileWalker referenceFile, final SamLocusIterator locusIterator)
+    public SamLocusAndReferenceIterator(
+            final ReferenceSequenceFileWalker referenceFile, final SamLocusIterator locusIterator)
             throws IllegalArgumentException {
-        if(!SequenceUtil.areSequenceDictionariesEqual(
-                locusIterator.getHeader().getSequenceDictionary(),
-                referenceFile.getSequenceDictionary())) {
-            throw new IllegalArgumentException("reference and locus iterator have difference dictionaries." +
-                    locusIterator.getHeader().getSequenceDictionary().toString() +
-                    referenceFile.getSequenceDictionary().toString());
+        if (!SequenceUtil.areSequenceDictionariesEqual(
+                locusIterator.getHeader().getSequenceDictionary(), referenceFile.getSequenceDictionary())) {
+            throw new IllegalArgumentException("reference and locus iterator have difference dictionaries."
+                    + locusIterator.getHeader().getSequenceDictionary().toString()
+                    + referenceFile.getSequenceDictionary().toString());
         }
         this.referenceSequenceFileWalker = referenceFile;
         this.locusIterator = locusIterator;
@@ -78,16 +78,15 @@ public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusA
     @Override
     public SAMLocusAndReference next() {
         final LocusInfo locus = locusIterator.next();
-        final ReferenceSequence referenceSequence = referenceSequenceFileWalker.get(locus.getSequenceIndex(), locus.getSequenceName(),
-                locus.getSequenceLength());
+        final ReferenceSequence referenceSequence = referenceSequenceFileWalker.get(
+                locus.getSequenceIndex(), locus.getSequenceName(), locus.getSequenceLength());
 
         // Developer notes:
         // 1. position is 1-based...arrays are 0-based!
         // 2. We must guard against insertions before the reference
         if (locus.getPosition() == 0) {
             return new SAMLocusAndReference(locus, BASE_BEFORE_REFERENCE_START);
-        }
-        else {
+        } else {
             return new SAMLocusAndReference(locus, referenceSequence.getBases()[locus.getPosition() - 1]);
         }
     }

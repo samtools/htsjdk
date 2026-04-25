@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -14,13 +13,12 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Companion tests for the ones in CRAMFileBAIIndexTest, but run against a .bai
@@ -33,9 +31,9 @@ import java.util.List;
 public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     private static final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
-    private static final int nofReads = 10000 ;
-    private static final int nofReadsPerContainer = 1000 ;
-    private static final int nofUnmappedReads = 279 ;
+    private static final int nofReads = 10000;
+    private static final int nofReadsPerContainer = 1000;
+    private static final int nofUnmappedReads = 279;
     private static final int nofMappedReads = 9721;
 
     private static File tmpCramFile;
@@ -46,12 +44,9 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     @Test
     public void testFileFileConstructor() throws IOException {
-        try (final CRAMFileReader reader = new CRAMFileReader(
-                tmpCramFile,
-                tmpCraiFile,
-                source,
-                ValidationStringency.STRICT);
-            final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519)) {
+        try (final CRAMFileReader reader =
+                        new CRAMFileReader(tmpCramFile, tmpCraiFile, source, ValidationStringency.STRICT);
+                final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519)) {
 
             Assert.assertTrue(iterator.hasNext());
             final SAMRecord record = iterator.next();
@@ -63,11 +58,8 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     @Test
     public void testStreamFileConstructor() throws IOException {
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(tmpCramFile),
-                tmpCraiFile,
-                source,
-                ValidationStringency.STRICT);
-             final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519)) {
+                        new SeekableFileStream(tmpCramFile), tmpCraiFile, source, ValidationStringency.STRICT);
+                final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519)) {
             Assert.assertTrue(iterator.hasNext());
             final SAMRecord record = iterator.next();
             Assert.assertEquals(record.getReferenceName(), "chrM");
@@ -78,11 +70,11 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     @Test
     public void testStreamStreamConstructor() throws IOException {
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(tmpCramFile),
-                new SeekableFileStream(tmpCraiFile),
-                source,
-                ValidationStringency.STRICT);
-            final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519)) {
+                        new SeekableFileStream(tmpCramFile),
+                        new SeekableFileStream(tmpCraiFile),
+                        source,
+                        ValidationStringency.STRICT);
+                final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1519)) {
             Assert.assertTrue(iterator.hasNext());
             SAMRecord record = iterator.next();
 
@@ -92,12 +84,9 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = SAMException.class)
-    public void testFileFileConstructorNoIndex () throws IOException {
+    public void testFileFileConstructorNoIndex() throws IOException {
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(tmpCramFile),
-                (File) null,
-                source,
-                ValidationStringency.STRICT)) {
+                new SeekableFileStream(tmpCramFile), (File) null, source, ValidationStringency.STRICT)) {
             reader.queryAlignmentStart("chrM", 1519);
         }
     }
@@ -105,10 +94,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     @Test(expectedExceptions = SAMException.class)
     public void testStreamStreamConstructorNoIndex() throws IOException {
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(tmpCramFile),
-                (SeekableFileStream) null,
-                source,
-                ValidationStringency.STRICT)) {
+                new SeekableFileStream(tmpCramFile), (SeekableFileStream) null, source, ValidationStringency.STRICT)) {
             reader.queryAlignmentStart("chrM", 1519);
         }
     }
@@ -117,7 +103,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     public void testMappedReads() throws IOException {
 
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-             final SAMRecordIterator samRecordIterator = samReader.iterator()) {
+                final SAMRecordIterator samRecordIterator = samReader.iterator()) {
             Assert.assertEquals(samReader.getFileHeader().getSortOrder(), SAMFileHeader.SortOrder.coordinate);
             try (final CRAMFileReader cramReader = new CRAMFileReader(
                     new ByteArraySeekableStream(cramBytes),
@@ -135,9 +121,8 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                     }
                     final String sam1 = samRecord.getSAMString();
 
-                    final CloseableIterator<SAMRecord> iterator = cramReader.queryAlignmentStart(
-                            samRecord.getReferenceName(),
-                            samRecord.getAlignmentStart());
+                    final CloseableIterator<SAMRecord> iterator =
+                            cramReader.queryAlignmentStart(samRecord.getReferenceName(), samRecord.getAlignmentStart());
 
                     Assert.assertTrue(iterator.hasNext(), counter + ": " + sam1);
                     final SAMRecord cramRecord = iterator.next();
@@ -145,11 +130,12 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                     Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), sam1 + sam2);
 
                     // default 'overlap' is true, so test records intersect the query:
-                    Assert.assertTrue(CoordMath.overlaps(
-                            cramRecord.getAlignmentStart(),
-                            cramRecord.getAlignmentEnd(),
-                            samRecord.getAlignmentStart(),
-                            samRecord.getAlignmentEnd()),
+                    Assert.assertTrue(
+                            CoordMath.overlaps(
+                                    cramRecord.getAlignmentStart(),
+                                    cramRecord.getAlignmentEnd(),
+                                    samRecord.getAlignmentStart(),
+                                    samRecord.getAlignmentEnd()),
                             sam1 + sam2);
                 }
                 Assert.assertEquals(counter, nofMappedReads);
@@ -160,25 +146,25 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     @Test
     public void testQueryUnmapped() throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-             final SAMRecordIterator unmappedSamIterator = samReader.queryUnmapped();
-             final CRAMFileReader reader = new CRAMFileReader(
-                    new ByteArraySeekableStream(cramBytes),
-                    new ByteArraySeekableStream(craiBytes),
-                    source,
-                    ValidationStringency.STRICT);
-             final CloseableIterator<SAMRecord> unmappedCramIterator = reader.queryUnmapped()) {
-                int counter = 0;
-                while (unmappedSamIterator.hasNext()) {
-                    Assert.assertTrue(unmappedCramIterator.hasNext());
-                    SAMRecord r1 = unmappedSamIterator.next();
-                    SAMRecord r2 = unmappedCramIterator.next();
-                    Assert.assertEquals(r1.getReadName(), r2.getReadName());
-                    Assert.assertEquals(r1.getBaseQualityString(), r2.getBaseQualityString());
-                    counter++;
-                }
+                final SAMRecordIterator unmappedSamIterator = samReader.queryUnmapped();
+                final CRAMFileReader reader = new CRAMFileReader(
+                        new ByteArraySeekableStream(cramBytes),
+                        new ByteArraySeekableStream(craiBytes),
+                        source,
+                        ValidationStringency.STRICT);
+                final CloseableIterator<SAMRecord> unmappedCramIterator = reader.queryUnmapped()) {
+            int counter = 0;
+            while (unmappedSamIterator.hasNext()) {
+                Assert.assertTrue(unmappedCramIterator.hasNext());
+                SAMRecord r1 = unmappedSamIterator.next();
+                SAMRecord r2 = unmappedCramIterator.next();
+                Assert.assertEquals(r1.getReadName(), r2.getReadName());
+                Assert.assertEquals(r1.getBaseQualityString(), r2.getBaseQualityString());
+                counter++;
+            }
 
-                Assert.assertFalse(unmappedCramIterator.hasNext());
-                Assert.assertEquals(counter, nofUnmappedReads);
+            Assert.assertFalse(unmappedCramIterator.hasNext());
+            Assert.assertEquals(counter, nofUnmappedReads);
         }
     }
 
@@ -190,11 +176,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
         long[] boundaries = new long[] {0, (CRAMFile.length() - 1) << 16};
         try (final CRAMIterator iterator = new CRAMIterator(
-                new SeekableFileStream(CRAMFile),
-                refSource,
-                ValidationStringency.STRICT,
-                null,
-                boundaries)) {
+                new SeekableFileStream(CRAMFile), refSource, ValidationStringency.STRICT, null, boundaries)) {
             long count = getIteratorCount(iterator);
             Assert.assertEquals(count, 2);
         }
@@ -227,7 +209,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
             final List<CRAIEntry> craiEntries = secondContainer.getCRAIEntries(new CompressorCache());
             Assert.assertEquals(craiEntries.size(), 2);
-            final CRAIEntry secondContainerCRAIEntry =  craiEntries.get(0);
+            final CRAIEntry secondContainerCRAIEntry = craiEntries.get(0);
 
             try (final CRAMFileReader cramFileReader = new CRAMFileReader(
                     new ByteArraySeekableStream(cramBytes),
@@ -254,7 +236,8 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                                     record.getAlignmentStart(),
                                     record.getAlignmentEnd(),
                                     secondContainerCRAIEntry.getAlignmentStart(),
-                                    secondContainerCRAIEntry.getAlignmentStart() + secondContainerCRAIEntry.getAlignmentSpan());
+                                    secondContainerCRAIEntry.getAlignmentStart()
+                                            + secondContainerCRAIEntry.getAlignmentSpan());
                             if (overlaps) {
                                 matchFound = true;
                             }
@@ -275,10 +258,8 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 new ByteArraySeekableStream(craiBytes),
                 source,
                 ValidationStringency.STRICT)) {
-            final QueryInterval[] query = new QueryInterval[] {
-                    new QueryInterval(0, 1519, 1520),
-                    new QueryInterval(1, 470535, 470536)
-            };
+            final QueryInterval[] query =
+                    new QueryInterval[] {new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
             try (final CloseableIterator<SAMRecord> iterator = reader.query(query, false)) {
                 Assert.assertTrue(iterator.hasNext());
 
@@ -301,12 +282,11 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 new ByteArraySeekableStream(craiBytes),
                 source,
                 ValidationStringency.STRICT)) {
-            final QueryInterval[] query = new QueryInterval[] {
-                    new QueryInterval(0, 1519, 1520),
-                    new QueryInterval(1, 470535, 470536)
-            };
+            final QueryInterval[] query =
+                    new QueryInterval[] {new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
             final BAMFileSpan fileSpan = BAMFileReader.getFileSpan(query, reader.getIndex());
-            final CloseableIterator<SAMRecord> iterator = reader.createIndexIterator(query, false, fileSpan.toCoordinateArray());
+            final CloseableIterator<SAMRecord> iterator =
+                    reader.createIndexIterator(query, false, fileSpan.toCoordinateArray());
 
             Assert.assertTrue(iterator.hasNext());
             SAMRecord r1 = iterator.next();
@@ -323,16 +303,15 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     @BeforeClass
     public static void prepare() throws IOException {
-        tmpCramFile = File.createTempFile(BAM_FILE.getName(), ".cram") ;
+        tmpCramFile = File.createTempFile(BAM_FILE.getName(), ".cram");
         tmpCramFile.deleteOnExit();
-        tmpCraiFile = new File (tmpCramFile.getAbsolutePath() + ".crai");
+        tmpCraiFile = new File(tmpCramFile.getAbsolutePath() + ".crai");
         tmpCraiFile.deleteOnExit();
 
-        source = new ReferenceSource(
-                new FakeReferenceSequenceFile(
-                        SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()
-                )
-        );
+        source = new ReferenceSource(new FakeReferenceSequenceFile(SamReaderFactory.makeDefault()
+                .getFileHeader(BAM_FILE)
+                .getSequenceDictionary()
+                .getSequences()));
         cramBytes = cramBytesFromBAMFile(BAM_FILE, source);
 
         try (final FileOutputStream fios = new FileOutputStream(tmpCraiFile)) {
@@ -344,7 +323,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         craiBytes = bytesFromFile(tmpCraiFile);
     }
 
-    //TODO: these are duplicated in CRAMFileCRAIIndexTest
+    // TODO: these are duplicated in CRAMFileCRAIIndexTest
     private static byte[] bytesFromFile(final File file) throws IOException {
         try (final FileInputStream fis = new FileInputStream(file)) {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -355,12 +334,15 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     private static byte[] cramBytesFromBAMFile(final File bamFile, final ReferenceSource source) throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
-             final SAMRecordIterator samIterator = samReader.iterator();
-             final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                final SAMRecordIterator samIterator = samReader.iterator();
+                final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             try (final CRAMFileWriter cramWriter = new CRAMFileWriter(
                     // to reduce granularity call setRecordsPerSlice
-                    // in order to set reads/slice to a small number, we must so the same for minimumSingleReferenceSliceSize
-                    new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(nofReadsPerContainer).setReadsPerSlice(nofReadsPerContainer),
+                    // in order to set reads/slice to a small number, we must so the same for
+                    // minimumSingleReferenceSliceSize
+                    new CRAMEncodingStrategy()
+                            .setMinimumSingleReferenceSliceSize(nofReadsPerContainer)
+                            .setReadsPerSlice(nofReadsPerContainer),
                     baos,
                     null,
                     true,

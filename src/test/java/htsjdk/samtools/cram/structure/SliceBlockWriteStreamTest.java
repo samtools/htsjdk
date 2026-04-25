@@ -3,12 +3,11 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.nametokenisation.NameTokenisationTest;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SliceBlockWriteStreamTest extends HtsjdkTest {
 
@@ -35,10 +34,9 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
             if (!StructureTestUtils.DATASERIES_NOT_WRITTEN_BY_HTSJDK.contains(dataSeries)) {
                 // artificially prepare read name data since the name tokenizer requires structured data and cannot
                 // handle the raw,unstructured data which this test uses
-                final String uncompressedContent =
-                    dataSeries == DataSeries.RN_ReadName ?
-                            dataSeries.getCanonicalName() + NameTokenisationTest.LOCAL_NAME_SEPARATOR_CHARSEQUENCE :
-                            dataSeries.getCanonicalName();
+                final String uncompressedContent = dataSeries == DataSeries.RN_ReadName
+                        ? dataSeries.getCanonicalName() + NameTokenisationTest.LOCAL_NAME_SEPARATOR_CHARSEQUENCE
+                        : dataSeries.getCanonicalName();
                 expectedExternalContent.put(dataSeries.getExternalBlockContentId(), uncompressedContent);
                 sliceBlocksWriteStreams
                         .getExternalWriter(dataSeries.getExternalBlockContentId())
@@ -53,8 +51,7 @@ public class SliceBlockWriteStreamTest extends HtsjdkTest {
         final byte[] coreRoundTripContent = sliceBlocks.getCoreBlock().getUncompressedContent(new CompressorCache());
         Assert.assertEquals(coreRoundTripContent.length, 1);
         Assert.assertEquals(coreRoundTripContent[0], expectedCoreContent);
-        sliceBlocks.getExternalContentIDs()
-                .stream()
+        sliceBlocks.getExternalContentIDs().stream()
                 .forEach(id -> Assert.assertEquals(
                         new String(sliceBlocks.getExternalBlock(id).getUncompressedContent(new CompressorCache())),
                         expectedExternalContent.get(id)));

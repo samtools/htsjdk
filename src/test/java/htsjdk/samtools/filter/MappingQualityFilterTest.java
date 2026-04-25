@@ -31,10 +31,10 @@ public class MappingQualityFilterTest extends HtsjdkTest {
 
     @DataProvider(name = "data")
     private Object[][] testData() {
-        return new Object[][]{
-                {0, 3},
-                {10, 2},
-                {30, 1}
+        return new Object[][] {
+            {0, 3},
+            {10, 2},
+            {30, 1}
         };
     }
 }

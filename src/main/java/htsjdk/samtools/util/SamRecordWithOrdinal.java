@@ -46,11 +46,22 @@ public abstract class SamRecordWithOrdinal {
         this.recordOrdinal = recordOrdinal;
     }
 
-    public SAMRecord getRecord() { return this.record; }
-    public void setRecord(final SAMRecord record) { this.record = record; }
-    public long getRecordOrdinal() { return this.recordOrdinal; }
-    public void setRecordOrdinal(final long recordOrdinal) { this.recordOrdinal = recordOrdinal; }
+    public SAMRecord getRecord() {
+        return this.record;
+    }
+
+    public void setRecord(final SAMRecord record) {
+        this.record = record;
+    }
+
+    public long getRecordOrdinal() {
+        return this.recordOrdinal;
+    }
+
+    public void setRecordOrdinal(final long recordOrdinal) {
+        this.recordOrdinal = recordOrdinal;
+    }
 
     /** Set the result state on this record. */
-    abstract public void setResultState(final boolean resultState);
+    public abstract void setResultState(final boolean resultState);
 }

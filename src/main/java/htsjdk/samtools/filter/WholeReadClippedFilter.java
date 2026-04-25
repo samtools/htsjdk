@@ -46,10 +46,10 @@ public class WholeReadClippedFilter implements SamRecordFilter {
     @Override
     public boolean filterOut(final SAMRecord record) {
         return record.getAttribute(ReservedTagConstants.XT) != null
-                && (Integer)record.getAttribute(ReservedTagConstants.XT) == 1;
+                && (Integer) record.getAttribute(ReservedTagConstants.XT) == 1;
     }
 
-     /**
+    /**
      * Determines whether a paired of SAMRecord matches this filter
      *
      * @param first  the first SAMRecord to evaluate

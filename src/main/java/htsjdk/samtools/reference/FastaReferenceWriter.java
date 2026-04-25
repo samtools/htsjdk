@@ -28,8 +28,6 @@ import htsjdk.samtools.SAMSequenceDictionaryCodec;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
-import org.apache.commons.compress.utils.CountingOutputStream;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -41,6 +39,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.commons.compress.utils.CountingOutputStream;
 
 /**
  * Writes a FASTA formatted reference file.
@@ -110,7 +109,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
     /**
      * Convenient cached {@code byte[]} representation of the line separator.
      */
-    private static final byte[] LINE_SEPARATOR = String.valueOf(LINE_SEPARATOR_CHR).getBytes(CHARSET);
+    private static final byte[] LINE_SEPARATOR =
+            String.valueOf(LINE_SEPARATOR_CHR).getBytes(CHARSET);
 
     /**
      * Output stream to the main FASTA output.
@@ -132,7 +132,6 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * Output writer to the output dictionary.
      */
     private final Writer dictWriter;
-
 
     /**
      * the md5 digester (or null if not adding md5)
@@ -198,10 +197,12 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param dictOutput  the (uncompressed) output stream to the dictFile, if requested, {@code null} if none should be generated.
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
-    FastaReferenceWriter(final int basesPerLine, final boolean addMd5,
-                                   final OutputStream fastaOutput,
-                                   final OutputStream indexOutput,
-                                   final OutputStream dictOutput) {
+    FastaReferenceWriter(
+            final int basesPerLine,
+            final boolean addMd5,
+            final OutputStream fastaOutput,
+            final OutputStream indexOutput,
+            final OutputStream dictOutput) {
 
         try {
             this.md5Digester = addMd5 ? MessageDigest.getInstance("MD5") : null;
@@ -211,7 +212,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
 
         this.defaultBasePerLine = basesPerLine;
         this.fastaStream = new CountingOutputStream(fastaOutput);
-        this.faiIndexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
+        this.faiIndexWriter =
+                indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
         this.dictWriter = dictOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(dictOutput, CHARSET);
         this.dictCodec = new SAMSequenceDictionaryCodec(dictWriter);
         this.dictCodec.encodeHeaderLine(false);
@@ -250,8 +252,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
         for (int i = 0; i < description.length(); i++) {
             final char c = description.charAt(i);
             if (Character.isISOControl(c) && c != '\t') { // tab is the only valid control char in the description.
-                throw new IllegalArgumentException("the input name contains non-tab control characters: '" +
-                        description + "'");
+                throw new IllegalArgumentException(
+                        "the input name contains non-tab control characters: '" + description + "'");
             }
         }
         return description;
@@ -288,8 +290,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if no base was added to the previous sequence or the writer is already closed.
      * @throws IOException              if such exception is thrown when writing into the output resources.
      */
-    public FastaReferenceWriter startSequence(final String sequenceName)
-            throws IOException {
+    public FastaReferenceWriter startSequence(final String sequenceName) throws IOException {
         return startSequence(sequenceName, "", defaultBasePerLine);
     }
 
@@ -321,8 +322,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if no base was added to the previous sequence or the writer is already closed.
      * @throws IOException              if such exception is thrown when writing into the output resources.
      */
-    public FastaReferenceWriter startSequence(final String sequenceName, final int basesPerLine)
-            throws IOException {
+    public FastaReferenceWriter startSequence(final String sequenceName, final int basesPerLine) throws IOException {
         return startSequence(sequenceName, "", FastaReferenceWriterBuilder.checkBasesPerLine(basesPerLine));
     }
 
@@ -359,8 +359,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if no base was added to the previous sequence or the writer is already closed.
      * @throws IOException              if such exception is thrown when writing into the output resources.
      */
-    public FastaReferenceWriter startSequence(final String sequenceName, final String description)
-            throws IOException {
+    public FastaReferenceWriter startSequence(final String sequenceName, final String description) throws IOException {
         return startSequence(sequenceName, description, defaultBasePerLine);
     }
 
@@ -397,8 +396,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
      *                                  the sequence has been already added.
      * @throws IOException              if such exception is thrown when writing into the output resources.
      */
-    public FastaReferenceWriter startSequence(final String sequenceName, final String description, final int basesPerLine)
-            throws IOException {
+    public FastaReferenceWriter startSequence(
+            final String sequenceName, final String description, final int basesPerLine) throws IOException {
         assertIsNotClosed();
         checkSequenceName(sequenceName);
         final String nonNullDescription = checkDescription(description);
@@ -424,8 +423,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
         return this;
     }
 
-    private void closeSequence()
-            throws IOException {
+    private void closeSequence() throws IOException {
         if (currentSequenceName != null) {
             if (currentBasesCount == 0) {
                 throw new IllegalStateException("no base was added");
@@ -440,13 +438,18 @@ public final class FastaReferenceWriter implements AutoCloseable {
         }
     }
 
-    private void writeIndexEntry()
-            throws IOException {
-        faiIndexWriter.append(currentSequenceName).append(INDEX_FIELD_SEPARATOR_CHR)
-                .append(String.valueOf(currentBasesCount)).append(INDEX_FIELD_SEPARATOR_CHR)
-                .append(String.valueOf(currentSequenceOffset)).append(INDEX_FIELD_SEPARATOR_CHR)
-                .append(String.valueOf(currentBasesPerLine)).append(INDEX_FIELD_SEPARATOR_CHR)
-                .append(String.valueOf(currentBasesPerLine + LINE_SEPARATOR.length)).append(LINE_SEPARATOR_CHR);
+    private void writeIndexEntry() throws IOException {
+        faiIndexWriter
+                .append(currentSequenceName)
+                .append(INDEX_FIELD_SEPARATOR_CHR)
+                .append(String.valueOf(currentBasesCount))
+                .append(INDEX_FIELD_SEPARATOR_CHR)
+                .append(String.valueOf(currentSequenceOffset))
+                .append(INDEX_FIELD_SEPARATOR_CHR)
+                .append(String.valueOf(currentBasesPerLine))
+                .append(INDEX_FIELD_SEPARATOR_CHR)
+                .append(String.valueOf(currentBasesPerLine + LINE_SEPARATOR.length))
+                .append(LINE_SEPARATOR_CHR);
     }
 
     private void writeDictEntry() {
@@ -468,8 +471,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if no sequence was started or the writer is already closed.
      * @throws IOException              if such exception is throw when writing in any of the outputs.
      */
-    public FastaReferenceWriter appendBases(final String basesBases)
-            throws IOException {
+    public FastaReferenceWriter appendBases(final String basesBases) throws IOException {
         return appendBases(basesBases.getBytes(StandardCharsets.US_ASCII));
     }
 
@@ -484,8 +486,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if no sequence was started or the writer is already closed.
      * @throws IOException              if such exception is throw when writing in any of the outputs.
      */
-    public FastaReferenceWriter appendBases(final byte[] bases)
-            throws IOException {
+    public FastaReferenceWriter appendBases(final byte[] bases) throws IOException {
         return appendBases(bases, 0, bases.length);
     }
 
@@ -503,16 +504,17 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if no sequence was started or the writer is already closed.
      * @throws IOException              if such exception is throw when writing in any of the outputs.
      */
-    public FastaReferenceWriter appendBases(final byte[] bases, final int offset, final int length)
-            throws IOException {
+    public FastaReferenceWriter appendBases(final byte[] bases, final int offset, final int length) throws IOException {
         assertIsNotClosed();
         assertSequenceOpen();
         checkSequenceBases(bases, offset, length);
         ValidationUtils.validateArg(offset >= 0, "the input offset cannot be negative");
         ValidationUtils.validateArg(length >= 0, "the input length must not be negative");
         final int to = offset + length;
-        ValidationUtils.validateArg(to <= bases.length, "the length + offset goes beyond the end of " +
-                "the input base array: '" + to + "' > '" + bases.length + "'");
+        ValidationUtils.validateArg(
+                to <= bases.length,
+                "the length + offset goes beyond the end of " + "the input base array: '" + to + "' > '" + bases.length
+                        + "'");
 
         int next = offset;
         while (next < to) {
@@ -523,7 +525,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
             final int nextLength = Math.min(to - next, currentBasesPerLine - currentLineBasesCount);
             fastaStream.write(bases, next, nextLength);
             if (md5Digester != null) {
-                md5Digester.update(new String(bases, next, nextLength).toUpperCase().getBytes());
+                md5Digester.update(
+                        new String(bases, next, nextLength).toUpperCase().getBytes());
             }
             currentLineBasesCount += nextLength;
             next += nextLength;
@@ -574,7 +577,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if the writer is already closed, a previous sequence (if any was opened) has no base appended to it or a sequence
      *                                  with such name was already appended to this writer.
      */
-    public FastaReferenceWriter appendSequence(final String name, final String description, final byte[] bases) throws IOException {
+    public FastaReferenceWriter appendSequence(final String name, final String description, final byte[] bases)
+            throws IOException {
         return startSequence(name, description).appendBases(bases);
     }
 
@@ -601,7 +605,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalStateException    if the writer is already closed, a previous sequence (if any was opened) has no base appended to it or a sequence
      *                                  with such name was already appended to this writer.
      */
-    public FastaReferenceWriter appendSequence(final String name, final String description, final int basesPerLine, final byte[] bases) throws IOException {
+    public FastaReferenceWriter appendSequence(
+            final String name, final String description, final int basesPerLine, final byte[] bases)
+            throws IOException {
         return startSequence(name, description, basesPerLine).appendBases(bases);
     }
 
@@ -654,11 +660,19 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param bases       the sequence bases, cannot be {@code null}.
      * @throws IOException if such exception is thrown when writing in the output resources.
      */
-    public static void writeSingleSequenceReference(final Path whereTo, final boolean makeIndex,
-                                                    final boolean makeDict, final String name,
-                                                    final String description, final byte[] bases)
+    public static void writeSingleSequenceReference(
+            final Path whereTo,
+            final boolean makeIndex,
+            final boolean makeDict,
+            final String name,
+            final String description,
+            final byte[] bases)
             throws IOException {
-        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(whereTo).setMakeFaiOutput(makeIndex).setMakeDictOutput(makeDict).build()) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                .setFastaFile(whereTo)
+                .setMakeFaiOutput(makeIndex)
+                .setMakeDictOutput(makeDict)
+                .build()) {
             writer.startSequence(name, description);
             writer.appendBases(bases);
         }
@@ -676,11 +690,21 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param bases        the sequence bases, cannot be {@code null}.
      * @throws IOException if such exception is thrown when writing in the output resources.
      */
-    public static void writeSingleSequenceReference(final Path whereTo, final int basesPerLine, final boolean makeIndex,
-                                                    final boolean makeDict, final String name,
-                                                    final String description, final byte[] bases)
+    public static void writeSingleSequenceReference(
+            final Path whereTo,
+            final int basesPerLine,
+            final boolean makeIndex,
+            final boolean makeDict,
+            final String name,
+            final String description,
+            final byte[] bases)
             throws IOException {
-        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setBasesPerLine(basesPerLine).setFastaFile(whereTo).setMakeFaiOutput(makeIndex).setMakeDictOutput(makeDict).build()) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                .setBasesPerLine(basesPerLine)
+                .setFastaFile(whereTo)
+                .setMakeFaiOutput(makeIndex)
+                .setMakeDictOutput(makeDict)
+                .build()) {
             writer.startSequence(name, description);
             writer.appendBases(bases);
         }
@@ -703,12 +727,11 @@ public final class FastaReferenceWriter implements AutoCloseable {
             // no op
         }
 
-        private NullWriter() {
-        }
+        private NullWriter() {}
 
         /**
          * The only singleton instance of this class (no need for more!)
          */
-        public final static NullWriter NULL_WRITER = new NullWriter();
+        public static final NullWriter NULL_WRITER = new NullWriter();
     }
 }

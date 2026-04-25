@@ -7,28 +7,28 @@ import htsjdk.samtools.seekablestream.SeekableStream;
  * null BAMIndexContent objects if all bins are empty.
  */
 class CachingBamFileIndexOptimizedForMerging extends CachingBAMFileIndex {
-  CachingBamFileIndexOptimizedForMerging(SeekableStream stream, SAMSequenceDictionary dictionary) {
-    super(stream, dictionary);
-  }
-
-  @Override
-  protected BAMIndexContent query(final int referenceSequence, final int startPos, final int endPos) {
-    seek(4);
-
-    final int sequenceCount = readInteger();
-
-    if (referenceSequence >= sequenceCount) {
-      return null;
+    CachingBamFileIndexOptimizedForMerging(SeekableStream stream, SAMSequenceDictionary dictionary) {
+        super(stream, dictionary);
     }
 
-    skipToSequence(referenceSequence);
+    @Override
+    protected BAMIndexContent query(final int referenceSequence, final int startPos, final int endPos) {
+        seek(4);
 
-    final int binCount = readInteger();
+        final int sequenceCount = readInteger();
 
-    if (binCount == 0) {
-      return null;
+        if (referenceSequence >= sequenceCount) {
+            return null;
+        }
+
+        skipToSequence(referenceSequence);
+
+        final int binCount = readInteger();
+
+        if (binCount == 0) {
+            return null;
+        }
+
+        return super.query(referenceSequence, startPos, endPos);
     }
-
-    return super.query(referenceSequence, startPos, endPos);
-  }
 }

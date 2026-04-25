@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.SliceBlocksReadStreams;
 import htsjdk.samtools.cram.structure.SliceBlocksWriteStreams;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -60,13 +59,15 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
         final int lenLength = ITF8.readUnsignedITF8(buffer);
         final byte[] lenBytes = new byte[lenLength];
         buffer.get(lenBytes);
-        final CRAMEncoding<Integer> lenEncoding = EncodingFactory.createCRAMEncoding(DataSeriesType.INT, lenEncodingID, lenBytes);
+        final CRAMEncoding<Integer> lenEncoding =
+                EncodingFactory.createCRAMEncoding(DataSeriesType.INT, lenEncodingID, lenBytes);
 
         final EncodingID byteID = EncodingID.values()[buffer.get()];
         final int byteLength = ITF8.readUnsignedITF8(buffer);
         final byte[] byteBytes = new byte[byteLength];
         buffer.get(byteBytes);
-        final CRAMEncoding<byte[]> byteEncoding = EncodingFactory.createCRAMEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
+        final CRAMEncoding<byte[]> byteEncoding =
+                EncodingFactory.createCRAMEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
 
         return new ByteArrayLenEncoding(lenEncoding, byteEncoding);
     }
@@ -93,7 +94,9 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     }
 
     @Override
-    public CRAMCodec<byte[]> buildCodec(final SliceBlocksReadStreams sliceBlocksReadStreams, final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
+    public CRAMCodec<byte[]> buildCodec(
+            final SliceBlocksReadStreams sliceBlocksReadStreams,
+            final SliceBlocksWriteStreams sliceBlocksWriteStreams) {
         return new ByteArrayLenCodec(
                 lenEncoding.buildCodec(sliceBlocksReadStreams, sliceBlocksWriteStreams),
                 byteEncoding.buildCodec(sliceBlocksReadStreams, sliceBlocksWriteStreams));
@@ -103,5 +106,4 @@ public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
     public String toString() {
         return String.format("LenEncoding: %s ByteEncoding: %s", lenEncoding.toString(), byteEncoding.toString());
     }
-
 }

@@ -27,14 +27,11 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.util.Log;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Additional tests for CRAMFileReader are in CRAMFileIndexTest
@@ -65,11 +62,12 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         reader.getIterator().hasNext();
     }
 
-    // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource referenceSource)
+    // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource
+    // referenceSource)
 
     @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader2ReferenceRequired() {
-        final InputStream bis =  null;
+        final InputStream bis = null;
         final CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, bis, null);
         reader.getIterator().hasNext();
     }
@@ -184,7 +182,8 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         new CRAMFileReader(bis, sfs, createReferenceSource(), ValidationStringency.STRICT);
     }
 
-    // constructor 6: CRAMFileReader(final InputStream stream, final File indexFile, final ReferenceSource referenceSource,
+    // constructor 6: CRAMFileReader(final InputStream stream, final File indexFile, final ReferenceSource
+    // referenceSource,
     //                final ValidationStringency validationStringency)
     @Test(description = "Test CRAMReader 6 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader6_ReferenceRequired() throws IOException {
@@ -208,12 +207,13 @@ public class CRAMFileReaderTest extends HtsjdkTest {
     @Test(description = "Test CRAMReader 7 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader7_ReferenceRequired() throws IOException {
         ReferenceSource refSource = null;
-        final CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, CRAM_WITH_CRAI, refSource, ValidationStringency.STRICT);
+        final CRAMFileReader reader =
+                new CRAMFileReader(CRAM_WITH_CRAI, CRAM_WITH_CRAI, refSource, ValidationStringency.STRICT);
         reader.getIterator().hasNext();
     }
 
     @Test
-    public void testCRAMReader7_ShouldAutomaticallyFindCRAMIndex()throws IOException {
+    public void testCRAMReader7_ShouldAutomaticallyFindCRAMIndex() throws IOException {
         File indexFile = null;
         CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
         Assert.assertTrue(reader.hasIndex(), "Can't find existing CRAM index.");
@@ -228,7 +228,8 @@ public class CRAMFileReaderTest extends HtsjdkTest {
     @Test(expectedExceptions = SAMException.class)
     public void testCRAMReader7_WithoutCRAMIndex() throws IOException {
         File indexFile = null;
-        CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
+        CRAMFileReader reader =
+                new CRAMFileReader(CRAM_WITHOUT_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
         reader.getIndex();
     }
 

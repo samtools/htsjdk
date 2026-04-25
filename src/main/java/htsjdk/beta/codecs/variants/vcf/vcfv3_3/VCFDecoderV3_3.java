@@ -1,8 +1,8 @@
 package htsjdk.beta.codecs.variants.vcf.vcfv3_3;
 
 import htsjdk.beta.codecs.variants.vcf.VCFDecoder;
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.variants.VariantsDecoderOptions;
 import htsjdk.variant.vcf.VCF3Codec;
 
@@ -25,5 +25,4 @@ public class VCFDecoderV3_3 extends VCFDecoder {
     public HtsVersion getVersion() {
         return VCFCodecV3_3.VCF_V33_VERSION;
     }
-
 }

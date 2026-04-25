@@ -17,7 +17,9 @@ public class HtsDefaultRegistry {
     /**
      * statically populate the default registry with any codecs on the classpath
      */
-    static {ServiceLoader.load(HtsCodec.class).forEach(htsDefaultCodecRegistry::registerCodec);}
+    static {
+        ServiceLoader.load(HtsCodec.class).forEach(htsDefaultCodecRegistry::registerCodec);
+    }
 
     /**
      * Grt the {@link HaploidReferenceResolver} resolver for this registry.
@@ -25,7 +27,8 @@ public class HtsDefaultRegistry {
      * @return the {@link HaploidReferenceResolver} resolver for this registry
      */
     public static synchronized HaploidReferenceResolver getHaploidReferenceResolver() {
-        return htsDefaultCodecRegistry.getHaploidReferenceResolver(); }
+        return htsDefaultCodecRegistry.getHaploidReferenceResolver();
+    }
 
     /**
      * Gt the {@link ReadsResolver} resolver for this registry.
@@ -33,7 +36,8 @@ public class HtsDefaultRegistry {
      * @return the {@link ReadsResolver} resolver for this registry
      */
     public static synchronized ReadsResolver getReadsResolver() {
-        return htsDefaultCodecRegistry.getReadsResolver(); }
+        return htsDefaultCodecRegistry.getReadsResolver();
+    }
 
     /**
      * Get the {@link VariantsResolver} resolver for this registry.
@@ -41,6 +45,6 @@ public class HtsDefaultRegistry {
      * @return the {@link VariantsResolver} resolver for this registry
      */
     public static synchronized VariantsResolver getVariantsResolver() {
-        return htsDefaultCodecRegistry.getVariantsResolver(); }
-
+        return htsDefaultCodecRegistry.getVariantsResolver();
+    }
 }

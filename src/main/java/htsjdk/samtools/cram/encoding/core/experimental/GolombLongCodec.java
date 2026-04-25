@@ -25,14 +25,15 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
     private final int m;
     private final long offset;
 
-    public GolombLongCodec(final BitInputStream coreBlockInputStream,
-                           final BitOutputStream coreBlockOutputStream,
-                           final long offset, final int m) {
+    public GolombLongCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final long offset,
+            final int m) {
         super(coreBlockInputStream, coreBlockOutputStream);
 
         if (m < 2) {
-            throw new IllegalArgumentException(
-                    "M parameter must be at least 2.");
+            throw new IllegalArgumentException("M parameter must be at least 2.");
         }
 
         this.m = m;
@@ -73,7 +74,6 @@ class GolombLongCodec extends ExperimentalCodec<Long> {
         } else {
             coreBlockOutputStream.write((int) (reminder + Math.pow(2, ceiling) - m), (int) ceiling);
         }
-
     }
 
     @Override

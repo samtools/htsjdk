@@ -39,12 +39,12 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     public static final String COMMAND_LINE_TAG = "CL";
     public static final String PREVIOUS_PROGRAM_GROUP_ID_TAG = "PP";
     private String mProgramGroupId;
-    public static final Set<String> STANDARD_TAGS = Collections.unmodifiableSet(
-            new HashSet<String>(Arrays.asList(PROGRAM_GROUP_ID_TAG,
-                    PROGRAM_NAME_TAG,
-                    PROGRAM_VERSION_TAG,
-                    COMMAND_LINE_TAG,
-                    PREVIOUS_PROGRAM_GROUP_ID_TAG)) );
+    public static final Set<String> STANDARD_TAGS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
+            PROGRAM_GROUP_ID_TAG,
+            PROGRAM_NAME_TAG,
+            PROGRAM_VERSION_TAG,
+            COMMAND_LINE_TAG,
+            PREVIOUS_PROGRAM_GROUP_ID_TAG)));
 
     public SAMProgramRecord(final String programGroupId) {
         this.mProgramGroupId = programGroupId;
@@ -67,7 +67,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     }
 
     public String getProgramName() {
-        return (String)getAttribute(PROGRAM_NAME_TAG);
+        return (String) getAttribute(PROGRAM_NAME_TAG);
     }
 
     public void setProgramName(final String name) {
@@ -75,7 +75,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     }
 
     public String getProgramVersion() {
-        return (String)getAttribute(PROGRAM_VERSION_TAG);
+        return (String) getAttribute(PROGRAM_VERSION_TAG);
     }
 
     public void setProgramVersion(final String version) {
@@ -83,7 +83,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     }
 
     public String getCommandLine() {
-        return (String)getAttribute(COMMAND_LINE_TAG);
+        return (String) getAttribute(COMMAND_LINE_TAG);
     }
 
     public void setCommandLine(final String commandLine) {
@@ -91,14 +91,12 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     }
 
     public String getPreviousProgramGroupId() {
-        return (String)getAttribute(PREVIOUS_PROGRAM_GROUP_ID_TAG);
+        return (String) getAttribute(PREVIOUS_PROGRAM_GROUP_ID_TAG);
     }
 
     public void setPreviousProgramGroupId(final String id) {
         setAttribute(PREVIOUS_PROGRAM_GROUP_ID_TAG, id);
     }
-
-
 
     /**
      * @return true if this == that except for the program group ID, which is arbitrary
@@ -115,7 +113,8 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         final SAMProgramRecord that = (SAMProgramRecord) o;
 
         if (!attributesEqual(that)) return false;
-        if (mProgramGroupId != null ? !mProgramGroupId.equals(that.mProgramGroupId) : that.mProgramGroupId != null) return false;
+        if (mProgramGroupId != null ? !mProgramGroupId.equals(that.mProgramGroupId) : that.mProgramGroupId != null)
+            return false;
 
         return true;
     }
@@ -131,7 +130,6 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }
-
 
     @Override
     public String getSAMString() {

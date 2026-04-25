@@ -25,7 +25,7 @@ package htsjdk.samtools;
 
 /**
  * Utility methods for encoding and decoding the SQ tag value of SAMRecord.
- * 
+ *
  * @author alecw@broadinstitute.org
  * @deprecated since 11/2018. SQ is a reserved tag that shouldn't be used and this code untested.
  */
@@ -37,7 +37,10 @@ public class SQTagUtil {
      * the two low-order bits, is the complementary base.
      */
     public enum SQBase {
-        SQ_A('A'), SQ_C('C'), SQ_G('G'), SQ_T('T');
+        SQ_A('A'),
+        SQ_C('C'),
+        SQ_G('G'),
+        SQ_T('T');
         private final Character base;
 
         SQBase(final Character base) {
@@ -66,11 +69,12 @@ public class SQTagUtil {
      */
     public static byte sqScaledProbabilityRatio(final double secondBestLikelihood, final double thirdBestLikelihood) {
         if (secondBestLikelihood >= 1.0 || thirdBestLikelihood <= 0 || thirdBestLikelihood > secondBestLikelihood) {
-            throw new IllegalArgumentException("Likelihoods out of range.  second best: " + secondBestLikelihood +
-            "; third best: " + thirdBestLikelihood);
+            throw new IllegalArgumentException("Likelihoods out of range.  second best: " + secondBestLikelihood
+                    + "; third best: " + thirdBestLikelihood);
         }
         // Cap value at QUALITY_MASK
-        return (byte)(Math.min(Math.round(-10.0 * Math.log10(thirdBestLikelihood/secondBestLikelihood)), QUALITY_MASK));
+        return (byte)
+                (Math.min(Math.round(-10.0 * Math.log10(thirdBestLikelihood / secondBestLikelihood)), QUALITY_MASK));
     }
 
     /**
@@ -96,7 +100,7 @@ public class SQTagUtil {
      * @return a byte containing the index and the log probability difference.
      */
     public static byte baseAndProbDiffToSqValue(final int base, final byte probRatio) {
-        return (byte)((base << BASE_INDEX_SHIFT) | Math.min(probRatio, QUALITY_MASK));
+        return (byte) ((base << BASE_INDEX_SHIFT) | Math.min(probRatio, QUALITY_MASK));
     }
 
     /**
@@ -105,7 +109,7 @@ public class SQTagUtil {
      * @return the log probability difference between the secondary and tertiary bases (-10log10(p3/p2)).
      */
     public static byte sqValueToProbRatio(final byte sqValue) {
-        return (byte)(sqValue & QUALITY_MASK);
+        return (byte) (sqValue & QUALITY_MASK);
     }
 
     /**
@@ -126,7 +130,6 @@ public class SQTagUtil {
         return (sqValue & 0xff) >>> BASE_INDEX_SHIFT;
     }
 
-
     /**
      * Reverses and complements the sqValues in place.
      * @param sqArray Array of SQ-values, with 2nd-best base in high-order 2 bits, and probability diff
@@ -136,7 +139,7 @@ public class SQTagUtil {
         final int lastIndex = sqArray.length - 1;
 
         int i, j;
-        for (i=0, j=lastIndex; i<j; ++i, --j) {
+        for (i = 0, j = lastIndex; i < j; ++i, --j) {
             final byte tmp = complementSqValue(sqArray[i]);
             sqArray[i] = complementSqValue(sqArray[j]);
             sqArray[j] = tmp;
@@ -152,5 +155,4 @@ public class SQTagUtil {
         final int complementOrdinal = COMPLEMENT_MASK & ~baseOrdinal;
         return baseAndProbDiffToSqValue(complementOrdinal, probDiff);
     }
-
 }

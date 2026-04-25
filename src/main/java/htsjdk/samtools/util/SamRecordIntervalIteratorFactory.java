@@ -28,7 +28,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.filter.IntervalFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -50,9 +49,8 @@ public class SamRecordIntervalIteratorFactory {
      * Note however that if there are many intervals that cover a great deal of the genome, using the BAM
      * index may actually make performance worse.
      */
-    public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(final SamReader samReader,
-                                                                      final List<Interval> uniqueIntervals,
-                                                                      final boolean useIndex) {
+    public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(
+            final SamReader samReader, final List<Interval> uniqueIntervals, final boolean useIndex) {
         if (!samReader.hasIndex() || !useIndex) {
             final int stopAfterSequence;
             final int stopAfterPosition;
@@ -65,13 +63,16 @@ public class SamRecordIntervalIteratorFactory {
                 stopAfterPosition = lastInterval.getEnd();
             }
             final IntervalFilter intervalFilter = new IntervalFilter(uniqueIntervals, samReader.getFileHeader());
-            return new StopAfterFilteringIterator(samReader.iterator(), intervalFilter, stopAfterSequence, stopAfterPosition);
+            return new StopAfterFilteringIterator(
+                    samReader.iterator(), intervalFilter, stopAfterSequence, stopAfterPosition);
         } else {
             final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
             for (int i = 0; i < queryIntervals.length; ++i) {
                 final Interval inputInterval = uniqueIntervals.get(i);
-                queryIntervals[i] = new QueryInterval(samReader.getFileHeader().getSequenceIndex(inputInterval.getContig()),
-                        inputInterval.getStart(), inputInterval.getEnd());
+                queryIntervals[i] = new QueryInterval(
+                        samReader.getFileHeader().getSequenceIndex(inputInterval.getContig()),
+                        inputInterval.getStart(),
+                        inputInterval.getEnd());
             }
             return samReader.queryOverlapping(queryIntervals);
         }
@@ -92,15 +93,14 @@ public class SamRecordIntervalIteratorFactory {
         private final SamRecordFilter filter;
         private SAMRecord next = null;
 
-        private StopAfterFilteringIterator(Iterator<SAMRecord> iterator, SamRecordFilter filter,
-                                           int stopAfterSequence, int stopAfterPosition) {
+        private StopAfterFilteringIterator(
+                Iterator<SAMRecord> iterator, SamRecordFilter filter, int stopAfterSequence, int stopAfterPosition) {
             this.stopAfterSequence = stopAfterSequence;
             this.stopAfterPosition = stopAfterPosition;
             this.iterator = iterator;
             this.filter = filter;
             next = getNextRecord();
         }
-
 
         /**
          * Returns true if the iteration has more elements.
@@ -148,7 +148,8 @@ public class SamRecordIntervalIteratorFactory {
                 SAMRecord record = iterator.next();
                 if (record.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) return null;
                 else if (record.getReferenceIndex() > stopAfterSequence) return null;
-                else if (record.getReferenceIndex() == stopAfterSequence && record.getAlignmentStart() > stopAfterPosition) {
+                else if (record.getReferenceIndex() == stopAfterSequence
+                        && record.getAlignmentStart() > stopAfterPosition) {
                     return null;
                 }
                 if (!filter.filterOut(record)) {

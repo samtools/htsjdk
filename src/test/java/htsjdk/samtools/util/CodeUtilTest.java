@@ -1,10 +1,9 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.List;
 
 public class CodeUtilTest extends HtsjdkTest {
 
@@ -27,7 +26,7 @@ public class CodeUtilTest extends HtsjdkTest {
 
     @Test(expectedExceptions = AssertionError.class)
     public void applyIfNotNullPositiveTest() {
-        CodeUtil.applyIfNotNull(1, (o) -> Assert.assertNotEquals(o, 1,
-                "Throwing this proves that the method was called with value 1"));
+        CodeUtil.applyIfNotNull(
+                1, (o) -> Assert.assertNotEquals(o, 1, "Throwing this proves that the method was called with value 1"));
     }
 }

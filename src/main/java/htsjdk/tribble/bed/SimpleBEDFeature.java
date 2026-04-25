@@ -24,7 +24,6 @@
 package htsjdk.tribble.bed;
 
 import htsjdk.tribble.annotation.Strand;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +40,8 @@ public class SimpleBEDFeature implements BEDFeature {
     private float score = Float.NaN;
     private String type = "";
     private Color color;
-    private String description;//protected float confidence;
-    //private String identifier;
+    private String description; // protected float confidence;
+    // private String identifier;
     private String link;
 
     public SimpleBEDFeature(int start, int end, String chr) {
@@ -141,7 +140,7 @@ public class SimpleBEDFeature implements BEDFeature {
         this.link = link;
     }
 
-    final static List<FullBEDFeature.Exon> emptyExonList = new ArrayList();
+    static final List<FullBEDFeature.Exon> emptyExonList = new ArrayList();
 
     @Override
     public java.util.List<FullBEDFeature.Exon> getExons() {

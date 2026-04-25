@@ -9,5 +9,4 @@ public class VCFSampleHeaderLine extends VCFSimpleHeaderLine {
     public VCFSampleHeaderLine(String line, VCFHeaderVersion version) {
         super(VCFConstants.SAMPLE_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, null));
     }
-
 }

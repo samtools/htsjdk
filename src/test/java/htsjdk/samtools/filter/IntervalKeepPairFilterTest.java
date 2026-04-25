@@ -4,13 +4,12 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Interval;
+import java.util.ArrayList;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class IntervalKeepPairFilterTest extends HtsjdkTest {
     private static final int READ_LENGTH = 151;
@@ -31,19 +30,18 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
         // The second read is unmapped, but both should be kept in an
         // interval test where the interval includes chromosome four, where
         // read one will overlap.
-        builder.addPair("second_mate_unmapped", 3, -1, 1, 1000, false, true,
-                "151M", null, false, false, false, false, -1);
+        builder.addPair(
+                "second_mate_unmapped", 3, -1, 1, 1000, false, true, "151M", null, false, false, false, false, -1);
         // The first read is unmapped but both should be kept in an
         // interval test where the interval includes chromosome four, where
         // read two will overlap.
-        builder.addPair("first_mate_unmapped", -1, 3, 1000, 1, true, false,
-                null, "151M", false, false, false, false, -1);
+        builder.addPair(
+                "first_mate_unmapped", -1, 3, 1000, 1, true, false, null, "151M", false, false, false, false, -1);
         // This pair will overlap any interval that includes chromosome 1:1000
         builder.addPair("prove_one_of_pair", 0, 1000, 1000);
         // These reads are unmapped and will not map to any intervals, so they
         // are never kept. This is tested below.
-        builder.addPair("both_unmapped", -1, -1, 1, 1, true, true, null, null,
-                false, false, false, false, -1);
+        builder.addPair("both_unmapped", -1, -1, 1, 1, true, true, null, null, false, false, false, false, -1);
         // Secondary alignments are never kept by the interval filter.
         builder.addFrag("mapped_pair_chr1", 0, 1, false, false, "151M", null, -1, true, false);
         // Supplementary alignment are never kept by the interval filter.
@@ -131,11 +129,11 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
         final List<Interval> intervalList_unmapped = new ArrayList<>();
         intervalList_unmapped.add(interval);
 
-        return new Object[][]{
-                {intervalList_twoPair, 4},
-                {intervalList_noMatch, 0},
-                {intervalList_onePair, 2},
-                {intervalList_unmapped, 4}
+        return new Object[][] {
+            {intervalList_twoPair, 4},
+            {intervalList_noMatch, 0},
+            {intervalList_onePair, 2},
+            {intervalList_unmapped, 4}
         };
     }
 }

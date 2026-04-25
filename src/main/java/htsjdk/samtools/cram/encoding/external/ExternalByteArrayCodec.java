@@ -19,8 +19,12 @@ public final class ExternalByteArrayCodec extends ExternalCodec<byte[]> {
     }
 
     @Override
-    public void write(final byte[] object) { outputWriter.write(object); }
+    public void write(final byte[] object) {
+        outputWriter.write(object);
+    }
 
     @Override
-    public byte[] read() { throw new RuntimeException("Cannot read byte array of unknown length."); }
+    public byte[] read() {
+        throw new RuntimeException("Cannot read byte array of unknown length.");
+    }
 }

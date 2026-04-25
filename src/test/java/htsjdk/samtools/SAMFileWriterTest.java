@@ -2,15 +2,15 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CollectionUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SAMFileWriterTest extends HtsjdkTest {
-    @Test public void testWritingPresortedData() throws Exception {
+    @Test
+    public void testWritingPresortedData() throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.queryname);
         builder.addFrag("q1", 0, 1000, false);
         builder.addFrag("q2", 0, 1000, false);
@@ -32,8 +32,7 @@ public class SAMFileWriterTest extends HtsjdkTest {
                 builder.forEach(writer::addAlignment);
                 writer.close();
                 Assert.fail("Should have thrown an exception on out of order records to a " + ext + " file.");
-            }
-            catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 Assert.assertTrue(e.getMessage().contains("Alignments added out of order"));
             }
         }

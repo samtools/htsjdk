@@ -1,27 +1,27 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.vcf;
 
@@ -29,7 +29,6 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,9 +42,11 @@ import java.util.Map;
 public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCFIDHeaderLine {
 
     public enum SupportedHeaderLineType {
-        INFO(true), FORMAT(false);
+        INFO(true),
+        FORMAT(false);
 
         public final boolean allowFlagValues;
+
         SupportedHeaderLineType(boolean flagValues) {
             allowFlagValues = flagValues;
         }
@@ -62,14 +63,28 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
 
     // access methods
     @Override
-    public String getID() { return name; }
-    public String getDescription() { return description; }
-    public VCFHeaderLineType getType() { return type; }
-    public VCFHeaderLineCount getCountType() { return countType; }
-    public boolean isFixedCount() { return countType == VCFHeaderLineCount.INTEGER; }
+    public String getID() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public VCFHeaderLineType getType() {
+        return type;
+    }
+
+    public VCFHeaderLineCount getCountType() {
+        return countType;
+    }
+
+    public boolean isFixedCount() {
+        return countType == VCFHeaderLineCount.INTEGER;
+    }
+
     public int getCount() {
-        if (!isFixedCount())
-            throw new TribbleException("Asking for header line count when type is not an integer");
+        if (!isFixedCount()) throw new TribbleException("Asking for header line count when type is not an integer");
         return count;
     }
 
@@ -130,7 +145,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param description  the description for this header line
      * @param lineType     the header line type
      */
-    protected VCFCompoundHeaderLine(String name, int count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
+    protected VCFCompoundHeaderLine(
+            String name, int count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
         this(name, count, type, description, lineType, null, null);
     }
 
@@ -143,7 +159,12 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param description  the description for this header line
      * @param lineType     the header line type
      */
-    protected VCFCompoundHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
+    protected VCFCompoundHeaderLine(
+            String name,
+            VCFHeaderLineCount count,
+            VCFHeaderLineType type,
+            String description,
+            SupportedHeaderLineType lineType) {
         this(name, count, type, description, lineType, null, null);
     }
 
@@ -158,7 +179,14 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param source       annotation source (case-insensitive, e.g. "dbsnp")
      * @param version      exact version (e.g. "138")
      */
-    protected VCFCompoundHeaderLine(String name, int count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType, String source, String version) {
+    protected VCFCompoundHeaderLine(
+            String name,
+            int count,
+            VCFHeaderLineType type,
+            String description,
+            SupportedHeaderLineType lineType,
+            String source,
+            String version) {
         super(lineType.toString(), "");
         this.name = name;
         this.countType = VCFHeaderLineCount.INTEGER;
@@ -182,7 +210,14 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @param source       annotation source (case-insensitive, e.g. "dbsnp")
      * @param version      exact version (e.g. "138")
      */
-    protected VCFCompoundHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType, String source, String version) {
+    protected VCFCompoundHeaderLine(
+            String name,
+            VCFHeaderLineCount count,
+            VCFHeaderLineType type,
+            String description,
+            SupportedHeaderLineType lineType,
+            String source,
+            String version) {
         super(lineType.toString(), "");
         this.name = name;
         this.countType = count;
@@ -212,7 +247,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         } else {
             recommendedTags = Collections.emptyList();
         }
-        final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags, recommendedTags);
+        final Map<String, String> mapping =
+                VCFHeaderLineTranslator.parseLine(version, line, expectedTags, recommendedTags);
         name = mapping.get("ID");
         count = -1;
         final String numberStr = mapping.get("Number");
@@ -222,13 +258,14 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             countType = VCFHeaderLineCount.R;
         } else if (numberStr.equals(VCFConstants.PER_GENOTYPE_COUNT)) {
             countType = VCFHeaderLineCount.G;
-        } else if ((version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v4)) ||
-                   (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v3))) {
+        } else if ((version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)
+                        && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v4))
+                || (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)
+                        && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v3))) {
             countType = VCFHeaderLineCount.UNBOUNDED;
         } else {
             countType = VCFHeaderLineCount.INTEGER;
             count = Integer.parseInt(numberStr);
-
         }
 
         if (count < 0 && countType == VCFHeaderLineCount.INTEGER)
@@ -237,14 +274,15 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         try {
             type = VCFHeaderLineType.valueOf(mapping.get("Type"));
         } catch (Exception e) {
-            throw new TribbleException(mapping.get("Type") + " is not a valid type in the VCF specification (note that types are case-sensitive)");
+            throw new TribbleException(mapping.get("Type")
+                    + " is not a valid type in the VCF specification (note that types are case-sensitive)");
         }
         if (type == VCFHeaderLineType.Flag && !allowFlagValues())
             throw new IllegalArgumentException("Flag is an unsupported type for this kind of field at line - " + line);
 
         description = mapping.get("Description");
         if (description == null && ALLOW_UNBOUND_DESCRIPTIONS) // handle the case where there's no description provided
-            description = UNBOUND_DESCRIPTION;
+        description = UNBOUND_DESCRIPTION;
 
         this.lineType = lineType;
 
@@ -258,20 +296,22 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
 
     private void validate() {
         if (type != VCFHeaderLineType.Flag && countType == VCFHeaderLineCount.INTEGER && count <= 0)
-            throw new IllegalArgumentException(String.format("Invalid count number, with fixed count the number should be 1 or higher: key=%s name=%s type=%s desc=%s lineType=%s count=%s",
-                getKey(), name, type, description, lineType, count));
+            throw new IllegalArgumentException(String.format(
+                    "Invalid count number, with fixed count the number should be 1 or higher: key=%s name=%s type=%s desc=%s lineType=%s count=%s",
+                    getKey(), name, type, description, lineType, count));
         if (name == null || type == null || description == null || lineType == null)
-            throw new IllegalArgumentException(String.format("Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s",
-                getKey(), name, type, description, lineType));
+            throw new IllegalArgumentException(String.format(
+                    "Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s",
+                    getKey(), name, type, description, lineType));
         if (name.contains("<") || name.contains(">"))
             throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain angle brackets");
-        if (name.contains("="))
-            throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain an equals sign");
+        if (name.contains("=")) throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain an equals sign");
 
         if (type == VCFHeaderLineType.Flag && count != 0) {
             count = 0;
             if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                System.err.println("FLAG fields must have a count value of 0, but saw " + count + " for header line " + getID() + ". Changing it to 0 inside the code");
+                System.err.println("FLAG fields must have a count value of 0, but saw " + count + " for header line "
+                        + getID() + ". Changing it to 0 inside the code");
             }
         }
     }
@@ -321,16 +361,15 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      */
     @Override
     public boolean equals(final Object o) {
-        if ( this == o ) {
+        if (this == o) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() || ! super.equals(o) ) {
+        if (o == null || getClass() != o.getClass() || !super.equals(o)) {
             return false;
         }
 
         final VCFCompoundHeaderLine that = (VCFCompoundHeaderLine) o;
-        return equalsExcludingDescription(that) &&
-               description.equals(that.description);
+        return equalsExcludingDescription(that) && description.equals(that.description);
     }
 
     @Override
@@ -338,7 +377,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         int result = super.hashCode();
         result = 31 * result + name.hashCode();
         result = 31 * result + count;
-        result = 31 * result + (countType != null ? countType.hashCode() : 0);  // only nullable field according to validate()
+        result = 31 * result
+                + (countType != null ? countType.hashCode() : 0); // only nullable field according to validate()
         result = 31 * result + description.hashCode();
         result = 31 * result + type.hashCode();
         result = 31 * result + lineType.hashCode();
@@ -348,16 +388,15 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     }
 
     public boolean equalsExcludingDescription(VCFCompoundHeaderLine other) {
-        return count == other.count &&
-                countType == other.countType &&
-                type == other.type &&
-                lineType == other.lineType &&
-                name.equals(other.name);
+        return count == other.count
+                && countType == other.countType
+                && type == other.type
+                && lineType == other.lineType
+                && name.equals(other.name);
     }
 
     public boolean sameLineTypeAndName(VCFCompoundHeaderLine other) {
-        return lineType == other.lineType &&
-                name.equals(other.name);
+        return lineType == other.lineType && name.equals(other.name);
     }
 
     /**
@@ -369,8 +408,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     /**
      * Specify annotation source
      * <p>
-     * This value is optional starting with VCFv4.2. 
-     * 
+     * This value is optional starting with VCFv4.2.
+     *
      * @param source  annotation source (case-insensitive, e.g. "dbsnp")
      */
     public void setSource(final String source) {
@@ -380,7 +419,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     /**
      * Specify annotation version
      * <p>
-     * This value is optional starting with VCFv4.2. 
+     * This value is optional starting with VCFv4.2.
      *
      * @param version exact version (e.g. "138")
      */

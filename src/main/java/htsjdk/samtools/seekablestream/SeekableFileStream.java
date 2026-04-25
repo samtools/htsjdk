@@ -38,7 +38,6 @@ public class SeekableFileStream extends SeekableStream {
     static Collection<SeekableFileStream> allInstances =
             Collections.synchronizedCollection(new HashSet<SeekableFileStream>());
 
-
     File file;
     RandomAccessFile fis;
 
@@ -74,7 +73,7 @@ public class SeekableFileStream extends SeekableStream {
         fis.getChannel().position(initPos + n);
         return position() - initPos;
     }
-    
+
     @Override
     public int read(final byte[] buffer, final int offset, final int length) throws IOException {
         if (length < 0) {
@@ -84,21 +83,20 @@ public class SeekableFileStream extends SeekableStream {
         while (n < length) {
             final int count = fis.read(buffer, offset + n, length - n);
             if (count < 0) {
-              if (n > 0) {
-                return n;
-              } else {
-                return count;
-              }
+                if (n > 0) {
+                    return n;
+                } else {
+                    return count;
+                }
             }
             n += count;
         }
         return n;
-
     }
 
     @Override
     public int read() throws IOException {
-        return fis.read();  
+        return fis.read();
     }
 
     @Override
@@ -111,12 +109,10 @@ public class SeekableFileStream extends SeekableStream {
         return file.getAbsolutePath();
     }
 
-
     @Override
     public void close() throws IOException {
         allInstances.remove(this);
         fis.close();
-
     }
 
     public static synchronized void closeAllInstances() {
@@ -126,8 +122,8 @@ public class SeekableFileStream extends SeekableStream {
             try {
                 sfs.close();
             } catch (IOException e) {
-                //TODO
-                //log.error("Error closing SeekableFileStream", e);
+                // TODO
+                // log.error("Error closing SeekableFileStream", e);
             }
         }
         allInstances.clear();

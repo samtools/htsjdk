@@ -25,13 +25,14 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     private final int m;
     private final int offset;
 
-    public GolombIntegerCodec(final BitInputStream coreBlockInputStream,
-                              final BitOutputStream coreBlockOutputStream,
-                              final int offset, final int m) {
+    public GolombIntegerCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final int offset,
+            final int m) {
         super(coreBlockInputStream, coreBlockOutputStream);
         if (m < 2) {
-            throw new IllegalArgumentException(
-                    "M parameter must be at least 2.");
+            throw new IllegalArgumentException("M parameter must be at least 2.");
         }
         this.m = m;
         this.offset = offset;
@@ -69,8 +70,7 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
         if (reminder < Math.pow(2, ceiling) - m) {
             coreBlockOutputStream.write(reminder, ceiling - 1);
         } else {
-            coreBlockOutputStream.write((int) (reminder + Math.pow(2, ceiling) - m),
-                    ceiling);
+            coreBlockOutputStream.write((int) (reminder + Math.pow(2, ceiling) - m), ceiling);
         }
     }
 
@@ -83,5 +83,4 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     public String toString() {
         return String.format("m: %d", m);
     }
-
 }

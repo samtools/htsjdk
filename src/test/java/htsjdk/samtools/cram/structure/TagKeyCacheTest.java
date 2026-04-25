@@ -9,7 +9,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
 
     /** Build a 3-byte tag ID array from two name chars and a type char, matching CRAM's tag dictionary format. */
     private static byte[] tagId(final char c1, final char c2, final char type) {
-        return new byte[]{(byte) c1, (byte) c2, (byte) type};
+        return new byte[] {(byte) c1, (byte) c2, (byte) type};
     }
 
     /** Pack a 3-byte tag ID into an int, matching ReadTag.name3BytesToInt. */
@@ -19,9 +19,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
 
     @Test
     public void testSingleTagLookup() {
-        final byte[][][] dictionary = {
-                {tagId('N', 'M', 'i')}
-        };
+        final byte[][][] dictionary = {{tagId('N', 'M', 'i')}};
         final TagKeyCache cache = new TagKeyCache(dictionary);
         final TagKeyCache.TagKeyInfo info = cache.get(tagIdAsInt('N', 'M', 'i'));
 
@@ -35,9 +33,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
 
     @Test
     public void testMultipleTagsInOneDictionaryEntry() {
-        final byte[][][] dictionary = {
-                {tagId('N', 'M', 'i'), tagId('M', 'D', 'Z'), tagId('R', 'G', 'Z')}
-        };
+        final byte[][][] dictionary = {{tagId('N', 'M', 'i'), tagId('M', 'D', 'Z'), tagId('R', 'G', 'Z')}};
         final TagKeyCache cache = new TagKeyCache(dictionary);
 
         final TagKeyCache.TagKeyInfo nm = cache.get(tagIdAsInt('N', 'M', 'i'));
@@ -60,8 +56,8 @@ public class TagKeyCacheTest extends HtsjdkTest {
     public void testMultipleDictionaryEntries() {
         // Two different tag-list combinations, as you'd see with records having different tag sets
         final byte[][][] dictionary = {
-                {tagId('N', 'M', 'i'), tagId('M', 'D', 'Z')},
-                {tagId('N', 'M', 'i'), tagId('S', 'A', 'Z'), tagId('X', 'A', 'Z')}
+            {tagId('N', 'M', 'i'), tagId('M', 'D', 'Z')},
+            {tagId('N', 'M', 'i'), tagId('S', 'A', 'Z'), tagId('X', 'A', 'Z')}
         };
         final TagKeyCache cache = new TagKeyCache(dictionary);
 
@@ -76,8 +72,8 @@ public class TagKeyCacheTest extends HtsjdkTest {
     public void testDuplicateTagIdsAreDeduped() {
         // NM appears in both dictionary entries — should only be stored once
         final byte[][][] dictionary = {
-                {tagId('N', 'M', 'i'), tagId('M', 'D', 'Z')},
-                {tagId('N', 'M', 'i'), tagId('S', 'A', 'Z')}
+            {tagId('N', 'M', 'i'), tagId('M', 'D', 'Z')},
+            {tagId('N', 'M', 'i'), tagId('S', 'A', 'Z')}
         };
         final TagKeyCache cache = new TagKeyCache(dictionary);
 
@@ -89,9 +85,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
 
     @Test
     public void testLookupMissReturnsNull() {
-        final byte[][][] dictionary = {
-                {tagId('N', 'M', 'i')}
-        };
+        final byte[][][] dictionary = {{tagId('N', 'M', 'i')}};
         final TagKeyCache cache = new TagKeyCache(dictionary);
 
         Assert.assertNull(cache.get(tagIdAsInt('M', 'D', 'Z')));
@@ -109,10 +103,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
     @Test
     public void testDictionaryWithEmptyEntry() {
         // An entry with no tags (records with no tags)
-        final byte[][][] dictionary = {
-                {},
-                {tagId('N', 'M', 'i')}
-        };
+        final byte[][][] dictionary = {{}, {tagId('N', 'M', 'i')}};
         final TagKeyCache cache = new TagKeyCache(dictionary);
 
         Assert.assertNotNull(cache.get(tagIdAsInt('N', 'M', 'i')));
@@ -121,9 +112,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
     @Test
     public void testSameTagNameDifferentTypes() {
         // Same tag name but different value types should be separate entries
-        final byte[][][] dictionary = {
-                {tagId('X', 'Y', 'i'), tagId('X', 'Y', 'Z')}
-        };
+        final byte[][][] dictionary = {{tagId('X', 'Y', 'i'), tagId('X', 'Y', 'Z')}};
         final TagKeyCache cache = new TagKeyCache(dictionary);
 
         final TagKeyCache.TagKeyInfo xyi = cache.get(tagIdAsInt('X', 'Y', 'i'));
@@ -152,8 +141,7 @@ public class TagKeyCacheTest extends HtsjdkTest {
         for (final String name : tagNames) {
             final TagKeyCache.TagKeyInfo info = cache.get(tagIdAsInt(name.charAt(0), name.charAt(1), 'Z'));
             Assert.assertNotNull(info, "Missing cache entry for " + name);
-            Assert.assertEquals(info.code, SAMTag.makeBinaryTag(name),
-                    "Binary tag code mismatch for " + name);
+            Assert.assertEquals(info.code, SAMTag.makeBinaryTag(name), "Binary tag code mismatch for " + name);
         }
     }
 }

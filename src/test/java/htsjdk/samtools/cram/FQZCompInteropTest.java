@@ -6,12 +6,6 @@ import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.cram.compression.fqzcomp.FQZCompDecode;
 import htsjdk.samtools.cram.compression.fqzcomp.FQZCompEncode;
 import htsjdk.samtools.cram.compression.fqzcomp.FQZUtils;
-import org.apache.commons.compress.utils.IOUtils;
-import org.testng.Assert;
-import org.testng.SkipException;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -20,6 +14,11 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
+import org.apache.commons.compress.utils.IOUtils;
+import org.testng.Assert;
+import org.testng.SkipException;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class FQZCompInteropTest extends HtsjdkTest {
 
@@ -34,46 +33,46 @@ public class FQZCompInteropTest extends HtsjdkTest {
         // FQZComp decoder
         final List<Object[]> testCases = new ArrayList<>();
         for (Path path : CRAMInteropTestUtils.getCRAMInteropCompressedPaths(COMPRESSED_FQZCOMP_DIR)) {
-            Object[] objects = new Object[]{
-                    path,
-                    CRAMInteropTestUtils.getUnCompressedPathForCompressedPath(path),
-                    new FQZCompDecode()
+            Object[] objects = new Object[] {
+                path, CRAMInteropTestUtils.getUnCompressedPathForCompressedPath(path), new FQZCompDecode()
             };
             testCases.add(objects);
         }
-        return testCases.toArray(new Object[][]{});
+        return testCases.toArray(new Object[][] {});
     }
 
-    @Test (
+    @Test(
             dataProvider = "decodeOnlyTestCases",
-            description = "Uncompress the existing compressed file using htsjdk FQZComp and compare it with the original file.")
+            description =
+                    "Uncompress the existing compressed file using htsjdk FQZComp and compare it with the original file.")
     public void testDecodeOnly(
-            final Path compressedFilePath,
-            final Path uncompressedInteropPath,
-            final FQZCompDecode fqzcompDecode) throws IOException {
+            final Path compressedFilePath, final Path uncompressedInteropPath, final FQZCompDecode fqzcompDecode)
+            throws IOException {
         try (final InputStream uncompressedInteropStream =
-                     new GZIPInputStream(Files.newInputStream(uncompressedInteropPath));
-             final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)
-        ) {
+                        new GZIPInputStream(Files.newInputStream(uncompressedInteropPath));
+                final InputStream preCompressedInteropStream = Files.newInputStream(compressedFilePath)) {
             // preprocess the uncompressed data (to match what the htscodecs-library test harness does)
             // by filtering out the embedded newlines, and then round trip through FQZComp codec
             // and compare the results
-            final ByteBuffer uncompressedInteropBytes = CompressionUtils.wrap(CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
-            final ByteBuffer preCompressedInteropBytes = CompressionUtils.wrap(IOUtils.toByteArray(preCompressedInteropStream));
+            final ByteBuffer uncompressedInteropBytes = CompressionUtils.wrap(
+                    CRAMInteropTestUtils.filterEmbeddedNewlines(IOUtils.toByteArray(uncompressedInteropStream)));
+            final ByteBuffer preCompressedInteropBytes =
+                    CompressionUtils.wrap(IOUtils.toByteArray(preCompressedInteropStream));
 
             // Use htsjdk to uncompress the precompressed file from htscodecs repo
             final ByteBuffer uncompressedHtsjdkBytes = fqzcompDecode.uncompress(preCompressedInteropBytes);
 
-            // for some reason, the raw, uncompressed interop test file streams appear to be fastq rather than phred (!),
+            // for some reason, the raw, uncompressed interop test file streams appear to be fastq rather than phred
+            // (!),
             // so before we can compare the results to the raw stream, we need convert them so they match the native
             // format returned by the codec
             SAMUtils.fastqToPhred(uncompressedInteropBytes.array());
 
             // Compare the htsjdk uncompressed bytes with the original input file from htscodecs repo
             Assert.assertEquals(uncompressedHtsjdkBytes, uncompressedInteropBytes);
-        } catch (final NoSuchFileException ex){
-            throw new SkipException("Skipping testDecodeOnly as either input file " +
-                    "or precompressed file is missing.", ex);
+        } catch (final NoSuchFileException ex) {
+            throw new SkipException(
+                    "Skipping testDecodeOnly as either input file " + "or precompressed file is missing.", ex);
         }
     }
 
@@ -100,31 +99,28 @@ public class FQZCompInteropTest extends HtsjdkTest {
         final byte[] allSame = new byte[300];
         java.util.Arrays.fill(allSame, (byte) 30);
 
-        return new Object[][]{
-                // description, quality data, record lengths
-                {"single record",           new byte[]{10, 20, 30, 20, 10},        new int[]{5}},
-                {"two equal records",        new byte[]{10, 20, 30, 10, 20, 30},    new int[]{3, 3}},
-                {"variable length records",  new byte[]{1, 2, 3, 4, 5, 6, 7},       new int[]{3, 4}},
-                {"single byte records",      new byte[]{5, 10, 15},                 new int[]{1, 1, 1}},
-                {"illumina-style binned",    illuminaQuals,                          makeEqualLengths(10, 100)},
-                {"random qualities",         randomQuals,                            makeEqualLengths(5, 100)},
-                {"all same quality",         allSame,                                makeEqualLengths(3, 100)},
+        return new Object[][] {
+            // description, quality data, record lengths
+            {"single record", new byte[] {10, 20, 30, 20, 10}, new int[] {5}},
+            {"two equal records", new byte[] {10, 20, 30, 10, 20, 30}, new int[] {3, 3}},
+            {"variable length records", new byte[] {1, 2, 3, 4, 5, 6, 7}, new int[] {3, 4}},
+            {"single byte records", new byte[] {5, 10, 15}, new int[] {1, 1, 1}},
+            {"illumina-style binned", illuminaQuals, makeEqualLengths(10, 100)},
+            {"random qualities", randomQuals, makeEqualLengths(5, 100)},
+            {"all same quality", allSame, makeEqualLengths(3, 100)},
         };
     }
 
-    @Test(dataProvider = "roundTripTestCases",
+    @Test(
+            dataProvider = "roundTripTestCases",
             description = "Round-trip encode/decode with FQZComp and verify data fidelity")
-    public void testFQZCompRoundTrip(
-            final String description,
-            final byte[] qualityData,
-            final int[] recordLengths) {
+    public void testFQZCompRoundTrip(final String description, final byte[] qualityData, final int[] recordLengths) {
         final ByteBuffer input = CompressionUtils.wrap(qualityData);
         final ByteBuffer compressed = new FQZCompEncode().compress(input, recordLengths);
         final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
 
         input.rewind();
-        Assert.assertEquals(decompressed, input,
-                "FQZComp round-trip failed for: " + description);
+        Assert.assertEquals(decompressed, input, "FQZComp round-trip failed for: " + description);
     }
 
     @Test(description = "Verify FQZComp produces smaller output than input for compressible data")
@@ -140,9 +136,10 @@ public class FQZCompInteropTest extends HtsjdkTest {
         final FQZCompEncode encoder = new FQZCompEncode();
         final ByteBuffer compressed = encoder.compress(CompressionUtils.wrap(quals), makeEqualLengths(100, 100));
 
-        Assert.assertTrue(compressed.remaining() < quals.length,
-                String.format("FQZComp should compress binned quality data: %d >= %d",
-                        compressed.remaining(), quals.length));
+        Assert.assertTrue(
+                compressed.remaining() < quals.length,
+                String.format(
+                        "FQZComp should compress binned quality data: %d >= %d", compressed.remaining(), quals.length));
     }
 
     /**
@@ -151,9 +148,9 @@ public class FQZCompInteropTest extends HtsjdkTest {
     @Test(description = "Round-trip with noodles test vectors")
     public void testNoodlesTestVectors() {
         final byte[][] records = {
-                {0, 0, 0, 1, 1, 2, 1, 1, 0, 0},
-                {0, 1, 2, 3, 3, 3, 3, 3, 3, 3},
-                {2, 1, 1, 0, 0}
+            {0, 0, 0, 1, 1, 2, 1, 1, 0, 0},
+            {0, 1, 2, 3, 3, 3, 3, 3, 3, 3},
+            {2, 1, 1, 0, 0}
         };
         final int[] lengths = {10, 10, 5};
 
@@ -207,7 +204,9 @@ public class FQZCompInteropTest extends HtsjdkTest {
         FQZUtils.readArray(buf, decoded, size);
 
         for (int i = 0; i < size; i++) {
-            Assert.assertEquals(decoded[i], original[i],
+            Assert.assertEquals(
+                    decoded[i],
+                    original[i],
                     String.format("storeArray/readArray mismatch at index %d for table of size %d", i, size));
         }
     }
@@ -300,15 +299,13 @@ public class FQZCompInteropTest extends HtsjdkTest {
 
     @DataProvider(name = "htsSpecsRoundTripTestCases")
     public Object[][] getHtsSpecsRoundTripTestCases() {
-        return new Object[][]{
-                {"q4"},
-                {"q8"},
-                {"q40+dir"},
-                {"qvar"},
+        return new Object[][] {
+            {"q4"}, {"q8"}, {"q40+dir"}, {"qvar"},
         };
     }
 
-    @Test(dataProvider = "htsSpecsRoundTripTestCases",
+    @Test(
+            dataProvider = "htsSpecsRoundTripTestCases",
             description = "Round-trip hts-specs quality data through FQZComp encode/decode")
     public void testFQZCompHtsSpecsRoundTrip(final String datasetName) throws IOException {
         final Path rawPath = CRAMInteropTestUtils.getCRAMInteropTestDataLocation()
@@ -342,8 +339,7 @@ public class FQZCompInteropTest extends HtsjdkTest {
             final ByteBuffer decompressed = FQZCompDecode.uncompress(compressed);
 
             input.rewind();
-            Assert.assertEquals(decompressed, input,
-                    "FQZComp hts-specs round-trip failed for: " + datasetName);
+            Assert.assertEquals(decompressed, input, "FQZComp hts-specs round-trip failed for: " + datasetName);
         }
     }
 
@@ -380,5 +376,4 @@ public class FQZCompInteropTest extends HtsjdkTest {
         java.util.Arrays.fill(lengths, recordLength);
         return lengths;
     }
-
 }

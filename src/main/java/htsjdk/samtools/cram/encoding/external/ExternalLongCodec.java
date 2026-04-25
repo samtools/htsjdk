@@ -14,11 +14,17 @@ final class ExternalLongCodec extends ExternalCodec<Long> {
     }
 
     @Override
-    public Long read() { return LTF8.readUnsignedLTF8(inputReader); }
+    public Long read() {
+        return LTF8.readUnsignedLTF8(inputReader);
+    }
 
     @Override
-    public void write(final Long value) { LTF8.writeUnsignedLTF8(value, outputWriter); }
+    public void write(final Long value) {
+        LTF8.writeUnsignedLTF8(value, outputWriter);
+    }
 
     @Override
-    public Long read(final int length) { throw new RuntimeException("Not implemented."); }
+    public Long read(final int length) {
+        throw new RuntimeException("Not implemented.");
+    }
 }

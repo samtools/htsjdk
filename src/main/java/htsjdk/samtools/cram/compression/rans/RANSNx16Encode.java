@@ -2,12 +2,6 @@ package htsjdk.samtools.cram.compression.rans;
 
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
-import htsjdk.samtools.cram.compression.rans.Constants;
-import htsjdk.samtools.cram.compression.rans.RANSEncode;
-import htsjdk.samtools.cram.compression.rans.RANSEncodingSymbol;
-import htsjdk.samtools.cram.compression.rans.RANSParams;
-import htsjdk.samtools.cram.compression.rans.Utils;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -63,7 +57,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 }
             }
             if (numSymbols > 1 && numSymbols <= 16) {
-                inputBuffer = CompressionUtils.encodePack(inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
+                inputBuffer = CompressionUtils.encodePack(
+                        inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
             } else {
                 outBuffer.put(0, (byte) (outBuffer.get(0) & ~RANSNx16Params.PACK_FLAG_MASK));
             }
@@ -226,7 +221,6 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 java.util.Arrays.copyOf(uncompFreqTable, uncompFreqTableSize),
                 new RANSNx16Params(~(RANSNx16Params.ORDER_FLAG_MASK | RANSNx16Params.N32_FLAG_MASK)));
 
-
         final byte[] freqHeader;
         if (compFreqTable.length < uncompFreqTableSize) {
             final byte[] h = new byte[1 + 10 + 10 + compFreqTable.length];
@@ -268,10 +262,11 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // Remainder
         for (idx[Nway - 1] = inputSize - 2;
-             idx[Nway - 1] > Nway * interleaveSize - 2 && idx[Nway - 1] >= 0;
-             idx[Nway - 1]--) {
+                idx[Nway - 1] > Nway * interleaveSize - 2 && idx[Nway - 1] >= 0;
+                idx[Nway - 1]--) {
             context[Nway - 1] = in[idx[Nway - 1]];
-            rans[Nway - 1] = syms[context[Nway - 1] & 0xFF][symbol[Nway - 1] & 0xFF].putSymbolNx16(rans[Nway - 1], compressedData, writePos);
+            rans[Nway - 1] = syms[context[Nway - 1] & 0xFF][symbol[Nway - 1] & 0xFF].putSymbolNx16(
+                    rans[Nway - 1], compressedData, writePos);
             symbol[Nway - 1] = context[Nway - 1];
         }
 
@@ -279,7 +274,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         while (idx[0] >= 0) {
             for (int r = 0; r < Nway; r++) {
                 context[Nway - 1 - r] = in[idx[Nway - 1 - r]];
-                rans[Nway - 1 - r] = syms[context[Nway - 1 - r] & 0xFF][symbol[Nway - 1 - r] & 0xFF].putSymbolNx16(rans[Nway - 1 - r], compressedData, writePos);
+                rans[Nway - 1 - r] = syms[context[Nway - 1 - r] & 0xFF][symbol[Nway - 1 - r] & 0xFF].putSymbolNx16(
+                        rans[Nway - 1 - r], compressedData, writePos);
                 symbol[Nway - 1 - r] = context[Nway - 1 - r];
             }
             for (int r = 0; r < Nway; r++) idx[r]--;
@@ -287,7 +283,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // Final context=0 symbols
         for (int r = 0; r < Nway; r++) {
-            rans[Nway - 1 - r] = syms[0][symbol[Nway - 1 - r] & 0xFF].putSymbolNx16(rans[Nway - 1 - r], compressedData, writePos);
+            rans[Nway - 1 - r] =
+                    syms[0][symbol[Nway - 1 - r] & 0xFF].putSymbolNx16(rans[Nway - 1 - r], compressedData, writePos);
         }
 
         // Flush states (same pattern as O0)
@@ -353,12 +350,16 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             int run = 0;
             for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
                 if (F[Constants.NUMBER_OF_SYMBOLS][j] == 0) continue;
-                if (run > 0) { run--; continue; }
+                if (run > 0) {
+                    run--;
+                    continue;
+                }
                 CompressionUtils.writeUint7(F[i][j], out, pos);
                 if (F[i][j] == 0) {
                     for (int k = j + 1; k < Constants.NUMBER_OF_SYMBOLS; k++) {
                         if (F[Constants.NUMBER_OF_SYMBOLS][k] == 0) continue;
-                        if (F[i][k] == 0) run++; else break;
+                        if (F[i][k] == 0) run++;
+                        else break;
                     }
                     out[pos[0]++] = (byte) run;
                 }
@@ -370,10 +371,13 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         int rle = 0;
         for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
             if (F[j] != 0) {
-                if (rle != 0) { rle--; } else {
+                if (rle != 0) {
+                    rle--;
+                } else {
                     out[pos[0]++] = (byte) j;
                     if (j != 0 && F[j - 1] != 0) {
-                        for (rle = j + 1; rle < Constants.NUMBER_OF_SYMBOLS && F[rle] != 0; rle++) ;
+                        for (rle = j + 1; rle < Constants.NUMBER_OF_SYMBOLS && F[rle] != 0; rle++)
+                            ;
                         rle -= j + 1;
                         out[pos[0]++] = (byte) rle;
                     }
@@ -385,7 +389,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
     // ---- RLE and Stripe (ByteBuffer bridge) ----
 
-    private ByteBuffer encodeRLE(final ByteBuffer inBuffer, final ByteBuffer outBuffer, final RANSNx16Params ransNx16Params) {
+    private ByteBuffer encodeRLE(
+            final ByteBuffer inBuffer, final ByteBuffer outBuffer, final RANSNx16Params ransNx16Params) {
         final int[] runCounts = new int[Constants.NUMBER_OF_SYMBOLS];
         final int inputSize = inBuffer.remaining();
         int lastSymbol = -1;
@@ -396,7 +401,10 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         }
         int numRLESymbols = 0;
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) if (runCounts[i] > 0) numRLESymbols++;
-        if (numRLESymbols == 0) { numRLESymbols = 1; runCounts[0] = 1; }
+        if (numRLESymbols == 0) {
+            numRLESymbols = 1;
+            runCounts[0] = 1;
+        }
 
         final ByteBuffer rleMetaData = CompressionUtils.allocateByteBuffer(numRLESymbols + 1 + inputSize);
         rleMetaData.put((byte) numRLESymbols);
@@ -420,8 +428,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         final byte[] rleMeta = new byte[rleMetaData.remaining()];
         rleMetaData.get(rleMeta);
-        final byte[] compressedRleMeta = compressOrder0WayN(rleMeta,
-                new RANSNx16Params(0x00 | ransNx16Params.getFormatFlags() & RANSNx16Params.N32_FLAG_MASK));
+        final byte[] compressedRleMeta = compressOrder0WayN(
+                rleMeta, new RANSNx16Params(0x00 | ransNx16Params.getFormatFlags() & RANSNx16Params.N32_FLAG_MASK));
 
         CompressionUtils.writeUint7(rleMeta.length * 2, outBuffer);
         CompressionUtils.writeUint7(idx, outBuffer);

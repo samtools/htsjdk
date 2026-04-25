@@ -24,7 +24,6 @@
 package htsjdk.samtools.filter;
 
 import htsjdk.samtools.SAMRecord;
-
 import java.util.List;
 
 /**
@@ -71,7 +70,7 @@ public class AggregateFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-         for (final SamRecordFilter filter : filters) {
+        for (final SamRecordFilter filter : filters) {
             if (filter.filterOut(first, second)) {
                 return true;
             }

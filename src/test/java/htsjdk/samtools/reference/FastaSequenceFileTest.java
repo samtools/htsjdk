@@ -27,11 +27,10 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.StringUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.PrintWriter;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * @author alecw@broadinstitute.org
@@ -75,7 +74,8 @@ public class FastaSequenceFileTest extends HtsjdkTest {
     // There was a bug when reading a fasta with trailing whitespace, only when a sequence dictionary exists.
     @Test
     public void testTrailingWhitespaceWithPreexistingSequenceDictionary() throws Exception {
-        final File fasta = new File("src/test/resources/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
+        final File fasta =
+                new File("src/test/resources/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
         final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
         ReferenceSequence referenceSequence = fastaReader.nextSequence();
         Assert.assertEquals(referenceSequence.getName(), "chr1");
@@ -83,7 +83,6 @@ public class FastaSequenceFileTest extends HtsjdkTest {
         referenceSequence = fastaReader.nextSequence();
         Assert.assertEquals(referenceSequence.getName(), "chr2");
         Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "TCGATCGA");
-
     }
 
     @Test
@@ -98,7 +97,8 @@ public class FastaSequenceFileTest extends HtsjdkTest {
         writer.println(sequence + " \t");
         writer.close();
         try (SeekableStream seekableStream = new SeekableFileStream(fasta)) {
-            final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta.getAbsolutePath(), seekableStream, null, true);
+            final FastaSequenceFile fastaReader =
+                    new FastaSequenceFile(fasta.getAbsolutePath(), seekableStream, null, true);
             final ReferenceSequence referenceSequence1 = fastaReader.nextSequence();
             Assert.assertEquals(referenceSequence1.getName(), chr1);
             Assert.assertEquals(StringUtil.bytesToString(referenceSequence1.getBases()), sequence + sequence);

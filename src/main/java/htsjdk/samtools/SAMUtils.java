@@ -32,7 +32,6 @@ import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.annotation.Strand;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -98,22 +97,7 @@ public final class SAMUtils {
     private static final byte COMPRESSED_B_HIGH = (byte) (COMPRESSED_B_LOW << 4);
 
     private static final byte[] COMPRESSED_LOOKUP_TABLE = {
-            '=',
-            'A',
-            'C',
-            'M',
-            'G',
-            'R',
-            'S',
-            'V',
-            'T',
-            'W',
-            'Y',
-            'H',
-            'K',
-            'D',
-            'B',
-            'N'
+        '=', 'A', 'C', 'M', 'G', 'R', 'S', 'V', 'T', 'W', 'Y', 'H', 'K', 'D', 'B', 'N'
     };
 
     /**
@@ -123,9 +107,10 @@ public final class SAMUtils {
      * calls and bit manipulation in the hot decode loop. Ported from htslib's {@code code2base} table.
      */
     private static final byte[] NIBBLE_PAIR_LOOKUP = new byte[512];
+
     static {
         for (int i = 0; i < 256; i++) {
-            NIBBLE_PAIR_LOOKUP[i * 2]     = COMPRESSED_LOOKUP_TABLE[(i >> 4) & 0xf];
+            NIBBLE_PAIR_LOOKUP[i * 2] = COMPRESSED_LOOKUP_TABLE[(i >> 4) & 0xf];
             NIBBLE_PAIR_LOOKUP[i * 2 + 1] = COMPRESSED_LOOKUP_TABLE[i & 0xf];
         }
     }
@@ -143,8 +128,8 @@ public final class SAMUtils {
         final byte[] compressedBases = new byte[(readBases.length + 1) / 2];
         int i;
         for (i = 1; i < readBases.length; i += 2) {
-            compressedBases[i / 2] = (byte) (charToCompressedBaseHigh(readBases[i - 1]) |
-                    charToCompressedBaseLow(readBases[i]));
+            compressedBases[i / 2] =
+                    (byte) (charToCompressedBaseHigh(readBases[i - 1]) | charToCompressedBaseLow(readBases[i]));
         }
         // Last nybble
         if (i == readBases.length) {
@@ -170,12 +155,13 @@ public final class SAMUtils {
      * @param compressedOffset byte offset into {@code compressedBases} at which to start decoding
      * @return new byte array of length {@code length} with bases as uppercase ASCII bytes
      */
-    public static byte[] compressedBasesToBytes(final int length, final byte[] compressedBases, final int compressedOffset) {
+    public static byte[] compressedBasesToBytes(
+            final int length, final byte[] compressedBases, final int compressedOffset) {
         final byte[] ret = new byte[length];
         final int pairs = length / 2;
         for (int i = 0; i < pairs; i++) {
             final int lookupIndex = (compressedBases[i + compressedOffset] & 0xFF) * 2;
-            ret[i * 2]     = NIBBLE_PAIR_LOOKUP[lookupIndex];
+            ret[i * 2] = NIBBLE_PAIR_LOOKUP[lookupIndex];
             ret[i * 2 + 1] = NIBBLE_PAIR_LOOKUP[lookupIndex + 1];
         }
         // Odd-length: last base is in the high nibble of the final byte
@@ -245,7 +231,8 @@ public final class SAMUtils {
             case 'b':
                 return COMPRESSED_B_LOW;
             default:
-                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseLow: " + Character.toString((char) base) + "(" + base + ")");
+                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseLow: "
+                        + Character.toString((char) base) + "(" + base + ")");
         }
     }
 
@@ -309,7 +296,8 @@ public final class SAMUtils {
             case 'b':
                 return COMPRESSED_B_HIGH;
             default:
-                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: " + Character.toString((char) base) + "(" + base + ")");
+                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: "
+                        + Character.toString((char) base) + "(" + base + ")");
         }
     }
 
@@ -436,9 +424,10 @@ public final class SAMUtils {
      * @param validationStringency If STRICT, throw a SAMFormatException.  If LENIENT, print the validation
      *                             errors to stderr.  If SILENT, do nothing.
      */
-    public static void processValidationErrors(final List<SAMValidationError> validationErrors,
-                                               final long samRecordIndex,
-                                               final ValidationStringency validationStringency) {
+    public static void processValidationErrors(
+            final List<SAMValidationError> validationErrors,
+            final long samRecordIndex,
+            final ValidationStringency validationStringency) {
         if (validationErrors != null && !validationErrors.isEmpty()) {
             for (final SAMValidationError validationError : validationErrors) {
                 validationError.setRecordNumber(samRecordIndex);
@@ -453,8 +442,8 @@ public final class SAMUtils {
         }
     }
 
-    public static void processValidationError(final SAMValidationError validationError,
-                                              final ValidationStringency validationStringency) {
+    public static void processValidationError(
+            final SAMValidationError validationError, final ValidationStringency validationStringency) {
         if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException("SAM validation error: " + validationError);
         } else if (validationStringency == ValidationStringency.LENIENT) {
@@ -474,7 +463,7 @@ public final class SAMUtils {
                     SAMReadGroupRecord.READ_GROUP_ID_TAG
                     // We don't actually want to compare with ID but it's suitable
                     // "just in case" since it's the only one that's actually required
-            );
+                    );
 
     /**
      * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
@@ -492,8 +481,10 @@ public final class SAMUtils {
         }
 
         // Sort the read group records by their first
-        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(referenceFasta).open(input);
-        final List<SAMReadGroupRecord> sortedRecords = new ArrayList<>(reader.getFileHeader().getReadGroups());
+        final SamReader reader =
+                SamReaderFactory.makeDefault().referenceSequence(referenceFasta).open(input);
+        final List<SAMReadGroupRecord> sortedRecords =
+                new ArrayList<>(reader.getFileHeader().getReadGroups());
         Collections.sort(sortedRecords, HEADER_RECORD_COMPARATOR);
 
         for (final SAMReadGroupRecord rgRecord : sortedRecords) {
@@ -504,7 +495,9 @@ public final class SAMUtils {
 
             try {
                 for (final Map.Entry<String, String> sortedEntry : sortedAttributes.entrySet()) {
-                    if (!sortedEntry.getKey().equals(SAMReadGroupRecord.READ_GROUP_ID_TAG)) { // Redundant check, safety first
+                    if (!sortedEntry
+                            .getKey()
+                            .equals(SAMReadGroupRecord.READ_GROUP_ID_TAG)) { // Redundant check, safety first
                         digest.update(sortedEntry.getKey().getBytes(ENCODING));
                         digest.update(sortedEntry.getValue().getBytes(ENCODING));
                     }
@@ -623,9 +616,11 @@ public final class SAMUtils {
      */
     public static boolean recordMapsEntirelyBeyondEndOfReference(final SAMRecord record) {
         if (record.getHeader() == null) {
-            throw new SAMException("A non-null SAMHeader is required to resolve the mapping position: " + record.getReadName());
+            throw new SAMException(
+                    "A non-null SAMHeader is required to resolve the mapping position: " + record.getReadName());
         } else {
-            return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+            return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength()
+                    < record.getAlignmentStart();
         }
     }
 
@@ -663,12 +658,10 @@ public final class SAMUtils {
         }
 
         return m1 + m2;
-
     }
 
-
     public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
-        try (SeekableStream ss = new SeekablePathStream(bamFile)){
+        try (SeekableStream ss = new SeekablePathStream(bamFile)) {
             return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);
@@ -709,7 +702,8 @@ public final class SAMUtils {
      * @param cigarTypeName  The type of cigar passed - for error logging.
      * @return List of alignment blocks
      */
-    public static List<AlignmentBlock> getAlignmentBlocks(final Cigar cigar, final int alignmentStart, final String cigarTypeName) {
+    public static List<AlignmentBlock> getAlignmentBlocks(
+            final Cigar cigar, final int alignmentStart, final String cigarTypeName) {
         if (cigar == null) return Collections.emptyList();
 
         final List<AlignmentBlock> alignmentBlocks = new ArrayList<>();
@@ -727,7 +721,7 @@ public final class SAMUtils {
                     break; // soft clip read bases
                 case N:
                     refBase += e.getLength();
-                    break;  // reference skip
+                    break; // reference skip
                 case D:
                     refBase += e.getLength();
                     break;
@@ -743,7 +737,8 @@ public final class SAMUtils {
                     refBase += length;
                     break;
                 default:
-                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator() + "in CIGAR: " + cigar);
+                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: "
+                            + e.getOperator() + "in CIGAR: " + cigar);
             }
         }
         return Collections.unmodifiableList(alignmentBlocks);
@@ -823,8 +818,12 @@ public final class SAMUtils {
         if (mateCigarString != null) {
             mateCigar = TextCigarCodec.decode(mateCigarString);
             if (withValidation && rec.getValidationStringency() != ValidationStringency.SILENT) {
-                final List<AlignmentBlock> alignmentBlocks = getAlignmentBlocks(mateCigar, rec.getMateAlignmentStart(), "mate cigar");
-                SAMUtils.processValidationErrors(validateCigar(rec, mateCigar, rec.getMateReferenceIndex(), alignmentBlocks, -1, "Mate CIGAR"), -1L, rec.getValidationStringency());
+                final List<AlignmentBlock> alignmentBlocks =
+                        getAlignmentBlocks(mateCigar, rec.getMateAlignmentStart(), "mate cigar");
+                SAMUtils.processValidationErrors(
+                        validateCigar(rec, mateCigar, rec.getMateReferenceIndex(), alignmentBlocks, -1, "Mate CIGAR"),
+                        -1L,
+                        rec.getValidationStringency());
             }
         }
         return mateCigar;
@@ -925,29 +924,35 @@ public final class SAMUtils {
      * @param cigarTypeName   For error reporting.  "Read CIGAR" or "Mate Cigar"
      * @return List of errors, or null if no errors.
      */
-
-    public static List<SAMValidationError> validateCigar(final SAMRecord rec,
-                                                         final Cigar cigar,
-                                                         final Integer referenceIndex,
-                                                         final List<AlignmentBlock> alignmentBlocks,
-                                                         final long recordNumber,
-                                                         final String cigarTypeName) {
+    public static List<SAMValidationError> validateCigar(
+            final SAMRecord rec,
+            final Cigar cigar,
+            final Integer referenceIndex,
+            final List<AlignmentBlock> alignmentBlocks,
+            final long recordNumber,
+            final String cigarTypeName) {
         // Don't know line number, and don't want to force read name to be decoded.
         List<SAMValidationError> ret = cigar.isValid(rec.getReadName(), recordNumber);
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             SAMFileHeader samHeader = rec.getHeader();
             if (null == samHeader) {
                 if (ret == null) ret = new ArrayList<>();
-                ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_HEADER,
-                        cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
+                ret.add(new SAMValidationError(
+                        SAMValidationError.Type.MISSING_HEADER,
+                        cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ",
+                        rec.getReadName(),
+                        recordNumber));
             } else {
                 final SAMSequenceRecord sequence = samHeader.getSequence(referenceIndex);
                 final int referenceSequenceLength = sequence.getSequenceLength();
                 for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
                     if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
                         if (ret == null) ret = new ArrayList<>();
-                        ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
-                                cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
+                        ret.add(new SAMValidationError(
+                                SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
+                                cigarTypeName + " M operator maps off end of reference",
+                                rec.getReadName(),
+                                recordNumber));
                         break;
                     }
                 }
@@ -968,21 +973,36 @@ public final class SAMUtils {
         List<SAMValidationError> ret = null;
 
         if (rec.getValidationStringency() != ValidationStringency.SILENT) {
-            if (rec.getReadPairedFlag() && !rec.getMateUnmappedFlag()) {      // The mateCigar will be defined if the mate is mapped
+            if (rec.getReadPairedFlag()
+                    && !rec.getMateUnmappedFlag()) { // The mateCigar will be defined if the mate is mapped
                 if (getMateCigarString(rec) != null) {
-                    ret = SAMUtils.validateCigar(rec, getMateCigar(rec), rec.getMateReferenceIndex(), getMateAlignmentBlocks(rec), recordNumber, "Mate CIGAR");
+                    ret = SAMUtils.validateCigar(
+                            rec,
+                            getMateCigar(rec),
+                            rec.getMateReferenceIndex(),
+                            getMateAlignmentBlocks(rec),
+                            recordNumber,
+                            "Mate CIGAR");
                 }
             } else {
                 if (getMateCigarString(rec) != null) {
                     ret = new ArrayList<>();
                     if (!rec.getReadPairedFlag()) {
-                        // If the read is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error
-                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
-                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
+                        // If the read is not paired, and the Mate Cigar String (MC Attribute) exists, that is a
+                        // validation error
+                        ret.add(new SAMValidationError(
+                                SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
+                                "Mate CIGAR String (MC Attribute) present for a read that is not paired",
+                                rec.getReadName(),
+                                recordNumber));
                     } else { // will hit here if rec.getMateUnmappedFlag() is true
-                        // If the Mate is unmapped, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
-                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
-                                "Mate CIGAR String (MC Attribute) present for a read whose mate is unmapped", rec.getReadName(), recordNumber));
+                        // If the Mate is unmapped, and the Mate Cigar String (MC Attribute) exists, that is a
+                        // validation error.
+                        ret.add(new SAMValidationError(
+                                SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
+                                "Mate CIGAR String (MC Attribute) present for a read whose mate is unmapped",
+                                rec.getReadName(),
+                                recordNumber));
                     }
                 }
             }
@@ -1027,7 +1047,8 @@ public final class SAMUtils {
      * Read bases include only those from insertion, match, or mismatch Cigar operators.
      */
     public static int getNumOverlappingAlignedBasesToClip(final SAMRecord rec) {
-        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
+        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information
+        // in the record.
 
         if (!rec.getReadPairedFlag() || rec.getReadUnmappedFlag() || rec.getMateUnmappedFlag()) return 0;
 
@@ -1038,7 +1059,8 @@ public final class SAMUtils {
 
         // Find the number of read bases after the given mate's alignment start.
         int numBasesToClip = 0;
-        final int refStartPos = rec.getMateAlignmentStart(); // relative reference position after which we should start clipping
+        final int refStartPos =
+                rec.getMateAlignmentStart(); // relative reference position after which we should start clipping
         final Cigar cigar = rec.getCigar();
         int refPos = rec.getAlignmentStart();
         for (final CigarElement el : cigar.getCigarElements()) {
@@ -1048,11 +1070,18 @@ public final class SAMUtils {
                 if (operator == CigarOperator.MATCH_OR_MISMATCH) { // M
                     if (refStartPos < refPos) numBasesToClip += refBasesLength; // use all of the bases
                     else
-                        numBasesToClip += (refPos + refBasesLength) - refStartPos;  // since the mate's alignment start can be in the middle of a cigar element
-                } else if (operator == CigarOperator.SOFT_CLIP || operator == CigarOperator.HARD_CLIP || operator == CigarOperator.PADDING || operator == CigarOperator.SKIPPED_REGION) {
+                        numBasesToClip += (refPos + refBasesLength)
+                                - refStartPos; // since the mate's alignment start can be in the middle of a cigar
+                    // element
+                } else if (operator == CigarOperator.SOFT_CLIP
+                        || operator == CigarOperator.HARD_CLIP
+                        || operator == CigarOperator.PADDING
+                        || operator == CigarOperator.SKIPPED_REGION) {
                     // ignore
                 } else { // ID
-                    numBasesToClip += operator.consumesReadBases() ? el.getLength() : 0; // clip all the bases in the read from this operator
+                    numBasesToClip += operator.consumesReadBases()
+                            ? el.getLength()
+                            : 0; // clip all the bases in the read from this operator
                 }
             }
             refPos += refBasesLength;
@@ -1088,8 +1117,10 @@ public final class SAMUtils {
      * @param noSideEffects             if true a modified clone of the original record is returned, otherwise we modify the record directly.
      * @return Returns a (possibly new) SAMRecord with the given number of bases soft-clipped
      */
-    public static SAMRecord clipOverlappingAlignedBases(final SAMRecord record, final int numOverlappingBasesToClip, final boolean noSideEffects) {
-        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
+    public static SAMRecord clipOverlappingAlignedBases(
+            final SAMRecord record, final int numOverlappingBasesToClip, final boolean noSideEffects) {
+        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information
+        // in the record.
 
         if (numOverlappingBasesToClip <= 0 || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()) {
             return record;
@@ -1112,7 +1143,8 @@ public final class SAMUtils {
             // FIXME: does not properly consider a cigar like: 100M20S10H
 
             // clip it, clip it good
-            rec.setCigar(new Cigar(CigarUtil.softClipEndOfRead(clipFrom, rec.getCigar().getCigarElements())));
+            rec.setCigar(new Cigar(
+                    CigarUtil.softClipEndOfRead(clipFrom, rec.getCigar().getCigarElements())));
             return rec;
         } catch (final CloneNotSupportedException e) {
             throw new SAMException(e.getMessage(), e);
@@ -1143,8 +1175,9 @@ public final class SAMUtils {
         /* extract value of SA tag */
         final Object saValue = record.getAttribute(SAMTag.SA);
         if (saValue == null) return Collections.emptyList();
-        if (!(saValue instanceof String)) throw new SAMException(
-                "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record);
+        if (!(saValue instanceof String))
+            throw new SAMException(
+                    "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record);
 
         final SAMRecordFactory samReaderFactory = new DefaultSAMRecordFactory();
 
@@ -1188,11 +1221,9 @@ public final class SAMUtils {
                 otherRec.setMateAlignmentStart(record.getMateAlignmentStart());
             }
 
-
             /* get reference sequence */
             final int tid = record.getHeader().getSequenceIndex(commaStrs[0]);
-            if (tid == -1)
-                throw new SAMException("Unknown contig in " + semiColonStr + ". Record: " + record);
+            if (tid == -1) throw new SAMException("Unknown contig in " + semiColonStr + ". Record: " + record);
             otherRec.setReferenceIndex(tid);
 
             /* fill POS */
@@ -1206,22 +1237,20 @@ public final class SAMUtils {
             otherRec.setAlignmentStart(alignStart);
 
             /* set TLEN */
-            if (record.getReadPairedFlag() &&
-                    !record.getMateUnmappedFlag() &&
-                    record.getMateReferenceIndex() == tid) {
+            if (record.getReadPairedFlag() && !record.getMateUnmappedFlag() && record.getMateReferenceIndex() == tid) {
                 otherRec.setInferredInsertSize(record.getMateAlignmentStart() - alignStart);
             }
 
             /* set FLAG */
             int other_flag = record_flag;
             other_flag |= (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag);
-           /* spec: Conventionally, at a supplementary line, the  1st element points to the primary line */
+            /* spec: Conventionally, at a supplementary line, the  1st element points to the primary line */
             if (!(record.getSupplementaryAlignmentFlag() && i == 0)) {
                 other_flag |= SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
             }
             otherRec.setFlags(other_flag);
 
-           /* set CIGAR */
+            /* set CIGAR */
             otherRec.setCigar(TextCigarCodec.decode(commaStrs[3]));
 
             /* set MAPQ */
@@ -1255,7 +1284,8 @@ public final class SAMUtils {
      * @deprecated because the method does the exact opposite of what it says.  Use the correctly named
      *             isReferenceSequenceIncompatibleWithBAI() instead.
      */
-    @Deprecated public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
+    @Deprecated
+    public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
         return isReferenceSequenceIncompatibleWithBAI(sequence);
     }
 
@@ -1275,15 +1305,20 @@ public final class SAMUtils {
      */
     public static String calculateOATagValue(SAMRecord record) {
         if (record.getReferenceName().contains(",")) {
-            throw new SAMException(String.format("Reference name for record %s contains a comma character.", record.getReadName()));
+            throw new SAMException(
+                    String.format("Reference name for record %s contains a comma character.", record.getReadName()));
         }
         final String oaValue;
         if (record.getReadUnmappedFlag()) {
-            oaValue = String.format(Locale.US, "*,0,%s,*,%s,",
+            oaValue = String.format(
+                    Locale.US,
+                    "*,0,%s,*,%s,",
                     record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
                     record.getMappingQuality());
         } else {
-            oaValue = String.format(Locale.US, "%s,%s,%s,%s,%s,%s",
+            oaValue = String.format(
+                    Locale.US,
+                    "%s,%s,%s,%s,%s,%s",
                     record.getReferenceName(),
                     record.getAlignmentStart(),
                     record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
@@ -1292,6 +1327,5 @@ public final class SAMUtils {
                     Optional.ofNullable(record.getAttribute(SAMTag.NM)).orElse(""));
         }
         return oaValue;
-
     }
 }

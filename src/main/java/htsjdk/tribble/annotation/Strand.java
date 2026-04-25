@@ -42,7 +42,7 @@ public enum Strand {
      * Denotes that a strand designation is not applicable
      * or is unknown.
      */
-    NONE('.');  // not really sure what we should do for the NONE Enum
+    NONE('.'); // not really sure what we should do for the NONE Enum
 
     /**
      * Common alias for the {@link #POSITIVE} strand.
@@ -57,7 +57,7 @@ public enum Strand {
     /**
      * Cached array of instances.
      */
-    private final static Strand[] VALUES = values();
+    private static final Strand[] VALUES = values();
 
     /**
      * How we represent the strand as a single {@code char}.
@@ -92,7 +92,7 @@ public enum Strand {
      *   the encoding char is not recognized.
      */
     public static Strand decode(final char ch) {
-        for(final Strand value : VALUES) {
+        for (final Strand value : VALUES) {
             if (value.charEncoding == ch) {
                 return value;
             }

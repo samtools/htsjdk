@@ -23,11 +23,9 @@
  */
 package htsjdk.samtools.util;
 
-
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,22 +38,24 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Asynchronous read-ahead implementation of {@link htsjdk.samtools.util.BlockCompressedInputStream}.   
- * 
- * Note that this implementation is not synchronized. If multiple threads access an instance concurrently, it must be synchronized externally. 
+ * Asynchronous read-ahead implementation of {@link htsjdk.samtools.util.BlockCompressedInputStream}.
+ *
+ * Note that this implementation is not synchronized. If multiple threads access an instance concurrently, it must be synchronized externally.
  */
 public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream {
-    private static final int READ_AHEAD_BUFFERS = (int)Math.ceil((double) Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-    private static final Executor threadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = Executors.defaultThreadFactory().newThread(r);
-                t.setDaemon(true);
-                return t;
-            }
-        });
+    private static final int READ_AHEAD_BUFFERS = (int) Math.ceil(
+            (double) Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
+    private static final Executor threadpool =
+            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = Executors.defaultThreadFactory().newThread(r);
+                    t.setDaemon(true);
+                    return t;
+                }
+            });
     /**
-     * Next blocks (in stream order) that have already been decompressed. 
+     * Next blocks (in stream order) that have already been decompressed.
      */
     private final BlockingQueue<DecompressedBlock> mResult = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
     /**
@@ -85,13 +85,11 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         super(stream, true, inflaterFactory);
     }
 
-    public AsyncBlockCompressedInputStream(final File file)
-        throws IOException {
+    public AsyncBlockCompressedInputStream(final File file) throws IOException {
         super(file);
     }
 
-    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory)
-            throws IOException {
+    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory) throws IOException {
         super(file, inflaterFactory);
     }
 
@@ -118,7 +116,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         }
         return nextBlockSync();
     }
-    
+
     @Override
     protected void prepareForSeek() {
         flushReadAhead();
@@ -203,7 +201,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
     /**
      * Foreground thread blocking operation that retrieves the next read-ahead buffer.
      * Lazy initiation of read-ahead is performed if required.
-     * @return next decompressed block in input stream 
+     * @return next decompressed block in input stream
      */
     private DecompressedBlock nextBlockSync() {
         ensureReadAhead();
@@ -216,6 +214,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         ensureReadAhead();
         return nextBlock;
     }
+
     private class AsyncBlockCompressedInputStreamRunnable implements Runnable {
         /**
          * Thread pool operation that fills the read-ahead queue

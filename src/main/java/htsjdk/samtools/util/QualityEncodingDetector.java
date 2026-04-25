@@ -1,12 +1,13 @@
 package htsjdk.samtools.util;
 
+import static java.util.Arrays.asList;
+
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,8 +20,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
-
-import static java.util.Arrays.asList;
 
 /**
  * Utility for determining the type of quality encoding/format (see {@link FastqQualityFormat}) used in a SAM/BAM or Fastq.
@@ -38,9 +37,13 @@ public class QualityEncodingDetector {
      * The maximum number of records over which the detector will iterate before making a determination, by default.
      */
     public static final long DEFAULT_MAX_RECORDS_TO_ITERATE = 10000;
+
     private static final Log log = Log.getInstance(QualityEncodingDetector.class);
 
-    public enum FileContext {FASTQ, SAM}
+    public enum FileContext {
+        FASTQ,
+        SAM
+    }
 
     static class Range {
         final int low, high;
@@ -60,23 +63,13 @@ public class QualityEncodingDetector {
      */
     enum QualityScheme {
         Phred(
-                new Range(0, 93),           // Raw value range
-                new Range(33, 126),         // ASCII value range
-                asList(new Range(33, 58)),  // Ranges into which we expect at least one ASCII value to fall
+                new Range(0, 93), // Raw value range
+                new Range(33, 126), // ASCII value range
+                asList(new Range(33, 58)), // Ranges into which we expect at least one ASCII value to fall
                 FastqQualityFormat.Standard // Associated quality format
-        ),
-        Solexa(
-                new Range(-5, 62),
-                new Range(59, 126),
-                new ArrayList<Range>(),
-                FastqQualityFormat.Solexa
-        ),
-        Illumina(
-                new Range(0, 62),
-                new Range(64, 126),
-                new ArrayList<Range>(),
-                FastqQualityFormat.Illumina
-        );
+                ),
+        Solexa(new Range(-5, 62), new Range(59, 126), new ArrayList<Range>(), FastqQualityFormat.Solexa),
+        Illumina(new Range(0, 62), new Range(64, 126), new ArrayList<Range>(), FastqQualityFormat.Illumina);
         final Range rawRange, asciiRange;
         /**
          * Ranges into which we expect at least one value to fall if this formatting is being used.  For example, for
@@ -84,9 +77,14 @@ public class QualityEncodingDetector {
          * probably not Standard-encoded.
          */
         final List<Range> expectedAsciiRanges;
+
         final FastqQualityFormat qualityFormat;
 
-        QualityScheme(final Range rawRange, final Range asciiRange, final List<Range> expectedAsciiRanges, final FastqQualityFormat qualityFormat) {
+        QualityScheme(
+                final Range rawRange,
+                final Range asciiRange,
+                final List<Range> expectedAsciiRanges,
+                final FastqQualityFormat qualityFormat) {
             this.rawRange = rawRange;
             this.asciiRange = asciiRange;
             this.expectedAsciiRanges = expectedAsciiRanges;
@@ -122,9 +120,11 @@ public class QualityEncodingDetector {
          * transformation by asking {@link SAMRecord} to convert the quality back into the ASCII that was read in the file.
          */
         public void add(final SAMRecord samRecord, final boolean useOriginalQualities) {
-            addAsciiQuality(useOriginalQualities && samRecord.getOriginalBaseQualities() != null
-                    ? SAMUtils.phredToFastq(samRecord.getOriginalBaseQualities()).getBytes()
-                    : samRecord.getBaseQualityString().getBytes());
+            addAsciiQuality(
+                    useOriginalQualities && samRecord.getOriginalBaseQualities() != null
+                            ? SAMUtils.phredToFastq(samRecord.getOriginalBaseQualities())
+                                    .getBytes()
+                            : samRecord.getBaseQualityString().getBytes());
         }
 
         public void add(final SAMRecord samRecord) {
@@ -167,7 +167,8 @@ public class QualityEncodingDetector {
      *
      * @return The number of records read
      */
-    public long add(final long maxRecords, final CloseableIterator<SAMRecord> iterator, final boolean useOriginalQualities) {
+    public long add(
+            final long maxRecords, final CloseableIterator<SAMRecord> iterator, final boolean useOriginalQualities) {
         long recordCount = 0;
         try {
             while (iterator.hasNext() && recordCount++ != maxRecords) {
@@ -328,12 +329,12 @@ public class QualityEncodingDetector {
      *                   so more records is better)
      * @return The determined quality format
      */
-    public static FastqQualityFormat detect(final long maxRecords, final CloseableIterator<SAMRecord> iterator, final boolean useOriginalQualities) {
+    public static FastqQualityFormat detect(
+            final long maxRecords, final CloseableIterator<SAMRecord> iterator, final boolean useOriginalQualities) {
         final QualityEncodingDetector detector = new QualityEncodingDetector();
         final long recordCount = detector.add(maxRecords, iterator, useOriginalQualities);
         log.debug(String.format("Read %s records.", recordCount));
         return detector.generateBestGuess(FileContext.SAM, null);
-
     }
 
     public static FastqQualityFormat detect(final long maxRecords, final CloseableIterator<SAMRecord> iterator) {
@@ -348,14 +349,13 @@ public class QualityEncodingDetector {
         return detect(DEFAULT_MAX_RECORDS_TO_ITERATE, reader);
     }
 
-
     /**
      * Reads through the records in the provided SAM reader and uses their quality scores to sanity check the expected
      * quality passed in. If the expected quality format is sane we just hand this back otherwise we throw a
      * {@link SAMException}.
      */
     public static FastqQualityFormat detect(final SamReader reader, final FastqQualityFormat expectedQualityFormat) {
-        //sanity check expectedQuality
+        // sanity check expectedQuality
         final QualityEncodingDetector detector = new QualityEncodingDetector();
         final long recordCount = detector.add(DEFAULT_MAX_RECORDS_TO_ITERATE, reader.iterator());
         log.debug(String.format("Read %s records from %s.", recordCount, reader));
@@ -374,9 +374,9 @@ public class QualityEncodingDetector {
             if (possibleFormats.contains(expectedQuality)) {
                 return expectedQuality;
             } else {
-                throw new SAMException(
-                        String.format("The quality values do not fall in the range appropriate for the expected quality of %s.",
-                                expectedQuality.name()));
+                throw new SAMException(String.format(
+                        "The quality values do not fall in the range appropriate for the expected quality of %s.",
+                        expectedQuality.name()));
             }
         } else {
             possibleFormats = this.generateCandidateQualities(true);
@@ -386,14 +386,16 @@ public class QualityEncodingDetector {
                 case 2:
                     if (possibleFormats.equals(EnumSet.of(FastqQualityFormat.Illumina, FastqQualityFormat.Solexa))) {
                         return FastqQualityFormat.Illumina;
-                    } else if (possibleFormats.equals(EnumSet.of(FastqQualityFormat.Illumina, FastqQualityFormat.Standard))) {
+                    } else if (possibleFormats.equals(
+                            EnumSet.of(FastqQualityFormat.Illumina, FastqQualityFormat.Standard))) {
                         switch (context) {
                             case FASTQ:
                                 return FastqQualityFormat.Illumina;
                             case SAM:
                                 return FastqQualityFormat.Standard;
                         }
-                    } else if (possibleFormats.equals(EnumSet.of(FastqQualityFormat.Standard, FastqQualityFormat.Solexa))) {
+                    } else if (possibleFormats.equals(
+                            EnumSet.of(FastqQualityFormat.Standard, FastqQualityFormat.Solexa))) {
                         return FastqQualityFormat.Standard;
                     } else throw new SAMException("Unreachable code.");
                 case 3:

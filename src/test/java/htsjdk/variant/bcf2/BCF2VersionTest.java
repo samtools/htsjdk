@@ -9,32 +9,16 @@ public class BCF2VersionTest extends VariantBaseTest {
 
     @DataProvider(name = "bcfVersionEqualsHashData")
     public Object[][] bcfVersionEqualsHashData() {
-        return new Object[][]{
-                {
-                        BCF2Codec.ALLOWED_BCF_VERSION,
-                        new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
-                        true
-                },
-                {
-                        new BCFVersion(0, 0),
-                        new BCFVersion(0, 0),
-                        true
-                },
-                {
-                        BCF2Codec.ALLOWED_BCF_VERSION,
-                        new BCFVersion(0, 0),
-                        false
-                },
-                {
-                        BCF2Codec.ALLOWED_BCF_VERSION,
-                        new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION),
-                        false
-                },
-                {
-                        BCF2Codec.ALLOWED_BCF_VERSION,
-                        new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION),
-                        false
-                },
+        return new Object[][] {
+            {
+                BCF2Codec.ALLOWED_BCF_VERSION,
+                new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
+                true
+            },
+            {new BCFVersion(0, 0), new BCFVersion(0, 0), true},
+            {BCF2Codec.ALLOWED_BCF_VERSION, new BCFVersion(0, 0), false},
+            {BCF2Codec.ALLOWED_BCF_VERSION, new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION), false},
+            {BCF2Codec.ALLOWED_BCF_VERSION, new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION), false},
         };
     }
 
@@ -48,6 +32,6 @@ public class BCF2VersionTest extends VariantBaseTest {
     private final void testBCFVersionHash(final BCFVersion v1, BCFVersion v2, boolean expected) {
         // given the small space the test data is drawn from, assume not equals => different
         // hash codes just for this test
-        Assert.assertEquals(expected,v1.hashCode() == v2.hashCode());
+        Assert.assertEquals(expected, v1.hashCode() == v2.hashCode());
     }
 }

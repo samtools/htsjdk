@@ -23,30 +23,26 @@
  */
 package htsjdk.samtools;
 
+import static htsjdk.samtools.SAMSequenceRecord.*;
+
 import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.samtools.util.Log;
-
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
-import static htsjdk.samtools.SAMSequenceRecord.*;
-
 /**
  * Collection of SAMSequenceRecords.
  */
-
 public class SAMSequenceDictionary implements HtsHeader, Serializable {
     public static final long serialVersionUID = 1L;
 
     private List<SAMSequenceRecord> mSequences = new ArrayList<>();
     private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<>();
 
-    public SAMSequenceDictionary() {
-    }
+    public SAMSequenceDictionary() {}
 
     public SAMSequenceDictionary(final List<SAMSequenceRecord> list) {
         this();
@@ -77,13 +73,15 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
 
     public void addSequence(final SAMSequenceRecord sequenceRecord) {
         if (mSequenceMap.containsKey(sequenceRecord.getSequenceName())) {
-            throw new IllegalArgumentException("Cannot add sequence that already exists in SAMSequenceDictionary: " +
-                    sequenceRecord.getSequenceName());
+            throw new IllegalArgumentException("Cannot add sequence that already exists in SAMSequenceDictionary: "
+                    + sequenceRecord.getSequenceName());
         }
         sequenceRecord.setSequenceIndex(mSequences.size());
         mSequences.add(sequenceRecord);
         mSequenceMap.put(sequenceRecord.getSequenceName(), sequenceRecord);
-        sequenceRecord.getAlternativeSequenceNames().forEach(an -> addSequenceAlias(sequenceRecord.getSequenceName(), an));
+        sequenceRecord
+                .getAlternativeSequenceNames()
+                .forEach(an -> addSequenceAlias(sequenceRecord.getSequenceName(), an));
     }
 
     /**
@@ -118,8 +116,7 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
      * @return The sum of the lengths of the sequences in this dictionary
      */
     public long getReferenceLength() {
-        return getSequences()
-                .stream()
+        return getSequences().stream()
                 .mapToLong(SAMSequenceRecord::getSequenceLength)
                 .sum();
     }
@@ -146,18 +143,20 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
         final Iterator<SAMSequenceRecord> thatSequences = that.mSequences.iterator();
         for (final SAMSequenceRecord thisSequence : mSequences) {
             if (!thatSequences.hasNext()) {
-                throw new AssertionError(String.format(DICT_MISMATCH_TEMPLATE, thisSequence + " is present in only one dictionary"));
+                throw new AssertionError(
+                        String.format(DICT_MISMATCH_TEMPLATE, thisSequence + " is present in only one dictionary"));
             } else {
                 final SAMSequenceRecord thatSequence = thatSequences.next();
-                if(!thatSequence.isSameSequence(thisSequence)) {
-                    throw new AssertionError(
-                            String.format(DICT_MISMATCH_TEMPLATE, thatSequence + " was found when " + thisSequence + " was expected")
-                    );
+                if (!thatSequence.isSameSequence(thisSequence)) {
+                    throw new AssertionError(String.format(
+                            DICT_MISMATCH_TEMPLATE,
+                            thatSequence + " was found when " + thisSequence + " was expected"));
                 }
             }
         }
         if (thatSequences.hasNext())
-            throw new AssertionError(String.format(DICT_MISMATCH_TEMPLATE, thatSequences.next() + " is present in only one dictionary"));
+            throw new AssertionError(
+                    String.format(DICT_MISMATCH_TEMPLATE, thatSequences.next() + " is present in only one dictionary"));
     }
 
     /**
@@ -200,7 +199,7 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
 
         SAMSequenceDictionary that = (SAMSequenceDictionary) o;
 
-       return mSequences.equals(that.mSequences);
+        return mSequences.equals(that.mSequences);
     }
 
     /**
@@ -216,12 +215,12 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
      * @param altName       new contig name
      * @return the contig associated to the 'originalName/altName'
      */
-    public SAMSequenceRecord addSequenceAlias(final String originalName,
-            final String altName) {
+    public SAMSequenceRecord addSequenceAlias(final String originalName, final String altName) {
         if (originalName == null) throw new IllegalArgumentException("original name cannot be null");
         if (altName == null) throw new IllegalArgumentException("alt name cannot be null");
         final SAMSequenceRecord originalSeqRecord = getSequence(originalName);
-        if (originalSeqRecord == null) throw new IllegalArgumentException("Sequence " + originalName + " doesn't exist in dictionary.");
+        if (originalSeqRecord == null)
+            throw new IllegalArgumentException("Sequence " + originalName + " doesn't exist in dictionary.");
         // same name, nothing to do
         if (originalName.equals(altName)) return originalSeqRecord;
         final SAMSequenceRecord altSeqRecord = getSequence(altName);
@@ -229,8 +228,8 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
             // alias was already set to the same record
             if (altSeqRecord.equals(originalSeqRecord)) return originalSeqRecord;
             // alias was already set to another record
-            throw new IllegalArgumentException("Alias " + altName + " for " + originalSeqRecord +
-                    " was already set to " + altSeqRecord.getSequenceName());
+            throw new IllegalArgumentException("Alias " + altName + " for " + originalSeqRecord + " was already set to "
+                    + altSeqRecord.getSequenceName());
         }
         mSequenceMap.put(altName, originalSeqRecord);
         return originalSeqRecord;
@@ -248,8 +247,7 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
      * @param altName       new contig name
      * @return the contig associated to the 'originalName/altName', with the AN tag including the altName
      */
-    public SAMSequenceRecord addAlternativeSequenceName(final String originalName,
-            final String altName) {
+    public SAMSequenceRecord addAlternativeSequenceName(final String originalName, final String altName) {
         final SAMSequenceRecord record = addSequenceAlias(originalName, altName);
         record.addAlternativeSequenceName(altName);
         return record;
@@ -267,20 +265,19 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
      *         empty
      */
     public String md5() {
-        if (isEmpty())
-            return "";
+        if (isEmpty()) return "";
         try {
             final MessageDigest md5 = MessageDigest.getInstance("MD5");
             md5.reset();
             for (final SAMSequenceRecord samSequenceRecord : mSequences) {
-                if (samSequenceRecord.getSequenceIndex() > 0)
-                    md5.update((byte) ' ');
+                if (samSequenceRecord.getSequenceIndex() > 0) md5.update((byte) ' ');
                 final String md5_tag = samSequenceRecord.getAttribute(SAMSequenceRecord.MD5_TAG);
                 if (md5_tag != null) {
                     md5.update(md5_tag.getBytes());
                 } else {
                     md5.update(samSequenceRecord.getSequenceName().getBytes());
-                    md5.update(String.valueOf(samSequenceRecord.getSequenceLength()).getBytes());
+                    md5.update(String.valueOf(samSequenceRecord.getSequenceLength())
+                            .getBytes());
                 }
             }
             String hash = new BigInteger(1, md5.digest()).toString(16);
@@ -301,14 +298,13 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
 
     @Override
     public String toString() {
-        return "SAMSequenceDictionary:( sequences:"+ size()+
-                " length:"+ getReferenceLength()+" "+
-                " md5:"+md5()+")";
+        return "SAMSequenceDictionary:( sequences:" + size() + " length:"
+                + getReferenceLength() + " " + " md5:"
+                + md5() + ")";
     }
 
-    public static final List<String> DEFAULT_DICTIONARY_EQUAL_TAG = Arrays.asList(
-            SAMSequenceRecord.MD5_TAG,
-            SAMSequenceRecord.SEQUENCE_LENGTH_TAG);
+    public static final List<String> DEFAULT_DICTIONARY_EQUAL_TAG =
+            Arrays.asList(SAMSequenceRecord.MD5_TAG, SAMSequenceRecord.SEQUENCE_LENGTH_TAG);
 
     /**
      * Will merge dictionaryTags from two dictionaries into one focusing on merging the tags rather than the sequences.
@@ -324,23 +320,31 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
      * @param tagsToMatch list of tags that must be equal if present in both sequence. Must contain MD, and LN
      * @return dictionary consisting of the same sequences as the two inputs with the merged values of tags.
      */
-    public static SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
-                                                          final SAMSequenceDictionary dict2,
-                                                          final List<String> tagsToMatch) {
+    public static SAMSequenceDictionary mergeDictionaries(
+            final SAMSequenceDictionary dict1, final SAMSequenceDictionary dict2, final List<String> tagsToMatch) {
 
         // We require MD and LN to match.
         if (!tagsToMatch.contains(MD5_TAG) || !tagsToMatch.contains(SEQUENCE_LENGTH_TAG)) {
-            throw new IllegalArgumentException("Both " + MD5_TAG + " and " + SEQUENCE_LENGTH_TAG + " must be matched " +
-                    "when merging dictionaries. Found: " + String.join(",", tagsToMatch));
+            throw new IllegalArgumentException("Both " + MD5_TAG + " and " + SEQUENCE_LENGTH_TAG + " must be matched "
+                    + "when merging dictionaries. Found: " + String.join(",", tagsToMatch));
         }
 
-        if (!dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList()).equals(
-                dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList()))) {
+        if (!dict1.getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .collect(Collectors.toList())
+                .equals(dict2.getSequences().stream()
+                        .map(SAMSequenceRecord::getSequenceName)
+                        .collect(Collectors.toList()))) {
 
-            throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
-                            "different sequences in them. Sequences must be in the same order as well. Found [%s] and [%s].",
-                    dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.joining(", ")),
-                    dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.joining(", "))));
+            throw new IllegalArgumentException(String.format(
+                    "Do not use this function to merge dictionaries with "
+                            + "different sequences in them. Sequences must be in the same order as well. Found [%s] and [%s].",
+                    dict1.getSequences().stream()
+                            .map(SAMSequenceRecord::getSequenceName)
+                            .collect(Collectors.joining(", ")),
+                    dict2.getSequences().stream()
+                            .map(SAMSequenceRecord::getSequenceName)
+                            .collect(Collectors.joining(", "))));
         }
 
         final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();
@@ -361,8 +365,9 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
                 final String value2 = s2.getAttribute(tag);
 
                 if (value1 != null && value2 != null && !value1.equals(value2)) {
-                    String baseMessage = String.format("Found sequence entry for which " +
-                                    "tags differ: %s and tag %s has the two values: %s and %s.",
+                    String baseMessage = String.format(
+                            "Found sequence entry for which "
+                                    + "tags differ: %s and tag %s has the two values: %s and %s.",
                             sName, tag, value1, value2);
 
                     if (tagsToMatch.contains(tag)) {
@@ -379,12 +384,13 @@ public class SAMSequenceDictionary implements HtsHeader, Serializable {
             final int length2 = s2.getSequenceLength();
 
             if (length1 != UNKNOWN_SEQUENCE_LENGTH && length2 != UNKNOWN_SEQUENCE_LENGTH && length1 != length2) {
-                throw new IllegalArgumentException(String.format("Cannot merge the two dictionaries. " +
-                        "Found sequence entry for which " + "lengths differ: %s has lengths %s and %s", sName, length1, length2));
+                throw new IllegalArgumentException(String.format(
+                        "Cannot merge the two dictionaries. " + "Found sequence entry for which "
+                                + "lengths differ: %s has lengths %s and %s",
+                        sName, length1, length2));
             }
             sMerged.setSequenceLength(length1 == UNKNOWN_SEQUENCE_LENGTH ? length2 : length1);
         }
         return finalDict;
     }
 }
-

@@ -1,17 +1,17 @@
 package htsjdk.samtools.fastq;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class BasicFastqWriterTest extends HtsjdkTest {
     public class OutputStreamWrapper extends ByteArrayOutputStream {
         public int flushCalled = 0;
         public int writeCalled = 0;
+
         @Override
         public void flush() throws IOException {
             flushCalled++;
@@ -38,6 +38,7 @@ public class BasicFastqWriterTest extends HtsjdkTest {
             }
         }
         // flush()/close() results in two flushes
-        Assert.assertTrue(loggedStream.flushCalled <= 5, "flush called " + loggedStream.flushCalled + " times which is > 5");
+        Assert.assertTrue(
+                loggedStream.flushCalled <= 5, "flush called " + loggedStream.flushCalled + " times which is > 5");
     }
 }

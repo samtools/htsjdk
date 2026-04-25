@@ -23,19 +23,15 @@
  */
 package htsjdk.samtools;
 
-
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.File;
 import java.io.InputStream;
-
 
 /**
  * Internal class for reading SAM text files.
  */
 class SAMTextReader extends SamReader.ReaderImplementation {
-
 
     private SAMRecordFactory samRecordFactory;
     private BufferedLineReader mReader;
@@ -56,7 +52,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      *
      * @param stream Need not be buffered, as this class provides buffered reading.
      */
-    public SAMTextReader(final InputStream stream, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
+    public SAMTextReader(
+            final InputStream stream, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
         mReader = new BufferedLineReader(stream);
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
@@ -69,7 +66,11 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      * @param stream Need not be buffered, as this class provides buffered reading.
      * @param file   For error reporting only.
      */
-    public SAMTextReader(final InputStream stream, final File file, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
+    public SAMTextReader(
+            final InputStream stream,
+            final File file,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory factory) {
         this(stream, validationStringency, factory);
         mFile = file;
     }
@@ -188,7 +189,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     /**
      * Unsupported for SAM text files.
      */
-    public CloseableIterator<SAMRecord> query(final String sequence, final int start, final int end, final boolean contained) {
+    public CloseableIterator<SAMRecord> query(
+            final String sequence, final int start, final int end, final boolean contained) {
         throw new UnsupportedOperationException("Cannot query SAM text files");
     }
 
@@ -227,8 +229,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      */
     private class RecordIterator implements CloseableIterator<SAMRecord> {
 
-        private final SAMLineParser parser = new SAMLineParser(samRecordFactory, validationStringency,
-                mFileHeader, mParentReader, mFile);
+        private final SAMLineParser parser =
+                new SAMLineParser(samRecordFactory, validationStringency, mFileHeader, mParentReader, mFile);
 
         private RecordIterator() {
             if (mReader == null) {
@@ -267,7 +269,5 @@ class SAMTextReader extends SamReader.ReaderImplementation {
 
             return parser.parseLine(mCurrentLine, mReader.getLineNumber());
         }
-
     }
 }
-

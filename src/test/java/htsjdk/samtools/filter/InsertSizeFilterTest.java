@@ -24,7 +24,8 @@ public class InsertSizeFilterTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "data")
-    public void testInsertSizeFilter(final int minInsertSize, final int maxInsertSize, final int expectedPassingRecords) {
+    public void testInsertSizeFilter(
+            final int minInsertSize, final int maxInsertSize, final int expectedPassingRecords) {
         final InsertSizeFilter filter = new InsertSizeFilter(minInsertSize, maxInsertSize);
         int actualPassingRecords = 0;
         for (final SAMRecord rec : builder) {
@@ -35,11 +36,11 @@ public class InsertSizeFilterTest extends HtsjdkTest {
 
     @DataProvider(name = "data")
     private Object[][] testData() {
-        return new Object[][]{
-                {0, 0, 2},
-                {50, 50, 2},
-                {50, 100, 6},
-                {0, Integer.MAX_VALUE, 8}
+        return new Object[][] {
+            {0, 0, 2},
+            {50, 50, 2},
+            {50, 100, 6},
+            {0, Integer.MAX_VALUE, 8}
         };
     }
 }

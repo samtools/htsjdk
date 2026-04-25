@@ -25,9 +25,7 @@ public class FQZParams {
         fqzFlags = new FQZGlobalFlags(inBuffer);
 
         final int numParamBlock = fqzFlags.isMultiParam() ? inBuffer.get() : 1;
-        int maxSelector = numParamBlock > 1 ?
-                numParamBlock :
-                0;
+        int maxSelector = numParamBlock > 1 ? numParamBlock : 0;
         if (fqzFlags.hasSelectorTable()) {
             maxSelector = inBuffer.get() & 0xFF;
             FQZUtils.readArray(inBuffer, selectorTable, 256);
@@ -45,7 +43,7 @@ public class FQZParams {
         for (int p = 0; p < numParamBlock; p++) {
             final FQZParam fqzparam = new FQZParam(inBuffer, NUMBER_OF_SYMBOLS);
             fqzParamList.add(p, fqzparam);
-            if (maxSymbol < fqzparam.getMaxSymbols()){
+            if (maxSymbol < fqzparam.getMaxSymbols()) {
                 maxSymbol = fqzparam.getMaxSymbols();
             }
         }
@@ -73,5 +71,4 @@ public class FQZParams {
     public int[] getSelectorTable() {
         return selectorTable;
     }
-
 }

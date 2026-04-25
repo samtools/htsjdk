@@ -1,11 +1,9 @@
 package htsjdk.samtools.cram.spec30;
 
-import org.testng.annotations.Test;
-
+import htsjdk.samtools.SAMRecord;
 import java.io.IOException;
 import java.util.List;
-
-import htsjdk.samtools.SAMRecord;
+import org.testng.annotations.Test;
 
 /** Tests multi-container/slice/ref layouts from the hts-specs 3.0 test suite. */
 public class Spec30MultiContainerTest extends HtsSpecsComplianceTestBase {

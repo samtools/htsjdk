@@ -2,7 +2,6 @@ package htsjdk.beta.io.bundle;
 
 import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.utils.ValidationUtils;
-
 import java.io.OutputStream;
 import java.util.Optional;
 
@@ -33,10 +32,7 @@ public class OutputStreamResource extends BundleResourceBase {
      * @param format The format for this resource. May not be null or 0-length.
      */
     public OutputStreamResource(
-            final OutputStream outputStream,
-            final String displayName,
-            final String contentType,
-            final String format) {
+            final OutputStream outputStream, final String displayName, final String contentType, final String format) {
         super(displayName, contentType, format);
         ValidationUtils.nonNull(outputStream, "output stream");
         this.outputStream = outputStream;
@@ -54,7 +50,9 @@ public class OutputStreamResource extends BundleResourceBase {
     }
 
     @Override
-    public boolean hasOutputType() { return true; }
+    public boolean hasOutputType() {
+        return true;
+    }
 
     @Override
     public boolean equals(Object o) {

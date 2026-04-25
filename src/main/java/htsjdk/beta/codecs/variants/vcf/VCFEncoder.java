@@ -1,25 +1,23 @@
 package htsjdk.beta.codecs.variants.vcf;
 
+import htsjdk.annotations.InternalAPI;
 import htsjdk.beta.exception.HtsjdkPluginException;
 import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
-import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsContentType;
 import htsjdk.beta.plugin.variants.VariantsEncoder;
 import htsjdk.beta.plugin.variants.VariantsEncoderOptions;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.io.IOPath;
-import htsjdk.annotations.InternalAPI;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
-
 import java.util.Optional;
-
 
 /**
  * InternalAPI
@@ -51,14 +49,19 @@ public abstract class VCFEncoder implements VariantsEncoder {
 
         this.outputBundle = outputBundle;
         this.variantsEncoderOptions = variantsEncoderOptions;
-        this.displayName = outputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS).getDisplayName();
+        this.displayName =
+                outputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS).getDisplayName();
     }
 
-   @Override
-    final public String getFileFormat() { return VariantsFormats.VCF; }
+    @Override
+    public final String getFileFormat() {
+        return VariantsFormats.VCF;
+    }
 
     @Override
-    final public String getDisplayName() { return displayName; }
+    public final String getDisplayName() {
+        return displayName;
+    }
 
     @Override
     public void setHeader(final VCFHeader vcfHeader) {
@@ -104,21 +107,17 @@ public abstract class VCFEncoder implements VariantsEncoder {
     }
 
     private static VariantContextWriter getVCFWriter(
-            final Bundle outputBundle,
-            final VariantsEncoderOptions variantsEncoderOptions) {
-        final VariantContextWriterBuilder writerBuilder =
-                variantsEncoderOptionsToVariantContextWriterBuilder(
-                        variantsEncoderOptions,
-                        outputBundle.get(BundleResourceType.CT_VARIANTS_INDEX).isPresent()
-                );
+            final Bundle outputBundle, final VariantsEncoderOptions variantsEncoderOptions) {
+        final VariantContextWriterBuilder writerBuilder = variantsEncoderOptionsToVariantContextWriterBuilder(
+                variantsEncoderOptions,
+                outputBundle.get(BundleResourceType.CT_VARIANTS_INDEX).isPresent());
         setWriterBuilderOutputs(writerBuilder, outputBundle);
         return writerBuilder.build();
     }
 
     // propagate VariantsEncoderOptions -> VariantContextWriterBuilder
     private static VariantContextWriterBuilder variantsEncoderOptionsToVariantContextWriterBuilder(
-            final VariantsEncoderOptions variantsEncoderOptions,
-            final boolean createIndex) {
+            final VariantsEncoderOptions variantsEncoderOptions, final boolean createIndex) {
         final VariantContextWriterBuilder vcWriterBuilder = new VariantContextWriterBuilder();
         vcWriterBuilder.clearOptions();
 
@@ -152,21 +151,19 @@ public abstract class VCFEncoder implements VariantsEncoder {
     }
 
     private static void setWriterBuilderOutputs(
-            final VariantContextWriterBuilder writerBuilder,
-            final Bundle outputBundle) {
+            final VariantContextWriterBuilder writerBuilder, final Bundle outputBundle) {
         final BundleResource variantsResource = outputBundle.getOrThrow(BundleResourceType.CT_VARIANT_CONTEXTS);
         if (!variantsResource.hasOutputType()) {
             throw new IllegalArgumentException(String.format(
                     "The provided %s resource (%s) must be a writeable/output resource",
-                    BundleResourceType.CT_VARIANT_CONTEXTS,
-                    variantsResource));
+                    BundleResourceType.CT_VARIANT_CONTEXTS, variantsResource));
         }
 
         final Optional<IOPath> optIndexIOPath = getIndexIOPath(outputBundle);
         if (variantsResource.getIOPath().isPresent()) {
             final IOPath variantsIOPath = variantsResource.getIOPath().get();
             if (optIndexIOPath.isPresent()) {
-                //TODO: this resolves the index automatically. it should check to make sure the provided index
+                // TODO: this resolves the index automatically. it should check to make sure the provided index
                 // matches the one that is automatically resolved, otherwise throw since the request will not be honored
             }
             writerBuilder.setOutputPath(variantsIOPath.toPath());
@@ -175,8 +172,7 @@ public abstract class VCFEncoder implements VariantsEncoder {
             if (optIndexIOPath.isPresent()) {
                 throw new HtsjdkUnsupportedOperationException(String.format(
                         "Can't write a VCF index to file %s when output is written to a stream %s",
-                        optIndexIOPath.get(),
-                        variantsResource));
+                        optIndexIOPath.get(), variantsResource));
             }
             // VariantContextWriterBuilder doesn't provide any buffering, but if we were to wrap the provided
             // stream in a buffered stream here, we wouldn't be able to properly control the flushing or lifetime
@@ -197,13 +193,11 @@ public abstract class VCFEncoder implements VariantsEncoder {
     private static void validateImputedOutputType(final IOPath variantsIOPath) {
         final VariantContextWriterBuilder.OutputType imputedOutputType =
                 VariantContextWriterBuilder.determineOutputTypeFromFile(variantsIOPath.toPath());
-        if (imputedOutputType != VariantContextWriterBuilder.OutputType.VCF &&
-                imputedOutputType != VariantContextWriterBuilder.OutputType.BLOCK_COMPRESSED_VCF) {
+        if (imputedOutputType != VariantContextWriterBuilder.OutputType.VCF
+                && imputedOutputType != VariantContextWriterBuilder.OutputType.BLOCK_COMPRESSED_VCF) {
             throw new HtsjdkPluginException(String.format(
                     "An unsupported output type %s was derived for the resource %s ",
-                    imputedOutputType,
-                    variantsIOPath.getRawInputString()
-            ));
+                    imputedOutputType, variantsIOPath.getRawInputString()));
         }
     }
 
@@ -216,13 +210,11 @@ public abstract class VCFEncoder implements VariantsEncoder {
         if (!indexResource.hasOutputType()) {
             throw new IllegalArgumentException(String.format(
                     "The provided %s index resource (%s) must be a writeable/output resource",
-                    BundleResourceType.CT_VARIANTS_INDEX,
-                    indexResource));
+                    BundleResourceType.CT_VARIANTS_INDEX, indexResource));
         }
         if (!indexResource.getIOPath().isPresent()) {
             throw new HtsjdkUnsupportedOperationException("Writing a VCF index to a stream not implemented");
         }
         return indexResource.getIOPath();
     }
-
 }

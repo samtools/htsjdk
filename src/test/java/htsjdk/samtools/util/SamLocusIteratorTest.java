@@ -24,10 +24,9 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMRecordSetBuilder;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.List;
 
 /**
  * @author alecw@broadinstitute.org
@@ -225,7 +224,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getDeletedInRecord().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getDeletedInRecord()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Deletion);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Deletion);
                     }
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 } else {
@@ -233,7 +233,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getRecordAndOffsets()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
                     }
                     Assert.assertEquals(li.size(), coverage);
 
@@ -280,7 +281,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                     }
                 } else {
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
@@ -304,7 +306,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         }
         final int insStart1 = 174;
         final int insStart2 = 191;
-        for (final int qualityScoreCutoff : new int[] {0, 10}){
+        for (final int qualityScoreCutoff : new int[] {0, 10}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setQualityScoreCutoff(10);
             sli.setQualityScoreCutoff(qualityScoreCutoff);
@@ -327,20 +329,19 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                     }
                 }
                 // Second insertion should only be included when cutoff is 0 because base quality is 9
                 else if ((qualityScoreCutoff == 0) && (li.getPosition() == insStart2)) {
                     Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
-                }
-                else {
+                } else {
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 }
             }
         }
     }
-
 
     /**
      * Test an insertion at the start of the read, with both including or not indels
@@ -380,7 +381,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 Assert.assertEquals(li.getInsertedInRecord().size(), (indelPosition) ? coverage : 0);
                 // Check the correct assignment of the alignment type
                 for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                    Assert.assertEquals(
+                            rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                 }
                 // check offsets of the insertion
                 if (indelPosition) {
@@ -428,7 +430,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 Assert.assertEquals(li.getInsertedInRecord().size(), (indelPosition) ? coverage : 0);
                 // Check the correct assignment of the alignment type
                 for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                    Assert.assertEquals(
+                            rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                 }
                 // check offsets of the insertion
                 if (indelPosition) {
@@ -481,7 +484,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 Assert.assertEquals(li.getInsertedInRecord().size(), (pos == endN) ? coverage : 0);
                 // Check the correct assignment of the alignment type
                 for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                    Assert.assertEquals(
+                            rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                 }
                 // check offsets of the insertion
                 if (pos == endN) {
@@ -534,12 +538,15 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 for (final SamLocusIterator.RecordAndOffset rao : li.getRecordAndOffsets()) {
                     Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
                 }
-                Assert.assertEquals(li.size(), coverage); // either will be all deletions, or all non-deletions, but always of size `coverage`.
+                Assert.assertEquals(
+                        li.size(),
+                        coverage); // either will be all deletions, or all non-deletions, but always of size `coverage`.
                 // accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), (insideDeletion) ? coverage : 0);
                 // Check the correct assignment of the alignment type
                 for (final SamLocusIterator.RecordAndOffset rao : li.getDeletedInRecord()) {
-                    Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Deletion);
+                    Assert.assertEquals(
+                            rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Deletion);
                 }
                 // no accumulation of insertion
                 Assert.assertEquals(li.getInsertedInRecord().size(), 0);
@@ -569,25 +576,76 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         }
 
         // make sure we accumulated depth of 2 for each position
-        final int[] expectedPositions = new int[]{
-                // 3S
-                165, 166, 167, // 3M
-                // 3N
-                171, 172, 173, // 3M
-                174, 175, 176, // 3D
-                177, 178, 179, // 3M
-                // 3I
-                180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197}; // 18M
+        final int[] expectedPositions = new int[] {
+            // 3S
+            165,
+            166,
+            167, // 3M
+            // 3N
+            171,
+            172,
+            173, // 3M
+            174,
+            175,
+            176, // 3D
+            177,
+            178,
+            179, // 3M
+            // 3I
+            180,
+            181,
+            182,
+            183,
+            184,
+            185,
+            186,
+            187,
+            188,
+            189,
+            190,
+            191,
+            192,
+            193,
+            194,
+            195,
+            196,
+            197
+        }; // 18M
 
-        final int[] expectedReadOffsets = new int[]{
-                // 3S
-                3, 4, 5, // 3M
-                // 3N
-                6, 7, 8, // 3M
-                8, 8, 8, // 3D previous 0-based offset
-                9, 10, 11, // 3M
-                // 3I
-                15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 // 3M
+        final int[] expectedReadOffsets = new int[] {
+            // 3S
+            3,
+            4,
+            5, // 3M
+            // 3N
+            6,
+            7,
+            8, // 3M
+            8,
+            8,
+            8, // 3D previous 0-based offset
+            9,
+            10,
+            11, // 3M
+            // 3I
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32 // 3M
         };
 
         // to check the range of the insertion
@@ -619,7 +677,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getInsertedInRecord()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Insertion);
                     }
                     // check the record offset
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), expectedInsertionOffset);
@@ -633,7 +692,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getDeletedInRecord().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getDeletedInRecord()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Deletion);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Deletion);
                     }
                     Assert.assertEquals(li.getRecordAndOffsets().size(), 0);
                     Assert.assertEquals(li.size(), coverage); // includes deletions
@@ -645,7 +705,8 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
                     // Check the correct assignment of the alignment type
                     for (final SamLocusIterator.RecordAndOffset rao : li.getRecordAndOffsets()) {
-                        Assert.assertEquals(rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
+                        Assert.assertEquals(
+                                rao.getAlignmentType(), SamLocusIterator.RecordAndOffset.AlignmentType.Match);
                     }
                     Assert.assertEquals(li.size(), coverage);
                     // Assert.assertEquals(li.getDeletedInRecord().size(), 0);
@@ -655,8 +716,6 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 ++i;
             }
         }
-
-
     }
 
     /**
@@ -685,26 +744,25 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         for (i = 0; i < 18; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
-            expectedReadOffsets[i] = new int[]{i};
+            expectedReadOffsets[i] = new int[] {i};
         }
         // Gap of 10, then 13 bases from the first read
         for (; i < 36 - 5; ++i) {
             expectedReferencePositions[i] = startPosition + 10 + i;
             expectedDepths[i] = 1;
-            expectedReadOffsets[i] = new int[]{i};
+            expectedReadOffsets[i] = new int[] {i};
         }
         // Last 5 bases of first read overlap first 5 bases of second read
         for (; i < 36; ++i) {
             expectedReferencePositions[i] = startPosition + 10 + i;
             expectedDepths[i] = 2;
-            expectedReadOffsets[i] = new int[]{i, i - 31};
-
+            expectedReadOffsets[i] = new int[] {i, i - 31};
         }
         // Last 31 bases of 2nd read
         for (; i < 36 + 36 - 5; ++i) {
             expectedReferencePositions[i] = startPosition + 10 + i;
             expectedDepths[i] = 1;
-            expectedReadOffsets[i] = new int[]{i - 31};
+            expectedReadOffsets[i] = new int[] {i - 31};
         }
 
         i = 0;
@@ -756,7 +814,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
-            expectedReadOffsets[i] = new int[]{i};
+            expectedReadOffsets[i] = new int[] {i};
         }
         // Gap of 10
         for (; i < 18 + 10; ++i) {
@@ -770,21 +828,21 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
-            expectedReadOffsets[i] = new int[]{i - 10};
+            expectedReadOffsets[i] = new int[] {i - 10};
         }
         // last 5 bases of the first read overlap first 5 bases of second read
         for (; i < 46; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 2;
             expectedDelDepths[i] = 0;
-            expectedReadOffsets[i] = new int[]{i - 10, i + 10 - 46 - 5};
+            expectedReadOffsets[i] = new int[] {i - 10, i + 10 - 46 - 5};
         }
         // Last 31 bases of 2nd read
         for (; i < numBasesCovered; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
-            expectedReadOffsets[i] = new int[]{i + 10 - 46 - 5};
+            expectedReadOffsets[i] = new int[] {i + 10 - 46 - 5};
         }
         i = 0;
         for (final SamLocusIterator.LocusInfo li : sli) {
@@ -832,11 +890,10 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         // Build quality string: 23 bases, all BQ=30 except position 10 (first insertion) = BQ=5
         final char[] quals = new char[23];
-        java.util.Arrays.fill(quals, '?');  // '?' = ASCII 63 - 33 = BQ 30
-        quals[10] = '&';                     // '&' = ASCII 38 - 33 = BQ 5
+        java.util.Arrays.fill(quals, '?'); // '?' = ASCII 63 - 33 = BQ 30
+        quals[10] = '&'; // '&' = ASCII 38 - 33 = BQ 5
 
-        builder.addFrag("record0", 0, startPosition, false, false,
-                "10M1I1M1I10M", new String(quals), 30);
+        builder.addFrag("record0", 0, startPosition, false, false, "10M1I1M1I10M", new String(quals), 30);
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
         sli.setIncludeIndels(true);
@@ -851,9 +908,10 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         for (final SamLocusIterator.RecordAndOffset rao : insertions) {
             // The second insertion's first base is at read offset 12.
-            Assert.assertEquals(rao.getOffset(), 12,
-                    "Insertion reported at wrong read offset — " +
-                    "readBase drift from prior BQ-failed insertion");
+            Assert.assertEquals(
+                    rao.getOffset(),
+                    12,
+                    "Insertion reported at wrong read offset — " + "readBase drift from prior BQ-failed insertion");
         }
     }
 }

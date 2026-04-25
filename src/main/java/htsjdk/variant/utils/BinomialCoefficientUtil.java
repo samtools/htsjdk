@@ -1,8 +1,5 @@
 package htsjdk.variant.utils;
 
-import java.lang.ArithmeticException;
-import java.lang.Math;
-
 /**
  * A modified version of the Apache Math implementation of binomial
  * coefficient calculation
@@ -24,7 +21,6 @@ import java.lang.Math;
  * Copyright 2010-2012 CS Systèmes d'Information
  *
  */
-
 public class BinomialCoefficientUtil {
 
     /**
@@ -111,12 +107,14 @@ public class BinomialCoefficientUtil {
      * @param k Size of the subsets to be counted.
      * @throws IllegalArgumentException if {@code n < 0} or {@code k > n}.
      */
-    private static void checkBinomial(final int n, final int k) throws IllegalArgumentException{
+    private static void checkBinomial(final int n, final int k) throws IllegalArgumentException {
         if (n < k) {
-            throw new IllegalArgumentException("The first value (" + n + ") must not be exceeded by the second value (" + k + ") in a binomial coefficient");
+            throw new IllegalArgumentException("The first value (" + n + ") must not be exceeded by the second value ("
+                    + k + ") in a binomial coefficient");
         }
         if (n < 0) {
-            throw new IllegalArgumentException("The first value (" + n + ") in a binomial coefficient must not be negative.");
+            throw new IllegalArgumentException(
+                    "The first value (" + n + ") in a binomial coefficient must not be negative.");
         }
     }
 
@@ -151,10 +149,8 @@ public class BinomialCoefficientUtil {
     private static int gcd(int p, int q) throws ArithmeticException {
         int a = p;
         int b = q;
-        if (a == 0 ||
-                b == 0) {
-            if (a == Integer.MIN_VALUE ||
-                    b == Integer.MIN_VALUE) {
+        if (a == 0 || b == 0) {
+            if (a == Integer.MIN_VALUE || b == Integer.MIN_VALUE) {
                 throw new ArithmeticException("overflow: gcd(" + p + ", " + q + ") is 2^31");
             }
             return Math.abs(a + b);
@@ -164,7 +160,7 @@ public class BinomialCoefficientUtil {
         long bl = b;
         boolean useLong = false;
         if (a < 0) {
-            if(Integer.MIN_VALUE == a) {
+            if (Integer.MIN_VALUE == a) {
                 useLong = true;
             } else {
                 a = -a;
@@ -180,7 +176,7 @@ public class BinomialCoefficientUtil {
             bl = -bl;
         }
         if (useLong) {
-            if(al == bl) {
+            if (al == bl) {
                 throw new ArithmeticException("overflow: gcd(" + p + ", " + q + ") is 2^31");
             }
             long blbu = bl;
@@ -225,8 +221,7 @@ public class BinomialCoefficientUtil {
     private static int gcdPositive(int a, int b) {
         if (a == 0) {
             return b;
-        }
-        else if (b == 0) {
+        } else if (b == 0) {
             return a;
         }
 
@@ -286,7 +281,6 @@ public class BinomialCoefficientUtil {
                         ret = a * b;
                     } else {
                         throw new ArithmeticException();
-
                     }
                 } else {
                     // assert b == 0
@@ -309,5 +303,4 @@ public class BinomialCoefficientUtil {
         }
         return ret;
     }
-
 }

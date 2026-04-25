@@ -31,7 +31,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 public final class BetaIntegerCodec extends CoreCodec<Integer> {
     private final int offset;
     private final int bitsPerValue;
-    private final long valueLimit;    // 1 << bitsPerValue (max 32) so int is too small
+    private final long valueLimit; // 1 << bitsPerValue (max 32) so int is too small
 
     /**
      * Given integers to encode in the range MIN to MAX:
@@ -40,10 +40,11 @@ public final class BetaIntegerCodec extends CoreCodec<Integer> {
      *               Setting this to (-MIN) will ensure all stored values will be in the range (0 .. MAX - MIN)
      * @param bitsPerValue the smallest value which will allow the largest stored value (MAX - MIN)
      */
-    public BetaIntegerCodec(final BitInputStream coreBlockInputStream,
-                            final BitOutputStream coreBlockOutputStream,
-                            final int offset,
-                            final int bitsPerValue) {
+    public BetaIntegerCodec(
+            final BitInputStream coreBlockInputStream,
+            final BitOutputStream coreBlockOutputStream,
+            final int offset,
+            final int bitsPerValue) {
 
         super(coreBlockInputStream, coreBlockOutputStream);
 
@@ -66,12 +67,11 @@ public final class BetaIntegerCodec extends CoreCodec<Integer> {
         final int newValue = value + offset;
 
         if (newValue < 0) {
-            String negative = String.format("Value %s plus offset %s must be positive",
-                    value, offset);
+            String negative = String.format("Value %s plus offset %s must be positive", value, offset);
             throw new IllegalArgumentException(negative);
         } else if (newValue >= valueLimit) {
-            String tooBig = String.format("Value %s plus offset %s is greater than or equal to limit %s",
-                    value, offset, valueLimit);
+            String tooBig = String.format(
+                    "Value %s plus offset %s is greater than or equal to limit %s", value, offset, valueLimit);
             throw new IllegalArgumentException(tooBig);
         }
 

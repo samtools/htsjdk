@@ -46,7 +46,7 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
         writer.write(data, 1, 3);
 
         final byte[] result = writer.toByteArray();
-        Assert.assertEquals(result, new byte[]{20, 30, 40});
+        Assert.assertEquals(result, new byte[] {20, 30, 40});
     }
 
     @Test
@@ -76,7 +76,7 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
     @Test
     public void testResetClearsAndAllowsReuse() {
         final CRAMByteWriter writer = new CRAMByteWriter();
-        writer.write(new byte[]{1, 2, 3});
+        writer.write(new byte[] {1, 2, 3});
         Assert.assertEquals(writer.size(), 3);
 
         writer.reset();
@@ -84,8 +84,8 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
         Assert.assertEquals(writer.toByteArray(), new byte[0]);
 
         // Write new data after reset
-        writer.write(new byte[]{4, 5});
-        Assert.assertEquals(writer.toByteArray(), new byte[]{4, 5});
+        writer.write(new byte[] {4, 5});
+        Assert.assertEquals(writer.toByteArray(), new byte[] {4, 5});
     }
 
     @Test
@@ -96,17 +96,17 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
         writer.write(42);
         Assert.assertEquals(writer.size(), 1);
 
-        writer.write(new byte[]{1, 2, 3});
+        writer.write(new byte[] {1, 2, 3});
         Assert.assertEquals(writer.size(), 4);
 
-        writer.write(new byte[]{10, 20, 30, 40, 50}, 2, 2);
+        writer.write(new byte[] {10, 20, 30, 40, 50}, 2, 2);
         Assert.assertEquals(writer.size(), 6);
     }
 
     @Test
     public void testGetPositionMatchesSize() {
         final CRAMByteWriter writer = new CRAMByteWriter();
-        writer.write(new byte[]{1, 2, 3, 4, 5});
+        writer.write(new byte[] {1, 2, 3, 4, 5});
         Assert.assertEquals(writer.getPosition(), writer.size());
         Assert.assertEquals(writer.getPosition(), 5);
     }
@@ -114,7 +114,7 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
     @Test
     public void testToByteArrayReturnsCopy() {
         final CRAMByteWriter writer = new CRAMByteWriter();
-        writer.write(new byte[]{1, 2, 3});
+        writer.write(new byte[] {1, 2, 3});
 
         final byte[] a = writer.toByteArray();
         final byte[] b = writer.toByteArray();
@@ -140,7 +140,7 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
 
     @Test
     public void testReadReturnsMinusOneAtEnd() {
-        final CRAMByteReader reader = new CRAMByteReader(new byte[]{42});
+        final CRAMByteReader reader = new CRAMByteReader(new byte[] {42});
         Assert.assertEquals(reader.read(), 42);
         Assert.assertEquals(reader.read(), -1);
         Assert.assertEquals(reader.read(), -1); // repeated calls stay at -1
@@ -196,15 +196,15 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
         final CRAMByteReader reader = new CRAMByteReader(data);
 
         final byte[] first = reader.readFully(3);
-        Assert.assertEquals(first, new byte[]{10, 20, 30});
+        Assert.assertEquals(first, new byte[] {10, 20, 30});
 
         final byte[] second = reader.readFully(2);
-        Assert.assertEquals(second, new byte[]{40, 50});
+        Assert.assertEquals(second, new byte[] {40, 50});
     }
 
     @Test
     public void testReadFullyZeroBytes() {
-        final CRAMByteReader reader = new CRAMByteReader(new byte[]{1, 2});
+        final CRAMByteReader reader = new CRAMByteReader(new byte[] {1, 2});
         final byte[] result = reader.readFully(0);
         Assert.assertEquals(result.length, 0);
     }
@@ -296,8 +296,8 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
     public void testRoundTripMixedWritesAndReads() {
         final CRAMByteWriter writer = new CRAMByteWriter(16);
         writer.write(0xAB);
-        writer.write(new byte[]{10, 20, 30});
-        writer.write(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 4); // writes {3,4,5,6}
+        writer.write(new byte[] {10, 20, 30});
+        writer.write(new byte[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 3, 4); // writes {3,4,5,6}
         writer.write(0xFF);
 
         final byte[] written = writer.toByteArray();
@@ -305,11 +305,11 @@ public class CRAMByteReaderWriterTest extends HtsjdkTest {
 
         final CRAMByteReader reader = new CRAMByteReader(written);
         Assert.assertEquals(reader.read(), 0xAB);
-        Assert.assertEquals(reader.readFully(3), new byte[]{10, 20, 30});
+        Assert.assertEquals(reader.readFully(3), new byte[] {10, 20, 30});
 
         final byte[] subset = new byte[4];
         Assert.assertEquals(reader.read(subset, 0, 4), 4);
-        Assert.assertEquals(subset, new byte[]{3, 4, 5, 6});
+        Assert.assertEquals(subset, new byte[] {3, 4, 5, 6});
 
         Assert.assertEquals(reader.read(), 0xFF);
         Assert.assertEquals(reader.available(), 0);

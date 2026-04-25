@@ -1,35 +1,33 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
-
 
 // the imports for unit testing.
 
 import htsjdk.variant.VariantBaseTest;
-
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
@@ -49,7 +47,7 @@ import org.testng.annotations.Test;
  */
 public class AlleleUnitTest extends VariantBaseTest {
     private Allele ARef, A, T, ATIns, ATCIns, NoCall, SpandDel, NonRef, UnspecifiedAlternate;
-    
+
     @BeforeSuite
     public void before() {
         A = Allele.create("A");
@@ -111,7 +109,6 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertEquals(ATCIns.getBases(), "ATC".getBytes());
     }
 
-
     @Test
     public void testConstructors1() {
         Allele a1 = Allele.create("A");
@@ -135,35 +132,35 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(a1.equals(a3));
         Assert.assertFalse(a1.equals(a4));
     }
-    
+
     @Test
     public void testVCF42Breakend() {
         Allele a;
-        
+
         a = Allele.create("A.");
         Assert.assertTrue(a.isSymbolic());
         Assert.assertEquals("A.", a.getDisplayString());
-        
+
         a = Allele.create(".A");
         Assert.assertTrue(a.isSymbolic());
         Assert.assertEquals(".A", a.getDisplayString());
-        
+
         Assert.assertTrue(Allele.create("AA.").isSymbolic());
         Assert.assertTrue(Allele.create(".AA").isSymbolic());
     }
-    
+
     @Test
     public void testBreakpoint() {
         Allele a = Allele.create("A[chr1:1[");
 
         Assert.assertTrue(a.isSymbolic());
         Assert.assertEquals("A[chr1:1[", a.getDisplayString());
-        
+
         Assert.assertTrue(Allele.create("]chr1:1]A").isSymbolic());
         Assert.assertTrue(Allele.create("[chr1:1[A").isSymbolic());
         Assert.assertTrue(Allele.create("A]chr1:1]").isSymbolic());
     }
-    
+
     @Test
     public void testBreakpointSymbolicBreakend() {
         Assert.assertTrue(Allele.create("A[<contig>:1[").isSymbolic());
@@ -171,19 +168,19 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(Allele.create("]<contig>:1]A").isSymbolic());
         Assert.assertTrue(Allele.create("[<contig>:1[A").isSymbolic());
     }
-    
+
     @Test
     public void testInsSymbolicShorthand() {
         Assert.assertTrue(Allele.create("A<ctg1>").isSymbolic());
         Assert.assertTrue(Allele.create("<ctg1>A").isSymbolic());
     }
-    
+
     @Test
     public void testTelomericBreakend() {
         Assert.assertTrue(Allele.create(".[1:10]").isSymbolic());
         Assert.assertTrue(Allele.create("[1:10].").isSymbolic());
     }
-    
+
     @Test
     public void testSymbolic() {
         Allele a = Allele.create("<SYMBOLIC>");
@@ -207,7 +204,6 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(a.isNonRefAllele());
     }
 
-
     @Test
     public void testEquals() {
         Assert.assertTrue(ARef.basesMatch(A));
@@ -229,55 +225,55 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertFalse(ATIns.basesMatch("ATC"));
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs1() {
         byte[] foo = null;
         Allele.create(foo);
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs2() {
         Allele.create("x");
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs3() {
         Allele.create("--");
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs4() {
         Allele.create("-A");
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs5() {
         Allele.create("A A");
     }
-    
-    @Test (expectedExceptions = IllegalArgumentException.class)
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs6() {
         Allele.create("<symbolic>", true); // symbolic cannot be ref allele
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadNoCallAllelel() {
         Allele.create(Allele.NO_CALL_STRING, true); // no call cannot be ref allele
     }
 
-    @Test (expectedExceptions = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadSpanningDeletionAllelel() {
         Allele.create(Allele.SPAN_DEL_STRING, true); // spanning deletion cannot be ref allele
     }
 
     @DataProvider
     public Object[][] getExtendTests() {
-        return new Object[][]{
-                {Allele.create("A"), "T", "AT"},
-                {Allele.create("A"), "TA", "ATA"},
-                {Allele.NO_CALL, "A", "A"},
-                {Allele.create("AT"), "CGA", "ATCGA"},
-                {Allele.create("ATC"), "GA", "ATCGA"}
+        return new Object[][] {
+            {Allele.create("A"), "T", "AT"},
+            {Allele.create("A"), "TA", "ATA"},
+            {Allele.NO_CALL, "A", "A"},
+            {Allele.create("AT"), "CGA", "ATCGA"},
+            {Allele.create("ATC"), "GA", "ATCGA"}
         };
     }
 
@@ -288,18 +284,18 @@ public class AlleleUnitTest extends VariantBaseTest {
     }
 
     @DataProvider
-    public Object[][] getTestCasesForCheckingSymbolicAlleles(){
-        return new Object[][]{
-                //allele, isSymbolic, isBreakpoint, isSingleBreakend
-                {"<DEL>",               true, false, false},
-                {"G]17:198982]",        true, true, false},
-                {"]13:123456]T",        true, true, false},
-                {"AAAAAA[chr1:1234[",   true, true, false},
-                {"AAAAAA]chr1:1234]",   true, true, false},
-                {"A.",                  true, false, true},
-                {".A",                  true, false, true},
-                {"AA",                  false, false, false},
-                {"A",                   false, false, false}
+    public Object[][] getTestCasesForCheckingSymbolicAlleles() {
+        return new Object[][] {
+            // allele, isSymbolic, isBreakpoint, isSingleBreakend
+            {"<DEL>", true, false, false},
+            {"G]17:198982]", true, true, false},
+            {"]13:123456]T", true, true, false},
+            {"AAAAAA[chr1:1234[", true, true, false},
+            {"AAAAAA]chr1:1234]", true, true, false},
+            {"A.", true, false, true},
+            {".A", true, false, true},
+            {"AA", false, false, false},
+            {"A", false, false, false}
         };
     }
 

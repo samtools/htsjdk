@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,7 +74,6 @@ public class DiskBackedQueue<E> implements Queue<E> {
      */
     private final SortingCollection.Codec<E> codec;
 
-
     /**
      * Prepare to accumulate records
      *
@@ -83,8 +81,8 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @param maxRecordsInRam how many records to accumulate before spilling to disk
      * @param tmpDirs Where to write files of records that will not fit in RAM
      */
-    private DiskBackedQueue(final SortingCollection.Codec<E> codec,
-                            final int maxRecordsInRam, final List<Path> tmpDirs) {
+    private DiskBackedQueue(
+            final SortingCollection.Codec<E> codec, final int maxRecordsInRam, final List<Path> tmpDirs) {
         if (maxRecordsInRam < 0) {
             throw new IllegalArgumentException("maxRecordsInRamQueue must be >= 0");
         }
@@ -94,7 +92,9 @@ public class DiskBackedQueue<E> implements Queue<E> {
         for (final Path tmpDir : tmpDirs) IOUtil.assertDirectoryIsWritable(tmpDir);
         this.tmpDirs = tmpDirs;
         this.codec = codec;
-        this.maxRecordsInRamQueue = (maxRecordsInRam == 0) ? 0 : maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
+        this.maxRecordsInRamQueue = (maxRecordsInRam == 0)
+                ? 0
+                : maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
         this.ramRecords = new ArrayDeque<E>(this.maxRecordsInRamQueue);
     }
 
@@ -105,10 +105,10 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @param maxRecordsInRam how many records to accumulate in memory before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
      */
-    public static <T> DiskBackedQueue<T> newInstance(final SortingCollection.Codec<T> codec,
-                                                     final int maxRecordsInRam,
-                                                     final List<File> tmpDir) {
-        return new DiskBackedQueue<T>(codec, maxRecordsInRam, tmpDir.stream().map(File::toPath).collect(Collectors.toList()));
+    public static <T> DiskBackedQueue<T> newInstance(
+            final SortingCollection.Codec<T> codec, final int maxRecordsInRam, final List<File> tmpDir) {
+        return new DiskBackedQueue<T>(
+                codec, maxRecordsInRam, tmpDir.stream().map(File::toPath).collect(Collectors.toList()));
     }
 
     /**
@@ -118,9 +118,8 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @param maxRecordsInRam how many records to accumulate in memory before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
      */
-    public static <T> DiskBackedQueue<T> newInstanceFromPaths(final SortingCollection.Codec<T> codec,
-            final int maxRecordsInRam,
-            final List<Path> tmpDir) {
+    public static <T> DiskBackedQueue<T> newInstanceFromPaths(
+            final SortingCollection.Codec<T> codec, final int maxRecordsInRam, final List<Path> tmpDir) {
         return new DiskBackedQueue<T>(codec, maxRecordsInRam, tmpDir);
     }
 
@@ -146,19 +145,21 @@ public class DiskBackedQueue<E> implements Queue<E> {
      */
     @Override
     public boolean add(final E record) throws IllegalStateException {
-        if (!canAdd) throw new IllegalStateException("Cannot add to DiskBackedQueue whose canAdd() method returns false");
+        if (!canAdd)
+            throw new IllegalStateException("Cannot add to DiskBackedQueue whose canAdd() method returns false");
 
-        // NB: we add all the records before removing them, so we can never have spilled to disk unless all the space for ram records
+        // NB: we add all the records before removing them, so we can never have spilled to disk unless all the space
+        // for ram records
         // have been exhausted.
         if (this.headRecord == null) { // this is the first record in the queue
-            if (0 < this.numRecordsOnDisk) throw new SAMException("Head record was null but we have records on disk. Bug!");
+            if (0 < this.numRecordsOnDisk)
+                throw new SAMException("Head record was null but we have records on disk. Bug!");
             this.headRecord = record;
-        }
-        else if (this.ramRecords.size() == this.maxRecordsInRamQueue) {
+        } else if (this.ramRecords.size() == this.maxRecordsInRamQueue) {
             spillToDisk(record);
-        }
-        else {
-            if (0 < this.numRecordsOnDisk) throw new SAMException("Trying to add records to RAM but there were records on disk. Bug!");
+        } else {
+            if (0 < this.numRecordsOnDisk)
+                throw new SAMException("Trying to add records to RAM but there were records on disk. Bug!");
             this.ramRecords.add(record);
         }
         return true;
@@ -174,8 +175,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         final E element = this.poll();
         if (element == null) {
             throw new NoSuchElementException("Attempting to remove() from empty DiskBackedQueue");
-        }
-        else {
+        } else {
             return element;
         }
     }
@@ -193,8 +193,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
     public E element() {
         if (this.headRecord != null) {
             return this.headRecord;
-        }
-        else {
+        } else {
             throw new NoSuchElementException("Attempting to element() from empty DiskBackedQueue");
         }
     }
@@ -268,14 +267,16 @@ public class DiskBackedQueue<E> implements Queue<E> {
         try {
             if (this.diskRecords == null) {
                 this.diskRecords = newTempFile();
-                this.outputStream = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
+                this.outputStream = tempStreamFactory.wrapTempOutputStream(
+                        Files.newOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
                 this.codec.setOutputStream(this.outputStream);
             }
             this.codec.encode(record);
             this.outputStream.flush();
             this.numRecordsOnDisk++;
         } catch (final IOException e) {
-            throw new RuntimeIOException("Problem writing temporary file. Try setting TMP_DIR to a file system with lots of space.", e);
+            throw new RuntimeIOException(
+                    "Problem writing temporary file. Try setting TMP_DIR to a file system with lots of space.", e);
         }
     }
 
@@ -284,7 +285,8 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * on JVM exit and then returns it.
      */
     private Path newTempFile() throws IOException {
-        return IOUtil.newTempPath("diskbackedqueue.", ".tmp", this.tmpDirs.toArray(new Path[tmpDirs.size()]), IOUtil.FIVE_GBS);
+        return IOUtil.newTempPath(
+                "diskbackedqueue.", ".tmp", this.tmpDirs.toArray(new Path[tmpDirs.size()]), IOUtil.FIVE_GBS);
     }
 
     /**
@@ -295,12 +297,10 @@ public class DiskBackedQueue<E> implements Queue<E> {
         if (!this.ramRecords.isEmpty()) {
             this.headRecord = this.ramRecords.poll();
             if (0 < numRecordsOnDisk) this.canAdd = false;
-        }
-        else if (this.diskRecords != null) {
+        } else if (this.diskRecords != null) {
             this.headRecord = this.readFileRecord(this.diskRecords);
             this.canAdd = false;
-        }
-        else {
+        } else {
             this.canAdd = true;
             this.headRecord = null;
         }
@@ -314,7 +314,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @return The next element from the head of the file, or null if end-of-file is reached
      * @throws RuntimeIOException
      */
-    private E readFileRecord (final Path file) {
+    private E readFileRecord(final Path file) {
         if (this.canAdd) this.canAdd = false; // NB: should this just be an assignment regardless?
 
         // we never wrote a record to disk

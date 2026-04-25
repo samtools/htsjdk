@@ -15,8 +15,7 @@ import java.io.Closeable;
  * @param <H> type param for the header for this format (i.e. SAMFileHeader)
  * @param <R> type param for the record for this format (i.e. SAMRecord)
  */
-public interface HtsDecoder<H extends HtsHeader, R extends HtsRecord>
-        extends HtsQuery<R>, Closeable {
+public interface HtsDecoder<H extends HtsHeader, R extends HtsRecord> extends HtsQuery<R>, Closeable {
 
     /**
      * Get the name of the file format supported by this decoder.The format name defines the underlying
@@ -52,5 +51,4 @@ public interface HtsDecoder<H extends HtsHeader, R extends HtsRecord>
      */
     @Override
     void close();
-
 }

@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,9 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Compares records based on if they should be considered PCR Duplicates (see MarkDuplicates).
- * 
+ *
  * There are three orderings provided by this comparator: compare, duplicateSetCompare, and fileOrderCompare.
- *  
+ *
  * Specify the headers when constructing this comparator if you would like to consider the library as the major sort key.
  * The records being compared must also have non-null SAMFileHeaders.
  *
@@ -50,7 +49,9 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
 
     /** An enum to provide type-safe keys for transient attributes the comparator puts on SAMRecords. */
     private static enum Attr {
-        LibraryId, ReadCoordinate, MateCoordinate
+        LibraryId,
+        ReadCoordinate,
+        MateCoordinate
     }
 
     private static final byte FF = 0, FR = 1, F = 2, RF = 3, RR = 4, R = 5;
@@ -58,12 +59,13 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     // We use a ConcurrentHashMap to ensure thread safety
     private final Map<String, Short> libraryIds = new ConcurrentHashMap<>(); // from library string to library id
     private short nextLibraryId = 1;
-    
+
     private ScoringStrategy scoringStrategy = ScoringStrategy.TOTAL_MAPPED_REFERENCE_LENGTH;
-    
+
     public SAMRecordDuplicateComparator() {}
 
-    @Deprecated // This results in sort order depending on the order in which the headers are listed.  Will be removed in future version.
+    @Deprecated // This results in sort order depending on the order in which the headers are listed.  Will be removed
+    // in future version.
     public SAMRecordDuplicateComparator(final List<SAMFileHeader> headers) {
         populateLibraryIds(headers);
     }
@@ -99,11 +101,13 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /**
      * Populates the set of transient attributes on SAMRecords if they are not already there.
      */
-    synchronized private void populateTransientAttributes(final SAMRecord... recs) {
+    private synchronized void populateTransientAttributes(final SAMRecord... recs) {
         for (final SAMRecord rec : recs) {
             if (rec.getTransientAttribute(Attr.LibraryId) != null) continue;
             rec.setTransientAttribute(Attr.LibraryId, getLibraryId(rec));
-            rec.setTransientAttribute(Attr.ReadCoordinate, rec.getReadNegativeStrandFlag() ? rec.getUnclippedEnd() : rec.getUnclippedStart());
+            rec.setTransientAttribute(
+                    Attr.ReadCoordinate,
+                    rec.getReadNegativeStrandFlag() ? rec.getUnclippedEnd() : rec.getUnclippedStart());
             rec.setTransientAttribute(Attr.MateCoordinate, getMateCoordinate(rec));
         }
     }
@@ -151,7 +155,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
         // R == RF, R == RR
         if (F == orientation1 || R == orientation1) { // first orientation is fragment
             /**
-             * We want 
+             * We want
              * F == FR, F == FF
              * R == RF, R == RR
              */
@@ -159,20 +163,18 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
                 if (F == orientation2 || FR == orientation2 || FF == orientation2) {
                     return 0;
                 }
-            }
-            else { // R == orientation1
+            } else { // R == orientation1
                 if (R == orientation2 || RF == orientation2 || RR == orientation2) {
                     return 0;
                 }
             }
-        }
-        else if (F == orientation2 || R == orientation2) { // first orientation is paired, second is fragment
+        } else if (F == orientation2 || R == orientation2) { // first orientation is paired, second is fragment
             return -compareOrientationByteCollapseOrientation(orientation2, orientation1);
         }
 
         return orientation1 - orientation2;
     }
-    
+
     /**
      * Returns a single byte that encodes the orientation of the two reads in a pair.
      */
@@ -185,9 +187,9 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
             else return SAMRecordDuplicateComparator.FF;
         }
     }
-    
+
     private int getFragmentOrientation(final SAMRecord record) {
-         return record.getReadNegativeStrandFlag() ? SAMRecordDuplicateComparator.R : SAMRecordDuplicateComparator.F;
+        return record.getReadNegativeStrandFlag() ? SAMRecordDuplicateComparator.R : SAMRecordDuplicateComparator.F;
     }
 
     private int getPairedOrientation(final SAMRecord record) {
@@ -208,12 +210,14 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
 
     private int getMateCoordinate(final SAMRecord record) {
         if (record.getReadPairedFlag() && !record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) {
-            return record.getMateNegativeStrandFlag() ? SAMUtils.getMateUnclippedEnd(record) : SAMUtils.getMateUnclippedStart(record);
+            return record.getMateNegativeStrandFlag()
+                    ? SAMUtils.getMateUnclippedEnd(record)
+                    : SAMUtils.getMateUnclippedStart(record);
         } else {
             return -1;
         }
     }
-    
+
     /** Is one end of a pair, or the fragment, unmapped? */
     private boolean hasUnmappedEnd(final SAMRecord record) {
         return (record.getReadUnmappedFlag() || (record.getReadPairedFlag() && record.getMateUnmappedFlag()));
@@ -223,11 +227,10 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     private boolean hasMappedEnd(final SAMRecord record) {
         return (!record.getReadUnmappedFlag() || (record.getReadPairedFlag() && !record.getMateUnmappedFlag()));
     }
-    
+
     /** Is this paired end and are both ends of a pair mapped */
     private boolean pairedEndAndBothMapped(final SAMRecord record) {
         return (record.getReadPairedFlag() && !record.getReadUnmappedFlag() && !record.getMateUnmappedFlag());
-        
     }
 
     /**
@@ -236,12 +239,12 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
      * Two records are compared based on if they are duplicates of each other, and then based
      * on if they should be prioritized for being the most "representative".  Typically, the representative
      * is the record in the SAM file that is *not* marked as a duplicate within a set of duplicates.
-     *  
+     *
      * Compare by file order, then duplicate scoring strategy, read name.
-     * 
+     *
      * If both reads are paired and both ends mapped, always prefer the first end over the second end.  This is needed to
-     * properly choose the first end for optical duplicate identification when both ends are mapped to the same position etc. 
-     */ 
+     * properly choose the first end for optical duplicate identification when both ends are mapped to the same position etc.
+     */
     @Override
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         populateTransientAttributes(samRecord1, samRecord2);
@@ -274,13 +277,17 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /**
      * Compares: Library identifier, reference index, read coordinate, orientation of the read (or read pair), mate's coordinate (if paired and mapped),
      * mapped ends, ...
-     *  
+     *
      * collapseOrientation - true if we want cases where fragment orientation to paired end orientation can be equal (ex. F == FR), false otherwise
      * considerNumberOfEndsMappedAndPairing - true if we want to prefer paired ends with both ends mapped over paired ends with only one end mapped, or paired ends with end
      * mapped over fragment reads, false otherwise.
-     *  
+     *
      */
-    private int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2, final boolean collapseOrientation, final boolean considerNumberOfEndsMappedAndPairing) {
+    private int fileOrderCompare(
+            final SAMRecord samRecord1,
+            final SAMRecord samRecord2,
+            final boolean collapseOrientation,
+            final boolean considerNumberOfEndsMappedAndPairing) {
         populateTransientAttributes(samRecord1, samRecord2);
         int cmp;
 
@@ -304,11 +311,9 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
             // NB: this accounts for unmapped reads to be placed at the ends of the file
             if (samRecord1Value == -1) {
                 cmp = (samRecord2Value == -1) ? 0 : 1;
-            }
-            else if (samRecord2Value == -1) {
+            } else if (samRecord2Value == -1) {
                 cmp = -1;
-            }
-            else {
+            } else {
                 cmp = samRecord1Value - samRecord2Value;
             }
         }
@@ -324,8 +329,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
             samRecord2Value = getPairedOrientation(samRecord2);
             if (collapseOrientation) {
                 cmp = compareOrientationByteCollapseOrientation(samRecord1Value, samRecord2Value);
-            }
-            else {
+            } else {
                 cmp = samRecord1Value - samRecord2Value;
             }
         }
@@ -340,7 +344,8 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
             // mate's coordinate
             if (cmp == 0) {
                 samRecord1Value = (Integer) samRecord1.getTransientAttribute(Attr.MateCoordinate);
-                samRecord2Value = (Integer) samRecord2.getTransientAttribute(Attr.MateCoordinate);;
+                samRecord2Value = (Integer) samRecord2.getTransientAttribute(Attr.MateCoordinate);
+                ;
                 cmp = samRecord1Value - samRecord2Value;
             }
         }
@@ -357,8 +362,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
                 samRecord1Value = hasUnmappedEnd(samRecord1) ? 1 : 0;
                 samRecord2Value = hasUnmappedEnd(samRecord2) ? 1 : 0;
                 cmp = samRecord1Value - samRecord2Value;
-            }
-            else { // if we care if one is paired and the other is not
+            } else { // if we care if one is paired and the other is not
                 cmp = samRecord1.getReadPairedFlag() ? -1 : 1;
             }
         }

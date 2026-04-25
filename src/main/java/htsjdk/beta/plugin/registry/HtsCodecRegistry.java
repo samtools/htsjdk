@@ -1,11 +1,12 @@
 package htsjdk.beta.plugin.registry;
 
+import htsjdk.beta.exception.HtsjdkPluginException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.HtsCodec;
 import htsjdk.beta.plugin.hapref.HaploidReferenceCodec;
 import htsjdk.beta.plugin.reads.ReadsCodec;
 import htsjdk.beta.plugin.variants.VariantsCodec;
-import htsjdk.beta.exception.HtsjdkPluginException;
-import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
+
 /**
  * A registry for tracking {@link HtsCodec} instances.
  * <p>
@@ -26,7 +27,7 @@ public class HtsCodecRegistry {
      * Create a registry. Protected to prevent use outside of the registry package. To create
      * a private registry from outside the registry package, use {@link #createPrivateRegistry}.
      */
-    protected HtsCodecRegistry() { }
+    protected HtsCodecRegistry() {}
 
     /**
      * Add a codec to the registry. If a codec that supports the same (format, version) (determined
@@ -66,15 +67,21 @@ public class HtsCodecRegistry {
      *
      * @return a mutable registry instance for private use
      */
-    public synchronized static HtsCodecRegistry createPrivateRegistry() {
+    public static synchronized HtsCodecRegistry createPrivateRegistry() {
         final HtsCodecRegistry privateRegistry = new HtsCodecRegistry();
 
         // propagate the codecs from the sourceRegistry to the new registry
-        HtsDefaultRegistry.htsDefaultCodecRegistry.getHaploidReferenceResolver().getCodecs()
+        HtsDefaultRegistry.htsDefaultCodecRegistry
+                .getHaploidReferenceResolver()
+                .getCodecs()
                 .forEach(c -> privateRegistry.registerCodec(c));
-        HtsDefaultRegistry.htsDefaultCodecRegistry.getReadsResolver().getCodecs().
-                forEach(c -> privateRegistry.registerCodec(c));
-        HtsDefaultRegistry.htsDefaultCodecRegistry.getVariantsResolver().getCodecs()
+        HtsDefaultRegistry.htsDefaultCodecRegistry
+                .getReadsResolver()
+                .getCodecs()
+                .forEach(c -> privateRegistry.registerCodec(c));
+        HtsDefaultRegistry.htsDefaultCodecRegistry
+                .getVariantsResolver()
+                .getCodecs()
                 .forEach(c -> privateRegistry.registerCodec(c));
         return privateRegistry;
     }
@@ -84,21 +91,25 @@ public class HtsCodecRegistry {
      *
      * @return the {@link HaploidReferenceResolver} for this registry
      */
-    public synchronized HaploidReferenceResolver getHaploidReferenceResolver() { return htsHaploidReferenceResolver; }
+    public synchronized HaploidReferenceResolver getHaploidReferenceResolver() {
+        return htsHaploidReferenceResolver;
+    }
 
     /**
      * Get the {@link ReadsResolver} for this registry.
      *
      * @return the {@link ReadsResolver} for this registry
      */
-    public synchronized ReadsResolver getReadsResolver() { return htsReadsResolver; }
+    public synchronized ReadsResolver getReadsResolver() {
+        return htsReadsResolver;
+    }
 
     /**
      * Get the {@link VariantsResolver} for this registry.
      *
      * @return the {@link VariantsResolver} for this registry
      */
-    public synchronized VariantsResolver getVariantsResolver() { return htsVariantsResolver; }
-
+    public synchronized VariantsResolver getVariantsResolver() {
+        return htsVariantsResolver;
+    }
 }
-

@@ -4,13 +4,12 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Created by vadim on 25/08/2015.
@@ -69,18 +68,19 @@ public class CRAIIndexTest extends HtsjdkTest {
         return index;
     }
 
-    private boolean allFoundEntriesIntersectQueryInFind(final List<CRAIEntry> index, final int sequenceId, final int start, final int span) {
+    private boolean allFoundEntriesIntersectQueryInFind(
+            final List<CRAIEntry> index, final int sequenceId, final int start, final int span) {
         final List<CRAIEntry> found = CRAIIndex.find(index, sequenceId, start, span);
         for (final CRAIEntry entry : found) {
             Assert.assertEquals(entry.getSequenceId(), sequenceId);
             final int dummy = -1;
-            if (! CRAIEntry.intersect(entry, new CRAIEntry(sequenceId, start, span, dummy, dummy, dummy))) {
+            if (!CRAIEntry.intersect(entry, new CRAIEntry(sequenceId, start, span, dummy, dummy, dummy))) {
                 return false;
             }
         }
 
         // don't pass if we had no matches
-        return ! found.isEmpty();
+        return !found.isEmpty();
     }
 
     @Test
@@ -98,7 +98,8 @@ public class CRAIIndexTest extends HtsjdkTest {
         doCRAITest(this::getBaiStreamFromFileAsSeekableStream);
     }
 
-    private void doCRAITest(final BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) {
+    private void doCRAITest(
+            final BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) {
         final ArrayList<CRAIEntry> index = new ArrayList<>();
         final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
         index.add(entry);
@@ -109,7 +110,8 @@ public class CRAIIndexTest extends HtsjdkTest {
         final SeekableStream baiStream = getBaiStreamForIndex.apply(dictionary, index);
 
         final DiskBasedBAMFileIndex bamIndex = new DiskBasedBAMFileIndex(baiStream, dictionary);
-        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(
+                entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
         final long[] coordinateArray = span.toCoordinateArray();
         Assert.assertEquals(coordinateArray.length, 2);
@@ -122,22 +124,21 @@ public class CRAIIndexTest extends HtsjdkTest {
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             doIndexing(index, baos);
             written = baos.toByteArray();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         try (final InputStream is = new ByteArrayInputStream(written);
-             final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(is, dictionary)) {
+                final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(is, dictionary)) {
             Assert.assertNotNull(baiStream);
             return baiStream;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private SeekableStream getBaiStreamFromFileAsSeekableStream(final SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
+    private SeekableStream getBaiStreamFromFileAsSeekableStream(
+            final SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
         try {
             final File file = File.createTempFile("test", ".crai");
             file.deleteOnExit();
@@ -147,12 +148,11 @@ public class CRAIIndexTest extends HtsjdkTest {
             }
 
             try (final InputStream is = new SeekableFileStream(file);
-                 final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(is, dictionary)) {
+                    final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(is, dictionary)) {
                 Assert.assertNotNull(baiStream);
                 return baiStream;
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -170,8 +170,7 @@ public class CRAIIndexTest extends HtsjdkTest {
                 Assert.assertNotNull(baiStream);
                 return baiStream;
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -186,7 +185,7 @@ public class CRAIIndexTest extends HtsjdkTest {
     // AKA get first
 
     @Test
-    public void testGetLeftmost()  {
+    public void testGetLeftmost() {
         final List<CRAIEntry> index = new ArrayList<>();
         Assert.assertNull(CRAIIndex.getLeftmost(index));
 
@@ -249,5 +248,4 @@ public class CRAIIndexTest extends HtsjdkTest {
             Assert.assertEquals(CRAIIndex.findLastAlignedEntry(index), lastAligned);
         }
     }
-
 }

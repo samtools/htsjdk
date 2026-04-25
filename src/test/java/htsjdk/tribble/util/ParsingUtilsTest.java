@@ -1,13 +1,9 @@
 package htsjdk.tribble.util;
 
-
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -15,7 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Parsing utils tests
@@ -33,11 +30,11 @@ public class ParsingUtilsTest extends HtsjdkTest {
         String[] tokens = new String[10];
         String blankColumnLine = "a\tb\t\td";
         int nTokens = ParsingUtils.split(blankColumnLine, tokens, '\t');
-        Assert.assertEquals(nTokens,4);
-        Assert.assertEquals(tokens[0],"a");
-        Assert.assertEquals(tokens[1],"b");
-        Assert.assertEquals(tokens[2],"");
-        Assert.assertEquals(tokens[3],"d");
+        Assert.assertEquals(nTokens, 4);
+        Assert.assertEquals(tokens[0], "a");
+        Assert.assertEquals(tokens[1], "b");
+        Assert.assertEquals(tokens[2], "");
+        Assert.assertEquals(tokens[3], "d");
     }
 
     @Test
@@ -45,12 +42,12 @@ public class ParsingUtilsTest extends HtsjdkTest {
         String[] tokens = new String[10];
         String blankColumnLine = "a\tb\t\td\t";
         int nTokens = ParsingUtils.split(blankColumnLine, tokens, '\t');
-        Assert.assertEquals(nTokens,5);
-        Assert.assertEquals(tokens[0],"a");
-        Assert.assertEquals(tokens[1],"b");
-        Assert.assertEquals(tokens[2],"");
-        Assert.assertEquals(tokens[3],"d");
-        Assert.assertEquals(tokens[4],"");
+        Assert.assertEquals(nTokens, 5);
+        Assert.assertEquals(tokens[0], "a");
+        Assert.assertEquals(tokens[1], "b");
+        Assert.assertEquals(tokens[2], "");
+        Assert.assertEquals(tokens[3], "d");
+        Assert.assertEquals(tokens[4], "");
     }
 
     @Test
@@ -58,11 +55,11 @@ public class ParsingUtilsTest extends HtsjdkTest {
         String[] tokens = new String[10];
         String blankColumnLine = "a b\t\td";
         int nTokens = ParsingUtils.splitWhitespace(blankColumnLine, tokens);
-        Assert.assertEquals(nTokens,4);
-        Assert.assertEquals(tokens[0],"a");
-        Assert.assertEquals(tokens[1],"b");
-        Assert.assertEquals(tokens[2],"");
-        Assert.assertEquals(tokens[3],"d");
+        Assert.assertEquals(nTokens, 4);
+        Assert.assertEquals(tokens[0], "a");
+        Assert.assertEquals(tokens[1], "b");
+        Assert.assertEquals(tokens[2], "");
+        Assert.assertEquals(tokens[3], "d");
     }
 
     @Test
@@ -70,11 +67,11 @@ public class ParsingUtilsTest extends HtsjdkTest {
         String[] tokens = new String[10];
         String blankColumnLine = "a b\t\td\t";
         int nTokens = ParsingUtils.splitWhitespace(blankColumnLine, tokens);
-        Assert.assertEquals(nTokens,5);
-        Assert.assertEquals(tokens[0],"a");
-        Assert.assertEquals(tokens[1],"b");
-        Assert.assertEquals(tokens[2],"");
-        Assert.assertEquals(tokens[3],"d");
+        Assert.assertEquals(nTokens, 5);
+        Assert.assertEquals(tokens[0], "a");
+        Assert.assertEquals(tokens[1], "b");
+        Assert.assertEquals(tokens[2], "");
+        Assert.assertEquals(tokens[3], "d");
     }
 
     /**
@@ -124,15 +121,16 @@ public class ParsingUtilsTest extends HtsjdkTest {
     }
 
     @Test
-    public void testFileDoesExist() throws IOException{
+    public void testFileDoesExist() throws IOException {
         File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         tempFile.deleteOnExit();
         testExists(tempFile.getAbsolutePath(), true);
-        testExists(tempFile.toURI().toString(), true);;
+        testExists(tempFile.toURI().toString(), true);
+        ;
     }
 
     @Test
-    public void testFileDoesNotExist() throws IOException{
+    public void testFileDoesNotExist() throws IOException {
         File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         tempFile.delete();
         testExists(tempFile.getAbsolutePath(), false);
@@ -140,8 +138,8 @@ public class ParsingUtilsTest extends HtsjdkTest {
     }
 
     @Test
-    public void testInMemoryNioFileDoesExist() throws IOException{
-        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+    public void testInMemoryNioFileDoesExist() throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             Path file = fs.getPath("/file");
             Files.createFile(file);
             testExists(file.toUri().toString(), true);
@@ -149,43 +147,42 @@ public class ParsingUtilsTest extends HtsjdkTest {
     }
 
     @Test
-    public void testInMemoryNioFileDoesNotExist() throws IOException{
-        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+    public void testInMemoryNioFileDoesNotExist() throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             Path file = fs.getPath("/file");
             testExists(file.toUri().toString(), false);
         }
     }
 
     @Test(groups = "ftp")
-    public void testFTPDoesExist() throws IOException{
+    public void testFTPDoesExist() throws IOException {
         testExists(AVAILABLE_FTP_URL, true);
     }
 
     @Test(groups = "ftp")
-    public void testFTPNotExist() throws IOException{
+    public void testFTPNotExist() throws IOException {
         testExists(UNAVAILABLE_FTP_URL, false);
     }
 
     @Test
-    public void testHTTPDoesExist() throws IOException{
+    public void testHTTPDoesExist() throws IOException {
         testExists(AVAILABLE_HTTP_URL, true);
     }
 
     @Test
-    public void testHTTPNotExist() throws IOException{
+    public void testHTTPNotExist() throws IOException {
         testExists(UNAVAILABLE_HTTP_URL, false);
     }
 
-
-    private static void testExists(String path, boolean expectExists) throws IOException{
+    private static void testExists(String path, boolean expectExists) throws IOException {
         Assert.assertEquals(ParsingUtils.resourceExists(path), expectExists);
     }
 
     @Test
-    public void testFileOpenInputStream() throws IOException{
+    public void testFileOpenInputStream() throws IOException {
         File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         tempFile.deleteOnExit();
-        try(Writer writer = new BufferedWriter(new OutputStreamWriter(IOUtil.openFileForWriting(tempFile)))) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(IOUtil.openFileForWriting(tempFile)))) {
             writer.write("hello");
         }
         testStream(tempFile.getAbsolutePath());
@@ -193,8 +190,8 @@ public class ParsingUtilsTest extends HtsjdkTest {
     }
 
     @Test
-    public void testInMemoryNioFileOpenInputStream() throws IOException{
-        try(FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+    public void testInMemoryNioFileOpenInputStream() throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
             Path file = fs.getPath("/file");
             Files.write(file, "hello".getBytes(StandardCharsets.UTF_8));
             testStream(file.toUri().toString());
@@ -202,22 +199,20 @@ public class ParsingUtilsTest extends HtsjdkTest {
     }
 
     @Test(groups = "ftp")
-    public void testFTPOpenInputStream() throws IOException{
+    public void testFTPOpenInputStream() throws IOException {
         testStream(AVAILABLE_FTP_URL);
     }
 
     @Test
-    public void testHTTPOpenInputStream() throws IOException{
+    public void testHTTPOpenInputStream() throws IOException {
         testStream(AVAILABLE_HTTP_URL);
     }
 
-    private static void testStream(String path) throws IOException{
-        try(InputStream is = ParsingUtils.openInputStream(path)) {
+    private static void testStream(String path) throws IOException {
+        try (InputStream is = ParsingUtils.openInputStream(path)) {
             Assert.assertNotNull(is, "InputStream is null for " + path);
             int b = is.read();
             Assert.assertNotSame(b, -1);
         }
     }
-
-
 }

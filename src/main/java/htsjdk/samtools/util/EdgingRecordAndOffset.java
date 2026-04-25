@@ -24,10 +24,10 @@
 
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.SAMRecord;
-
 import static htsjdk.samtools.util.EdgingRecordAndOffset.Type.BEGIN;
 import static htsjdk.samtools.util.EdgingRecordAndOffset.Type.END;
+
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Holds a SAMRecord plus the zero-based offset into that SAMRecord's bases and quality scores that corresponds
@@ -40,7 +40,7 @@ import static htsjdk.samtools.util.EdgingRecordAndOffset.Type.END;
  * as for each alignment block two objects of <code>EdgingRecordAndOffset</code> are created with two different types.
  * The main idea of using EdgeReadIterator is to process alignment block starting from locus where BEGIN type occurs,
  * aggregate information per locus and keep it until END type occurs, then remove alignment block from consideration.
- * 
+ *
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
@@ -71,7 +71,8 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
      * an alignment block.
      */
     public enum Type {
-        BEGIN, END
+        BEGIN,
+        END
     }
 
     private static class StartEdgingRecordAndOffset extends EdgingRecordAndOffset {
@@ -166,7 +167,7 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
         /**
          * For object with type END this fields holds the reference to object with type BEGIN for the read.
          */
-        final private EdgingRecordAndOffset start;
+        private final EdgingRecordAndOffset start;
 
         EndEdgingRecordAndOffset(EdgingRecordAndOffset record) {
             super(record.getRecord(), record.getOffset());

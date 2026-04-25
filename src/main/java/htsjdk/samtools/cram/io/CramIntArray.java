@@ -18,8 +18,7 @@ public class CramIntArray {
     public static int[] array(final InputStream inputStream) {
         final int size = ITF8.readUnsignedITF8(inputStream);
         final int[] array = new int[size];
-        for (int i = 0; i < size; i++)
-            array[i] = ITF8.readUnsignedITF8(inputStream);
+        for (int i = 0; i < size; i++) array[i] = ITF8.readUnsignedITF8(inputStream);
 
         return array;
     }

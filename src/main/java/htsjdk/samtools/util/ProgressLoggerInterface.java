@@ -23,7 +23,6 @@ package htsjdk.samtools.util;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 import htsjdk.samtools.SAMRecord;
 
 /**
@@ -31,8 +30,12 @@ import htsjdk.samtools.SAMRecord;
  */
 public interface ProgressLoggerInterface {
 
-	boolean record(final String chrom, final int pos);
-	boolean record(final SAMRecord rec);
-	boolean record(final SAMRecord... recs);
-	default void reset() {};
+    boolean record(final String chrom, final int pos);
+
+    boolean record(final SAMRecord rec);
+
+    boolean record(final SAMRecord... recs);
+
+    default void reset() {}
+    ;
 }

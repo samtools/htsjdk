@@ -37,10 +37,6 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -51,6 +47,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Tests for the integration between {@link SeekableStream} and {@link GZIPInputStream}.
@@ -70,12 +69,13 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
     private static Collection<Allele> alleles = Arrays.asList(Allele.create("A", true), Allele.create("C"));
     private static String RANDOM_ATTRIBUTE = "RD";
 
-
-    private static File createBgzipVcfsWithVariableSize(final int firstRecordAttributeLength, final int nSmallRecords) throws Exception {
+    private static File createBgzipVcfsWithVariableSize(final int firstRecordAttributeLength, final int nSmallRecords)
+            throws Exception {
         final VariantContext longRecord = new VariantContextBuilder("long", TEST_CHR, 1, 1, alleles)
                 .attribute(RANDOM_ATTRIBUTE, generateRandomString(firstRecordAttributeLength))
                 .make();
-        final File tempFile = Files.createTempFile("test" + firstRecordAttributeLength + "_" + nSmallRecords, ".vcf.gz").toFile();
+        final File tempFile = Files.createTempFile("test" + firstRecordAttributeLength + "_" + nSmallRecords, ".vcf.gz")
+                .toFile();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOptions(VariantContextWriterBuilder.NO_OPTIONS)
                 .setOutputFile(tempFile)
@@ -84,17 +84,19 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
             writer.setHeader(createTestHeader()); // do not write the header
             writer.add(longRecord);
             for (int i = 2; i <= nSmallRecords + 1; i++) {
-                final VariantContext smallRecord = new VariantContextBuilder("short", TEST_CHR, i, i, alleles).attribute(RANDOM_ATTRIBUTE, ".").make();
+                final VariantContext smallRecord = new VariantContextBuilder("short", TEST_CHR, i, i, alleles)
+                        .attribute(RANDOM_ATTRIBUTE, ".")
+                        .make();
                 writer.add(smallRecord);
             }
         }
         return tempFile;
     }
 
-
     private static VCFHeader createTestHeader() {
         final VCFHeader header = new VCFHeader();
-        header.addMetaDataLine(new VCFInfoHeaderLine(RANDOM_ATTRIBUTE, 1, VCFHeaderLineType.Character, "random string"));
+        header.addMetaDataLine(
+                new VCFInfoHeaderLine(RANDOM_ATTRIBUTE, 1, VCFHeaderLineType.Character, "random string"));
         return header;
     }
 
@@ -115,7 +117,8 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
         // GZIPInputStream available() bug. 5 first-record-length variants cover the range.
         final int nSmallRecords = 100_000;
         for (int firstRecordLength = 1000; firstRecordLength <= 9000; firstRecordLength += 2000) {
-            data.add(new Object[]{createBgzipVcfsWithVariableSize(firstRecordLength, nSmallRecords), nSmallRecords+1});
+            data.add(new Object[] {createBgzipVcfsWithVariableSize(firstRecordLength, nSmallRecords), nSmallRecords + 1
+            });
         }
         return data.iterator();
     }
@@ -134,7 +137,7 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
     @Test(dataProvider = "compressedVcfsToTest")
     public void testConsistencyWithBgzip(final File input, final long nLines) throws Exception {
         try (final InputStream gzIs = new GZIPInputStream(new SeekableFileStream(input));
-             final InputStream bgzIs = new BlockCompressedInputStream(input)) {
+                final InputStream bgzIs = new BlockCompressedInputStream(input)) {
             int bgz = bgzIs.read();
             while (bgz != -1) {
                 Assert.assertEquals(gzIs.read(), bgz);
@@ -142,6 +145,5 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
             }
             Assert.assertEquals(gzIs.read(), bgz);
         }
-
     }
 }

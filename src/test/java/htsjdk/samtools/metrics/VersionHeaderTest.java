@@ -2,11 +2,9 @@ package htsjdk.samtools.metrics;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
-
 
 public class VersionHeaderTest extends HtsjdkTest {
 
@@ -17,7 +15,5 @@ public class VersionHeaderTest extends HtsjdkTest {
         versionHeader.setVersionString("1.0.1");
         final VersionHeader deserialized = TestUtil.serializeAndDeserialize(versionHeader);
         Assert.assertEquals(deserialized, versionHeader);
-
     }
-
 }

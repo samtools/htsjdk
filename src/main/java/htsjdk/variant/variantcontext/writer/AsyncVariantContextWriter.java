@@ -33,11 +33,20 @@ public class AsyncVariantContextWriter extends AbstractAsyncWriter<VariantContex
         this.underlyingWriter = out;
     }
 
-    @Override protected void synchronouslyWrite(final VariantContext item) { this.underlyingWriter.add(item); }
+    @Override
+    protected void synchronouslyWrite(final VariantContext item) {
+        this.underlyingWriter.add(item);
+    }
 
-    @Override protected void synchronouslyClose() { this.underlyingWriter.close();  }
+    @Override
+    protected void synchronouslyClose() {
+        this.underlyingWriter.close();
+    }
 
-    @Override protected final String getThreadNamePrefix() { return "VariantContextWriterThread-"; }
+    @Override
+    protected final String getThreadNamePrefix() {
+        return "VariantContextWriterThread-";
+    }
 
     @Override
     public void add(final VariantContext vc) {
@@ -48,7 +57,7 @@ public class AsyncVariantContextWriter extends AbstractAsyncWriter<VariantContex
     public void writeHeader(final VCFHeader header) {
         this.underlyingWriter.writeHeader(header);
     }
-    
+
     @Override
     public boolean checkError() {
         return false;
@@ -58,5 +67,4 @@ public class AsyncVariantContextWriter extends AbstractAsyncWriter<VariantContex
     public void setHeader(final VCFHeader header) {
         this.underlyingWriter.setHeader(header);
     }
-
 }

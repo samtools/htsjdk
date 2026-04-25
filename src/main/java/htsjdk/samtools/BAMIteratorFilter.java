@@ -1,12 +1,14 @@
 package htsjdk.samtools;
 
-
 /**
  * Interface implemented by filetering iterators used for BAM/CRAM readers.
  */
 interface BAMIteratorFilter {
     public enum IntervalComparison {
-        BEFORE, AFTER, OVERLAPPING, CONTAINED
+        BEFORE,
+        AFTER,
+        OVERLAPPING,
+        CONTAINED
     }
 
     /**
@@ -14,7 +16,9 @@ interface BAMIteratorFilter {
      * how to handle each SAMRecord.
      */
     public enum FilteringIteratorState {
-        MATCHES_FILTER, STOP_ITERATION, CONTINUE_ITERATION
+        MATCHES_FILTER,
+        STOP_ITERATION,
+        CONTINUE_ITERATION
     }
 
     /**
@@ -23,4 +27,3 @@ interface BAMIteratorFilter {
      */
     FilteringIteratorState compareToFilter(final SAMRecord record);
 }
-

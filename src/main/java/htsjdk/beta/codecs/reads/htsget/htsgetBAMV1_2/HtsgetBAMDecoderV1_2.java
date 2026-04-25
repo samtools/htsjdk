@@ -1,6 +1,8 @@
 package htsjdk.beta.codecs.reads.htsget.htsgetBAMV1_2;
 
 import htsjdk.beta.codecs.reads.htsget.HtsgetBAMDecoder;
+import htsjdk.beta.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
@@ -8,15 +10,12 @@ import htsjdk.beta.plugin.interval.HtsInterval;
 import htsjdk.beta.plugin.interval.HtsIntervalUtils;
 import htsjdk.beta.plugin.interval.HtsQueryRule;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
-import htsjdk.beta.exception.HtsjdkIOException;
-import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.HtsgetBAMFileReader;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +44,10 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
                     false);
         } catch (IOException e) {
             throw new HtsjdkIOException(
-                    String.format("Failure opening Htsget reader on %s", readsResource.getIOPath().get()), e);
+                    String.format(
+                            "Failure opening Htsget reader on %s",
+                            readsResource.getIOPath().get()),
+                    e);
         }
     }
 
@@ -84,8 +86,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
     @Override
     public CloseableIterator<SAMRecord> query(final List<HtsInterval> intervals, final HtsQueryRule queryRule) {
         return htsgetReader.query(
-                HtsIntervalUtils.toLocatableList(intervals),
-                (queryRule == HtsQueryRule.CONTAINED) == true);
+                HtsIntervalUtils.toLocatableList(intervals), (queryRule == HtsQueryRule.CONTAINED) == true);
     }
 
     @Override
@@ -100,7 +101,7 @@ public class HtsgetBAMDecoderV1_2 extends HtsgetBAMDecoder {
 
     @Override
     public Optional<SAMRecord> queryMate(final SAMRecord rec) {
-        //reader doesn't support this
+        // reader doesn't support this
         throw new HtsjdkUnsupportedOperationException("queryMate not implemented for htsget BAM reader");
     }
 }

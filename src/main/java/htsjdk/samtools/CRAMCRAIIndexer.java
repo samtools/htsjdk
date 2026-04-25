@@ -7,11 +7,10 @@ import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.BufferedOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Scanner;
 import java.util.zip.GZIPInputStream;
@@ -28,8 +27,8 @@ import java.util.zip.GZIPOutputStream;
  */
 public class CRAMCRAIIndexer implements CRAMIndexer {
 
-    final private CRAIIndex craiIndex = new CRAIIndex();
-    final private GZIPOutputStream os;
+    private final CRAIIndex craiIndex = new CRAIIndex();
+    private final GZIPOutputStream os;
 
     /**
      * Create a CRAMCRAIIndexer that writes to the given output stream.
@@ -43,8 +42,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
         }
         try {
             this.os = new GZIPOutputStream(new BufferedOutputStream(os));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeIOException("Error opening CRAI index output stream");
         }
     }
@@ -57,9 +55,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
      * @param samHeader SAMFileHeader - user to verify sort order
      * @param entries the CRAI entries to index
      */
-    public CRAMCRAIIndexer(final OutputStream os,
-                           final SAMFileHeader samHeader,
-                           final Collection<CRAIEntry> entries) {
+    public CRAMCRAIIndexer(final OutputStream os, final SAMFileHeader samHeader, final Collection<CRAIEntry> entries) {
         this(os, samHeader);
         craiIndex.addEntries(entries);
     }
@@ -73,9 +69,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
     }
 
     @Override
-    public void processContainer(
-            final Container container,
-            final ValidationStringency validationStringency) {
+    public void processContainer(final Container container, final ValidationStringency validationStringency) {
         processContainer(container);
     }
 
@@ -88,8 +82,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
             craiIndex.writeIndex(os);
             os.flush();
             os.close();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeIOException("Error writing CRAI index to output stream");
         }
     }
@@ -102,11 +95,11 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
      */
     public static void writeIndex(final SeekableStream cramStream, OutputStream craiStream) {
         final CramHeader cramHeader = CramIO.readCramHeader(cramStream);
-        final SAMFileHeader samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), cramStream, null);
+        final SAMFileHeader samFileHeader =
+                Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), cramStream, null);
         if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException(String.format(
-                    "Input must be coordinate sorted (found %s) to create an index.",
-                    samFileHeader.getSortOrder()));
+                    "Input must be coordinate sorted (found %s) to create an index.", samFileHeader.getSortOrder()));
         }
         final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(craiStream, samFileHeader);
         final CRAMVersion cramVersion = cramHeader.getCRAMVersion();
@@ -141,11 +134,9 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
                 final String line = scanner.nextLine();
                 craiIndex.addEntry(new CRAIEntry(line));
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeIOException("Error reading CRAI index from output stream");
-        }
-        finally {
+        } finally {
             if (null != scanner) {
                 scanner.close();
             }
@@ -153,5 +144,4 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
 
         return craiIndex;
     }
-
 }

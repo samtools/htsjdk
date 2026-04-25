@@ -26,7 +26,6 @@ package htsjdk.samtools.fastq;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -54,20 +53,23 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             this.printable = printable;
         }
 
-        @Override public String toString() { return this.printable; }
+        @Override
+        public String toString() {
+            return this.printable;
+        }
     }
 
-    final private File fastqFile;
-    final private BufferedReader reader;
+    private final File fastqFile;
+    private final BufferedReader reader;
     private FastqRecord nextRecord;
-    private int line=1;
+    private int line = 1;
 
-    final private boolean skipBlankLines;
+    private final boolean skipBlankLines;
 
     public FastqReader(final File file) {
-        this(file,false);
+        this(file, false);
     }
-    
+
     /**
      * Constructor
      * @param file of FASTQ to read read. Will be opened with htsjdk.samtools.util.IOUtil.openFileForBufferedReading
@@ -87,7 +89,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      * @param reader input reader . Will be closed by the close method
      * @param skipBlankLines should we skip blank lines ?
      */
-    public FastqReader(final File file, final BufferedReader reader,boolean skipBlankLines) {
+    public FastqReader(final File file, final BufferedReader reader, boolean skipBlankLines) {
         this.fastqFile = file;
         this.reader = reader;
         this.skipBlankLines = skipBlankLines;
@@ -95,19 +97,20 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
     }
 
     public FastqReader(final File file, final BufferedReader reader) {
-        this(file,reader,false);
+        this(file, reader, false);
     }
 
     private FastqRecord readNextRecord() {
         try {
             // Read sequence header
             final String seqHeader = readLineConditionallySkippingBlanks();
-            if (seqHeader == null) return null ;
+            if (seqHeader == null) return null;
             if (StringUtil.isBlank(seqHeader)) {
                 throw new SAMException(error("Missing sequence header"));
             }
             if (!seqHeader.startsWith(FastqConstants.SEQUENCE_HEADER)) {
-                throw new SAMException(error("Sequence header must start with " + FastqConstants.SEQUENCE_HEADER + ": " + seqHeader));
+                throw new SAMException(
+                        error("Sequence header must start with " + FastqConstants.SEQUENCE_HEADER + ": " + seqHeader));
             }
 
             // Read sequence line
@@ -118,7 +121,8 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             final String qualHeader = readLineConditionallySkippingBlanks();
             checkLine(qualHeader, LineType.QualityHeader);
             if (!qualHeader.startsWith(FastqConstants.QUALITY_HEADER)) {
-                throw new SAMException(error("Quality header must start with " + FastqConstants.QUALITY_HEADER + ": "+ qualHeader));
+                throw new SAMException(
+                        error("Quality header must start with " + FastqConstants.QUALITY_HEADER + ": " + qualHeader));
             }
 
             // Read quality line
@@ -130,10 +134,13 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
                 throw new SAMException(error("Sequence and quality line must be the same length"));
             }
 
-            final FastqRecord frec = new FastqRecord(seqHeader.substring(1, seqHeader.length()), seqLine,
-                    qualHeader.substring(1, qualHeader.length()), qualLine);
-            line += 4 ;
-            return frec ;
+            final FastqRecord frec = new FastqRecord(
+                    seqHeader.substring(1, seqHeader.length()),
+                    seqLine,
+                    qualHeader.substring(1, qualHeader.length()),
+                    qualLine);
+            line += 4;
+            return frec;
 
         } catch (IOException e) {
             throw new SAMException(error(e.getMessage()), e);
@@ -141,7 +148,9 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
     }
 
     @Override
-    public boolean hasNext() { return nextRecord != null; }
+    public boolean hasNext() {
+        return nextRecord != null;
+    }
 
     @Override
     public FastqRecord next() {
@@ -154,7 +163,9 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
     }
 
     @Override
-    public void remove() { throw new UnsupportedOperationException("Unsupported operation"); }
+    public void remove() {
+        throw new UnsupportedOperationException("Unsupported operation");
+    }
 
     /**
      * WARNING: Despite the fact that this class implements Iterable, calling iterator() method does not
@@ -162,15 +173,20 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      * directly.  It is provided so that this class can be used in Java for-each loop.
      */
     @Override
-    public Iterator<FastqRecord> iterator() { return this; }
+    public Iterator<FastqRecord> iterator() {
+        return this;
+    }
 
-    public int getLineNumber() { return line ; }
-
+    public int getLineNumber() {
+        return line;
+    }
 
     /**
      * @return Name of FASTQ being read, or null if not known.
      */
-    public File getFile() { return fastqFile ; }
+    public File getFile() {
+        return fastqFile;
+    }
 
     @Override
     public void close() {
@@ -206,7 +222,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         do {
             line = reader.readLine();
             if (line == null) return line;
-        } while(skipBlankLines && StringUtil.isBlank(line));
+        } while (skipBlankLines && StringUtil.isBlank(line));
         return line;
     }
 

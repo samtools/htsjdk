@@ -19,9 +19,7 @@ package htsjdk.samtools.cram.io;
 
 import java.io.Closeable;
 import java.io.Flushable;
-import java.io.IOException;
 import java.io.OutputStream;
-
 
 /**
  * An interface to describe the requirements for writing out bits as opposed to bytes. Implementors must keep track of the amount of data
@@ -36,7 +34,6 @@ public interface BitOutputStream extends Closeable, Flushable {
      */
     void write(int bitContainer, int nofBits);
 
-
     /**
      * Write specified number of bits supplied in the long value. The method is naturally limited to 64 bits max.
      * @param bitContainer an integer containing the bits to be written out
@@ -44,14 +41,12 @@ public interface BitOutputStream extends Closeable, Flushable {
      */
     void write(long bitContainer, int nofBits);
 
-
     /**
      * Write specified number of bits supplied in the byte value. The method is naturally limited to 8 bits max.
      * @param bitContainer an integer containing the bits to be written out
      * @param nofBits the number of bits to written out, minimum 0, maximum 8.
      */
     void write(byte bitContainer, int nofBits);
-
 
     /**
      * Write a single bit specified in the boolean argument.

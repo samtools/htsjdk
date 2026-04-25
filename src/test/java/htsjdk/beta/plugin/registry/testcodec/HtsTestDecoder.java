@@ -1,13 +1,12 @@
 package htsjdk.beta.plugin.registry.testcodec;
 
-import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.io.bundle.Bundle;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsDecoder;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.util.Optional;
 
 // Dummy decoder class for use by tests
@@ -25,7 +24,9 @@ public class HtsTestDecoder implements ReadsDecoder {
     }
 
     @Override
-    public String getFileFormat() { return htsFormat; }
+    public String getFileFormat() {
+        return htsFormat;
+    }
 
     @Override
     public HtsVersion getVersion() {
@@ -43,7 +44,7 @@ public class HtsTestDecoder implements ReadsDecoder {
     }
 
     @Override
-    public void close() { }
+    public void close() {}
 
     @Override
     public CloseableIterator<SAMRecord> iterator() {

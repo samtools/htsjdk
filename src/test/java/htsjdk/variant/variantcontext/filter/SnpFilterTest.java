@@ -4,15 +4,14 @@ import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Created by farjoun on 9/9/15.
@@ -27,21 +26,26 @@ public class SnpFilterTest extends HtsjdkTest {
     Allele AT = Allele.create("AT", false);
     Allele star = Allele.create("<*>", false);
 
-
     @DataProvider()
     public Iterator<Object[]> variantProvider() {
 
-        final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Collections.<Allele>emptyList());
+        final VariantContextBuilder vc_builder =
+                new VariantContextBuilder("testCode", "chr1", 1, 1, Collections.<Allele>emptyList());
         final List<Object[]> variants = new ArrayList<Object[]>(10);
 
-        variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, G))         .make(), true});    // SNP
-        variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, G, T))      .make(), true});    // SNP
+        variants.add(new Object[] {vc_builder.alleles(Arrays.asList(refA, G)).make(), true}); // SNP
+        variants.add(new Object[] {vc_builder.alleles(Arrays.asList(refA, G, T)).make(), true}); // SNP
 
-        variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, AG))         .make(), false}); // INDEL
-        variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, G, AG))      .make(), false}); // MIXED
-        variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, star))       .make(), false}); // SYMBOLIC
-        variants.add(new Object[]{vc_builder.stop(2).alleles(Arrays.asList(refAG, T)) .make(), false}); // INDEL
-        variants.add(new Object[]{vc_builder.stop(2).alleles(Arrays.asList(refAG, AT)).make(), false}); // MNP
+        variants.add(new Object[] {vc_builder.alleles(Arrays.asList(refA, AG)).make(), false}); // INDEL
+        variants.add(
+                new Object[] {vc_builder.alleles(Arrays.asList(refA, G, AG)).make(), false}); // MIXED
+        variants.add(new Object[] {vc_builder.alleles(Arrays.asList(refA, star)).make(), false}); // SYMBOLIC
+        variants.add(new Object[] {
+            vc_builder.stop(2).alleles(Arrays.asList(refAG, T)).make(), false
+        }); // INDEL
+        variants.add(new Object[] {
+            vc_builder.stop(2).alleles(Arrays.asList(refAG, AT)).make(), false
+        }); // MNP
 
         return variants.iterator();
     }

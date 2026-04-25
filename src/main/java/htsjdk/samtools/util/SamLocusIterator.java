@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.*;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,8 +37,8 @@ import java.util.List;
  *
  * @author alecw@broadinstitute.org
  */
-
-public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.RecordAndOffset, SamLocusIterator.LocusInfo> {
+public class SamLocusIterator
+        extends AbstractLocusIterator<SamLocusIterator.RecordAndOffset, SamLocusIterator.LocusInfo> {
 
     /**
      * Prepare to iterate through the given SAM records, skipping non-primary alignments.  Do not use
@@ -96,7 +95,8 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
             final int readStart = alignmentBlock.getReadStart();
             final int blockLength = alignmentBlock.getLength();
-            final int blockStartAccIndex = alignmentBlock.getReferenceStart() - accumulator.get(0).getPosition();
+            final int blockStartAccIndex =
+                    alignmentBlock.getReferenceStart() - accumulator.get(0).getPosition();
 
             for (int i = 0; i < blockLength; ++i) {
                 // 0-based offset into the read of the current base
@@ -104,7 +104,8 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
 
                 // if the quality score cutoff is met, accumulate the base info
                 if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readOffset] >= minQuality) {
-                    // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
+                    // 0-based offset from the aligned position of the first base in the read to the aligned position of
+                    // the current base.
                     final int accumulateIndex = blockStartAccIndex + i;
                     accumulator.get(accumulateIndex).add(new RecordAndOffset(rec, readOffset));
                 }
@@ -134,7 +135,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             final CigarOperator operator = e.getOperator();
             if (operator.equals(CigarOperator.I)) {
                 // insertions are included in the previous base
-                if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readBase] >= minQuality){
+                if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readBase] >= minQuality) {
                     accumulator.get(baseAccIndex - 1).addInserted(rec, readBase);
                 }
                 // Always advance past inserted bases regardless of quality check,
@@ -161,12 +162,14 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         final int alignmentLength = alignmentEnd - alignmentStart;
 
         // if there is an insertion in the first base and it is not tracked in the accumulator, add it
-        if (includeIndels && startWithInsertion(rec.getCigar()) &&
-                (accumulator.isEmpty() || accumulator.get(0).getPosition() == alignmentStart)) {
+        if (includeIndels
+                && startWithInsertion(rec.getCigar())
+                && (accumulator.isEmpty() || accumulator.get(0).getPosition() == alignmentStart)) {
             accumulator.add(0, new LocusInfo(ref, alignmentStart - 1));
         }
         // Ensure there are LocusInfos up to and including this position
-        final int accIndexWhereReadStarts = accumulator.isEmpty() ? 0 : alignmentStart - accumulator.get(0).getPosition();
+        final int accIndexWhereReadStarts =
+                accumulator.isEmpty() ? 0 : alignmentStart - accumulator.get(0).getPosition();
         final int newLocusesCount = accIndexWhereReadStarts + alignmentLength - accumulator.size();
         for (int i = 0; i <= newLocusesCount; i++) {
             accumulator.add(new LocusInfo(ref, alignmentEnd - newLocusesCount + i));
@@ -251,20 +254,21 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             if (deletedInRecord == null) {
                 deletedInRecord = new ArrayList<>();
             }
-            deletedInRecord.add(new RecordAndOffset(read, previousPosition, AbstractRecordAndOffset.AlignmentType.Deletion));
+            deletedInRecord.add(
+                    new RecordAndOffset(read, previousPosition, AbstractRecordAndOffset.AlignmentType.Deletion));
         }
 
         /**
          * Accumulate info for one read with an insertion.
          * For this locus, the reads in the insertion are included also in recordAndOffsets
          */
-
         public void addInserted(final SAMRecord read, int firstPosition) {
 
             if (insertedInRecord == null) {
                 insertedInRecord = new ArrayList<>();
             }
-            insertedInRecord.add(new RecordAndOffset(read, firstPosition, AbstractRecordAndOffset.AlignmentType.Insertion));
+            insertedInRecord.add(
+                    new RecordAndOffset(read, firstPosition, AbstractRecordAndOffset.AlignmentType.Insertion));
         }
 
         public List<RecordAndOffset> getDeletedInRecord() {
@@ -272,7 +276,9 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         }
 
         public List<RecordAndOffset> getInsertedInRecord() {
-            return (insertedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(insertedInRecord);
+            return (insertedInRecord == null)
+                    ? Collections.emptyList()
+                    : Collections.unmodifiableList(insertedInRecord);
         }
 
         /**
@@ -283,16 +289,15 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             return super.size() + ((deletedInRecord == null) ? 0 : deletedInRecord.size());
         }
 
-
         /**
          * @return <code>true</code> if all the RecordAndOffset lists are empty;
          * <code>false</code> if at least one have records
          */
         @Override
         public boolean isEmpty() {
-            return getRecordAndOffsets().isEmpty() &&
-                    (deletedInRecord == null || deletedInRecord.isEmpty()) &&
-                    (insertedInRecord == null || insertedInRecord.isEmpty());
+            return getRecordAndOffsets().isEmpty()
+                    && (deletedInRecord == null || deletedInRecord.isEmpty())
+                    && (insertedInRecord == null || insertedInRecord.isEmpty());
         }
     }
 }

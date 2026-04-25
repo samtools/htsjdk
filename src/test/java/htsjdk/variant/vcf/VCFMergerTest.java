@@ -43,9 +43,6 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,10 +51,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class VCFMergerTest extends HtsjdkTest {
 
-    private final static Path VCF_FILE = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf.bgz").toPath();
+    private static final Path VCF_FILE = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf.bgz").toPath();
 
     /**
      * Writes a <i>partitioned VCF</i>.
@@ -87,12 +86,14 @@ public class VCFMergerTest extends HtsjdkTest {
             ValidationUtils.nonNull(header.getSequenceDictionary(), "VCF header must have a sequence dictionary");
             this.header = header;
             try (OutputStream headerOut = Files.newOutputStream(outputDir.resolve("header"))) {
-                OutputStream out =
-                        compressed ? new BlockCompressedOutputStream(headerOut, (Path) null) : headerOut;
-                VariantContextWriter writer =
-                        new VariantContextWriterBuilder().clearOptions().setOutputVCFStream(out).build();
+                OutputStream out = compressed ? new BlockCompressedOutputStream(headerOut, (Path) null) : headerOut;
+                VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputVCFStream(out)
+                        .build();
                 writer.writeHeader(header);
-                out.flush(); // don't close BlockCompressedOutputStream since we don't want to write the terminator after the header
+                out.flush(); // don't close BlockCompressedOutputStream since we don't want to write the terminator
+                // after the header
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
@@ -109,12 +110,12 @@ public class VCFMergerTest extends HtsjdkTest {
                     partNumber++;
                     String partName = String.format("part-%05d", partNumber);
                     OutputStream out = Files.newOutputStream(outputDir.resolve(partName));
-                    OutputStream indexOut = Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.TABIX_INDEX));
-                    IndexCreator tabixIndexCreator = new StreamBasedTabixIndexCreator(
-                                        header.getSequenceDictionary(), TabixFormat.VCF, indexOut);
+                    OutputStream indexOut =
+                            Files.newOutputStream(outputDir.resolve("." + partName + FileExtensions.TABIX_INDEX));
+                    IndexCreator tabixIndexCreator =
+                            new StreamBasedTabixIndexCreator(header.getSequenceDictionary(), TabixFormat.VCF, indexOut);
                     this.variantContextWriter = new VariantContextWriterBuilder()
-                            .setOutputStream(
-                                    compressed ? new TerminatorlessBlockCompressedOutputStream(out) : out)
+                            .setOutputStream(compressed ? new TerminatorlessBlockCompressedOutputStream(out) : out)
                             .setReferenceDictionary(header.getSequenceDictionary())
                             .setIndexCreator(tabixIndexCreator)
                             .modifyOption(Options.INDEX_ON_THE_FLY, tabixIndexCreator != null)
@@ -164,7 +165,8 @@ public class VCFMergerTest extends HtsjdkTest {
         public void merge(Path dir, Path outputVcf, Path outputTbi) throws IOException {
             Path headerPath = dir.resolve("header");
             List<Path> vcfParts = Files.list(dir)
-                    .filter(path -> !path.toString().endsWith(FileExtensions.TABIX_INDEX)) // include header and terminator
+                    .filter(path ->
+                            !path.toString().endsWith(FileExtensions.TABIX_INDEX)) // include header and terminator
                     .sorted()
                     .collect(Collectors.toList());
             List<Path> tbiParts = Files.list(dir)
@@ -174,7 +176,9 @@ public class VCFMergerTest extends HtsjdkTest {
 
             Assert.assertTrue(tbiParts.size() > 1);
 
-            ValidationUtils.validateArg(vcfParts.size() - 2 == tbiParts.size(), "Number of VCF part files does not match number of TBI files (" + tbiParts.size() + ")");
+            ValidationUtils.validateArg(
+                    vcfParts.size() - 2 == tbiParts.size(),
+                    "Number of VCF part files does not match number of TBI files (" + tbiParts.size() + ")");
 
             // merge VCF parts
             try (OutputStream out = Files.newOutputStream(outputVcf)) {
@@ -209,18 +213,22 @@ public class VCFMergerTest extends HtsjdkTest {
         final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp");
         IOUtil.deleteOnExit(outputDir);
 
-        final Path outputVcf = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.COMPRESSED_VCF).toPath();
+        final Path outputVcf = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.COMPRESSED_VCF)
+                .toPath();
         IOUtil.deleteOnExit(outputVcf);
 
         final Path outputTbi = IOUtil.addExtension(outputVcf, FileExtensions.TABIX_INDEX);
         IOUtil.deleteOnExit(outputTbi);
 
-        final Path outputTbiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.TABIX_INDEX).toPath();
+        final Path outputTbiMerged = File.createTempFile(
+                        this.getClass().getSimpleName() + ".", FileExtensions.TABIX_INDEX)
+                .toPath();
         IOUtil.deleteOnExit(outputTbiMerged);
 
         // 1. Read an input VCF and write it out in partitioned form (header, parts, terminator)
         try (VCFFileReader vcfReader = new VCFFileReader(VCF_FILE, false);
-             PartitionedVCFFileWriter partitionedVCFFileWriter = new PartitionedVCFFileWriter(outputDir, 2500, true)) {
+                PartitionedVCFFileWriter partitionedVCFFileWriter =
+                        new PartitionedVCFFileWriter(outputDir, 2500, true)) {
             partitionedVCFFileWriter.writeHeader(vcfReader.getFileHeader());
             for (VariantContext vc : vcfReader) {
                 partitionedVCFFileWriter.add(vc);

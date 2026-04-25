@@ -25,7 +25,6 @@ package htsjdk.tribble.bed;
 
 import htsjdk.tribble.NamedFeature;
 import htsjdk.tribble.annotation.Strand;
-
 import java.awt.*;
 
 /**

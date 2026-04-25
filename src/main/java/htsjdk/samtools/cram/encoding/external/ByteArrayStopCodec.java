@@ -18,9 +18,8 @@ final class ByteArrayStopCodec extends ExternalCodec<byte[]> {
      * @param outputWriter writer for the external data block (may be null if only reading)
      * @param stopByte the delimiter byte that terminates each encoded value
      */
-    public ByteArrayStopCodec(final CRAMByteReader inputReader,
-                              final CRAMByteWriter outputWriter,
-                              final byte stopByte) {
+    public ByteArrayStopCodec(
+            final CRAMByteReader inputReader, final CRAMByteWriter outputWriter, final byte stopByte) {
         super(inputReader, outputWriter);
         this.stop = 0xFF & stopByte;
     }
@@ -36,9 +35,8 @@ final class ByteArrayStopCodec extends ExternalCodec<byte[]> {
             scanPos++;
         }
         if (scanPos == buf.length) {
-            throw new CRAMException(
-                    "Stop byte 0x" + Integer.toHexString(stop) +
-                    " not found in external block (scanned " + (scanPos - startPos) + " bytes)");
+            throw new CRAMException("Stop byte 0x" + Integer.toHexString(stop)
+                    + " not found in external block (scanned " + (scanPos - startPos) + " bytes)");
         }
         final int len = scanPos - startPos;
         final byte[] result = inputReader.readFully(len);

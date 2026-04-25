@@ -24,10 +24,9 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.Date;
 
 /**
  * @author alecw@broadinstitute.org

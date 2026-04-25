@@ -21,19 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  **/
-
-
 package htsjdk.samtools;
+
+import static org.testng.Assert.assertEquals;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,9 +42,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import static org.testng.Assert.assertEquals;
-
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * @author aaron
@@ -66,8 +62,10 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
     /** tests that if we've set the merging to false, we get a SAMException for bam's with different dictionaries. */
     @Test(expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
     public void testMergedException() {
-        File INPUT[] = {new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
-                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")};
+        File INPUT[] = {
+            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
+            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")
+        };
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
         for (final File inFile : INPUT) {
             IOUtil.assertFileIsReadable(inFile);
@@ -79,20 +77,25 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
     /** Tests that we can successfully merge two files with */
     @Test
     public void testMerging() {
-        File INPUT[] = {new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
-                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")};
+        File INPUT[] = {
+            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
+            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")
+        };
         final List<SamReader> readers = new ArrayList<SamReader>();
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
         for (final File inFile : INPUT) {
             IOUtil.assertFileIsReadable(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
-            final SamReader in = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(inFile);
+            final SamReader in = SamReaderFactory.makeDefault()
+                    .validationStringency(ValidationStringency.SILENT)
+                    .open(inFile);
 
             readers.add(in);
             headers.add(in.getFileHeader());
         }
         final MergingSamRecordIterator iterator;
-        final SamFileHeaderMerger headerMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.unsorted, headers, true);
+        final SamFileHeaderMerger headerMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.unsorted, headers, true);
         iterator = new MergingSamRecordIterator(headerMerger, readers, false);
         headerMerger.getMergedHeader();
 
@@ -132,14 +135,17 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
     public void testSequenceDictionaryMerge() {
         final String sd1 = sq1 + sq2 + sq5;
         final String sd2 = sq2 + sq3 + sq4;
-        SamReader reader1 = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd1))));
-        SamReader reader2 = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd2))));
+        SamReader reader1 = SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd1))));
+        SamReader reader2 = SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd2))));
         final List<SAMFileHeader> inputHeaders = Arrays.asList(reader1.getFileHeader(), reader2.getFileHeader());
         SamFileHeaderMerger merger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, inputHeaders, true);
         final SAMFileHeader mergedHeader = merger.getMergedHeader();
         for (final SAMFileHeader inputHeader : inputHeaders) {
             int prevTargetIndex = -1;
-            for (final SAMSequenceRecord sequenceRecord : inputHeader.getSequenceDictionary().getSequences()) {
+            for (final SAMSequenceRecord sequenceRecord :
+                    inputHeader.getSequenceDictionary().getSequences()) {
                 final int targetIndex = mergedHeader.getSequenceIndex(sequenceRecord.getSequenceName());
                 Assert.assertNotSame(targetIndex, -1);
                 Assert.assertTrue(prevTargetIndex < targetIndex);
@@ -167,13 +173,16 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
             IOUtil.assertFileIsReadable(inFile);
 
             // We are now checking for zero-length reads, so suppress complaint about that.
-            final SamReader in = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(inFile);
+            final SamReader in = SamReaderFactory.makeDefault()
+                    .validationStringency(ValidationStringency.SILENT)
+                    .open(inFile);
             readers.add(in);
             headers.add(in.getFileHeader());
         }
         final MergingSamRecordIterator iterator;
 
-        final SamFileHeaderMerger headerMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headers, true);
+        final SamFileHeaderMerger headerMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headers, true);
         iterator = new MergingSamRecordIterator(headerMerger, readers, false);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -210,27 +219,29 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
         for (final String item : b.split("\\t")) {
             if (!remaining.remove(item)) return false;
         }
-        return remaining.isEmpty(); 
+        return remaining.isEmpty();
     }
 
     @DataProvider(name = "data")
     private Object[][] getProgramGroupAndReadGroupMergeData() {
 
-        return new Object[][]{
-                {
-
-                        new File[]{
-                                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file1.sam"),
-                                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file2.sam")},
-                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/expected_output.sam")
-                }, {
-                new File[]{
-                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file1.sam"),
-                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file2.sam"),
-                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file3.sam"),
-                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file4.sam")},
+        return new Object[][] {
+            {
+                new File[] {
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file1.sam"),
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file2.sam")
+                },
+                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/expected_output.sam")
+            },
+            {
+                new File[] {
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file1.sam"),
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file2.sam"),
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file3.sam"),
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file4.sam")
+                },
                 new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/expected_output.sam")
-        }
+            }
         };
     }
 
@@ -238,8 +249,10 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
     public void testUnmergeableSequenceDictionary() {
         final String sd1 = sq1 + sq2 + sq5;
         final String sd2 = sq2 + sq3 + sq4 + sq1;
-        final SamReader reader1 = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd1))));
-        final SamReader reader2 = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd2))));
+        final SamReader reader1 = SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd1))));
+        final SamReader reader2 = SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(new ByteArrayInputStream(StringUtil.stringToBytes(sd2))));
         final List<SAMFileHeader> inputHeaders = Arrays.asList(reader1.getFileHeader(), reader2.getFileHeader());
         new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, inputHeaders, true);
         CloserUtil.close(reader1);
@@ -248,19 +261,20 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
 
     @DataProvider(name = "fourDigitBase36StrPositiveData")
     public Object[][] positiveFourDigitBase36StrData() {
-        return new Object[][]{
-                {0, "0"},
-                {15, "F"},
-                {36, "10"},
-                {1200000, "PPXC"},
-                {36 * 36 * 36 * 36 - 2, "ZZZY"},
-                {36 * 36 * 36 * 36 - 1, "ZZZZ"},
+        return new Object[][] {
+            {0, "0"},
+            {15, "F"},
+            {36, "10"},
+            {1200000, "PPXC"},
+            {36 * 36 * 36 * 36 - 2, "ZZZY"},
+            {36 * 36 * 36 * 36 - 1, "ZZZZ"},
         };
     }
 
     @Test(dataProvider = "fourDigitBase36StrPositiveData")
     public void fourDigitBase36StrPositiveTest(final int toConvert, final String expectedValue) {
-        final SamFileHeaderMerger headerMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, new ArrayList<SAMFileHeader>(), true);
+        final SamFileHeaderMerger headerMerger =
+                new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, new ArrayList<SAMFileHeader>(), true);
         Assert.assertEquals(expectedValue, headerMerger.positiveFourDigitBase36Str(toConvert));
     }
 }

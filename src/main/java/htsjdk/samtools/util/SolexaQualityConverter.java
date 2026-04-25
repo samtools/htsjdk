@@ -42,11 +42,11 @@ public class SolexaQualityConverter {
     /**
      * This value is removed from an Illumina 1.8 quality score to make it a Phred score
      */
-    public final static int ILLUMINA_TO_PHRED_SUBTRAHEND = SOLEXA_ADDEND - PHRED_ADDEND;
+    public static final int ILLUMINA_TO_PHRED_SUBTRAHEND = SOLEXA_ADDEND - PHRED_ADDEND;
 
     private static SolexaQualityConverter singleton = null;
 
-    public static synchronized SolexaQualityConverter getSingleton()  {
+    public static synchronized SolexaQualityConverter getSingleton() {
         if (singleton == null) {
             singleton = new SolexaQualityConverter();
         }
@@ -67,10 +67,9 @@ public class SolexaQualityConverter {
         }
     }
 
-
     /** Converts a solexa character quality into a phred numeric quality. */
     private byte convertSolexaQualityCharToPhredBinary(final int solexaQuality) {
-        return (byte) Math.round(10d * Math.log10(1d+Math.pow(10d, (solexaQuality - SOLEXA_ADDEND)/10d)));
+        return (byte) Math.round(10d * Math.log10(1d + Math.pow(10d, (solexaQuality - SOLEXA_ADDEND) / 10d)));
     }
 
     /**
@@ -94,7 +93,7 @@ public class SolexaQualityConverter {
      * Decode in place in order to avoid extra object allocation.
      */
     public void convertSolexaQualityCharsToPhredBinary(final byte[] solexaQuals) {
-        for (int i=0; i<solexaQuals.length; ++i) {
+        for (int i = 0; i < solexaQuals.length; ++i) {
             solexaQuals[i] = phredScore[solexaQuals[i]];
         }
     }
@@ -104,8 +103,8 @@ public class SolexaQualityConverter {
      * Decode in place in order to avoid extra object allocation.
      */
     public void convertSolexaQualityCharsToPhredChars(final byte[] solexaQuals) {
-        for (int i=0; i<solexaQuals.length; ++i) {
-            solexaQuals[i] = (byte)((phredScore[solexaQuals[i]] + PHRED_ADDEND) & 0xff);
+        for (int i = 0; i < solexaQuals.length; ++i) {
+            solexaQuals[i] = (byte) ((phredScore[solexaQuals[i]] + PHRED_ADDEND) & 0xff);
         }
     }
 
@@ -115,14 +114,14 @@ public class SolexaQualityConverter {
      * @param solexaQuals qualities are converted in place.
      */
     public void convertSolexa_1_3_QualityCharsToPhredBinary(final byte[] solexaQuals) {
-        for (int i=0; i<solexaQuals.length; ++i) {
+        for (int i = 0; i < solexaQuals.length; ++i) {
             solexaQuals[i] -= SOLEXA_ADDEND;
         }
     }
 
     public void convertSolexa_1_3_QualityCharsToPhredBinary(int offset, int length, final byte[] solexaQuals) {
         final int limit = offset + length;
-        for (int i=offset; i < limit; ++i) {
+        for (int i = offset; i < limit; ++i) {
             solexaQuals[i] -= SOLEXA_ADDEND;
         }
     }

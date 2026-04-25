@@ -32,7 +32,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -50,8 +49,7 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     private final BlockCompressedInputStream stream;
     private final GZIIndex gzindex;
 
-    public BlockCompressedIndexedFastaSequenceFile(final Path path)
-            throws FileNotFoundException {
+    public BlockCompressedIndexedFastaSequenceFile(final Path path) throws FileNotFoundException {
         this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
     }
 
@@ -64,10 +62,7 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
      * @param gziIndex the associated gziIndex
      */
     public BlockCompressedIndexedFastaSequenceFile(
-            final IOPath fastaPath,
-            final IOPath dictPath,
-            final FastaSequenceIndex index,
-            final GZIIndex gziIndex) {
+            final IOPath fastaPath, final IOPath dictPath, final FastaSequenceIndex index, final GZIIndex gziIndex) {
         super(fastaPath, dictPath, index);
         if (gziIndex == null) {
             throw new IllegalArgumentException("null gzi index");
@@ -85,7 +80,8 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
         this(path, index, loadFastaGziIndex(path));
     }
 
-    public BlockCompressedIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index, final GZIIndex gziIndex) {
+    public BlockCompressedIndexedFastaSequenceFile(
+            final Path path, final FastaSequenceIndex index, final GZIIndex gziIndex) {
         super(path, index);
         if (gziIndex == null) {
             throw new IllegalArgumentException("null gzi index");
@@ -107,7 +103,12 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
      * @param dictionary The sequence dictionary, or null if there isn't one.
      * @param gziIndex The GZI index; may not be null.
      */
-    public BlockCompressedIndexedFastaSequenceFile(final String source, final SeekableStream in, final FastaSequenceIndex index, final SAMSequenceDictionary dictionary, final GZIIndex gziIndex) {
+    public BlockCompressedIndexedFastaSequenceFile(
+            final String source,
+            final SeekableStream in,
+            final FastaSequenceIndex index,
+            final SAMSequenceDictionary dictionary,
+            final GZIIndex gziIndex) {
         super(source, index, dictionary);
         if (gziIndex == null) {
             throw new IllegalArgumentException("null gzi index");

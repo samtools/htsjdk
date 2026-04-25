@@ -20,17 +20,16 @@ public class FQZGlobalFlags {
     }
 
     // returns True if more than one parameter block is present
-    public boolean isMultiParam(){
-        return ((globalFlags & MULTI_PARAM_FLAG_MASK)!=0);
+    public boolean isMultiParam() {
+        return ((globalFlags & MULTI_PARAM_FLAG_MASK) != 0);
     }
 
     // returns True if the parameter selector is mapped through selector table
-    public boolean hasSelectorTable(){
-        return ((globalFlags & SELECTOR_TABLE_FLAG_MASK)!=0);
+    public boolean hasSelectorTable() {
+        return ((globalFlags & SELECTOR_TABLE_FLAG_MASK) != 0);
     }
 
-    public boolean doReverse(){
-        return ((globalFlags & DO_REVERSE_FLAG_MASK)!=0);
+    public boolean doReverse() {
+        return ((globalFlags & DO_REVERSE_FLAG_MASK) != 0);
     }
-
 }
