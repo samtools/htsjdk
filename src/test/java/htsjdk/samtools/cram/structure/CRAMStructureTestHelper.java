@@ -7,6 +7,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.ValidationUtils;
 import org.testng.Assert;
 
@@ -131,6 +132,11 @@ public class CRAMStructureTestHelper {
         Assert.assertFalse(samRecord.getReadUnmappedFlag(), "read should be mapped");
         Assert.assertTrue(samRecord.getReferenceIndex() >= 0, "read should have valid ref index");
         Assert.assertTrue(samRecord.getAlignmentStart() > 0, "read should have a valid alignment start");
+
+        // Set NM/MD tags to match what CRAM decode will regenerate
+        final byte[] refBases = REFERENCE_SOURCE.getReferenceBases(
+                SAM_FILE_HEADER.getSequence(referenceIndex), false);
+        SequenceUtil.calculateMdAndNmTags(samRecord, refBases, true, true);
 
         return samRecord;
     }

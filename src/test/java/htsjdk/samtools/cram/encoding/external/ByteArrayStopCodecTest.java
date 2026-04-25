@@ -2,12 +2,12 @@ package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.encoding.CRAMCodec;
+import htsjdk.samtools.cram.io.CRAMByteReader;
+import htsjdk.samtools.cram.io.CRAMByteWriter;
 import htsjdk.samtools.cram.io.IOTestCases;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class ByteArrayStopCodecTest extends HtsjdkTest {
@@ -21,20 +21,16 @@ public class ByteArrayStopCodecTest extends HtsjdkTest {
             Assert.assertNotEquals(v, stopByte);
         }
 
-        byte[] written;
-        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CRAMCodec<byte[]> writeCodec = new ByteArrayStopCodec(null, os, stopByte);
+        final CRAMByteWriter os = new CRAMByteWriter();
+        final CRAMCodec<byte[]> writeCodec = new ByteArrayStopCodec(null, os, stopByte);
 
-            writeCodec.write(values);
-            os.flush();
-            written = os.toByteArray();
-        }
+        writeCodec.write(values);
+        final byte[] written = os.toByteArray();
 
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final CRAMCodec<byte[]> readCodec = new ByteArrayStopCodec(is, null, stopByte);
+        final CRAMByteReader is = new CRAMByteReader(written);
+        final CRAMCodec<byte[]> readCodec = new ByteArrayStopCodec(is, null, stopByte);
 
-            final byte[] actual = readCodec.read();
-            Assert.assertEquals(actual, values);
-        }
+        final byte[] actual = readCodec.read();
+        Assert.assertEquals(actual, values);
     }
 }

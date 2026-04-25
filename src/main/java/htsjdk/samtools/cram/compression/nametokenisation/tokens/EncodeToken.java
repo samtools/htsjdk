@@ -23,6 +23,10 @@ public class EncodeToken {
     private String actualValue;
     private String relativeValue;
 
+    /** Cached parsed integer for relativeValue, avoiding repeated Integer.parseInt() calls. */
+    private int relativeValueInt;
+    private boolean hasRelativeValueInt;
+
     /**
      * Token types TOKEN_DELTA, TOKEN_DELTA0, TOKEN_DIGITS, TOKEN_DIGITS0 all have a relative value that
      * differs from the actual value of the original fragment, and for those token types, we need to preserve
@@ -40,6 +44,23 @@ public class EncodeToken {
         this.relativeValue = relativeValue;
     }
 
+    public EncodeToken(final byte type, final String actualValue, final int relativeValueInt) {
+        this.tokenType = type;
+        this.actualValue = actualValue;
+        this.relativeValue = null;
+        this.relativeValueInt = relativeValueInt;
+        this.hasRelativeValueInt = true;
+    }
+
+    /** Get the relative value as an int, parsing from string only on first call. */
+    public int getRelativeValueAsInt() {
+        if (!hasRelativeValueInt) {
+            relativeValueInt = Integer.parseInt(relativeValue);
+            hasRelativeValueInt = true;
+        }
+        return relativeValueInt;
+    }
+
     public byte getTokenType() {
         return tokenType;
     }
@@ -49,6 +70,9 @@ public class EncodeToken {
     }
 
     public String getRelativeValue() {
+        if (relativeValue == null && hasRelativeValueInt) {
+            relativeValue = String.valueOf(relativeValueInt);
+        }
         return relativeValue;
     }
 

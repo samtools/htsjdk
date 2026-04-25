@@ -1,4 +1,4 @@
-@SQ	SN:c1	LN:10
+@SQ	SN:c1	LN:10	M5:e224bd8a70e5466c6a033be886045c85	UR:/home/vadim/bin/htslib/test/c1.fa
 sq1	0	c1	1	0	10M	*	0	0	AACCGCGGTT	**********	MD:Z:10	NM:i:0
 sQ1	0	c1	1	0	10M	*	0	0	AACCGCGGTT	*	MD:Z:10	NM:i:0
 SQ1	0	c1	1	0	10M	*	0	0	*	*	MD:Z:10	NM:i:0

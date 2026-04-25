@@ -25,11 +25,13 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -133,6 +135,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     }
 
     private void validateRecords(final List<SAMRecord> expectedRecords, ByteArrayInputStream is, ReferenceSource referenceSource) {
+        // CRAM decode regenerates missing NM/MD tags (matching htslib behavior), so add them
+        // to expected records before comparison
+        addMissingNmMd(expectedRecords, referenceSource);
+
         try (CRAMFileReader cReader = new CRAMFileReader(null, is, referenceSource)) {
 
             SAMRecordIterator iterator2 = cReader.getIterator();
@@ -161,6 +167,19 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                     Assert.assertEquals(tv.value, expectedRecord.getAttribute(tv.tag));
                 });
 
+            }
+        }
+    }
+
+    /** Add NM/MD to mapped records that are missing them, matching what CRAM decode will produce. */
+    private static void addMissingNmMd(final List<SAMRecord> records, final ReferenceSource refSource) {
+        for (final SAMRecord rec : records) {
+            if (!rec.getReadUnmappedFlag() && rec.getReferenceIndex() >= 0 && rec.getAttribute(SAMTag.MD) == null) {
+                final byte[] refBases = refSource.getReferenceBases(
+                        rec.getHeader().getSequence(rec.getReferenceIndex()), false);
+                if (refBases != null) {
+                    SequenceUtil.calculateMdAndNmTags(rec, refBases, true, true);
+                }
             }
         }
     }
@@ -254,6 +273,9 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
         }
 
+        // CRAM decode regenerates NM/MD, so add them to expected records
+        addMissingNmMd(records, source);
+
         try (CRAMFileReader cramReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT)) {
             final SAMRecordIterator iterator = cramReader.getIterator();
             int i = 0;
@@ -300,6 +322,10 @@ public class CRAMFileWriterTest extends HtsjdkTest {
             });
         }
 
+        // CRAM decode regenerates NM/MD, so add them to expected records
+        final ReferenceSource refSourceForValidation = new ReferenceSource(newFasta);
+        addMissingNmMd(records, refSourceForValidation);
+
         try (SamReader cramReader = SamReaderFactory.make().referenceSequence(newFasta).open(output)) {
             final SAMRecordIterator iterator = cramReader.iterator();
             int i = 0;
@@ -337,6 +363,86 @@ public class CRAMFileWriterTest extends HtsjdkTest {
                 // test if the read names are sorted alphabetically:
                 Assert.assertTrue(rec.getReadName().compareTo(prevName) >= 0);
             }
+        }
+    }
+
+    /**
+     * Verify that records with NM and MD tags survive a CRAM round-trip: tags are stripped during
+     * encoding and regenerated during decoding.
+     */
+    @Test
+    public void testNmMdRegenerationRoundTrip() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ReferenceSource refSource = createReferenceSource();
+
+        // Create a mapped record with NM and MD
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName("testRead");
+        record.setReferenceName("chr1");
+        record.setAlignmentStart(1);
+        record.setCigarString("10M");
+        record.setReadBases("AAAAAAAAAA".getBytes());
+        record.setBaseQualities("IIIIIIIIII".getBytes());
+        record.setReadPairedFlag(false);
+        record.setReadUnmappedFlag(false);
+        record.setAttribute(SAMTag.NM, 0);
+        record.setAttribute(SAMTag.MD, "10");
+        record.setAttribute(SAMTag.RG, header.getReadGroups().get(0).getId());
+
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(os, refSource, header, null)) {
+            writer.addAlignment(record);
+        }
+
+        try (CRAMFileReader reader = new CRAMFileReader(null, new ByteArrayInputStream(os.toByteArray()), refSource)) {
+            final SAMRecord decoded = reader.getIterator().next();
+            Assert.assertEquals(decoded.getIntegerAttribute(SAMTag.NM), Integer.valueOf(0),
+                    "NM should be regenerated during CRAM decode");
+            Assert.assertEquals(decoded.getStringAttribute(SAMTag.MD), "10",
+                    "MD should be regenerated during CRAM decode");
+            Assert.assertNull(decoded.getAttribute("cF"),
+                    "Internal cF tag should be stripped during decode");
+        }
+    }
+
+    /**
+     * Verify that storeNM=true/storeMD=true preserves NM and MD verbatim without cF tag.
+     */
+    @Test
+    public void testStoreNmMdVerbatim() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ReferenceSource refSource = createReferenceSource();
+        final CRAMEncodingStrategy strategy = new CRAMEncodingStrategy()
+                .setStoreNM(true)
+                .setStoreMD(true);
+
+        // Create a mapped record with NM and MD
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName("verbatimNmMd");
+        record.setReferenceName("chr1");
+        record.setAlignmentStart(1);
+        record.setCigarString("10M");
+        record.setReadBases("AAAAAAAAAA".getBytes());
+        record.setBaseQualities("IIIIIIIIII".getBytes());
+        record.setReadPairedFlag(false);
+        record.setReadUnmappedFlag(false);
+        record.setAttribute(SAMTag.NM, 0);
+        record.setAttribute(SAMTag.MD, "10");
+        record.setAttribute(SAMTag.RG, header.getReadGroups().get(0).getId());
+
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(strategy, os, null, true, refSource, header, null)) {
+            writer.addAlignment(record);
+        }
+
+        try (CRAMFileReader reader = new CRAMFileReader(null, new ByteArrayInputStream(os.toByteArray()), refSource)) {
+            final SAMRecord decoded = reader.getIterator().next();
+            Assert.assertEquals(decoded.getIntegerAttribute(SAMTag.NM), Integer.valueOf(0),
+                    "NM should be preserved verbatim");
+            Assert.assertEquals(decoded.getStringAttribute(SAMTag.MD), "10",
+                    "MD should be preserved verbatim");
+            Assert.assertNull(decoded.getAttribute("cF"),
+                    "cF tag should not exist when NM/MD are stored verbatim");
         }
     }
 }

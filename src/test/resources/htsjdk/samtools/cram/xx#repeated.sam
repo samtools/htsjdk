@@ -1,7 +1,7 @@
-@SQ	SN:xx	LN:20
-S	67	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********
-S	131	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********
-S	67	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********
-S	131	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********
-S	67	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********
-S	131	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********
+@SQ	SN:xx	LN:20	M5:bbf4de6d8497a119dda6e074521643dc	UR:/Users/thibault/src/htsjdk/src/test/resources/htsjdk/samtools/cram/xx.fa
+S	67	xx	1	1	10M	=	11	20	AAAAAAAAAA	**********	MD:Z:10	NM:i:0
+S	131	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********	MD:Z:10	NM:i:0
+S	67	xx	1	1	10M	=	11	-20	AAAAAAAAAA	**********	MD:Z:10	NM:i:0
+S	131	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********	MD:Z:10	NM:i:0
+S	67	xx	1	1	10M	=	11	-20	AAAAAAAAAA	**********	MD:Z:10	NM:i:0
+S	131	xx	11	1	10M	=	1	-20	TTTTTTTTTT	**********	MD:Z:10	NM:i:0

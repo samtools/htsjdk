@@ -19,7 +19,10 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
+import htsjdk.samtools.cram.compression.TrialCompressor;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.encoding.*;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
@@ -59,6 +62,10 @@ public final class CompressionHeaderFactory {
     private final Map<Integer, EncodingDetails> bestTagEncodings = new HashMap<>();
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
+    // Per-tag trial compressors that persist across containers. Each tag ID gets its own
+    // TrialCompressor that learns which of GZIP/rANS-0/rANS-1 works best for that tag's data.
+    private final Map<Integer, ExternalCompressor> tagTrialCompressors = new HashMap<>();
+
     /**
      * Create a CompressionHeaderFactory using the provided CRAMEncodingStrategy.
      * @param encodingStrategy {@link CRAMEncodingStrategy} to use, may not be null
@@ -66,9 +73,9 @@ public final class CompressionHeaderFactory {
     public CompressionHeaderFactory(final CRAMEncodingStrategy encodingStrategy) {
         ValidationUtils.nonNull(encodingStrategy, "A CRAMEncodingStrategy is required");
 
-        this.encodingMap = encodingStrategy.getCustomCompressionHeaderEncodingMap() == null ?
-                new CompressionHeaderEncodingMap(encodingStrategy) :
-                encodingStrategy.getCustomCompressionHeaderEncodingMap();
+        this.encodingMap = encodingStrategy.getCustomCompressionHeaderEncodingMap() != null ?
+                encodingStrategy.getCustomCompressionHeaderEncodingMap() :
+                new CompressionHeaderEncodingMap(encodingStrategy);
         this.encodingStrategy = encodingStrategy;
     }
 
@@ -89,8 +96,9 @@ public final class CompressionHeaderFactory {
                 true,
                 true);
 
-        compressionHeader.setTagIdDictionary(buildTagIdDictionary(containerCRAMCompressionRecords));
-        buildTagEncodings(containerCRAMCompressionRecords, compressionHeader);
+        final Set<Integer> discoveredTagIds = new HashSet<>();
+        compressionHeader.setTagIdDictionary(buildTagIdDictionary(containerCRAMCompressionRecords, discoveredTagIds));
+        buildTagEncodings(containerCRAMCompressionRecords, compressionHeader, discoveredTagIds);
         final SubstitutionMatrix substitutionMatrix = new SubstitutionMatrix(containerCRAMCompressionRecords);
         updateSubstitutionCodes(containerCRAMCompressionRecords, substitutionMatrix);
         compressionHeader.setSubstitutionMatrix(substitutionMatrix);
@@ -114,20 +122,14 @@ public final class CompressionHeaderFactory {
      * @param compressionHeader
      *            compression header to register encodings
      */
-    private void buildTagEncodings(final List<CRAMCompressionRecord> cramCompressionRecords, final CompressionHeader compressionHeader) {
-        final Set<Integer> tagIdSet = new HashSet<>();
-
-        for (final CRAMCompressionRecord record : cramCompressionRecords) {
-            if (record.getTags() == null || record.getTags().size() == 0) {
-                continue;
-            }
-
-            for (final ReadTag tag : record.getTags()) {
-                tagIdSet.add(tag.keyType3BytesAsInt);
-            }
-        }
-
-        for (final int tagId : tagIdSet) {
+    /**
+     * Build tag encodings using tag IDs already discovered during dictionary building,
+     * avoiding a redundant pass over all records.
+     */
+    private void buildTagEncodings(final List<CRAMCompressionRecord> cramCompressionRecords,
+                                   final CompressionHeader compressionHeader,
+                                   final Set<Integer> discoveredTagIds) {
+        for (final int tagId : discoveredTagIds) {
             if (bestTagEncodings.containsKey(tagId)) {
                 compressionHeader.addTagEncoding(tagId, bestTagEncodings.get(tagId).compressor, bestTagEncodings.get(tagId).params);
             } else {
@@ -171,7 +173,8 @@ public final class CompressionHeaderFactory {
      *            records holding the tags
      * @return a 3D byte array: a set of unique lists of tag ids.
      */
-    private static byte[][][] buildTagIdDictionary(final List<CRAMCompressionRecord> cramCompressionRecords) {
+    private static byte[][][] buildTagIdDictionary(final List<CRAMCompressionRecord> cramCompressionRecords,
+                                                    final Set<Integer> discoveredTagIds) {
         final Comparator<ReadTag> comparator = new Comparator<ReadTag>() {
             @Override
             public int compare(final ReadTag o1, final ReadTag o2) {
@@ -209,9 +212,11 @@ public final class CompressionHeaderFactory {
 
             int tagIndex = 0;
             for (int i = 0; i < record.getTags().size(); i++) {
-                tagIds[i * 3] = (byte) record.getTags().get(tagIndex).keyType3Bytes.charAt(0);
-                tagIds[i * 3 + 1] = (byte) record.getTags().get(tagIndex).keyType3Bytes.charAt(1);
-                tagIds[i * 3 + 2] = (byte) record.getTags().get(tagIndex).keyType3Bytes.charAt(2);
+                final ReadTag tag = record.getTags().get(tagIndex);
+                tagIds[i * 3] = (byte) tag.keyType3Bytes.charAt(0);
+                tagIds[i * 3 + 1] = (byte) tag.keyType3Bytes.charAt(1);
+                tagIds[i * 3 + 2] = (byte) tag.keyType3Bytes.charAt(2);
+                discoveredTagIds.add(tag.keyType3BytesAsInt);
                 tagIndex++;
             }
 
@@ -255,13 +260,32 @@ public final class CompressionHeaderFactory {
     }
 
     /**
-     * Get the best external compressor to use for the given byte array.
-     *
-     * @param data byte array to compress
-     * @return best compressor to use for the data
+     * Get the trial compressor for a tag, creating one if it doesn't exist yet. The trial
+     * compressor tries GZIP, rANS order-0, and rANS order-1 on the first few blocks, then
+     * uses the winner for subsequent blocks until re-trial.
      */
-    public ExternalCompressor getBestExternalCompressor(final byte[] data) {
-        return encodingMap.getBestExternalCompressor(data, encodingStrategy);
+    private ExternalCompressor getTagTrialCompressor(final int tagID) {
+        return tagTrialCompressors.computeIfAbsent(tagID, id -> {
+            final CompressorCache cache = new CompressorCache();
+            // Extract the two-character tag name from the encoded tag ID
+            final char tag1 = (char) ((id >> 16) & 0xFF);
+            final char tag2 = (char) ((id >> 8) & 0xFF);
+
+            // BZIP2's BWT excels on structured alignment tags (SA:Z, XA:Z) where
+            // repeated substrings like contig names and CIGAR patterns are common
+            final boolean useBzip2 = (tag1 == 'S' && tag2 == 'A') || (tag1 == 'X' && tag2 == 'A');
+            if (useBzip2) {
+                return new TrialCompressor(List.of(
+                        cache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
+                        cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()),
+                        cache.getCompressorForMethod(BlockCompressionMethod.BZIP2, ExternalCompressor.NO_COMPRESSION_ARG)
+                ));
+            }
+            return new TrialCompressor(List.of(
+                    cache.getCompressorForMethod(BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
+                    cache.getCompressorForMethod(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal())
+            ));
+        });
     }
 
     byte[] getDataForTag(final List<CRAMCompressionRecord> cramCompressionRecords, final int tagID) {
@@ -368,12 +392,11 @@ public final class CompressionHeaderFactory {
      */
     private EncodingDetails buildEncodingForTag(final List<CRAMCompressionRecord> records, final int tagID) {
         final EncodingDetails details = new EncodingDetails();
-        final byte[] data = getDataForTag(records, tagID);
-
-        details.compressor = getBestExternalCompressor(data);
+        details.compressor = getTagTrialCompressor(tagID);
 
         final byte type = getTagType(tagID);
         switch (type) {
+            // Fixed-size types — no record iteration needed
             case 'A':
             case 'c':
             case 'C':
@@ -391,39 +414,66 @@ public final class CompressionHeaderFactory {
                 details.params = buildTagEncodingForSize(2, tagID);
                 return details;
 
+            // Z-type strings — always use stop-byte encoding, no record iteration needed
             case 'Z':
-            case 'B':
-                final ByteSizeRange stats = getByteSizeRangeOfTagValues(records, tagID);
-                final boolean singleSize = stats.min == stats.max;
-                if (singleSize) {
-                    details.params = buildTagEncodingForSize(stats.min, tagID);
-                    return details;
-                }
-
-                if (type == 'Z') {
-                    details.params = new ByteArrayStopEncoding((byte) '\t', tagID).toEncodingDescriptor();
-                    return details;
-                }
-
-                final int minSize_threshold_ForByteArrayStopEncoding = 100;
-                if (stats.min > minSize_threshold_ForByteArrayStopEncoding) {
-                    final int unusedByte = getUnusedByte(data);
-                    if (unusedByte > ALL_BYTES_USED) {
-                        details.params = new ByteArrayStopEncoding((byte) unusedByte, tagID).toEncodingDescriptor();
-                        return details;
-                    }
-                }
-
-                // NOTE: This usage of ByteArrayLenEncoding does NOT split the stream between core
-                // and external, since both the length and byte encoding instantiated here are
-                // external. But it does create two different external encodings with the same externalID (???)
-                details.params = new ByteArrayLenEncoding(
-                        new ExternalIntegerEncoding(tagID),
-                        new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
+                details.params = new ByteArrayStopEncoding((byte) '\t', tagID).toEncodingDescriptor();
                 return details;
+
+            // B-type arrays — need record iteration for size range and data
+            case 'B':
+                return buildEncodingForVariableLengthTag(records, tagID, type, details);
             default:
                 throw new IllegalArgumentException("Unknown tag type: " + (char) type);
         }
+    }
+
+    /**
+     * Build encoding for B-type array tags using a single pass over records
+     * to collect size range and raw data bytes (for getUnusedByte check).
+     */
+    private EncodingDetails buildEncodingForVariableLengthTag(
+            final List<CRAMCompressionRecord> records, final int tagID, final byte type,
+            final EncodingDetails details) {
+        baosForTagValues.reset();
+
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (final CRAMCompressionRecord record : records) {
+            if (record.getTags() != null) {
+                for (final ReadTag tag : record.getTags()) {
+                    if (tag.keyType3BytesAsInt == tagID) {
+                        final int size = getTagValueByteSize(type, tag.getValue());
+                        if (size < min) min = size;
+                        if (size > max) max = size;
+                        try {
+                            baosForTagValues.write(tag.getValueAsByteArray());
+                        } catch (final IOException e) {
+                            throw new RuntimeIOException(e);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (min == max) {
+            details.params = buildTagEncodingForSize(min, tagID);
+            return details;
+        }
+
+        // B-type with variable sizes
+        final int minSize_threshold_ForByteArrayStopEncoding = 100;
+        if (min > minSize_threshold_ForByteArrayStopEncoding) {
+            final int unusedByte = getUnusedByte(baosForTagValues.toByteArray());
+            if (unusedByte > ALL_BYTES_USED) {
+                details.params = new ByteArrayStopEncoding((byte) unusedByte, tagID).toEncodingDescriptor();
+                return details;
+            }
+        }
+
+        details.params = new ByteArrayLenEncoding(
+                new ExternalIntegerEncoding(tagID),
+                new ExternalByteArrayEncoding(tagID)).toEncodingDescriptor();
+        return details;
     }
 
     /**

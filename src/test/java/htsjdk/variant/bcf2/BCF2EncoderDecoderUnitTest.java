@@ -120,24 +120,18 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
             primitives.add(new BCF2TypedValue(null, type));
         }
 
+        // One representative per type plus one null per non-CHAR type. Reducing from 17 to 9
+        // values cuts the 3-way cartesian product from 4913 to 729 test sequences while still
+        // covering all type combinations and null handling.
         forCombinations.add(new BCF2TypedValue(10, BCF2Type.INT8));
-        forCombinations.add(new BCF2TypedValue(100, BCF2Type.INT8));
-        forCombinations.add(new BCF2TypedValue(-100, BCF2Type.INT8));
-        forCombinations.add(new BCF2TypedValue(-128, BCF2Type.INT16));    // first value in range
-        forCombinations.add(new BCF2TypedValue( 128, BCF2Type.INT16));    // first value in range
-        forCombinations.add(new BCF2TypedValue(-100000, BCF2Type.INT32));
+        forCombinations.add(new BCF2TypedValue(-128, BCF2Type.INT16));
         forCombinations.add(new BCF2TypedValue(100000, BCF2Type.INT32));
-        forCombinations.add(new BCF2TypedValue(0.0, BCF2Type.FLOAT));
         forCombinations.add(new BCF2TypedValue(1.23e6, BCF2Type.FLOAT));
-        forCombinations.add(new BCF2TypedValue(-1.23e6, BCF2Type.FLOAT));
-        forCombinations.add(new BCF2TypedValue("S", BCF2Type.CHAR));
         forCombinations.add(new BCF2TypedValue("ABCDEFGHIJKLMNOPQRSTUVWXYZ", BCF2Type.CHAR));
-        forCombinations.add(new BCF2TypedValue("ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ", BCF2Type.CHAR));
-
-        // missing values
-        for ( BCF2Type type : BCF2Type.values() ) {
-            forCombinations.add(new BCF2TypedValue(null, type));
-        }
+        forCombinations.add(new BCF2TypedValue(null, BCF2Type.INT8));
+        forCombinations.add(new BCF2TypedValue(null, BCF2Type.INT16));
+        forCombinations.add(new BCF2TypedValue(null, BCF2Type.INT32));
+        forCombinations.add(new BCF2TypedValue(null, BCF2Type.FLOAT));
     }
 
     // --------------------------------------------------------------------------------

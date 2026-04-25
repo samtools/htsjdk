@@ -4,6 +4,14 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Global parameters for the FQZComp quality score codec. Contains one or more {@link FQZParam} blocks,
+ * an optional selector table for choosing between parameter blocks per record, and the global
+ * flags controlling features like quality reversal and multi-parameter mode.
+ *
+ * @see FQZParam
+ * @see FQZGlobalFlags
+ */
 public class FQZParams {
     private static final int NUMBER_OF_SYMBOLS = 256;
 

@@ -317,11 +317,10 @@ public class Container {
             final SAMFileHeader samFileHeader) {
         final List<SAMRecord> samRecords = new ArrayList<>(getContainerHeader().getNumberOfRecords());
         for (final Slice slice : getSlices()) {
-            final List<CRAMCompressionRecord> cramCompressionRecords = slice.deserializeCRAMRecords(compressorCache, validationStringency);
             // before we convert to SAMRecord, we need to normalize the CRAMCompressionRecord in each Slice
-            slice.normalizeCRAMRecords(
-                    cramCompressionRecords,
-                    cramReferenceRegion);
+            final List<CRAMCompressionRecord> cramCompressionRecords = slice.deserializeCRAMRecords(compressorCache, validationStringency);
+            slice.normalizeCRAMRecords( cramCompressionRecords, cramReferenceRegion);
+
             for (final CRAMCompressionRecord cramCompressionRecord : cramCompressionRecords) {
                 final SAMRecord samRecord = cramCompressionRecord.toSAMRecord(samFileHeader);
                 samRecord.setValidationStringency(validationStringency);
@@ -380,6 +379,9 @@ public class Container {
      * @throws CRAMException when the Container is in an invalid state
      */
     private void distributeIndexingParametersToSlices() {
+        if (slices.isEmpty()) {
+            return;
+        }
         final int lastSliceIndex = slices.size() - 1;
         for (int i = 0; i < lastSliceIndex; i++) {
             final Slice slice = slices.get(i);

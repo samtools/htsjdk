@@ -52,6 +52,7 @@ public class CompressionHeader {
     private final Map<Integer, EncodingDescriptor> tagEncodingMap = new TreeMap<>();
     private SubstitutionMatrix substitutionMatrix;
     private byte[][][] tagIDDictionary;
+    private TagKeyCache tagKeyCache;
 
     /**
      * Create a CompressionHeader using the default {@link CRAMEncodingStrategy}
@@ -153,6 +154,15 @@ public class CompressionHeader {
 
     public  void setTagIdDictionary(final byte[][][] dictionary) {
         this.tagIDDictionary = dictionary;
+        this.tagKeyCache = new TagKeyCache(dictionary);
+    }
+
+    /**
+     * Returns the {@link TagKeyCache} for looking up pre-computed tag key metadata.
+     * Built from the tag ID dictionary when the compression header is parsed.
+     */
+    public TagKeyCache getTagKeyCache() {
+        return tagKeyCache;
     }
 
     public void setSubstitutionMatrix(final SubstitutionMatrix substitutionMatrix) {
@@ -240,6 +250,7 @@ public class CompressionHeader {
                     final byte[] dictionaryBytes = new byte[size];
                     buffer.get(dictionaryBytes);
                     tagIDDictionary = parseDictionary(dictionaryBytes);
+                    tagKeyCache = new TagKeyCache(tagIDDictionary);
                 } else if (SM_substitutionMatrix.equals(key)) {
                     // parse subs matrix here:
                     final byte[] matrixBytes = new byte[SubstitutionMatrix.BASES_SIZE];
@@ -279,54 +290,56 @@ public class CompressionHeader {
     }
 
     private void internalWrite(final OutputStream outputStream) throws IOException {
+        // Each map below is written to outputStream as a length-prefixed byte
+        // array, so we need to know the full serialized size before writing.
+        // Buffer to a ByteArrayOutputStream first, then emit [length][bytes].
+        // Pre-sized to 16 KB: enough for typical tag sets without reallocation,
+        // but small enough that we don't waste memory when most of it is unused.
+        // Rich tag sets (PacBio/Ultima flow-space, ONT mod bases) grow via the
+        // usual doubling -- a few reallocations are cheap relative to the final
+        // size. Reused across both blocks via reset().
+        final ByteArrayOutputStream mapStream = new ByteArrayOutputStream(16 * 1024);
+
         { // preservation map:
-            final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
-            ITF8.writeUnsignedITF8(5, mapBuffer);
+            ITF8.writeUnsignedITF8(5, mapStream);
 
-            mapBuffer.put(RN_readNamesIncluded.getBytes());
-            mapBuffer.put((byte) (preserveReadNames ? 1 : 0));
+            mapStream.write(RN_readNamesIncluded.getBytes());
+            mapStream.write(preserveReadNames ? 1 : 0);
 
-            mapBuffer.put(AP_alignmentPositionIsDelta.getBytes());
-            mapBuffer.put((byte) (APDelta ? 1 : 0));
+            mapStream.write(AP_alignmentPositionIsDelta.getBytes());
+            mapStream.write(APDelta ? 1 : 0);
 
-            mapBuffer.put(RR_referenceRequired.getBytes());
-            mapBuffer.put((byte) (referenceRequired ? 1 : 0));
+            mapStream.write(RR_referenceRequired.getBytes());
+            mapStream.write(referenceRequired ? 1 : 0);
 
-            mapBuffer.put(SM_substitutionMatrix.getBytes());
-            mapBuffer.put(substitutionMatrix.getEncodedMatrix());
+            mapStream.write(SM_substitutionMatrix.getBytes());
+            mapStream.write(substitutionMatrix.getEncodedMatrix());
 
-            mapBuffer.put(TD_tagIdsDictionary.getBytes());
+            mapStream.write(TD_tagIdsDictionary.getBytes());
             final byte[] dictionaryBytes = dictionaryToByteArray();
-            ITF8.writeUnsignedITF8(dictionaryBytes.length, mapBuffer);
-            mapBuffer.put(dictionaryBytes);
+            ITF8.writeUnsignedITF8(dictionaryBytes.length, mapStream);
+            mapStream.write(dictionaryBytes);
 
-            mapBuffer.flip();
-            final byte[] mapBytes = new byte[mapBuffer.limit()];
-            mapBuffer.get(mapBytes);
-
-            ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
-            outputStream.write(mapBytes);
+            ITF8.writeUnsignedITF8(mapStream.size(), outputStream);
+            mapStream.writeTo(outputStream);
         }
 
         encodingMap.write(outputStream);
 
         { // tag encoding map:
-            final ByteBuffer mapBuffer = ByteBuffer.allocate(1024 * 100);
-            ITF8.writeUnsignedITF8(tagEncodingMap.size(), mapBuffer);
+            mapStream.reset();
+            ITF8.writeUnsignedITF8(tagEncodingMap.size(), mapStream);
             for (final Integer dataSeries : tagEncodingMap.keySet()) {
-                ITF8.writeUnsignedITF8(dataSeries, mapBuffer);
+                ITF8.writeUnsignedITF8(dataSeries, mapStream);
 
                 final EncodingDescriptor params = tagEncodingMap.get(dataSeries);
-                mapBuffer.put((byte) (0xFF & params.getEncodingID().getId()));
-                ITF8.writeUnsignedITF8(params.getEncodingParameters().length, mapBuffer);
-                mapBuffer.put(params.getEncodingParameters());
+                mapStream.write(0xFF & params.getEncodingID().getId());
+                ITF8.writeUnsignedITF8(params.getEncodingParameters().length, mapStream);
+                mapStream.write(params.getEncodingParameters());
             }
-            mapBuffer.flip();
-            final byte[] mapBytes = new byte[mapBuffer.limit()];
-            mapBuffer.get(mapBytes);
 
-            ITF8.writeUnsignedITF8(mapBytes.length, outputStream);
-            outputStream.write(mapBytes);
+            ITF8.writeUnsignedITF8(mapStream.size(), outputStream);
+            mapStream.writeTo(outputStream);
         }
     }
 

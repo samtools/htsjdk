@@ -9,21 +9,40 @@ import htsjdk.samtools.cram.compression.nametokenisation.NameTokeniserExternalCo
 import htsjdk.samtools.cram.compression.range.RangeDecode;
 import htsjdk.samtools.cram.compression.range.RangeEncode;
 import htsjdk.samtools.cram.compression.range.RangeExternalCompressor;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Decode;
-import htsjdk.samtools.cram.compression.rans.rans4x8.RANS4x8Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Decode;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
 
+/**
+ * Abstract base class for CRAM external block compressors. Each subclass wraps a specific
+ * compression algorithm (GZIP, rANS, BZIP2, etc.) and provides compress/uncompress operations
+ * on raw byte arrays. Instances are typically obtained via {@link #getCompressorForMethod}.
+ */
 public abstract class ExternalCompressor {
     final public static int NO_COMPRESSION_ARG = -1;
     final private static String argErrorMessage = "Invalid compression arg (%d) requested for CRAM %s compressor";
 
     private BlockCompressionMethod method;
 
+    /**
+     * @param method the compression method for this compressor, or null if the method will be
+     *               determined later (e.g., by {@link TrialCompressor} after its first trial)
+     */
     protected ExternalCompressor(final BlockCompressionMethod method) {
+        this.method = method;
+    }
+
+    /**
+     * Set the compression method. For use by subclasses like {@link TrialCompressor} that
+     * determine their method after construction.
+     *
+     * @param method the compression method to set
+     */
+    protected void setMethod(final BlockCompressionMethod method) {
         this.method = method;
     }
 
@@ -35,13 +54,30 @@ public abstract class ExternalCompressor {
      */
     public abstract byte[] compress(byte[] data, CRAMCodecModelContext contextModel);
 
+    /**
+     * Decompress the data.
+     *
+     * @param data the compressed data
+     * @return the decompressed data
+     */
     public abstract byte[] uncompress(byte[] data);
 
-    public BlockCompressionMethod getMethod() { return method; }
+    /**
+     * @return the compression method used by this compressor
+     * @throws IllegalStateException if the method has not been determined yet (compress() must
+     *         be called first for compressors like {@link TrialCompressor})
+     */
+    public BlockCompressionMethod getMethod() {
+        if (method == null) {
+            throw new IllegalStateException(
+                    "Compression method has not been determined yet — compress() must be called before getMethod()");
+        }
+        return method;
+    }
 
     @Override
     public String toString() {
-        return this.getMethod().toString();
+        return method != null ? method.toString() : "UNDETERMINED";
     }
 
     @Override
@@ -51,12 +87,12 @@ public abstract class ExternalCompressor {
 
         ExternalCompressor that = (ExternalCompressor) o;
 
-        return getMethod() == that.getMethod();
+        return method == that.method;
     }
 
     @Override
     public int hashCode() {
-        return getMethod().hashCode();
+        return method != null ? method.hashCode() : 0;
     }
 
     /**

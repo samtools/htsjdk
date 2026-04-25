@@ -1,13 +1,19 @@
 package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Decode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Encode;
-import htsjdk.samtools.cram.compression.rans.ransnx16.RANSNx16Params;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Decode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
+import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 
 import java.util.Objects;
 
+/**
+ * CRAM external compressor that uses the rANS Nx16 entropy coder (CRAM 3.1).
+ * Supports order-0, order-1, bit-packing, RLE, striping, and CAT modes via
+ * flag combinations. Wraps shared {@link RANSNx16Encode} and {@link RANSNx16Decode}
+ * instances to avoid repeated allocation of large internal tables.
+ */
 public final class RANSNx16ExternalCompressor extends ExternalCompressor {
     private final int flags;
     private final RANSNx16Encode ransEncode;
@@ -25,6 +31,13 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
         this(0, ransEncode, ransDecode); // order 0
     }
 
+    /**
+     * Create a rANS Nx16 compressor with the specified flag combination.
+     *
+     * @param flags bitmask of rANS Nx16 flags (order, pack, RLE, stripe, etc.)
+     * @param ransEncode shared encoder instance
+     * @param ransDecode shared decoder instance
+     */
     public RANSNx16ExternalCompressor(
             final int flags,
             final RANSNx16Encode ransEncode,
@@ -37,13 +50,12 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
 
     @Override
     public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
-        final RANSNx16Params params = new RANSNx16Params(flags);
-        return CompressionUtils.toByteArray(ransEncode.compress(CompressionUtils.wrap(data), params));
+        return ransEncode.compress(data, new RANSNx16Params(flags));
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        return CompressionUtils.toByteArray(ransDecode.uncompress(CompressionUtils.wrap(data)));
+        return ransDecode.uncompress(data);
     }
 
     @Override

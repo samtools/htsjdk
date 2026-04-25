@@ -74,6 +74,7 @@ public final class ContainerFactory {
     private final List<SAMRecord> sliceSAMRecords;
 
     private long globalRecordCounter = 0;
+    private long accumulatedBases = 0;
     private int currentReferenceContextID = ReferenceContext.UNINITIALIZED_REFERENCE_ID;
 
     /**
@@ -112,11 +113,13 @@ public final class ContainerFactory {
         final int updatedReferenceContextID = sliceFactory.getUpdatedReferenceContext(
                 currentReferenceContextID,
                 nextRecordIndex,
-                sliceSAMRecords.size());
+                sliceSAMRecords.size(),
+                accumulatedBases);
 
         if (shouldEmitSlice(updatedReferenceContextID)) {
             sliceFactory.createNewSliceEntry(currentReferenceContextID, sliceSAMRecords);
             sliceSAMRecords.clear();
+            accumulatedBases = 0;
 
             if (shouldEmitContainer(
                     currentReferenceContextID,
@@ -130,6 +133,7 @@ public final class ContainerFactory {
         }
 
         sliceSAMRecords.add(samRecord);
+        accumulatedBases += samRecord.getReadLength();
         return container;
     }
 

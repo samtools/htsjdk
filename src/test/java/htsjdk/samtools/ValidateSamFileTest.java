@@ -73,6 +73,10 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test
     public void testValidCRAMFileWithoutSeqDict() throws Exception {
+        // This CRAM was written by an older encoder that unconditionally stripped NM/MD tags.
+        // With current behavior (matching htslib/samtools), NM/MD are regenerated correctly
+        // on decode, so validation finds no errors. Previously this test expected MISSING_NM
+        // warnings which are no longer produced.
         final File reference = new File(TEST_DATA_DIR, "nm_tag_validation.fa");
         final SamReader samReader = SamReaderFactory
                 .makeDefault()
@@ -82,7 +86,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final Histogram<String> results = executeValidation(samReader,
                 new FastaSequenceFile(reference, true),
                 IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertTrue(!results.isEmpty());
+        Assert.assertTrue(results.isEmpty());
     }
 
     @Test

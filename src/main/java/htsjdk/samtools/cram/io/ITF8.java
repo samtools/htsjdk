@@ -215,6 +215,75 @@ public class ITF8 {
     }
 
     /**
+     * Reads an unsigned ITF8 integer from a {@link CRAMByteReader}. Equivalent to the InputStream version
+     * but avoids synchronized method call overhead.
+     *
+     * @param reader the reader to read from
+     * @return the decoded value
+     */
+    public static int readUnsignedITF8(final CRAMByteReader reader) {
+        final int b1 = reader.read();
+        if (b1 == -1)
+            throw new RuntimeEOFException();
+
+        if ((b1 & 128) == 0)
+            return b1;
+
+        if ((b1 & 64) == 0)
+            return ((b1 & 127) << 8) | reader.read();
+
+        if ((b1 & 32) == 0) {
+            final int b2 = reader.read();
+            final int b3 = reader.read();
+            return ((b1 & 63) << 16) | b2 << 8 | b3;
+        }
+
+        if ((b1 & 16) == 0)
+            return ((b1 & 31) << 24) | reader.read() << 16 | reader.read() << 8 | reader.read();
+
+        return ((b1 & 15) << 28) | reader.read() << 20 | reader.read() << 12 | reader.read() << 4 | (15 & reader.read());
+    }
+
+    /**
+     * Writes an unsigned ITF8 integer to a {@link CRAMByteWriter}. Equivalent to the OutputStream version
+     * but avoids synchronized method call overhead.
+     *
+     * @param value the value to write
+     * @param writer the writer to write to
+     * @return number of bits written
+     */
+    public static int writeUnsignedITF8(final int value, final CRAMByteWriter writer) {
+        if ((value >>> 7) == 0) {
+            writer.write(value);
+            return 8;
+        }
+        if ((value >>> 14) == 0) {
+            writer.write(((value >> 8) | 0x80));
+            writer.write((value & 0xFF));
+            return 16;
+        }
+        if ((value >>> 21) == 0) {
+            writer.write(((value >> 16) | 0xC0));
+            writer.write(((value >> 8) & 0xFF));
+            writer.write((value & 0xFF));
+            return 24;
+        }
+        if ((value >>> 28) == 0) {
+            writer.write(((value >> 24) | 0xE0));
+            writer.write(((value >> 16) & 0xFF));
+            writer.write(((value >> 8) & 0xFF));
+            writer.write((value & 0xFF));
+            return 32;
+        }
+        writer.write(((value >> 28) | 0xF0));
+        writer.write(((value >> 20) & 0xFF));
+        writer.write(((value >> 12) & 0xFF));
+        writer.write(((value >> 4) & 0xFF));
+        writer.write((value & 0xFF));
+        return 40;
+    }
+
+    /**
      * Writes an unsigned (32 bit) integer to a byte new array encoded as ITF8. The sign bit is interpreted as a value bit.
      *
      * @param value the value to be written out

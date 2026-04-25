@@ -12,6 +12,8 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Test a set of index queries against a series of CRAM files that are generated using reads content from a known
@@ -38,6 +40,31 @@ public class CRAMIndexPermutationsTests extends HtsjdkTest {
             new ReferenceSource(new FakeReferenceSequenceFile(
                     SamReaderFactory.makeDefault().getFileHeader(truthBAM).getSequenceDictionary().getSequences()
             ));
+
+    // Caches to avoid rebuilding CRAM files for the same encoding strategy across test methods.
+    // Key is the strategy's toString() + index type suffix.
+    private static final ConcurrentMap<String, File> baiCramCache = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, File> craiCramCache = new ConcurrentHashMap<>();
+
+    private static File getCachedBAICram(final CRAMEncodingStrategy strategy) {
+        return baiCramCache.computeIfAbsent(strategy.toString(), k -> {
+            try {
+                return CRAMIndexTestHelper.createCRAMWithBAIForEncodingStrategy(truthBAM, fakeReferenceSource, strategy);
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private static File getCachedCRAICram(final CRAMEncodingStrategy strategy) {
+        return craiCramCache.computeIfAbsent(strategy.toString(), k -> {
+            try {
+                return CRAMIndexTestHelper.createCRAMWithCRAIForEncodingStrategy(truthBAM, fakeReferenceSource, strategy);
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 
     // Partitioning permutations
     final CRAMEncodingStrategy defaultStrategy10000x1 = new CRAMEncodingStrategy();
@@ -145,10 +172,7 @@ public class CRAMIndexPermutationsTests extends HtsjdkTest {
             final CRAMEncodingStrategy cramEncodingStrategy,
             final QueryInterval[] queryIntervals) throws IOException {
 
-        final File tempCRAM = CRAMIndexTestHelper.createCRAMWithBAIForEncodingStrategy(
-                truthBAM,
-                fakeReferenceSource,
-                cramEncodingStrategy);
+        final File tempCRAM = getCachedBAICram(cramEncodingStrategy);
         final List<String> cramResults = CRAMIndexTestHelper.getCRAMResultsForQueryIntervals(
                 tempCRAM,
                 SamFiles.findIndex(tempCRAM),
@@ -166,10 +190,7 @@ public class CRAMIndexPermutationsTests extends HtsjdkTest {
             final CRAMEncodingStrategy cramEncodingStrategy,
             final QueryInterval[] queryIntervals) throws IOException {
 
-        final File tempCRAM = CRAMIndexTestHelper.createCRAMWithCRAIForEncodingStrategy(
-                truthBAM,
-                fakeReferenceSource,
-                cramEncodingStrategy);
+        final File tempCRAM = getCachedCRAICram(cramEncodingStrategy);
 
         final List<String> cramResults = CRAMIndexTestHelper.getCRAMResultsForQueryIntervals(
                 tempCRAM,
@@ -203,10 +224,7 @@ public class CRAMIndexPermutationsTests extends HtsjdkTest {
 
     @Test(dataProvider = "cramUnmappedTestCases")
     public void testQueryUnmapped(final CRAMEncodingStrategy cramEncodingStrategy) throws IOException {
-        final File tempCRAM = CRAMIndexTestHelper.createCRAMWithCRAIForEncodingStrategy(
-                truthBAM,
-                fakeReferenceSource,
-                cramEncodingStrategy);
+        final File tempCRAM = getCachedCRAICram(cramEncodingStrategy);
         final List<String> cramResults = CRAMIndexTestHelper.getCRAMResultsForUnmapped(
                 tempCRAM,
                 SamFiles.findIndex(tempCRAM),

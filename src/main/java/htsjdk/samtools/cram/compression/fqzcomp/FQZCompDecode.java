@@ -17,6 +17,14 @@ public class FQZCompDecode {
     private static final int NUMBER_OF_SYMBOLS = 256;
     private static int SUPPORTED_FQZCOMP_VERSION = 5; // 5 because the spec says so
 
+    /**
+     * Decompress a FQZComp-compressed quality score block. Reads the uncompressed size, version,
+     * parameters, and then decodes quality symbols using adaptive arithmetic coding with the
+     * context model defined by the parameters.
+     *
+     * @param inBuffer the compressed FQZComp data (consumed by this call)
+     * @return a rewound ByteBuffer containing the decompressed quality scores
+     */
     public static ByteBuffer uncompress( final ByteBuffer inBuffer) {
         final int outBufferLength = CompressionUtils.readUint7(inBuffer);
         final int version = inBuffer.get() & 0xFF;
@@ -77,7 +85,10 @@ public class FQZCompDecode {
     }
 
 
-    // If duplicate returns 1, else 0
+    /**
+     * Decode the header for a new record: selector, length, reverse flag, and duplicate flag.
+     * Updates the FQZ state with the decoded record metadata.
+     */
     public static void decodeFQZNewRecord(
             final ByteBuffer inBuffer,
             final RangeCoder rangeCoder,
@@ -125,6 +136,16 @@ public class FQZCompDecode {
         state.setReadOrdinal(state.getReadOrdinal() + 1);
     }
 
+    /**
+     * Update the 16-bit context value after encoding/decoding a quality score. Incorporates
+     * quality history, position, delta, and selector into the context based on the parameter
+     * configuration. Also decrements the remaining bases counter.
+     *
+     * @param params the parameter block controlling context bit allocation
+     * @param state the mutable encoder/decoder state
+     * @param quality the quality value just encoded/decoded
+     * @return the new 16-bit context value
+     */
     public static int fqzUpdateContext(final FQZParam params,
                                        final FQZState state,
                                        final int quality) {
@@ -148,6 +169,10 @@ public class FQZCompDecode {
         return last & 0xffff;
     }
 
+    /**
+     * Reverse quality score arrays for records that were flagged for reversal during encoding.
+     * Called after all quality scores have been decoded when the global DO_REVERSE flag is set.
+     */
     public static void reverseQualities(final ByteBuffer outBuffer, final int outBufferLength, final FQZState fqzState) {
         final boolean[] toReverse = fqzState.getReverseArray();
         final int[] qualityLengths = fqzState.getQualityLengthArray();

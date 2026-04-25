@@ -25,75 +25,66 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.Defaults;
-import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.GzipCodec;
 import htsjdk.utils.ValidationUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 public final class GZIPExternalCompressor extends ExternalCompressor {
-    // The writeCompressionLevel value is used for write only. When this class is used to read
-    // (uncompress) data read from a CRAM block, writeCompressionLevel does not necessarily reflect
-    // the level that was used to compress that data (the compression level that  used to create a
-    // gzip compressed stream is not recovered from Slice block itself).
     private final int writeCompressionLevel;
+    private final GzipCodec codec;
 
     public GZIPExternalCompressor() {
         this(Defaults.COMPRESSION_LEVEL);
     }
 
     public GZIPExternalCompressor(final int compressionLevel) {
-        super(BlockCompressionMethod.GZIP);
-        ValidationUtils.validateArg(compressionLevel >= Deflater.NO_COMPRESSION  && compressionLevel <= Deflater.BEST_COMPRESSION,
-                String.format("Invalid compression level (%d) requested for CRAM GZIP compression", compressionLevel));
-        this.writeCompressionLevel = compressionLevel;
+        this(compressionLevel, Deflater.DEFAULT_STRATEGY);
     }
 
-    /**
-     * @return the gzip compression level used by this compressor's compress method
-     */
+    public GZIPExternalCompressor(final int compressionLevel, final int deflateStrategy) {
+        super(BlockCompressionMethod.GZIP);
+        ValidationUtils.validateArg(compressionLevel >= Deflater.NO_COMPRESSION && compressionLevel <= Deflater.BEST_COMPRESSION,
+                String.format("Invalid compression level (%d) requested for CRAM GZIP compression", compressionLevel));
+        this.writeCompressionLevel = compressionLevel;
+        this.codec = new GzipCodec(compressionLevel, deflateStrategy);
+    }
+
+    /** @return the gzip compression level used by this compressor's compress method */
     public int getWriteCompressionLevel() { return writeCompressionLevel; }
 
     @Override
     public byte[] compress(final byte[] data, final CRAMCodecModelContext unused_contextModel) {
-        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try (final GZIPOutputStream gos = new GZIPOutputStream(byteArrayOutputStream) {
-            {
-                def.setLevel(writeCompressionLevel);
-            }
-        }) {
-            IOUtil.copyStream(new ByteArrayInputStream(data), gos);
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-
-        return byteArrayOutputStream.toByteArray();
+        final ByteBuffer compressed = codec.compress(ByteBuffer.wrap(data));
+        final byte[] result = new byte[compressed.remaining()];
+        compressed.get(result);
+        return result;
     }
 
     @Override
     public byte[] uncompress(byte[] data) {
-        // Note that when uncompressing data that was retrieved from a (slice) data block
-        // embedded in a CRAM stream, the writeCompressionLevel value is not recovered
-        // from the block, and therefore does not necessarily reflect the value that was used
-        // to compress the data that is now being uncompressed
-        try (final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data))) {
-            return InputStreamUtils.readFully(gzipInputStream);
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
+        final ByteBuffer decompressed = codec.decompress(ByteBuffer.wrap(data));
+        final byte[] result = new byte[decompressed.remaining()];
+        decompressed.get(result);
+        return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (!super.equals(o)) return false;
+        return writeCompressionLevel == ((GZIPExternalCompressor) o).writeCompressionLevel;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * super.hashCode() + writeCompressionLevel;
     }
 
     @Override
     public String toString() {
         return String.format("%s(%d)", super.toString(), writeCompressionLevel);
     }
-
 }
