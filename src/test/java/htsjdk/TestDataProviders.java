@@ -38,7 +38,7 @@ public class TestDataProviders extends HtsjdkTest {
     }
 
     /** Groups that require external infrastructure and are excluded from the default test run. */
-    private static final Set<String> EXCLUDED_GROUPS = Set.of("htsget", "ftp", "http", "sra", "ena");
+    private static final Set<String> EXCLUDED_GROUPS = Set.of("htsget", "ftp", "http", "ena");
 
     @DataProvider(name = "DataprovidersThatDontTestThemselves")
     private Iterator<Object[]> testAllDataProvidersData() throws Exception {

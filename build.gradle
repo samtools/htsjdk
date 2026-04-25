@@ -51,7 +51,6 @@ dependencies {
     implementation "org.json:json:20231013"
     implementation 'org.openjdk.nashorn:nashorn-core:15.4'
     
-    api "gov.nih.nlm.ncbi:ngs-java:2.9.0"
     api "org.apache.commons:commons-jexl:2.1.1"
 
     testImplementation 'org.testng:testng:7.8.0'
@@ -225,13 +224,13 @@ tasks.register('testWithOptimisticVCF4_4', Test) {
 }
 
 test {
-    description = "Runs the unit tests other than the SRA tests"
+    description = "Runs the unit tests other than external-API tests"
 
    useTestNG {
        if (OperatingSystem.current().isUnix()) {
-           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "htsget"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "ena", "htsget"
        } else {
-           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "sra", "ena", "htsget", "unix"
+           excludeGroups "slow", "broken", "defaultReference", "optimistic_vcf_4_4", "ftp", "http", "ena", "htsget", "unix"
        }
        parallel = "classes"
        threadCount = Runtime.runtime.availableProcessors()
@@ -250,13 +249,12 @@ tasks.register('testFTP', Test) {
 }
 
 tasks.register('testExternalApis', Test) {
-    description = "Run the SRA, ENA, and HTTP tests (tests that interact with external APIs)"
+    description = "Run the ENA and HTTP tests (tests that interact with external APIs)"
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
-    jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
     useTestNG {
-        includeGroups "sra", "http", "ena"
+        includeGroups "http", "ena"
         excludeGroups "slow", "broken"
     }
 }

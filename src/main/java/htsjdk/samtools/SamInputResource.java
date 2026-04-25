@@ -28,7 +28,6 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import htsjdk.samtools.sra.SRAAccession;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -129,10 +128,6 @@ public class SamInputResource {
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final SeekableStream seekableStream) {
         return new SamInputResource(new SeekableStreamInputResource(seekableStream));
-    }
-
-    public static SamInputResource of(final SRAAccession acc) {
-        return new SamInputResource(new SRAInputResource(acc));
     }
 
     /**
@@ -241,7 +236,6 @@ abstract class InputResource {
         URL,
         SEEKABLE_STREAM,
         INPUT_STREAM,
-        SRA_ACCESSION,
         HTSGET
     }
 
@@ -266,9 +260,6 @@ abstract class InputResource {
     /** All resource types support {@link java.io.InputStream} generation. */
     abstract InputStream asUnbufferedInputStream();
 
-    /** SRA archive resource */
-    abstract SRAAccession asSRAAccession();
-
     @Override
     public String toString() {
         final String childToString;
@@ -287,9 +278,6 @@ abstract class InputResource {
                 break;
             case URL:
                 childToString = asUrl().toString();
-                break;
-            case SRA_ACCESSION:
-                childToString = asSRAAccession().toString();
                 break;
             case HTSGET:
                 childToString = ((HtsgetInputResource) this).uri.toString();
@@ -363,11 +351,6 @@ class FileInputResource extends InputResource {
             }
         }
     }
-
-    @Override
-    public SRAAccession asSRAAccession() {
-        return null;
-    }
 }
 
 class PathInputResource extends InputResource {
@@ -428,11 +411,6 @@ class PathInputResource extends InputResource {
     public InputStream asUnbufferedInputStream() {
         return asUnbufferedSeekableStream();
     }
-
-    @Override
-    public SRAAccession asSRAAccession() {
-        return null;
-    }
 }
 
 class UrlInputResource extends InputResource {
@@ -482,11 +460,6 @@ class UrlInputResource extends InputResource {
     public InputStream asUnbufferedInputStream() {
         return asUnbufferedSeekableStream();
     }
-
-    @Override
-    public SRAAccession asSRAAccession() {
-        return null;
-    }
 }
 
 class SeekableStreamInputResource extends InputResource {
@@ -522,11 +495,6 @@ class SeekableStreamInputResource extends InputResource {
     InputStream asUnbufferedInputStream() {
         return asUnbufferedSeekableStream();
     }
-
-    @Override
-    public SRAAccession asSRAAccession() {
-        return null;
-    }
 }
 
 class InputStreamInputResource extends InputResource {
@@ -561,51 +529,6 @@ class InputStreamInputResource extends InputResource {
     @Override
     InputStream asUnbufferedInputStream() {
         return inputStreamResource;
-    }
-
-    @Override
-    public SRAAccession asSRAAccession() {
-        return null;
-    }
-}
-
-class SRAInputResource extends InputResource {
-
-    final SRAAccession accession;
-
-    SRAInputResource(final SRAAccession accession) {
-        super(Type.SRA_ACCESSION);
-        this.accession = accession;
-    }
-
-    @Override
-    File asFile() {
-        return null;
-    }
-
-    @Override
-    Path asPath() {
-        return null;
-    }
-
-    @Override
-    URL asUrl() {
-        return null;
-    }
-
-    @Override
-    SeekableStream asUnbufferedSeekableStream() {
-        return null;
-    }
-
-    @Override
-    InputStream asUnbufferedInputStream() {
-        return null;
-    }
-
-    @Override
-    public SRAAccession asSRAAccession() {
-        return accession;
     }
 }
 
@@ -646,11 +569,6 @@ class HtsgetInputResource extends InputResource {
 
     @Override
     InputStream asUnbufferedInputStream() {
-        return null;
-    }
-
-    @Override
-    SRAAccession asSRAAccession() {
         return null;
     }
 }

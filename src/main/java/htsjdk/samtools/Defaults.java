@@ -96,12 +96,6 @@ public class Defaults {
     public static final String EBI_REFERENCE_SERVICE_URL_MASK;
 
     /**
-     * Boolean describing whether downloading of SRA native libraries is allowed,
-     * in case such native libraries are not found locally.  Default = false.
-     */
-    public static final boolean SRA_LIBRARIES_DOWNLOAD;
-
-    /**
      * Whether to attempt to use jlibdeflate (libdeflate via JNI) for DEFLATE compression and decompression.
      * When true, the default deflater/inflater factories will try to load the native library and fall back
      * to the JDK implementation if it is not available.  Default = true.
@@ -143,7 +137,6 @@ public class Defaults {
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
         SAM_FLAG_FIELD_FORMAT =
                 SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
-        SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
         USE_LIBDEFLATE = getBooleanProperty("use_libdeflate", true);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
         OPTIMISTIC_VCF_4_4 = getBooleanProperty(OPTIMISTIC_VCF_4_4_PROPERTY, false);

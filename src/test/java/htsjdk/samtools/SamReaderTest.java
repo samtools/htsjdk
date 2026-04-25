@@ -206,7 +206,6 @@ public class SamReaderTest extends HtsjdkTest {
         final Set<SamReader.Type> setOfKnownFileTypes = new HashSet<>();
         setOfKnownFileTypes.add(SamReader.Type.BAM_TYPE);
         setOfKnownFileTypes.add(SamReader.Type.SAM_TYPE);
-        setOfKnownFileTypes.add(SamReader.Type.SRA_TYPE);
         setOfKnownFileTypes.add(SamReader.Type.CRAM_TYPE);
 
         final List<Object[]> list = new ArrayList<>();
