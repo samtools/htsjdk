@@ -37,14 +37,16 @@ gawk -F'\t' '
   }
 
   END {
-    # Stable variant ordering: alphabetical, but put samtools last.
+    # Stable variant ordering: alphabetical for picard-* (htsjdk impls), then
+    # the non-htsjdk reference impls (pysam, samtools) at the end.
     n_v = 0
-    for (v in variants) if (v != "samtools") vlist[++n_v] = v
+    for (v in variants) if (v != "samtools" && v != "pysam") vlist[++n_v] = v
     if (n_v > 0) asort(vlist)
+    if ("pysam"    in variants) vlist[++n_v] = "pysam"
     if ("samtools" in variants) vlist[++n_v] = "samtools"
 
     # Stable test ordering: preferred first, then any others as encountered.
-    split("bam-read bam-write cram-to-bam bam-to-cram-fast bam-to-cram-normal", preferred, " ")
+    split("bam-read cram-read bam-write bam-to-cram-fast bam-to-cram-normal", preferred, " ")
     n_t = 0
     for (i = 1; i <= length(preferred); i++) if (preferred[i] in tests) tlist[++n_t] = preferred[i]
     for (t in tests) {

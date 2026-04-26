@@ -8,3 +8,5 @@ platforms = ["osx-arm64", "linux-aarch64", "linux-64"]
 openjdk = "17.*"
 samtools = "*"
 gawk = "*"   # summarize.sh uses gawk-style functions; macOS /usr/bin/awk is BSD awk
+pysam = "*"  # used by min_read.py to expose htslib CRAM/BAM read path for cross-impl comparison
+numpy = "*"  # min_read.py uses numpy ops on pysam.AlignedSegment.query_qualities

@@ -17,12 +17,17 @@
 # "samtools" is added automatically.
 #
 # Tests:
-#   bam-read            Picard CollectInsertSizeMetrics on $BAM
-#                       (samtools: `samtools view -c` as a read-only proxy)
-#   bam-write           Picard SamFormatConverter BAM -> BAM
-#   cram-read           Picard CollectInsertSizeMetrics on $CRAM
-#   bam-to-cram-fast    BAM -> CRAM, FAST profile / samtools 3.0
-#   bam-to-cram-normal  BAM -> CRAM, NORMAL profile / samtools 3.1 (skipped for picard-4.3*)
+#   bam-read            CollectQualityYieldMetrics on $BAM (Picard / htsjdk)
+#                       or min_read.py (pysam / htslib). samtools skipped (no
+#                       like-for-like CQM equivalent).
+#   cram-read           Same as bam-read, but $CRAM input + reference. Isolates
+#                       the CRAM decode path.
+#   bam-write           BAM -> BAM at COMPRESSION_LEVEL=5 (Picard SamFormatConverter
+#                       or `samtools view -b -@ 0 -l 5`). pysam skipped (not a
+#                       write target here).
+#   bam-to-cram-fast    BAM -> CRAM, FAST profile / samtools v=3.0.
+#   bam-to-cram-normal  BAM -> CRAM, NORMAL profile / samtools v=3.1 (skipped
+#                       for picard-4.3*, which can only write 3.0).
 #
 # Usage:
 #   pixi run ./run.sh \
@@ -47,7 +52,7 @@ PICARD_DIR="/tmp/picard-bench"
 OUT_DIR="./out"
 ITERATIONS=3
 VARIANTS=""
-TESTS="bam-read,bam-write,cram-to-bam,bam-to-cram-fast,bam-to-cram-normal"
+TESTS="bam-read,cram-read,bam-write,bam-to-cram-fast,bam-to-cram-normal"
 BAM=""
 CRAM=""
 REFERENCE=""
@@ -88,6 +93,7 @@ if [[ -d "$PICARD_DIR" ]]; then
   done < <(find "$PICARD_DIR" -maxdepth 1 -name '*.jar' -type f | sort)
 fi
 ALL_VARIANTS+=("samtools")
+ALL_VARIANTS+=("pysam")
 
 if [[ -z "$VARIANTS" ]]; then
   VARIANTS_ARRAY=("${ALL_VARIANTS[@]}")
@@ -190,59 +196,69 @@ build_cmd() {
 
   case "$test" in
     bam-read)
-      if [[ -z "$jar" ]]; then
-        # samtools is intentionally skipped for BAM read tests: there is no
-        # like-for-like samtools equivalent of CollectQualityYieldMetrics, so
-        # any cross-tool comparison would be apples-to-oranges. We keep
-        # samtools only on the CRAM read/write tests where the comparison is
-        # meaningful.
+      # CollectQualityYieldMetrics is a single-pass-over-records tool that does
+      # not plot (no R/PDF render): the cost is JVM startup + htsjdk BAM decode +
+      # per-record stats. The pysam variant runs min_read.py which mimics CQM's
+      # per-record work scope (iterate primaries, walk qual array, accumulate
+      # Q20/Q30 counts). samtools has no like-for-like CQM equivalent so it's
+      # intentionally skipped.
+      if [[ "$variant" == "pysam" ]]; then
+        cmd_args=(python "$(dirname "$0")/min_read.py" "$BAM")
+      elif [[ -z "$jar" ]]; then
         return 1
       else
-        # CollectQualityYieldMetrics is a single-pass-over-records tool that
-        # does not plot (no R/PDF render), so the cost is mostly Picard JVM
-        # startup + htsjdk decode + per-record stats. CollectInsertSizeMetrics
-        # adds ~12s of R-driven PDF rendering, which inflates the comparison
-        # against samtools dramatically.
         local m="$OUT_DIR/$variant.cqm.txt"
-        cmd_args=(java)
+        cmd_args=(java -Xms4g -Xmx4g)
         [[ -n "$props" ]] && cmd_args+=("$props")
         cmd_args+=(-jar "$jar" CollectQualityYieldMetrics "I=$BAM" "O=$m")
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;
-    bam-write)
-      cmd_outfile="$OUT_DIR/$variant.recompressed.bam"
-      if [[ -z "$jar" ]]; then
-        # See note on bam-read above; same reasoning -- skip samtools.
+    cram-read)
+      # CRAM-input version of bam-read: same CQM tool / same min_read.py with
+      # CRAM input + reference. Isolates the CRAM decode path (no BAM-write
+      # tax). Reference is required for both implementations to materialise
+      # SEQ. samtools skipped (no CQM equivalent).
+      if [[ "$variant" == "pysam" ]]; then
+        cmd_args=(python "$(dirname "$0")/min_read.py" "$CRAM" "$REFERENCE")
+      elif [[ -z "$jar" ]]; then
         return 1
       else
-        cmd_args=(java)
+        local m="$OUT_DIR/$variant.cram.cqm.txt"
+        cmd_args=(java -Xms4g -Xmx4g)
         [[ -n "$props" ]] && cmd_args+=("$props")
-        cmd_args+=(-jar "$jar" SamFormatConverter "I=$BAM" "O=$cmd_outfile")
+        cmd_args+=(-jar "$jar" CollectQualityYieldMetrics "I=$CRAM" "O=$m" "R=$REFERENCE")
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;
-    cram-to-bam)
-      # Apples-to-apples CRAM read benchmark: decode CRAM and re-encode as BAM
-      # at compression level 1 (fastest). The BAM-side compression is the same
-      # tiny constant on both Picard and samtools, so the bulk of the timing
-      # is the CRAM decode path. Both tools do exactly the same scope of work.
-      cmd_outfile="$OUT_DIR/$variant.from-cram.bam"
-      if [[ -z "$jar" ]]; then
-        cmd_args=(samtools view -b -1 --reference "$REFERENCE" -o "$cmd_outfile" "$CRAM")
+    bam-write)
+      # BAM -> BAM round-trip at compression level 5 (htsjdk + samtools default).
+      # samtools cell uses single thread (-@ 0 = main thread only) to match
+      # Picard's single-threaded BAM encode path. pysam isn't a write target.
+      cmd_outfile="$OUT_DIR/$variant.recompressed.bam"
+      if [[ "$variant" == "pysam" ]]; then
+        return 1
+      elif [[ -z "$jar" ]]; then
+        # NB: in samtools 1.23.x `-l INT` is `--library STR` (filter by read-group
+        # library), NOT compression level. Compression is set via
+        # --output-fmt-option level=N. Using `-l 5` will silently produce an
+        # empty BAM (no library "5" in any record).
+        cmd_args=(samtools view -b -@ 0 --output-fmt-option level=5 -o "$cmd_outfile" "$BAM")
       else
-        cmd_args=(java)
+        cmd_args=(java -Xms4g -Xmx4g)
         [[ -n "$props" ]] && cmd_args+=("$props")
-        cmd_args+=(-jar "$jar" SamFormatConverter "I=$CRAM" "O=$cmd_outfile" "R=$REFERENCE" COMPRESSION_LEVEL=1)
+        cmd_args+=(-jar "$jar" SamFormatConverter "I=$BAM" "O=$cmd_outfile" COMPRESSION_LEVEL=5)
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
       fi
       ;;
     bam-to-cram-fast)
       cmd_outfile="$OUT_DIR/$variant.fast.cram"
-      if [[ -z "$jar" ]]; then
+      if [[ "$variant" == "pysam" ]]; then
+        return 1
+      elif [[ -z "$jar" ]]; then
         cmd_args=(samtools view -C --reference "$REFERENCE" --output-fmt-option version=3.0 -o "$cmd_outfile" "$BAM")
       else
-        cmd_args=(java)
+        cmd_args=(java -Xms4g -Xmx4g)
         [[ -n "$props" ]] && cmd_args+=("$props")
         cmd_args+=(-jar "$jar" SamFormatConverter "I=$BAM" "O=$cmd_outfile" "R=$REFERENCE")
         # CRAM_PROFILE flag only meaningful for picard-5.0 (must be exposed on
@@ -255,11 +271,12 @@ build_cmd() {
       ;;
     bam-to-cram-normal)
       [[ "$variant" == picard-4.3* ]] && return 1   # 4.3 only writes 3.0
+      [[ "$variant" == "pysam"     ]] && return 1
       cmd_outfile="$OUT_DIR/$variant.normal.cram"
       if [[ -z "$jar" ]]; then
         cmd_args=(samtools view -C --reference "$REFERENCE" --output-fmt-option version=3.1 -o "$cmd_outfile" "$BAM")
       else
-        cmd_args=(java)
+        cmd_args=(java -Xms4g -Xmx4g)
         [[ -n "$props" ]] && cmd_args+=("$props")
         cmd_args+=(-jar "$jar" SamFormatConverter "I=$BAM" "O=$cmd_outfile" "R=$REFERENCE" CRAM_PROFILE=NORMAL)
         [[ -n "$flags" ]] && for w in $flags; do cmd_args+=("$w"); done
@@ -282,17 +299,28 @@ cat "$BAM" "$CRAM" "$REFERENCE" >/dev/null
 declare -a cmd_args=()
 declare cmd_outfile=""
 
-for variant in "${VARIANTS_ARRAY[@]}"; do
-  for test in "${TESTS_ARRAY[@]}"; do
-    if ! build_cmd "$variant" "$test"; then
-      echo "[skip] $variant $test"
-      continue
-    fi
-    for ((i=1; i<=ITERATIONS; i++)); do
+# Iteration is the OUTER loop so that a complete pass over every (variant, test)
+# cell finishes before any cell is repeated. That way: (a) if the run is killed
+# early you have a complete-but-noisy dataset rather than precise numbers for a
+# subset of cells, and (b) per-iteration summary tables are meaningful from
+# iteration 1 onward.
+for ((i=1; i<=ITERATIONS; i++)); do
+  echo
+  echo "=========== iteration $i / $ITERATIONS ==========="
+  for variant in "${VARIANTS_ARRAY[@]}"; do
+    for test in "${TESTS_ARRAY[@]}"; do
+      if ! build_cmd "$variant" "$test"; then
+        [[ $i -eq 1 ]] && echo "[skip] $variant $test"
+        continue
+      fi
       echo "[run]  $variant $test iter=$i  -> ${cmd_args[*]}"
       run_timed "$variant" "$test" "$i"
     done
   done
+
+  echo
+  echo "=========== summary after iteration $i ==========="
+  "$(dirname "$0")/summarize.sh" "$RESULTS" || echo "(summarize.sh failed; raw results in $RESULTS)"
 done
 
 echo
