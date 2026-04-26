@@ -94,6 +94,9 @@ if [[ -d "$PICARD_DIR" ]]; then
 fi
 ALL_VARIANTS+=("samtools")
 ALL_VARIANTS+=("pysam")
+# htslib variant: compiled C tool against libhts. Only enroll if the binary
+# is present; the build step is intentionally separate (build_min_read_c.sh).
+[[ -x "$(dirname "$0")/min_read_c" ]] && ALL_VARIANTS+=("htslib")
 
 if [[ -z "$VARIANTS" ]]; then
   VARIANTS_ARRAY=("${ALL_VARIANTS[@]}")
@@ -204,6 +207,8 @@ build_cmd() {
       # intentionally skipped.
       if [[ "$variant" == "pysam" ]]; then
         cmd_args=(python "$(dirname "$0")/min_read.py" "$BAM")
+      elif [[ "$variant" == "htslib" ]]; then
+        cmd_args=("$(dirname "$0")/min_read_c" "$BAM")
       elif [[ -z "$jar" ]]; then
         return 1
       else
@@ -221,6 +226,8 @@ build_cmd() {
       # SEQ. samtools skipped (no CQM equivalent).
       if [[ "$variant" == "pysam" ]]; then
         cmd_args=(python "$(dirname "$0")/min_read.py" "$CRAM" "$REFERENCE")
+      elif [[ "$variant" == "htslib" ]]; then
+        cmd_args=("$(dirname "$0")/min_read_c" "$CRAM" "$REFERENCE")
       elif [[ -z "$jar" ]]; then
         return 1
       else
@@ -236,7 +243,7 @@ build_cmd() {
       # samtools cell uses single thread (-@ 0 = main thread only) to match
       # Picard's single-threaded BAM encode path. pysam isn't a write target.
       cmd_outfile="$OUT_DIR/$variant.recompressed.bam"
-      if [[ "$variant" == "pysam" ]]; then
+      if [[ "$variant" == "pysam" || "$variant" == "htslib" ]]; then
         return 1
       elif [[ -z "$jar" ]]; then
         # NB: in samtools 1.23.x `-l INT` is `--library STR` (filter by read-group
@@ -253,7 +260,7 @@ build_cmd() {
       ;;
     bam-to-cram-fast)
       cmd_outfile="$OUT_DIR/$variant.fast.cram"
-      if [[ "$variant" == "pysam" ]]; then
+      if [[ "$variant" == "pysam" || "$variant" == "htslib" ]]; then
         return 1
       elif [[ -z "$jar" ]]; then
         cmd_args=(samtools view -C --reference "$REFERENCE" --output-fmt-option version=3.0 -o "$cmd_outfile" "$BAM")
@@ -272,6 +279,7 @@ build_cmd() {
     bam-to-cram-normal)
       [[ "$variant" == picard-4.3* ]] && return 1   # 4.3 only writes 3.0
       [[ "$variant" == "pysam"     ]] && return 1
+      [[ "$variant" == "htslib"    ]] && return 1
       cmd_outfile="$OUT_DIR/$variant.normal.cram"
       if [[ -z "$jar" ]]; then
         cmd_args=(samtools view -C --reference "$REFERENCE" --output-fmt-option version=3.1 -o "$cmd_outfile" "$BAM")

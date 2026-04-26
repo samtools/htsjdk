@@ -38,10 +38,11 @@ gawk -F'\t' '
 
   END {
     # Stable variant ordering: alphabetical for picard-* (htsjdk impls), then
-    # the non-htsjdk reference impls (pysam, samtools) at the end.
+    # the non-htsjdk reference impls (htslib, pysam, samtools) at the end.
     n_v = 0
-    for (v in variants) if (v != "samtools" && v != "pysam") vlist[++n_v] = v
+    for (v in variants) if (v != "samtools" && v != "pysam" && v != "htslib") vlist[++n_v] = v
     if (n_v > 0) asort(vlist)
+    if ("htslib"   in variants) vlist[++n_v] = "htslib"
     if ("pysam"    in variants) vlist[++n_v] = "pysam"
     if ("samtools" in variants) vlist[++n_v] = "samtools"
 

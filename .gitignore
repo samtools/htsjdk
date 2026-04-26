@@ -21,3 +21,7 @@ src/htsjdk.iml
 
 #japi-compliance-checker
 /compat_reports/
+
+# perf_5.0.0 benchmark build artifact (arch-specific; build via build_min_read_c.sh)
+benchmarks/perf_5.0.0/min_read_c
+
