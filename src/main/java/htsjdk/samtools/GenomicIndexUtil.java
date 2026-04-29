@@ -97,7 +97,7 @@ public class GenomicIndexUtil {
 
     /**
      * calculate the bin given an alignment in [beg,end)
-     * Described in "The Human Genome Browser at UCSC. Kent & al. doi: 10.1101/gr.229102 "
+     * Described in "The Human Genome Browser at UCSC. Kent &amp; al. doi: 10.1101/gr.229102 "
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
      */
@@ -114,7 +114,7 @@ public class GenomicIndexUtil {
 
     /**
      * calculate the bin given an alignment in [beg,end)
-     * Described in "The Human Genome Browser at UCSC. Kent & al. doi: 10.1101/gr.229102 "
+     * Described in "The Human Genome Browser at UCSC. Kent &amp; al. doi: 10.1101/gr.229102 "
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
      * @param minShift minimum bin width (2^minShift)

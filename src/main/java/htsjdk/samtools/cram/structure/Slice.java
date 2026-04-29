@@ -170,7 +170,6 @@ public class Slice {
      * @param compressionHeader the enclosing {@link Container}'s Compression Header
      * @param containerByteOffset
      * @param globalRecordCounter
-     * @return a Slice corresponding to the given records
      *
      * Determines whether the slice is single ref, unmapped or multi reference, and derives alignment
      * boundaries for the slice if single ref.

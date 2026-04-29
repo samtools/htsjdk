@@ -625,8 +625,8 @@ public final class SAMUtils {
     }
 
     /**
-     * @return negative if mapq1 < mapq2, etc.
-     * Note that MAPQ(0) < MAPQ(255) < MAPQ(1)
+     * @return negative if {@code mapq1 < mapq2}, etc.
+     * Note that {@code MAPQ(0) < MAPQ(255) < MAPQ(1)}
      */
     public static int compareMapqs(final int mapq1, final int mapq2) {
         if (mapq1 == mapq2) return 0;
@@ -1155,7 +1155,7 @@ public final class SAMUtils {
      * Checks if a long attribute value is within the allowed range of a 32-bit unsigned integer.
      *
      * @param value a long value to check
-     * @return true if value is >= 0 and <= {@link BinaryCodec#MAX_UINT}, and false otherwise
+     * @return true if value is {@code >= 0} and {@code <=} {@link BinaryCodec#MAX_UINT}, and false otherwise
      */
     public static boolean isValidUnsignedIntegerAttribute(long value) {
         return value >= 0 && value <= BinaryCodec.MAX_UINT;

@@ -160,8 +160,8 @@ public class LinearIndex extends AbstractIndex {
      * Note that covered regions are open on the left ( and closed on the right ].
      * <p/>
      * In general, if block i is the ith block (starting from 0), then block i
-     * contains all records that have starting position > (i * binWidth) and
-     * <= ((i + 1) * binWidth))
+     * contains all records that have starting position {@code > (i * binWidth)} and
+     * {@code <= ((i + 1) * binWidth))}
      */
     public static class ChrIndex implements htsjdk.tribble.index.ChrIndex {
         private String name = "";

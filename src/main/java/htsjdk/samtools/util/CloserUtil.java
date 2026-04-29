@@ -54,8 +54,8 @@ public class CloserUtil {
      *
      * @param objs   A list of potentially closeable objects
      *
-     * NOTE: This method must take a List<? extends Object>, not List<Object>, otherwise the overload above will be selected
-     * if the argument is not exactly List<Object>.
+     * NOTE: This method must take a {@code List<? extends Object>}, not {@code List<Object>}, otherwise the overload above will be selected
+     * if the argument is not exactly {@code List<Object>}.
      */
     public static void close(List<? extends Object> objs) {
         for (Object o : objs) {

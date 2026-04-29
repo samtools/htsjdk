@@ -239,7 +239,7 @@ public class IntervalList implements Iterable<Interval> {
      * Note: this function modifies the object in-place and is therefore difficult to work with.
      *
      * @return the set of unique intervals condensed from the contained intervals
-     * @deprecated use {@link #uniqued()#getIntervals()} instead.
+     * @deprecated use {@link #uniqued()}.{@link #getIntervals()} instead.
      */
     @Deprecated
     public List<Interval> getUniqueIntervals() {
@@ -306,7 +306,7 @@ public class IntervalList implements Iterable<Interval> {
      * Note: this function modifies the object in-place and is therefore difficult to work with.
      *
      * @param concatenateNames If false, the merged interval has the name of the earlier interval. This keeps name shorter.
-     * @deprecated use {@link #uniqued(boolean)#getIntervals()} or {@link #getUniqueIntervals(IntervalList, boolean)} instead.
+     * @deprecated use {@link #uniqued(boolean)}.{@link #getIntervals()} or {@link #getUniqueIntervals(IntervalList, boolean)} instead.
      */
     @Deprecated
     public List<Interval> getUniqueIntervals(final boolean concatenateNames) {

@@ -104,7 +104,7 @@ public class Bin implements Comparable<Bin> {
     /**
      * Compare two bins to see what ordering they should appear in.
      * @param other Other bin to which this bin should be compared.
-     * @return -1 if this < other, 0 if this == other, 1 if this > other.
+     * @return {@code -1 if this < other, 0 if this == other, 1 if this > other}.
      */
     @Override
     public int compareTo(final Bin other) {

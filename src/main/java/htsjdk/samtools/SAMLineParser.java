@@ -215,7 +215,7 @@ public class SAMLineParser {
      *
      * @param line       line to parse
      * @param lineNumber line number in the file. If the line number is not known
-     *                   can be <=0.
+     *                   can be {@code <=0}.
      * @return a new SAMRecord object
      */
     public SAMRecord parseLine(final String line, final int lineNumber) {

@@ -71,7 +71,7 @@ public class LongLineBufferedReader extends Reader {
      *
      * @param in A Reader
      * @param sz Input-buffer size
-     * @throws IllegalArgumentException If sz is <= 0
+     * @throws IllegalArgumentException If sz is {@code <= 0}
      */
     public LongLineBufferedReader(Reader in, int sz) {
         super(in);
@@ -437,7 +437,7 @@ public class LongLineBufferedReader extends Reader {
      *                       buffer will cause a new buffer to be allocated
      *                       whose size is no smaller than limit.
      *                       Therefore large values should be used with care.
-     * @throws IllegalArgumentException If readAheadLimit is < 0
+     * @throws IllegalArgumentException If readAheadLimit is {@code < 0}
      * @throws IOException              If an I/O error occurs
      */
     @Override

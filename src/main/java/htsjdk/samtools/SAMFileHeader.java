@@ -287,7 +287,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord implements HtsHeader 
      * Otherwise, the value will be converted to a String with toString.
      * @param key attribute name
      * @param value attribute value
-     * @deprecated Use {@link #setAttribute(String, String) instead
+     * @deprecated Use {@link #setAttribute(String, String)} instead
      */
     @Deprecated
     @Override

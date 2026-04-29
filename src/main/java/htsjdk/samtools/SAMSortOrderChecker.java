@@ -39,7 +39,7 @@ public class SAMSortOrderChecker {
 
     /**
      * Check if given SAMRecord violates sort order relative to previous SAMRecord.
-     * @return True if sort order is unsorted, if this is the first record, or if previous <= rec.
+     * @return True if sort order is unsorted, if this is the first record, or if {@code previous <= rec}.
      */
     public boolean isSorted(final SAMRecord rec) {
         if (comparator == null) {

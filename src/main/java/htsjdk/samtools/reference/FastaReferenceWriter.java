@@ -52,7 +52,7 @@ import org.apache.commons.compress.utils.CountingOutputStream;
  * byte[][] seqBases = ...;
  * ...
  * try (final FastaReferenceWriter writer = new FastaReferenceFileWriter(outputFile)) {
- *      for (int i = 0; i < seqNames.length; i++) {
+ *      for (int i = 0; i &lt; seqNames.length; i++) {
  *          writer.startSequence(seqNames[i]).appendBases(seqBases[i]);
  *      }
  * }

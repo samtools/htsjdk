@@ -54,7 +54,7 @@ import java.util.Set;
  * in the sort order per the above paragraph.  Only if the mateUnmappedFlag is false can the mate reference name/index
  * and mate alignment start be interpreted as indicating the actual alignment position of the mate.
  * <p>
- * Note also that there are a number of getters & setters that are linked, i.e. they present different representations
+ * Note also that there are a number of getters and setters that are linked, i.e. they present different representations
  * of the same underlying data.  In these cases there is typically a representation that is preferred because it
  * ought to be faster than some other representation.  The following are the preferred representations:
  * </p><ul>
@@ -161,7 +161,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
     public static final String NULL_QUALS_STRING = "*";
 
     /**
-     * abs(insertSize) must be <= this
+     * {@code abs(insertSize) <=} this
      */
     public static final int MAX_INSERT_SIZE = Integer.MAX_VALUE;
 
@@ -791,7 +791,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
     }
 
     /**
-     * @return insert size (difference btw 5' end of read & 5' end of mate), if possible, else 0.
+     * @return insert size (difference btw 5' end of read and 5' end of mate), if possible, else 0.
      * Negative if mate maps to lower position than read.
      */
     public int getInferredInsertSize() {
@@ -1651,7 +1651,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
     }
 
     /**
-     * an alias of {@link #getAlignmentStart()
+     * an alias of {@link #getAlignmentStart()}
      * @return 1-based inclusive leftmost position of the clipped sequence, or 0 if there is no position.
      */
     @Override

@@ -57,7 +57,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     /**
      * Sets the GZip compression level for subsequent BlockCompressedOutputStream object creation
      * that do not specify the compression level.
-     * @param compressionLevel 1 <= compressionLevel <= 9
+     * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      */
     public static void setDefaultCompressionLevel(final int compressionLevel) {
         if (compressionLevel < Deflater.NO_COMPRESSION || compressionLevel > Deflater.BEST_COMPRESSION) {
@@ -133,7 +133,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     /**
      * Prepare to compress at the given compression level
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * @param compressionLevel 1 <= compressionLevel <= 9
+     * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      */
     public BlockCompressedOutputStream(final String filename, final int compressionLevel) {
         this(new File(filename), compressionLevel);
@@ -141,7 +141,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
 
     /**
      * Prepare to compress at the given compression level
-     * @param compressionLevel 1 <= compressionLevel <= 9
+     * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
      * Use {@link #BlockCompressedOutputStream(File, int, DeflaterFactory)} to specify a custom factory.
      */
@@ -151,7 +151,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
 
     /**
      * Prepare to compress at the given compression level
-     * @param compressionLevel 1 <= compressionLevel <= 9
+     * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
      */
     public BlockCompressedOutputStream(
@@ -161,7 +161,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
 
     /**
      * Prepare to compress at the given compression level
-     * @param compressionLevel 1 <= compressionLevel <= 9
+     * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
      */
     public BlockCompressedOutputStream(

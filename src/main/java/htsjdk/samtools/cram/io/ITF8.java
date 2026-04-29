@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
  * ITF8 encodes ints as 1 to 5 bytes depending on the highest set bit.
  *
  * (using 1-based counting)
- * If highest bit < 8:
+ * If highest bit {@code < 8}:
  *      write out [bits 1-8]
  * Highest bit = 8-14:
  *      write a byte 1,0,[bits 9-14]

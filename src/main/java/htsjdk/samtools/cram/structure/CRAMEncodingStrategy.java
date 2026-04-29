@@ -138,7 +138,7 @@ public class CRAMEncodingStrategy {
      * switch to, and subsequently emit, a multiple reference slice, rather than a small single-reference
      * that contains fewer than this number of records.
      *
-     * This number must be <= the value for {@link #getReadsPerSlice}
+     * This number must be {@code <=} the value for {@link #getReadsPerSlice}
      *
      * @param minimumSingleReferenceSliceSize the minimum slice size
      * @return this strategy for chaining

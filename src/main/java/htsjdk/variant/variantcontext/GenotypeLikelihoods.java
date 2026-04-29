@@ -435,7 +435,7 @@ public final class GenotypeLikelihoods {
 
     /**
      * This method is no longer necessary and is now a no-op
-     * @throws IllegalArgumentException if altAlleles or ploidy &lt= 0
+     * @throws IllegalArgumentException if altAlleles or ploidy {@code <=} 0
      * @deprecated as of sept 2020, this method is no longer necessary
      */
     @Deprecated
@@ -447,7 +447,7 @@ public final class GenotypeLikelihoods {
      * @param PLindex   the PL index
      * @param ploidy    number of chromosomes
      * @return the ploidy allele indices
-     * @throws IllegalStateException if PLindex < 0 or ploidy < 0
+     * @throws IllegalStateException if {@code PLindex < 0} or {@code ploidy < 0}
      */
     public static synchronized List<Integer> getAlleles(final int PLindex, final int ploidy) {
         if (PLindex < 0) {

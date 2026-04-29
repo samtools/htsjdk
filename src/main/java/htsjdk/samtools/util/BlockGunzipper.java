@@ -100,7 +100,7 @@ public class BlockGunzipper {
      * @param uncompressedBlock must be big enough to hold decompressed output.
      * @param uncompressedBlockOffset the offset into uncompressedBlock.
      * @param compressedBlock compressed data starting at offset 0.
-     * @param compressedBlock  the offset into the compressed data.
+     * @param compressedBlockOffset  the offset into the compressed data.
      * @param compressedLength size of compressed data, possibly less than the size of the buffer.
      * @return the uncompressed data size.
      */

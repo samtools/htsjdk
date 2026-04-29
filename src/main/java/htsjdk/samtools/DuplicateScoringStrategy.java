@@ -126,7 +126,7 @@ public class DuplicateScoringStrategy {
      * If true is given to assumeMateCigar, then any score that can use the mate cigar to to compute the mate's score will return the score
      * computed on both ends.
      *
-     * We allow different scoring strategies. We return <0 if rec1 has a better strategy than rec2.
+     * We allow different scoring strategies. We return {@code <0} if rec1 has a better strategy than rec2.
      */
     public static int compare(
             final SAMRecord rec1,
@@ -156,7 +156,7 @@ public class DuplicateScoringStrategy {
      * pre-computed by computeDuplicateScore and stored in the "DS" tag.  If the scores are equal, we break
      * ties based on mapping quality (added to the mate's mapping quality if paired and mapped), then library/read name.
      *
-     * We allow different scoring strategies. We return <0 if rec1 has a better strategy than rec2.
+     * We allow different scoring strategies. We return {@code <0} if rec1 has a better strategy than rec2.
      */
     public static int compare(final SAMRecord rec1, final SAMRecord rec2, final ScoringStrategy scoringStrategy) {
         return compare(rec1, rec2, scoringStrategy, false);

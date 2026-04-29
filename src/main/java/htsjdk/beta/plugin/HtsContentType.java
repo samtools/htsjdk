@@ -15,7 +15,7 @@ import htsjdk.beta.plugin.variants.VariantsFormats;
  *     <li> For {@link HtsContentType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>
  *     <li> For {@link HtsContentType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
  *     <li> For {@link HtsContentType#VARIANT_CONTEXTS} codecs, see the {@link htsjdk.beta.plugin.variants} package </li>
- *     <li> For {@link HtsContentType#FEATURES} codecs, see the {@link htsjdk.beta.plugin.features} package </li>
+ *     <li> For {@link HtsContentType#FEATURES} codecs, see the {@code htsjdk.beta.plugin.features} package </li>
  * </ul>
  * <p>
  * There can be many codecs for a given content type, each representing a different version of an
@@ -43,7 +43,7 @@ public enum HtsContentType {
     VARIANT_CONTEXTS,
 
     /**
-     * Features content type (see {@link htsjdk.beta.plugin.features} for related formats)
+     * Features content type (see {@code htsjdk.beta.plugin.features} for related formats)
      */
     FEATURES,
 }

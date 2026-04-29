@@ -51,11 +51,11 @@ import java.nio.file.spi.FileSystemProvider;
  *
  * General syntax for an "absolute" URI:
  *
- *     <scheme>:<scheme-specific-part>
+ *     {@code <scheme>:<scheme-specific-part>}
  *
  * Many "hierarchical" URI schemes use this syntax:
  *
- *     <scheme>://<authority><path>?<query>
+ *     {@code <scheme>://<authority><path>?<query>}
  *
  * More specifically:
  *
@@ -64,7 +64,7 @@ import java.nio.file.spi.FileSystemProvider;
  *         net_path      = "//" authority [ abs_path ]
  *         abs_path      = "/"  path_segments
  *         opaque_part   = uric_no_slash *uric
- *         uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | ","
+ *         uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" | "&amp;" | "=" | "+" | "$" | ","
  */
 public class HtsPath implements IOPath, Serializable {
     private static final long serialVersionUID = 1L;

@@ -35,9 +35,9 @@ import java.io.Serializable;
  * which is decoded if coordinate and strand are equal.
  *
  * Extreme care must be taken to ensure the following:
- * if A == B, then B == A
- * if A < B, then B > A
- * if A < B && B < C, then A < C
+ * {@code if A == B, then B == A}
+ * {@code if A < B, then B > A}
+ * {@code if A < B && B < C, then A < C}
  *
  */
 public class SAMRecordCoordinateComparator implements SAMRecordComparator, Serializable {
@@ -81,7 +81,7 @@ public class SAMRecordCoordinateComparator implements SAMRecordComparator, Seria
      * this method returns 0.  If read is paired and unmapped, use the mate mapping to sort.
      * Records being compared must have non-null SAMFileHeaders.
      *
-     * @return negative if samRecord1 < samRecord2,  0 if equal, else positive
+     * @return negative if {@code samRecord1 < samRecord2}, 0 if equal, else positive
      */
     @Override
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {

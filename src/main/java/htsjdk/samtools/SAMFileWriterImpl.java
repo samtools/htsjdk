@@ -32,7 +32,7 @@ import java.io.StringWriter;
 
 /**
  * Base class for implementing SAM writer with any underlying format.
- * Mostly this manages accumulation & sorting of SAMRecords when appropriate,
+ * Mostly this manages accumulation and sorting of SAMRecords when appropriate,
  * and produces the text version of the header, since that seems to be a popular item
  * in both text and binary file formats.
  */

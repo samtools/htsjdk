@@ -44,7 +44,7 @@ public interface IOPath {
      * Return true if this {code IOPath} can be resolved to an {@code java.nio} Path. If true, {@code #toPath()} can be
      * safely called.
      *
-     * There are cases where a valid URI with a valid scheme backed by an installed {@code java.nio File System
+     * There are cases where a valid URI with a valid scheme backed by an installed {@code java.nio} File System
      * still can't be turned into a {@code java.nio.file.Path}, i.e., the following specifies an invalid
      * authority "namenode":
      *
