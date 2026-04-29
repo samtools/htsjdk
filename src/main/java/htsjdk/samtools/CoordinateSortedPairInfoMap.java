@@ -190,7 +190,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     }
 
     /**
-     * @return number of elements stored in RAM.  Always <= size()
+     * @return number of elements stored in RAM.  Always {@code <= size()}
      */
     public int sizeInRam() {
         return mapInRam != null ? mapInRam.size() : 0;

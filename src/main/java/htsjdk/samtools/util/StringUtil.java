@@ -190,7 +190,7 @@ public class StringUtil {
 
     /**
      * Return input string with newlines inserted to ensure that all lines
-     * have length <= maxLineLength.  if a word is too long, it is simply broken
+     * have length {@code <=} maxLineLength.  if a word is too long, it is simply broken
      * at maxLineLength.  Does not handle tabs intelligently (due to implementer laziness).
      */
     public static String wordWrap(final String s, final int maxLineLength) {

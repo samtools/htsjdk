@@ -117,11 +117,11 @@ public class ContainerHeader {
     }
 
     /**
-     * Create a container header from an {@link InputStream}.
+     * Create a container header from an {@link InputStream}. Populates the container header values
+     * but leaves the body empty (no slices and blocks).
      *
      * @param cramVersion the CRAM version to assume
      * @param inputStream the input stream from which to read
-     * @return a new {@link ContainerHeader} object with container header values filled out but empty body (no slices and blocks).
      */
     public ContainerHeader(final CRAMVersion cramVersion, final InputStream inputStream) {
         this.containerBlocksByteSize = CramInt.readInt32(inputStream);

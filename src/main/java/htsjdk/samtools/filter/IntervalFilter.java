@@ -50,7 +50,7 @@ public class IntervalFilter implements SamRecordFilter {
 
     /**
      * Prepare to filter out SAMRecords that do not overlap the given list of intervals
-     * @param intervals -- must be locus-ordered & non-overlapping
+     * @param intervals -- must be locus-ordered and non-overlapping
      */
     public IntervalFilter(final List<Interval> intervals, final SAMFileHeader samHeader) {
         this.samHeader = samHeader;

@@ -99,7 +99,6 @@ public class VCFEncoder {
      *
      * @param vcfOutput the {@link Appendable} to write to
      * @param context the variant
-     * @return the java.lang.Appendable 'vcfOutput'
      * @throws IOException
      */
     public void write(final Appendable vcfOutput, final VariantContext context) throws IOException {
@@ -408,7 +407,7 @@ public class VCFEncoder {
 
     /**
      * write the encoded GT field for a Genotype
-     * @param alleleMap a mapping of Allele -> GT allele value (from {@link this#buildAlleleStrings(VariantContext)}
+     * @param alleleMap a mapping of Allele to GT allele value (from {@link #buildAlleleStrings(VariantContext)})
      * @param vcfoutput the appendable to write to, to avoid inefficiency due to string copying
      * @param g the genotoype to encode
      * @throws IOException if appending fails with an IOException
@@ -455,7 +454,7 @@ public class VCFEncoder {
 
     /**
      * Easy way to generate the GT field for a Genotype.  This will be less efficient than using
-     * {@link this#writeGtField(Map, Appendable, Genotype)} because of redundant Map initializations
+     * {@link #writeGtField(Map, Appendable, Genotype)} because of redundant Map initializations
      * @param vc a VariantContext which must contain g or the results are likely to be incorrect
      * @param g a Genotype in vc
      * @return a String containing the encoding of the GT field of g

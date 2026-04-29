@@ -376,7 +376,6 @@ public class VariantContextWriterBuilder {
      * for all VariantContextWriterBuilders created after this call.
      *
      * @param option the option to unset
-     * @return this <code>VariantContextWriterBuilder</code>
      */
     public static void unsetDefaultOption(final Options option) {
         VariantContextWriterBuilder.DEFAULT_OPTIONS.remove(option);

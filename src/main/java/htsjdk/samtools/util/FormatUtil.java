@@ -109,7 +109,7 @@ public class FormatUtil {
         return this.dateFormat.format(value);
     }
 
-    /** Formats date & time */
+    /** Formats date and time */
     public String format(final Iso8601Date value) {
         return value.toString();
     }

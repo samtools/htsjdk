@@ -80,11 +80,10 @@ public class CompressionHeader {
     }
 
     /**
-     * Read a COMPRESSION_HEADER Block from an InputStream and return its contents as a CompressionHeader.
+     * Read a COMPRESSION_HEADER Block from an InputStream and populate this CompressionHeader from its contents.
      *
      * @param cramVersion the CRAM version
      * @param blockStream the stream to read from
-     * @return a new CompressionHeader
      */
     public CompressionHeader(final CRAMVersion cramVersion, final InputStream blockStream) {
         final Block compressionHeaderBlock = Block.read(cramVersion, blockStream);

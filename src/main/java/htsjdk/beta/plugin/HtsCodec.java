@@ -76,7 +76,7 @@ import htsjdk.io.IOPath;
  *     <li> For {@link HtsContentType#ALIGNED_READS} codecs, see the {@link htsjdk.beta.plugin.reads} package </li>
  *     <li> For {@link HtsContentType#HAPLOID_REFERENCE} codecs, see the {@link htsjdk.beta.plugin.hapref} package </li>
  *     <li> For {@link HtsContentType#VARIANT_CONTEXTS} codecs, see the {@link htsjdk.beta.plugin.variants} package </li>
- *     <li> For {@link HtsContentType#FEATURES} codecs, see the {@link htsjdk.beta.plugin.features} package </li>
+ *     <li> For {@link HtsContentType#FEATURES} codecs, see the {@code htsjdk.beta.plugin.features} package </li>
  * </ul>
  * <p>
  * <H3>Example Content Type: Reads</H3>

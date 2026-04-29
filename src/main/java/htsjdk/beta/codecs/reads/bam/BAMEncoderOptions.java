@@ -120,7 +120,7 @@ public class BAMEncoderOptions {
      * {@link htsjdk.samtools.util.BlockCompressedStreamConstants#DEFAULT_COMPRESSION_LEVEL}.
      * See {@link htsjdk.samtools.util.BlockCompressedStreamConstants#DEFAULT_COMPRESSION_LEVEL}
      *
-     * @return the compression level for these options, 1 <= compressionLevel <= 9
+     * @return the compression level for these options, {@code 1 <= compressionLevel <= 9}
      */
     public int getCompressionLevel() {
         return compressionLevel;
@@ -130,7 +130,7 @@ public class BAMEncoderOptions {
      * Set the compression level for these options. Defaults value is
      * {@link htsjdk.samtools.util.BlockCompressedStreamConstants#DEFAULT_COMPRESSION_LEVEL}.
      *
-     * @param compressionLevel the compression level for these options, 1 <= compressionLevel <= 9
+     * @param compressionLevel the compression level for these options, {@code 1 <= compressionLevel <= 9}
      * @return updated options
      */
     public BAMEncoderOptions setCompressionLevel(int compressionLevel) {

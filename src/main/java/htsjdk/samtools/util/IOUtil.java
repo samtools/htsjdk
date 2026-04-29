@@ -163,7 +163,7 @@ public class IOUtil {
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
     /**
      * Sets the GZip compression level for subsequent GZIPOutputStream object creation.
-     * @param compressionLevel 0 <= compressionLevel <= 9
+     * @param compressionLevel {@code 0 <= compressionLevel <= 9}
      */
     public static void setCompressionLevel(final int compressionLevel) {
         if (compressionLevel < Deflater.NO_COMPRESSION || compressionLevel > Deflater.BEST_COMPRESSION) {

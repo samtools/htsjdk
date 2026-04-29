@@ -74,7 +74,7 @@ public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serial
      * are equal enough that their ordering in a sorted SAM file would be arbitrary,
      * this method returns 0.
      *
-     * @return negative if samRecord1 < samRecord2,  0 if equal, else positive
+     * @return negative if {@code samRecord1 < samRecord2}, 0 if equal, else positive
      */
     @Override
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {

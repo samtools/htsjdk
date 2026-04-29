@@ -211,7 +211,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
     }
 
     /**
-     * Closes inner <code>SamIterator</>.
+     * Closes inner {@code SamIterator}.
      */
     @Override
     public void close() {

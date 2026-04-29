@@ -14,7 +14,7 @@ public class QueryInterval implements Comparable<QueryInterval> {
     public final int referenceIndex;
     /** 1-based, inclusive */
     public final int start;
-    /** 1-based, inclusive.  If <= 0, implies that the interval goes to the end of the reference sequence */
+    /** 1-based, inclusive.  If {@code <= 0}, implies that the interval goes to the end of the reference sequence */
     public final int end;
 
     public QueryInterval(final int referenceIndex, final int start, final int end) {

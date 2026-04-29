@@ -354,7 +354,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
     }
 
     /**
-     * Returns the cumulative probability of observing a value <= v when sampling the
+     * Returns the cumulative probability of observing a value {@code <=} v when sampling the
      * distribution represented by this histogram.
      * @throws UnsupportedOperationException if this histogram does not store instances of Number
      */
@@ -527,7 +527,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
     }
 
     /**
-     * Trims the histogram so that only bins <= width are kept.
+     * Trims the histogram so that only bins {@code <=} width are kept.
      */
     public void trimByWidth(final int width) {
         final Iterator<K> it = map.descendingKeySet().iterator();
