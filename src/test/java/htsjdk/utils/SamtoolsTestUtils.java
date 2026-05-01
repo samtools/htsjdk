@@ -8,13 +8,46 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Test utilities for running samtools from htsjdk tests.
  */
 public class SamtoolsTestUtils {
     private static final String SAMTOOLS_BINARY_ENV_VARIABLE = "HTSJDK_SAMTOOLS_BIN";
-    public static final String expectedSamtoolsVersion = "1.21";
+    public static final String minimumSamtoolsVersion = "1.23.1";
+
+    private static final Pattern SAMTOOLS_VERSION_PATTERN = Pattern.compile("(?m)^samtools\\s+(\\d+(?:\\.\\d+)*)");
+
+    /**
+     * Extracts the version string (e.g. "1.23.1") from the output of `samtools --version`,
+     * which begins with a line of the form {@code samtools <version>}.
+     *
+     * @return the version string, or null if no version line was found.
+     */
+    static String parseSamtoolsVersion(final String samtoolsVersionOutput) {
+        final Matcher m = SAMTOOLS_VERSION_PATTERN.matcher(samtoolsVersionOutput);
+        return m.find() ? m.group(1) : null;
+    }
+
+    /**
+     * Compares two dotted-numeric version strings (e.g. "1.23.1") component-by-component.
+     * Missing trailing components are treated as zero, so "1.23" is equal to "1.23.0".
+     */
+    static int compareVersions(final String a, final String b) {
+        final String[] aParts = a.split("\\.");
+        final String[] bParts = b.split("\\.");
+        final int len = Math.max(aParts.length, bParts.length);
+        for (int i = 0; i < len; i++) {
+            final int av = i < aParts.length ? Integer.parseInt(aParts[i]) : 0;
+            final int bv = i < bParts.length ? Integer.parseInt(bParts[i]) : 0;
+            if (av != bv) {
+                return Integer.compare(av, bv);
+            }
+        }
+        return 0;
+    }
 
     /**
      * @return true if samtools is available, otherwise false

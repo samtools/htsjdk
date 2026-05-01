@@ -10,7 +10,8 @@ on:
 jobs:
   test:
     env:
-      HTSJDK_SAMTOOLS_BIN: /usr/bin/samtools
+      HTSJDK_SAMTOOLS_BIN: /usr/local/bin/samtools
+      SAMTOOLS_VERSION: 1.23.1
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,20 +21,28 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     name: Java ${{ matrix.Java }} build and test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # full history + tags so palantir/git-version sees the latest release tag
       - name: Set up java ${{ matrix.Java }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.Java }}
-          distribution: 'adopt'
-          cache: gradle
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Compile with Gradle
         run: ./gradlew compileJava
+      - name: Cache samtools
+        id: cache-samtools
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/samtools
+          key: samtools-${{ env.SAMTOOLS_VERSION }}-${{ runner.os }}
       - name: Install Samtools
+        if: steps.cache-samtools.outputs.cache-hit != 'true'
         run: scripts/install-samtools.sh
       - name: Start the htsget server
         run: scripts/htsget-scripts/start-htsget-test-server.sh
@@ -50,15 +59,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Tests that require external APIs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # full history + tags so palantir/git-version sees the latest release tag
       - name: Set up java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'adopt'
-          cache: gradle
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Compile with Gradle
@@ -75,15 +85,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Java Format Check
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # full history + tags so palantir/git-version sees the latest release tag
       - name: Set up java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'adopt'
-          cache: gradle
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Verify formatting
@@ -92,15 +103,16 @@ jobs:
     runs-on: ubuntu-latest
     name: SpotBugs
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # full history + tags so palantir/git-version sees the latest release tag
       - name: Set up java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'adopt'
-          cache: gradle
+          distribution: 'temurin'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Compile with Gradle
@@ -111,6 +123,3 @@ jobs:
         with:
           name: spotBugs-Report
           path: build/reports/spotbugs
-
-
-
