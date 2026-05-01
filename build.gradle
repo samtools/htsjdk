@@ -102,7 +102,7 @@ java {
 //
 // To change the planned bump (e.g. after a release lands), update nextVersionBump
 // below and commit.
-final nextVersionBump = "x"
+final nextVersionBump = "x.x.x"
 
 final isRelease = Boolean.getBoolean("release")
 final details = versionDetails()
@@ -352,9 +352,9 @@ publishing {
 signing {
     useGpgCmd()
     sign(publishing.publications.htsjdk)
-    required = { isRelease && gradle.taskGraph.hasTask("publishAllPublicationsToCentralPortal") }
+    required = { isRelease }
     tasks.withType(Sign).configureEach {
-        onlyIf { isRelease && gradle.taskGraph.hasTask("publishAllPublicationsToCentralPortal") }
+        onlyIf { isRelease }
     }
 }
 
