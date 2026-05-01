@@ -27,10 +27,52 @@ public class SamtoolsTestUtilsTest extends HtsjdkTest {
         if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
             throw new SkipException("Samtools not available on local device");
         }
-        // If this test runs, but fails because version validation fails, then the local samtools version is
-        // not the one expected by the htsjdk tests
         final ProcessExecutor.ExitStatusAndOutput processStatus = SamtoolsTestUtils.executeSamToolsCommand("--version");
-        Assert.assertTrue(processStatus.stdout.contains(SamtoolsTestUtils.expectedSamtoolsVersion));
+        final String localVersion = SamtoolsTestUtils.parseSamtoolsVersion(processStatus.stdout);
+        Assert.assertNotNull(
+                localVersion,
+                "Could not parse samtools version from `samtools --version` output: " + processStatus.stdout);
+        Assert.assertTrue(
+                SamtoolsTestUtils.compareVersions(localVersion, SamtoolsTestUtils.minimumSamtoolsVersion) >= 0,
+                "Local samtools version " + localVersion + " is older than the minimum required by htsjdk tests ("
+                        + SamtoolsTestUtils.minimumSamtoolsVersion + ")");
+    }
+
+    @Test
+    public void testParseSamtoolsVersionFromTypicalOutput() {
+        final String stdout = "samtools 1.23.1\nUsing htslib 1.23.1\nCopyright (C) 2024 Genome Research Ltd.\n";
+        Assert.assertEquals(SamtoolsTestUtils.parseSamtoolsVersion(stdout), "1.23.1");
+    }
+
+    @Test
+    public void testParseSamtoolsVersionTwoComponent() {
+        Assert.assertEquals(SamtoolsTestUtils.parseSamtoolsVersion("samtools 1.21\n"), "1.21");
+    }
+
+    @Test
+    public void testParseSamtoolsVersionReturnsNullWhenAbsent() {
+        Assert.assertNull(SamtoolsTestUtils.parseSamtoolsVersion("nothing recognizable here\n"));
+    }
+
+    @Test
+    public void testCompareVersionsEqualWithImplicitZero() {
+        Assert.assertEquals(SamtoolsTestUtils.compareVersions("1.23", "1.23.0"), 0);
+    }
+
+    @Test
+    public void testCompareVersionsPatchGreater() {
+        Assert.assertTrue(SamtoolsTestUtils.compareVersions("1.23.1", "1.23") > 0);
+    }
+
+    @Test
+    public void testCompareVersionsMajorLess() {
+        Assert.assertTrue(SamtoolsTestUtils.compareVersions("1.21", "1.23.1") < 0);
+    }
+
+    @Test
+    public void testCompareVersionsNumericNotLexical() {
+        // 1.10 is greater than 1.9 numerically, even though "1.10" sorts before "1.9" lexically.
+        Assert.assertTrue(SamtoolsTestUtils.compareVersions("1.10", "1.9") > 0);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
