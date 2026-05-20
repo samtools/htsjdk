@@ -329,6 +329,26 @@ public final class SAMUtils {
     }
 
     /**
+     * Decode a byte range holding ASCII read bases into a canonical byte[] (upper-cased,
+     * '.' replaced with 'N'). Skips the round-trip through {@link String} for callers that
+     * already have the bases as bytes.
+     */
+    static byte[] readStringToNormalizedBases(final byte[] src, final int off, final int len) {
+        final byte[] bases = new byte[len];
+        for (int i = 0; i < len; ++i) {
+            byte b = src[off + i];
+            if (b >= 'a' && b <= 'z') {
+                b = (byte) (b - ('a' - 'A'));
+            }
+            if (b == '.') {
+                b = 'N';
+            }
+            bases[i] = b;
+        }
+        return bases;
+    }
+
+    /**
      * Convert bases in place into canonical form, upper case, and with no-call represented as N.
      *
      * @param bases byte array of bases to "normalize", in place.
@@ -410,6 +430,23 @@ public final class SAMUtils {
             final int v = (scores[i] & 0xff) - 33;
             if (v < 0 || v > 93) {
                 throw new IllegalArgumentException("Invalid fastq character: " + (char) (scores[i] & 0xff));
+            }
+            scores[i] = (byte) v;
+        }
+        return scores;
+    }
+
+    /**
+     * Convert a byte range holding printable ASCII FASTQ phred scores into binary phred scores.
+     * Skips the round-trip through {@link String} for callers that already have the qualities
+     * as bytes.
+     */
+    public static byte[] fastqToPhred(final byte[] src, final int off, final int len) {
+        final byte[] scores = new byte[len];
+        for (int i = 0; i < len; i++) {
+            final int v = (src[off + i] & 0xff) - 33;
+            if (v < 0 || v > 93) {
+                throw new IllegalArgumentException("Invalid fastq character: " + (char) (src[off + i] & 0xff));
             }
             scores[i] = (byte) v;
         }

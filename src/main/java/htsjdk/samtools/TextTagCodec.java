@@ -28,6 +28,7 @@ import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.StringUtil;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
@@ -210,6 +211,93 @@ public class TextTagCodec {
         final char typeChar = tag.charAt(3);
         final String stringVal = tag.length() == 4 ? "" : tag.substring(5);
         lastValue = convertStringToObject(typeChar, stringVal);
+    }
+
+    /**
+     * Byte-based variant of {@link #decodeValue(String)}. Parses a tag from a {@code KEY:T:VALUE}
+     * byte range without allocating a {@link String} for the tag substring. For value types whose
+     * parsers operate on bytes directly ({@code i}, {@code A}, {@code H}) no value-side
+     * {@link String} is allocated either; types whose parsers require a {@link String}
+     * ({@code Z}, {@code f}, {@code B}) construct one lazily for just the value bytes.
+     */
+    void decodeValue(final byte[] buf, final int off, final int len) {
+        if (len < 4 || buf[off + 2] != ':' || (len > 4 && buf[off + 4] != ':')) {
+            // Build the error message from the bytes so the user can see what we got.
+            throw new SAMFormatException(
+                    "Malformed tag '" + new String(buf, off, len, StandardCharsets.ISO_8859_1) + "'");
+        }
+        final char typeChar = (char) (buf[off + 3] & 0xff);
+        final int valueOff = off + 5;
+        final int valueLen = len - 5;
+        lastValue = convertBytesToObject(typeChar, buf, valueOff, valueLen);
+    }
+
+    private static Number parseIntegerTagValue(final byte[] buf, final int off, final int len) {
+        if (len == 0) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        int i = 0;
+        final boolean negative;
+        final byte first = buf[off];
+        if (first == '-') {
+            negative = true;
+            i = 1;
+        } else if (first == '+') {
+            negative = false;
+            i = 1;
+        } else {
+            negative = false;
+        }
+        if (i == len) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        long acc = 0;
+        for (; i < len; i++) {
+            final byte b = buf[off + i];
+            if (b < '0' || b > '9') {
+                throw new SAMFormatException("Tag of type i should have signed decimal value");
+            }
+            acc = acc * 10 + (b - '0');
+            if (acc > Integer.MAX_VALUE + 1L) {
+                return parseIntegerTagValueSlow(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+            }
+        }
+        final long signed = negative ? -acc : acc;
+        if (signed >= Integer.MIN_VALUE && signed <= Integer.MAX_VALUE) {
+            return (int) signed;
+        }
+        return parseIntegerTagValueSlow(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+    }
+
+    private static Object convertBytesToObject(final char type, final byte[] buf, final int off, final int len) {
+        switch (type) {
+            case 'Z':
+                return new String(buf, off, len, StandardCharsets.ISO_8859_1);
+            case 'A':
+                if (len != 1) {
+                    throw new SAMFormatException("Tag of type A should have a single-character value");
+                }
+                return (char) (buf[off] & 0xff);
+            case 'i':
+                return parseIntegerTagValue(buf, off, len);
+            case 'f':
+                try {
+                    return Float.parseFloat(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException("Tag of type f should have single-precision floating point value");
+                }
+            case 'H':
+                try {
+                    return StringUtil.hexStringToBytes(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException(
+                            "Tag of type H should have valid hex string with even number of digits");
+                }
+            case 'B':
+                return covertStringArrayToObject(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+            default:
+                throw new SAMFormatException("Unrecognized tag type: " + type);
+        }
     }
 
     /**

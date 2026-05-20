@@ -25,6 +25,10 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.StringUtil;
 import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,6 +61,15 @@ public class SAMLineParser {
     private final String[] mFields = new String[10000];
 
     /**
+     * Scratch arrays for byte-based parsing. Each pair (mFieldOffsets[i], mFieldLengths[i]) gives
+     * the position and length of field i within the current line's byte buffer. Allocated once and
+     * reused across calls; matches the size of {@link #mFields} so the same field-count limits apply.
+     */
+    private final int[] mFieldOffsets = new int[10000];
+
+    private final int[] mFieldLengths = new int[10000];
+
+    /**
      * Add information about the origin (reader and position) to SAM records.
      */
     private final SamReader mParentReader;
@@ -72,6 +85,9 @@ public class SAMLineParser {
 
     private int currentLineNumber;
     private String currentLine;
+    private byte[] currentLineBuf;
+    private int currentLineOff;
+    private int currentLineLen;
 
     //
     // Constructors
@@ -220,19 +236,42 @@ public class SAMLineParser {
      * @return a new SAMRecord object
      */
     public SAMRecord parseLine(final String line, final int lineNumber) {
-
-        this.currentLineNumber = lineNumber;
+        // SAM alignment lines are restricted to printable ASCII by the spec, so ISO-8859-1 is
+        // lossless and turns getBytes() into a bulk arraycopy on compact-string JVMs.
+        final byte[] bytes = line.getBytes(StandardCharsets.ISO_8859_1);
         this.currentLine = line;
+        return parseLineFromBytes(bytes, 0, bytes.length, lineNumber);
+    }
 
-        final int numFields = StringUtil.split(line, mFields, '\t');
+    /**
+     * Parse a SAM alignment line from a byte range without first allocating a {@link String} for
+     * the line. The 5 numeric fields (FLAG, POS, MAPQ, PNEXT, TLEN), the SEQ bases, the QUAL
+     * scores, and the {@code KEY:T:VALUE} substrings of optional tags are all consumed directly
+     * from the byte range; only fields that ultimately need to be stored as {@link String}s on
+     * the resulting {@link SAMRecord} (QNAME, RNAME/RNEXT, CIGAR, Z-type tag values, ...) cause
+     * a {@link String} allocation.
+     *
+     * @param buf        backing byte array
+     * @param off        offset of the first byte of the line within {@code buf}
+     * @param len        length of the line in bytes (excluding any line terminator)
+     * @param lineNumber line number in the file, or {@code <= 0} if unknown
+     * @return a new SAMRecord object
+     */
+    public SAMRecord parseLineFromBytes(final byte[] buf, final int off, final int len, final int lineNumber) {
+        this.currentLineNumber = lineNumber;
+        this.currentLineBuf = buf;
+        this.currentLineOff = off;
+        this.currentLineLen = len;
+
+        final int numFields = splitFieldsByTab(buf, off, len, mFieldOffsets, mFieldLengths);
         if (numFields < NUM_REQUIRED_FIELDS) {
             throw reportFatalErrorParsingLine("Not enough fields");
         }
-        if (numFields == mFields.length) {
+        if (numFields == mFieldOffsets.length) {
             reportErrorParsingLine("Too many fields in SAM text record.");
         }
         for (int i = 0; i < numFields; ++i) {
-            if (mFields[i].isEmpty()) {
+            if (mFieldLengths[i] == 0) {
                 reportErrorParsingLine("Empty field at position " + i + " (zero-based)");
             }
         }
@@ -243,16 +282,17 @@ public class SAMLineParser {
         final SAMRecord samRecord = samRecordFactory.createSAMRecord(this.mFileHeader);
         samRecord.setValidationStringency(this.validationStringency);
         if (mParentReader != null) samRecord.setFileSource(new SAMFileSource(mParentReader, null));
-        samRecord.setReadName(mFields[QNAME_COL]);
+        samRecord.setReadName(decodeField(buf, mFieldOffsets[QNAME_COL], mFieldLengths[QNAME_COL]));
 
-        final int flags = parseFlag(mFields[FLAG_COL], "FLAG");
+        final int flags = parseFlag(decodeField(buf, mFieldOffsets[FLAG_COL], mFieldLengths[FLAG_COL]), "FLAG");
         samRecord.setFlags(flags);
 
-        String rname = mFields[RNAME_COL];
+        final int rnameOff = mFieldOffsets[RNAME_COL];
+        final int rnameLen = mFieldLengths[RNAME_COL];
         String resolvedRname = null;
         int resolvedRnameIndex = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-        if (!rname.equals("*")) {
-            rname = SAMSequenceRecord.truncateSequenceName(rname);
+        if (!isAsterisk(buf, rnameOff, rnameLen)) {
+            String rname = SAMSequenceRecord.truncateSequenceName(decodeField(buf, rnameOff, rnameLen));
             final SAMSequenceRecord rnameRecord = mSequenceDictionary.getSequence(rname);
             if (rnameRecord != null) {
                 resolvedRname = rnameRecord.getSequenceName();
@@ -268,14 +308,16 @@ public class SAMLineParser {
             reportErrorParsingLine("RNAME is not specified but flags indicate mapped");
         }
 
-        final int pos = parseInt(mFields[POS_COL], "POS");
-        final int mapq = parseInt(mFields[MAPQ_COL], "MAPQ");
-        final String cigar = mFields[CIGAR_COL];
+        final int pos = parseIntFromBytes(buf, mFieldOffsets[POS_COL], mFieldLengths[POS_COL], "POS");
+        final int mapq = parseIntFromBytes(buf, mFieldOffsets[MAPQ_COL], mFieldLengths[MAPQ_COL], "MAPQ");
+        final int cigarOff = mFieldOffsets[CIGAR_COL];
+        final int cigarLen = mFieldLengths[CIGAR_COL];
+        final boolean cigarIsAsterisk = isAsterisk(buf, cigarOff, cigarLen);
         if (!SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(samRecord.getReferenceName())) {
             if (pos == 0) {
                 reportErrorParsingLine("POS must be non-zero if RNAME is specified");
             }
-            if (!samRecord.getReadUnmappedFlag() && cigar.equals("*")) {
+            if (!samRecord.getReadUnmappedFlag() && cigarIsAsterisk) {
                 reportErrorParsingLine("CIGAR must not be '*' if RNAME is specified");
             }
         } else {
@@ -285,16 +327,17 @@ public class SAMLineParser {
             if (mapq != 0) {
                 reportErrorParsingLine("MAPQ must be zero if RNAME is not specified");
             }
-            if (!cigar.equals("*")) {
+            if (!cigarIsAsterisk) {
                 reportErrorParsingLine("CIGAR must be '*' if RNAME is not specified");
             }
         }
         samRecord.setAlignmentStart(pos);
         samRecord.setMappingQuality(mapq);
-        samRecord.setCigarString(cigar);
+        samRecord.setCigarString(decodeField(buf, cigarOff, cigarLen));
 
-        String mateRName = mFields[MRNM_COL];
-        if (mateRName.equals("*")) {
+        final int mrnmOff = mFieldOffsets[MRNM_COL];
+        final int mrnmLen = mFieldLengths[MRNM_COL];
+        if (isAsterisk(buf, mrnmOff, mrnmLen)) {
             if (samRecord.getReadPairedFlag() && !samRecord.getMateUnmappedFlag()) {
                 reportErrorParsingLine("MRNM not specified but flags indicate mate mapped");
             }
@@ -302,13 +345,13 @@ public class SAMLineParser {
             if (!samRecord.getReadPairedFlag()) {
                 reportErrorParsingLine("MRNM specified but flags indicate unpaired");
             }
-            if (mateRName.equals("=")) {
+            if (mrnmLen == 1 && buf[mrnmOff] == '=') {
                 if (resolvedRname == null) {
                     reportErrorParsingLine("MRNM is '=', but RNAME is not set");
                 }
                 samRecord.setMateReferenceNameAndIndex(resolvedRname, resolvedRnameIndex);
             } else {
-                mateRName = SAMSequenceRecord.truncateSequenceName(mateRName);
+                final String mateRName = SAMSequenceRecord.truncateSequenceName(decodeField(buf, mrnmOff, mrnmLen));
                 final SAMSequenceRecord mateRecord = mSequenceDictionary.getSequence(mateRName);
                 if (mateRecord != null) {
                     samRecord.setMateReferenceNameAndIndex(mateRecord.getSequenceName(), mateRecord.getSequenceIndex());
@@ -321,8 +364,8 @@ public class SAMLineParser {
             }
         }
 
-        final int matePos = parseInt(mFields[MPOS_COL], "MPOS");
-        final int isize = parseInt(mFields[ISIZE_COL], "ISIZE");
+        final int matePos = parseIntFromBytes(buf, mFieldOffsets[MPOS_COL], mFieldLengths[MPOS_COL], "MPOS");
+        final int isize = parseIntFromBytes(buf, mFieldOffsets[ISIZE_COL], mFieldLengths[ISIZE_COL], "ISIZE");
         if (!samRecord.getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
             if (matePos == 0) {
                 reportErrorParsingLine("MPOS must be non-zero if MRNM is specified");
@@ -337,32 +380,35 @@ public class SAMLineParser {
         }
         samRecord.setMateAlignmentStart(matePos);
         samRecord.setInferredInsertSize(isize);
-        if (!mFields[SEQ_COL].equals("*")) {
+
+        final int seqOff = mFieldOffsets[SEQ_COL];
+        final int seqLen = mFieldLengths[SEQ_COL];
+        if (!isAsterisk(buf, seqOff, seqLen)) {
             // In SILENT mode reportErrorParsingLine is a no-op so the per-base scan is pure waste;
             // skipping it preserves observable behavior.
             if (this.validationStringency != ValidationStringency.SILENT) {
-                validateReadBases(mFields[SEQ_COL]);
+                validateReadBases(buf, seqOff, seqLen);
             }
-            samRecord.setReadString(mFields[SEQ_COL]);
+            samRecord.setReadBases(SAMUtils.readStringToNormalizedBases(buf, seqOff, seqLen));
         } else {
             samRecord.setReadBases(SAMRecord.NULL_SEQUENCE);
         }
-        if (!mFields[QUAL_COL].equals("*")) {
+        final int qualOff = mFieldOffsets[QUAL_COL];
+        final int qualLen = mFieldLengths[QUAL_COL];
+        if (!isAsterisk(buf, qualOff, qualLen)) {
             if (samRecord.getReadBases() == SAMRecord.NULL_SEQUENCE) {
                 reportErrorParsingLine("QUAL should not be specified if SEQ is not specified");
             }
-            // Use the byte[] length directly rather than getReadString().length(), which would
-            // allocate a fresh String from the bases byte[] just to discard it.
-            if (samRecord.getReadLength() != mFields[QUAL_COL].length()) {
+            if (samRecord.getReadLength() != qualLen) {
                 reportErrorParsingLine("length(QUAL) != length(SEQ)");
             }
-            samRecord.setBaseQualityString(mFields[QUAL_COL]);
+            samRecord.setBaseQualities(SAMUtils.fastqToPhred(buf, qualOff, qualLen));
         } else {
             samRecord.setBaseQualities(SAMRecord.NULL_QUALS);
         }
 
         for (int i = NUM_REQUIRED_FIELDS; i < numFields; ++i) {
-            parseTag(samRecord, mFields[i]);
+            parseTag(samRecord, buf, mFieldOffsets[i], mFieldLengths[i]);
         }
 
         // Only call samRecord.isValid() if errors would be reported since the validation
@@ -379,6 +425,137 @@ public class SAMLineParser {
         return samRecord;
     }
 
+    /**
+     * Reads 8 bytes from {@code buf[off..off+8)} as a little-endian {@code long}. The SWAR
+     * scanner in {@link #splitFieldsByTab} processes 8 bytes per iteration this way, which is
+     * much faster than the equivalent byte-by-byte loop because Java byte loops don't get
+     * auto-vectorized while VarHandle long reads do.
+     */
+    private static final VarHandle BYTE_ARRAY_AS_LONG_LE =
+            MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
+
+    // SWAR constants for detecting a target byte within an 8-byte word.
+    // See e.g. https://graphics.stanford.edu/~seander/bithacks.html#ZeroInWord
+    private static final long TAB_PATTERN = 0x0909090909090909L; // '\t' repeated 8x
+    private static final long SWAR_ONES = 0x0101010101010101L;
+    private static final long SWAR_HIGH = 0x8080808080808080L;
+
+    /**
+     * Split a byte range by tab characters into a parallel pair of offset/length arrays. The
+     * last field is always recorded (mirroring {@link StringUtil#split}'s contract that the
+     * final segment is included even with no trailing delimiter), and parsing stops once the
+     * scratch arrays are full so the caller can detect "too many fields".
+     *
+     * <p>Scans 8 bytes at a time using a SWAR ("SIMD within a register") trick: XOR with a
+     * word of repeated tab bytes makes matching bytes zero, then {@code (x - 0x01..01) & ~x &
+     * 0x80..80} sets the high bit of any zero byte. This avoids the scalar byte loop that the
+     * JIT does not auto-vectorize and roughly matches the throughput of HotSpot's intrinsified
+     * {@code String.indexOf} without requiring us to materialize a {@link String}.</p>
+     *
+     * @return the number of fields recorded
+     */
+    private static int splitFieldsByTab(
+            final byte[] buf, final int off, final int len, final int[] offsets, final int[] lengths) {
+        final int end = off + len;
+        final int maxFields = offsets.length;
+        int fieldStart = off;
+        int count = 0;
+
+        int i = off;
+        final int simdEnd = end - 7;
+        while (i < simdEnd) {
+            final long word = (long) BYTE_ARRAY_AS_LONG_LE.get(buf, i);
+            final long xored = word ^ TAB_PATTERN;
+            long detected = (xored - SWAR_ONES) & ~xored & SWAR_HIGH;
+            if (detected == 0) {
+                i += 8;
+                continue;
+            }
+            // One or more tab bytes in this chunk. Each match contributes a single set bit
+            // (the high bit of that byte), so we can iterate matches with the standard
+            // "find lowest set bit, clear it" pattern.
+            do {
+                final int byteOff = Long.numberOfTrailingZeros(detected) >>> 3;
+                final int tabPos = i + byteOff;
+                if (count >= maxFields) {
+                    return count;
+                }
+                offsets[count] = fieldStart;
+                lengths[count] = tabPos - fieldStart;
+                count++;
+                fieldStart = tabPos + 1;
+                detected &= detected - 1;
+            } while (detected != 0);
+            i += 8;
+        }
+
+        // Scalar tail for the final 0-7 bytes.
+        for (; i < end; i++) {
+            if (buf[i] == '\t') {
+                if (count >= maxFields) {
+                    return count;
+                }
+                offsets[count] = fieldStart;
+                lengths[count] = i - fieldStart;
+                count++;
+                fieldStart = i + 1;
+            }
+        }
+        if (count < maxFields) {
+            offsets[count] = fieldStart;
+            lengths[count] = end - fieldStart;
+            count++;
+        }
+        return count;
+    }
+
+    /** True iff the byte range is exactly the single ASCII character {@code *}. */
+    private static boolean isAsterisk(final byte[] buf, final int off, final int len) {
+        return len == 1 && buf[off] == '*';
+    }
+
+    /** Decode a SAM field byte range as a {@link String} using ISO-8859-1 (lossless for ASCII). */
+    private static String decodeField(final byte[] buf, final int off, final int len) {
+        return new String(buf, off, len, StandardCharsets.ISO_8859_1);
+    }
+
+    private int parseIntFromBytes(final byte[] buf, final int off, final int len, final String fieldName) {
+        if (len == 0) {
+            throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
+        }
+        int i = 0;
+        final boolean negative;
+        final byte first = buf[off];
+        if (first == '-') {
+            negative = true;
+            i = 1;
+        } else if (first == '+') {
+            negative = false;
+            i = 1;
+        } else {
+            negative = false;
+        }
+        if (i == len) {
+            throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
+        }
+        long acc = 0;
+        for (; i < len; i++) {
+            final byte b = buf[off + i];
+            if (b < '0' || b > '9') {
+                throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
+            }
+            acc = acc * 10 + (b - '0');
+            if (acc > Integer.MAX_VALUE + 1L) {
+                throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
+            }
+        }
+        final long signed = negative ? -acc : acc;
+        if (signed < Integer.MIN_VALUE || signed > Integer.MAX_VALUE) {
+            throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
+        }
+        return (int) signed;
+    }
+
     private void validateReadBases(final String bases) {
         /*
          * Using regex is slow, so check for invalid characters via
@@ -388,6 +565,15 @@ public class SAMLineParser {
          */
         for (int i = 0; i < bases.length(); ++i) {
             if (!isValidReadBase(bases.charAt(i))) {
+                reportErrorParsingLine("Invalid character in read bases");
+                return;
+            }
+        }
+    }
+
+    private void validateReadBases(final byte[] buf, final int off, final int len) {
+        for (int i = 0; i < len; ++i) {
+            if (!isValidReadBase((char) (buf[off + i] & 0xff))) {
                 reportErrorParsingLine("Invalid character in read bases");
                 return;
             }
@@ -454,6 +640,28 @@ public class SAMLineParser {
         }
     }
 
+    private void parseTag(final SAMRecord samRecord, final byte[] buf, final int off, final int len) {
+        if (len < 2) {
+            reportErrorParsingLine("Malformed tag");
+            return;
+        }
+        final Object value;
+        try {
+            tagCodec.decodeValue(buf, off, len);
+            value = tagCodec.getLastValue();
+        } catch (SAMFormatException e) {
+            reportErrorParsingLine(e);
+            return;
+        }
+        final short binaryTag = (short) ((buf[off + 1] & 0xff) << 8 | (buf[off] & 0xff));
+        if (value instanceof TagValueAndUnsignedArrayFlag) {
+            final TagValueAndUnsignedArrayFlag valueAndFlag = (TagValueAndUnsignedArrayFlag) value;
+            samRecord.setAttribute(binaryTag, valueAndFlag.value, valueAndFlag.isUnsignedArray);
+        } else {
+            samRecord.setAttribute(binaryTag, value);
+        }
+    }
+
     //
     // Error methods
     //
@@ -492,9 +700,19 @@ public class SAMLineParser {
         if (mFile != null) {
             fileMessage = "File " + mFile + "; ";
         }
+        final String lineText;
+        if (this.currentLine != null) {
+            lineText = this.currentLine;
+        } else if (this.currentLineBuf != null) {
+            // Byte-based parseLine path: materialize the line lazily so we don't pay the
+            // String allocation on the (much more common) success path.
+            lineText = new String(currentLineBuf, currentLineOff, currentLineLen, StandardCharsets.ISO_8859_1);
+        } else {
+            lineText = "";
+        }
         return "Error parsing text SAM file. "
                 + reason + "; " + fileMessage + "Line "
                 + (this.currentLineNumber <= 0 ? "unknown" : this.currentLineNumber)
-                + "\nLine: " + this.currentLine;
+                + "\nLine: " + lineText;
     }
 }

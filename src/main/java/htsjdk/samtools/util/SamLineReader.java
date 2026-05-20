@@ -15,10 +15,10 @@ import java.nio.charset.StandardCharsets;
  *       Latin-1 is lossless and avoids the overhead of UTF-8 multi-byte scanning.</li>
  * </ul>
  *
- * <p>This replaces the previous approach of wrapping the stream in
- * {@code InputStreamReader(UTF-8) → BufferedReader → LineNumberReader}, which performed
- * per-character UTF-8 decoding even though alignment lines (99%+ of a typical SAM file) are
- * pure ASCII.</p>
+ * <p>For the hottest call sites, {@link #readNextLine()} reads a line into the reader's internal
+ * buffer without allocating a {@link String}. The line bytes are then accessible via
+ * {@link #getLineBuffer()}, {@link #getLineOffset()}, and {@link #getLineLength()}; those values
+ * are valid only until the next call to {@code readNextLine()} or {@link #readLine()}.</p>
  */
 public class SamLineReader implements LineReader {
     private static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
@@ -33,6 +33,10 @@ public class SamLineReader implements LineReader {
     private byte[] overflow = new byte[512];
     private int overflowLen;
 
+    private byte[] currentLineBuf;
+    private int currentLineOff;
+    private int currentLineLen;
+
     public SamLineReader(final InputStream in) {
         this(in, DEFAULT_BUFFER_SIZE);
     }
@@ -42,10 +46,17 @@ public class SamLineReader implements LineReader {
         this.buf = new byte[Math.max(bufferSize, 64)];
     }
 
-    @Override
-    public String readLine() {
+    /**
+     * Reads the next line into the reader's internal buffer without allocating a {@link String}.
+     * After this returns {@code true}, the line bytes are accessible via {@link #getLineBuffer()},
+     * {@link #getLineOffset()}, and {@link #getLineLength()}. Those values are valid only until
+     * the next call to this method or {@link #readLine()}.
+     *
+     * @return {@code true} if a line was read, {@code false} if the stream is at EOF
+     */
+    public boolean readNextLine() {
         if (pos >= limit && !fill()) {
-            return null;
+            return false;
         }
 
         overflowLen = 0;
@@ -62,26 +73,27 @@ public class SamLineReader implements LineReader {
 
             if (terminatorPos >= 0) {
                 final int chunkLen = terminatorPos - pos;
-                final String result;
                 if (overflowLen == 0) {
-                    result = decodeBytes(buf, pos, chunkLen);
+                    // Fast path: line is wholly within the main buffer; expose buf+offset directly
+                    currentLineBuf = buf;
+                    currentLineOff = pos;
+                    currentLineLen = chunkLen;
                 } else {
+                    // Line spans buffer fills; consolidate trailing bytes into the overflow buffer
                     appendToOverflow(buf, pos, chunkLen);
-                    result = decodeBytes(overflow, 0, overflowLen);
+                    currentLineBuf = overflow;
+                    currentLineOff = 0;
+                    currentLineLen = overflowLen;
                 }
 
                 pos = terminatorPos + 1;
                 if (buf[terminatorPos] == '\r') {
-                    if (pos >= limit && !fill()) {
-                        // EOF right after \r — that's fine, line is complete
-                    }
-                    if (pos < limit && buf[pos] == '\n') {
-                        pos++;
-                    }
+                    if (pos >= limit) fill();
+                    if (pos < limit && buf[pos] == '\n') pos++;
                 }
 
                 lineNumber++;
-                return result;
+                return true;
             }
 
             appendToOverflow(buf, pos, limit - pos);
@@ -89,12 +101,41 @@ public class SamLineReader implements LineReader {
 
             if (!fill()) {
                 if (overflowLen > 0) {
+                    currentLineBuf = overflow;
+                    currentLineOff = 0;
+                    currentLineLen = overflowLen;
                     lineNumber++;
-                    return decodeBytes(overflow, 0, overflowLen);
+                    return true;
                 }
-                return null;
+                return false;
             }
         }
+    }
+
+    /**
+     * @return the buffer holding the bytes of the most recently read line, valid only until the
+     *         next call to {@link #readNextLine()} or {@link #readLine()}
+     */
+    public byte[] getLineBuffer() {
+        return currentLineBuf;
+    }
+
+    /** @return the offset within {@link #getLineBuffer()} at which the current line starts */
+    public int getLineOffset() {
+        return currentLineOff;
+    }
+
+    /** @return the length in bytes of the current line, excluding the line terminator */
+    public int getLineLength() {
+        return currentLineLen;
+    }
+
+    @Override
+    public String readLine() {
+        if (!readNextLine()) {
+            return null;
+        }
+        return decodeBytes(currentLineBuf, currentLineOff, currentLineLen);
     }
 
     @Override
