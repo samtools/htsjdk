@@ -154,4 +154,51 @@ public class SAMTextReaderTest extends HtsjdkTest {
         final SAMRecord record = samLineParser.parseLine(samRecord);
         Assert.assertEquals(record.getAttribute(ARRAY_TAG), array);
     }
+
+    @Test
+    public void testFlagAboveSignedIntRangeIsRejected() {
+        // The fast FLAG parser must not silently sign-extend values > Integer.MAX_VALUE.
+        // The spec restricts FLAG to 16 bits; the legacy path threw, and we want to preserve that.
+        final SAMLineParser parser = new SAMLineParser(new SAMFileHeader());
+        final String line = "Read\t4294967295\tchr1\t1\t0\t*\t*\t0\t0\t*\t*";
+        try {
+            parser.parseLine(line);
+            Assert.fail("Expected SAMFormatException for FLAG above signed-int range");
+        } catch (final SAMFormatException expected) {
+            // expected
+        }
+    }
+
+    @Test
+    public void testErrorMessageReportsCurrentLineAfterMixedParseModes() {
+        // Regression test: after a successful parseLine(String) call, parseLineFromBytes on the
+        // same parser must produce error messages referencing the BYTE line, not the stale
+        // String line from the earlier call.
+        final SAMLineParser parser =
+                new SAMLineParser(new SAMFileHeader(), null, null).withSamFlagField(SamFlagField.DECIMAL);
+        // First, parse a well-formed line through the String API to seed currentLine.
+        final String good = "Read\t4\tchr1\t1\t0\t*\t*\t0\t0\tG\t%";
+        parser.parseLine(good);
+
+        // Now feed a malformed line through the bytes API and force STRICT to surface the message.
+        final SAMLineParser strict = new SAMLineParser(
+                new DefaultSAMRecordFactory(), ValidationStringency.STRICT, new SAMFileHeader(), null, null);
+        // Same warm-up via parseLine(String) on the strict parser:
+        strict.parseLine(good);
+        // Now an obviously malformed byte line (too few tab-separated fields):
+        final byte[] bad = "Read\tNOT-AN-INT\t".getBytes();
+        try {
+            strict.parseLineFromBytes(bad, 0, bad.length, 7);
+            Assert.fail("Expected an exception");
+        } catch (final SAMFormatException e) {
+            // The error message must reference the byte line "Read\tNOT-AN-INT\t", not the
+            // earlier "good" line.
+            final String message = e.getMessage();
+            Assert.assertTrue(
+                    message.contains("NOT-AN-INT") || message.contains("Read\tNOT-AN-INT"),
+                    "Expected error message to reference the byte line; got: " + message);
+            Assert.assertFalse(
+                    message.contains("chr1"), "Error message must not reference the stale prior line; got: " + message);
+        }
+    }
 }

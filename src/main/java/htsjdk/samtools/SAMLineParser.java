@@ -30,11 +30,14 @@ import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * This class enables creation of a SAMRecord object from a String in SAM text format.  The SAM flag field will be inferred
  * for each record separately, unless the expected format is set using `withSamFlagField`.
+ *
+ * <p>Instances hold reusable per-line scratch state (tab-position arrays, current-line buffers,
+ * the embedded {@link TextTagCodec}). They are <b>not thread-safe</b>; a single parser must not
+ * be used from multiple threads concurrently.</p>
  */
 public class SAMLineParser {
 
@@ -54,10 +57,11 @@ public class SAMLineParser {
     private static final int NUM_REQUIRED_FIELDS = 11;
 
     /**
-     * Maximum number of tab-separated fields we'll record from a single line. Allocate the
-     * scratch arrays once at construction time rather than per-line. The size is arbitrary --
-     * merely large enough to handle the maximum number of fields any reasonable SAM file should
-     * contain (11 mandatory + many optional tags).
+     * Maximum number of tab-separated fields a single line may contain. This is both the size of
+     * the per-parser scratch arrays ({@link #mFieldOffsets}, {@link #mFieldLengths}) and the
+     * hard cap that triggers a "Too many fields" error during parsing. The size is generously
+     * above anything observed in practice (11 mandatory fields plus a few dozen optional tags
+     * per record); the memory cost is two {@code int[]}s (~80KB) per parser instance.
      */
     private static final int MAX_FIELDS = 10000;
 
@@ -80,7 +84,11 @@ public class SAMLineParser {
     private final SAMFileHeader mFileHeader;
     private final SAMSequenceDictionary mSequenceDictionary;
     private final File mFile;
-    private Optional<SamFlagField> samFlagField = Optional.empty();
+    /**
+     * Optional user-provided format override for the FLAG field. {@code null} means
+     * "auto-detect format per record" via {@link SamFlagField#parseDefault}.
+     */
+    private SamFlagField samFlagField;
 
     private final TextTagCodec tagCodec = new TextTagCodec();
 
@@ -179,13 +187,13 @@ public class SAMLineParser {
      */
     public SAMLineParser withSamFlagField(final SamFlagField samFlagField) {
         if (samFlagField == null) throw new IllegalArgumentException("Sam flag field was null");
-        this.samFlagField = Optional.of(samFlagField);
+        this.samFlagField = samFlagField;
         return this;
     }
 
     private int parseFlag(final String s, final String fieldName) {
         try {
-            return samFlagField.isPresent() ? samFlagField.get().parse(s) : SamFlagField.parseDefault(s);
+            return samFlagField != null ? samFlagField.parse(s) : SamFlagField.parseDefault(s);
         } catch (NumberFormatException e) {
             throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
         } catch (SAMFormatException e) {
@@ -253,6 +261,9 @@ public class SAMLineParser {
         this.currentLineBuf = buf;
         this.currentLineOff = off;
         this.currentLineLen = len;
+        // Clear any String set by an earlier parseLine(String) call so makeErrorString reads from
+        // the current byte buffer rather than the stale prior line.
+        this.currentLine = null;
 
         final int numFields = splitFieldsByTab(buf, off, len, mFieldOffsets, mFieldLengths);
         if (numFields < NUM_REQUIRED_FIELDS) {
@@ -524,24 +535,25 @@ public class SAMLineParser {
         if (len == 0) {
             throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
         }
-        int i = 0;
+        final int end = off + len;
+        int i = off;
         final boolean negative;
-        final byte first = buf[off];
+        final byte first = buf[i];
         if (first == '-') {
             negative = true;
-            i = 1;
+            i++;
         } else if (first == '+') {
             negative = false;
-            i = 1;
+            i++;
         } else {
             negative = false;
         }
-        if (i == len) {
+        if (i == end) {
             throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
         }
         long acc = 0;
-        for (; i < len; i++) {
-            final byte b = buf[off + i];
+        for (; i < end; i++) {
+            final byte b = buf[i];
             if (b < '0' || b > '9') {
                 throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
             }
@@ -569,21 +581,24 @@ public class SAMLineParser {
      * interpreted as octal, "0x..." as hex, anything non-digit as named-flag string format).</p>
      */
     private int parseFlagFromBytes(final byte[] buf, final int off, final int len) {
-        if (samFlagField.isEmpty() && len > 0) {
+        if (samFlagField == null && len > 0) {
             final byte first = buf[off];
             // Single '0' is fine (decimal zero). Leading '0' followed by more characters is octal
             // per SamFlagField.of, so defer to the String path.
             if (first >= '1' && first <= '9' || (first == '0' && len == 1)) {
+                final int end = off + len;
                 long acc = 0;
                 boolean fast = true;
-                for (int i = 0; i < len; i++) {
-                    final byte b = buf[off + i];
+                for (int i = off; i < end; i++) {
+                    final byte b = buf[i];
                     if (b < '0' || b > '9') {
                         fast = false;
                         break;
                     }
                     acc = acc * 10 + (b - '0');
-                    if (acc > 0xFFFFFFFFL) {
+                    // Reject values outside the signed-int range: SamFlagField.parseDefault is
+                    // backed by Integer.parseInt and would throw NumberFormatException for these.
+                    if (acc > Integer.MAX_VALUE) {
                         fast = false;
                         break;
                     }
@@ -610,44 +625,26 @@ public class SAMLineParser {
         }
     }
 
-    private boolean isValidReadBase(final char base) {
-        switch (base) {
-            case 'a':
-            case 'c':
-            case 'm':
-            case 'g':
-            case 'r':
-            case 's':
-            case 'v':
-            case 't':
-            case 'w':
-            case 'y':
-            case 'h':
-            case 'k':
-            case 'd':
-            case 'b':
-            case 'n':
-            case 'A':
-            case 'C':
-            case 'M':
-            case 'G':
-            case 'R':
-            case 'S':
-            case 'V':
-            case 'T':
-            case 'W':
-            case 'Y':
-            case 'H':
-            case 'K':
-            case 'D':
-            case 'B':
-            case 'N':
-            case '.':
-            case '=':
-                return true;
-            default:
-                return false;
+    /**
+     * Lookup table for valid read-base characters: indexed by ASCII codepoint (0-127), value
+     * is {@code true} iff that character is a legal IUPAC base, ambiguity code, '.', or '='.
+     * Branch-free check replaces the ~30-case switch used previously.
+     */
+    private static final boolean[] VALID_READ_BASE = new boolean[128];
+
+    static {
+        for (final char c :
+                new char[] {'A', 'C', 'M', 'G', 'R', 'S', 'V', 'T', 'W', 'Y', 'H', 'K', 'D', 'B', 'N', '.', '='}) {
+            VALID_READ_BASE[c] = true;
+            // Lowercase variants (except '.' and '=' which have no lowercase form)
+            if (c >= 'A' && c <= 'Z') {
+                VALID_READ_BASE[c + ('a' - 'A')] = true;
+            }
         }
+    }
+
+    private static boolean isValidReadBase(final char base) {
+        return base < VALID_READ_BASE.length && VALID_READ_BASE[base];
     }
 
     /**

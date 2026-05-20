@@ -40,8 +40,17 @@ import java.nio.charset.StandardCharsets;
  *
  * <p>For the hottest call sites, {@link #readNextLine()} reads a line into the reader's internal
  * buffer without allocating a {@link String}. The line bytes are then accessible via
- * {@link #getLineBuffer()}, {@link #getLineOffset()}, and {@link #getLineLength()}; those values
- * are valid only until the next call to {@code readNextLine()} or {@link #readLine()}.</p>
+ * {@link #getLineBuffer()}, {@link #getLineOffset()}, and {@link #getLineLength()}.</p>
+ *
+ * <p><b>Lifetime of the line-bytes view:</b> the buffer/offset/length triple returned by the
+ * accessor methods is valid only until the next call to any of {@link #readNextLine()},
+ * {@link #readLine()}, or {@link #peek()} on the same instance. Each of those methods may
+ * compact or refill the internal buffer, invalidating an earlier line-bytes view. Callers must
+ * either consume (copy out or interpret) the line bytes before invoking another reader method,
+ * or use {@link #readLine()} which materialises the line as an immutable {@link String}.</p>
+ *
+ * <p>This class is <b>not thread-safe</b>; a single instance must not be used from multiple
+ * threads concurrently.</p>
  */
 public class SamLineReader implements LineReader {
     private static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
@@ -110,10 +119,12 @@ public class SamLineReader implements LineReader {
                 final byte terminator = buf[terminatorPos];
                 pos = terminatorPos + 1;
 
-                // If the terminator is '\r' and it is the very last byte of the current fill,
-                // we need to refill before we can tell whether the next byte is the '\n' of a
-                // '\r\n' pair. That refill compacts/overwrites the main buffer, so we must
-                // copy the line bytes into the overflow buffer first to keep them stable.
+                // If the terminator is '\r' at the end of the current fill, we must refill now
+                // to disambiguate '\r' vs '\r\n'. That refill compacts/overwrites the main
+                // buffer, so copy the line bytes to the overflow buffer first. (The other
+                // refill triggers -- a future readNextLine/readLine/peek call -- are the
+                // caller's responsibility per the API contract: they must consume the line
+                // bytes before invoking another reader method.)
                 final boolean needLookaheadFill = (terminator == '\r' && pos >= limit);
                 if (needLookaheadFill || overflowLen > 0) {
                     appendToOverflow(buf, chunkStart, chunkLen);
@@ -129,8 +140,8 @@ public class SamLineReader implements LineReader {
                     currentLineOff = 0;
                     currentLineLen = overflowLen;
                 } else {
-                    // Fast path: the entire line is wholly within the main buffer and the buffer
-                    // has not been mutated since we located it; expose buf + offset directly.
+                    // Fast path: the entire line is wholly within the main buffer; expose
+                    // buf + offset directly.
                     currentLineBuf = buf;
                     currentLineOff = chunkStart;
                     currentLineLen = chunkLen;

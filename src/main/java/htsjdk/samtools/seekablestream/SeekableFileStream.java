@@ -26,6 +26,13 @@ import java.util.Collections;
 import java.util.HashSet;
 
 /**
+ * A {@link SeekableStream} backed by a local file via {@link RandomAccessFile}.
+ *
+ * <p>The file length is captured at construction time and the read position is tracked locally,
+ * so {@link #length()}, {@link #eof()}, {@link #position()}, and {@link #available()} do not
+ * issue per-call syscalls. This is fine for the typical SAM/BAM/CRAM use case (open, read
+ * sequentially, close) but means callers should not expect to observe growth of a file being
+ * actively written by another process.</p>
  *
  * @author jrobinso
  */
@@ -95,11 +102,16 @@ public class SeekableFileStream extends SeekableStream {
     }
 
     @Override
-    public long skip(long n) throws IOException {
-        final long newPos = pos + n;
-        fis.getChannel().position(newPos);
-        final long actual = newPos - pos;
-        pos = newPos;
+    public long skip(final long n) throws IOException {
+        if (n <= 0) {
+            return 0L;
+        }
+        // Clamp to file length so we honour the InputStream.skip contract: return the number of
+        // bytes actually skipped, never reporting more than remain in the file.
+        final long target = Math.min(pos + n, length);
+        fis.seek(target);
+        final long actual = target - pos;
+        pos = target;
         return actual;
     }
 

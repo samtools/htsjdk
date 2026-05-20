@@ -171,6 +171,13 @@ public class TextTagCodec {
 
     /**
      * Convert typed tag in SAM text format (name:type:value) into tag name and Object value representation.
+     *
+     * <p><b>The returned {@link Map.Entry} is shared and reused across calls.</b> Its key and
+     * value fields are overwritten by the next call to {@code decode()} on this
+     * {@link TextTagCodec} instance; callers that need to retain the result beyond a single
+     * decode call must copy the key and value out before invoking decode again. {@link
+     * Map.Entry#setValue} throws {@link UnsupportedOperationException}.</p>
+     *
      * @param tag SAM text format name:type:value tag.
      * @return Tag name as 2-character String, and tag value in appropriate class based on tag type.
      * If value is an unsigned array, then the value is a TagValueAndUnsignedArrayFlag object.
@@ -227,8 +234,11 @@ public class TextTagCodec {
                     "Malformed tag '" + new String(buf, off, len, StandardCharsets.ISO_8859_1) + "'");
         }
         final char typeChar = (char) (buf[off + 3] & 0xff);
-        final int valueOff = off + 5;
-        final int valueLen = len - 5;
+        // When len == 4 (e.g. "XY:Z" with no trailing colon+value) the tag has an empty value;
+        // mirror the String overload which treats this as "". Without the guard we'd produce a
+        // negative valueLen and crash inside the type-specific value parsers.
+        final int valueOff = len > 4 ? off + 5 : off;
+        final int valueLen = len > 4 ? len - 5 : 0;
         lastValue = convertBytesToObject(typeChar, buf, valueOff, valueLen);
     }
 

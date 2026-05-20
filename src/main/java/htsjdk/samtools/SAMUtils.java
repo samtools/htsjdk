@@ -335,15 +335,16 @@ public final class SAMUtils {
      */
     static byte[] readStringToNormalizedBases(final byte[] src, final int off, final int len) {
         final byte[] bases = new byte[len];
-        for (int i = 0; i < len; ++i) {
-            byte b = src[off + i];
+        final int end = off + len;
+        for (int i = off, j = 0; i < end; i++, j++) {
+            byte b = src[i];
             if (b >= 'a' && b <= 'z') {
                 b = (byte) (b - ('a' - 'A'));
             }
             if (b == '.') {
                 b = 'N';
             }
-            bases[i] = b;
+            bases[j] = b;
         }
         return bases;
     }
@@ -415,21 +416,21 @@ public final class SAMUtils {
      * @param fastq Phred scores in FASTQ printable ASCII format.
      * @return byte array of binary phred scores in which each byte corresponds to a character in the input string.
      */
-    @SuppressWarnings("deprecation")
     public static byte[] fastqToPhred(final String fastq) {
         if (fastq == null) {
             return null;
         }
         final int length = fastq.length();
         final byte[] scores = new byte[length];
-        // Bulk-copy ASCII characters into the byte[] (FASTQ is single-byte ASCII), then subtract
-        // the FASTQ-33 offset in a tight loop. This avoids the per-character charAt() cost and
-        // the per-character method dispatch through fastqToPhred(char).
-        fastq.getBytes(0, length, scores, 0);
+        // Validate per-char from the String first to catch non-ASCII chars (> 0xFF) that the
+        // deprecated bulk getBytes() would silently narrow to a misleading byte. On JVMs with
+        // compact strings the charAt() loop is intrinsified for Latin-1 strings and remains
+        // very fast.
         for (int i = 0; i < length; i++) {
-            final int v = (scores[i] & 0xff) - 33;
+            final int c = fastq.charAt(i);
+            final int v = c - 33;
             if (v < 0 || v > MAX_PHRED_SCORE) {
-                throw new IllegalArgumentException("Invalid fastq character: " + (char) (scores[i] & 0xff));
+                throw new IllegalArgumentException("Invalid fastq character: " + (char) c);
             }
             scores[i] = (byte) v;
         }
@@ -443,12 +444,13 @@ public final class SAMUtils {
      */
     public static byte[] fastqToPhred(final byte[] src, final int off, final int len) {
         final byte[] scores = new byte[len];
-        for (int i = 0; i < len; i++) {
-            final int v = (src[off + i] & 0xff) - 33;
+        final int end = off + len;
+        for (int i = off, j = 0; i < end; i++, j++) {
+            final int v = (src[i] & 0xff) - 33;
             if (v < 0 || v > MAX_PHRED_SCORE) {
-                throw new IllegalArgumentException("Invalid fastq character: " + (char) (src[off + i] & 0xff));
+                throw new IllegalArgumentException("Invalid fastq character: " + (char) (src[i] & 0xff));
             }
-            scores[i] = (byte) v;
+            scores[j] = (byte) v;
         }
         return scores;
     }

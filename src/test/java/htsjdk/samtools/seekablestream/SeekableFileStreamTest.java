@@ -171,4 +171,34 @@ public class SeekableFileStreamTest extends HtsjdkTest {
             Assert.assertEquals(s.position(), 0L);
         }
     }
+
+    @Test
+    public void testSkipReturnsBytesActuallySkippedWithinFile() throws Exception {
+        try (final SeekableFileStream s = new SeekableFileStream(makeTestFile(new byte[100]))) {
+            Assert.assertEquals(s.skip(40), 40L);
+            Assert.assertEquals(s.position(), 40L);
+        }
+    }
+
+    @Test
+    public void testSkipClampedAtEof() throws Exception {
+        // skip(n) requesting past EOF must return the bytes actually skipped, not the requested n.
+        // Position must end exactly at file length (not beyond).
+        try (final SeekableFileStream s = new SeekableFileStream(makeTestFile(new byte[100]))) {
+            Assert.assertEquals(s.skip(500), 100L);
+            Assert.assertEquals(s.position(), 100L);
+            Assert.assertTrue(s.eof());
+            Assert.assertEquals(s.available(), 0);
+        }
+    }
+
+    @Test
+    public void testSkipNegativeReturnsZero() throws Exception {
+        // InputStream.skip(n) with n <= 0 must return 0 and not move the position.
+        try (final SeekableFileStream s = new SeekableFileStream(makeTestFile(new byte[100]))) {
+            s.seek(50);
+            Assert.assertEquals(s.skip(-10), 0L);
+            Assert.assertEquals(s.position(), 50L);
+        }
+    }
 }

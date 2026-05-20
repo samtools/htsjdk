@@ -289,9 +289,10 @@ public class SamLineReaderTest extends HtsjdkTest {
 
     @Test
     public void testReadNextLineExposesLineWithinMainBuffer() {
-        // When the whole line fits in the main buffer, getLineBuffer() should return the same
-        // byte[] each call (the main internal buffer) -- the fast path that avoids overflow.
-        try (final SamLineReader reader = readerFrom("first\nsecond\n")) {
+        // Two lines followed by trailing bytes so neither line ends at the buffer limit; in
+        // that case the fast path exposes the main buffer directly. The trailing "extra\n"
+        // ensures pos < limit after both readNextLine() calls.
+        try (final SamLineReader reader = readerFrom("first\nsecond\nextra\n")) {
             Assert.assertTrue(reader.readNextLine());
             final byte[] firstBuf = reader.getLineBuffer();
             Assert.assertEquals(currentLineAsString(reader), "first");
@@ -381,5 +382,26 @@ public class SamLineReaderTest extends HtsjdkTest {
             Assert.assertEquals(reader.readLine(), "string-api");
             Assert.assertNull(reader.readLine());
         }
+    }
+
+    @Test
+    public void testReadNextLineThenAnotherReadNextLine() {
+        // The contract says current-line accessors are invalidated by the next readNextLine().
+        // This pins that the second call correctly exposes the second line's bytes.
+        final String first = "ABCDE";
+        final String second = "FGHIJ";
+        try (final SamLineReader reader = readerFrom(first + "\n" + second + "\n", first.length() + 1)) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), first);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), second);
+        }
+    }
+
+    @Test
+    public void testCloseIsIdempotent() throws java.io.IOException {
+        final SamLineReader reader = readerFrom("hello\n");
+        reader.close();
+        reader.close(); // second close must not throw
     }
 }
