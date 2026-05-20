@@ -64,6 +64,7 @@ public class SAMLineParser {
     private final SAMRecordFactory samRecordFactory;
     private final ValidationStringency validationStringency;
     private final SAMFileHeader mFileHeader;
+    private final SAMSequenceDictionary mSequenceDictionary;
     private final File mFile;
     private Optional<SamFlagField> samFlagField = Optional.empty();
 
@@ -128,6 +129,7 @@ public class SAMLineParser {
         this.samRecordFactory = samRecordFactory;
         this.validationStringency = validationStringency;
         this.mFileHeader = samFileHeader;
+        this.mSequenceDictionary = samFileHeader.getSequenceDictionary();
 
         // Can be null
         this.mParentReader = samFileReader;
@@ -244,15 +246,21 @@ public class SAMLineParser {
         samRecord.setFlags(flags);
 
         String rname = mFields[RNAME_COL];
+        String resolvedRname = null;
+        int resolvedRnameIndex = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
         if (!rname.equals("*")) {
             rname = SAMSequenceRecord.truncateSequenceName(rname);
-            // validateReferenceName does a HashMap lookup against the sequence dictionary just to
-            // build an error message; skip it in SILENT mode since reportErrorParsingLine is a no-op
-            // there. setReferenceName below performs its own lookup of the same name.
-            if (this.validationStringency != ValidationStringency.SILENT) {
-                validateReferenceName(rname, "RNAME");
+            final SAMSequenceRecord rnameRecord = mSequenceDictionary.getSequence(rname);
+            if (rnameRecord != null) {
+                resolvedRname = rnameRecord.getSequenceName();
+                resolvedRnameIndex = rnameRecord.getSequenceIndex();
+                samRecord.setReferenceNameAndIndex(resolvedRname, resolvedRnameIndex);
+            } else {
+                if (this.validationStringency != ValidationStringency.SILENT) {
+                    validateReferenceName(rname, "RNAME");
+                }
+                samRecord.setReferenceName(rname);
             }
-            samRecord.setReferenceName(rname);
         } else if (!samRecord.getReadUnmappedFlag()) {
             reportErrorParsingLine("RNAME is not specified but flags indicate mapped");
         }
@@ -291,23 +299,22 @@ public class SAMLineParser {
             if (!samRecord.getReadPairedFlag()) {
                 reportErrorParsingLine("MRNM specified but flags indicate unpaired");
             }
-            if (!"=".equals(mateRName)) {
-                mateRName = SAMSequenceRecord.truncateSequenceName(mateRName);
-            }
-            if (this.validationStringency != ValidationStringency.SILENT) {
-                validateReferenceName(mateRName, "MRNM");
-            }
             if (mateRName.equals("=")) {
-                if (samRecord.getReferenceName() == null) {
+                if (resolvedRname == null) {
                     reportErrorParsingLine("MRNM is '=', but RNAME is not set");
                 }
-                // Mate ref equals RNAME -- reuse the index we resolved during setReferenceName so
-                // we don't do a second sequence-dictionary HashMap lookup for the same name.
-                final Integer rIdx = samRecord.getReferenceIndex();
-                samRecord.setMateReferenceNameAndIndex(
-                        samRecord.getReferenceName(), rIdx == null ? SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX : rIdx);
+                samRecord.setMateReferenceNameAndIndex(resolvedRname, resolvedRnameIndex);
             } else {
-                samRecord.setMateReferenceName(mateRName);
+                mateRName = SAMSequenceRecord.truncateSequenceName(mateRName);
+                final SAMSequenceRecord mateRecord = mSequenceDictionary.getSequence(mateRName);
+                if (mateRecord != null) {
+                    samRecord.setMateReferenceNameAndIndex(mateRecord.getSequenceName(), mateRecord.getSequenceIndex());
+                } else {
+                    if (this.validationStringency != ValidationStringency.SILENT) {
+                        validateReferenceName(mateRName, "MRNM");
+                    }
+                    samRecord.setMateReferenceName(mateRName);
+                }
             }
         }
 
