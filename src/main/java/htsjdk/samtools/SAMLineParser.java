@@ -246,7 +246,12 @@ public class SAMLineParser {
         String rname = mFields[RNAME_COL];
         if (!rname.equals("*")) {
             rname = SAMSequenceRecord.truncateSequenceName(rname);
-            validateReferenceName(rname, "RNAME");
+            // validateReferenceName does a HashMap lookup against the sequence dictionary just to
+            // build an error message; skip it in SILENT mode since reportErrorParsingLine is a no-op
+            // there. setReferenceName below performs its own lookup of the same name.
+            if (this.validationStringency != ValidationStringency.SILENT) {
+                validateReferenceName(rname, "RNAME");
+            }
             samRecord.setReferenceName(rname);
         } else if (!samRecord.getReadUnmappedFlag()) {
             reportErrorParsingLine("RNAME is not specified but flags indicate mapped");
@@ -289,12 +294,18 @@ public class SAMLineParser {
             if (!"=".equals(mateRName)) {
                 mateRName = SAMSequenceRecord.truncateSequenceName(mateRName);
             }
-            validateReferenceName(mateRName, "MRNM");
+            if (this.validationStringency != ValidationStringency.SILENT) {
+                validateReferenceName(mateRName, "MRNM");
+            }
             if (mateRName.equals("=")) {
                 if (samRecord.getReferenceName() == null) {
                     reportErrorParsingLine("MRNM is '=', but RNAME is not set");
                 }
-                samRecord.setMateReferenceName(samRecord.getReferenceName());
+                // Mate ref equals RNAME -- reuse the index we resolved during setReferenceName so
+                // we don't do a second sequence-dictionary HashMap lookup for the same name.
+                final Integer rIdx = samRecord.getReferenceIndex();
+                samRecord.setMateReferenceNameAndIndex(
+                        samRecord.getReferenceName(), rIdx == null ? SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX : rIdx);
             } else {
                 samRecord.setMateReferenceName(mateRName);
             }

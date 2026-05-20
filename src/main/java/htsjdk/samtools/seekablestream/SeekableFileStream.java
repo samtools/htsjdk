@@ -41,37 +41,66 @@ public class SeekableFileStream extends SeekableStream {
     File file;
     RandomAccessFile fis;
 
+    /**
+     * File length cached at construction time. Callers that read SAM/BAM/CRAM open the file once
+     * and read it sequentially without other writers, so caching avoids repeated stat syscalls
+     * inside the hot read loop (notably {@link #available()}, which is called once per
+     * {@link java.io.InputStreamReader} fill via {@code StreamDecoder.inReady}).
+     */
+    private final long length;
+
+    /**
+     * Position tracked locally so that {@link #available()} does not need a per-call
+     * {@code lseek(SEEK_CUR)} syscall via {@link RandomAccessFile#getFilePointer()}. All mutation
+     * paths in this class keep this in sync with the underlying {@link RandomAccessFile}.
+     */
+    private long pos;
+
     public SeekableFileStream(final File file) throws FileNotFoundException {
         this.file = file;
         fis = new RandomAccessFile(file, "r");
+        this.length = file.length();
+        this.pos = 0;
         allInstances.add(this);
     }
 
     @Override
     public long length() {
-        return file.length();
+        return length;
     }
 
     @Override
     public boolean eof() throws IOException {
-        return fis.length() == fis.getFilePointer();
+        return pos >= length;
+    }
+
+    @Override
+    public int available() throws IOException {
+        final long remaining = length - pos;
+        if (remaining <= 0) {
+            return 0;
+        }
+        return (int) Math.min(Integer.MAX_VALUE, remaining);
     }
 
     @Override
     public void seek(final long position) throws IOException {
         fis.seek(position);
+        pos = position;
     }
 
     @Override
     public long position() throws IOException {
-        return fis.getChannel().position();
+        return pos;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        long initPos = position();
-        fis.getChannel().position(initPos + n);
-        return position() - initPos;
+        final long newPos = pos + n;
+        fis.getChannel().position(newPos);
+        final long actual = newPos - pos;
+        pos = newPos;
+        return actual;
     }
 
     @Override
@@ -84,6 +113,7 @@ public class SeekableFileStream extends SeekableStream {
             final int count = fis.read(buffer, offset + n, length - n);
             if (count < 0) {
                 if (n > 0) {
+                    pos += n;
                     return n;
                 } else {
                     return count;
@@ -91,17 +121,26 @@ public class SeekableFileStream extends SeekableStream {
             }
             n += count;
         }
+        pos += n;
         return n;
     }
 
     @Override
     public int read() throws IOException {
-        return fis.read();
+        final int b = fis.read();
+        if (b >= 0) {
+            pos++;
+        }
+        return b;
     }
 
     @Override
     public int read(byte[] b) throws IOException {
-        return fis.read(b);
+        final int n = fis.read(b);
+        if (n > 0) {
+            pos += n;
+        }
+        return n;
     }
 
     @Override

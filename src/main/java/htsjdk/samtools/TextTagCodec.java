@@ -212,6 +212,73 @@ public class TextTagCodec {
         lastValue = convertStringToObject(typeChar, stringVal);
     }
 
+    /**
+     * Fast path for the {@code 'i'} tag value: parse a signed decimal directly into a
+     * {@code Number}. The vast majority of SAM integer tags (e.g. {@code AS}, {@code NM},
+     * {@code MQ}, {@code MAPQ}) are small signed integers that fit in {@code int}, so we
+     * accumulate digits manually and skip {@link Long#parseLong}. Values outside the signed
+     * 32-bit range fall through to {@link Long#parseLong} so that the SAM-allowed unsigned
+     * 32-bit range [-2^31, 2^32) is still handled correctly. Returns {@link Integer} when the
+     * value fits, {@link Long} otherwise (matching the prior contract).
+     */
+    private static Number parseIntegerTagValue(final String stringVal) {
+        final int len = stringVal.length();
+        if (len == 0) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        int i = 0;
+        final boolean negative;
+        final char first = stringVal.charAt(0);
+        if (first == '-') {
+            negative = true;
+            i = 1;
+        } else if (first == '+') {
+            negative = false;
+            i = 1;
+        } else {
+            negative = false;
+        }
+        if (i == len) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        // Accumulate into long to detect overflow past Integer range. If overflow occurs we
+        // fall back to the Long path which handles the unsigned-32-bit case correctly.
+        long acc = 0;
+        for (; i < len; i++) {
+            final char c = stringVal.charAt(i);
+            if (c < '0' || c > '9') {
+                throw new SAMFormatException("Tag of type i should have signed decimal value");
+            }
+            acc = acc * 10 + (c - '0');
+            if (acc > Integer.MAX_VALUE + 1L) {
+                // Out of signed int range -- defer to the broader spec path.
+                return parseIntegerTagValueSlow(stringVal);
+            }
+        }
+        final long signed = negative ? -acc : acc;
+        if (signed >= Integer.MIN_VALUE && signed <= Integer.MAX_VALUE) {
+            return (int) signed;
+        }
+        return parseIntegerTagValueSlow(stringVal);
+    }
+
+    private static Number parseIntegerTagValueSlow(final String stringVal) {
+        final long lValue;
+        try {
+            lValue = Long.parseLong(stringVal);
+        } catch (NumberFormatException e) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
+            return (int) lValue;
+        } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+            return lValue;
+        } else {
+            throw new SAMFormatException(
+                    "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
+        }
+    }
+
     private static Object convertStringToObject(final char type, final String stringVal) {
         switch (type) {
             case 'Z':
@@ -221,22 +288,8 @@ public class TextTagCodec {
                     throw new SAMFormatException("Tag of type A should have a single-character value");
                 }
                 return stringVal.charAt(0);
-            case 'i': {
-                final long lValue;
-                try {
-                    lValue = Long.parseLong(stringVal);
-                } catch (NumberFormatException e) {
-                    throw new SAMFormatException("Tag of type i should have signed decimal value");
-                }
-                if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
-                    return (int) lValue;
-                } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
-                    return lValue;
-                } else {
-                    throw new SAMFormatException(
-                            "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
-                }
-            }
+            case 'i':
+                return parseIntegerTagValue(stringVal);
             case 'f':
                 try {
                     return Float.parseFloat(stringVal);
