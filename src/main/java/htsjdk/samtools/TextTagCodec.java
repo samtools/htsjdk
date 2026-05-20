@@ -31,6 +31,7 @@ import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.AbstractMap;
 import java.util.Date;
 import java.util.Map;
 
@@ -50,33 +51,6 @@ public class TextTagCodec {
      * This is really a local variable of decode(), but allocated here to reduce allocations.
      */
     private final String[] fields = new String[NUM_TAG_FIELDS];
-
-    /**
-     * Reusable Map.Entry returned by {@link #decode}. The decode() contract makes it valid only
-     * until the next decode() call, which is fine for the SAMLineParser callers that consume it
-     * before parsing the next tag.
-     */
-    private final MutableTagEntry reusableEntry = new MutableTagEntry();
-
-    private static final class MutableTagEntry implements Map.Entry<String, Object> {
-        private String key;
-        private Object value;
-
-        @Override
-        public String getKey() {
-            return key;
-        }
-
-        @Override
-        public Object getValue() {
-            return value;
-        }
-
-        @Override
-        public Object setValue(final Object o) {
-            throw new UnsupportedOperationException();
-        }
-    }
 
     /**
      * Convert in-memory representation of tag to SAM text representation.
@@ -172,21 +146,13 @@ public class TextTagCodec {
     /**
      * Convert typed tag in SAM text format (name:type:value) into tag name and Object value representation.
      *
-     * <p><b>The returned {@link Map.Entry} is shared and reused across calls.</b> Its key and
-     * value fields are overwritten by the next call to {@code decode()} on this
-     * {@link TextTagCodec} instance; callers that need to retain the result beyond a single
-     * decode call must copy the key and value out before invoking decode again. {@link
-     * Map.Entry#setValue} throws {@link UnsupportedOperationException}.</p>
-     *
      * @param tag SAM text format name:type:value tag.
      * @return Tag name as 2-character String, and tag value in appropriate class based on tag type.
      * If value is an unsigned array, then the value is a TagValueAndUnsignedArrayFlag object.
      */
     public Map.Entry<String, Object> decode(final String tag) {
         decodeValue(tag);
-        reusableEntry.key = tag.substring(0, 2);
-        reusableEntry.value = lastValue;
-        return reusableEntry;
+        return new AbstractMap.SimpleImmutableEntry<>(tag.substring(0, 2), lastValue);
     }
 
     /**

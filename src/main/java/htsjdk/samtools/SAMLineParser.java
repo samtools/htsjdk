@@ -297,7 +297,8 @@ public class SAMLineParser {
         final int rnameLen = mFieldLengths[RNAME_COL];
         String resolvedRname = null;
         int resolvedRnameIndex = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-        if (!isAsterisk(buf, rnameOff, rnameLen)) {
+        final boolean rnameSpecified = !isAsterisk(buf, rnameOff, rnameLen);
+        if (rnameSpecified) {
             String rname = SAMSequenceRecord.truncateSequenceName(decodeField(buf, rnameOff, rnameLen));
             final SAMSequenceRecord rnameRecord = mSequenceDictionary.getSequence(rname);
             if (rnameRecord != null) {
@@ -352,10 +353,19 @@ public class SAMLineParser {
                 reportErrorParsingLine("MRNM specified but flags indicate unpaired");
             }
             if (mrnmLen == 1 && buf[mrnmOff] == '=') {
-                if (resolvedRname == null) {
+                if (!rnameSpecified) {
                     reportErrorParsingLine("MRNM is '=', but RNAME is not set");
                 }
-                samRecord.setMateReferenceNameAndIndex(resolvedRname, resolvedRnameIndex);
+                if (resolvedRname != null) {
+                    // Dictionary-hit fast path: reuse the canonical name and index we already
+                    // resolved when parsing RNAME.
+                    samRecord.setMateReferenceNameAndIndex(resolvedRname, resolvedRnameIndex);
+                } else {
+                    // RNAME was specified but not in the dictionary (or was '*'); mirror the
+                    // record's current reference name via setMateReferenceName, which will
+                    // intern it consistent with how setReferenceName handled the miss.
+                    samRecord.setMateReferenceName(samRecord.getReferenceName());
+                }
             } else {
                 final String mateRName = SAMSequenceRecord.truncateSequenceName(decodeField(buf, mrnmOff, mrnmLen));
                 final SAMSequenceRecord mateRecord = mSequenceDictionary.getSequence(mateRName);

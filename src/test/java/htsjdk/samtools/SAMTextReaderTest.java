@@ -170,6 +170,25 @@ public class SAMTextReaderTest extends HtsjdkTest {
     }
 
     @Test
+    public void testMrnmEqualsWithRnameNotInDictionaryDoesNotNpe() {
+        // Regression: when RNAME is specified but the name is not present in the sequence
+        // dictionary, parsing a record with MRNM='=' must not pass a null mate reference name
+        // through to setMateReferenceNameAndIndex (which would NPE callers downstream).
+        // The mate reference name should mirror the record's reference name.
+        final SAMFileHeader header = new SAMFileHeader();
+        // Header has no @SQ records, so any RNAME lookup will miss.
+        final SAMLineParser parser =
+                new SAMLineParser(new DefaultSAMRecordFactory(), ValidationStringency.SILENT, header, null, null);
+        // FLAG 99 = paired + proper-pair + mate-reverse + first-of-pair; mate must be mapped.
+        final String line = "Read\t99\tchrUnknown\t100\t30\t50M\t=\t150\t100\t"
+                + "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\t"
+                + "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+        final SAMRecord record = parser.parseLine(line);
+        Assert.assertEquals(record.getReferenceName(), "chrUnknown");
+        Assert.assertEquals(record.getMateReferenceName(), "chrUnknown");
+    }
+
+    @Test
     public void testErrorMessageReportsCurrentLineAfterMixedParseModes() {
         // Regression test: after a successful parseLine(String) call, parseLineFromBytes on the
         // same parser must produce error messages referencing the BYTE line, not the stale
