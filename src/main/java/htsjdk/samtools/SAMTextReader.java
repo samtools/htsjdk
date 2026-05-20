@@ -23,8 +23,9 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.LineReader;
+import htsjdk.samtools.util.SamLineReader;
 import java.io.File;
 import java.io.InputStream;
 
@@ -34,7 +35,7 @@ import java.io.InputStream;
 class SAMTextReader extends SamReader.ReaderImplementation {
 
     private SAMRecordFactory samRecordFactory;
-    private BufferedLineReader mReader;
+    private LineReader mReader;
     private SAMFileHeader mFileHeader = null;
     private String mCurrentLine = null;
     private RecordIterator mIterator = null;
@@ -54,7 +55,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      */
     public SAMTextReader(
             final InputStream stream, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
-        mReader = new BufferedLineReader(stream);
+        mReader = new SamLineReader(stream);
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
         readHeader();
