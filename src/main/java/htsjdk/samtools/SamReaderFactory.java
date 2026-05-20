@@ -117,8 +117,10 @@ public abstract class SamReaderFactory {
 
     /**
      * Set this factory's {@link htsjdk.samtools.util.zip.InflaterFactory} to the provided one, then returns itself.
-     * Note: The inflaterFactory provided here is only used for BAM decompression implemented with {@link BAMFileReader},
-     * it is not used for CRAM or other formats like a gzipped SAM file.
+     * Note: The inflaterFactory provided here is used for BAM decompression by {@link BAMFileReader} and for
+     * BGZF-compressed SAM decompression by {@link BlockCompressedInputStream}; it is not used for CRAM or for
+     * plain (non-BGZF) gzipped SAM files (those go through {@link java.util.zip.GZIPInputStream}, which is
+     * not parameterized by {@link InflaterFactory}).
      */
     public abstract SamReaderFactory inflaterFactory(final InflaterFactory inflaterFactory);
 
@@ -433,8 +435,10 @@ public abstract class SamReaderFactory {
                                     this.inflaterFactory);
                         }
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
+                        // Pass the configured inflater factory through so that BGZF-compressed
+                        // SAM honors the same factory selection (e.g. libdeflate) as BAM does.
                         primitiveSamReader = new SAMTextReader(
-                                new BlockCompressedInputStream(bufferedStream),
+                                new BlockCompressedInputStream(bufferedStream, this.inflaterFactory),
                                 validationStringency,
                                 this.samRecordFactory);
                     } else if (IOUtil.isGZIPInputStream(bufferedStream)) {
