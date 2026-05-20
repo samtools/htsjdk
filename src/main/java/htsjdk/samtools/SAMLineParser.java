@@ -270,9 +270,13 @@ public class SAMLineParser {
         if (numFields == mFieldOffsets.length) {
             reportErrorParsingLine("Too many fields in SAM text record.");
         }
-        for (int i = 0; i < numFields; ++i) {
-            if (mFieldLengths[i] == 0) {
-                reportErrorParsingLine("Empty field at position " + i + " (zero-based)");
+        // In SILENT mode reportErrorParsingLine is a no-op so iterating every field just to find
+        // empty ones is pure waste; preserves observable behavior since no error would be raised.
+        if (this.validationStringency != ValidationStringency.SILENT) {
+            for (int i = 0; i < numFields; ++i) {
+                if (mFieldLengths[i] == 0) {
+                    reportErrorParsingLine("Empty field at position " + i + " (zero-based)");
+                }
             }
         }
         // createSAMRecord(header) already assigns mHeader in the SAMRecord constructor.
@@ -284,7 +288,7 @@ public class SAMLineParser {
         if (mParentReader != null) samRecord.setFileSource(new SAMFileSource(mParentReader, null));
         samRecord.setReadName(decodeField(buf, mFieldOffsets[QNAME_COL], mFieldLengths[QNAME_COL]));
 
-        final int flags = parseFlag(decodeField(buf, mFieldOffsets[FLAG_COL], mFieldLengths[FLAG_COL]), "FLAG");
+        final int flags = parseFlagFromBytes(buf, mFieldOffsets[FLAG_COL], mFieldLengths[FLAG_COL]);
         samRecord.setFlags(flags);
 
         final int rnameOff = mFieldOffsets[RNAME_COL];
@@ -554,6 +558,45 @@ public class SAMLineParser {
             throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
         }
         return (int) signed;
+    }
+
+    /**
+     * Parse the FLAG field. Spec says FLAG is an unsigned 16-bit integer in decimal, so the
+     * vast majority of inputs are short decimal strings. Fast-path that case directly off the
+     * byte range to skip the String allocation and {@link SamFlagField} format-detection work.
+     * Non-decimal formats (hex prefix, octal prefix, named flags, custom format set via
+     * {@link #withSamFlagField}) fall back to the existing String-based path.
+     *
+     * <p>The fast path only fires when the first byte is a non-zero digit; this matches
+     * {@link SamFlagField#of}'s format detection (a leading '0' followed by more digits is
+     * interpreted as octal, "0x..." as hex, anything non-digit as named-flag string format).</p>
+     */
+    private int parseFlagFromBytes(final byte[] buf, final int off, final int len) {
+        if (samFlagField.isEmpty() && len > 0) {
+            final byte first = buf[off];
+            // Single '0' is fine (decimal zero). Leading '0' followed by more characters is octal
+            // per SamFlagField.of, so defer to the String path.
+            if (first >= '1' && first <= '9' || (first == '0' && len == 1)) {
+                long acc = 0;
+                boolean fast = true;
+                for (int i = 0; i < len; i++) {
+                    final byte b = buf[off + i];
+                    if (b < '0' || b > '9') {
+                        fast = false;
+                        break;
+                    }
+                    acc = acc * 10 + (b - '0');
+                    if (acc > 0xFFFFFFFFL) {
+                        fast = false;
+                        break;
+                    }
+                }
+                if (fast) {
+                    return (int) acc;
+                }
+            }
+        }
+        return parseFlag(decodeField(buf, off, len), "FLAG");
     }
 
     private void validateReadBases(final String bases) {
