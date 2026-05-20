@@ -26,7 +26,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.StringUtil;
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -318,7 +317,11 @@ public class SAMLineParser {
         samRecord.setMateAlignmentStart(matePos);
         samRecord.setInferredInsertSize(isize);
         if (!mFields[SEQ_COL].equals("*")) {
-            validateReadBases(mFields[SEQ_COL]);
+            // In SILENT mode reportErrorParsingLine is a no-op so the per-base scan is pure waste;
+            // skipping it preserves observable behavior.
+            if (this.validationStringency != ValidationStringency.SILENT) {
+                validateReadBases(mFields[SEQ_COL]);
+            }
             samRecord.setReadString(mFields[SEQ_COL]);
         } else {
             samRecord.setReadBases(SAMRecord.NULL_SEQUENCE);
@@ -327,7 +330,9 @@ public class SAMLineParser {
             if (samRecord.getReadBases() == SAMRecord.NULL_SEQUENCE) {
                 reportErrorParsingLine("QUAL should not be specified if SEQ is not specified");
             }
-            if (samRecord.getReadString().length() != mFields[QUAL_COL].length()) {
+            // Use the byte[] length directly rather than getReadString().length(), which would
+            // allocate a fresh String from the bases byte[] just to discard it.
+            if (samRecord.getReadLength() != mFields[QUAL_COL].length()) {
                 reportErrorParsingLine("length(QUAL) != length(SEQ)");
             }
             samRecord.setBaseQualityString(mFields[QUAL_COL]);
@@ -409,23 +414,22 @@ public class SAMLineParser {
     }
 
     private void parseTag(final SAMRecord samRecord, final String tag) {
-        Map.Entry<String, Object> entry = null;
+        final Object value;
         try {
-            entry = tagCodec.decode(tag);
+            tagCodec.decodeValue(tag);
+            value = tagCodec.getLastValue();
         } catch (SAMFormatException e) {
             reportErrorParsingLine(e);
+            return;
         }
-        if (entry != null) {
-            if (entry.getValue() instanceof TagValueAndUnsignedArrayFlag) {
-                final TagValueAndUnsignedArrayFlag valueAndFlag = (TagValueAndUnsignedArrayFlag) entry.getValue();
-                if (valueAndFlag.isUnsignedArray) {
-                    samRecord.setUnsignedArrayAttribute(entry.getKey(), valueAndFlag.value);
-                } else {
-                    samRecord.setAttribute(entry.getKey(), valueAndFlag.value);
-                }
-            } else {
-                samRecord.setAttribute(entry.getKey(), entry.getValue());
-            }
+        // The tag layout is fixed at KEY[2]:T:VALUE so we can compute the binary tag here without
+        // allocating a 2-character substring just to throw it away inside SAMTag.makeBinaryTag.
+        final short binaryTag = (short) (tag.charAt(1) << 8 | tag.charAt(0));
+        if (value instanceof TagValueAndUnsignedArrayFlag) {
+            final TagValueAndUnsignedArrayFlag valueAndFlag = (TagValueAndUnsignedArrayFlag) value;
+            samRecord.setAttribute(binaryTag, valueAndFlag.value, valueAndFlag.isUnsignedArray);
+        } else {
+            samRecord.setAttribute(binaryTag, value);
         }
     }
 

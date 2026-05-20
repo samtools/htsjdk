@@ -302,6 +302,33 @@ public final class SAMUtils {
     }
 
     /**
+     * Fused decode of an ASCII read-bases String into a canonical byte[] (upper-cased,
+     * '.' replaced with 'N'). Single pass and a single allocation, avoiding the separate
+     * {@code stringToBytes} + {@code normalizeBases} traversals used by callers that go
+     * via String.
+     */
+    @SuppressWarnings("deprecation")
+    static byte[] readStringToNormalizedBases(final String value) {
+        if (value == null) {
+            return null;
+        }
+        final int length = value.length();
+        final byte[] bases = new byte[length];
+        value.getBytes(0, length, bases, 0);
+        for (int i = 0; i < length; ++i) {
+            byte b = bases[i];
+            if (b >= 'a' && b <= 'z') {
+                b = (byte) (b - ('a' - 'A'));
+            }
+            if (b == '.') {
+                b = 'N';
+            }
+            bases[i] = b;
+        }
+        return bases;
+    }
+
+    /**
      * Convert bases in place into canonical form, upper case, and with no-call represented as N.
      *
      * @param bases byte array of bases to "normalize", in place.
@@ -368,14 +395,23 @@ public final class SAMUtils {
      * @param fastq Phred scores in FASTQ printable ASCII format.
      * @return byte array of binary phred scores in which each byte corresponds to a character in the input string.
      */
+    @SuppressWarnings("deprecation")
     public static byte[] fastqToPhred(final String fastq) {
         if (fastq == null) {
             return null;
         }
         final int length = fastq.length();
         final byte[] scores = new byte[length];
+        // Bulk-copy ASCII characters into the byte[] (FASTQ is single-byte ASCII), then subtract
+        // the FASTQ offset in a tight loop. This avoids the per-character charAt() cost and the
+        // per-character method dispatch through fastqToPhred(char).
+        fastq.getBytes(0, length, scores, 0);
         for (int i = 0; i < length; i++) {
-            scores[i] = (byte) fastqToPhred(fastq.charAt(i));
+            final int v = (scores[i] & 0xff) - 33;
+            if (v < 0 || v > 93) {
+                throw new IllegalArgumentException("Invalid fastq character: " + (char) (scores[i] & 0xff));
+            }
+            scores[i] = (byte) v;
         }
         return scores;
     }

@@ -51,6 +51,33 @@ public class TextTagCodec {
     private final String[] fields = new String[NUM_TAG_FIELDS];
 
     /**
+     * Reusable Map.Entry returned by {@link #decode}. The decode() contract makes it valid only
+     * until the next decode() call, which is fine for the SAMLineParser callers that consume it
+     * before parsing the next tag.
+     */
+    private final MutableTagEntry reusableEntry = new MutableTagEntry();
+
+    private static final class MutableTagEntry implements Map.Entry<String, Object> {
+        private String key;
+        private Object value;
+
+        @Override
+        public String getKey() {
+            return key;
+        }
+
+        @Override
+        public Object getValue() {
+            return value;
+        }
+
+        @Override
+        public Object setValue(final Object o) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
      * Convert in-memory representation of tag to SAM text representation.
      * @param tagName Two-character tag name.
      * @param value Tag value as appropriate Object subclass.
@@ -148,72 +175,85 @@ public class TextTagCodec {
      * If value is an unsigned array, then the value is a TagValueAndUnsignedArrayFlag object.
      */
     public Map.Entry<String, Object> decode(final String tag) {
-        final int numFields = StringUtil.splitConcatenateExcessTokens(tag, fields, ':');
-        if (numFields != TextTagCodec.NUM_TAG_FIELDS && numFields != TextTagCodec.NUM_TAG_FIELDS - 1) {
-            throw new SAMFormatException("Not enough fields in tag '" + tag + "'");
-        }
-        final String key = fields[0];
-        final String type = fields[1];
-        final String stringVal = numFields == TextTagCodec.NUM_TAG_FIELDS ? fields[2] : "";
-        final Object val = convertStringToObject(type, stringVal);
-        return new Map.Entry<String, Object>() {
-            @Override
-            public String getKey() {
-                return key;
-            }
-
-            @Override
-            public Object getValue() {
-                return val;
-            }
-
-            @Override
-            public Object setValue(final Object o) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        decodeValue(tag);
+        reusableEntry.key = tag.substring(0, 2);
+        reusableEntry.value = lastValue;
+        return reusableEntry;
     }
 
-    private static Object convertStringToObject(final String type, final String stringVal) {
-        if (type.equals("Z")) {
-            return stringVal;
-        } else if (type.equals("A")) {
-            if (stringVal.length() != 1) {
-                throw new SAMFormatException("Tag of type A should have a single-character value");
-            }
-            return stringVal.charAt(0);
-        } else if (type.equals("i")) {
-            final long lValue;
-            try {
-                lValue = Long.parseLong(stringVal);
-            } catch (NumberFormatException e) {
-                throw new SAMFormatException("Tag of type i should have signed decimal value");
-            }
+    /**
+     * Holds the most recently-decoded value when {@link #decodeValue} is used to avoid
+     * the {@link Map.Entry} allocation in {@link #decode}. This is the value associated
+     * with the most recent {@link #decodeValue} call.
+     */
+    private Object lastValue;
 
-            if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
-                return (int) lValue;
-            } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
-                return lValue;
-            } else {
-                throw new SAMFormatException(
-                        "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
+    /**
+     * @return the value decoded by the most recent {@link #decodeValue} call.
+     */
+    Object getLastValue() {
+        return lastValue;
+    }
+
+    /**
+     * Decode a tag string ({@code KEY:T:VALUE}) and store the decoded value in {@link #lastValue},
+     * to be retrieved by {@link #getLastValue}. Faster than {@link #decode} because it skips the
+     * 2-character key substring and the {@link Map.Entry} bookkeeping; the caller is responsible
+     * for computing the binary tag directly from the input String.
+     */
+    void decodeValue(final String tag) {
+        // Tags follow the fixed layout KEY:T:VALUE where KEY is 2 chars and T is 1 char,
+        // so a direct character index walk is cheaper than splitting into a String[].
+        if (tag.length() < 4 || tag.charAt(2) != ':' || (tag.length() > 4 && tag.charAt(4) != ':')) {
+            throw new SAMFormatException("Malformed tag '" + tag + "'");
+        }
+        final char typeChar = tag.charAt(3);
+        final String stringVal = tag.length() == 4 ? "" : tag.substring(5);
+        lastValue = convertStringToObject(typeChar, stringVal);
+    }
+
+    private static Object convertStringToObject(final char type, final String stringVal) {
+        switch (type) {
+            case 'Z':
+                return stringVal;
+            case 'A':
+                if (stringVal.length() != 1) {
+                    throw new SAMFormatException("Tag of type A should have a single-character value");
+                }
+                return stringVal.charAt(0);
+            case 'i': {
+                final long lValue;
+                try {
+                    lValue = Long.parseLong(stringVal);
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException("Tag of type i should have signed decimal value");
+                }
+                if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
+                    return (int) lValue;
+                } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+                    return lValue;
+                } else {
+                    throw new SAMFormatException(
+                            "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
+                }
             }
-        } else if (type.equals("f")) {
-            try {
-                return Float.parseFloat(stringVal);
-            } catch (NumberFormatException e) {
-                throw new SAMFormatException("Tag of type f should have single-precision floating point value");
-            }
-        } else if (type.equals("H")) {
-            try {
-                return StringUtil.hexStringToBytes(stringVal);
-            } catch (NumberFormatException e) {
-                throw new SAMFormatException("Tag of type H should have valid hex string with even number of digits");
-            }
-        } else if (type.equals("B")) {
-            return covertStringArrayToObject(stringVal);
-        } else {
-            throw new SAMFormatException("Unrecognized tag type: " + type);
+            case 'f':
+                try {
+                    return Float.parseFloat(stringVal);
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException("Tag of type f should have single-precision floating point value");
+                }
+            case 'H':
+                try {
+                    return StringUtil.hexStringToBytes(stringVal);
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException(
+                            "Tag of type H should have valid hex string with even number of digits");
+                }
+            case 'B':
+                return covertStringArrayToObject(stringVal);
+            default:
+                throw new SAMFormatException("Unrecognized tag type: " + type);
         }
     }
 
