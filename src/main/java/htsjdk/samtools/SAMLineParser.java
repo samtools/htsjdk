@@ -54,20 +54,21 @@ public class SAMLineParser {
     private static final int NUM_REQUIRED_FIELDS = 11;
 
     /**
-     * Allocate this once rather than for every line as a performance
-     * optimization. The size is arbitrary -- merely large enough to handle the
-     * maximum number of fields we might expect from a reasonable SAM file.
+     * Maximum number of tab-separated fields we'll record from a single line. Allocate the
+     * scratch arrays once at construction time rather than per-line. The size is arbitrary --
+     * merely large enough to handle the maximum number of fields any reasonable SAM file should
+     * contain (11 mandatory + many optional tags).
      */
-    private final String[] mFields = new String[10000];
+    private static final int MAX_FIELDS = 10000;
 
     /**
      * Scratch arrays for byte-based parsing. Each pair (mFieldOffsets[i], mFieldLengths[i]) gives
-     * the position and length of field i within the current line's byte buffer. Allocated once and
-     * reused across calls; matches the size of {@link #mFields} so the same field-count limits apply.
+     * the position and length of field i within the current line's byte buffer. Allocated once
+     * and reused across calls to {@link #parseLineFromBytes}.
      */
-    private final int[] mFieldOffsets = new int[10000];
+    private final int[] mFieldOffsets = new int[MAX_FIELDS];
 
-    private final int[] mFieldLengths = new int[10000];
+    private final int[] mFieldLengths = new int[MAX_FIELDS];
 
     /**
      * Add information about the origin (reader and position) to SAM records.
@@ -180,16 +181,6 @@ public class SAMLineParser {
         if (samFlagField == null) throw new IllegalArgumentException("Sam flag field was null");
         this.samFlagField = Optional.of(samFlagField);
         return this;
-    }
-
-    private int parseInt(final String s, final String fieldName) {
-        final int ret;
-        try {
-            ret = Integer.parseInt(s);
-        } catch (NumberFormatException e) {
-            throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
-        }
-        return ret;
     }
 
     private int parseFlag(final String s, final String fieldName) {
@@ -523,6 +514,12 @@ public class SAMLineParser {
         return new String(buf, off, len, StandardCharsets.ISO_8859_1);
     }
 
+    /**
+     * Parse a signed decimal integer directly from {@code buf[off..off+len)} without allocating a
+     * {@link String}. Accepts an optional leading {@code +} or {@code -}; the value must fit in a
+     * signed 32-bit integer. Reports a fatal error if any non-digit appears or the value
+     * over/underflows. {@code fieldName} is used to construct the error message.
+     */
     private int parseIntFromBytes(final byte[] buf, final int off, final int len, final String fieldName) {
         if (len == 0) {
             throw reportFatalErrorParsingLine("Non-numeric value in " + fieldName + " column");
@@ -599,21 +596,11 @@ public class SAMLineParser {
         return parseFlag(decodeField(buf, off, len), "FLAG");
     }
 
-    private void validateReadBases(final String bases) {
-        /*
-         * Using regex is slow, so check for invalid characters via
-         * isValidReadBase(), which hopefully the JIT will optimize. if
-         * (!VALID_BASES.matcher(bases).matches()) {
-         * reportErrorParsingLine("Invalid character in read bases"); }
-         */
-        for (int i = 0; i < bases.length(); ++i) {
-            if (!isValidReadBase(bases.charAt(i))) {
-                reportErrorParsingLine("Invalid character in read bases");
-                return;
-            }
-        }
-    }
-
+    /**
+     * Scan the SEQ field for any byte that isn't a valid IUPAC base character. Reports (or
+     * throws) on the first invalid base, depending on validation stringency; using a switch is
+     * substantially faster than a regex match.
+     */
     private void validateReadBases(final byte[] buf, final int off, final int len) {
         for (int i = 0; i < len; ++i) {
             if (!isValidReadBase((char) (buf[off + i] & 0xff))) {
@@ -663,26 +650,12 @@ public class SAMLineParser {
         }
     }
 
-    private void parseTag(final SAMRecord samRecord, final String tag) {
-        final Object value;
-        try {
-            tagCodec.decodeValue(tag);
-            value = tagCodec.getLastValue();
-        } catch (SAMFormatException e) {
-            reportErrorParsingLine(e);
-            return;
-        }
-        // The tag layout is fixed at KEY[2]:T:VALUE so we can compute the binary tag here without
-        // allocating a 2-character substring just to throw it away inside SAMTag.makeBinaryTag.
-        final short binaryTag = (short) (tag.charAt(1) << 8 | tag.charAt(0));
-        if (value instanceof TagValueAndUnsignedArrayFlag) {
-            final TagValueAndUnsignedArrayFlag valueAndFlag = (TagValueAndUnsignedArrayFlag) value;
-            samRecord.setAttribute(binaryTag, valueAndFlag.value, valueAndFlag.isUnsignedArray);
-        } else {
-            samRecord.setAttribute(binaryTag, value);
-        }
-    }
-
+    /**
+     * Parse one {@code KEY:T:VALUE} optional tag from a byte range and attach the result to
+     * {@code samRecord}. Decodes the value via {@link TextTagCodec#decodeValue(byte[], int, int)}
+     * and computes the binary tag short directly from the two key bytes (avoiding a 2-character
+     * String allocation that {@code SAMTag.makeBinaryTag} would otherwise force).
+     */
     private void parseTag(final SAMRecord samRecord, final byte[] buf, final int off, final int len) {
         if (len < 2) {
             reportErrorParsingLine("Malformed tag");

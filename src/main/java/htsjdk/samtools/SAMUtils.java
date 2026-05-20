@@ -423,12 +423,12 @@ public final class SAMUtils {
         final int length = fastq.length();
         final byte[] scores = new byte[length];
         // Bulk-copy ASCII characters into the byte[] (FASTQ is single-byte ASCII), then subtract
-        // the FASTQ offset in a tight loop. This avoids the per-character charAt() cost and the
-        // per-character method dispatch through fastqToPhred(char).
+        // the FASTQ-33 offset in a tight loop. This avoids the per-character charAt() cost and
+        // the per-character method dispatch through fastqToPhred(char).
         fastq.getBytes(0, length, scores, 0);
         for (int i = 0; i < length; i++) {
             final int v = (scores[i] & 0xff) - 33;
-            if (v < 0 || v > 93) {
+            if (v < 0 || v > MAX_PHRED_SCORE) {
                 throw new IllegalArgumentException("Invalid fastq character: " + (char) (scores[i] & 0xff));
             }
             scores[i] = (byte) v;
@@ -437,15 +437,15 @@ public final class SAMUtils {
     }
 
     /**
-     * Convert a byte range holding printable ASCII FASTQ phred scores into binary phred scores.
-     * Skips the round-trip through {@link String} for callers that already have the qualities
-     * as bytes.
+     * Convert a byte range holding printable ASCII FASTQ phred scores (Sanger encoding, value +
+     * 33) into binary phred scores. Skips the round-trip through {@link String} for callers that
+     * already have the qualities as bytes.
      */
     public static byte[] fastqToPhred(final byte[] src, final int off, final int len) {
         final byte[] scores = new byte[len];
         for (int i = 0; i < len; i++) {
             final int v = (src[off + i] & 0xff) - 33;
-            if (v < 0 || v > 93) {
+            if (v < 0 || v > MAX_PHRED_SCORE) {
                 throw new IllegalArgumentException("Invalid fastq character: " + (char) (src[off + i] & 0xff));
             }
             scores[i] = (byte) v;

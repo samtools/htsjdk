@@ -259,4 +259,127 @@ public class SamLineReaderTest extends HtsjdkTest {
             Assert.assertNull(reader.readLine());
         }
     }
+
+    // ----- byte-based API tests (readNextLine + getLineBuffer / getLineOffset / getLineLength) ---
+
+    private static String currentLineAsString(final SamLineReader reader) {
+        return new String(
+                reader.getLineBuffer(), reader.getLineOffset(), reader.getLineLength(), StandardCharsets.ISO_8859_1);
+    }
+
+    @Test
+    public void testReadNextLineReturnsTrueWhileLinesAvailable() {
+        try (final SamLineReader reader = readerFrom("alpha\nbeta\ngamma\n")) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "alpha");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "beta");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "gamma");
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testReadNextLineOnEmptyInput() {
+        try (final SamLineReader reader = readerFrom("")) {
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testReadNextLineExposesLineWithinMainBuffer() {
+        // When the whole line fits in the main buffer, getLineBuffer() should return the same
+        // byte[] each call (the main internal buffer) -- the fast path that avoids overflow.
+        try (final SamLineReader reader = readerFrom("first\nsecond\n")) {
+            Assert.assertTrue(reader.readNextLine());
+            final byte[] firstBuf = reader.getLineBuffer();
+            Assert.assertEquals(currentLineAsString(reader), "first");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertSame(reader.getLineBuffer(), firstBuf, "expected the same main buffer on the fast path");
+            Assert.assertEquals(currentLineAsString(reader), "second");
+        }
+    }
+
+    @Test
+    public void testReadNextLineSpillsToOverflowWhenLineCrossesBufferBoundary() {
+        // Force the line to straddle two fills by using a buffer smaller than the line.
+        final String line = "ABCDEFGHIJ";
+        try (final SamLineReader reader = readerFrom(line + "\n", 4)) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), line);
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testReadNextLineWithCrLfTerminator() {
+        try (final SamLineReader reader = readerFrom("hello\r\nworld\r\n")) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "hello");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "world");
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testReadNextLineCrLfSplitAcrossBufferBoundary() {
+        // Buffer size 5 means the first fill holds "ABCD\r", and the \n shows up in the next fill.
+        try (final SamLineReader reader = readerFrom("ABCD\r\nnext\n", 5)) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "ABCD");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "next");
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testReadNextLineEmptyLines() {
+        try (final SamLineReader reader = readerFrom("\nx\n\n")) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getLineLength(), 0);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "x");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getLineLength(), 0);
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testReadNextLineLastLineWithoutTerminator() {
+        try (final SamLineReader reader = readerFrom("first\nlast")) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "first");
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "last");
+            Assert.assertFalse(reader.readNextLine());
+        }
+    }
+
+    @Test
+    public void testGetLineNumberIncrementsWithByteApi() {
+        try (final SamLineReader reader = readerFrom("a\nb\nc\n")) {
+            Assert.assertEquals(reader.getLineNumber(), 0);
+            reader.readNextLine();
+            Assert.assertEquals(reader.getLineNumber(), 1);
+            reader.readNextLine();
+            Assert.assertEquals(reader.getLineNumber(), 2);
+            reader.readNextLine();
+            Assert.assertEquals(reader.getLineNumber(), 3);
+        }
+    }
+
+    @Test
+    public void testReadNextLineAndReadLineCanBeInterleaved() {
+        // The two APIs share state, so calling readLine() should still work after readNextLine().
+        try (final SamLineReader reader = readerFrom("byte-api\nstring-api\n")) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(currentLineAsString(reader), "byte-api");
+            Assert.assertEquals(reader.readLine(), "string-api");
+            Assert.assertNull(reader.readLine());
+        }
+    }
 }

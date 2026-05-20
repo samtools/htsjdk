@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2026 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package htsjdk.samtools.util;
 
 import java.io.IOException;
@@ -37,13 +60,23 @@ public class SamLineReader implements LineReader {
     private int currentLineOff;
     private int currentLineLen;
 
+    /**
+     * Constructs a {@link SamLineReader} over {@code in} using a default 64KB buffer.
+     */
     public SamLineReader(final InputStream in) {
         this(in, DEFAULT_BUFFER_SIZE);
     }
 
+    /**
+     * Constructs a {@link SamLineReader} over {@code in} with an explicit internal buffer size.
+     * Buffer sizes smaller than the longest line in the input still work -- the reader will just
+     * spill onto its overflow buffer -- so this constructor is primarily useful for tests that
+     * want to exercise buffer-boundary code paths. The buffer size is clamped to a minimum of 1
+     * to avoid degenerate 0-byte reads.
+     */
     public SamLineReader(final InputStream in, final int bufferSize) {
         this.in = in;
-        this.buf = new byte[Math.max(bufferSize, 64)];
+        this.buf = new byte[Math.max(bufferSize, 1)];
     }
 
     /**
@@ -72,24 +105,35 @@ public class SamLineReader implements LineReader {
             }
 
             if (terminatorPos >= 0) {
+                final int chunkStart = pos;
                 final int chunkLen = terminatorPos - pos;
-                if (overflowLen == 0) {
-                    // Fast path: line is wholly within the main buffer; expose buf+offset directly
-                    currentLineBuf = buf;
-                    currentLineOff = pos;
-                    currentLineLen = chunkLen;
-                } else {
-                    // Line spans buffer fills; consolidate trailing bytes into the overflow buffer
-                    appendToOverflow(buf, pos, chunkLen);
+                final byte terminator = buf[terminatorPos];
+                pos = terminatorPos + 1;
+
+                // If the terminator is '\r' and it is the very last byte of the current fill,
+                // we need to refill before we can tell whether the next byte is the '\n' of a
+                // '\r\n' pair. That refill compacts/overwrites the main buffer, so we must
+                // copy the line bytes into the overflow buffer first to keep them stable.
+                final boolean needLookaheadFill = (terminator == '\r' && pos >= limit);
+                if (needLookaheadFill || overflowLen > 0) {
+                    appendToOverflow(buf, chunkStart, chunkLen);
+                }
+
+                if (terminator == '\r') {
+                    if (pos >= limit) fill();
+                    if (pos < limit && buf[pos] == '\n') pos++;
+                }
+
+                if (overflowLen > 0) {
                     currentLineBuf = overflow;
                     currentLineOff = 0;
                     currentLineLen = overflowLen;
-                }
-
-                pos = terminatorPos + 1;
-                if (buf[terminatorPos] == '\r') {
-                    if (pos >= limit) fill();
-                    if (pos < limit && buf[pos] == '\n') pos++;
+                } else {
+                    // Fast path: the entire line is wholly within the main buffer and the buffer
+                    // has not been mutated since we located it; expose buf + offset directly.
+                    currentLineBuf = buf;
+                    currentLineOff = chunkStart;
+                    currentLineLen = chunkLen;
                 }
 
                 lineNumber++;
