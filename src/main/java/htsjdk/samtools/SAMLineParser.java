@@ -236,10 +236,13 @@ public class SAMLineParser {
                 reportErrorParsingLine("Empty field at position " + i + " (zero-based)");
             }
         }
+        // createSAMRecord(header) already assigns mHeader in the SAMRecord constructor.
+        // Calling setHeader() again would trigger setReferenceName("*") and
+        // setMateReferenceName("*") which each do a dictionary HashMap lookup, only for
+        // parseLine to immediately overwrite both names and indices below.
         final SAMRecord samRecord = samRecordFactory.createSAMRecord(this.mFileHeader);
         samRecord.setValidationStringency(this.validationStringency);
         if (mParentReader != null) samRecord.setFileSource(new SAMFileSource(mParentReader, null));
-        samRecord.setHeader(this.mFileHeader);
         samRecord.setReadName(mFields[QNAME_COL]);
 
         final int flags = parseFlag(mFields[FLAG_COL], "FLAG");
