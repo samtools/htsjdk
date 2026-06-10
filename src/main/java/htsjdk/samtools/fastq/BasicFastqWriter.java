@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.Flushable;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 
 /**
  * In general FastqWriterFactory should be used so that AsyncFastqWriter can be enabled, but there are some
@@ -38,16 +39,32 @@ public class BasicFastqWriter implements FastqWriter, Flushable {
     private final String path;
     private final PrintStream writer;
 
+    /**
+     * @deprecated since 6/2026, use {@link #BasicFastqWriter(Path)} instead.
+     */
+    @Deprecated
     public BasicFastqWriter(final File file) {
-        this(file, false);
+        this(file == null ? null : file.toPath());
     }
 
+    /**
+     * @deprecated since 6/2026, use {@link #BasicFastqWriter(Path, boolean)} instead.
+     */
+    @Deprecated
     public BasicFastqWriter(final File file, final boolean createMd5) {
-        this(file, new PrintStream(IOUtil.maybeBufferOutputStream(maybeMd5Wrap(file, createMd5))));
+        this(file == null ? null : file.toPath(), createMd5);
     }
 
-    private BasicFastqWriter(final File file, final PrintStream writer) {
-        this.path = (file != null ? file.getAbsolutePath() : "");
+    public BasicFastqWriter(final Path path) {
+        this(path, false);
+    }
+
+    public BasicFastqWriter(final Path path, final boolean createMd5) {
+        this(path, new PrintStream(IOUtil.maybeBufferOutputStream(maybeMd5Wrap(path, createMd5))));
+    }
+
+    private BasicFastqWriter(final Path path, final PrintStream writer) {
+        this.path = (path != null ? path.toAbsolutePath().toString() : "");
         this.writer = writer;
     }
 
@@ -81,11 +98,11 @@ public class BasicFastqWriter implements FastqWriter, Flushable {
         writer.close();
     }
 
-    private static OutputStream maybeMd5Wrap(final File file, final boolean createMd5) {
+    private static OutputStream maybeMd5Wrap(final Path path, final boolean createMd5) {
         if (createMd5) {
-            return IOUtil.openFileForMd5CalculatingWriting(file);
+            return IOUtil.openFileForMd5CalculatingWriting(path);
         } else {
-            return IOUtil.openFileForWriting(file);
+            return IOUtil.openFileForWriting(path);
         }
     }
 }

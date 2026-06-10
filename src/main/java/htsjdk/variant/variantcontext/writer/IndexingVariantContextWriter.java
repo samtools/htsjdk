@@ -72,7 +72,9 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param output    the output stream to write to
      * @param refDict   the reference dictionary
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
+     * @deprecated since 06/2025 use {@link #IndexingVariantContextWriter(String, Path, OutputStream, SAMSequenceDictionary, boolean)} instead
      */
+    @Deprecated
     protected IndexingVariantContextWriter(
             final String name,
             final File location,
@@ -113,7 +115,9 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param refDict   the reference dictionary
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      * @param idxCreator    the custom index creator.  NOTE: must be initialized
+     * @deprecated since 06/2025 use {@link #IndexingVariantContextWriter(String, Path, OutputStream, SAMSequenceDictionary, boolean, IndexCreator)} instead
      */
+    @Deprecated
     protected IndexingVariantContextWriter(
             final String name,
             final File location,
@@ -225,7 +229,9 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param location
      * @param stream
      * @return
+     * @deprecated since 06/2025 use {@link #writerName(Path, OutputStream)} instead
      */
+    @Deprecated
     protected static final String writerName(final File location, final OutputStream stream) {
         return writerName(IOUtil.toPath(location), stream);
     }

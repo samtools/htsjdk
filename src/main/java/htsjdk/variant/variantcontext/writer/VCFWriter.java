@@ -83,6 +83,10 @@ class VCFWriter extends IndexingVariantContextWriter {
     /* Wrapping in a {@link BufferedWriter} avoids frequent conversions with individual writes to OutputStreamWriter. */
     private final Writer writer = new BufferedWriter(new OutputStreamWriter(lineBuffer, VCFEncoder.VCF_CHARSET));
 
+    /**
+     * @deprecated since 5.0; use the {@link Path}-based constructor instead.
+     */
+    @Deprecated
     public VCFWriter(
             final File location,
             final OutputStream output,
@@ -115,6 +119,10 @@ class VCFWriter extends IndexingVariantContextWriter {
         this.writeFullFormatField = writeFullFormatField;
     }
 
+    /**
+     * @deprecated since 5.0; use the {@link Path}-based constructor instead.
+     */
+    @Deprecated
     public VCFWriter(
             final File location,
             final OutputStream output,

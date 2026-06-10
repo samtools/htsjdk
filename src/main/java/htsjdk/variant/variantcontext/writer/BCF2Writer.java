@@ -129,6 +129,11 @@ class BCF2Writer extends IndexingVariantContextWriter {
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
 
+    /**
+     * @deprecated since 06/2024 use the {@link Path}-based constructor
+     *     {@link #BCF2Writer(Path, OutputStream, SAMSequenceDictionary, boolean, boolean)} instead.
+     */
+    @Deprecated
     public BCF2Writer(
             final File location,
             final OutputStream output,
@@ -149,6 +154,11 @@ class BCF2Writer extends IndexingVariantContextWriter {
         this.doNotWriteGenotypes = doNotWriteGenotypes;
     }
 
+    /**
+     * @deprecated since 06/2024 use the {@link Path}-based constructor
+     *     {@link #BCF2Writer(Path, OutputStream, SAMSequenceDictionary, IndexCreator, boolean, boolean)} instead.
+     */
+    @Deprecated
     public BCF2Writer(
             final File location,
             final OutputStream output,

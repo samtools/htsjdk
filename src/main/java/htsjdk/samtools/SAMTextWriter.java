@@ -26,11 +26,12 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.AsciiWriter;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Writer for text-format SAM files.
@@ -40,7 +41,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
 
     private final Writer out;
     // For error reporting only.
-    private final File file;
+    private final Path path;
     private final TextTagCodec tagCodec = new TextTagCodec();
 
     private final SamFlagField samFlagFieldOutput;
@@ -54,11 +55,21 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     }
 
     /**
+     * Constructs a SAMTextWriter that writes to a Path.
+     * @param path Where to write the output.
+     */
+    public SAMTextWriter(final Path path) {
+        this(path, SamFlagField.DECIMAL);
+    }
+
+    /**
      * Constructs a SAMTextWriter that writes to a File.
      * @param file Where to write the output.
+     * @deprecated since 06/2025 Use {@link #SAMTextWriter(Path)} instead.
      */
+    @Deprecated
     public SAMTextWriter(final File file) {
-        this(file, SamFlagField.DECIMAL);
+        this(file.toPath());
     }
 
     /**
@@ -84,23 +95,33 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     public SAMTextWriter(final Writer out, final SamFlagField samFlagFieldOutput) {
         if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
         this.out = out;
-        this.file = null;
+        this.path = null;
+        this.samFlagFieldOutput = samFlagFieldOutput;
+    }
+
+    /**
+     * Constructs a SAMTextWriter that writes to a Path.
+     * @param path Where to write the output.
+     */
+    public SAMTextWriter(final Path path, final SamFlagField samFlagFieldOutput) {
+        if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
+        try {
+            this.path = path;
+            this.out = new AsciiWriter(Files.newOutputStream(path));
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
         this.samFlagFieldOutput = samFlagFieldOutput;
     }
 
     /**
      * Constructs a SAMTextWriter that writes to a File.
      * @param file Where to write the output.
+     * @deprecated since 06/2025 Use {@link #SAMTextWriter(Path, SamFlagField)} instead.
      */
+    @Deprecated
     public SAMTextWriter(final File file, final SamFlagField samFlagFieldOutput) {
-        if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
-        try {
-            this.file = file;
-            this.out = new AsciiWriter(new FileOutputStream(file));
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-        this.samFlagFieldOutput = samFlagFieldOutput;
+        this(file.toPath(), samFlagFieldOutput);
     }
 
     /**
@@ -110,7 +131,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     public SAMTextWriter(final OutputStream stream, final SamFlagField samFlagFieldOutput) {
         if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
-        this.file = null;
+        this.path = null;
         this.out = new AsciiWriter(stream);
         this.samFlagFieldOutput = samFlagFieldOutput;
     }
@@ -224,9 +245,9 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     @Override
     public String getFilename() {
-        if (file == null) {
+        if (path == null) {
             return null;
         }
-        return file.getAbsolutePath();
+        return path.toAbsolutePath().toString();
     }
 }

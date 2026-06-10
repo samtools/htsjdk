@@ -115,7 +115,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(Path, int, DeflaterFactory)} to specify a custom factory.
      */
     public BlockCompressedOutputStream(final String filename) {
         this(filename, defaultCompressionLevel);
@@ -124,36 +124,65 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(Path, int, DeflaterFactory)} to specify a custom factory.
+     *
+     * @deprecated since 5.0.0 Use {@link #BlockCompressedOutputStream(Path)} instead.
      */
+    @Deprecated
     public BlockCompressedOutputStream(final File file) {
-        this(file, defaultCompressionLevel);
+        this(IOUtil.toPath(file));
     }
 
     /**
-     * Prepare to compress at the given compression level
+     * Uses default compression level, which is 5 unless changed by setCompressionLevel
+     * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
+     * Use {@link #BlockCompressedOutputStream(Path, int, DeflaterFactory)} to specify a custom factory.
+     */
+    public BlockCompressedOutputStream(final Path path) {
+        this(path, defaultCompressionLevel);
+    }
+
+    /**
+     * Prepare to compress at the given compression level. The {@code filename} is resolved to a {@link Path} using
+     * {@link IOUtil#getPath(String)}, so scheme-bearing identifiers (e.g. {@code file:}, {@code gs:}) are honored.
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
      * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      */
     public BlockCompressedOutputStream(final String filename, final int compressionLevel) {
-        this(new File(filename), compressionLevel);
+        this(stringToPath(filename), compressionLevel);
     }
 
     /**
      * Prepare to compress at the given compression level
      * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(Path, int, DeflaterFactory)} to specify a custom factory.
+     *
+     * @deprecated since 5.0.0 Use {@link #BlockCompressedOutputStream(Path, int)} instead.
      */
+    @Deprecated
     public BlockCompressedOutputStream(final File file, final int compressionLevel) {
-        this(file, compressionLevel, defaultDeflaterFactory);
+        this(IOUtil.toPath(file), compressionLevel);
+    }
+
+    /**
+     * Prepare to compress at the given compression level
+     * @param compressionLevel {@code 1 <= compressionLevel <= 9}
+     * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
+     * Use {@link #BlockCompressedOutputStream(Path, int, DeflaterFactory)} to specify a custom factory.
+     */
+    public BlockCompressedOutputStream(final Path path, final int compressionLevel) {
+        this(path, compressionLevel, defaultDeflaterFactory);
     }
 
     /**
      * Prepare to compress at the given compression level
      * @param compressionLevel {@code 1 <= compressionLevel <= 9}
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
+     *
+     * @deprecated since 5.0.0 Use {@link #BlockCompressedOutputStream(Path, int, DeflaterFactory)} instead.
      */
+    @Deprecated
     public BlockCompressedOutputStream(
             final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         this(IOUtil.toPath(file), compressionLevel, deflaterFactory);
@@ -175,18 +204,20 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(OutputStream, File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(OutputStream, Path, int, DeflaterFactory)} to specify a custom factory.
      *
      * @param file may be null
+     * @deprecated since 5.0.0 Use {@link #BlockCompressedOutputStream(OutputStream, Path)} instead.
      */
+    @Deprecated
     public BlockCompressedOutputStream(final OutputStream os, final File file) {
-        this(os, file, defaultCompressionLevel);
+        this(os, IOUtil.toPath(file));
     }
 
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(OutputStream, File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(OutputStream, Path, int, DeflaterFactory)} to specify a custom factory.
      *
      * @param file may be null
      */
@@ -196,15 +227,18 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
 
     /**
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(OutputStream, File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(OutputStream, Path, int, DeflaterFactory)} to specify a custom factory.
+     *
+     * @deprecated since 5.0.0 Use {@link #BlockCompressedOutputStream(OutputStream, Path, int)} instead.
      */
+    @Deprecated
     public BlockCompressedOutputStream(final OutputStream os, final File file, final int compressionLevel) {
-        this(os, file, compressionLevel, defaultDeflaterFactory);
+        this(os, IOUtil.toPath(file), compressionLevel);
     }
 
     /**
      * Note: this constructor uses the default {@link DeflaterFactory}, see {@link #getDefaultDeflaterFactory()}.
-     * Use {@link #BlockCompressedOutputStream(OutputStream, File, int, DeflaterFactory)} to specify a custom factory.
+     * Use {@link #BlockCompressedOutputStream(OutputStream, Path, int, DeflaterFactory)} to specify a custom factory.
      */
     public BlockCompressedOutputStream(final OutputStream os, final Path file, final int compressionLevel) {
         this(os, file, compressionLevel, defaultDeflaterFactory);
@@ -216,7 +250,10 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
      * @param file file to which to write the output or null if not available
      * @param compressionLevel the compression level (0-9)
      * @param deflaterFactory custom factory to create deflaters (overrides the default)
+     *
+     * @deprecated since 5.0.0 Use {@link #BlockCompressedOutputStream(OutputStream, Path, int, DeflaterFactory)} instead.
      */
+    @Deprecated
     public BlockCompressedOutputStream(
             final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         this(os, IOUtil.toPath(file), compressionLevel, deflaterFactory);
@@ -247,11 +284,37 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
      * @return A BlockCompressedOutputStream, either by wrapping the given OutputStream, or by casting if it already
      *         is a BCOS.
      */
-    public static BlockCompressedOutputStream maybeBgzfWrapOutputStream(final File location, OutputStream output) {
+    public static BlockCompressedOutputStream maybeBgzfWrapOutputStream(final Path location, OutputStream output) {
         if (!(output instanceof BlockCompressedOutputStream)) {
             return new BlockCompressedOutputStream(output, location);
         } else {
             return (BlockCompressedOutputStream) output;
+        }
+    }
+
+    /**
+     *
+     * @param location May be null.  Used for error messages, and for checking file termination.
+     * @param output May or not already be a BlockCompressedOutputStream.
+     * @return A BlockCompressedOutputStream, either by wrapping the given OutputStream, or by casting if it already
+     *         is a BCOS.
+     * @deprecated since 5.0.0 Use {@link #maybeBgzfWrapOutputStream(Path, OutputStream)} instead.
+     */
+    @Deprecated
+    public static BlockCompressedOutputStream maybeBgzfWrapOutputStream(final File location, OutputStream output) {
+        return maybeBgzfWrapOutputStream(IOUtil.toPath(location), output);
+    }
+
+    /**
+     * Converts a user-supplied path string to a {@link Path} using the scheme-aware {@link IOUtil#getPath(String)},
+     * so that identifiers carrying a scheme (e.g. {@code file:}, {@code gs:}) are resolved with the correct provider.
+     * Any {@link IOException} raised while resolving the filesystem is rethrown as an unchecked {@link RuntimeIOException}.
+     */
+    private static Path stringToPath(final String filename) {
+        try {
+            return IOUtil.getPath(filename);
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Could not convert to a Path: " + filename, e);
         }
     }
 
