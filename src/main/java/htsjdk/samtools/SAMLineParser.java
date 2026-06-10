@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -83,7 +84,7 @@ public class SAMLineParser {
     private final ValidationStringency validationStringency;
     private final SAMFileHeader mFileHeader;
     private final SAMSequenceDictionary mSequenceDictionary;
-    private final File mFile;
+    private final Path mPath;
     /**
      * Optional user-provided format override for the FLAG field. {@code null} means
      * "auto-detect format per record" via {@link SamFlagField#parseDefault}.
@@ -108,7 +109,24 @@ public class SAMLineParser {
      */
     public SAMLineParser(final SAMFileHeader samFileHeader) {
 
-        this(new DefaultSAMRecordFactory(), ValidationStringency.DEFAULT_STRINGENCY, samFileHeader, null, null);
+        this(new DefaultSAMRecordFactory(), ValidationStringency.DEFAULT_STRINGENCY, samFileHeader, null, (Path) null);
+    }
+
+    /**
+     * Public constructor. Use the default SAMRecordFactory and stringency.
+     *
+     * @param samFileHeader SAM file header
+     * @param samFileReader SAM file reader For passing to SAMRecord.setFileSource, may be null.
+     * @param samPath       SAM file path being read (for error message only, may be null)
+     */
+    public SAMLineParser(final SAMFileHeader samFileHeader, final SamReader samFileReader, final Path samPath) {
+
+        this(
+                new DefaultSAMRecordFactory(),
+                ValidationStringency.DEFAULT_STRINGENCY,
+                samFileHeader,
+                samFileReader,
+                samPath);
     }
 
     /**
@@ -117,15 +135,12 @@ public class SAMLineParser {
      * @param samFileHeader SAM file header
      * @param samFileReader SAM file reader For passing to SAMRecord.setFileSource, may be null.
      * @param samFile       SAM file being read (for error message only, may be null)
+     * @deprecated Use {@link #SAMLineParser(SAMFileHeader, SamReader, Path)} instead.
      */
+    @Deprecated
     public SAMLineParser(final SAMFileHeader samFileHeader, final SamReader samFileReader, final File samFile) {
 
-        this(
-                new DefaultSAMRecordFactory(),
-                ValidationStringency.DEFAULT_STRINGENCY,
-                samFileHeader,
-                samFileReader,
-                samFile);
+        this(samFileHeader, samFileReader, samFile == null ? null : samFile.toPath());
     }
 
     /**
@@ -135,14 +150,14 @@ public class SAMLineParser {
      * @param validationStringency validation stringency
      * @param samFileHeader        SAM file header
      * @param samFileReader        SAM file reader For passing to SAMRecord.setFileSource, may be null.
-     * @param samFile              SAM file being read (for error message only, may be null)
+     * @param samPath              SAM file path being read (for error message only, may be null)
      */
     public SAMLineParser(
             final SAMRecordFactory samRecordFactory,
             final ValidationStringency validationStringency,
             final SAMFileHeader samFileHeader,
             final SamReader samFileReader,
-            final File samFile) {
+            final Path samPath) {
 
         if (samRecordFactory == null) throw new NullPointerException("The SamRecordFactory must be set");
 
@@ -159,7 +174,34 @@ public class SAMLineParser {
         this.mParentReader = samFileReader;
 
         // Can be null
-        this.mFile = samFile;
+        this.mPath = samPath;
+    }
+
+    /**
+     * Public constructor.
+     *
+     * @param samRecordFactory     SamRecord Factory
+     * @param validationStringency validation stringency
+     * @param samFileHeader        SAM file header
+     * @param samFileReader        SAM file reader For passing to SAMRecord.setFileSource, may be null.
+     * @param samFile              SAM file being read (for error message only, may be null)
+     * @deprecated Use {@link #SAMLineParser(SAMRecordFactory, ValidationStringency, SAMFileHeader, SamReader, Path)}
+     *     instead.
+     */
+    @Deprecated
+    public SAMLineParser(
+            final SAMRecordFactory samRecordFactory,
+            final ValidationStringency validationStringency,
+            final SAMFileHeader samFileHeader,
+            final SamReader samFileReader,
+            final File samFile) {
+
+        this(
+                samRecordFactory,
+                validationStringency,
+                samFileHeader,
+                samFileReader,
+                samFile == null ? null : samFile.toPath());
     }
 
     /**
@@ -715,8 +757,8 @@ public class SAMLineParser {
 
     private String makeErrorString(final String reason) {
         String fileMessage = "";
-        if (mFile != null) {
-            fileMessage = "File " + mFile + "; ";
+        if (mPath != null) {
+            fileMessage = "File " + mPath + "; ";
         }
         // Materialize the offending line lazily from the byte buffer so we don't pay the String
         // allocation on the (much more common) success path.

@@ -27,6 +27,8 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SamLineReader;
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 
 /**
  * Internal class for reading SAM text files.
@@ -38,7 +40,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     private SAMFileHeader mFileHeader = null;
     private boolean mHasCurrentLine = false;
     private RecordIterator mIterator = null;
-    private File mFile = null;
+    private Path mPath = null;
 
     private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
@@ -64,15 +66,31 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      * Prepare to read a SAM text file.
      *
      * @param stream Need not be buffered, as this class provides buffered reading.
-     * @param file   For error reporting only.
+     * @param path   For error reporting only.
      */
+    public SAMTextReader(
+            final InputStream stream,
+            final Path path,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory factory) {
+        this(stream, validationStringency, factory);
+        mPath = path;
+    }
+
+    /**
+     * Prepare to read a SAM text file.
+     *
+     * @param stream Need not be buffered, as this class provides buffered reading.
+     * @param file   For error reporting only.
+     * @deprecated since 06/2025 Use {@link #SAMTextReader(InputStream, Path, ValidationStringency, SAMRecordFactory)} instead.
+     */
+    @Deprecated
     public SAMTextReader(
             final InputStream stream,
             final File file,
             final ValidationStringency validationStringency,
             final SAMRecordFactory factory) {
-        this(stream, validationStringency, factory);
-        mFile = file;
+        this(stream, file == null ? null : file.toPath(), validationStringency, factory);
     }
 
     /**
@@ -215,7 +233,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     private void readHeader() {
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
         headerCodec.setValidationStringency(validationStringency);
-        mFileHeader = headerCodec.decode(mReader, (mFile != null ? mFile.toString() : null));
+        mFileHeader = headerCodec.decode(mReader, (mPath != null ? mPath.toString() : null));
         advanceLine();
     }
 
@@ -228,8 +246,14 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      */
     private class RecordIterator implements CloseableIterator<SAMRecord> {
 
-        private final SAMLineParser parser =
-                new SAMLineParser(samRecordFactory, validationStringency, mFileHeader, mParentReader, mFile);
+        // SAMLineParser still accepts only a File for error-reporting purposes. The path is converted to a File
+        // when it lives on the default filesystem; otherwise null is passed (the value is only used in messages).
+        private final SAMLineParser parser = new SAMLineParser(
+                samRecordFactory,
+                validationStringency,
+                mFileHeader,
+                mParentReader,
+                (mPath != null && mPath.getFileSystem() == FileSystems.getDefault()) ? mPath.toFile() : null);
 
         private RecordIterator() {
             if (mReader == null) {

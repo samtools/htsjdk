@@ -50,7 +50,10 @@ public class VCFFileReader implements VCFReader {
 
     /**
      * Returns true if the given file appears to be a BCF file.
+     *
+     * @deprecated since June 2024, use {@link #isBCF(Path)} instead
      */
+    @Deprecated
     public static boolean isBCF(final File file) {
         return isBCF(file.toPath());
     }
@@ -64,42 +67,51 @@ public class VCFFileReader implements VCFReader {
 
     /**
      * Returns the SAMSequenceDictionary from the provided VCF file.
+     *
+     * @deprecated since June 2024, use {@link #getSequenceDictionary(Path)} instead
      */
+    @Deprecated
     public static SAMSequenceDictionary getSequenceDictionary(final File file) {
-        try (final VCFFileReader vcfFileReader = new VCFFileReader(file, false)) {
-            return vcfFileReader.getFileHeader().getSequenceDictionary();
-        }
+        return getSequenceDictionary(file.toPath());
     }
 
     /**
      * Constructs a VCFFileReader that requires the index to be present.
+     *
+     * @deprecated since June 2024, use {@link #VCFFileReader(Path)} instead
      */
+    @Deprecated
     public VCFFileReader(final File file) {
-        this(file, true);
+        this(file.toPath());
     }
 
     /**
      * Constructs a VCFFileReader with a specified index.
+     *
+     * @deprecated since June 2024, use {@link #VCFFileReader(Path, Path)} instead
      */
+    @Deprecated
     public VCFFileReader(final File file, final File indexFile) {
-        this(file, indexFile, true);
+        this(file.toPath(), indexFile.toPath());
     }
 
     /**
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
+     *
+     * @deprecated since June 2024, use {@link #VCFFileReader(Path, boolean)} instead
      */
+    @Deprecated
     public VCFFileReader(final File file, final boolean requireIndex) {
-        // Note how we deal with type safety here, just casting to (FeatureCodec)
-        // in the call to getFeatureReader is not enough for Java 8.
         this(file.toPath(), requireIndex);
     }
 
     /**
      * Allows construction of a VCFFileReader with a specified index file.
+     *
+     * @deprecated since June 2024, use {@link #VCFFileReader(Path, Path, boolean)} instead
      */
+    @Deprecated
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
-        // Note how we deal with type safety here, just casting to (FeatureCodec)
-        // in the call to getFeatureReader is not enough for Java 8.
         this(file.toPath(), indexFile.toPath(), requireIndex);
     }
 
@@ -115,7 +127,7 @@ public class VCFFileReader implements VCFReader {
     }
 
     /**
-     * Returns the SAMSequenceDictionary from the provided VCF file.
+     * Returns the SAMSequenceDictionary from the provided VCF path.
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path path) {
         try (final VCFFileReader r = new VCFFileReader(path, false)) {
