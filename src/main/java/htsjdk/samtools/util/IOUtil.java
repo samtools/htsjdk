@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
 import java.io.BufferedInputStream;
@@ -59,6 +60,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
@@ -1455,6 +1457,334 @@ public class IOUtil {
             Files.walkFileTree(directory, simpleFileVisitor);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Path-based equivalents of the File-based utility methods above. These are the canonical
+    // entry points going forward; the File-based overloads are retained only as deprecated shims
+    // pending their removal.
+    // ------------------------------------------------------------------------------------------
+
+    public static SeekableStream maybeBufferedSeekableStream(final Path path) {
+        try {
+            return maybeBufferedSeekableStream(new SeekablePathStream(path));
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */
+    public static String basename(final Path path) {
+        final String full = path.getFileName().toString();
+        final int index = full.lastIndexOf('.');
+        if (index > 0 && index > full.lastIndexOf(path.getFileSystem().getSeparator())) {
+            return full.substring(0, index);
+        } else {
+            return full;
+        }
+    }
+
+    /**
+     * Checks that each path is non-null, and is either extent and writable, or non-existent but
+     * that the parent directory exists and is writable. If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param paths the list of paths to check for writability
+     */
+    public static void assertPathsAreWritable(final List<Path> paths) {
+        for (final Path path : paths) assertFileIsWritable(path);
+    }
+
+    /**
+     * Checks that a directory is non-null, extent, readable and a directory
+     * otherwise a runtime exception is thrown.
+     *
+     * @param dir the dir to check for readability
+     */
+    public static void assertDirectoryIsReadable(final Path dir) {
+        if (dir == null) {
+            throw new IllegalArgumentException("Cannot check readability of null directory.");
+        } else if (!Files.exists(dir)) {
+            throw new SAMException("Directory does not exist: " + dir.toUri().toString());
+        } else if (!Files.isDirectory(dir)) {
+            throw new SAMException("Cannot read from directory because it is not a directory: "
+                    + dir.toUri().toString());
+        } else if (!Files.isReadable(dir)) {
+            throw new SAMException(
+                    "Directory exists but is not readable: " + dir.toUri().toString());
+        }
+    }
+
+    /**
+     * Checks that the two paths are the same length, and have the same content, otherwise throws a runtime exception.
+     */
+    public static void assertFilesEqual(final Path p1, final Path p2) {
+        try {
+            if (Files.size(p1) != Files.size(p2)) {
+                throw new SAMException("File " + p1 + " is " + Files.size(p1) + " bytes but file " + p2 + " is "
+                        + Files.size(p2) + " bytes.");
+            }
+            try (final InputStream s1 = Files.newInputStream(p1);
+                    final InputStream s2 = Files.newInputStream(p2)) {
+                final byte[] buf1 = new byte[1024 * 1024];
+                final byte[] buf2 = new byte[1024 * 1024];
+                int len1;
+                while ((len1 = s1.read(buf1)) != -1) {
+                    final int len2 = s2.read(buf2);
+                    if (len1 != len2) {
+                        throw new SAMException(
+                                "Unexpected EOF comparing files that are supposed to be the same length.");
+                    }
+                    if (!Arrays.equals(buf1, buf2)) {
+                        throw new SAMException("Files " + p1 + " and " + p2 + " differ.");
+                    }
+                }
+            }
+        } catch (final IOException e) {
+            throw new SAMException("Exception comparing files " + p1 + " and " + p2, e);
+        }
+    }
+
+    /**
+     * Checks that a file is of non-zero length
+     */
+    public static void assertFileSizeNonZero(final Path path) {
+        try {
+            if (Files.size(path) == 0) {
+                throw new SAMException(path.toAbsolutePath() + " has length 0");
+            }
+        } catch (IOException e) {
+            throw new SAMException("Error checking file size: " + path, e);
+        }
+    }
+
+    /**
+     * Opens a file for reading, decompressing it if necessary
+     *
+     * @param path  The file to open
+     * @return the input stream to read from
+     */
+    public static BufferedReader openFileForBufferedUtf8Reading(final Path path) {
+        return new BufferedReader(new InputStreamReader(openFileForReading(path), Charset.forName("UTF-8")));
+    }
+
+    /**
+     * Copy input to output, overwriting output if it already exists.
+     */
+    public static void copyPath(final Path input, final Path output) {
+        try {
+            Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new SAMException("Error copying " + input + " to " + output, e);
+        }
+    }
+
+    /**
+     * Returns paths matching regexp in the given directory.
+     *
+     * @param directory the directory to search
+     * @param regexp the regular expression pattern
+     * @return list of paths matching regexp.
+     */
+    public static List<Path> getPathsMatchingRegexp(final Path directory, final String regexp) {
+        final Pattern pattern = Pattern.compile(regexp);
+        return getPathsMatchingRegexp(directory, pattern);
+    }
+
+    /**
+     * Returns paths matching regexp in the given directory.
+     *
+     * @param directory the directory to search
+     * @param regexp the regular expression pattern
+     * @return list of paths matching regexp.
+     */
+    public static List<Path> getPathsMatchingRegexp(final Path directory, final Pattern regexp) {
+        try {
+            return Files.list(directory)
+                    .filter(path ->
+                            regexp.matcher(path.getFileName().toString()).matches())
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeIOException("Error listing directory: " + directory, e);
+        }
+    }
+
+    /**
+     * Delete the given path or directory.  If a directory, all enclosing files and subdirs are also deleted.
+     */
+    public static boolean deleteDirectoryTree(final Path pathOrDirectory) {
+        try {
+            if (Files.isDirectory(pathOrDirectory)) {
+                Files.walk(pathOrDirectory)
+                        .sorted((a, b) -> -a.compareTo(b)) // reverse order to delete children first
+                        .forEach(path -> {
+                            try {
+                                Files.delete(path);
+                            } catch (IOException e) {
+                                throw new RuntimeIOException(e);
+                            }
+                        });
+            } else {
+                Files.delete(pathOrDirectory);
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns the size (in bytes) of the file or directory and all it's children.
+     */
+    public static long sizeOfTree(final Path pathOrDirectory) {
+        try {
+            if (Files.isDirectory(pathOrDirectory)) {
+                return Files.walk(pathOrDirectory)
+                        .mapToLong(path -> {
+                            try {
+                                return Files.size(path);
+                            } catch (IOException e) {
+                                return 0;
+                            }
+                        })
+                        .sum();
+            } else {
+                return Files.size(pathOrDirectory);
+            }
+        } catch (IOException e) {
+            throw new RuntimeIOException("Error calculating size of tree: " + pathOrDirectory, e);
+        }
+    }
+
+    /**
+     * Copies a directory tree (all subdirectories and files) recursively to a destination
+     */
+    public static void copyDirectoryTree(final Path pathOrDirectory, final Path destination) {
+        try {
+            if (Files.isDirectory(pathOrDirectory)) {
+                Files.createDirectories(destination);
+                Files.walk(pathOrDirectory).forEach(source -> {
+                    try {
+                        Path dest = destination.resolve(pathOrDirectory.relativize(source));
+                        if (Files.isDirectory(source)) {
+                            Files.createDirectories(dest);
+                        } else {
+                            Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeIOException(e);
+                    }
+                });
+            }
+        } catch (IOException e) {
+            throw new RuntimeIOException("Error copying directory tree: " + pathOrDirectory, e);
+        }
+    }
+
+    /** Returns the name of the file extension (i.e. text after the last "." in the filename) including the . */
+    public static String fileSuffix(final Path path) {
+        final String full = path.getFileName().toString();
+        final int index = full.lastIndexOf('.');
+        if (index > 0 && index > full.lastIndexOf(path.getFileSystem().getSeparator())) {
+            return full.substring(index);
+        } else {
+            return null;
+        }
+    }
+
+    /** Returns the full path to the file with all symbolic links resolved **/
+    public static String getFullCanonicalPath(final Path path) {
+        try {
+            Path p = path.toRealPath();
+            return p.toString();
+        } catch (final IOException ioe) {
+            throw new RuntimeIOException(
+                    "Error getting full canonical path for " + path + ": " + ioe.getMessage(), ioe);
+        }
+    }
+
+    /**
+     * Returns an iterator over the lines in a text file. The underlying resources are automatically
+     * closed when the iterator hits the end of the input, or manually by calling close().
+     *
+     * @param path a path that is to be read in as text
+     * @return an iterator over the lines in the text file
+     */
+    public static IterableOnceIterator<String> readLines(final Path path) {
+        try {
+            final BufferedReader in = IOUtil.openFileForBufferedReading(path);
+
+            return new IterableOnceIterator<String>() {
+                private String next = in.readLine();
+
+                /** Returns true if there is another line to read or false otherwise. */
+                @Override
+                public boolean hasNext() {
+                    return next != null;
+                }
+
+                /** Returns the next line in the file or null if there are no more lines. */
+                @Override
+                public String next() {
+                    try {
+                        final String tmp = next;
+                        next = in.readLine();
+                        if (next == null) in.close();
+                        return tmp;
+                    } catch (final IOException ioe) {
+                        throw new RuntimeIOException(ioe);
+                    }
+                }
+
+                /** Closes the underlying input stream. Not required if end of stream has already been hit. */
+                @Override
+                public void close() throws IOException {
+                    CloserUtil.close(in);
+                }
+            };
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /** Returns all of the untrimmed lines in the provided path. */
+    public static List<String> slurpLines(final Path path) {
+        try {
+            return slurpLines(Files.newInputStream(path));
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /** Convenience overload for {@link #slurp(java.io.InputStream, java.nio.charset.Charset)} using the default charset {@link java.nio.charset.Charset#defaultCharset()}. */
+    public static String slurp(final Path path) {
+        try {
+            return slurp(Files.newInputStream(path));
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /**
+     * Converts the given URI to a {@link Path} object. If the filesystem cannot be found in the usual way, then attempt
+     * to load the filesystem provider using the thread context classloader.
+     *
+     * @param uri the URI to convert
+     * @return the resulting {@code Path}
+     * @throws IOException an I/O error occurs creating the file system
+     */
+    public static Path getPath(URI uri) throws IOException {
+        try {
+            return Paths.get(uri);
+        } catch (FileSystemNotFoundException e) {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) {
+                throw e;
+            }
+            return FileSystems.newFileSystem(uri, new HashMap<>(), cl)
+                    .provider()
+                    .getPath(uri);
         }
     }
 }
