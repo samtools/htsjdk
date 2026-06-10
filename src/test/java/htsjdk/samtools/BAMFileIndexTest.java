@@ -28,7 +28,8 @@ import static org.testng.Assert.*;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.*;
 import java.io.ByteArrayInputStream;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,13 +45,13 @@ import org.testng.annotations.Test;
  * Test BAM file indexing.
  */
 public class BAMFileIndexTest extends HtsjdkTest {
-    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private final Path BAM_FILE = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final boolean mVerbose = false;
 
     @Test
     public void testGetSearchBins() throws Exception {
         final DiskBasedBAMFileIndex bfi = new DiskBasedBAMFileIndex(
-                new File(BAM_FILE.getPath() + ".bai"),
+                Path.of(BAM_FILE + ".bai"),
                 null); // todo can null be replaced with a Sequence dictionary for the BAM_FILE?
         final long[] bins = bfi.getSpanOverlapping(1, 0, 0).toCoordinateArray();
         /***
@@ -114,7 +115,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
         final StopWatch linearScan = new StopWatch();
         final StopWatch queryUnmapped = new StopWatch();
         int unmappedCountFromLinearScan = 0;
-        final File bamFile = BAM_FILE;
+        final Path bamFile = BAM_FILE;
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         linearScan.start();
         CloseableIterator<SAMRecord> it = reader.iterator();
@@ -299,8 +300,8 @@ public class BAMFileIndexTest extends HtsjdkTest {
                 + "one_end_mapped\t73\tchr7\t100\t255\t101M\t*\t0\t0\tCAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN\t)'.*.+2,))&&'&*/)-&*-)&.-)&)&),/-&&..)./.,.).*&&,&.&&-)&&&0*&&&&&&&&/32/,01460&&/6/*0*/2/283//36868/&\tRG:Z:0\n"
                 + "one_end_mapped\t133\tchr7\t100\t0\t*\t=\t100\t0\tNCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA\t&/15445666651/566666553+2/14/&/555512+3/)-'/-&-'*+))*''13+3)'//++''/'))/3+&*5++)&'2+&+/*&-&&*)&-./1'1\tRG:Z:0\n";
         final ByteArrayInputStream bis = new ByteArrayInputStream(StringUtil.stringToBytes(samText));
-        final File bamFile = File.createTempFile("BAMFileIndexTest.", FileExtensions.BAM);
-        bamFile.deleteOnExit();
+        final Path bamFile = Files.createTempFile("BAMFileIndexTest.", FileExtensions.BAM);
+        bamFile.toFile().deleteOnExit();
         final SamReader textReader = SamReaderFactory.makeDefault().open(SamInputResource.of(bis));
         SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
         samFileWriterFactory.setCreateIndex(true);
@@ -310,7 +311,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
         }
         writer.close();
         final SamReader bamReader = SamReaderFactory.makeDefault().open(bamFile);
-        SamFiles.findIndex(bamFile).deleteOnExit();
+        SamFiles.findIndex(bamFile).toFile().deleteOnExit();
         Assert.assertEquals(countElements(bamReader.queryContained("chr7", 100, 100)), 1);
         Assert.assertEquals(countElements(bamReader.queryOverlapping("chr7", 100, 100)), 2);
         bamReader.close();
@@ -349,7 +350,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
         assertEquals(count, expectedCount);
     }
 
-    private void runRandomTest(final File bamFile, final int count, final Random generator) {
+    private void runRandomTest(final Path bamFile, final int count, final Random generator) {
         final List<String> referenceNames = getReferenceNames(bamFile);
         final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), count, generator);
         for (final QueryInterval interval : intervals) {
@@ -383,7 +384,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
         return intervals;
     }
 
-    private List<String> getReferenceNames(final File bamFile) {
+    private List<String> getReferenceNames(final Path bamFile) {
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         final List<String> result = new ArrayList<String>();
         final List<SAMSequenceRecord> seqRecords =
@@ -398,7 +399,7 @@ public class BAMFileIndexTest extends HtsjdkTest {
     }
 
     private int runQueryTest(
-            final File bamFile, final String sequence, final int startPos, final int endPos, final boolean contained) {
+            final Path bamFile, final String sequence, final int startPos, final int endPos, final boolean contained) {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
         final SamReader reader1 = SamReaderFactory.makeDefault().open(bamFile);
         final SamReader reader2 = SamReaderFactory.makeDefault().open(bamFile);

@@ -25,7 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
-import java.io.File;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -37,7 +37,7 @@ import org.testng.annotations.Test;
  * @author alecw@broadinstitute.org
  */
 public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
-    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools");
 
     @Test(
             expectedExceptions = {SAMException.class},
@@ -76,7 +76,7 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
 
     @Test(dataProvider = "samFilesWithSpaceInSequenceName")
     public void testSamSequenceTruncation(final String filename) {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, filename));
+        final SamReader reader = SamReaderFactory.makeDefault().open(TEST_DATA_DIR.resolve(filename));
         for (final SAMSequenceRecord sequence :
                 reader.getFileHeader().getSequenceDictionary().getSequences()) {
             Assert.assertFalse(sequence.getSequenceName().contains(" "), sequence.getSequenceName());
@@ -94,7 +94,7 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
 
     @Test(expectedExceptions = {SAMFormatException.class})
     public void testBadRname() {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, "readWithBadRname.sam"));
+        final SamReader reader = SamReaderFactory.makeDefault().open(TEST_DATA_DIR.resolve("readWithBadRname.sam"));
         for (final SAMRecord rec : reader) {}
         Assert.fail("Should not reach here.");
     }

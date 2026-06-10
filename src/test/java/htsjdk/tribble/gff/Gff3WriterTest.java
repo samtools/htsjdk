@@ -8,7 +8,6 @@ import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Path;
@@ -74,7 +73,7 @@ public class Gff3WriterTest extends HtsjdkTest {
 
             // read temp files back in
 
-            Assert.assertTrue(isGZipped(tempFileGzip.toFile()));
+            Assert.assertTrue(isGZipped(tempFileGzip));
             final List<String> comments2 = new ArrayList<>();
             final HashSet<SequenceRegion> regions2 = new HashSet<>();
             final LinkedHashSet<Gff3Feature> features2 = readFromFile(tempFile, comments2, regions2);
@@ -221,10 +220,10 @@ public class Gff3WriterTest extends HtsjdkTest {
         Assert.assertEquals(encoded, expectedEncoded);
     }
 
-    private static boolean isGZipped(final File f) {
+    private static boolean isGZipped(final Path f) {
         int magic = 0;
         try {
-            RandomAccessFile raf = new RandomAccessFile(f, "r");
+            RandomAccessFile raf = new RandomAccessFile(f.toFile(), "r");
             magic = raf.read() & 0xff | ((raf.read() << 8) & 0xff00);
             raf.close();
         } catch (Throwable e) {

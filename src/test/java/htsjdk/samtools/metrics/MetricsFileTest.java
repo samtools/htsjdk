@@ -29,11 +29,13 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.TestUtil;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Serializable;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -186,13 +188,13 @@ public class MetricsFileTest extends HtsjdkTest {
 
     @Test
     public void areMetricsFilesEqualTest() {
-        final File TEST_DIR = new File("src/test/resources/htsjdk/samtools/metrics/");
-        final File file1 = new File(TEST_DIR, "metricsOne.metrics");
-        final File file2 = new File(TEST_DIR, "metricsOneCopy.metrics");
-        final File file3 = new File(TEST_DIR, "metricsOneCopyReordered.metrics");
+        final Path TEST_DIR = Paths.get("src/test/resources/htsjdk/samtools/metrics/");
+        final Path file1 = TEST_DIR.resolve("metricsOne.metrics");
+        final Path file2 = TEST_DIR.resolve("metricsOneCopy.metrics");
+        final Path file3 = TEST_DIR.resolve("metricsOneCopyReordered.metrics");
 
-        final File fileModifiedHist = new File(TEST_DIR, "metricsOneModifiedHistogram.metrics");
-        final File fileModifiedMet = new File(TEST_DIR, "metricsOneModifiedMetrics.metrics");
+        final Path fileModifiedHist = TEST_DIR.resolve("metricsOneModifiedHistogram.metrics");
+        final Path fileModifiedMet = TEST_DIR.resolve("metricsOneModifiedMetrics.metrics");
 
         Assert.assertTrue(MetricsFile.areMetricsEqual(file1, file2));
         Assert.assertTrue(MetricsFile.areMetricsEqual(file1, file3));
@@ -206,13 +208,16 @@ public class MetricsFileTest extends HtsjdkTest {
     /** Helper method to persist metrics to file and read them back again. */
     private <METRIC extends MetricBase> MetricsFile<METRIC, Integer> writeThenReadBack(MetricsFile<METRIC, Integer> in)
             throws IOException {
-        File f = File.createTempFile("test", ".metrics");
-        f.deleteOnExit();
-        FileWriter out = new FileWriter(f);
-        in.write(out);
+        Path f = Files.createTempFile("test", ".metrics");
+        f.toFile().deleteOnExit();
+        try (Writer out = Files.newBufferedWriter(f)) {
+            in.write(out);
+        }
 
         MetricsFile<METRIC, Integer> retval = new MetricsFile<METRIC, Integer>();
-        retval.read(new FileReader(f));
+        try (Reader reader = Files.newBufferedReader(f)) {
+            retval.read(reader);
+        }
         return retval;
     }
 }

@@ -28,12 +28,13 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.File;
-import java.io.FileOutputStream;
+import htsjdk.samtools.util.IOUtil;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Function;
 import org.testng.Assert;
@@ -48,20 +49,20 @@ import org.testng.annotations.Test;
  */
 public class CRAMIndexQueryTest extends HtsjdkTest {
 
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+    private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools/cram");
 
-    private static final File cramQueryWithBAI = new File(TEST_DATA_DIR, "cramQueryWithBAI.cram");
-    private static final File cramQueryWithCRAI = new File(TEST_DATA_DIR, "cramQueryWithCRAI.cram");
-    private static File cramQueryWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryWithCRAI
-    private static final File cramQueryReference = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.10M-10M200k.fasta");
+    private static final Path cramQueryWithBAI = TEST_DATA_DIR.resolve("cramQueryWithBAI.cram");
+    private static final Path cramQueryWithCRAI = TEST_DATA_DIR.resolve("cramQueryWithCRAI.cram");
+    private static Path cramQueryWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryWithCRAI
+    private static final Path cramQueryReference = TEST_DATA_DIR.resolve("human_g1k_v37.20.21.10M-10M200k.fasta");
 
-    private static final File cramQueryReadsWithBAI = new File(TEST_DATA_DIR, "cramQueryTest.cram");
-    private static File cramQueryReadsWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryReadsWithBAI
+    private static final Path cramQueryReadsWithBAI = TEST_DATA_DIR.resolve("cramQueryTest.cram");
+    private static Path cramQueryReadsWithLocalCRAI = null; // generated  by @BeforeClass from cramQueryReadsWithBAI
 
-    private static final File cramQueryTestEmptyWithBAI = new File(TEST_DATA_DIR, "cramQueryTestEmpty.cram");
-    private static File cramQueryTestEmptyWithLocalCRAI =
+    private static final Path cramQueryTestEmptyWithBAI = TEST_DATA_DIR.resolve("cramQueryTestEmpty.cram");
+    private static Path cramQueryTestEmptyWithLocalCRAI =
             null; // generated  by @BeforeClass from cramQueryTestEmptyWithBAI
-    private static final File cramQueryReadsReference = new File(TEST_DATA_DIR, "../hg19mini.fasta");
+    private static final Path cramQueryReadsReference = TEST_DATA_DIR.resolve("../hg19mini.fasta");
 
     // htsjdk currently generates .bai index files instead of .crai due to
     // https://github.com/samtools/htsjdk/issues/531;
@@ -71,29 +72,34 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     // to run to use as additional test cases
     @BeforeClass
     public void createLocallyGeneratedCRAIFiles() throws IOException {
-        cramQueryWithLocalCRAI = File.createTempFile("cramQueryWithLocalCRAI.", ".cram");
-        cramQueryWithLocalCRAI.deleteOnExit();
-        File tempCRAIOut = new File(cramQueryWithLocalCRAI.getAbsolutePath() + ".crai");
-        tempCRAIOut.deleteOnExit();
+        cramQueryWithLocalCRAI = Files.createTempFile("cramQueryWithLocalCRAI.", ".cram");
+        IOUtil.deleteOnExit(cramQueryWithLocalCRAI);
+        Path tempCRAIOut = craiSibling(cramQueryWithLocalCRAI);
+        IOUtil.deleteOnExit(tempCRAIOut);
         createLocalCRAMAndCRAI(cramQueryWithCRAI, cramQueryWithLocalCRAI, tempCRAIOut);
 
-        cramQueryReadsWithLocalCRAI = File.createTempFile("cramQueryReadsWithLocalCRAI.", ".cram");
-        tempCRAIOut = new File(cramQueryReadsWithLocalCRAI.getAbsolutePath() + ".crai");
-        tempCRAIOut.deleteOnExit();
-        cramQueryReadsWithLocalCRAI.deleteOnExit();
+        cramQueryReadsWithLocalCRAI = Files.createTempFile("cramQueryReadsWithLocalCRAI.", ".cram");
+        tempCRAIOut = craiSibling(cramQueryReadsWithLocalCRAI);
+        IOUtil.deleteOnExit(tempCRAIOut);
+        IOUtil.deleteOnExit(cramQueryReadsWithLocalCRAI);
         createLocalCRAMAndCRAI(cramQueryReadsWithBAI, cramQueryReadsWithLocalCRAI, tempCRAIOut);
 
-        cramQueryTestEmptyWithLocalCRAI = File.createTempFile("cramQueryTestEmptyWithLocalCRAI.", ".cram");
-        tempCRAIOut = new File(cramQueryTestEmptyWithLocalCRAI.getAbsolutePath() + ".crai");
-        tempCRAIOut.deleteOnExit();
-        cramQueryTestEmptyWithLocalCRAI.deleteOnExit();
+        cramQueryTestEmptyWithLocalCRAI = Files.createTempFile("cramQueryTestEmptyWithLocalCRAI.", ".cram");
+        tempCRAIOut = craiSibling(cramQueryTestEmptyWithLocalCRAI);
+        IOUtil.deleteOnExit(tempCRAIOut);
+        IOUtil.deleteOnExit(cramQueryTestEmptyWithLocalCRAI);
         createLocalCRAMAndCRAI(cramQueryTestEmptyWithBAI, cramQueryTestEmptyWithLocalCRAI, tempCRAIOut);
     }
 
-    private void createLocalCRAMAndCRAI(final File inputCRAM, final File outputCRAM, final File outputCRAI)
+    /** Returns the sibling .crai path for a given CRAM path (cramPath + ".crai"). */
+    private static Path craiSibling(final Path cramPath) {
+        return Paths.get(cramPath.toAbsolutePath() + ".crai");
+    }
+
+    private void createLocalCRAMAndCRAI(final Path inputCRAM, final Path outputCRAM, final Path outputCRAI)
             throws IOException {
-        Files.copy(inputCRAM.toPath(), outputCRAM.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        try (FileOutputStream bos = new FileOutputStream(outputCRAI)) {
+        Files.copy(inputCRAM, outputCRAM, StandardCopyOption.REPLACE_EXISTING);
+        try (OutputStream bos = Files.newOutputStream(outputCRAI)) {
             CRAMCRAIIndexer.writeIndex(new SeekableFileStream(outputCRAM), bos);
         }
     }
@@ -182,8 +188,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             {cramQueryTestEmptyWithBAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[] {}},
             {cramQueryTestEmptyWithLocalCRAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[] {}},
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 new QueryInterval(0, 631, 631),
                 new String[] {
                     "IL29_4505:7:51:11752:16255#2",
@@ -218,8 +224,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalOverlapping")
     public void testQueryOverlappingSingleInterval(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -232,8 +238,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalOverlapping")
     public void testQueryOverlappingSequence(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -251,8 +257,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalOverlapping")
     public void testQuerySingleIntervalContainedFalse(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -265,8 +271,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalOverlapping")
     public void testQuerySequenceContainedFalse(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -359,8 +365,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             {cramQueryTestEmptyWithBAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[] {}},
             {cramQueryTestEmptyWithLocalCRAI, cramQueryReadsReference, new QueryInterval(0, 1, 0), new String[] {}},
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 new QueryInterval(0, 631, 656),
                 new String[] {"IL29_4505:7:88:5383:14756#2"},
             }
@@ -369,8 +375,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalContained")
     public void testQueryContainedSingleInterval(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -383,8 +389,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalContained")
     public void testQueryContainedSequence(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -402,8 +408,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalContained")
     public void testQuerySingleIntervalContainedTrue(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -416,8 +422,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "singleIntervalContained")
     public void testQuerySequenceContainedTrue(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval interval,
             final String[] expectedNames)
             throws IOException {
@@ -570,8 +576,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "multipleIntervalOverlapping")
     public void testQueryOverlappingMultipleIntervals(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval[] intervals,
             final String[] expectedNames)
             throws IOException {
@@ -608,8 +614,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     // using more than one interval; these tests optimize down to 0 or 1 interval
     @Test(dataProvider = "otherMultipleIntervals")
     public void testOtherMultipleIntervals(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval[] intervals,
             final String[] expectedNames)
             throws IOException {
@@ -756,8 +762,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "multipleIntervalContained")
     public void testQueryContainedMultipleIntervals(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final QueryInterval[] intervals,
             final String[] expectedNames)
             throws IOException {
@@ -780,7 +786,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "unmappedQueries")
-    public void testQueryUnmapped(final File cramFileName, final File referenceFileName, final String[] expectedNames)
+    public void testQueryUnmapped(final Path cramFileName, final Path referenceFileName, final String[] expectedNames)
             throws IOException {
         doQueryTest(SamReader::queryUnmapped, cramFileName, referenceFileName, expectedNames);
     }
@@ -796,15 +802,15 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             // in the same container that don't match the alignment start are properly constrained to only the
             // matching reads
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 "Mito",
                 631,
                 24
             },
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTestGATKGen.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 "Mito",
                 631,
                 24
@@ -814,8 +820,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "alignmentStartQueries")
     public void testQueryAlignmentStart(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final String queryContig,
             final int alignmentStart,
             final int expectedReadCount)
@@ -843,15 +849,15 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             {cramQueryWithLocalCRAI, cramQueryReference, "20", 100013, "f"},
             {cramQueryWithBAI, cramQueryReference, "20", 100013, "f"},
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 "Mito",
                 631,
                 "IL29_4505:7:30:11521:4492#2"
             },
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTestGATKGen.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 "Mito",
                 631,
                 "IL29_4505:7:30:11521:4492#2"
@@ -861,8 +867,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "mateQueries")
     public void testQueryMate(
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final String queryContig,
             final int alignmentStart,
             final String expectedReadName)
@@ -898,8 +904,8 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     private void doQueryTest(
             final Function<SamReader, CloseableIterator<SAMRecord>> getIterator,
-            final File cramFileName,
-            final File referenceFileName,
+            final Path cramFileName,
+            final Path referenceFileName,
             final String[] expectedNames)
             throws IOException {
         SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.LENIENT);
@@ -934,7 +940,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     // (https://github.com/samtools/htsjdk/issues/563), these can be re-enabled.
     //
     @Test(dataProvider = "iteratorStateTests", expectedExceptions = SAMException.class, enabled = false)
-    public void testIteratorState(final File cramFileName, final File referenceFileName) throws IOException {
+    public void testIteratorState(final Path cramFileName, final Path referenceFileName) throws IOException {
         SamReaderFactory factory = SamReaderFactory.makeDefault();
         if (referenceFileName != null) {
             factory = factory.referenceSequence(referenceFileName);
@@ -956,25 +962,25 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
             // reads to be distributed over multiple slices (at least for large numbers of unmapped reads)
             // tests the fix to https://github.com/samtools/htsjdk/issues/562
             {
-                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                TEST_DATA_DIR.resolve("NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
+                TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta"),
                 0
             },
             {
-                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.1-unMapped.cram"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                TEST_DATA_DIR.resolve("NA12878.20.21.1-100.100-SeqsPerSlice.1-unMapped.cram"),
+                TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta"),
                 1
             },
             {
-                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                TEST_DATA_DIR.resolve("NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta"),
                 500
             },
         };
     }
 
     @Test(dataProvider = "unmappedSliceTest")
-    public void testUnmappedMultiSlice(final File cramFileName, final File referenceFileName, final int expectedCount)
+    public void testUnmappedMultiSlice(final Path cramFileName, final Path referenceFileName, final int expectedCount)
             throws IOException {
         SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
         factory = factory.referenceSequence(referenceFileName);
@@ -1014,19 +1020,19 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
 
     @Test(dataProvider = "serialQueries")
     public void testSerialQueriesOnRemoteFile(
-            final File cramFile,
-            final File referenceFile,
+            final Path cramFile,
+            final Path referenceFile,
             final QueryInterval interval,
             final String[] expectedNames,
             final int nUnmapped)
             throws IOException {
-        final Path cramIndex = SamFiles.findIndex(cramFile.toPath());
+        final Path cramIndex = SamFiles.findIndex(cramFile);
 
         try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path jimfsCRAM = jimfs.getPath("remotecram.cram");
             final Path jimfsCRAI = jimfs.getPath("remotecram.crai");
 
-            Files.copy(cramFile.toPath(), jimfsCRAM);
+            Files.copy(cramFile, jimfsCRAM);
             Files.copy(cramIndex, jimfsCRAI);
 
             SamReaderFactory factory =

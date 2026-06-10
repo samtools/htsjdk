@@ -27,10 +27,12 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -45,8 +47,8 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
     @Test
     public void testBasic() throws Exception {
-        final File f = File.createTempFile("BCOST.", ".gz");
-        f.deleteOnExit();
+        final Path f = Files.createTempFile("BCOST.", ".gz");
+        IOUtil.deleteOnExit(f);
         final List<String> linesWritten = new ArrayList<>();
         System.out.println("Creating file " + f);
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
@@ -85,8 +87,8 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
     @Test
     public void testWriteSingleBytes() throws Exception {
-        final File f = File.createTempFile("BCOST.", ".gz");
-        f.deleteOnExit();
+        final Path f = Files.createTempFile("BCOST.", ".gz");
+        IOUtil.deleteOnExit(f);
         final String s = "Hello, I am a test string, and I will be written out one painful byte at a time.";
         final byte[] bs = s.getBytes();
         final int iterations = BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2 / bs.length;
@@ -180,7 +182,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
             throws Exception {
 
         final BlockCompressedInputStream bcis = isFile
-                ? new BlockCompressedInputStream(new File(filePath))
+                ? new BlockCompressedInputStream(Paths.get(filePath))
                 : new BlockCompressedInputStream(new FileInputStream(filePath));
 
         if (isClosed) {
@@ -209,8 +211,8 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
     @Test
     public void testOverflow() throws Exception {
-        final File f = File.createTempFile("BCOST.", ".gz");
-        f.deleteOnExit();
+        final Path f = Files.createTempFile("BCOST.", ".gz");
+        IOUtil.deleteOnExit(f);
         System.out.println("Creating file " + f);
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
         Random r = new Random(15555);
@@ -244,8 +246,8 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
     @Test
     public void testCustomDeflater() throws Exception {
-        final File f = File.createTempFile("testCustomDeflater.", ".gz");
-        f.deleteOnExit();
+        final Path f = Files.createTempFile("testCustomDeflater.", ".gz");
+        IOUtil.deleteOnExit(f);
         System.out.println("Creating file " + f);
 
         final int[] deflateCalls = {0}; // Note: using and array is a HACK to fool the compiler

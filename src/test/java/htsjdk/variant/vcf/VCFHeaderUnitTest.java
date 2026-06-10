@@ -40,14 +40,19 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -63,7 +68,7 @@ import org.testng.annotations.Test;
  */
 public class VCFHeaderUnitTest extends VariantBaseTest {
 
-    private File tempDir;
+    private Path tempDir;
 
     private VCFHeader createHeader(String headerStr) {
         VCFCodec codec = new VCFCodec();
@@ -75,15 +80,17 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @BeforeClass
     private void createTemporaryDirectory() {
-        tempDir = TestUtil.getTempDirectory("VCFHeader", "VCFHeaderTest");
+        tempDir = TestUtil.getTempDirectoryAsPath("VCFHeader", "VCFHeaderTest");
     }
 
     @AfterClass
-    private void deleteTemporaryDirectory() {
-        for (File f : tempDir.listFiles()) {
-            f.delete();
+    private void deleteTemporaryDirectory() throws IOException {
+        try (final Stream<Path> entries = Files.list(tempDir)) {
+            for (final Path entry : (Iterable<Path>) entries::iterator) {
+                Files.delete(entry);
+            }
         }
-        tempDir.delete();
+        Files.delete(tempDir);
     }
 
     @Test
@@ -103,7 +110,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(
-                AsciiLineReader.from(new FileInputStream(variantTestDataRoot + "HiSeq.10000.vcf")));
+                AsciiLineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "HiSeq.10000.vcf"))));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
 
         Assert.assertEquals(header.getNGenotypeSamples(), 1, "Wrong number of samples in remapped header");
@@ -135,7 +142,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test(dataProvider = "testVCFHeaderDictionaryMergingData")
     public void testVCFHeaderDictionaryMerging(final String vcfFileName) {
         final VCFHeader headerOne =
-                new VCFFileReader(new File(variantTestDataRoot + vcfFileName), false).getFileHeader();
+                new VCFFileReader(Path.of(variantTestDataRoot + vcfFileName), false).getFileHeader();
         final VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
         final List<String> sampleList = new ArrayList<String>();
         sampleList.addAll(headerOne.getSampleNamesInOrder());
@@ -155,8 +162,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingMultiSampleVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator =
-                new AsciiLineReaderIterator(AsciiLineReader.from(new FileInputStream(variantTestDataRoot + "ex2.vcf")));
+        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(
+                AsciiLineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "ex2.vcf"))));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
@@ -165,12 +172,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(
-                AsciiLineReader.from(new FileInputStream(variantTestDataRoot + "dbsnp_135.b37.1000.vcf")));
+                AsciiLineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"))));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
     private VCFHeader getHiSeqVCFHeader() {
-        final File vcf = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
+        final Path vcf = Path.of("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(vcf, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();
@@ -315,7 +322,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test
     public void testVCFHeaderHonorContigLineOrder() throws IOException {
         try (final VCFFileReader vcfReader =
-                new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
+                new VCFFileReader(Path.of(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
             // start with a header with a bunch of contig lines
             final VCFHeader header = vcfReader.getFileHeader();
             final List<VCFContigHeaderLine> originalHeaderList = header.getContigLines();
@@ -382,7 +389,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddMetaDataLineDoesNotDuplicateContigs() {
-        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
+        Path input = Path.of("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -404,7 +411,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddDuplicateContigLine() {
-        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
+        Path input = Path.of("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -420,7 +427,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddDuplicateHeaderLine() {
-        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
+        Path input = Path.of("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -486,7 +493,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test
     public void testVCFHeaderSerialization() throws Exception {
         final VCFFileReader reader =
-                new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
+                new VCFFileReader(Path.of("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
         final VCFHeader originalHeader = reader.getFileHeader();
         reader.close();
 
@@ -552,7 +559,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         // read an existing VCF
         final VCFFileReader originalFileReader =
-                new VCFFileReader(new File("src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf"), false);
+                new VCFFileReader(Path.of("src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf"), false);
         final VCFHeader originalHeader = originalFileReader.getFileHeader();
 
         // add a header line with quotes to the header
@@ -597,11 +604,11 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 "This other value has a \\n newline in it");
 
         // write the file out into a new copy
-        final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", FileExtensions.VCF);
-        firstCopyVCFFile.deleteOnExit();
+        final Path firstCopyVCFFile = Files.createTempFile("testEscapeHeaderQuotes1.", FileExtensions.VCF);
+        firstCopyVCFFile.toFile().deleteOnExit();
 
         final VariantContextWriter firstCopyWriter = new VariantContextWriterBuilder()
-                .setOutputFile(firstCopyVCFFile)
+                .setOutputPath(firstCopyVCFFile)
                 .setReferenceDictionary(createArtificialSequenceDictionary())
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
@@ -649,10 +656,10 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 "This other value has a \\n newline in it");
 
         // write one more copy to make sure things don't get double escaped
-        final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", FileExtensions.VCF);
-        secondCopyVCFFile.deleteOnExit();
+        final Path secondCopyVCFFile = Files.createTempFile("testEscapeHeaderQuotes2.", FileExtensions.VCF);
+        secondCopyVCFFile.toFile().deleteOnExit();
         final VariantContextWriter secondCopyWriter = new VariantContextWriterBuilder()
-                .setOutputFile(secondCopyVCFFile)
+                .setOutputPath(secondCopyVCFFile)
                 .setReferenceDictionary(createArtificialSequenceDictionary())
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
@@ -722,15 +729,15 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // this test ensures that source/version fields are round-tripped properly
 
         // read an existing VCF
-        File expectedFile = new File("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
+        Path expectedFile = Path.of("src/test/resources/htsjdk/variant/Vcf4.2WithSourceVersionInfoFields.vcf");
 
         // write the file out into a new copy
-        final File actualFile = File.createTempFile("testVcf4.2roundtrip.", FileExtensions.VCF);
-        actualFile.deleteOnExit();
+        final Path actualFile = Files.createTempFile("testVcf4.2roundtrip.", FileExtensions.VCF);
+        actualFile.toFile().deleteOnExit();
 
         try (final VCFFileReader originalFileReader = new VCFFileReader(expectedFile, false);
                 final VariantContextWriter copyWriter = new VariantContextWriterBuilder()
-                        .setOutputFile(actualFile)
+                        .setOutputPath(actualFile)
                         .setReferenceDictionary(createArtificialSequenceDictionary())
                         .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                         .build()) {
@@ -742,8 +749,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             }
         }
 
-        final String actualContents = new String(Files.readAllBytes(actualFile.toPath()), StandardCharsets.UTF_8);
-        final String expectedContents = new String(Files.readAllBytes(expectedFile.toPath()), StandardCharsets.UTF_8);
+        final String actualContents = new String(Files.readAllBytes(actualFile), StandardCharsets.UTF_8);
+        final String expectedContents = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8);
         Assert.assertEquals(actualContents, expectedContents);
     }
 
@@ -756,7 +763,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
      * @param file the file
      * @return a string
      */
-    private static String md5SumFile(File file) {
+    private static String md5SumFile(Path file) {
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("MD5");
@@ -765,8 +772,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         }
         InputStream is;
         try {
-            is = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
+            is = Files.newInputStream(file);
+        } catch (IOException e) {
             throw new RuntimeException("Unable to open file " + file);
         }
         byte[] buffer = new byte[8192];
@@ -791,12 +798,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     private void checkMD5ofHeaderFile(VCFHeader header, String md5sum) {
-        File myTempFile = null;
+        Path myTempFile = null;
         PrintWriter pw = null;
         try {
-            myTempFile = File.createTempFile("VCFHeader", "vcf");
-            myTempFile.deleteOnExit();
-            pw = new PrintWriter(myTempFile);
+            myTempFile = Files.createTempFile("VCFHeader", "vcf");
+            myTempFile.toFile().deleteOnExit();
+            pw = new PrintWriter(Files.newBufferedWriter(myTempFile));
         } catch (IOException e) {
             Assert.fail("Unable to make a temp file!");
         }

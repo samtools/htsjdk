@@ -24,7 +24,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -81,8 +82,8 @@ public class SAMTextWriterTest extends HtsjdkTest {
 
     private void doTest(final SAMRecordSetBuilder recordSetBuilder, final SamFlagField samFlagField) throws Exception {
         SamReader inputSAM = recordSetBuilder.getSamReader();
-        final File samFile = File.createTempFile("tmp.", ".sam");
-        samFile.deleteOnExit();
+        final Path samFile = Files.createTempFile("tmp.", ".sam");
+        samFile.toFile().deleteOnExit();
         final Map<String, Object> tagMap = new HashMap<String, Object>();
         tagMap.put("XC", 'q');
         tagMap.put("XI", 12345);

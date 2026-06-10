@@ -5,13 +5,13 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.ProviderNotFoundException;
@@ -323,12 +323,8 @@ public class HtsPathUnitTest extends HtsjdkTest {
     public Object[][] outputStreamPaths() throws IOException {
         return new Object[][] {
             // output URIs that can be resolved to an actual test file
-            {File.createTempFile("testOutputStream", ".txt").toString()},
-            {
-                "file://"
-                        + getLocalFileAsURIPathString(
-                                File.createTempFile("testOutputStream", ".txt").toPath())
-            },
+            {Files.createTempFile("testOutputStream", ".txt").toString()},
+            {"file://" + getLocalFileAsURIPathString(Files.createTempFile("testOutputStream", ".txt"))},
         };
     }
 
@@ -676,7 +672,7 @@ public class HtsPathUnitTest extends HtsjdkTest {
      * Returns /Users/user/=
      */
     private static String getCWDAsFileReference() {
-        return new File(".").getAbsolutePath();
+        return Paths.get(".").toAbsolutePath().toString();
     }
 
     /**
@@ -699,9 +695,8 @@ public class HtsPathUnitTest extends HtsjdkTest {
     }
 
     /**
-     * Get just the path part of the URI representing a file on the local file system. This
-     * uses java.io.File to get a locally valid file reference, which is then converted to
-     * a URI.
+     * Get just the path part of the URI representing a file on the local file system. The
+     * supplied Path is converted to a normalized URI.
      */
     private String getLocalFileAsURIPathString(final Path localPath) {
         return localPath.toUri().normalize().getPath();

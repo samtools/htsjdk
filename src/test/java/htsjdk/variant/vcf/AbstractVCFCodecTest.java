@@ -5,7 +5,7 @@ import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import org.testng.Assert;
@@ -18,7 +18,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     public void shouldPreserveSymbolicAlleleCase() {
         final VariantContext variant;
         try (final VCFFileReader reader =
-                new VCFFileReader(new File(VariantBaseTest.variantTestDataRoot + "breakpoint.vcf"), false)) {
+                new VCFFileReader(Path.of(VariantBaseTest.variantTestDataRoot + "breakpoint.vcf"), false)) {
             variant = reader.iterator().next();
         }
         // VCF v4.1 s1.4.5
@@ -62,7 +62,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     public void testGLnotOverridePL() {
         final VariantContext variant;
         try (final VCFFileReader reader =
-                new VCFFileReader(new File("src/test/resources/htsjdk/variant/test_withGLandPL.vcf"), false)) {
+                new VCFFileReader(Path.of("src/test/resources/htsjdk/variant/test_withGLandPL.vcf"), false)) {
             variant = reader.iterator().next();
         }
         Assert.assertEquals(variant.getGenotype(0).getPL(), new int[] {45, 0, 50});
@@ -79,7 +79,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 
     @Test(dataProvider = "caseIntolerantDoubles")
     public void testCaseIntolerantDoubles(String vcfInput, double value) {
-        try (final VCFFileReader reader = new VCFFileReader(new File(vcfInput), false)) {
+        try (final VCFFileReader reader = new VCFFileReader(Path.of(vcfInput), false)) {
             try {
                 Iterator<VariantContext> iterator = reader.iterator();
                 final VariantContext baseVariant = iterator.next(); // First row uses Java-style

@@ -96,7 +96,8 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
     }
 
     private DiskBackedQueue<String> makeDiskBackedQueue(final int maxRecordsInRam) {
-        return DiskBackedQueue.newInstance(new StringCodec(), maxRecordsInRam, Collections.singletonList(tmpDir()));
+        return DiskBackedQueue.newInstanceFromPaths(
+                new StringCodec(), maxRecordsInRam, Collections.singletonList(tmpDir()));
     }
 
     @Test

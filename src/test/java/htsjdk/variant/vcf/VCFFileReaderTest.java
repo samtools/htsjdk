@@ -5,11 +5,10 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -21,21 +20,21 @@ import org.testng.annotations.Test;
  * Created by farjoun on 10/12/17.
  */
 public class VCFFileReaderTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/variant/");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/variant/");
 
     @DataProvider(name = "queryableData")
     public Iterator<Object[]> queryableData() throws IOException {
         List<Object[]> tests = new ArrayList<>();
-        tests.add(new Object[] {new File(TEST_DATA_DIR, "NA12891.fp.vcf"), false});
-        tests.add(new Object[] {new File(TEST_DATA_DIR, "NA12891.vcf"), false});
+        tests.add(new Object[] {TEST_DATA_DIR.resolve("NA12891.fp.vcf"), false});
+        tests.add(new Object[] {TEST_DATA_DIR.resolve("NA12891.vcf"), false});
         tests.add(new Object[] {
             VCFUtils.createTemporaryIndexedVcfFromInput(
-                    new File(TEST_DATA_DIR, "NA12891.vcf"), "fingerprintcheckertest.tmp."),
+                    TEST_DATA_DIR.resolve("NA12891.vcf"), "fingerprintcheckertest.tmp."),
             true
         });
         tests.add(new Object[] {
             VCFUtils.createTemporaryIndexedVcfFromInput(
-                    new File(TEST_DATA_DIR, "NA12891.vcf.gz"), "fingerprintcheckertest.tmp."),
+                    TEST_DATA_DIR.resolve("NA12891.vcf.gz"), "fingerprintcheckertest.tmp."),
             true
         });
 
@@ -43,7 +42,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "queryableData")
-    public void testIsQueriable(final File vcf, final boolean expectedQueryable) throws Exception {
+    public void testIsQueriable(final Path vcf, final boolean expectedQueryable) throws Exception {
         Assert.assertEquals(new VCFFileReader(vcf, false).isQueryable(), expectedQueryable);
     }
 
@@ -117,8 +116,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
     public void testAcceptOptimisticVCF4_4() {
         // This file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
         // This will fail unless the optimistic_vcf_4_4" property isn't set
-        try (final VCFFileReader reader =
-                new VCFFileReader(Paths.get(TEST_DATA_DIR.getAbsolutePath(), "VCF4_4HeaderTest.vcf"), false)) {
+        try (final VCFFileReader reader = new VCFFileReader(TEST_DATA_DIR.resolve("VCF4_4HeaderTest.vcf"), false)) {
             final VCFHeader header = reader.getFileHeader();
             Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
         }
@@ -126,21 +124,21 @@ public class VCFFileReaderTest extends HtsjdkTest {
 
     @Test
     public void testTabixFileWithEmbeddedSpaces() throws IOException {
-        final File testVCF = new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz");
-        final File testTBI = new File(TEST_DATA_DIR, "HiSeq.10000.vcf.bgz.tbi");
+        final Path testVCF = TEST_DATA_DIR.resolve("HiSeq.10000.vcf.bgz");
+        final Path testTBI = TEST_DATA_DIR.resolve("HiSeq.10000.vcf.bgz.tbi");
 
         // Copy the input files into a temporary directory with embedded spaces in the name.
         // This test needs to include the associated .tbi file because we want to force execution
         // of the tabix code path.
-        final File tempDir = IOUtil.createTempDir("test spaces").toFile();
-        Assert.assertTrue(tempDir.getAbsolutePath().contains(" "));
-        tempDir.deleteOnExit();
-        final File inputVCF = new File(tempDir, "HiSeq.10000.vcf.bgz");
-        inputVCF.deleteOnExit();
-        final File inputTBI = new File(tempDir, "HiSeq.10000.vcf.bgz.tbi");
-        inputTBI.deleteOnExit();
-        IOUtil.copyFile(testVCF, inputVCF);
-        IOUtil.copyFile(testTBI, inputTBI);
+        final Path tempDir = IOUtil.createTempDir("test spaces");
+        Assert.assertTrue(tempDir.toAbsolutePath().toString().contains(" "));
+        tempDir.toFile().deleteOnExit();
+        final Path inputVCF = tempDir.resolve("HiSeq.10000.vcf.bgz");
+        inputVCF.toFile().deleteOnExit();
+        final Path inputTBI = tempDir.resolve("HiSeq.10000.vcf.bgz.tbi");
+        inputTBI.toFile().deleteOnExit();
+        Files.copy(testVCF, inputVCF);
+        Files.copy(testTBI, inputTBI);
 
         try (final VCFFileReader vcfFileReader = new VCFFileReader(inputVCF)) {
             Assert.assertNotNull(vcfFileReader.getFileHeader());

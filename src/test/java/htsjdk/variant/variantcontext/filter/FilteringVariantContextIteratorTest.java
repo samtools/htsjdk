@@ -27,7 +27,7 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
-import java.io.File;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -36,7 +36,7 @@ import org.testng.annotations.Test;
  * Tests for testing the (VariantContext)FilteringVariantContextIterator, and the HeterozygosityFilter
  */
 public class FilteringVariantContextIteratorTest extends HtsjdkTest {
-    final File testDir = new File("src/test/resources/htsjdk/variant");
+    final Path testDir = Path.of("src/test/resources/htsjdk/variant");
 
     @DataProvider
     public Object[][] filteringIteratorData() {
@@ -54,7 +54,7 @@ public class FilteringVariantContextIteratorTest extends HtsjdkTest {
     @Test(dataProvider = "filteringIteratorData")
     public void testFilteringIterator(final VariantContextFilter filter, final int expectedCount) {
 
-        final File vcf = new File(testDir, "ex2.vcf");
+        final Path vcf = testDir.resolve("ex2.vcf");
         final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
         final FilteringVariantContextIterator filteringIterator =
                 new FilteringVariantContextIterator(vcfReader.iterator(), filter);
@@ -78,7 +78,7 @@ public class FilteringVariantContextIteratorTest extends HtsjdkTest {
     @Test(dataProvider = "badSampleData", expectedExceptions = IllegalArgumentException.class)
     public void testMissingSample(final String file, final String sample) {
 
-        final File vcf = new File(testDir, file);
+        final Path vcf = testDir.resolve(file);
         final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
         final HeterozygosityFilter heterozygosityFilter = new HeterozygosityFilter(true, sample);
 

@@ -4,8 +4,8 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -156,9 +156,9 @@ public class Spec30IndexTest extends HtsSpecsComplianceTestBase {
             final boolean contained,
             final int expectedCount)
             throws IOException {
-        final File cramFile = SPEC_30_DIR.resolve(basename + ".cram").toFile();
-        final File craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai").toFile();
-        final ReferenceSource source = new ReferenceSource(REFERENCE);
+        final Path cramFile = SPEC_30_DIR.resolve(basename + ".cram");
+        final Path craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai");
+        final ReferenceSource source = new ReferenceSource(REFERENCE.toPath());
 
         try (final CRAMFileReader reader = new CRAMFileReader(
                 new SeekableFileStream(cramFile),
@@ -176,9 +176,9 @@ public class Spec30IndexTest extends HtsSpecsComplianceTestBase {
     }
 
     private void assertUnmappedCount(final String basename, final int expectedCount) throws IOException {
-        final File cramFile = SPEC_30_DIR.resolve(basename + ".cram").toFile();
-        final File craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai").toFile();
-        final ReferenceSource source = new ReferenceSource(REFERENCE);
+        final Path cramFile = SPEC_30_DIR.resolve(basename + ".cram");
+        final Path craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai");
+        final ReferenceSource source = new ReferenceSource(REFERENCE.toPath());
 
         try (final CRAMFileReader reader = new CRAMFileReader(
                 new SeekableFileStream(cramFile),

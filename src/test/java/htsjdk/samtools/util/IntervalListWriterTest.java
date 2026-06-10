@@ -6,7 +6,6 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -28,9 +27,9 @@ public class IntervalListWriterTest extends HtsjdkTest {
 
     @Test
     public void testEndToEnd() throws IOException {
-        final File tempFile = File.createTempFile("IntervalListWriterTest.", ".interval_list");
-        tempFile.deleteOnExit();
-        testEndToEnd(tempFile.toPath());
+        final Path tempFile = Files.createTempFile("IntervalListWriterTest.", ".interval_list");
+        IOUtil.deleteOnExit(tempFile);
+        testEndToEnd(tempFile);
     }
 
     @Test

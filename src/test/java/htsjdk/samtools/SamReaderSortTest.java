@@ -26,7 +26,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import java.io.File;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -52,7 +52,7 @@ public class SamReaderSortTest extends HtsjdkTest {
     @Test(expectedExceptions = IllegalStateException.class)
     public void testSortsDisagree() throws Exception {
         SAMRecordIterator it = SamReaderFactory.makeDefault()
-                .open(new File(COORDINATE_SORTED_FILE))
+                .open(Path.of(COORDINATE_SORTED_FILE))
                 .iterator();
         try {
             it.assertSorted(SAMFileHeader.SortOrder.queryname);
@@ -68,7 +68,7 @@ public class SamReaderSortTest extends HtsjdkTest {
     @Test(dataProvider = "validSorts")
     public void testSortAssertionValid(String file, SAMFileHeader.SortOrder order) {
         SAMRecordIterator it =
-                SamReaderFactory.makeDefault().open(new File(file)).iterator();
+                SamReaderFactory.makeDefault().open(Path.of(file)).iterator();
         try {
             it.assertSorted(order);
             while (it.hasNext()) {
@@ -92,7 +92,7 @@ public class SamReaderSortTest extends HtsjdkTest {
     @Test(dataProvider = "invalidSorts", expectedExceptions = IllegalStateException.class)
     public void testSortAssertionFails(String file, SAMFileHeader.SortOrder order) throws Exception {
         SAMRecordIterator it =
-                SamReaderFactory.makeDefault().open(new File(file)).iterator();
+                SamReaderFactory.makeDefault().open(Path.of(file)).iterator();
         try {
             it.assertSorted(order);
             while (it.hasNext()) {
@@ -105,8 +105,8 @@ public class SamReaderSortTest extends HtsjdkTest {
     }
 
     private CRAMFileReader getCramFileReader(String file, String fileReference) {
-        final ReferenceSource referenceSource = new ReferenceSource(new File(fileReference));
-        return new CRAMFileReader(new File(file), referenceSource);
+        final ReferenceSource referenceSource = new ReferenceSource(Path.of(fileReference));
+        return new CRAMFileReader(Path.of(file), referenceSource);
     }
 
     @Test(dataProvider = "sortsCramWithoutIndex")

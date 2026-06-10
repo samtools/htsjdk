@@ -27,8 +27,8 @@ package htsjdk.samtools.reference;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -45,7 +45,7 @@ public class ReferenceSequenceTests extends HtsjdkTest {
 
     @Test(dataProvider = "fastaTestParameters")
     public void testSingleShortSequence(int chroms, int basesPerChrom) throws Exception {
-        File f = makeRandomReference(chroms, basesPerChrom);
+        Path f = makeRandomReference(chroms, basesPerChrom);
         ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(f);
 
         for (int i = 1; i <= chroms; ++i) {
@@ -75,10 +75,10 @@ public class ReferenceSequenceTests extends HtsjdkTest {
     }
 
     /** Utility method to write a random reference sequence of specified length. */
-    private File makeRandomReference(int chroms, int basesPerChrom) throws Exception {
-        File file = File.createTempFile("reference.", ".fasta");
-        file.deleteOnExit();
-        BufferedWriter out = new BufferedWriter(new FileWriter(file));
+    private Path makeRandomReference(int chroms, int basesPerChrom) throws Exception {
+        Path file = Files.createTempFile("reference.", ".fasta");
+        file.toFile().deleteOnExit();
+        BufferedWriter out = Files.newBufferedWriter(file);
 
         for (int i = 1; i <= chroms; ++i) {
             out.write("> chr" + i);

@@ -8,8 +8,8 @@ import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -58,23 +58,23 @@ public class TribbleIndexedFeatureReaderTest extends HtsjdkTest {
 
     @DataProvider()
     public Object[][] createIntervalFileStrings() {
-        return new Object[][] {{new File(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list"), 4}};
+        return new Object[][] {{Path.of(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list"), 4}};
     }
 
     @Test(dataProvider = "createIntervalFileStrings")
-    public void testUnIndexedIntervalList(final File testPath, final int expectedCount) throws IOException {
+    public void testUnIndexedIntervalList(final Path testPath, final int expectedCount) throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
-                new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
+                new TribbleIndexedFeatureReader<>(testPath.toAbsolutePath().toString(), codec, false)) {
             Assert.assertEquals(featureReader.iterator().stream().count(), expectedCount);
         }
     }
 
     @Test(dataProvider = "createIntervalFileStrings", expectedExceptions = TribbleException.class)
-    public void testUnIndexedIntervalListWithQuery(final File testPath, final int ignored) throws IOException {
+    public void testUnIndexedIntervalListWithQuery(final Path testPath, final int ignored) throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
-                new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
+                new TribbleIndexedFeatureReader<>(testPath.toAbsolutePath().toString(), codec, false)) {
 
             Assert.assertEquals(
                     featureReader.query("1", 17032814, 17032814).stream().count(), 1);
@@ -84,9 +84,9 @@ public class TribbleIndexedFeatureReaderTest extends HtsjdkTest {
     @Test(expectedExceptions = TribbleException.MalformedFeatureFile.class)
     public void testPoolyFormatedIntervalListWithQuery() throws IOException {
         final IntervalListCodec codec = new IntervalListCodec();
-        final File testPath = new File(TestUtils.DATA_DIR, "interval_list/badExample.interval_list");
+        final Path testPath = Path.of(TestUtils.DATA_DIR, "interval_list/badExample.interval_list");
         try (final TribbleIndexedFeatureReader<Interval, LineIterator> featureReader =
-                new TribbleIndexedFeatureReader<>(testPath.getAbsolutePath(), codec, false)) {
+                new TribbleIndexedFeatureReader<>(testPath.toAbsolutePath().toString(), codec, false)) {
             final CloseableTribbleIterator<Interval> iterator = featureReader.iterator();
             int numberOfRecords = 0;
             while (iterator.hasNext()) {

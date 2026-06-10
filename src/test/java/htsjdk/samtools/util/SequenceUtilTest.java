@@ -27,7 +27,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -534,9 +534,9 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @Test
     public void testCalculateNmTag() {
-        final File TEST_DIR = new File("src/test/resources/htsjdk/samtools/SequenceUtil");
-        final File referenceFile = new File(TEST_DIR, "reference_with_lower_and_uppercase.fasta");
-        final File samFile = new File(TEST_DIR, "upper_and_lowercase_read.sam");
+        final Path TEST_DIR = Path.of("src/test/resources/htsjdk/samtools/SequenceUtil");
+        final Path referenceFile = TEST_DIR.resolve("reference_with_lower_and_uppercase.fasta");
+        final Path samFile = TEST_DIR.resolve("upper_and_lowercase_read.sam");
 
         SamReader reader = SamReaderFactory.makeDefault().open(samFile);
         ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(referenceFile);

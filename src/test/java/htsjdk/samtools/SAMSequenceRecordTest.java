@@ -25,8 +25,9 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -121,21 +122,22 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         };
     }
 
-    File AccessFileWithAlternateContigName;
+    Path AccessFileWithAlternateContigName;
 
     @BeforeMethod
     void setup() throws IOException {
-        File input = new File("src/test/resources/htsjdk/samtools/SamSequenceRecordTest/alternate_contig_names.sam");
+        Path input = Path.of("src/test/resources/htsjdk/samtools/SamSequenceRecordTest/alternate_contig_names.sam");
 
-        final File outputFile = File.createTempFile("tmp.", ".bam");
-        outputFile.deleteOnExit();
+        final Path outputFile = Files.createTempFile("tmp.", ".bam");
+        outputFile.toFile().deleteOnExit();
 
         final SamReader samReader = SamReaderFactory.make().open(input);
         final SAMFileHeader fileHeader = samReader.getFileHeader().clone();
         fileHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
-        try (SAMFileWriter samWriter =
-                new SAMFileWriterFactory().setCreateIndex(true).makeWriter(fileHeader, false, outputFile, null)) {
+        try (SAMFileWriter samWriter = new SAMFileWriterFactory()
+                .setCreateIndex(true)
+                .makeWriter(fileHeader, false, outputFile, (Path) null)) {
             samReader.forEach(samWriter::addAlignment);
         }
         AccessFileWithAlternateContigName = outputFile;

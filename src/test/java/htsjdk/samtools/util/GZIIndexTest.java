@@ -25,10 +25,10 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -44,37 +44,38 @@ public class GZIIndexTest extends HtsjdkTest {
     @DataProvider
     public Object[][] indexFiles() {
         return new Object[][] {
-            {new File("src/test/resources/htsjdk/samtools/block_compressed.sam.gz.gzi"), 2},
-            {new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi"), 17}
+            {Paths.get("src/test/resources/htsjdk/samtools/block_compressed.sam.gz.gzi"), 2},
+            {Paths.get("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi"), 17}
         };
     }
 
     @Test(dataProvider = "indexFiles")
-    public void testLoadIndex(final File indexFile, final int expectedBlocks) throws Exception {
+    public void testLoadIndex(final Path indexFile, final int expectedBlocks) throws Exception {
         // test reading of the input file
-        final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
+        final GZIIndex index = GZIIndex.loadIndex(indexFile);
         Assert.assertEquals(index.getNumberOfBlocks(), expectedBlocks);
     }
 
     @Test(dataProvider = "indexFiles")
-    public void testLoadIndexFromStream(final File indexFile, final int expectedBlocks) throws Exception {
-        try (InputStream in = new FileInputStream(indexFile)) {
+    public void testLoadIndexFromStream(final Path indexFile, final int expectedBlocks) throws Exception {
+        try (InputStream in = Files.newInputStream(indexFile)) {
             final GZIIndex index = GZIIndex.loadIndex(indexFile.toString(), in);
             Assert.assertEquals(index.getNumberOfBlocks(), expectedBlocks);
         }
     }
 
     @Test(dataProvider = "indexFiles")
-    public void testWriteIndex(final File indexFile, final int exprectedBlocks) throws Exception {
+    public void testWriteIndex(final Path indexFile, final int exprectedBlocks) throws Exception {
         // load the index and write it down
-        final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
-        final File temp = File.createTempFile("testWriteIndex", indexFile.getName());
-        temp.deleteOnExit();
-        index.writeIndex(Files.newOutputStream(temp.toPath()));
+        final GZIIndex index = GZIIndex.loadIndex(indexFile);
+        final Path temp =
+                Files.createTempFile("testWriteIndex", indexFile.getFileName().toString());
+        IOUtil.deleteOnExit(temp);
+        index.writeIndex(temp);
 
         // test equal byte representation on disk
-        final byte[] expected = Files.readAllBytes(indexFile.toPath());
-        final byte[] actual = Files.readAllBytes(temp.toPath());
+        final byte[] expected = Files.readAllBytes(indexFile);
+        final byte[] actual = Files.readAllBytes(temp);
         Assert.assertEquals(expected, actual);
     }
 
@@ -82,22 +83,22 @@ public class GZIIndexTest extends HtsjdkTest {
     public Object[][] filesWithIndex() {
         return new Object[][] {
             {
-                new File("src/test/resources/htsjdk/samtools/block_compressed.sam.gz"),
-                new File("src/test/resources/htsjdk/samtools/block_compressed.sam.gz.gzi")
+                Paths.get("src/test/resources/htsjdk/samtools/block_compressed.sam.gz"),
+                Paths.get("src/test/resources/htsjdk/samtools/block_compressed.sam.gz.gzi")
             },
             {
-                new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz"),
-                new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi")
+                Paths.get("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz"),
+                Paths.get("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi")
             }
         };
     }
 
     @Test(dataProvider = "filesWithIndex")
-    public void testBuildIndex(final File fileToIndex, final File expectedIndex) throws Exception {
+    public void testBuildIndex(final Path fileToIndex, final Path expectedIndex) throws Exception {
         // create the index for the provided file
-        final GZIIndex actual = GZIIndex.buildIndex(fileToIndex.toPath());
+        final GZIIndex actual = GZIIndex.buildIndex(fileToIndex);
         // load the expected index to check for equality
-        final GZIIndex expected = GZIIndex.loadIndex(expectedIndex.toPath());
+        final GZIIndex expected = GZIIndex.loadIndex(expectedIndex);
         Assert.assertEquals(actual, expected);
     }
 
@@ -105,8 +106,7 @@ public class GZIIndexTest extends HtsjdkTest {
     public Iterator<Object[]> virtualOffsetForSeekData() throws Exception {
         // wer use the index from the FASTA file for testing seek
         final GZIIndex index = GZIIndex.loadIndex(
-                new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi")
-                        .toPath());
+                Paths.get("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi"));
         final List<Object[]> data = new ArrayList<>(2 * index.getNumberOfBlocks() + 3);
         // position 0
         data.add(new Object[] {0, 0, 0, index});

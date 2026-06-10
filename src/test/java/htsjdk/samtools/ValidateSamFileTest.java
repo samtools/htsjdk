@@ -34,15 +34,15 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.StringUtil;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,7 +59,7 @@ import org.testng.annotations.Test;
  * @author Doug Voet
  */
 public class ValidateSamFileTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/ValidateSamFileTest");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/ValidateSamFileTest");
     private static final int TERMINATION_GZIP_BLOCK_SIZE = 28;
     private static final int RANDOM_NUMBER_TRUNC_BYTE = 128;
 
@@ -67,7 +67,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testValidSamFile() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "valid.sam"));
+                .open(TEST_DATA_DIR.resolve("valid.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(results.isEmpty());
     }
@@ -78,11 +78,11 @@ public class ValidateSamFileTest extends HtsjdkTest {
         // With current behavior (matching htslib/samtools), NM/MD are regenerated correctly
         // on decode, so validation finds no errors. Previously this test expected MISSING_NM
         // warnings which are no longer produced.
-        final File reference = new File(TEST_DATA_DIR, "nm_tag_validation.fa");
+        final Path reference = TEST_DATA_DIR.resolve("nm_tag_validation.fa");
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
                 .referenceSequence(reference)
-                .open(new File(TEST_DATA_DIR, "nm_tag_validation.cram"));
+                .open(TEST_DATA_DIR.resolve("nm_tag_validation.cram"));
         final Histogram<String> results = executeValidation(
                 samReader, new FastaSequenceFile(reference, true), IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(results.isEmpty());
@@ -92,7 +92,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testSamFileVersion1pt5() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
+                .open(TEST_DATA_DIR.resolve("test_samfile_version_1pt5.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(results.getCount(), 2.0);
     }
@@ -102,7 +102,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Histogram<String> results = executeValidation(
                 SamReaderFactory.makeDefault()
                         .validationStringency(ValidationStringency.SILENT)
-                        .open(new File(TEST_DATA_DIR, "invalid_coord_sort_order.sam")),
+                        .open(TEST_DATA_DIR.resolve("invalid_coord_sort_order.sam")),
                 null,
                 IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
@@ -112,7 +112,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         results = executeValidation(
                 SamReaderFactory.makeDefault()
                         .validationStringency(ValidationStringency.SILENT)
-                        .open(new File(TEST_DATA_DIR, "invalid_queryname_sort_order.sam")),
+                        .open(TEST_DATA_DIR.resolve("invalid_queryname_sort_order.sam")),
                 null,
                 IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
@@ -423,7 +423,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testMateCigarScenarios(
             final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
             throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
+        final SamReader reader = SamReaderFactory.makeDefault().open(TEST_DATA_DIR.resolve(inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
         Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
@@ -447,7 +447,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
             throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, inputFile));
+                .open(TEST_DATA_DIR.resolve(inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
         Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
@@ -467,7 +467,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test(expectedExceptions = SAMException.class, dataProvider = "testFatalParsingErrors")
     public void testFatalParsingErrors(final String scenario, final String inputFile) throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
+        final SamReader reader = SamReaderFactory.makeDefault().open(TEST_DATA_DIR.resolve(inputFile));
         executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.fail("Exception should have been thrown.");
     }
@@ -482,7 +482,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test(dataProvider = "testQualitiesNotStored")
     public void testNotStoredQualitiesFields(final String inputFile, final double expectedValue) throws IOException {
-        try (final SamReader reader = SamReaderFactory.makeDefault().open((new File(TEST_DATA_DIR, inputFile)))) {
+        try (final SamReader reader = SamReaderFactory.makeDefault().open(TEST_DATA_DIR.resolve(inputFile))) {
             final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
             Assert.assertEquals(
                     results.get(SAMValidationError.Type.QUALITY_NOT_STORED.getHistogramString())
@@ -518,7 +518,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testQualityFormatValidation() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .open(
-                        new File(
+                        Path.of(
                                 "./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         final Histogram.Bin<String> bin =
@@ -576,8 +576,8 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testHeaderValidation() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "buggyHeader.sam"));
-        final File referenceFile = new File(TEST_DATA_DIR, "../hg19mini.fasta");
+                .open(TEST_DATA_DIR.resolve("buggyHeader.sam"));
+        final Path referenceFile = TEST_DATA_DIR.resolve("../hg19mini.fasta");
         final ReferenceSequenceFile reference = new FastaSequenceFile(referenceFile, false);
         final Histogram<String> results = executeValidation(samReader, reference, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
@@ -598,7 +598,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testSeqQualMismatch() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "seq_qual_len_mismatch.sam"));
+                .open(TEST_DATA_DIR.resolve("seq_qual_len_mismatch.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
                 results.get(SAMValidationError.Type.MISMATCH_SEQ_QUAL_LENGTH.getHistogramString())
@@ -610,7 +610,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testPlatformMissing() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open((new File(TEST_DATA_DIR, "missing_platform_unit.sam")));
+                .open(TEST_DATA_DIR.resolve("missing_platform_unit.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
                 results.get(SAMValidationError.Type.MISSING_PLATFORM_VALUE.getHistogramString())
@@ -622,7 +622,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testPlatformInvalid() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open((new File(TEST_DATA_DIR, "invalid_platform_unit.sam")));
+                .open(TEST_DATA_DIR.resolve("invalid_platform_unit.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
                 results.get(SAMValidationError.Type.INVALID_PLATFORM_VALUE.getHistogramString())
@@ -634,7 +634,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testDuplicateRGIDs() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open((new File(TEST_DATA_DIR, "duplicate_rg.sam")));
+                .open(TEST_DATA_DIR.resolve("duplicate_rg.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
                 results.get(SAMValidationError.Type.DUPLICATE_READ_GROUP_ID.getHistogramString())
@@ -647,7 +647,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
                 .enable(SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES)
-                .open((new File(TEST_DATA_DIR, "bad_index.bam")));
+                .open(TEST_DATA_DIR.resolve("bad_index.bam"));
 
         Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(
@@ -663,9 +663,9 @@ public class ValidateSamFileTest extends HtsjdkTest {
     }
 
     private void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
-        final File samFile = File.createTempFile("validateHeader.", ".sam");
-        samFile.deleteOnExit();
-        final PrintWriter pw = new PrintWriter(samFile);
+        final Path samFile = Files.createTempFile("validateHeader.", ".sam");
+        samFile.toFile().deleteOnExit();
+        final PrintWriter pw = new PrintWriter(Files.newOutputStream(samFile));
         pw.println("@HD\tVN:" + version);
         pw.close();
         final SamReader reader = SamReaderFactory.makeDefault().open(samFile);
@@ -696,7 +696,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void duplicateReads() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "duplicated_reads.sam"));
+                .open(TEST_DATA_DIR.resolve("duplicated_reads.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertFalse(results.isEmpty());
         Assert.assertEquals(
@@ -709,7 +709,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void duplicateReadsOutOfOrder() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
-                .open(new File(TEST_DATA_DIR, "duplicated_reads_out_of_order.sam"));
+                .open(TEST_DATA_DIR.resolve("duplicated_reads_out_of_order.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertFalse(results.isEmpty());
         Assert.assertEquals(
@@ -760,7 +760,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test(dataProvider = "validateBamFileTerminationData")
     public void validateBamFileTerminationTest(
-            final File file, final SAMValidationError.Type errorType, final int numWarnings, final int numErrors)
+            final Path file, final SAMValidationError.Type errorType, final int numWarnings, final int numErrors)
             throws IOException {
         final SamFileValidator samFileValidator = new SamFileValidator(new PrintWriter(System.out), 8000);
         samFileValidator.validateBamFileTermination(file);
@@ -784,32 +784,30 @@ public class ValidateSamFileTest extends HtsjdkTest {
             final Collection<SAMValidationError.Type> ignoringError,
             final boolean skipMateValidation)
             throws IOException {
-        final File outFile = File.createTempFile("validation", ".txt");
-        outFile.deleteOnExit();
+        final Path outFile = Files.createTempFile("validation", ".txt");
+        outFile.toFile().deleteOnExit();
 
-        final PrintWriter out = new PrintWriter(outFile);
+        final PrintWriter out = new PrintWriter(Files.newOutputStream(outFile));
         final SamFileValidator samFileValidator = new SamFileValidator(out, 8000);
         samFileValidator.setIndexValidationStringency(stringency).setErrorsToIgnore(ignoringError);
         samFileValidator.setSkipMateValidation(skipMateValidation);
         samFileValidator.validateSamFileSummary(samReader, reference);
 
-        final LineNumberReader reader = new LineNumberReader(new FileReader(outFile));
+        final BufferedReader reader = Files.newBufferedReader(outFile);
         if (reader.readLine().equals("No errors found")) {
             return new Histogram<>();
         }
         final MetricsFile<MetricBase, String> outputFile = new MetricsFile<>();
-        outputFile.read(new FileReader(outFile));
+        outputFile.read(Files.newBufferedReader(outFile));
         Assert.assertNotNull(outputFile.getHistogram());
         return outputFile.getHistogram();
     }
 
-    private File getBrokenFile(int truncByte) throws IOException {
-        final FileChannel stream =
-                FileChannel.open(new File(TEST_DATA_DIR + "/test_samfile_version_1pt5.bam").toPath());
-        final File breakingFile = File.createTempFile("trunc", ".bam");
-        breakingFile.deleteOnExit();
-        FileChannel.open(breakingFile.toPath(), StandardOpenOption.WRITE)
-                .transferFrom(stream, 0, stream.size() - truncByte);
+    private Path getBrokenFile(int truncByte) throws IOException {
+        final FileChannel stream = FileChannel.open(TEST_DATA_DIR.resolve("test_samfile_version_1pt5.bam"));
+        final Path breakingFile = Files.createTempFile("trunc", ".bam");
+        breakingFile.toFile().deleteOnExit();
+        FileChannel.open(breakingFile, StandardOpenOption.WRITE).transferFrom(stream, 0, stream.size() - truncByte);
         return breakingFile;
     }
 }

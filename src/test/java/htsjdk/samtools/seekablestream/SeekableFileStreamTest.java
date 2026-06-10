@@ -25,7 +25,8 @@ package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -41,7 +42,7 @@ public class SeekableFileStreamTest extends HtsjdkTest {
     @Test
     public void testSeek() throws Exception {
         String expectedLine = "ccccccccc";
-        File testFile = new File("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt");
+        Path testFile = Paths.get("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt");
         SeekableFileStream is = new SeekableFileStream(testFile);
         is.seek(20);
         BufferedLineReader reader = new BufferedLineReader(is);

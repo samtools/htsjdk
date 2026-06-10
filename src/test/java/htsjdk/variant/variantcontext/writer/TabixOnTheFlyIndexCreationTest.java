@@ -32,25 +32,26 @@ import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCF3Codec;
 import htsjdk.variant.vcf.VCFHeader;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import org.testng.annotations.Test;
 
 public class TabixOnTheFlyIndexCreationTest extends HtsjdkTest {
-    private static final File SMALL_VCF = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz");
+    private static final Path SMALL_VCF = Path.of("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz");
 
     @Test
     public void simpleTest() throws Exception {
         final VCF3Codec codec = new VCF3Codec();
-        final FeatureReader<VariantContext> reader =
-                AbstractFeatureReader.getFeatureReader(SMALL_VCF.getAbsolutePath(), codec, false);
+        final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(
+                SMALL_VCF.toAbsolutePath().toString(), codec, false);
         final VCFHeader headerFromFile = (VCFHeader) reader.getHeader();
-        final File vcf = File.createTempFile("TabixOnTheFlyIndexCreationTest.", FileExtensions.COMPRESSED_VCF);
-        final File tabix = new File(vcf.getAbsolutePath() + FileExtensions.TABIX_INDEX);
-        vcf.deleteOnExit();
-        tabix.deleteOnExit();
+        final Path vcf = Files.createTempFile("TabixOnTheFlyIndexCreationTest.", FileExtensions.COMPRESSED_VCF);
+        final Path tabix = Path.of(vcf.toAbsolutePath() + FileExtensions.TABIX_INDEX);
+        vcf.toFile().deleteOnExit();
+        tabix.toFile().deleteOnExit();
         final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
-                .setOutputFile(vcf)
+                .setOutputPath(vcf)
                 .setReferenceDictionary(headerFromFile.getSequenceDictionary())
                 .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY, Options.ALLOW_MISSING_FIELDS_IN_HEADER))
                 .build();

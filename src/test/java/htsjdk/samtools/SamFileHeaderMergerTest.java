@@ -33,9 +33,9 @@ import htsjdk.samtools.util.StringUtil;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -57,17 +57,17 @@ import org.testng.annotations.Test;
  */
 public class SamFileHeaderMergerTest extends HtsjdkTest {
 
-    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools");
 
     /** tests that if we've set the merging to false, we get a SAMException for bam's with different dictionaries. */
     @Test(expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
     public void testMergedException() {
-        File INPUT[] = {
-            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
-            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")
+        Path INPUT[] = {
+            TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/Chromosome1to10.bam"),
+            TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/Chromosome5to9.bam")
         };
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
-        for (final File inFile : INPUT) {
+        for (final Path inFile : INPUT) {
             IOUtil.assertFileIsReadable(inFile);
             headers.add(SamReaderFactory.makeDefault().getFileHeader(inFile));
         }
@@ -77,13 +77,13 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
     /** Tests that we can successfully merge two files with */
     @Test
     public void testMerging() {
-        File INPUT[] = {
-            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
-            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")
+        Path INPUT[] = {
+            TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/Chromosome1to10.bam"),
+            TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/Chromosome5to9.bam")
         };
         final List<SamReader> readers = new ArrayList<SamReader>();
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
-        for (final File inFile : INPUT) {
+        for (final Path inFile : INPUT) {
             IOUtil.assertFileIsReadable(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
             final SamReader in = SamReaderFactory.makeDefault()
@@ -157,9 +157,9 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "data")
-    public void testProgramGroupAndReadGroupMerge(File inputFiles[], File expectedOutputFile) throws IOException {
+    public void testProgramGroupAndReadGroupMerge(Path inputFiles[], Path expectedOutputFile) throws IOException {
 
-        BufferedReader reader = new BufferedReader(new FileReader(expectedOutputFile));
+        BufferedReader reader = new BufferedReader(Files.newBufferedReader(expectedOutputFile));
 
         String line;
         String expected_output = "";
@@ -169,7 +169,7 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
 
         final List<SamReader> readers = new ArrayList<SamReader>();
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
-        for (final File inFile : inputFiles) {
+        for (final Path inFile : inputFiles) {
             IOUtil.assertFileIsReadable(inFile);
 
             // We are now checking for zero-length reads, so suppress complaint about that.
@@ -227,20 +227,20 @@ public class SamFileHeaderMergerTest extends HtsjdkTest {
 
         return new Object[][] {
             {
-                new File[] {
-                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file1.sam"),
-                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file2.sam")
+                new Path[] {
+                    TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case1/chr11sub_file1.sam"),
+                    TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case1/chr11sub_file2.sam")
                 },
-                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/expected_output.sam")
+                TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case1/expected_output.sam")
             },
             {
-                new File[] {
-                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file1.sam"),
-                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file2.sam"),
-                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file3.sam"),
-                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file4.sam")
+                new Path[] {
+                    TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case2/chr11sub_file1.sam"),
+                    TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case2/chr11sub_file2.sam"),
+                    TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case2/chr11sub_file3.sam"),
+                    TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case2/chr11sub_file4.sam")
                 },
-                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/expected_output.sam")
+                TEST_DATA_DIR.resolve("SamFileHeaderMergerTest/case2/expected_output.sam")
             }
         };
     }

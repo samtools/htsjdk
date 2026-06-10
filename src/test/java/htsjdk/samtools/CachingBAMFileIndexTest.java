@@ -3,8 +3,9 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,8 +43,8 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
         final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory().setCreateIndex(true);
-        final File outBam = File.createTempFile("tmp", ".bam");
-        try (final SAMFileWriter writer = writerFactory.makeWriter(header, true, outBam, null)) {
+        final Path outBam = Files.createTempFile("tmp", ".bam");
+        try (final SAMFileWriter writer = writerFactory.makeWriter(header, true, outBam, (Path) null)) {
             IntStream.range(1, 200)
                     .mapToObj(i -> {
                         final SAMRecord record = new SAMRecord(header);
@@ -57,9 +58,9 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
                     .forEach(writer::addAlignment);
         }
 
-        final File indexFile = new File(outBam.getParent(), IOUtil.basename(outBam) + FileExtensions.BAI_INDEX);
-        indexFile.deleteOnExit();
-        outBam.deleteOnExit();
+        final Path indexFile = outBam.resolveSibling(IOUtil.basename(outBam) + FileExtensions.BAI_INDEX);
+        indexFile.toFile().deleteOnExit();
+        outBam.toFile().deleteOnExit();
         return new CachingBAMFileIndex(indexFile, dict);
     }
 

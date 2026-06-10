@@ -6,9 +6,9 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.utils.SamtoolsTestUtils;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -19,7 +19,7 @@ import org.testng.annotations.Test;
  */
 public class CRAMEdgeCasesTest extends HtsjdkTest {
 
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/cram");
 
     // NOTE: mateResolutionTest1.sam file has 3 reads, with the first read mated to the third, and the third mated
     // to the second (see with BAM flags and mate alignment start):
@@ -42,37 +42,32 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
     @DataProvider(name = "mateResolutionTests")
     public Object[][] getMateResolutionTests() throws IOException {
         return new Object[][] {
-            {
-                new File(TEST_DATA_DIR, "mateResolutionTest1.sam"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta")
-            },
-            {
-                new File(TEST_DATA_DIR, "mateResolutionTest2.sam"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta")
-            }
+            {TEST_DATA_DIR.resolve("mateResolutionTest1.sam"), TEST_DATA_DIR.resolve("human_g1k_v37.20.subset.fasta")},
+            {TEST_DATA_DIR.resolve("mateResolutionTest2.sam"), TEST_DATA_DIR.resolve("human_g1k_v37.20.subset.fasta")}
         };
     }
 
     @Test(dataProvider = "mateResolutionTests")
-    public final void testMateResolution(final File testFileWithMates, final File referenceFile) throws IOException {
+    public final void testMateResolution(final Path testFileWithMates, final Path referenceFile) throws IOException {
 
         // convert sam to cram and compare results
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
-        final File htsjdkTempCRAM = File.createTempFile("testMateResolution", ".cram");
+        final Path htsjdkTempCRAM = Files.createTempFile("testMateResolution", ".cram");
+        htsjdkTempCRAM.toFile().deleteOnExit();
         CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, testFileWithMates, htsjdkTempCRAM, referenceFile);
         assertEqualAlignmentFileContents(testFileWithMates, htsjdkTempCRAM, referenceFile);
 
         // now use samtools to roundtrip the original, and compare results
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
             final IOPath tempSamtoolsIOPath = SamtoolsTestUtils.convertToCRAM(
-                    new HtsPath(testFileWithMates.getAbsolutePath()),
-                    new HtsPath(referenceFile.getAbsolutePath()),
+                    new HtsPath(testFileWithMates.toAbsolutePath().toString()),
+                    new HtsPath(referenceFile.toAbsolutePath().toString()),
                     null);
-            assertEqualAlignmentFileContents(tempSamtoolsIOPath.toPath().toFile(), htsjdkTempCRAM, referenceFile);
+            assertEqualAlignmentFileContents(tempSamtoolsIOPath.toPath(), htsjdkTempCRAM, referenceFile);
         }
     }
 
-    final void assertEqualAlignmentFileContents(final File testFile1, final File testFile2, final File referenceFile)
+    final void assertEqualAlignmentFileContents(final Path testFile1, final Path testFile2, final Path referenceFile)
             throws IOException {
         final SamReaderFactory readerFactory = SamReaderFactory.makeDefault()
                 .referenceSequence(referenceFile)
@@ -107,11 +102,11 @@ public class CRAMEdgeCasesTest extends HtsjdkTest {
     // testing for a contig found in the reads but not in the reference
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testContigNotFoundInRef() throws IOException {
-        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
+        final Path CRAMFile = Path.of("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
+        final Path refFile = Path.of("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
         final ReferenceSource refSource = new ReferenceSource(refFile);
         final CRAMIterator iterator =
-                new CRAMIterator(new FileInputStream(CRAMFile), refSource, ValidationStringency.STRICT);
+                new CRAMIterator(Files.newInputStream(CRAMFile), refSource, ValidationStringency.STRICT);
         while (iterator.hasNext()) {
             iterator.next();
         }

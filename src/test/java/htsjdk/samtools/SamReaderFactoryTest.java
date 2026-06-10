@@ -24,7 +24,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
@@ -35,12 +34,12 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SamReaderFactoryTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools");
     private static final Log LOG = Log.getInstance(SamReaderFactoryTest.class);
 
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void variousFormatReaderTest(final String inputFile) throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
         for (final SAMRecord ignored : reader) {}
         reader.close();
@@ -68,7 +67,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
             }
         };
 
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
         try (final SamReader reader = SamReaderFactory.makeDefault()
                 .inflaterFactory(myInflaterFactory)
                 .open(input)) {
@@ -123,7 +122,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void testWrap() throws IOException {
-        final Path input = Paths.get(TEST_DATA_DIR.getPath(), "noheader.sam");
+        final Path input = TEST_DATA_DIR.resolve("noheader.sam");
         final SamReader wrappedReader =
                 SamReaderFactory.makeDefault().open(input, SamReaderFactoryTest::addHeader, null);
         int records = countRecords(wrappedReader);
@@ -134,7 +133,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     @Test(dataProvider = "queryIntervalIssue76TestCases")
     public void queryIntervalIssue76(final String sequenceName, final int start, final int end, final int expectedCount)
             throws IOException {
-        final File input = new File(TEST_DATA_DIR, "issue76.bam");
+        final Path input = TEST_DATA_DIR.resolve("issue76.bam");
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
         final QueryInterval interval = new QueryInterval(
                 reader.getFileHeader().getSequence(sequenceName).getSequenceIndex(), start, end);
@@ -208,7 +207,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void samRecordFactoryTest(final String inputFile) throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
 
         final SAMRecordFactoryTester recordFactory = new SAMRecordFactoryTester();
         final SamReaderFactory readerFactory = SamReaderFactory.makeDefault().samRecordFactory(recordFactory);
@@ -239,9 +238,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     /**
      * Unit tests for asserting all permutations of data and index sources read the same records and header.
      */
-    final File localBam = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    final Path localBam = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
-    final File localBamIndex = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    final Path localBamIndex = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
 
     final URL bamUrl, bamIndexUrl;
 
@@ -277,26 +276,27 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     }
 
     private InputResource composeInputResourceForType(final InputResource.Type type, final boolean forIndex) {
-        final File f = forIndex ? localBamIndex : localBam;
+        final Path f = forIndex ? localBamIndex : localBam;
         final URL url = forIndex ? bamIndexUrl : bamUrl;
         switch (type) {
             case FILE:
-                return new FileInputResource(f);
+                return new FileInputResource(f.toFile());
             case PATH:
-                return new PathInputResource(f.toPath(), Function.identity());
+                return new PathInputResource(f, Function.identity());
             case URL:
                 return new UrlInputResource(url);
             case SEEKABLE_STREAM:
                 return new SeekableStreamInputResource(new SeekableHTTPStream(url));
             case INPUT_STREAM:
                 try {
-                    return new InputStreamInputResource(new FileInputStream(f));
+                    return new InputStreamInputResource(new FileInputStream(f.toFile()));
                 } catch (final FileNotFoundException e) {
                     throw new RuntimeIOException(e);
                 }
             case HTSGET:
-                return new HtsgetInputResource(URI.create(
-                        HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + f.getName()));
+                return new HtsgetInputResource(URI.create(HtsgetBAMFileReaderTest.HTSGET_ENDPOINT
+                        + HtsgetBAMFileReaderTest.LOCAL_PREFIX
+                        + f.getFileName().toString()));
             default:
                 throw new IllegalStateException();
         }
@@ -325,7 +325,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void openPath() throws IOException {
-        final Path path = localBam.toPath();
+        final Path path = localBam;
         final List<SAMRecord> records;
         final SAMFileHeader fileHeader;
         try (final SamReader reader = SamReaderFactory.makeDefault().open(path)) {
@@ -346,9 +346,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testOpenIrregularPath() throws IOException {
         // See: htsjdk.samtools.SamInputResource.of(java.nio.file.Path)
         // Related to https://github.com/samtools/htsjdk/issues/1716
-        final File irregularFile = new File("/dev/null");
-        try (final SamReader fileReader = SamReaderFactory.makeDefault().open(irregularFile);
-                final SamReader pathReader = SamReaderFactory.makeDefault().open(irregularFile.toPath())) {
+        final Path irregularPath = Path.of("/dev/null");
+        try (final SamReader fileReader = SamReaderFactory.makeDefault().open(irregularPath);
+                final SamReader pathReader = SamReaderFactory.makeDefault().open(irregularPath)) {
             Assert.assertEquals(fileReader.getResourceDescription(), pathReader.getResourceDescription());
         }
     }
@@ -360,7 +360,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                 URI.create("htsget://127.0.0.1:3000/reads/htsjdk_test.index_test.bam"), InputResource.Type.HTSGET,
             },
             {
-                localBam.toURI(), InputResource.Type.PATH,
+                localBam.toUri(), InputResource.Type.PATH,
             },
             {
                 URI.create("http://test.url"), InputResource.Type.URL,
@@ -425,8 +425,8 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void checkHasIndexForStreamingPathBamWithFileIndex() throws IOException {
-        InputResource bam = new NeverFilePathInputResource(localBam.toPath());
-        InputResource index = new FileInputResource(localBamIndex);
+        InputResource bam = new NeverFilePathInputResource(localBam);
+        InputResource index = new FileInputResource(localBamIndex.toFile());
 
         // ensure that the index is being used, not checked in queryInputResourcePermutation
         try (final SamReader reader = SamReaderFactory.makeDefault().open(new SamInputResource(bam, index))) {
@@ -436,8 +436,8 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void queryStreamingPathBamWithFileIndex() throws IOException {
-        InputResource bam = new NeverFilePathInputResource(localBam.toPath());
-        InputResource index = new FileInputResource(localBamIndex);
+        InputResource bam = new NeverFilePathInputResource(localBam);
+        InputResource index = new FileInputResource(localBamIndex.toFile());
 
         queryInputResourcePermutation(new SamInputResource(bam, index));
     }
@@ -464,9 +464,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public static class TestReaderFactory implements CustomReaderFactory.ICustomReaderFactory {
         @Override
         public SamReader open(URL url) {
-            final File file = new File(TEST_DATA_DIR, url.getQuery());
-            LOG.info("Opening customr reader for " + file.toString());
-            return SamReaderFactory.makeDefault().open(file);
+            final Path path = TEST_DATA_DIR.resolve(url.getQuery());
+            LOG.info("Opening customr reader for " + path.toString());
+            return SamReaderFactory.makeDefault().open(path);
         }
     }
 
@@ -522,7 +522,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         // deliberately specify a bad index file to ensure we get an IOException
         getCRAMReaderFromInputResource(
                 (cramURL, indexURL) -> {
-                    return SamInputResource.of(cramURL).index(new File("nonexistent.bai"));
+                    return SamInputResource.of(cramURL).index(Path.of("nonexistent.bai"));
                 },
                 true,
                 3);
@@ -530,16 +530,16 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void testCRAMReaderWithCRAIFromNonFilePath() throws IOException {
-        final File cramFile = new File(TEST_DATA_DIR, "cram/cramQueryWithCRAI.cram");
-        final File cramIndex = new File(TEST_DATA_DIR, "cram/cramQueryWithCRAI.cram.crai");
-        final File referenceFile = new File(TEST_DATA_DIR, "cram/human_g1k_v37.20.21.10M-10M200k.fasta");
+        final Path cramFile = TEST_DATA_DIR.resolve("cram/cramQueryWithCRAI.cram");
+        final Path cramIndex = TEST_DATA_DIR.resolve("cram/cramQueryWithCRAI.cram.crai");
+        final Path referenceFile = TEST_DATA_DIR.resolve("cram/human_g1k_v37.20.21.10M-10M200k.fasta");
 
         try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
             final Path jimfsCRAM = jimfs.getPath("acram.cram");
             final Path jimfsCRAI = jimfs.getPath("acram.crai");
 
-            Files.copy(cramFile.toPath(), jimfsCRAM);
-            Files.copy(cramIndex.toPath(), jimfsCRAI);
+            Files.copy(cramFile, jimfsCRAM);
+            Files.copy(cramIndex, jimfsCRAI);
 
             final SamReaderFactory factory = SamReaderFactory.makeDefault()
                     .referenceSource(new ReferenceSource(referenceFile))
@@ -560,13 +560,19 @@ public class SamReaderFactoryTest extends HtsjdkTest {
             final boolean hasIndex,
             final int expectedCount)
             throws IOException {
-        final String cramFilePath = new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath();
-        final String cramIndexPath = new File(TEST_DATA_DIR, "cram_with_bai_index.cram.bai").getAbsolutePath();
+        final String cramFilePath = TEST_DATA_DIR
+                .resolve("cram_with_bai_index.cram")
+                .toAbsolutePath()
+                .toString();
+        final String cramIndexPath = TEST_DATA_DIR
+                .resolve("cram_with_bai_index.cram.bai")
+                .toAbsolutePath()
+                .toString();
         final URL cramURL = new URL("file://" + cramFilePath);
         final URL indexURL = new URL("file://" + cramIndexPath);
 
         final SamReaderFactory factory = SamReaderFactory.makeDefault()
-                .referenceSource(new ReferenceSource(new File(TEST_DATA_DIR, "hg19mini.fasta")))
+                .referenceSource(new ReferenceSource(TEST_DATA_DIR.resolve("hg19mini.fasta")))
                 .validationStringency(ValidationStringency.SILENT);
         final SamReader reader = factory.open(getInputResource.apply(cramURL, indexURL));
 
@@ -579,16 +585,17 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testSamReaderFromSeekableStream() throws IOException {
         // even though a SAM isn't indexable, make sure we can open one
         // using a seekable stream
-        final File samFile = new File(TEST_DATA_DIR, "unsorted.sam");
+        final Path samPath = TEST_DATA_DIR.resolve("unsorted.sam");
         final SamReaderFactory factory =
                 SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
-        final SamReader reader = factory.open(SamInputResource.of(new SeekableFileStream(samFile)));
+        final SamReader reader = factory.open(SamInputResource.of(new SeekableFileStream(samPath)));
         Assert.assertEquals(countRecords(reader), 10);
     }
 
     @Test
     public void testSamReaderFromURL() throws IOException {
-        final String samFilePath = new File(TEST_DATA_DIR, "unsorted.sam").getAbsolutePath();
+        final String samFilePath =
+                TEST_DATA_DIR.resolve("unsorted.sam").toAbsolutePath().toString();
         final URL samURL = new URL("file://" + samFilePath);
         final SamReaderFactory factory =
                 SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
@@ -602,10 +609,10 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         // use a bogus (.bai file) to force SamReaderFactory to fall through to the
         // fallback code that assumes a SAM File when it can't determine the
         // format of the input, to ensure that it results in a SAMFormatException
-        final File samFile = new File(TEST_DATA_DIR, "cram_with_bai_index.cram.bai");
+        final Path samPath = TEST_DATA_DIR.resolve("cram_with_bai_index.cram.bai");
         final SamReaderFactory factory =
                 SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
-        try (final SamReader reader = factory.open(SamInputResource.of(new SeekableFileStream(samFile)))) {
+        try (final SamReader reader = factory.open(SamInputResource.of(new SeekableFileStream(samPath)))) {
             countRecords(reader);
         }
     }
@@ -620,10 +627,11 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
         for (final boolean usePath : CollectionUtil.makeList(true, false)) {
 
-            final File fifo = File.createTempFile("fifo", "");
-            Assert.assertTrue(fifo.delete());
-            fifo.deleteOnExit();
-            final Process exec = new ProcessBuilder("mkfifo", fifo.getAbsolutePath()).start();
+            final Path fifo = Files.createTempFile("fifo", "");
+            Files.delete(fifo);
+            fifo.toFile().deleteOnExit();
+            final Process exec =
+                    new ProcessBuilder("mkfifo", fifo.toAbsolutePath().toString()).start();
             exec.waitFor(1, TimeUnit.MINUTES);
             Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
 
@@ -644,7 +652,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                         return written;
                     }
                 });
-                final SamInputResource res = usePath ? SamInputResource.of(fifo.toPath()) : SamInputResource.of(fifo);
+                final SamInputResource res = usePath ? SamInputResource.of(fifo) : SamInputResource.of(fifo.toFile());
 
                 int count = 0;
                 try (final SamReader in = SamReaderFactory.make().open(res)) {

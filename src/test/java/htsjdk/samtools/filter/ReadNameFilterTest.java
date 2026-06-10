@@ -3,7 +3,7 @@ package htsjdk.samtools.filter;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CollectionUtil;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.testng.Assert;
@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
  */
 public class ReadNameFilterTest extends HtsjdkTest {
 
-    private static final File TEST_DIR = new File("src/test/resources/htsjdk/samtools/filter");
+    private static final Path TEST_DIR = Path.of("src/test/resources/htsjdk/samtools/filter");
     private static final List<String> names = CollectionUtil.makeList(
             "Read1_filter", "read3_stay", "Read2_filter", "read4_stay", "Hello_filter", "goodbye");
 
@@ -25,7 +25,7 @@ public class ReadNameFilterTest extends HtsjdkTest {
         names.forEach(builder::addUnmappedFragment);
 
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(
-                builder.getRecords().iterator(), new ReadNameFilter(new File(TEST_DIR, "names.txt"), true));
+                builder.getRecords().iterator(), new ReadNameFilter(TEST_DIR.resolve("names.txt"), true));
 
         Assert.assertEquals(
                 filteringSamIterator.stream()

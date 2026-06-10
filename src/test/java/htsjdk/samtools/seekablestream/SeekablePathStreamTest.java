@@ -24,9 +24,9 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -34,7 +34,7 @@ public class SeekablePathStreamTest extends HtsjdkTest {
 
     @Test
     public void testRead() throws Exception {
-        Path testPath = new File("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt").toPath();
+        Path testPath = Paths.get("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt");
         SeekablePathStream is = new SeekablePathStream(testPath);
         Assert.assertEquals(is.position(), 0);
         Assert.assertEquals(is.read(), (int) 'a');

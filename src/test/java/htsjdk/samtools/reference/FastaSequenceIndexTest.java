@@ -26,10 +26,9 @@ package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,25 +41,23 @@ import org.testng.annotations.Test;
  * Test the fasta sequence index reader.
  */
 public class FastaSequenceIndexTest extends HtsjdkTest {
-    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
+    private static Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/reference");
 
     @DataProvider(name = "homosapiens")
-    public Object[][] provideHomoSapiens() throws FileNotFoundException {
-        final File sequenceIndexFile = new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.fasta.fai");
+    public Object[][] provideHomoSapiens() throws IOException {
+        final Path sequenceIndexFile = TEST_DATA_DIR.resolve("Homo_sapiens_assembly18.fasta.fai");
         return new Object[][] {
             new Object[] {new FastaSequenceIndex(sequenceIndexFile)},
-            {new FastaSequenceIndex(sequenceIndexFile.toPath())},
-            {new FastaSequenceIndex(new FileInputStream(sequenceIndexFile))}
+            {new FastaSequenceIndex(Files.newInputStream(sequenceIndexFile))}
         };
     }
 
     @DataProvider(name = "specialcharacters")
-    public Object[][] provideSpecialCharacters() throws FileNotFoundException {
-        final File sequenceIndexFile = new File(TEST_DATA_DIR, "testing.fai");
+    public Object[][] provideSpecialCharacters() throws IOException {
+        final Path sequenceIndexFile = TEST_DATA_DIR.resolve("testing.fai");
         return new Object[][] {
             new Object[] {new FastaSequenceIndex(sequenceIndexFile)},
-            {new FastaSequenceIndex(sequenceIndexFile.toPath())},
-            {new FastaSequenceIndex(new FileInputStream(sequenceIndexFile))}
+            {new FastaSequenceIndex(Files.newInputStream(sequenceIndexFile))}
         };
     }
 
@@ -291,17 +288,17 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
     @Test
     public void testWrite() throws Exception {
         // gets the original file and index
-        final File originalFile = new File(TEST_DATA_DIR, "testing.fai");
+        final Path originalFile = TEST_DATA_DIR.resolve("testing.fai");
         final FastaSequenceIndex originalIndex = new FastaSequenceIndex(originalFile);
 
         // write the index to a temp file and test if files are the same
-        final File fileToWrite = File.createTempFile("testing.toWrite", "fai");
-        fileToWrite.deleteOnExit();
-        originalIndex.write(fileToWrite.toPath());
+        final Path fileToWrite = Files.createTempFile("testing.toWrite", "fai");
+        fileToWrite.toFile().deleteOnExit();
+        originalIndex.write(fileToWrite);
 
         // read all the files and compare line by line
-        try (final Stream<String> original = Files.lines(originalFile.toPath());
-                final Stream<String> written = Files.lines(fileToWrite.toPath())) {
+        try (final Stream<String> original = Files.lines(originalFile);
+                final Stream<String> written = Files.lines(fileToWrite)) {
             final List<String> originalLines =
                     original.filter(s -> !s.isEmpty()).collect(Collectors.toList());
             final List<String> actualLines = written.filter(s -> !s.isEmpty()).collect(Collectors.toList());

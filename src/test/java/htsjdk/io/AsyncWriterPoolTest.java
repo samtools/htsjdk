@@ -3,7 +3,8 @@ package htsjdk.io;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -63,13 +64,13 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
         for (int threads = 1; threads <= 4; threads++) {
             AsyncWriterPool pool = new AsyncWriterPool(threads);
             int fileNum = 8;
-            ArrayList<File> files = new ArrayList<>();
+            ArrayList<Path> files = new ArrayList<>();
             ArrayList<Writer<String>> writers = new ArrayList<>();
             ArrayList<Iterator<Integer>> streams = new ArrayList<>();
             for (int i = 0; i < fileNum; i++) {
-                File file = File.createTempFile(String.format("AsyncPoolWriter_%s_%s", threads, i), ".tmp");
-                file.deleteOnExit();
-                TestWriter writer = new TestWriter(file.toPath());
+                Path file = Files.createTempFile(String.format("AsyncPoolWriter_%s_%s", threads, i), ".tmp");
+                IOUtil.deleteOnExit(file);
+                TestWriter writer = new TestWriter(file);
                 files.add(file);
                 Writer<String> pooledWriter = pool.pool(writer, new LinkedBlockingQueue<>(), 15);
                 writers.add(pooledWriter);
@@ -89,7 +90,7 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
 
             // Verify that values wrote in order and in full
             for (int i = 0; i < fileNum; i++) {
-                File file = files.get(i);
+                Path file = files.get(i);
                 List<Integer> lines =
                         IOUtil.slurpLines(file).stream().map(Integer::parseInt).collect(Collectors.toList());
                 Assert.assertTrue(AsyncWriterPoolTest.isSorted(lines));
@@ -102,9 +103,9 @@ public class AsyncWriterPoolTest extends HtsjdkTest {
     public void testNoSelfSuppression() throws IOException {
 
         AsyncWriterPool pool = new AsyncWriterPool(4);
-        File file = File.createTempFile("AsyncPoolWriterTest", ".tmp");
-        file.deleteOnExit();
-        TestWriter writer = new TestWriter(file.toPath());
+        Path file = Files.createTempFile("AsyncPoolWriterTest", ".tmp");
+        IOUtil.deleteOnExit(file);
+        TestWriter writer = new TestWriter(file);
         Writer<String> pooledWriter =
                 pool.pool(writer, new LinkedBlockingQueue<>(), 1); // NB: buffsize must be 1 to make tests work
         writer.close(); // Close the inner writer so an exception will be thrown when a thread trys to write to it

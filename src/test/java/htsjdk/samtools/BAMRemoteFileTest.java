@@ -28,9 +28,9 @@ import static org.testng.Assert.*;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.TestUtil;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -41,9 +41,9 @@ import org.testng.annotations.Test;
  * Test BAM file indexing.
  */
 public class BAMRemoteFileTest extends HtsjdkTest {
-    private final File BAM_INDEX_FILE =
-            new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
-    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private final Path BAM_INDEX_FILE =
+            Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    private final Path BAM_FILE = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final String BAM_URL_STRING = TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam";
     private final URL bamURL;
 
@@ -146,7 +146,7 @@ public class BAMRemoteFileTest extends HtsjdkTest {
 
     private void runLocalRemoteTest(
             final URL bamURL,
-            final File bamFile,
+            final Path bamFile,
             final String sequence,
             final int startPos,
             final int endPos,

@@ -5,16 +5,17 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.cram.compression.range.RangeExternalCompressor;
 import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.zip.Deflater;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class ExternalCompressionTest extends HtsjdkTest {
-    public static final File BZIP2_FILE = new File("src/test/resources/htsjdk/samtools/cram/io/bzip2-test.bz2");
+    public static final Path BZIP2_FILE = Paths.get("src/test/resources/htsjdk/samtools/cram/io/bzip2-test.bz2");
     public static final byte[] TEST_BYTES = "This is a simple string to test compression".getBytes();
 
     @DataProvider(name = "compressorForMethodPositiveTests")
@@ -123,7 +124,7 @@ public class ExternalCompressionTest extends HtsjdkTest {
     @Test
     public void testBZip2Decompression() throws IOException {
         final BZIP2ExternalCompressor compressor = new BZIP2ExternalCompressor();
-        final byte[] input = Files.readAllBytes(BZIP2_FILE.toPath());
+        final byte[] input = Files.readAllBytes(BZIP2_FILE);
         final byte[] output = compressor.uncompress(input);
         Assert.assertEquals(output, "BZip2 worked".getBytes());
     }

@@ -19,10 +19,10 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -746,7 +746,7 @@ public class HtsCodecResolverTest extends HtsjdkTest {
 
     static final InputStream getInputStreamOnGzippedContent(final String contents) {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (final BlockCompressedOutputStream bcs = new BlockCompressedOutputStream(bos, (File) null)) {
+            try (final BlockCompressedOutputStream bcs = new BlockCompressedOutputStream(bos, (Path) null)) {
                 bcs.write(contents.getBytes());
             }
             final byte array[] = bos.toByteArray();

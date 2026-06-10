@@ -49,8 +49,8 @@ public class BaiEqualityChecker {
                 .setUseAsyncIo(false);
         SAMFileHeader header = readerFactory.getFileHeader(bamFile);
         SAMSequenceDictionary dict = header.getSequenceDictionary();
-        AbstractBAMFileIndex bai1 = new CachingBAMFileIndex(baiFile1.toFile(), dict);
-        AbstractBAMFileIndex bai2 = new CachingBAMFileIndex(baiFile2.toFile(), dict);
+        AbstractBAMFileIndex bai1 = new CachingBAMFileIndex(baiFile1, dict);
+        AbstractBAMFileIndex bai2 = new CachingBAMFileIndex(baiFile2, dict);
 
         Assert.assertEquals(bai1.getNumberOfReferences(), bai2.getNumberOfReferences(), "Number of references");
         Assert.assertEquals(bai1.getNoCoordinateCount(), bai2.getNoCoordinateCount(), "No coordinate index count");

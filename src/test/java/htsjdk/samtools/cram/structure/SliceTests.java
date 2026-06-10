@@ -15,8 +15,8 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.SequenceUtil;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -105,10 +105,11 @@ public class SliceTests extends HtsjdkTest {
     public void testValidateReferenceMD5Fails() throws IOException {
         // auxf.alteredForMD5test.fa has been altered slightly from the original reference
         // to cause the CRAM md5 check to fail
-        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.alteredForMD5test.fa");
+        final Path CRAMFile = Path.of("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
+        final Path refFile = Path.of("src/test/resources/htsjdk/samtools/cram/auxf.alteredForMD5test.fa");
         final ReferenceSource refSource = new ReferenceSource(refFile);
-        try (final CRAMFileReader reader = new CRAMFileReader(CRAMFile, null, refSource, ValidationStringency.STRICT)) {
+        try (final CRAMFileReader reader =
+                new CRAMFileReader(CRAMFile, (Path) null, refSource, ValidationStringency.STRICT)) {
             final Iterator<SAMRecord> it = reader.getIterator();
             while (it.hasNext()) {
                 it.next();

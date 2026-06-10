@@ -28,9 +28,9 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.vcf.VCFFileReader;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +48,7 @@ public class IntervalListTest extends HtsjdkTest {
 
     final SAMFileHeader fileHeader;
     final IntervalList list1, list2, list3, empty;
-    public static final Path TEST_DIR = new File("src/test/resources/htsjdk/samtools/intervallist").toPath();
+    public static final Path TEST_DIR = Paths.get("src/test/resources/htsjdk/samtools/intervallist");
 
     public IntervalListTest() {
         fileHeader = IntervalList.fromPath(TEST_DIR.resolve("IntervalListchr123_empty.interval_list"))
@@ -82,7 +82,7 @@ public class IntervalListTest extends HtsjdkTest {
     public void testIntervalListFrom() throws IOException {
         final String testPath =
                 TEST_DIR.resolve("IntervalListFromVCFTestComp.interval_list").toString();
-        final IntervalList fromFileList = IntervalList.fromFile(new File(testPath));
+        final IntervalList fromFileList = IntervalList.fromPath(Paths.get(testPath));
         final IntervalList fromPathList = IntervalList.fromPath(IOUtil.getPath(testPath));
         fromFileList
                 .getHeader()
@@ -732,9 +732,8 @@ public class IntervalListTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testContigsAbsentInHeader() {
-        String vcf = TEST_DIR.resolve("IntervalListFromVCFNoContigLines.vcf").toString();
-        final File vcfFile = new File(vcf);
-        VCFFileReader.toIntervalList(vcfFile.toPath());
+        final Path vcf = TEST_DIR.resolve("IntervalListFromVCFNoContigLines.vcf");
+        VCFFileReader.toIntervalList(vcf);
     }
 
     @DataProvider

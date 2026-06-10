@@ -35,9 +35,8 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -92,16 +91,16 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
         }
 
         @Override
-        public VariantContextWriter makeWriter(final File file, final EnumSet<Options> baseOptions) {
+        public VariantContextWriter makeWriter(final Path path, final EnumSet<Options> baseOptions) {
             return new VariantContextWriterBuilder()
-                    .setOutputFile(file)
+                    .setOutputPath(path)
                     .setReferenceDictionary(dictionary)
                     .setOptions(baseOptions)
                     .build();
         }
 
         @Override
-        public VariantContextTestProvider.VariantContextContainer readAllVCs(File input) throws IOException {
+        public VariantContextTestProvider.VariantContextContainer readAllVCs(Path input) throws IOException {
             final BCF2Codec codec = this.makeCodec();
             return VariantContextTestProvider.readAllVCs(input, codec);
         }
@@ -147,16 +146,16 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
         }
 
         @Override
-        public VariantContextWriter makeWriter(final File file, final EnumSet<Options> baseOptions) {
+        public VariantContextWriter makeWriter(final Path path, final EnumSet<Options> baseOptions) {
             return new VariantContextWriterBuilder()
-                    .setOutputFile(file)
+                    .setOutputPath(path)
                     .setReferenceDictionary(dictionary)
                     .setOptions(baseOptions)
                     .build();
         }
 
         @Override
-        public VariantContextTestProvider.VariantContextContainer readAllVCs(File input) throws FileNotFoundException {
+        public VariantContextTestProvider.VariantContextContainer readAllVCs(Path input) throws IOException {
             final VCFCodec codec = this.makeCodec();
             return VariantContextTestProvider.readAllVCs(input, codec);
         }

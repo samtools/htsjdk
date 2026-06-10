@@ -1,9 +1,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
@@ -14,7 +13,7 @@ import org.testng.annotations.Test;
 
 public class CSIIndexTest extends HtsjdkTest {
 
-    public static final String TEST_DATA_DIR = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/";
+    public static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/");
     private DiskBasedBAMFileIndex bai;
     private CSIIndex csi;
     private CSIIndex mcsi;
@@ -41,15 +40,15 @@ public class CSIIndexTest extends HtsjdkTest {
 
     @BeforeClass
     public void init() {
-        bai = new DiskBasedBAMFileIndex(new File(TEST_DATA_DIR, "index_test.bam.bai"), null);
-        csi = new CSIIndex(new File(TEST_DATA_DIR, "index_test.bam.csi"), false, null);
-        mcsi = new CSIIndex(new File(TEST_DATA_DIR, "index_test.bam.csi"), true, null);
+        bai = new DiskBasedBAMFileIndex(TEST_DATA_DIR.resolve("index_test.bam.bai"), null);
+        csi = new CSIIndex(TEST_DATA_DIR.resolve("index_test.bam.csi"), false, null);
+        mcsi = new CSIIndex(TEST_DATA_DIR.resolve("index_test.bam.csi"), true, null);
         try {
-            ucsi = new CSIIndex(Paths.get(TEST_DATA_DIR, "uncompressed_index.bam.csi"), null);
+            ucsi = new CSIIndex(TEST_DATA_DIR.resolve("uncompressed_index.bam.csi"), null);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ubai = new DiskBasedBAMFileIndex(new File(TEST_DATA_DIR, "uncompressed_index.bam.bai"), null);
+        ubai = new DiskBasedBAMFileIndex(TEST_DATA_DIR.resolve("uncompressed_index.bam.bai"), null);
     }
 
     @Test
@@ -411,7 +410,7 @@ public class CSIIndexTest extends HtsjdkTest {
     @Test(dataProvider = "getDataForTestLongReferenceQuery")
     public void testLongReferenceQuery(String chr, int start, int end, int expectedReads) throws IOException {
         final SamReaderFactory samReaderFactory = SamReaderFactory.makeDefault();
-        try (final SamReader read = samReaderFactory.open(new File(TEST_DATA_DIR, "long_references.bam"))) {
+        try (final SamReader read = samReaderFactory.open(TEST_DATA_DIR.resolve("long_references.bam"))) {
             final SAMRecordIterator values = read.query(chr, start, end, false);
             Assert.assertEquals(values.toList().size(), expectedReads);
         }

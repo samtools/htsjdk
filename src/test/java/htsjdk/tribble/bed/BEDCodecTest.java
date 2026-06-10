@@ -37,9 +37,9 @@ import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.util.ParsingUtils;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -52,21 +52,21 @@ public class BEDCodecTest extends HtsjdkTest {
         return new Object[][] {
             {
                 // BGZP BED file with no header, 2 features
-                new File(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"), 0 // header has length 0
+                Path.of(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"), 0 // header has length 0
             },
             {
                 // BGZP BED file with one line header, 2 features
-                new File(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"), 10 // header has length 10
+                Path.of(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"), 10 // header has length 10
             }
         };
     }
 
     @Test(dataProvider = "gzippedBedTestData")
-    public void testReadActualHeader(final File gzippedBedFile, final int firstFeatureOffset) throws IOException {
+    public void testReadActualHeader(final Path gzippedBedFile, final int firstFeatureOffset) throws IOException {
         // Given an indexable SOURCE on a BED file, test that readActualHeader retains the correct offset
         // of the first feature, whether there is a header or not
         BEDCodec bedCodec = new BEDCodec();
-        try (final InputStream is = ParsingUtils.openInputStream(gzippedBedFile.getPath());
+        try (final InputStream is = ParsingUtils.openInputStream(gzippedBedFile.toString());
                 final BlockCompressedInputStream bcis = new BlockCompressedInputStream(is)) {
             AsciiLineReaderIterator it = (AsciiLineReaderIterator) bedCodec.makeIndexableSourceFromStream(bcis);
             Object header = bedCodec.readActualHeader(it);

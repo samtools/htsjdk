@@ -2,27 +2,25 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class CRAMReferencelessTest extends HtsjdkTest {
 
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/cram");
 
     @Test
     public void testReadCRAMWithEmbeddedReference() throws IOException {
         try (final SamReader cramReader = SamReaderFactory.makeDefault()
                         .validationStringency(ValidationStringency.LENIENT)
-                        .referenceSource(
-                                new ReferenceSource(new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")))
-                        .open(new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"));
+                        .referenceSource(new ReferenceSource(TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta")))
+                        .open(TEST_DATA_DIR.resolve("NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"));
                 final SamReader cramReaderEmbedded = SamReaderFactory.makeDefault()
                         .validationStringency(ValidationStringency.LENIENT)
-                        .open(new File(
-                                TEST_DATA_DIR,
+                        .open(TEST_DATA_DIR.resolve(
                                 "referenceEmbedded.NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"))) {
             final Iterator<SAMRecord> cramIterator = cramReader.iterator();
             final Iterator<SAMRecord> cramEmbeddedIterator = cramReaderEmbedded.iterator();
@@ -43,10 +41,10 @@ public class CRAMReferencelessTest extends HtsjdkTest {
     public void testForNPE() throws IOException {
         try (final SamReader cramReader = SamReaderFactory.makeDefault()
                         .validationStringency(ValidationStringency.LENIENT)
-                        .open(new File(TEST_DATA_DIR, "testIGV1286.sam"));
+                        .open(TEST_DATA_DIR.resolve("testIGV1286.sam"));
                 final SamReader cramReaderEmbedded = SamReaderFactory.makeDefault()
                         .validationStringency(ValidationStringency.LENIENT)
-                        .open(new File(TEST_DATA_DIR, "testIGV1286.cram"))) {
+                        .open(TEST_DATA_DIR.resolve("testIGV1286.cram"))) {
             final Iterator<SAMRecord> cramIterator = cramReader.iterator();
             final Iterator<SAMRecord> cramEmbeddedIterator = cramReaderEmbedded.iterator();
             int count = 0;
@@ -67,7 +65,7 @@ public class CRAMReferencelessTest extends HtsjdkTest {
         // test reading a cram with no reference compression (RR=false in compression header)
         try (final SamReader samReader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.LENIENT)
-                .open(new File(TEST_DATA_DIR, "referenceNotRequired.cram"))) {
+                .open(TEST_DATA_DIR.resolve("referenceNotRequired.cram"))) {
             final Iterator<SAMRecord> iterator = samReader.iterator();
             while (iterator.hasNext()) {
                 final SAMRecord samRecord1 = iterator.next();

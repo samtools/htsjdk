@@ -5,8 +5,9 @@ import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -16,8 +17,8 @@ public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
 
     @Test
     public void testLineReaderPosition() throws IOException {
-        final File multiBlockFile = File.createTempFile("BlockCompressedAsciiLineReaderTest", ".gz");
-        multiBlockFile.deleteOnExit();
+        final Path multiBlockFile = Files.createTempFile("BlockCompressedAsciiLineReaderTest", ".gz");
+        multiBlockFile.toFile().deleteOnExit();
 
         // write a file that has more than a single compressed block
         final long expectedFinalLineOffset = populateMultiBlockCompressedFile(multiBlockFile);
@@ -43,8 +44,8 @@ public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void testRejectPositionalInputStream() throws IOException {
-        final File multiBlockFile = File.createTempFile("BlockCompressedAsciiLineReaderTest", ".gz");
-        multiBlockFile.deleteOnExit();
+        final Path multiBlockFile = Files.createTempFile("BlockCompressedAsciiLineReaderTest", ".gz");
+        multiBlockFile.toFile().deleteOnExit();
         populateMultiBlockCompressedFile(multiBlockFile);
 
         try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(multiBlockFile);
@@ -54,7 +55,7 @@ public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
     }
 
     // Populate a block compressed file so that has more than a single compressed block
-    private long populateMultiBlockCompressedFile(final File tempBlockCompressedFile) throws IOException {
+    private long populateMultiBlockCompressedFile(final Path tempBlockCompressedFile) throws IOException {
         long sentinelLineOffset = -1;
 
         try (BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(tempBlockCompressedFile)) {

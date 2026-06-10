@@ -64,7 +64,7 @@ public class IOUtilTest extends HtsjdkTest {
     private static final String[] TEST_FILE_EXTENSIONS = {".txt", ".txt.gz"};
     private static final String TEST_STRING = "bar!";
 
-    private File existingTempFile;
+    private Path existingTempFile;
     private String systemUser;
     private String systemTempDir;
     private FileSystem inMemoryFileSystem;
@@ -72,14 +72,13 @@ public class IOUtilTest extends HtsjdkTest {
 
     @BeforeClass
     public void setUp() throws IOException {
-        existingTempFile = File.createTempFile("FiletypeTest.", ".tmp");
-        existingTempFile.deleteOnExit();
+        existingTempFile = Files.createTempFile("FiletypeTest.", ".tmp");
+        existingTempFile.toFile().deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
-        final File tmpDir = new File(systemTempDir);
+        final Path tmpDir = Paths.get(systemTempDir);
         inMemoryFileSystem = Jimfs.newFileSystem(Configuration.unix());
-        ;
-        if (!tmpDir.isDirectory()) tmpDir.mkdir();
-        if (!tmpDir.isDirectory())
+        if (!Files.isDirectory(tmpDir)) Files.createDirectories(tmpDir);
+        if (!Files.isDirectory(tmpDir))
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
         systemUser = System.getProperty("user.name");
         // build long file of random words for compression testing
@@ -109,8 +108,8 @@ public class IOUtilTest extends HtsjdkTest {
     public void testFileReadingAndWriting() throws IOException {
         String randomizedTestString = TEST_STRING + System.currentTimeMillis();
         for (String ext : TEST_FILE_EXTENSIONS) {
-            File f = File.createTempFile(TEST_FILE_PREFIX, ext);
-            f.deleteOnExit();
+            Path f = Files.createTempFile(TEST_FILE_PREFIX, ext);
+            f.toFile().deleteOnExit();
 
             OutputStream os = IOUtil.openFileForWriting(f);
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
@@ -133,26 +132,37 @@ public class IOUtilTest extends HtsjdkTest {
             tmpPath = tmpPath.substring(0, tmpPath.length() - userName.length());
         }
 
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        File actual = new File(tmpDir, "actual.txt");
-        actual.deleteOnExit();
-        ProcessExecutor.execute(new String[] {"touch", actual.getAbsolutePath()});
-        File symlink = new File(tmpDir, "symlink.txt");
-        symlink.deleteOnExit();
-        ProcessExecutor.execute(new String[] {"ln", "-s", actual.getAbsolutePath(), symlink.getAbsolutePath()});
-        File lnDir = new File(tmpDir, "symLinkDir");
-        lnDir.deleteOnExit();
-        ProcessExecutor.execute(new String[] {"ln", "-s", tmpDir.getAbsolutePath(), lnDir.getAbsolutePath()});
-        File lnToActual = new File(lnDir, "actual.txt");
-        lnToActual.deleteOnExit();
-        File lnToSymlink = new File(lnDir, "symlink.txt");
-        lnToSymlink.deleteOnExit();
+        final Path tmpDir = Paths.get(tmpPath, userName);
+        Files.createDirectories(tmpDir);
+        tmpDir.toFile().deleteOnExit();
+        final Path actual = tmpDir.resolve("actual.txt");
+        actual.toFile().deleteOnExit();
+        ProcessExecutor.execute(new String[] {"touch", actual.toAbsolutePath().toString()});
+        final Path symlink = tmpDir.resolve("symlink.txt");
+        symlink.toFile().deleteOnExit();
+        ProcessExecutor.execute(new String[] {
+            "ln",
+            "-s",
+            actual.toAbsolutePath().toString(),
+            symlink.toAbsolutePath().toString()
+        });
+        final Path lnDir = tmpDir.resolve("symLinkDir");
+        lnDir.toFile().deleteOnExit();
+        ProcessExecutor.execute(new String[] {
+            "ln",
+            "-s",
+            tmpDir.toAbsolutePath().toString(),
+            lnDir.toAbsolutePath().toString()
+        });
+        final Path lnToActual = lnDir.resolve("actual.txt");
+        lnToActual.toFile().deleteOnExit();
+        final Path lnToSymlink = lnDir.resolve("symlink.txt");
+        lnToSymlink.toFile().deleteOnExit();
 
-        File[] files = {actual, symlink, lnToActual, lnToSymlink};
-        for (File f : files) {
-            Assert.assertEquals(IOUtil.getFullCanonicalPath(f), actual.getCanonicalPath());
+        final Path[] files = {actual, symlink, lnToActual, lnToSymlink};
+        for (final Path f : files) {
+            Assert.assertEquals(
+                    IOUtil.getFullCanonicalPath(f), actual.toRealPath().toString());
         }
     }
 
@@ -161,8 +171,8 @@ public class IOUtilTest extends HtsjdkTest {
         final String utf8 =
                 new StringWriter().append((char) 168).append((char) 197).toString();
         for (String ext : TEST_FILE_EXTENSIONS) {
-            final File f = File.createTempFile(TEST_FILE_PREFIX, ext);
-            f.deleteOnExit();
+            final Path f = Files.createTempFile(TEST_FILE_PREFIX, ext);
+            f.toFile().deleteOnExit();
 
             final BufferedWriter writer = IOUtil.openFileForBufferedUtf8Writing(f);
             writer.write(utf8);
@@ -170,7 +180,7 @@ public class IOUtilTest extends HtsjdkTest {
 
             final BufferedReader reader = IOUtil.openFileForBufferedUtf8Reading(f);
             final String line = reader.readLine();
-            Assert.assertEquals(utf8, line, f.getAbsolutePath());
+            Assert.assertEquals(utf8, line, f.toAbsolutePath().toString());
 
             CloserUtil.close(reader);
         }
@@ -178,40 +188,35 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test
     public void slurpLinesTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE.toFile()), SLURP_TEST_LINES);
+        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE), SLURP_TEST_LINES);
     }
 
     @Test
     public void slurpWhitespaceOnlyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE.toFile()), "     \n     ");
+        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE), "     \n     ");
     }
 
     @Test
     public void slurpEmptyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE.toFile()), "");
+        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE), "");
     }
 
     @Test
     public void slurpTest() throws FileNotFoundException {
         Assert.assertEquals(
-                IOUtil.slurp(SLURP_TEST_FILE.toFile()),
-                CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
+                IOUtil.slurp(SLURP_TEST_FILE), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
     }
 
     @Test(dataProvider = "fileTypeTestCases")
     public void testFileType(final String path, boolean expectedIsRegularFile) {
-        final File file = new File(path);
-        Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
-        Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
+        Assert.assertEquals(IOUtil.isRegularPath(Paths.get(path)), expectedIsRegularFile);
     }
 
     @Test(
             dataProvider = "unixFileTypeTestCases",
             groups = {"unix"})
     public void testFileTypeUnix(final String path, boolean expectedIsRegularFile) {
-        final File file = new File(path);
-        Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
-        Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
+        Assert.assertEquals(IOUtil.isRegularPath(Paths.get(path)), expectedIsRegularFile);
     }
 
     @Test
@@ -253,7 +258,7 @@ public class IOUtilTest extends HtsjdkTest {
     @DataProvider(name = "fileTypeTestCases")
     private Object[][] fileTypeTestCases() {
         return new Object[][] {
-            {existingTempFile.getAbsolutePath(), Boolean.TRUE},
+            {existingTempFile.toAbsolutePath().toString(), Boolean.TRUE},
             {systemTempDir, Boolean.FALSE}
         };
     }
@@ -293,7 +298,8 @@ public class IOUtilTest extends HtsjdkTest {
         try {
             Path testPath = IOUtil.getDefaultTmpDirPath();
             Assert.assertEquals(
-                    testPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + systemUser);
+                    testPath.toAbsolutePath().toString(),
+                    Paths.get(systemTempDir).toAbsolutePath() + "/" + systemUser);
 
             // change the properties to test others
             final String newTempPath =
@@ -303,7 +309,7 @@ public class IOUtilTest extends HtsjdkTest {
             System.setProperty("user.name", newUser);
             testPath = IOUtil.getDefaultTmpDirPath();
             Assert.assertEquals(
-                    testPath.toFile().getAbsolutePath(), new File(newTempPath).getAbsolutePath() + "/" + newUser);
+                    testPath.toAbsolutePath().toString(), Paths.get(newTempPath).toAbsolutePath() + "/" + newUser);
 
         } finally {
             // reset system properties
@@ -415,24 +421,25 @@ public class IOUtilTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] filesForWritableDirectory() throws Exception {
-        final File nonWritableFile = new File(systemTempDir, "testAssertDirectoryIsWritable_non_writable_dir");
+        final Path nonWritableDir = Paths.get(systemTempDir, "testAssertDirectoryIsWritable_non_writable_dir");
+        final File nonWritableFile = nonWritableDir.toFile();
         nonWritableFile.mkdir();
         nonWritableFile.setWritable(false);
 
         return new Object[][] {
             // non existent
-            {new File("no_exists"), false},
+            {Paths.get("no_exists"), false},
             // non directory
             {existingTempFile, false},
             // non-writable directory
-            {nonWritableFile, false},
+            {nonWritableDir, false},
             // writable directory
-            {new File(systemTempDir), true},
+            {Paths.get(systemTempDir), true},
         };
     }
 
     @Test(dataProvider = "filesForWritableDirectory")
-    public void testAssertDirectoryIsWritableFile(final File file, final boolean writable) {
+    public void testAssertDirectoryIsWritableFile(final Path file, final boolean writable) {
         try {
             IOUtil.assertDirectoryIsWritable(file);
         } catch (SAMException e) {
@@ -498,7 +505,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
     public void testBlockCompressionExtensionFile(final String testString, final boolean expected) {
-        Assert.assertEquals(IOUtil.hasBlockCompressedExtension(new File(testString)), expected);
+        Assert.assertEquals(IOUtil.hasBlockCompressedExtension(Paths.get(testString)), expected);
     }
 
     @DataProvider(name = "blockCompressedExtensionExtensionURIStrings")
@@ -592,7 +599,7 @@ public class IOUtilTest extends HtsjdkTest {
             IOUtil.setCompressionLevel(compressionLevel);
             Assert.assertEquals(IOUtil.getCompressionLevel(), compressionLevel);
             final InputStream inStream = IOUtil.openFileForReading(file);
-            try (final OutputStream outStream = IOUtil.openFileForWriting(outFile.toFile())) {
+            try (final OutputStream outStream = IOUtil.openFileForWriting(outFile)) {
                 IOUtil.transferByStream(inStream, outStream, origSize);
             }
             final long newSize = Files.size(outFile);
@@ -654,7 +661,7 @@ public class IOUtilTest extends HtsjdkTest {
     public void testCopyFile(final Path file) throws IOException {
         final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
-        IOUtil.copyFile(file.toFile(), outFile.toFile());
+        IOUtil.copyPath(file, outFile);
         Assert.assertEquals(
                 Files.lines(file).collect(Collectors.toList()),
                 Files.lines(outFile).collect(Collectors.toList()));
@@ -668,7 +675,7 @@ public class IOUtilTest extends HtsjdkTest {
         outFile.toFile().deleteOnExit();
         file.toFile().setReadable(false);
         try {
-            IOUtil.copyFile(file.toFile(), outFile.toFile());
+            IOUtil.copyPath(file, outFile);
         } finally { // need to set input file permission back to readable so other unit tests can access it
             file.toFile().setReadable(true);
         }
@@ -681,7 +688,7 @@ public class IOUtilTest extends HtsjdkTest {
         final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
         outFile.toFile().setWritable(false);
-        IOUtil.copyFile(file.toFile(), outFile.toFile());
+        IOUtil.copyPath(file, outFile);
     }
 
     @DataProvider
@@ -697,7 +704,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "baseNameTests")
     public void testBasename(final Path file, final String expected) {
-        final String result = IOUtil.basename(file.toFile());
+        final String result = IOUtil.basename(file);
         Assert.assertEquals(result, expected);
     }
 
@@ -728,17 +735,17 @@ public class IOUtilTest extends HtsjdkTest {
         final Path regExpDir = Files.createTempDirectory("regExpDir");
         regExpDir.toFile().deleteOnExit();
         final List<String> listExpected = Arrays.asList(expected);
-        final List<File> expectedFiles = new ArrayList<File>();
+        final List<Path> expectedFiles = new ArrayList<Path>();
         for (String name : allNames) {
             final Path file = regExpDir.resolve(name);
             file.toFile().deleteOnExit();
-            file.toFile().createNewFile();
+            Files.createFile(file);
             if (listExpected.contains(name)) {
-                expectedFiles.add(file.toFile());
+                expectedFiles.add(file);
             }
         }
-        final File[] result = IOUtil.getFilesMatchingRegexp(regExpDir.toFile(), regexp);
-        Assert.assertEqualsNoOrder(result, expectedFiles.toArray());
+        final List<Path> result = IOUtil.getPathsMatchingRegexp(regExpDir, regexp);
+        Assert.assertEqualsNoOrder(result.toArray(), expectedFiles.toArray());
     }
 
     @Test()
@@ -757,7 +764,7 @@ public class IOUtilTest extends HtsjdkTest {
             }
         }
         final List<String> retLines = new ArrayList<String>();
-        IOUtil.readLines(file.toFile()).forEachRemaining(retLines::add);
+        IOUtil.readLines(file).forEachRemaining(retLines::add);
         Assert.assertEquals(retLines, lines);
     }
 
@@ -772,7 +779,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "fileSuffixTests")
     public void testSuffixTest(final Path file, final String expected) {
-        final String ret = IOUtil.fileSuffix(file.toFile());
+        final String ret = IOUtil.fileSuffix(file);
         Assert.assertEquals(ret, expected);
     }
 
@@ -780,7 +787,7 @@ public class IOUtilTest extends HtsjdkTest {
     public void testCopyDirectoryTree() throws IOException {
         final Path copyToDir = Files.createTempDirectory("copyToDir");
         copyToDir.toFile().deleteOnExit();
-        IOUtil.copyDirectoryTree(TEST_VARIANT_DIR.toFile(), copyToDir.toFile());
+        IOUtil.copyDirectoryTree(TEST_VARIANT_DIR, copyToDir);
         final List<Path> collect = Files.walk(TEST_VARIANT_DIR)
                 .filter(f -> !f.equals(TEST_VARIANT_DIR))
                 .map(p -> p.getFileName())
@@ -835,7 +842,7 @@ public class IOUtilTest extends HtsjdkTest {
 
         try (final OutputStream outputStream = IOUtil.openFileForMd5CalculatingWriting(output)) {
             // tsato: perhaps BamFileIoUtils is a better place for this test
-            BamFileIoUtils.blockCopyBamFile(IOUtil.toPath(HtsjdkTestUtils.NA12878_8000), outputStream, false, false);
+            BamFileIoUtils.blockCopyBamFile(HtsjdkTestUtils.NA12878_8000, outputStream, false, false);
         } catch (IOException e) {
             throw new HtsjdkException("Encountered an IO error", e);
         }

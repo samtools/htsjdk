@@ -60,12 +60,12 @@ public class TbiEqualityChecker {
         this.tbiFile1 = tbiFile1;
         this.tbiFile2 = tbiFile2;
 
-        this.blockStream = new BlockCompressedInputStream(vcfFile.toFile());
+        this.blockStream = new BlockCompressedInputStream(vcfFile);
     }
 
     private void assertEquals(boolean identical) throws IOException {
-        TabixIndex tbi1 = (TabixIndex) IndexFactory.loadIndex(tbiFile1.toFile().getPath());
-        TabixIndex tbi2 = (TabixIndex) IndexFactory.loadIndex(tbiFile2.toFile().getPath());
+        TabixIndex tbi1 = (TabixIndex) IndexFactory.loadIndex(tbiFile1.toString());
+        TabixIndex tbi2 = (TabixIndex) IndexFactory.loadIndex(tbiFile2.toString());
 
         Assert.assertEquals(tbi1.getSequenceNames(), tbi2.getSequenceNames(), "Sequences");
 

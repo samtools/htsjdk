@@ -20,8 +20,9 @@ import htsjdk.samtools.SamFiles;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.FileOutputStream;
+import htsjdk.samtools.util.IOUtil;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,29 +66,27 @@ public class HtsCRAMCodec30And21QueryTest extends HtsjdkTest {
     public void createLocallyGeneratedCRAIFiles() throws IOException {
         cramQueryWithLocalCRAI = IOPathUtils.createTempPath("cramQueryWithLocalCRAI.", ".cram");
         IOPath tempCRAIOut = new HtsPath(cramQueryWithLocalCRAI.getURIString() + ".crai");
-        tempCRAIOut.toPath().toFile().deleteOnExit();
+        IOUtil.deleteOnExit(tempCRAIOut.toPath());
         createLocalCRAMAndCRAI(cramQueryWithCRAI, cramQueryWithLocalCRAI, tempCRAIOut);
 
         cramQueryReadsWithLocalCRAI = IOPathUtils.createTempPath("cramQueryReadsWithLocalCRAI.", ".cram");
         tempCRAIOut = new HtsPath(cramQueryReadsWithLocalCRAI.getURIString() + ".crai");
-        tempCRAIOut.toPath().toFile().deleteOnExit();
-        cramQueryReadsWithLocalCRAI.toPath().toFile().deleteOnExit();
+        IOUtil.deleteOnExit(tempCRAIOut.toPath());
+        IOUtil.deleteOnExit(cramQueryReadsWithLocalCRAI.toPath());
         createLocalCRAMAndCRAI(cramQueryReadsWithBAI, cramQueryReadsWithLocalCRAI, tempCRAIOut);
 
         cramQueryTestEmptyWithLocalCRAI = IOPathUtils.createTempPath("cramQueryTestEmptyWithLocalCRAI.", ".cram");
         tempCRAIOut = new HtsPath(cramQueryTestEmptyWithLocalCRAI.getURIString() + ".crai");
-        tempCRAIOut.toPath().toFile().deleteOnExit();
-        cramQueryTestEmptyWithLocalCRAI.toPath().toFile().deleteOnExit();
+        IOUtil.deleteOnExit(tempCRAIOut.toPath());
+        IOUtil.deleteOnExit(cramQueryTestEmptyWithLocalCRAI.toPath());
         createLocalCRAMAndCRAI(cramQueryTestEmptyWithBAI, cramQueryTestEmptyWithLocalCRAI, tempCRAIOut);
     }
 
     private void createLocalCRAMAndCRAI(final IOPath inputCRAM, final IOPath outputCRAM, final IOPath outputCRAI)
             throws IOException {
         Files.copy(inputCRAM.toPath(), outputCRAM.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        try (final FileOutputStream bos =
-                        new FileOutputStream(outputCRAI.toPath().toFile());
-                final SeekableFileStream sfs =
-                        new SeekableFileStream(outputCRAM.toPath().toFile())) {
+        try (final OutputStream bos = Files.newOutputStream(outputCRAI.toPath());
+                final SeekableFileStream sfs = new SeekableFileStream(outputCRAM.toPath())) {
             CRAMCRAIIndexer.writeIndex(sfs, bos);
         }
     }

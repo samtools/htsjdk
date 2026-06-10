@@ -6,14 +6,15 @@ import htsjdk.samtools.cram.compression.range.RangeExternalCompressor;
 import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.structure.CompressorCache;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.zip.Deflater;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class CompressorCacheTest extends HtsjdkTest {
-    public static final File BZIP2_FILE = new File("src/test/resources/htsjdk/samtools/cram/io/bzip2-test.bz2");
+    public static final Path BZIP2_FILE = Paths.get("src/test/resources/htsjdk/samtools/cram/io/bzip2-test.bz2");
     public static final byte[] TEST_BYTES = "This is a simple string to test compression".getBytes();
 
     final CompressorCache compressorCache = new CompressorCache();

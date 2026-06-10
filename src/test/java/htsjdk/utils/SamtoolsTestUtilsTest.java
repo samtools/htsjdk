@@ -9,8 +9,8 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.ProcessExecutor;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -90,14 +90,14 @@ public class SamtoolsTestUtilsTest extends HtsjdkTest {
         }
 
         // Validates CRAM conversion.
-        final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
-        final File sourceFile = new File(TEST_DATA_DIR, "cramQueryWithBAI.cram");
-        final File cramReference = new File(TEST_DATA_DIR, "human_g1k_v37.20.21.10M-10M200k.fasta");
+        final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/cram");
+        final Path sourceFile = TEST_DATA_DIR.resolve("cramQueryWithBAI.cram");
+        final Path cramReference = TEST_DATA_DIR.resolve("human_g1k_v37.20.21.10M-10M200k.fasta");
         // This also validates that any extra command line arguments are passed through to samtools by requesting
         // that NM/MD values are synthesized in the output file (which is required for the output records to match).
         final IOPath tempSamtoolsPath = SamtoolsTestUtils.convertToCRAM(
-                new HtsPath(sourceFile.getAbsolutePath()),
-                new HtsPath(cramReference.getAbsolutePath()),
+                new HtsPath(sourceFile.toAbsolutePath().toString()),
+                new HtsPath(cramReference.toAbsolutePath().toString()),
                 "--input-fmt-option decode_md=1 --output-fmt-option store_md=1 --output-fmt-option store_nm=1");
         final SamReaderFactory factory = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.LENIENT)
