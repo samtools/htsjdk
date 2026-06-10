@@ -256,7 +256,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
                     System.err.println(
                             "No contig dictionary found in header, falling back to reference sequence dictionary");
                 }
-                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
+                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), (Path) null));
             } else {
                 throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
             }

@@ -27,7 +27,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SortingCollection;
-import java.io.File;
+import java.nio.file.Path;
 
 /**
  * An iterator of sets of duplicates.  Duplicates are defined currently by the ordering in
@@ -88,7 +88,7 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
 
             // Sort it!
             final int maxRecordsInRam = SAMFileWriterImpl.getDefaultMaxRecordsInRam();
-            final File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+            final Path tmpDir = Path.of(System.getProperty("java.io.tmpdir"));
             final SortingCollection<SAMRecord> alignmentSorter = SortingCollection.newInstance(
                     SAMRecord.class, new BAMRecordCodec(header), this.comparator, maxRecordsInRam, tmpDir);
 

@@ -120,19 +120,37 @@ public class BinaryCodec implements Closeable {
      *
      * @param file    file to be written to or read from
      * @param writing whether the file is being written to
+     * @deprecated since 5.0; use {@link #BinaryCodec(Path, boolean)} instead.
      */
+    @Deprecated
     public BinaryCodec(final File file, final boolean writing) {
         this(IOUtil.toPath(file), writing);
     }
 
     /**
-     * Constructs BinaryCodec from a file name and set its mode to writing or not
+     * Constructs BinaryCodec from a file name and set its mode to writing or not.
+     * The name is resolved in a scheme-aware manner via {@link IOUtil#getPath(String)},
+     * so it may refer to a local file or any path supported by an installed NIO file system
+     * provider.
      *
      * @param fileName name of the file to be written to or read from
      * @param writing  writing whether the file is being written to
      */
     public BinaryCodec(final String fileName, final boolean writing) {
-        this(new File(fileName), writing);
+        this(toPath(fileName), writing);
+    }
+
+    /**
+     * Resolves a user-supplied file name into a {@link Path} in a scheme-aware manner,
+     * wrapping the checked {@link IOException} thrown by {@link IOUtil#getPath(String)} so it
+     * can be used from a constructor's delegation expression.
+     */
+    private static Path toPath(final String fileName) {
+        try {
+            return IOUtil.getPath(fileName);
+        } catch (IOException e) {
+            throw new RuntimeIOException("Error resolving path: " + fileName, e);
+        }
     }
 
     /**

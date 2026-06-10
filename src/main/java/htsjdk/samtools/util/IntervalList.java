@@ -453,7 +453,9 @@ public class IntervalList implements Iterable<Interval> {
      *
      * @param file the file containing the intervals
      * @return an IntervalList object that contains the headers and intervals from the file
+     * @deprecated use {@link #fromPath(Path)} instead.
      */
+    @Deprecated
     public static IntervalList fromFile(final File file) {
         return fromPath(IOUtil.toPath(file));
     }
@@ -488,8 +490,22 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #concatenate(Collection)}
+     * Calls {@link #fromPath(Path)} on the provided paths, and returns their {@link #concatenate(Collection)}
      */
+    public static IntervalList fromPaths(final Collection<Path> intervalListPaths) {
+        final Collection<IntervalList> intervalLists = new ArrayList<>();
+        for (final Path path : intervalListPaths) {
+            intervalLists.add(IntervalList.fromPath(path));
+        }
+        return IntervalList.concatenate(intervalLists);
+    }
+
+    /**
+     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #concatenate(Collection)}
+     *
+     * @deprecated use {@link #fromPaths(Collection)} instead.
+     */
+    @Deprecated
     public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
         final Collection<IntervalList> intervalLists = new ArrayList<>();
         for (final File file : intervalListFiles) {
@@ -569,7 +585,9 @@ public class IntervalList implements Iterable<Interval> {
      * Writes out the list of intervals to the supplied file.
      *
      * @param file a file to write to.  If exists it will be overwritten.
+     * @deprecated use {@link #write(Path)} instead.
      */
+    @Deprecated
     public void write(final File file) {
         this.write(file.toPath());
     }

@@ -26,10 +26,11 @@ package htsjdk.samtools.filter;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.RuntimeScriptException;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.CompiledScript;
@@ -42,7 +43,7 @@ import javax.script.SimpleBindings;
  * Javascript filter with HEADER type containing TYPE records. contains two
  * static method to get a SAM Read filter or a VariantFilter.
  *
- * warning: tools, like galaxy, using this class are not safe because a script
+ * <p>warning: tools, like galaxy, using this class are not safe because a script
  * can access the filesystem.
  *
  * @author Pierre Lindenbaum PhD
@@ -56,11 +57,26 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
     protected Bindings bindings;
 
     /**
-     * constructor using a java.io.File script, compiles the script, puts
-     * 'header' in the bindings
+     * Constructor using a Path to a script file, compiles the script, puts
+     * 'header' in the bindings.
+     *
+     * @param scriptPath path to the JavaScript file to be compiled
+     * @param header the header to be injected in the javascript context
+     * @throws IOException if the script file cannot be read
      */
+    protected AbstractJavascriptFilter(final Path scriptPath, final HEADER header) throws IOException {
+        this(Files.newBufferedReader(scriptPath), header);
+    }
+
+    /**
+     * Constructor using a java.io.File script, compiles the script, puts
+     * 'header' in the bindings.
+     *
+     * @deprecated use {@link #AbstractJavascriptFilter(Path, Object)} instead.
+     */
+    @Deprecated
     protected AbstractJavascriptFilter(final File scriptFile, final HEADER header) throws IOException {
-        this(new FileReader(scriptFile), header);
+        this(scriptFile.toPath(), header);
     }
 
     /**

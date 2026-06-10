@@ -36,9 +36,10 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -95,18 +96,36 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
      *
      * For testing purposes really
      *
-     * @param source file containing the features
+     * @param source path containing the features
      * @param dest the place to write the binary features
      * @param codec of the source file features
      * @throws IOException
      */
     public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(
-            final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec)
+            final Path source, final Path dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec)
             throws IOException {
         final FeatureReader<FEATURE_TYPE> reader = AbstractFeatureReader.getFeatureReader(
-                source.getAbsolutePath(), codec, false); // IndexFactory.loadIndex(idxFile));
-        final OutputStream output = new FileOutputStream(dest);
+                source.toAbsolutePath().toString(), codec, false); // IndexFactory.loadIndex(idxFile));
+        final OutputStream output = Files.newOutputStream(dest);
         ExampleBinaryCodec.convertToBinaryTest(reader, output);
+    }
+
+    /**
+     * Convenience method that creates an ExampleBinaryCodec file from another feature file.
+     *
+     * For testing purposes really
+     *
+     * @param source file containing the features
+     * @param dest the place to write the binary features
+     * @param codec of the source file features
+     * @throws IOException
+     * @deprecated Use {@link #convertToBinaryTest(Path, Path, FeatureCodec)} instead.
+     */
+    @Deprecated
+    public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(
+            final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec)
+            throws IOException {
+        convertToBinaryTest(source.toPath(), dest.toPath(), codec);
     }
 
     /**

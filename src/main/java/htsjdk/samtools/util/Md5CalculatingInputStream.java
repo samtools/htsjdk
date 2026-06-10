@@ -26,10 +26,11 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -42,17 +43,17 @@ public class Md5CalculatingInputStream extends InputStream {
 
     private final InputStream is;
     private final MessageDigest md5;
-    private final File digestFile;
+    private final Path digestPath;
     private String hash;
 
     /**
      * Constructor that takes in the InputStream that we are wrapping
      * and creates the MD5 MessageDigest
      */
-    public Md5CalculatingInputStream(InputStream is, File digestFile) {
+    public Md5CalculatingInputStream(InputStream is, Path digestPath) {
         super();
         this.is = is;
-        this.digestFile = digestFile;
+        this.digestPath = digestPath;
         this.hash = null;
 
         try {
@@ -61,6 +62,17 @@ public class Md5CalculatingInputStream extends InputStream {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
+    }
+
+    /**
+     * Constructor that takes in the InputStream that we are wrapping
+     * and creates the MD5 MessageDigest.
+     *
+     * @deprecated since 06/2026 use {@link #Md5CalculatingInputStream(InputStream, Path)} instead.
+     */
+    @Deprecated
+    public Md5CalculatingInputStream(InputStream is, File digestFile) {
+        this(is, digestFile == null ? null : digestFile.toPath());
     }
 
     @Override
@@ -110,8 +122,8 @@ public class Md5CalculatingInputStream extends InputStream {
         is.close();
         makeHash();
 
-        if (digestFile != null) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(digestFile));
+        if (digestPath != null) {
+            BufferedWriter writer = Files.newBufferedWriter(digestPath);
             writer.write(hash);
             writer.close();
         }

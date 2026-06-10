@@ -153,7 +153,9 @@ public class VCFIteratorBuilder {
      * @param file the file (can be bcf, vcf, vcf.gz)
      * @return the VCFIterator
      * @throws IOException
+     * @deprecated use {@link #open(Path)} instead.
      */
+    @Deprecated
     @SuppressWarnings("static-method")
     public VCFIterator open(final File file) throws IOException {
         return this.open(file.toPath());

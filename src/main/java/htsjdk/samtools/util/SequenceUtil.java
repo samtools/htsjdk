@@ -36,6 +36,7 @@ import htsjdk.samtools.fastq.FastqConstants;
 import htsjdk.utils.ValidationUtils;
 import java.io.File;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -354,16 +355,27 @@ public class SequenceUtil {
     }
 
     /**
-     * Throws an exception if both parameters are non-null and unequal, including the filenames.
+     * Throws an exception if both parameters are non-null and unequal, including the paths.
      */
     public static void assertSequenceDictionariesEqual(
-            final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final File f1, final File f2) {
+            final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final Path p1, final Path p2) {
         try {
             assertSequenceDictionariesEqual(s1, s2);
         } catch (final SequenceListsDifferException e) {
             throw new SequenceListsDifferException(
-                    "In files " + f1.getAbsolutePath() + " and " + f2.getAbsolutePath(), e);
+                    "In files " + p1.toAbsolutePath() + " and " + p2.toAbsolutePath(), e);
         }
+    }
+
+    /**
+     * Throws an exception if both parameters are non-null and unequal, including the filenames.
+     *
+     * @deprecated use {@link #assertSequenceDictionariesEqual(SAMSequenceDictionary, SAMSequenceDictionary, Path, Path)} instead.
+     */
+    @Deprecated
+    public static void assertSequenceDictionariesEqual(
+            final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final File f1, final File f2) {
+        assertSequenceDictionariesEqual(s1, s2, f1.toPath(), f2.toPath());
     }
 
     /**

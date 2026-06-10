@@ -100,7 +100,9 @@ public class SortingLongCollection {
      *
      * @param maxValuesInRam how many values to accumulate before spilling to disk
      * @param tmpDir         Where to write files of values that will not fit in RAM
+     * @deprecated use {@link #SortingLongCollection(int, Path...)} instead.
      */
+    @Deprecated
     public SortingLongCollection(final int maxValuesInRam, final File... tmpDir) {
         this(maxValuesInRam, Arrays.stream(tmpDir).map(File::toPath).toArray(Path[]::new));
     }

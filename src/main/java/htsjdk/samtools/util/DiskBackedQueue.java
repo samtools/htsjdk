@@ -104,10 +104,12 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @param codec For writing records to file and reading them back into RAM
      * @param maxRecordsInRam how many records to accumulate in memory before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
+     * @deprecated since the File API is being phased out; use {@link #newInstanceFromPaths} instead.
      */
+    @Deprecated
     public static <T> DiskBackedQueue<T> newInstance(
             final SortingCollection.Codec<T> codec, final int maxRecordsInRam, final List<File> tmpDir) {
-        return new DiskBackedQueue<T>(
+        return newInstanceFromPaths(
                 codec, maxRecordsInRam, tmpDir.stream().map(File::toPath).collect(Collectors.toList()));
     }
 

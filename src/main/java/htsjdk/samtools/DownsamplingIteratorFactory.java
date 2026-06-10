@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.IOUtil;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -112,13 +113,29 @@ public class DownsamplingIteratorFactory {
      * See {@link DownsamplingIteratorFactory#make(Iterator, Strategy, double, double, int)} for detailed parameter information.
      */
     public static DownsamplingIterator make(
-            final File samFile,
+            final Path samFile,
             final Strategy strategy,
             final double proportion,
             final double accuracy,
             final int seed) {
         IOUtil.assertFileIsReadable(samFile);
         return make(SamReaderFactory.makeDefault().open(samFile), strategy, proportion, accuracy, seed);
+    }
+
+    /**
+     * Convenience method that constructs a downsampling iterator for all the reads in a SAM file.
+     * See {@link DownsamplingIteratorFactory#make(Iterator, Strategy, double, double, int)} for detailed parameter information.
+     *
+     * @deprecated since 06/2026 Use {@link #make(Path, Strategy, double, double, int)} instead.
+     */
+    @Deprecated
+    public static DownsamplingIterator make(
+            final File samFile,
+            final Strategy strategy,
+            final double proportion,
+            final double accuracy,
+            final int seed) {
+        return make(samFile.toPath(), strategy, proportion, accuracy, seed);
     }
 
     /**

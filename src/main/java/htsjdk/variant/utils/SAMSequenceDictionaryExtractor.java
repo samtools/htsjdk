@@ -127,8 +127,8 @@ public class SAMSequenceDictionaryExtractor {
         }
 
         /**
-         * @deprecated in favor of {@link VCFFileReader##extractDictionary(Path) }
-         * */
+         * @deprecated in favor of {@link #extractDictionary(Path)}
+         */
         @Deprecated
         SAMSequenceDictionary extractDictionary(final File file) {
             return extractDictionary(file.toPath());
@@ -137,7 +137,7 @@ public class SAMSequenceDictionaryExtractor {
         abstract SAMSequenceDictionary extractDictionary(final Path file);
 
         /**
-         * @deprecated in favor of {@link SAMSequenceDictionaryExtractor##forFile(Path) }
+         * @deprecated in favor of {@link #forFile(Path)}
          */
         @Deprecated
         static TYPE forFile(final File dictionaryExtractable) {

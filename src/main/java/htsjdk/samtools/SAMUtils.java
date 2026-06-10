@@ -544,8 +544,21 @@ public final class SAMUtils {
      * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
      * header. This hash code changes any time read groups are added or removed. Comparing one file's
      * hash code to another's tells you if the read groups in the BAM files are different.
+     *
+     * @deprecated since 5.0.0; use {@link #calculateReadGroupRecordChecksum(Path, Path)} instead.
      */
+    @Deprecated
     public static String calculateReadGroupRecordChecksum(final File input, final File referenceFasta) {
+        return calculateReadGroupRecordChecksum(
+                input.toPath(), referenceFasta == null ? null : referenceFasta.toPath());
+    }
+
+    /**
+     * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
+     * header. This hash code changes any time read groups are added or removed. Comparing one file's
+     * hash code to another's tells you if the read groups in the BAM files are different.
+     */
+    public static String calculateReadGroupRecordChecksum(final Path input, final Path referenceFasta) {
         final String ENCODING = "UTF-8";
 
         final MessageDigest digest;
@@ -746,13 +759,12 @@ public final class SAMUtils {
     /**
      * Returns the virtual file offset of the first record in a BAM file - i.e. the virtual file
      * offset after skipping over the text header and the sequence records.
+     *
+     * @deprecated since 5.0.0; use {@link #findVirtualOffsetOfFirstRecordInBam(Path)} instead.
      */
+    @Deprecated
     public static long findVirtualOffsetOfFirstRecordInBam(final File bamFile) {
-        try {
-            return BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile);
-        } catch (final IOException ioe) {
-            throw new RuntimeEOFException(ioe);
-        }
+        return findVirtualOffsetOfFirstRecordInBam(bamFile.toPath());
     }
 
     /**

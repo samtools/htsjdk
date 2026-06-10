@@ -55,13 +55,15 @@ public class Tribble {
      * Does not actually create an index
      * @param file  the file
      * @return a non-null File representing the index
+     * @deprecated since June 2025 Use {@link #indexPath(Path)} instead.
      */
+    @Deprecated
     public static File indexFile(final File file) {
-        return indexFile(file.getAbsoluteFile(), FileExtensions.TRIBBLE_INDEX);
+        return indexPath(file.getAbsoluteFile().toPath()).toFile();
     }
 
     /**
-     * Return the name of the index file for the provided {@code path}
+     * Return the Path of the index file for the provided {@code path}
      * Does not actually create an index
      * @param path the path
      * @return Path representing the index filename
@@ -85,13 +87,15 @@ public class Tribble {
      * Does not actually create an index
      * @param file  the file
      * @return a non-null File representing the index
+     * @deprecated since June 2025 Use {@link #tabixIndexPath(Path)} instead.
      */
+    @Deprecated
     public static File tabixIndexFile(final File file) {
-        return indexFile(file.getAbsoluteFile(), FileExtensions.TABIX_INDEX);
+        return tabixIndexPath(file.getAbsoluteFile().toPath()).toFile();
     }
 
     /**
-     * Return the name of the tabix index file for the provided {@code path}
+     * Return the Path of the tabix index file for the provided {@code path}
      * Does not actually create an index
      * @param path the path
      * @return Path representing the index filename
@@ -109,16 +113,5 @@ public class Tribble {
      */
     private static String indexFile(final String filename, final String extension) {
         return ParsingUtils.appendToPath(filename, extension);
-    }
-
-    /**
-     * Return the File of the index file for the provided {@code file} and {@code extension}
-     * Does not actually create an index
-     * @param file  the file
-     * @param extension the extension to use for the index
-     * @return a non-null File representing the index
-     */
-    private static File indexFile(final File file, final String extension) {
-        return new File(file.getAbsoluteFile() + extension);
     }
 }

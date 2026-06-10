@@ -205,6 +205,10 @@ public class SamFileValidator {
         return result;
     }
 
+    /**
+     * @deprecated use {@link #validateBamFileTermination(Path)} instead
+     */
+    @Deprecated
     public void validateBamFileTermination(final File inputFile) {
         validateBamFileTermination(IOUtil.toPath(inputFile));
     }

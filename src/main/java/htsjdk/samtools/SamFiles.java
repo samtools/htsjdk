@@ -21,7 +21,9 @@ public class SamFiles {
      * If the file is a symlink and the index cannot be found, try to unsymlink the file and look for the bai in the actual file path.
      *
      * @return The index for the provided SAM, or null if one was not found.
+     * @deprecated since 5.0; use {@link #findIndex(Path)} instead.
      */
+    @Deprecated
     public static File findIndex(final File samFile) {
         final Path path = findIndex(IOUtil.toPath(samFile));
         return path == null ? null : path.toFile();
@@ -106,5 +108,41 @@ public class SamFiles {
         }
 
         return null;
+    }
+
+    /**
+     * Determines if the given path represents a BAM file based on its file extension.
+     *
+     * @param path the path to check
+     * @return true if the path has a valid BAM file extension (.bam), false otherwise
+     */
+    public static boolean isBAMFile(final Path path) {
+        return path != null
+                && SamReader.Type.BAM_TYPE.hasValidFileExtension(
+                        path.getFileName().toString());
+    }
+
+    /**
+     * Determines if the given path represents a CRAM file based on its file extension.
+     *
+     * @param path the path to check
+     * @return true if the path has a valid CRAM file extension (.cram), false otherwise
+     */
+    public static boolean isCRAMFile(final Path path) {
+        return path != null
+                && SamReader.Type.CRAM_TYPE.hasValidFileExtension(
+                        path.getFileName().toString());
+    }
+
+    /**
+     * Determines if the given path represents a SAM file based on its file extension.
+     *
+     * @param path the path to check
+     * @return true if the path has a valid SAM file extension (.sam), false otherwise
+     */
+    public static boolean isSAMFile(final Path path) {
+        return path != null
+                && SamReader.Type.SAM_TYPE.hasValidFileExtension(
+                        path.getFileName().toString());
     }
 }

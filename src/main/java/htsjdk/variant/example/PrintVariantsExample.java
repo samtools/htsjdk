@@ -23,6 +23,7 @@
 package htsjdk.variant.example;
 
 import htsjdk.samtools.Defaults;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.tribble.AbstractFeatureReader;
@@ -33,9 +34,9 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -59,23 +60,25 @@ public final class PrintVariantsExample {
             System.out.println("Usage: " + PrintVariantsExample.class.getCanonicalName() + " inFile [outFile]");
             System.exit(1);
         }
-        final File inputFile = new File(args[0]);
-        final File outputFile = args.length >= 2 ? new File(args[1]) : null;
+        // Resolve user-supplied arguments through IOUtil.getPath so that scheme-aware inputs
+        // (file/http/https/ftp/gcs and custom NIO SPI providers) are honored, not just local files.
+        final Path inputPath = IOUtil.getPath(args[0]);
+        final Path outputPath = args.length >= 2 ? IOUtil.getPath(args[1]) : null;
 
         final long start = System.currentTimeMillis();
 
         log.info("Start with args:" + Arrays.toString(args));
         printConfigurationInfo();
 
-        try (final VariantContextWriter writer = outputFile == null
+        try (final VariantContextWriter writer = outputPath == null
                         ? null
                         : new VariantContextWriterBuilder()
-                                .setOutputFile(outputFile)
+                                .setOutputPath(outputPath)
                                 .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
                                 .unsetOption(Options.INDEX_ON_THE_FLY)
                                 .build();
                 final AbstractFeatureReader<VariantContext, LineIterator> reader =
-                        AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), false)) {
+                        AbstractFeatureReader.getFeatureReader(inputPath.toUri().toString(), new VCFCodec(), false)) {
 
             log.info(reader.getClass().getSimpleName() + " hasIndex " + reader.hasIndex());
             if (writer != null) {

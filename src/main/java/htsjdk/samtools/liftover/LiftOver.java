@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.*;
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,9 +81,29 @@ public class LiftOver {
 
     /**
      * Load UCSC chain file in order to lift over Intervals.
+     *
+     * @deprecated since 6/2024 use {@link #LiftOver(Path)} instead.
      */
+    @Deprecated
     public LiftOver(File chainFile) {
-        this(Chain.loadChains(chainFile));
+        this(chainFile.toPath());
+    }
+
+    /**
+     * Load UCSC chain file in order to lift over Intervals.
+     */
+    public LiftOver(Path chainFile) {
+        this(loadChains(chainFile));
+    }
+
+    /**
+     * Read all the chains from the given UCSC chain format file and load into an OverlapDetector.
+     */
+    private static OverlapDetector<Chain> loadChains(final Path chainFile) {
+        IOUtil.assertFileIsReadable(chainFile);
+        try (final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile))) {
+            return Chain.loadChains(reader, chainFile.toString());
+        }
     }
 
     /**

@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -117,16 +116,20 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * Use this ctor if you wish to call seek()
      * @param file source of bytes
      * @throws IOException
+     * @deprecated since 5.0; use {@link #BlockCompressedInputStream(Path)} instead.
      */
+    @Deprecated
     public BlockCompressedInputStream(final File file) throws IOException {
-        this(file, BlockGunzipper.getDefaultInflaterFactory());
+        this(IOUtil.toPath(file));
     }
 
     /**
-     * Equivalent constructor for Path as the one that takes a File. Supports seeking.
+     * Use this ctor if you wish to call seek()
+     * @param path source of bytes
+     * @throws IOException
      */
-    public BlockCompressedInputStream(final Path file) throws IOException {
-        this(new SeekablePathStream(file));
+    public BlockCompressedInputStream(final Path path) throws IOException {
+        this(path, BlockGunzipper.getDefaultInflaterFactory());
     }
 
     /**
@@ -134,9 +137,21 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @param file source of bytes
      * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
      * @throws IOException
+     * @deprecated since 5.0; use {@link #BlockCompressedInputStream(Path, InflaterFactory)} instead.
      */
+    @Deprecated
     public BlockCompressedInputStream(final File file, final InflaterFactory inflaterFactory) throws IOException {
-        mFile = new SeekableFileStream(file);
+        this(IOUtil.toPath(file), inflaterFactory);
+    }
+
+    /**
+     * Use this ctor if you wish to call seek()
+     * @param path source of bytes
+     * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
+     * @throws IOException
+     */
+    public BlockCompressedInputStream(final Path path, final InflaterFactory inflaterFactory) throws IOException {
+        mFile = new SeekablePathStream(path);
         mStream = null;
         blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
@@ -623,7 +638,9 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @param file the file to check
      * @return status of the last compressed block
      * @throws IOException
+     * @deprecated since 5.0; use {@link #checkTermination(Path)} instead.
      */
+    @Deprecated
     public static FileTermination checkTermination(final File file) throws IOException {
         return checkTermination(IOUtil.toPath(file));
     }

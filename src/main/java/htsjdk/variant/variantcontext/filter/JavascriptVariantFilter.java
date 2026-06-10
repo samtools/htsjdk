@@ -29,6 +29,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
 
 /**
  * JavaScript-based {@link VariantContextFilter}.
@@ -57,15 +58,29 @@ import java.io.Reader;
 public class JavascriptVariantFilter extends AbstractJavascriptFilter<VCFHeader, VariantContext>
         implements VariantContextFilter {
     /**
+     * constructor using a javascript file path
+     *
+     * @param scriptPath
+     *            the path to the javascript file to be compiled
+     * @param header
+     *            the SAMHeader
+     */
+    public JavascriptVariantFilter(final Path scriptPath, final VCFHeader header) throws IOException {
+        super(scriptPath, header);
+    }
+
+    /**
      * constructor using a javascript File
      *
      * @param scriptFile
      *            the javascript file to be compiled
      * @param header
      *            the SAMHeader
+     * @deprecated use {@link #JavascriptVariantFilter(Path, VCFHeader)} instead.
      */
+    @Deprecated
     public JavascriptVariantFilter(final File scriptFile, final VCFHeader header) throws IOException {
-        super(scriptFile, header);
+        this(scriptFile.toPath(), header);
     }
 
     /**

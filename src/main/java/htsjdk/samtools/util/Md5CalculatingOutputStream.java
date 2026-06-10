@@ -64,6 +64,13 @@ public class Md5CalculatingOutputStream extends OutputStream {
         }
     }
 
+    /**
+     * Constructor that takes in the OutputStream that we are wrapping and the digest file to write the MD5 to.
+     *
+     * @deprecated since the File-based API is being migrated to {@link Path}; use
+     *     {@link #Md5CalculatingOutputStream(OutputStream, Path)} instead.
+     */
+    @Deprecated
     public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
         this(os, IOUtil.toPath(digestFile));
     }
