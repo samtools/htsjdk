@@ -1240,7 +1240,14 @@ public class IOUtil {
      * @throws IOException an I/O error occurs creating the file system
      */
     public static Path getPath(String uriString) throws IOException {
-        URI uri = URI.create(uriString);
+        final URI uri;
+        try {
+            uri = URI.create(uriString);
+        } catch (final IllegalArgumentException e) {
+            // Not a valid URI (e.g. it contains spaces or other characters that are illegal in a URI);
+            // treat it as a path on the default filesystem rather than failing.
+            return Paths.get(uriString);
+        }
         try {
             // if the URI has no scheme, then treat as a local file, otherwise use the scheme to determine the
             // filesystem to use
@@ -1573,9 +1580,13 @@ public class IOUtil {
      * Copy input to output, overwriting output if it already exists.
      */
     public static void copyPath(final Path input, final Path output) {
-        try {
-            Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
+        // Copy through an output stream opened on the target (rather than Files.copy with
+        // REPLACE_EXISTING, which would delete-then-recreate the target) so that an existing
+        // but non-writable destination causes a failure, matching the historical copyFile behavior.
+        try (final InputStream in = Files.newInputStream(input);
+                final OutputStream out = Files.newOutputStream(output)) {
+            in.transferTo(out);
+        } catch (final IOException e) {
             throw new SAMException("Error copying " + input + " to " + output, e);
         }
     }

@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -269,26 +270,33 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             final int nRecs,
             final boolean verifySupplementalFiles)
             throws IOException {
-        if (outputPath.getFileName().toString().endsWith(SamReader.Type.CRAM_TYPE.fileExtension())) {
-            Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(outputPath))));
-        }
+        // The format-magic checks below open the file with SeekableFileStream, which only supports the
+        // default (local) filesystem, and rely on the file name carrying a proper format extension. The
+        // jimfs-based tests deliberately use bare extension names (no dot), so restrict these checks to
+        // the default filesystem; the reader round-trip and supplemental-file checks below still validate
+        // the non-default-filesystem cases.
+        if (outputPath.getFileSystem() == FileSystems.getDefault()) {
+            if (outputPath.getFileName().toString().endsWith(SamReader.Type.CRAM_TYPE.fileExtension())) {
+                Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(outputPath))));
+            }
 
-        if (outputPath.getFileName().toString().endsWith(SamReader.Type.BAM_TYPE.fileExtension())) {
-            Assert.assertTrue(SamStreams.isBAMFile(new BufferedInputStream(new SeekableFileStream(outputPath))));
-        }
+            if (outputPath.getFileName().toString().endsWith(SamReader.Type.BAM_TYPE.fileExtension())) {
+                Assert.assertTrue(SamStreams.isBAMFile(new BufferedInputStream(new SeekableFileStream(outputPath))));
+            }
 
-        if (outputPath.getFileName().toString().endsWith(SamReader.Type.SAM_TYPE.fileExtension())) {
-            byte[] head = new byte[3];
-            new DataInputStream(Files.newInputStream(outputPath)).readFully(head);
-            Assert.assertEquals("@HD".getBytes(), head);
+            if (outputPath.getFileName().toString().endsWith(SamReader.Type.SAM_TYPE.fileExtension())) {
+                byte[] head = new byte[3];
+                new DataInputStream(Files.newInputStream(outputPath)).readFully(head);
+                Assert.assertEquals("@HD".getBytes(), head);
+            }
         }
 
         if (verifySupplementalFiles) {
             final Path indexPath = SamFiles.findIndex(outputPath);
-            indexPath.toFile().deleteOnExit();
+            IOUtil.deleteOnExit(indexPath);
             final Path md5Path =
                     outputPath.resolveSibling(outputPath.getFileName().toString() + ".md5");
-            md5Path.toFile().deleteOnExit();
+            IOUtil.deleteOnExit(md5Path);
             Assert.assertTrue(Files.size(indexPath) > 0);
             Assert.assertTrue(Files.size(md5Path) > 0);
         }
