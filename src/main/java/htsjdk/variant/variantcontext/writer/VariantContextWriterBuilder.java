@@ -74,13 +74,13 @@ import java.util.EnumSet;
  * .setBuffer(8192);
  *
  * VariantContextWriter sample1_writer = builder
- * .setOutputFile("sample1.vcf")
+ * .setOutputPath(Path.of("sample1.vcf"))
  * .build();
  * VariantContextWriter sample2_writer = builder
- * .setOutputFile("sample2.bcf")
+ * .setOutputPath(Path.of("sample2.bcf"))
  * .build();
  * VariantContextWriter sample3_writer = builder
- * .setOutputFile("sample3.vcf.bgzf")
+ * .setOutputPath(Path.of("sample3.vcf.bgzf"))
  * .build();
  * </pre>
  *
@@ -95,11 +95,11 @@ import java.util.EnumSet;
  * .unsetBuffering();
  *
  * VariantContextWriter sample1_writer = builder
- * .setOutputFile("sample1.custom_extension")
+ * .setOutputPath(Path.of("sample1.custom_extension"))
  * .setOutputFileType(OutputType.VCF)
  * .build();
  * VariantContextWriter sample2_writer = builder
- * .setOutputFile("sample2.custom_extension")
+ * .setOutputPath(Path.of("sample2.custom_extension"))
  * .setOutputFileType(OutputType.BLOCK_COMPRESSED_VCF)
  * .build();
  * </pre>
@@ -158,7 +158,9 @@ public class VariantContextWriterBuilder {
      *
      * @param outFile the file the <code>VariantContextWriter</code> will write to
      * @return this <code>VariantContextWriterBuilder</code>
+     * @deprecated use {@link #setOutputPath(Path)} instead.
      */
+    @Deprecated
     public VariantContextWriterBuilder setOutputFile(final File outFile) {
         return setOutputPath(IOUtil.toPath(outFile));
     }
@@ -178,14 +180,45 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output file for the next <code>VariantContextWriter</code> created by this builder.
+     * Set the output for the next <code>VariantContextWriter</code> created by this builder from a URI.
      * Determines file type implicitly from the filename.
+     * <p>
+     * This is a convenience method that delegates to {@link #setOutputPath(Path)} after converting the URI to a
+     * {@link Path} via {@link IOUtil#getPath(java.net.URI)}. The URI's scheme must be supported by an available NIO filesystem
+     * provider (e.g. {@code file}, {@code gs}, etc.).
+     * </p>
      *
-     * @param outFile the file the <code>VariantContextWriter</code> will write to
+     * @param outUri the URI of the output the <code>VariantContextWriter</code> will write to
      * @return this <code>VariantContextWriterBuilder</code>
+     * @throws RuntimeIOException if the URI cannot be converted to a Path
+     */
+    public VariantContextWriterBuilder setOutputURI(final java.net.URI outUri) {
+        try {
+            return setOutputPath(IOUtil.getPath(outUri));
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Could not convert URI to a Path: " + outUri, e);
+        }
+    }
+
+    /**
+     * Set the output for the next <code>VariantContextWriter</code> created by this builder.
+     * Determines file type implicitly from the filename.
+     * <p>
+     * The string is converted to a {@link Path} via {@link IOUtil#getPath(String)}, which is scheme-aware: a value
+     * with no scheme is treated as a local file, while a value with a scheme (e.g. {@code gs://}) is resolved using
+     * the matching NIO filesystem provider. For more control, use {@link #setOutputPath(Path)} directly.
+     * </p>
+     *
+     * @param outFile the output the <code>VariantContextWriter</code> will write to
+     * @return this <code>VariantContextWriterBuilder</code>
+     * @throws RuntimeIOException if the string cannot be converted to a Path
      */
     public VariantContextWriterBuilder setOutputFile(final String outFile) {
-        return setOutputFile(new File(outFile));
+        try {
+            return setOutputPath(IOUtil.getPath(outFile));
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Could not convert to a Path: " + outFile, e);
+        }
     }
 
     /**
@@ -506,7 +539,9 @@ public class VariantContextWriterBuilder {
      *
      * @param file A file whose {@link OutputType} we want to infer
      * @return The file's {@link OutputType}. Never {@code null}.
+     * @deprecated use {@link #determineOutputTypeFromFile(Path)} instead.
      */
+    @Deprecated
     public static OutputType determineOutputTypeFromFile(final File file) {
         return determineOutputTypeFromFile(file.toPath());
     }

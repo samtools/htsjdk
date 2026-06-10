@@ -44,6 +44,7 @@ import htsjdk.utils.ValidationUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -52,7 +53,7 @@ import java.util.function.Function;
 
 /**
  * Factory class for creating ReferenceSequenceFile instances for reading reference
- * sequences store in various formats.
+ * sequences stored in various formats.
  *
  * @author Tim Fennell
  */
@@ -76,9 +77,11 @@ public class ReferenceSequenceFileFactory {
      * will be truncated at first whitespace, if any.
      *
      * @param file the reference sequence file on disk
+     * @deprecated since June 2024; use {@link #getReferenceSequenceFile(Path)} instead.
      */
+    @Deprecated
     public static ReferenceSequenceFile getReferenceSequenceFile(final File file) {
-        return getReferenceSequenceFile(file, true);
+        return getReferenceSequenceFile(IOUtil.toPath(file));
     }
 
     /**
@@ -87,10 +90,12 @@ public class ReferenceSequenceFileFactory {
      *
      * @param file the reference sequence file on disk
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @deprecated since June 2024; use {@link #getReferenceSequenceFile(Path, boolean)} instead.
      */
+    @Deprecated
     public static ReferenceSequenceFile getReferenceSequenceFile(
             final File file, final boolean truncateNamesAtWhitespace) {
-        return getReferenceSequenceFile(file, truncateNamesAtWhitespace, true);
+        return getReferenceSequenceFile(IOUtil.toPath(file), truncateNamesAtWhitespace);
     }
 
     /**
@@ -100,10 +105,54 @@ public class ReferenceSequenceFileFactory {
      * @param file the reference sequence file on disk
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     * @deprecated since June 2024; use {@link #getReferenceSequenceFile(Path, boolean, boolean)} instead.
      */
+    @Deprecated
     public static ReferenceSequenceFile getReferenceSequenceFile(
             final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        return getReferenceSequenceFile(IOUtil.toPath(file), HtsPath::new, truncateNamesAtWhitespace, preferIndexed);
+        return getReferenceSequenceFile(IOUtil.toPath(file), truncateNamesAtWhitespace, preferIndexed);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.  Sequence names
+     * will be truncated at first whitespace, if any.
+     *
+     * @param uri the URI of the reference sequence file
+     * @return a ReferenceSequenceFile instance
+     * @throws IOException if no filesystem provider can be found for the URI, or the file cannot be accessed
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final URI uri) throws IOException {
+        return getReferenceSequenceFile(uri, true);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.
+     *
+     * @param uri the URI of the reference sequence file
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @return a ReferenceSequenceFile instance
+     * @throws IOException if no filesystem provider can be found for the URI, or the file cannot be accessed
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final URI uri, final boolean truncateNamesAtWhitespace)
+            throws IOException {
+        return getReferenceSequenceFile(uri, truncateNamesAtWhitespace, true);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.
+     *
+     * @param uri the URI of the reference sequence file
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     * @return a ReferenceSequenceFile instance
+     * @throws IOException if no filesystem provider can be found for the URI, or the file cannot be accessed
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(
+            final URI uri, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) throws IOException {
+        return getReferenceSequenceFile(IOUtil.getPath(uri), truncateNamesAtWhitespace, preferIndexed);
     }
 
     /**
@@ -322,7 +371,9 @@ public class ReferenceSequenceFileFactory {
      * Returns the default dictionary name for a FASTA file.
      *
      * @param file the reference sequence file on disk.
+     * @deprecated since June 2024; use {@link #getDefaultDictionaryForReferenceSequence(Path)} instead.
      */
+    @Deprecated
     public static File getDefaultDictionaryForReferenceSequence(final File file) {
         return getDefaultDictionaryForReferenceSequence(IOUtil.toPath(file)).toFile();
     }

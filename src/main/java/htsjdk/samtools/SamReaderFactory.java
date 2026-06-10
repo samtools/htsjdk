@@ -32,6 +32,7 @@ import htsjdk.samtools.util.zip.InflaterFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
@@ -43,8 +44,13 @@ import java.util.zip.GZIPInputStream;
 /**
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
  * handful of static generators.</p>
+ *
+ * <p>This factory accepts {@link java.nio.file.Path} and {@link java.net.URI} inputs, as well as
+ * legacy {@link java.io.File} inputs (the latter are deprecated). Any NIO-compatible filesystem
+ * provider (e.g., jimfs, S3, HDFS) can be used via the standard SPI mechanism.</p>
+ *
  * <pre>
- *     SamReaderFactory.makeDefault().open(new File("/my/bam.bam");
+ *     SamReaderFactory.makeDefault().open(Path.of("/my/bam.bam"));
  * </pre>
  * <p>Example: Configure a factory</p>
  * <pre>
@@ -61,8 +67,11 @@ import java.util.zip.GZIPInputStream;
  *              .enable({@link Option#INCLUDE_SOURCE_IN_RECORDS}, {@link Option#VALIDATE_CRC_CHECKSUMS})
  *              .validationStringency({@link ValidationStringency#SILENT});
  *
- *     // File-based bam
- *     final {@link SamReader} fileReader = factory.open(new File("/my/bam.bam"));
+ *     // Path-based bam
+ *     final {@link SamReader} pathReader = factory.open(Path.of("/my/bam.bam"));
+ *
+ *     // URI-based bam (resolved via the scheme-aware NIO SPI mechanism)
+ *     final {@link SamReader} uriReader = factory.open(URI.create("file:///my/bam.bam"));
  *
  *     // HTTP-hosted BAM with index from an arbitrary stream
  *     final SeekableStream myBamIndexStream = ...
@@ -77,7 +86,15 @@ public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
-    public abstract SamReader open(final File file);
+    /**
+     * Open the specified file.
+     *
+     * @deprecated since 5.0.0; use {@link #open(Path)} or {@link #open(URI)} instead.
+     */
+    @Deprecated
+    public SamReader open(final File file) {
+        return open(file.toPath());
+    }
 
     /**
      * Open the specified path (without using any wrappers).
@@ -86,6 +103,22 @@ public abstract class SamReaderFactory {
      */
     public SamReader open(final Path path) {
         return open(path, null, null);
+    }
+
+    /**
+     * Open the SAM, BAM, or CRAM file identified by the specified URI.
+     *
+     * <p>The URI is resolved to a {@link Path} using the scheme-aware NIO SPI mechanism
+     * (see {@link IOUtil#getPath(URI)}), so any installed NIO filesystem provider
+     * (e.g., file, jimfs, S3, HDFS) may be used. This is a convenience method that
+     * delegates to {@link #open(Path)}.</p>
+     *
+     * @param uri the URI of the SAM, BAM, or CRAM file to open (e.g., {@code file:///path/to/file.bam})
+     * @return a {@link SamReader} for the specified URI
+     * @throws IOException if the URI cannot be resolved to a usable Path
+     */
+    public SamReader open(final URI uri) throws IOException {
+        return open(IOUtil.getPath(uri));
     }
 
     /**
@@ -133,20 +166,56 @@ public abstract class SamReaderFactory {
     /** Sets a specific Option to a boolean value. * */
     public abstract SamReaderFactory setOption(final Option option, boolean value);
 
-    /** Sets the specified reference sequence * */
+    /**
+     * Sets the specified reference sequence.
+     *
+     * @deprecated since 5.0.0; use {@link #referenceSequence(Path)} or {@link #referenceSequence(URI)} instead.
+     */
+    @Deprecated
     public abstract SamReaderFactory referenceSequence(File referenceSequence);
 
     /** Sets the specified reference sequence. */
     public abstract SamReaderFactory referenceSequence(Path referenceSequence);
 
+    /**
+     * Sets the reference sequence identified by the specified URI.
+     *
+     * <p>The URI is resolved to a {@link Path} using the scheme-aware NIO SPI mechanism
+     * (see {@link IOUtil#getPath(URI)}). This is a convenience method that delegates to
+     * {@link #referenceSequence(Path)}.</p>
+     *
+     * @param referenceUri the URI of the reference sequence file
+     * @return this factory
+     * @throws IOException if the URI cannot be resolved to a usable Path
+     */
+    public abstract SamReaderFactory referenceSequence(URI referenceUri) throws IOException;
+
     /** Sets the specified reference sequence * */
     public abstract SamReaderFactory referenceSource(CRAMReferenceSource referenceSequence);
 
-    /** Utility method to open the file get the header and close the file */
+    /**
+     * Utility method to open the file, get the header, and close the file.
+     *
+     * @deprecated since 5.0.0; use {@link #getFileHeader(Path)} or {@link #getFileHeader(URI)} instead.
+     */
+    @Deprecated
     public abstract SAMFileHeader getFileHeader(File samFile);
 
     /** Utility method to open the file get the header and close the file */
     public abstract SAMFileHeader getFileHeader(Path samFile);
+
+    /**
+     * Utility method to open the file identified by the specified URI, get the header, and close the file.
+     *
+     * <p>The URI is resolved to a {@link Path} using the scheme-aware NIO SPI mechanism
+     * (see {@link IOUtil#getPath(URI)}). This is a convenience method that delegates to
+     * {@link #getFileHeader(Path)}.</p>
+     *
+     * @param samUri the URI of the SAM, BAM, or CRAM file
+     * @return the file header
+     * @throws IOException if the URI cannot be resolved to a usable Path
+     */
+    public abstract SAMFileHeader getFileHeader(URI samUri) throws IOException;
 
     /** Reapplies any changed options to the reader * */
     public abstract void reapplyOptions(SamReader reader);
@@ -216,11 +285,9 @@ public abstract class SamReaderFactory {
         }
 
         @Override
+        @Deprecated
         public SamReader open(final File file) {
-            final SamInputResource r = SamInputResource.of(file);
-            final File indexMaybe = SamFiles.findIndex(file);
-            if (indexMaybe != null) r.index(indexMaybe);
-            return open(r);
+            return open(file.toPath());
         }
 
         @Override
@@ -269,9 +336,9 @@ public abstract class SamReaderFactory {
         }
 
         @Override
+        @Deprecated
         public SamReaderFactory referenceSequence(final File referenceSequence) {
-            this.referenceSource = new ReferenceSource(referenceSequence);
-            return this;
+            return referenceSequence(referenceSequence.toPath());
         }
 
         @Override
@@ -281,17 +348,20 @@ public abstract class SamReaderFactory {
         }
 
         @Override
+        public SamReaderFactory referenceSequence(final URI referenceUri) throws IOException {
+            return referenceSequence(IOUtil.getPath(referenceUri));
+        }
+
+        @Override
         public SamReaderFactory referenceSource(final CRAMReferenceSource referenceSource) {
             this.referenceSource = referenceSource;
             return this;
         }
 
         @Override
+        @Deprecated
         public SAMFileHeader getFileHeader(final File samFile) {
-            final SamReader reader = open(samFile);
-            final SAMFileHeader header = reader.getFileHeader();
-            CloserUtil.close(reader);
-            return header;
+            return getFileHeader(samFile.toPath());
         }
 
         @Override
@@ -300,6 +370,11 @@ public abstract class SamReaderFactory {
             final SAMFileHeader header = reader.getFileHeader();
             CloserUtil.close(reader);
             return header;
+        }
+
+        @Override
+        public SAMFileHeader getFileHeader(final URI samUri) throws IOException {
+            return getFileHeader(IOUtil.getPath(samUri));
         }
 
         @Override

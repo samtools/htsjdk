@@ -38,6 +38,7 @@ import htsjdk.samtools.util.zip.DeflaterFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.Deflater;
@@ -220,6 +221,18 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      * @param tmpDir Path to the temporary directory
      */
+    public SAMFileWriterFactory setTempDirectory(final Path tmpDir) {
+        this.tmpDir = tmpDir == null ? null : tmpDir.toFile();
+        return this;
+    }
+
+    /**
+     * Set the temporary directory to use when sort data.
+     *
+     * @param tmpDir Path to the temporary directory
+     * @deprecated since 6/26, use {@link #setTempDirectory(Path)} instead
+     */
+    @Deprecated
     public SAMFileWriterFactory setTempDirectory(final File tmpDir) {
         this.tmpDir = tmpDir;
         return this;
@@ -227,10 +240,10 @@ public class SAMFileWriterFactory implements Cloneable {
 
     /**
      * Gets the temporary directory that will be used when sorting data.
-     * @see #setTempDirectory(File)
+     * @see #setTempDirectory(Path)
      */
-    public File getTempDirectory() {
-        return tmpDir;
+    public Path getTempDirectory() {
+        return tmpDir == null ? null : tmpDir.toPath();
     }
 
     /**
@@ -273,9 +286,11 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
      * @param outputFile where to write the output.
+     * @deprecated since 6/26, use {@link #makeBAMWriter(SAMFileHeader, boolean, Path)} instead
      */
+    @Deprecated
     public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
-        return makeBAMWriter(header, presorted, outputFile, this.getCompressionLevel());
+        return makeBAMWriter(header, presorted, outputFile.toPath());
     }
 
     /**
@@ -290,13 +305,33 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Create a BAMFileWriter that is ready to receive SAMRecords from a URI.  Uses default compression level.
+     * <p>
+     * This is a convenience method that delegates to {@link #makeBAMWriter(SAMFileHeader, boolean, Path)} by converting
+     * the URI to a Path via {@link IOUtil#getPath(URI)}. The URI must be supported by an available NIO filesystem provider.
+     * </p>
+     *
+     * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
+     * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
+     * @param outputUri  URI where to write the output (e.g., file:///path/to/file.bam)
+     * @return a SAMFileWriter for the specified URI
+     * @throws IOException if the URI cannot be converted to a Path
+     */
+    public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final URI outputUri)
+            throws IOException {
+        return makeBAMWriter(header, presorted, IOUtil.getPath(outputUri));
+    }
+
+    /**
      * Create a BAMFileWriter that is ready to receive SAMRecords.
      *
      * @param header           entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted        if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
      * @param outputFile       where to write the output.
      * @param compressionLevel Override default compression level with the given value, between 0 (fastest) and 9 (smallest).
+     * @deprecated since 6/26, use {@link #makeBAMWriter(SAMFileHeader, boolean, Path, int)} instead
      */
+    @Deprecated
     public SAMFileWriter makeBAMWriter(
             final SAMFileHeader header, final boolean presorted, final File outputFile, final int compressionLevel) {
         return makeBAMWriter(header, presorted, outputFile.toPath(), compressionLevel);
@@ -358,7 +393,9 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
      * @param outputFile where to write the output.
+     * @deprecated since 6/26, use {@link #makeSAMWriter(SAMFileHeader, boolean, Path)} instead
      */
+    @Deprecated
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
         return makeSAMWriter(header, presorted, outputFile.toPath());
     }
@@ -390,6 +427,24 @@ public class SAMFileWriterFactory implements Cloneable {
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputPath.toUri(), ioe);
         }
+    }
+
+    /**
+     * Create a SAMTextWriter that is ready to receive SAMRecords from a URI.
+     * <p>
+     * This is a convenience method that delegates to {@link #makeSAMWriter(SAMFileHeader, boolean, Path)} by converting
+     * the URI to a Path via {@link IOUtil#getPath(URI)}. The URI must be supported by an available NIO filesystem provider.
+     * </p>
+     *
+     * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
+     * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
+     * @param outputUri  URI where to write the output (e.g., file:///path/to/file.sam)
+     * @return a SAMFileWriter for the specified URI
+     * @throws IOException if the URI cannot be converted to a Path
+     */
+    public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final URI outputUri)
+            throws IOException {
+        return makeSAMWriter(header, presorted, IOUtil.getPath(outputUri));
     }
 
     /**
@@ -425,7 +480,7 @@ public class SAMFileWriterFactory implements Cloneable {
         return initWriter(
                 header,
                 presorted,
-                new BAMFileWriter(stream, (File) null, this.getCompressionLevel(), this.deflaterFactory));
+                new BAMFileWriter(stream, (String) null, this.getCompressionLevel(), this.deflaterFactory));
     }
 
     /**
@@ -454,7 +509,9 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param presorted  presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
      * @param outputFile where to write the output.  Must end with .sam or .bam.
      * @return SAM or BAM writer based on file extension of outputFile.
+     * @deprecated since 6/26, use {@link #makeSAMOrBAMWriter(SAMFileHeader, boolean, Path)} instead
      */
+    @Deprecated
     public SAMFileWriter makeSAMOrBAMWriter(
             final SAMFileHeader header, final boolean presorted, final File outputFile) {
         return makeSAMOrBAMWriter(header, presorted, outputFile.toPath());
@@ -483,6 +540,25 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Create either a SAM or a BAM writer based on examination of the URI extension.
+     * <p>
+     * This is a convenience method that delegates to {@link #makeSAMOrBAMWriter(SAMFileHeader, boolean, Path)} by
+     * converting the URI to a Path via {@link IOUtil#getPath(URI)}. The URI must be supported by an available NIO
+     * filesystem provider.
+     * </p>
+     *
+     * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
+     * @param presorted  presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
+     * @param outputUri  URI where to write the output (e.g., file:///path/to/file.sam or file:///path/to/file.bam)
+     * @return SAM or BAM writer based on file extension of outputUri
+     * @throws IOException if the URI cannot be converted to a Path
+     */
+    public SAMFileWriter makeSAMOrBAMWriter(final SAMFileHeader header, final boolean presorted, final URI outputUri)
+            throws IOException {
+        return makeSAMOrBAMWriter(header, presorted, IOUtil.getPath(outputUri));
+    }
+
+    /**
      *
      * Create a SAM, BAM or CRAM writer based on examination of the outputFile extension.
      * The method assumes BAM file format for unknown file extensions.
@@ -493,7 +569,9 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param referenceFasta reference sequence file
      * @return SAMFileWriter appropriate for SAM and CRAM file types specified in outputFile, or a BAM writer for all other types
      *
+     * @deprecated since 6/26, use {@link #makeWriter(SAMFileHeader, boolean, Path, Path)} instead
      */
+    @Deprecated
     public SAMFileWriter makeWriter(
             final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
         return makeWriter(header, presorted, IOUtil.toPath(outputFile), IOUtil.toPath(referenceFasta));
@@ -538,6 +616,28 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Create a SAM, BAM or CRAM writer based on examination of the URI extension.
+     * <p>
+     * This is a convenience method that delegates to {@link #makeWriter(SAMFileHeader, boolean, Path, Path)} by
+     * converting the URIs to Paths via {@link IOUtil#getPath(URI)}. The URIs must be supported by an available NIO
+     * filesystem provider.
+     * </p>
+     *
+     * @param header header. Sort order is determined by the sortOrder property of this arg.
+     * @param presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
+     * @param outputUri URI where to write the output (e.g., file:///path/to/file.sam, file:///path/to/file.bam, or file:///path/to/file.cram)
+     * @param referenceUri URI of the reference sequence file, or null
+     * @return SAMFileWriter appropriate for the file type specified in outputUri
+     * @throws IOException if a URI cannot be converted to a Path
+     */
+    public SAMFileWriter makeWriter(
+            final SAMFileHeader header, final boolean presorted, final URI outputUri, final URI referenceUri)
+            throws IOException {
+        final Path referencePath = referenceUri == null ? null : IOUtil.getPath(referenceUri);
+        return makeWriter(header, presorted, IOUtil.getPath(outputUri), referencePath);
+    }
+
+    /**
      * Create a CRAMFileWriter on an output stream. Requires the input to be presorted to match the sort order defined
      * by the input header.
      *
@@ -547,7 +647,9 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param stream where to write the output.
      * @param referenceFasta reference sequence file
      * @return CRAMFileWriter
+     * @deprecated since 6/26, use {@link #makeCRAMWriter(SAMFileHeader, OutputStream, Path)} instead
      */
+    @Deprecated
     public CRAMFileWriter makeCRAMWriter(
             final SAMFileHeader header, final OutputStream stream, final File referenceFasta) {
         return makeCRAMWriter(header, stream, IOUtil.toPath(referenceFasta));
@@ -587,7 +689,10 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param referenceFasta reference sequence file
      * @return CRAMFileWriter
      *
+     * @deprecated since 6/26, use {@link #makeWriter(SAMFileHeader, boolean, Path, Path)} or
+     * {@link #makeCRAMWriter(SAMFileHeader, boolean, Path, Path)} instead
      */
+    @Deprecated
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final File outputFile, final File referenceFasta) {
         return createCRAMWriterWithSettings(header, true, outputFile.toPath(), IOUtil.toPath(referenceFasta));
     }
@@ -622,7 +727,9 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param referenceFasta reference sequence file
      * @return CRAMFileWriter
      *
+     * @deprecated since 6/26, use {@link #makeCRAMWriter(SAMFileHeader, boolean, Path, Path)} instead
      */
+    @Deprecated
     public CRAMFileWriter makeCRAMWriter(
             final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
         return makeCRAMWriter(header, presorted, outputFile.toPath(), IOUtil.toPath(referenceFasta));
@@ -664,6 +771,30 @@ public class SAMFileWriterFactory implements Cloneable {
     public CRAMFileWriter makeCRAMWriter(
             final SAMFileHeader header, final boolean presorted, final Path output, final Path referenceFasta) {
         return createCRAMWriterWithSettings(header, presorted, output, referenceFasta);
+    }
+
+    /**
+     * Create a CRAMFileWriter on an output file from a URI.
+     * <p>
+     * This is a convenience method that delegates to {@link #makeCRAMWriter(SAMFileHeader, boolean, Path, Path)} by
+     * converting the URIs to Paths via {@link IOUtil#getPath(URI)}. The URIs must be supported by an available NIO
+     * filesystem provider.
+     * </p>
+     *
+     * Note: does not honor factory setting for USE_ASYNC_IO.
+     *
+     * @param header entire header. Sort order is determined by the sortOrder property of this arg.
+     * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
+     * @param outputUri URI where to write the output (e.g., file:///path/to/file.cram)
+     * @param referenceUri URI of the reference sequence file, or null
+     * @return CRAMFileWriter
+     * @throws IOException if a URI cannot be converted to a Path
+     */
+    public CRAMFileWriter makeCRAMWriter(
+            final SAMFileHeader header, final boolean presorted, final URI outputUri, final URI referenceUri)
+            throws IOException {
+        final Path referencePath = referenceUri == null ? null : IOUtil.getPath(referenceUri);
+        return makeCRAMWriter(header, presorted, IOUtil.getPath(outputUri), referencePath);
     }
 
     /**
