@@ -55,7 +55,9 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * Build a sequence index from the specified file.
      * @param indexFile File to open.
      * @throws FileNotFoundException if the index file cannot be found.
+     * @deprecated since 5.0; use {@link #FastaSequenceIndex(Path)} instead.
      */
+    @Deprecated
     public FastaSequenceIndex(File indexFile) {
         this(IOUtil.toPath(indexFile));
     }

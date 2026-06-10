@@ -50,8 +50,12 @@ public class ReferenceSequenceFileWalker implements Closeable {
         this(ReferenceSequenceFileFactory.getReferenceSequenceFile(path, HtsPath::new, true, false));
     }
 
+    /**
+     * @deprecated since 5/2026 use {@link #ReferenceSequenceFileWalker(Path)} instead.
+     */
+    @Deprecated
     public ReferenceSequenceFileWalker(final File file) {
-        this(ReferenceSequenceFileFactory.getReferenceSequenceFile(file, true, false));
+        this(file.toPath());
     }
 
     /**

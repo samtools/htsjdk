@@ -51,7 +51,9 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     /**
      * Finds and loads the sequence file dictionary.
      * @param file Fasta file to read.  Also acts as a prefix for supporting files.
+     * @deprecated use {@link #AbstractFastaSequenceFile(Path)} instead.
      */
+    @Deprecated
     AbstractFastaSequenceFile(final File file) {
         this(IOUtil.toPath(file));
     }

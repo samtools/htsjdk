@@ -53,7 +53,9 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
      * @param file The file to open.
      * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
+     * @deprecated use {@link #IndexedFastaSequenceFile(Path, FastaSequenceIndex)} instead.
      */
+    @Deprecated
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
         this(IOUtil.toPath(file), index);
     }
@@ -62,9 +64,11 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
      * @param file The file to open.
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+     * @deprecated use {@link #IndexedFastaSequenceFile(Path)} instead.
      */
+    @Deprecated
     public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
-        this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(IOUtil.toPath(file)))));
+        this(IOUtil.toPath(file), new FastaSequenceIndex(findRequiredFastaIndexFile(IOUtil.toPath(file))));
     }
 
     /**

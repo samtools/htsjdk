@@ -50,12 +50,21 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     private int sequenceIndex = -1;
     private final byte[] basesBuffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
 
-    /** Constructs a FastaSequenceFile that reads from the specified file. */
+    /**
+     * Constructs a FastaSequenceFile that reads from the specified file.
+     *
+     * @deprecated since 06/2026 use {@link #FastaSequenceFile(Path, boolean)} instead.
+     */
+    @Deprecated
     public FastaSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
         this(IOUtil.toPath(file), truncateNamesAtWhitespace);
     }
 
-    /** Constructs a FastaSequenceFile that reads from the specified file. */
+    /**
+     * Constructs a FastaSequenceFile that reads from the specified file.
+     * @param path Path to the FASTA file
+     * @param truncateNamesAtWhitespace whether to truncate sequence names at whitespace
+     */
     public FastaSequenceFile(final Path path, final boolean truncateNamesAtWhitespace) {
         super(path);
         this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
