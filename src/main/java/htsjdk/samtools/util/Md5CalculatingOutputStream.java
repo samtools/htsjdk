@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -62,17 +61,6 @@ public class Md5CalculatingOutputStream extends OutputStream {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
-    }
-
-    /**
-     * Constructor that takes in the OutputStream that we are wrapping and the digest file to write the MD5 to.
-     *
-     * @deprecated since the File-based API is being migrated to {@link Path}; use
-     *     {@link #Md5CalculatingOutputStream(OutputStream, Path)} instead.
-     */
-    @Deprecated
-    public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
-        this(os, IOUtil.toPath(digestFile));
     }
 
     @Override

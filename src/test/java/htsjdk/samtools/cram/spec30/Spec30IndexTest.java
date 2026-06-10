@@ -158,7 +158,7 @@ public class Spec30IndexTest extends HtsSpecsComplianceTestBase {
             throws IOException {
         final Path cramFile = SPEC_30_DIR.resolve(basename + ".cram");
         final Path craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai");
-        final ReferenceSource source = new ReferenceSource(REFERENCE.toPath());
+        final ReferenceSource source = new ReferenceSource(REFERENCE);
 
         try (final CRAMFileReader reader = new CRAMFileReader(
                 new SeekableFileStream(cramFile),
@@ -178,7 +178,7 @@ public class Spec30IndexTest extends HtsSpecsComplianceTestBase {
     private void assertUnmappedCount(final String basename, final int expectedCount) throws IOException {
         final Path cramFile = SPEC_30_DIR.resolve(basename + ".cram");
         final Path craiFile = SPEC_30_DIR.resolve(basename + ".cram.crai");
-        final ReferenceSource source = new ReferenceSource(REFERENCE.toPath());
+        final ReferenceSource source = new ReferenceSource(REFERENCE);
 
         try (final CRAMFileReader reader = new CRAMFileReader(
                 new SeekableFileStream(cramFile),

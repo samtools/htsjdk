@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.AsciiWriter;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -60,16 +59,6 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     public SAMTextWriter(final Path path) {
         this(path, SamFlagField.DECIMAL);
-    }
-
-    /**
-     * Constructs a SAMTextWriter that writes to a File.
-     * @param file Where to write the output.
-     * @deprecated since 06/2025 Use {@link #SAMTextWriter(Path)} instead.
-     */
-    @Deprecated
-    public SAMTextWriter(final File file) {
-        this(file.toPath());
     }
 
     /**
@@ -112,16 +101,6 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             throw new RuntimeIOException(e);
         }
         this.samFlagFieldOutput = samFlagFieldOutput;
-    }
-
-    /**
-     * Constructs a SAMTextWriter that writes to a File.
-     * @param file Where to write the output.
-     * @deprecated since 06/2025 Use {@link #SAMTextWriter(Path, SamFlagField)} instead.
-     */
-    @Deprecated
-    public SAMTextWriter(final File file, final SamFlagField samFlagFieldOutput) {
-        this(file.toPath(), samFlagFieldOutput);
     }
 
     /**

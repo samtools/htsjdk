@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -38,7 +37,6 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -83,28 +81,6 @@ class VCFWriter extends IndexingVariantContextWriter {
     /* Wrapping in a {@link BufferedWriter} avoids frequent conversions with individual writes to OutputStreamWriter. */
     private final Writer writer = new BufferedWriter(new OutputStreamWriter(lineBuffer, VCFEncoder.VCF_CHARSET));
 
-    /**
-     * @deprecated since 5.0; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    public VCFWriter(
-            final File location,
-            final OutputStream output,
-            final SAMSequenceDictionary refDict,
-            final boolean enableOnTheFlyIndexing,
-            final boolean doNotWriteGenotypes,
-            final boolean allowMissingFieldsInHeader,
-            final boolean writeFullFormatField) {
-        this(
-                IOUtil.toPath(location),
-                output,
-                refDict,
-                enableOnTheFlyIndexing,
-                doNotWriteGenotypes,
-                allowMissingFieldsInHeader,
-                writeFullFormatField);
-    }
-
     public VCFWriter(
             final Path location,
             final OutputStream output,
@@ -117,30 +93,6 @@ class VCFWriter extends IndexingVariantContextWriter {
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
-    }
-
-    /**
-     * @deprecated since 5.0; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    public VCFWriter(
-            final File location,
-            final OutputStream output,
-            final SAMSequenceDictionary refDict,
-            final IndexCreator indexCreator,
-            final boolean enableOnTheFlyIndexing,
-            final boolean doNotWriteGenotypes,
-            final boolean allowMissingFieldsInHeader,
-            final boolean writeFullFormatField) {
-        this(
-                IOUtil.toPath(location),
-                output,
-                refDict,
-                indexCreator,
-                enableOnTheFlyIndexing,
-                doNotWriteGenotypes,
-                allowMissingFieldsInHeader,
-                writeFullFormatField);
     }
 
     public VCFWriter(

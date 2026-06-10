@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -22,14 +21,6 @@ class MemoryMappedFileBuffer implements IndexFileBuffer {
         } catch (final IOException exc) {
             throw new RuntimeIOException(exc.getMessage(), exc);
         }
-    }
-
-    /**
-     * @deprecated since 5.0.0; use {@link #MemoryMappedFileBuffer(Path)} instead.
-     */
-    @Deprecated
-    MemoryMappedFileBuffer(final File file) {
-        this(file.toPath());
     }
 
     @Override

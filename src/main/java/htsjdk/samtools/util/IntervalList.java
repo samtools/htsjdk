@@ -32,7 +32,6 @@ import htsjdk.tribble.IntervalList.IntervalListCodec;
 import htsjdk.tribble.MutableFeature;
 import htsjdk.utils.ValidationUtils;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -449,18 +448,6 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Parses an interval list from a file.
-     *
-     * @param file the file containing the intervals
-     * @return an IntervalList object that contains the headers and intervals from the file
-     * @deprecated use {@link #fromPath(Path)} instead.
-     */
-    @Deprecated
-    public static IntervalList fromFile(final File file) {
-        return fromPath(IOUtil.toPath(file));
-    }
-
-    /**
      * Parses an interval list from a path.
      *
      * @param path the path containing the intervals
@@ -496,20 +483,6 @@ public class IntervalList implements Iterable<Interval> {
         final Collection<IntervalList> intervalLists = new ArrayList<>();
         for (final Path path : intervalListPaths) {
             intervalLists.add(IntervalList.fromPath(path));
-        }
-        return IntervalList.concatenate(intervalLists);
-    }
-
-    /**
-     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #concatenate(Collection)}
-     *
-     * @deprecated use {@link #fromPaths(Collection)} instead.
-     */
-    @Deprecated
-    public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
-        final Collection<IntervalList> intervalLists = new ArrayList<>();
-        for (final File file : intervalListFiles) {
-            intervalLists.add(IntervalList.fromFile(file));
         }
         return IntervalList.concatenate(intervalLists);
     }
@@ -579,17 +552,6 @@ public class IntervalList implements Iterable<Interval> {
         } catch (final IOException ioe) {
             throw new SAMException("Error writing out interval list to file: " + path.toAbsolutePath(), ioe);
         }
-    }
-
-    /**
-     * Writes out the list of intervals to the supplied file.
-     *
-     * @param file a file to write to.  If exists it will be overwritten.
-     * @deprecated use {@link #write(Path)} instead.
-     */
-    @Deprecated
-    public void write(final File file) {
-        this.write(file.toPath());
     }
 
     /**

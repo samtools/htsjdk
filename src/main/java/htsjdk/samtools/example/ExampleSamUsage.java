@@ -32,7 +32,6 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -81,18 +80,6 @@ public class ExampleSamUsage {
         for (final SAMRecord samRecord : myReader) {
             System.err.print(samRecord);
         }
-    }
-
-    /**
-     * Read a SAM or BAM file, convert each read name to upper case, and write a new
-     * SAM or BAM file.
-     *
-     * @deprecated since 6/26, use {@link #convertReadNamesToUpperCase(Path, Path)} instead
-     */
-    @Deprecated
-    public void convertReadNamesToUpperCase(final File inputSamOrBamFile, final File outputSamOrBamFile)
-            throws IOException {
-        convertReadNamesToUpperCase(inputSamOrBamFile.toPath(), outputSamOrBamFile.toPath());
     }
 
     /**

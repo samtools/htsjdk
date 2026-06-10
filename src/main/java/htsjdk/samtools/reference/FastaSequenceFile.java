@@ -33,7 +33,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FastLineReader;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -49,16 +48,6 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     private FastLineReader in;
     private int sequenceIndex = -1;
     private final byte[] basesBuffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
-
-    /**
-     * Constructs a FastaSequenceFile that reads from the specified file.
-     *
-     * @deprecated since 06/2026 use {@link #FastaSequenceFile(Path, boolean)} instead.
-     */
-    @Deprecated
-    public FastaSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
-        this(IOUtil.toPath(file), truncateNamesAtWhitespace);
-    }
 
     /**
      * Constructs a FastaSequenceFile that reads from the specified file.

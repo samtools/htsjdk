@@ -21,7 +21,7 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
     protected static final Path SPEC_30_FAILED_DIR =
             Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.0/failed");
     protected static final Path SPEC_31_DIR = Path.of("src/test/resources/htsjdk/hts-specs/test/cram/3.1/passed");
-    protected static final File REFERENCE = new File("src/test/resources/htsjdk/hts-specs/test/cram/ce.fa");
+    protected static final Path REFERENCE = Path.of("src/test/resources/htsjdk/hts-specs/test/cram/ce.fa");
 
     /**
      * Decode a CRAM file from the 3.0/passed directory and return its records.
@@ -45,13 +45,13 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
      * Read a SAM file from the 3.0/passed directory and return its records.
      */
     protected List<SAMRecord> readSam(final String basename) throws IOException {
-        return readSamFile(SPEC_30_DIR.resolve(basename + ".sam").toFile());
+        return readSamFile(SPEC_30_DIR.resolve(basename + ".sam"));
     }
 
     /**
      * Read a SAM file and return its records.
      */
-    protected List<SAMRecord> readSamFile(final File samFile) throws IOException {
+    protected List<SAMRecord> readSamFile(final Path samFile) throws IOException {
         try (final SamReader reader = SamReaderFactory.makeDefault()
                 .referenceSequence(REFERENCE)
                 .validationStringency(ValidationStringency.SILENT)
@@ -167,7 +167,7 @@ public class HtsSpecsComplianceTestBase extends HtsjdkTest {
      * Round-trip: read SAM → write CRAM → read back → compare against original SAM.
      */
     protected void assertRoundTrip(final String basename) throws IOException {
-        final File samFile = SPEC_30_DIR.resolve(basename + ".sam").toFile();
+        final Path samFile = SPEC_30_DIR.resolve(basename + ".sam");
         final List<SAMRecord> originalRecords = readSamFile(samFile);
         if (originalRecords.isEmpty()) {
             return; // nothing to round-trip

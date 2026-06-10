@@ -41,7 +41,6 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -70,48 +69,6 @@ public class ReferenceSequenceFileFactory {
      */
     @Deprecated
     public static final String FASTA_INDEX_EXTENSION = FileExtensions.FASTA_INDEX;
-
-    /**
-     * Attempts to determine the type of the reference file and return an instance
-     * of ReferenceSequenceFile that is appropriate to read it.  Sequence names
-     * will be truncated at first whitespace, if any.
-     *
-     * @param file the reference sequence file on disk
-     * @deprecated since June 2024; use {@link #getReferenceSequenceFile(Path)} instead.
-     */
-    @Deprecated
-    public static ReferenceSequenceFile getReferenceSequenceFile(final File file) {
-        return getReferenceSequenceFile(IOUtil.toPath(file));
-    }
-
-    /**
-     * Attempts to determine the type of the reference file and return an instance
-     * of ReferenceSequenceFile that is appropriate to read it.
-     *
-     * @param file the reference sequence file on disk
-     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
-     * @deprecated since June 2024; use {@link #getReferenceSequenceFile(Path, boolean)} instead.
-     */
-    @Deprecated
-    public static ReferenceSequenceFile getReferenceSequenceFile(
-            final File file, final boolean truncateNamesAtWhitespace) {
-        return getReferenceSequenceFile(IOUtil.toPath(file), truncateNamesAtWhitespace);
-    }
-
-    /**
-     * Attempts to determine the type of the reference file and return an instance
-     * of ReferenceSequenceFile that is appropriate to read it.
-     *
-     * @param file the reference sequence file on disk
-     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
-     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
-     * @deprecated since June 2024; use {@link #getReferenceSequenceFile(Path, boolean, boolean)} instead.
-     */
-    @Deprecated
-    public static ReferenceSequenceFile getReferenceSequenceFile(
-            final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        return getReferenceSequenceFile(IOUtil.toPath(file), truncateNamesAtWhitespace, preferIndexed);
-    }
 
     /**
      * Attempts to determine the type of the reference file and return an instance
@@ -365,17 +322,6 @@ public class ReferenceSequenceFileFactory {
             return new IndexedFastaSequenceFile(source, in, index, dictionary);
         }
         return new FastaSequenceFile(source, in, dictionary, truncateNamesAtWhitespace);
-    }
-
-    /**
-     * Returns the default dictionary name for a FASTA file.
-     *
-     * @param file the reference sequence file on disk.
-     * @deprecated since June 2024; use {@link #getDefaultDictionaryForReferenceSequence(Path)} instead.
-     */
-    @Deprecated
-    public static File getDefaultDictionaryForReferenceSequence(final File file) {
-        return getDefaultDictionaryForReferenceSequence(IOUtil.toPath(file)).toFile();
     }
 
     /**

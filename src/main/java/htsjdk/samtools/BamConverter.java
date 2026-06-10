@@ -1,6 +1,9 @@
 package htsjdk.samtools;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Simple command-line tool for reading and optionally converting BAM files, primarily
@@ -50,6 +53,8 @@ public class BamConverter {
         }
         final String inputPath = positional[0];
         final String outputPath = positional.length > 1 ? positional[1] : null;
+        final Path input = Paths.get(inputPath);
+        final Path output = outputPath != null ? Paths.get(outputPath) : null;
 
         if (outputPath != null) {
             System.err.printf("Converting %s -> %s%s%n", inputPath, outputPath, eager ? " (eager decode)" : "");
@@ -63,13 +68,12 @@ public class BamConverter {
         long count = 0;
         final long startTime = System.currentTimeMillis();
 
-        try (final SamReader reader = readerFactory.open(new File(inputPath))) {
+        try (final SamReader reader = readerFactory.open(input)) {
             final SAMFileHeader header = reader.getFileHeader();
 
-            if (outputPath != null) {
+            if (output != null) {
                 final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-                try (final SAMFileWriter writer =
-                        writerFactory.makeBAMWriter(header, true, new File(outputPath).toPath())) {
+                try (final SAMFileWriter writer = writerFactory.makeBAMWriter(header, true, output)) {
                     for (final SAMRecord record : reader) {
                         if (eager) record.eagerDecode();
                         writer.addAlignment(record);
@@ -93,10 +97,10 @@ public class BamConverter {
         }
 
         final long elapsed = System.currentTimeMillis() - startTime;
-        final long inputSize = new File(inputPath).length();
+        final long inputSize = fileSize(input);
 
-        if (outputPath != null) {
-            final long outputSize = new File(outputPath).length();
+        if (output != null) {
+            final long outputSize = fileSize(output);
             System.err.printf(
                     "Done. %,d records in %.1fs. Input: %,d bytes, Output: %,d bytes (%.1f%%)%n",
                     count,
@@ -114,6 +118,21 @@ public class BamConverter {
             if (flag.equals(arg)) return true;
         }
         return false;
+    }
+
+    /**
+     * Returns the size of the file at the given path in bytes, or 0 if it cannot be determined.
+     * Mirrors the lenient behavior of the previous {@code java.io.File#length()} usage.
+     *
+     * @param path the file to size
+     * @return the size in bytes, or 0 if the file is missing or cannot be read
+     */
+    private static long fileSize(final Path path) {
+        try {
+            return Files.size(path);
+        } catch (final IOException e) {
+            return 0;
+        }
     }
 
     private static void die(final String message) {

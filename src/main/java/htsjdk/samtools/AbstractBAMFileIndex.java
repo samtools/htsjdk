@@ -26,7 +26,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -59,25 +58,8 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
     }
 
-    /**
-     * @deprecated since 5.0.0; use {@link #AbstractBAMFileIndex(Path, SAMSequenceDictionary)} instead.
-     */
-    @Deprecated
-    protected AbstractBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
-        this(file.toPath(), dictionary);
-    }
-
     protected AbstractBAMFileIndex(final Path path, final SAMSequenceDictionary dictionary) {
         this(createBufferForPath(path), path.toString(), dictionary);
-    }
-
-    /**
-     * @deprecated since 5.0.0; use {@link #AbstractBAMFileIndex(Path, SAMSequenceDictionary, boolean)} instead.
-     */
-    @Deprecated
-    protected AbstractBAMFileIndex(
-            final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
-        this(file.toPath(), dictionary, useMemoryMapping);
     }
 
     protected AbstractBAMFileIndex(
@@ -114,7 +96,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                 throw new RuntimeIOException("Failed to open index stream for non-local path: " + path, e);
             }
         }
-        return new MemoryMappedFileBuffer(path.toFile());
+        return new MemoryMappedFileBuffer(path);
     }
 
     /**
@@ -130,7 +112,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                 throw new RuntimeIOException("Failed to open index stream for non-local path: " + path, e);
             }
         }
-        return useMemoryMapping ? new MemoryMappedFileBuffer(path.toFile()) : new RandomAccessFileBuffer(path.toFile());
+        return useMemoryMapping ? new MemoryMappedFileBuffer(path) : new RandomAccessFileBuffer(path);
     }
 
     /**

@@ -35,7 +35,6 @@ import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,20 +78,6 @@ public class CountRecords {
         FeatureCodec codec = getFeatureCodec(featureFile);
 
         runWithIndex(featureFile, codec, optimizeIndex);
-    }
-
-    /**
-     *
-     * @see htsjdk.tribble.index.linear.LinearIndex#optimize(double)
-     * @param featureInput  File containing features
-     * @param codec  Codec used to read the features
-     * @param optimizeThreshold Threshold used to optimize the linear index
-     * @return the number of records seen
-     * @deprecated since 6/2025, use {@link #runWithIndex(Path, FeatureCodec, int)} instead.
-     */
-    @Deprecated
-    public static long runWithIndex(File featureInput, FeatureCodec codec, int optimizeThreshold) {
-        return runWithIndex(featureInput.toPath(), codec, optimizeThreshold);
     }
 
     /**
@@ -153,18 +138,6 @@ public class CountRecords {
      * @param featureFile the feature file
      * @param codec the codec to decode features with
      * @return an index instance
-     * @deprecated since 6/2025, use {@link #loadIndex(Path, FeatureCodec)} instead.
-     */
-    @Deprecated
-    public static Index loadIndex(File featureFile, FeatureCodec codec) {
-        return loadIndex(featureFile.toPath(), codec);
-    }
-
-    /**
-     *
-     * @param featureFile the feature file
-     * @param codec the codec to decode features with
-     * @return an index instance
      */
     public static Index loadIndex(Path featureFile, FeatureCodec codec) {
         // lets setup a index file name
@@ -192,19 +165,6 @@ public class CountRecords {
      * @param indexFile the index file; the location we should be writing the index to
      * @param codec the codec to read features with
      * @return an index instance
-     * @deprecated since 6/2025, use {@link #createAndWriteNewIndex(Path, Path, FeatureCodec)} instead.
-     */
-    @Deprecated
-    public static Index createAndWriteNewIndex(File featureFile, File indexFile, FeatureCodec codec) {
-        return createAndWriteNewIndex(featureFile.toPath(), indexFile.toPath(), codec);
-    }
-
-    /**
-     * creates a new index, given the feature file and the codec
-     * @param featureFile the feature file (i.e. .vcf, .bed)
-     * @param indexFile the index file; the location we should be writing the index to
-     * @param codec the codec to read features with
-     * @return an index instance
      */
     public static Index createAndWriteNewIndex(Path featureFile, Path indexFile, FeatureCodec codec) {
         try {
@@ -221,19 +181,6 @@ public class CountRecords {
         } catch (IOException e) {
             throw new RuntimeIOException("Unable to create index from file " + featureFile, e);
         }
-    }
-
-    /**
-     * Return a {@code FeatureCodec} instance appropriate for the given
-     * {@code featureFile}. Codec is generated based on file extension
-     * @param featureFile the feature file to determine a codec for
-     * @return a codec appropriate for the file
-     * @throws IllegalArgumentException If a codec cannot be found
-     * @deprecated since 6/2025, use {@link #getFeatureCodec(Path)} instead.
-     */
-    @Deprecated
-    public static FeatureCodec getFeatureCodec(File featureFile) {
-        return getFeatureCodec(featureFile.toPath());
     }
 
     /**

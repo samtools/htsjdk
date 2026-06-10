@@ -18,13 +18,11 @@
 
 package htsjdk.tribble.index.interval;
 
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.TribbleIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex.ChrIndex;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -57,22 +55,6 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
     public IntervalIndexCreator(final Path inputPath, final int featuresPerInterval) {
         this.inputPath = inputPath;
         this.featuresPerInterval = featuresPerInterval;
-    }
-
-    /**
-     * @deprecated since the File -&gt; Path migration; use {@link #IntervalIndexCreator(Path, int)} instead.
-     */
-    @Deprecated
-    public IntervalIndexCreator(final File inputFile, final int featuresPerInterval) {
-        this(IOUtil.toPath(inputFile), featuresPerInterval);
-    }
-
-    /**
-     * @deprecated since the File -&gt; Path migration; use {@link #IntervalIndexCreator(Path)} instead.
-     */
-    @Deprecated
-    public IntervalIndexCreator(final File inputFile) {
-        this(IOUtil.toPath(inputFile));
     }
 
     public IntervalIndexCreator(final Path inputPath) {

@@ -28,15 +28,12 @@ import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 /**
  * This class stores SAMRecords for return.  The purpose of this class is to buffer records that need to be modified or processed in some
@@ -66,30 +63,6 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     private final SAMFileHeader header;
 
     private final Class<T> clazz; // the class to create
-
-    /**
-     * @param maxRecordsInRam how many records to buffer before spilling to disk
-     * @param blockSize the number of records in a given block
-     * @param tmpDirs the temporary directories to use when spilling to disk
-     * @param header the header
-     * @param clazz the class that extends SamRecordWithOrdinal
-     * @deprecated since the File API is being phased out; use {@link #SamRecordTrackingBuffer(int, int, List, SAMFileHeader, Class)}
-     *     with a {@code List<Path>} instead.
-     */
-    @Deprecated
-    public SamRecordTrackingBuffer(
-            final int maxRecordsInRam,
-            final int blockSize,
-            final Collection<File> tmpDirs,
-            final SAMFileHeader header,
-            final Class<T> clazz) {
-        this(
-                maxRecordsInRam,
-                blockSize,
-                tmpDirs.stream().map(File::toPath).collect(Collectors.toList()),
-                header,
-                clazz);
-    }
 
     /**
      * @param maxRecordsInRam how many records to buffer before spilling to disk

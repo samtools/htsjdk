@@ -25,7 +25,6 @@ package htsjdk.samtools.filter;
 
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.RuntimeScriptException;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -66,17 +65,6 @@ public abstract class AbstractJavascriptFilter<HEADER, TYPE> {
      */
     protected AbstractJavascriptFilter(final Path scriptPath, final HEADER header) throws IOException {
         this(Files.newBufferedReader(scriptPath), header);
-    }
-
-    /**
-     * Constructor using a java.io.File script, compiles the script, puts
-     * 'header' in the bindings.
-     *
-     * @deprecated use {@link #AbstractJavascriptFilter(Path, Object)} instead.
-     */
-    @Deprecated
-    protected AbstractJavascriptFilter(final File scriptFile, final HEADER header) throws IOException {
-        this(scriptFile.toPath(), header);
     }
 
     /**

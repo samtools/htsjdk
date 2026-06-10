@@ -36,7 +36,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -150,19 +149,6 @@ public class VariantContextWriterBuilder {
     public VariantContextWriterBuilder setReferenceDictionary(final SAMSequenceDictionary refDict) {
         this.refDict = refDict;
         return this;
-    }
-
-    /**
-     * Set the output file for the next <code>VariantContextWriter</code> created by this builder.
-     * Determines file type implicitly from the filename.
-     *
-     * @param outFile the file the <code>VariantContextWriter</code> will write to
-     * @return this <code>VariantContextWriterBuilder</code>
-     * @deprecated use {@link #setOutputPath(Path)} instead.
-     */
-    @Deprecated
-    public VariantContextWriterBuilder setOutputFile(final File outFile) {
-        return setOutputPath(IOUtil.toPath(outFile));
     }
 
     /**
@@ -529,21 +515,6 @@ public class VariantContextWriterBuilder {
             writer = new AsyncVariantContextWriter(writer, AsyncVariantContextWriter.DEFAULT_QUEUE_SIZE);
 
         return writer;
-    }
-
-    /**
-     * Attempts to determine the type of file/data to write based on the File path being
-     * written to. Will attempt to determine using the logical filename; if that fails it will
-     * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
-     * but is neither a file or directory then VCF_STREAM is returned.
-     *
-     * @param file A file whose {@link OutputType} we want to infer
-     * @return The file's {@link OutputType}. Never {@code null}.
-     * @deprecated use {@link #determineOutputTypeFromFile(Path)} instead.
-     */
-    @Deprecated
-    public static OutputType determineOutputTypeFromFile(final File file) {
-        return determineOutputTypeFromFile(file.toPath());
     }
 
     /**

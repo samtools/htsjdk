@@ -7,7 +7,6 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -36,15 +35,6 @@ public enum SamIndexes {
     public static InputStream openIndexFileAsBaiOrNull(final Path path, final SAMSequenceDictionary dictionary)
             throws IOException {
         return openIndexUrlAsBaiOrNull(path.toUri().toURL(), dictionary);
-    }
-
-    /**
-     * @deprecated since 06/2026 use {@link #openIndexFileAsBaiOrNull(Path, SAMSequenceDictionary)} instead.
-     */
-    @Deprecated
-    public static InputStream openIndexFileAsBaiOrNull(final File file, final SAMSequenceDictionary dictionary)
-            throws IOException {
-        return openIndexFileAsBaiOrNull(file.toPath(), dictionary);
     }
 
     public static InputStream openIndexUrlAsBaiOrNull(final URL url, final SAMSequenceDictionary dictionary)

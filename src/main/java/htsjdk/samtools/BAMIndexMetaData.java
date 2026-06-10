@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -222,18 +221,6 @@ public class BAMIndexMetaData {
         final long newLastOffset =
                 lastOffset == 0 ? lastOffset : BlockCompressedFilePointerUtil.shift(lastOffset, offset); // 0 is unset
         return new BAMIndexMetaData(newFirstOffset, newLastOffset, alignedRecords, unAlignedRecords);
-    }
-
-    /**
-     * Prints meta-data statistics from BAM index (.bai or .csi) file
-     * Statistics include count of aligned and unaligned reads for each reference sequence
-     * and a count of all records with no start coordinate
-     *
-     * @deprecated since this uses a {@link File}; use {@link #printIndexStats(Path)} instead.
-     */
-    @Deprecated
-    public static void printIndexStats(final File inputBamFile) {
-        printIndexStats(inputBamFile == null ? null : inputBamFile.toPath());
     }
 
     /**

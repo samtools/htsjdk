@@ -22,7 +22,6 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
@@ -214,14 +213,6 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     @Deprecated
     public static boolean hasBlockCompressedExtension(final Path path) {
         return IOUtil.hasBlockCompressedExtension(path.getFileName().toString());
-    }
-
-    /**
-     * @deprecated use {@link IOUtil#hasBlockCompressedExtension(Path)}.
-     */
-    @Deprecated
-    public static boolean hasBlockCompressedExtension(final File file) {
-        return hasBlockCompressedExtension(file.toPath());
     }
 
     /**

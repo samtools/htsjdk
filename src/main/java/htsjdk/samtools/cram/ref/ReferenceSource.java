@@ -24,12 +24,10 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -65,14 +63,6 @@ public class ReferenceSource implements CRAMReferenceSource {
     // is the weak reference hash map above, resulting in much thrashing.
     private byte[] backingReferenceBases;
     private int backingContigIndex;
-
-    /**
-     * @deprecated since 6.0.0; use {@link #ReferenceSource(Path)} instead.
-     */
-    @Deprecated
-    public ReferenceSource(final File file) {
-        this(IOUtil.toPath(file));
-    }
 
     public ReferenceSource(final Path path) {
         this(path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));

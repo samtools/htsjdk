@@ -27,7 +27,6 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.IOUtil;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -45,19 +44,6 @@ public class ReadNameFilter implements SamRecordFilter {
 
     private boolean includeReads = false;
     private Set<String> readNameFilterSet = new HashSet<>();
-
-    /**
-     * Constructor that reads read names from a file.
-     *
-     * @param readNameFilterFile a file containing read names (one per line)
-     * @param includeReads if true, include only reads in the file; if false, exclude reads in the file
-     * @throws SAMException if the file cannot be read
-     * @deprecated since 5.0; use {@link #ReadNameFilter(Path, boolean)} instead.
-     */
-    @Deprecated
-    public ReadNameFilter(final File readNameFilterFile, final boolean includeReads) {
-        this(readNameFilterFile.toPath(), includeReads);
-    }
 
     /**
      * Constructor that reads read names from a file.

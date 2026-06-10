@@ -30,7 +30,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.IOUtil;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -48,28 +47,6 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * The interface facilitating direct access to the fasta.
      */
     private final SeekableByteChannel channel;
-
-    /**
-     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
-     * @param file The file to open.
-     * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
-     * @deprecated use {@link #IndexedFastaSequenceFile(Path, FastaSequenceIndex)} instead.
-     */
-    @Deprecated
-    public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
-        this(IOUtil.toPath(file), index);
-    }
-
-    /**
-     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
-     * @param file The file to open.
-     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
-     * @deprecated use {@link #IndexedFastaSequenceFile(Path)} instead.
-     */
-    @Deprecated
-    public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
-        this(IOUtil.toPath(file), new FastaSequenceIndex(findRequiredFastaIndexFile(IOUtil.toPath(file))));
-    }
 
     /**
      * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
@@ -129,14 +106,6 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
             String source, final SeekableStream in, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
         super(source, index, dictionary);
         this.channel = new ReadableSeekableStreamByteChannel(in);
-    }
-
-    /**
-     * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
-     */
-    @Deprecated
-    public static boolean canCreateIndexedFastaReader(final File fastaFile) {
-        return canCreateIndexedFastaReader(fastaFile.toPath());
     }
 
     /**

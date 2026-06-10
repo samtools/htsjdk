@@ -28,7 +28,6 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -73,33 +72,11 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
 
     /**
      * Constructor
-     * @param file of FASTQ to read read. Will be opened with htsjdk.samtools.util.IOUtil.openFileForBufferedReading
-     * @param skipBlankLines should we skip blank lines ?
-     * @deprecated since 06/2026, use {@link #FastqReader(Path, boolean)} instead.
-     */
-    @Deprecated
-    public FastqReader(final File file) {
-        this(file == null ? null : file.toPath(), false);
-    }
-
-    /**
-     * Constructor
      * @param path of FASTQ to read. Will be opened with htsjdk.samtools.util.IOUtil.openFileForBufferedReading
      * @param skipBlankLines should we skip blank lines ?
      */
     public FastqReader(final Path path, final boolean skipBlankLines) {
         this(path, IOUtil.openFileForBufferedReading(path), skipBlankLines);
-    }
-
-    /**
-     * Constructor
-     * @param file of FASTQ to read read. Will be opened with htsjdk.samtools.util.IOUtil.openFileForBufferedReading
-     * @param skipBlankLines should we skip blank lines ?
-     * @deprecated since 06/2026, use {@link #FastqReader(Path, boolean)} instead.
-     */
-    @Deprecated
-    public FastqReader(final File file, final boolean skipBlankLines) {
-        this(file == null ? null : file.toPath(), skipBlankLines);
     }
 
     public FastqReader(final BufferedReader reader) {
@@ -119,31 +96,8 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         this.nextRecord = readNextRecord();
     }
 
-    /**
-     * Constructor
-     * @param file Name of FASTQ being read, or null if not known.
-     * @param reader input reader . Will be closed by the close method
-     * @param skipBlankLines should we skip blank lines ?
-     * @deprecated since 06/2026, use {@link #FastqReader(Path, BufferedReader, boolean)} instead.
-     */
-    @Deprecated
-    public FastqReader(final File file, final BufferedReader reader, boolean skipBlankLines) {
-        this(file == null ? null : file.toPath(), reader, skipBlankLines);
-    }
-
     public FastqReader(final Path path, final BufferedReader reader) {
         this(path, reader, false);
-    }
-
-    /**
-     * Constructor
-     * @param file Name of FASTQ being read, or null if not known.
-     * @param reader input reader . Will be closed by the close method
-     * @deprecated since 06/2026, use {@link #FastqReader(Path, BufferedReader)} instead.
-     */
-    @Deprecated
-    public FastqReader(final File file, final BufferedReader reader) {
-        this(file == null ? null : file.toPath(), reader, false);
     }
 
     private FastqRecord readNextRecord() {
@@ -232,16 +186,6 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      */
     public Path getPath() {
         return fastqPath;
-    }
-
-    /**
-     * @return Name of FASTQ being read, or null if not known.
-     * @deprecated since 06/2026, use {@link #getPath()} instead. Throws if the underlying path is
-     *     not backed by the default (local) file system.
-     */
-    @Deprecated
-    public File getFile() {
-        return fastqPath == null ? null : fastqPath.toFile();
     }
 
     @Override

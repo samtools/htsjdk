@@ -17,7 +17,6 @@
  */
 package htsjdk.samtools.seekablestream;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -46,23 +45,13 @@ public class SeekableFileStream extends SeekableStream {
      * Create a {@code SeekableFileStream} over a local file represented by a {@link Path}.
      *
      * @param path the path to the local file to open; must be backed by the default (local) filesystem
-     *             because the underlying {@link RandomAccessFile} requires a {@link File}
+     *             because the underlying {@link RandomAccessFile} requires a local file
      * @throws FileNotFoundException if the file does not exist or cannot be opened for reading
      */
     public SeekableFileStream(final Path path) throws FileNotFoundException {
         this.path = path;
         fis = new RandomAccessFile(path.toFile(), "r");
         allInstances.add(this);
-    }
-
-    /**
-     * Create a {@code SeekableFileStream} over a local {@link File}.
-     *
-     * @deprecated use {@link #SeekableFileStream(Path)} instead.
-     */
-    @Deprecated
-    public SeekableFileStream(final File file) throws FileNotFoundException {
-        this(file.toPath());
     }
 
     @Override

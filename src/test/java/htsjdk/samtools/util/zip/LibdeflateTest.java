@@ -86,7 +86,7 @@ public class LibdeflateTest extends HtsjdkTest {
 
         // Write with libdeflate (default factory when libdeflate is available)
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(baos, (java.io.File) null)) {
+        try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(baos, (java.nio.file.Path) null)) {
             out.write(original);
         }
 
@@ -110,7 +110,7 @@ public class LibdeflateTest extends HtsjdkTest {
         // Write with JDK deflater
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final BlockCompressedOutputStream out =
-                new BlockCompressedOutputStream(baos, (java.io.File) null, 5, new DeflaterFactory() {
+                new BlockCompressedOutputStream(baos, (java.nio.file.Path) null, 5, new DeflaterFactory() {
                     @Override
                     public java.util.zip.Deflater makeDeflater(int compressionLevel, boolean gzipCompatible) {
                         return new java.util.zip.Deflater(compressionLevel, gzipCompatible);
@@ -134,8 +134,8 @@ public class LibdeflateTest extends HtsjdkTest {
 
     private byte[] roundTrip(final byte[] data, final int compressionLevel) throws IOException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (final BlockCompressedOutputStream out =
-                new BlockCompressedOutputStream(baos, (java.io.File) null, compressionLevel, new DeflaterFactory())) {
+        try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(
+                baos, (java.nio.file.Path) null, compressionLevel, new DeflaterFactory())) {
             out.write(data);
         }
 

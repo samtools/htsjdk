@@ -29,12 +29,12 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -45,9 +45,9 @@ import java.util.zip.GZIPInputStream;
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
  * handful of static generators.</p>
  *
- * <p>This factory accepts {@link java.nio.file.Path} and {@link java.net.URI} inputs, as well as
- * legacy {@link java.io.File} inputs (the latter are deprecated). Any NIO-compatible filesystem
- * provider (e.g., jimfs, S3, HDFS) can be used via the standard SPI mechanism.</p>
+ * <p>This factory accepts {@link java.nio.file.Path} and {@link java.net.URI} inputs. Any
+ * NIO-compatible filesystem provider (e.g., jimfs, S3, HDFS) can be used via the standard SPI
+ * mechanism.</p>
  *
  * <pre>
  *     SamReaderFactory.makeDefault().open(Path.of("/my/bam.bam"));
@@ -85,16 +85,6 @@ import java.util.zip.GZIPInputStream;
 public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
-
-    /**
-     * Open the specified file.
-     *
-     * @deprecated since 5.0.0; use {@link #open(Path)} or {@link #open(URI)} instead.
-     */
-    @Deprecated
-    public SamReader open(final File file) {
-        return open(file.toPath());
-    }
 
     /**
      * Open the specified path (without using any wrappers).
@@ -166,14 +156,6 @@ public abstract class SamReaderFactory {
     /** Sets a specific Option to a boolean value. * */
     public abstract SamReaderFactory setOption(final Option option, boolean value);
 
-    /**
-     * Sets the specified reference sequence.
-     *
-     * @deprecated since 5.0.0; use {@link #referenceSequence(Path)} or {@link #referenceSequence(URI)} instead.
-     */
-    @Deprecated
-    public abstract SamReaderFactory referenceSequence(File referenceSequence);
-
     /** Sets the specified reference sequence. */
     public abstract SamReaderFactory referenceSequence(Path referenceSequence);
 
@@ -192,14 +174,6 @@ public abstract class SamReaderFactory {
 
     /** Sets the specified reference sequence * */
     public abstract SamReaderFactory referenceSource(CRAMReferenceSource referenceSequence);
-
-    /**
-     * Utility method to open the file, get the header, and close the file.
-     *
-     * @deprecated since 5.0.0; use {@link #getFileHeader(Path)} or {@link #getFileHeader(URI)} instead.
-     */
-    @Deprecated
-    public abstract SAMFileHeader getFileHeader(File samFile);
 
     /** Utility method to open the file get the header and close the file */
     public abstract SAMFileHeader getFileHeader(Path samFile);
@@ -285,12 +259,6 @@ public abstract class SamReaderFactory {
         }
 
         @Override
-        @Deprecated
-        public SamReader open(final File file) {
-            return open(file.toPath());
-        }
-
-        @Override
         public ValidationStringency validationStringency() {
             return validationStringency;
         }
@@ -336,12 +304,6 @@ public abstract class SamReaderFactory {
         }
 
         @Override
-        @Deprecated
-        public SamReaderFactory referenceSequence(final File referenceSequence) {
-            return referenceSequence(referenceSequence.toPath());
-        }
-
-        @Override
         public SamReaderFactory referenceSequence(final Path referenceSequence) {
             this.referenceSource = new ReferenceSource(referenceSequence);
             return this;
@@ -356,12 +318,6 @@ public abstract class SamReaderFactory {
         public SamReaderFactory referenceSource(final CRAMReferenceSource referenceSource) {
             this.referenceSource = referenceSource;
             return this;
-        }
-
-        @Override
-        @Deprecated
-        public SAMFileHeader getFileHeader(final File samFile) {
-            return getFileHeader(samFile.toPath());
         }
 
         @Override
@@ -462,12 +418,12 @@ public abstract class SamReaderFactory {
                     InputStream bufferedStream = IOUtil.maybeBufferInputStream(
                             data.asUnbufferedInputStream(),
                             Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE));
-                    File sourceFile = data.asFile();
-                    // calling asFile is safe even if indexMaybe is a Google Cloud Storage bucket
+                    Path sourcePath = data.asPath();
+                    // calling asPath is safe even if indexMaybe is a Google Cloud Storage bucket
                     // (in that case we just get null)
-                    final File indexFile = indexMaybe == null ? null : indexMaybe.asFile();
+                    final Path indexPath = indexMaybe == null ? null : indexMaybe.asPath();
                     if (SamStreams.isBAMFile(bufferedStream)) {
-                        if (sourceFile == null || !sourceFile.isFile()) {
+                        if (sourcePath == null || !Files.isRegularFile(sourcePath)) {
                             // check whether we can seek
                             final SeekableStream indexSeekable =
                                     indexMaybe == null ? null : indexMaybe.asUnbufferedSeekableStream();
@@ -478,7 +434,7 @@ public abstract class SamReaderFactory {
                                 // it's OK that we consumed a bit of the stream already, this ctor expects it.
                                 primitiveSamReader = new BAMFileReader(
                                         bufferedStream,
-                                        indexFile,
+                                        indexPath,
                                         false,
                                         asynchronousIO,
                                         validationStringency,
@@ -501,8 +457,8 @@ public abstract class SamReaderFactory {
                         } else {
                             bufferedStream.close();
                             primitiveSamReader = new BAMFileReader(
-                                    sourceFile,
-                                    indexFile,
+                                    sourcePath,
+                                    indexPath,
                                     false,
                                     asynchronousIO,
                                     validationStringency,
@@ -523,13 +479,13 @@ public abstract class SamReaderFactory {
                         if (referenceSource == null) {
                             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
                         }
-                        if (sourceFile == null || !sourceFile.isFile()) {
+                        if (sourcePath == null || !Files.isRegularFile(sourcePath)) {
                             final SeekableStream indexSeekableStream =
                                     indexMaybe == null ? null : indexMaybe.asUnbufferedSeekableStream();
                             final SeekableStream sourceSeekableStream = data.asUnbufferedSeekableStream();
                             if (null == sourceSeekableStream || null == indexSeekableStream) {
                                 primitiveSamReader = new CRAMFileReader(
-                                        bufferedStream, indexFile, referenceSource, validationStringency);
+                                        bufferedStream, indexPath, referenceSource, validationStringency);
                             } else {
                                 sourceSeekableStream.seek(0);
                                 primitiveSamReader = new CRAMFileReader(
@@ -541,7 +497,7 @@ public abstract class SamReaderFactory {
                         } else {
                             bufferedStream.close();
                             primitiveSamReader =
-                                    new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
+                                    new CRAMFileReader(sourcePath, indexPath, referenceSource, validationStringency);
                         }
                     } else {
                         if (indexDefined) {
@@ -549,7 +505,7 @@ public abstract class SamReaderFactory {
                             throw new RuntimeException("Cannot use index file with textual SAM file");
                         }
                         primitiveSamReader = new SAMTextReader(
-                                bufferedStream, sourceFile, validationStringency, this.samRecordFactory);
+                                bufferedStream, sourcePath, validationStringency, this.samRecordFactory);
                     }
                 }
 

@@ -28,7 +28,6 @@ package htsjdk.variant.bcf2;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.*;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -203,25 +202,6 @@ public final class BCF2Utils {
                 }
             }
         }
-    }
-
-    /**
-     * Returns a good name for a shadow BCF file for vcfFile.
-     *
-     * foo.vcf =&gt; foo.bcf
-     * foo.xxx =&gt; foo.xxx.bcf
-     *
-     * If the resulting BCF file cannot be written, return null.  Happens
-     * when vcfFile = /dev/null for example
-     *
-     * @param vcfFile
-     * @return the BCF
-     * @deprecated use {@link #shadowBCF(Path)} instead
-     */
-    @Deprecated
-    public static final File shadowBCF(final File vcfFile) {
-        final Path bcf = shadowBCF(vcfFile.toPath());
-        return bcf == null ? null : bcf.toFile();
     }
 
     public static BCF2Type determineIntegerType(final int value) {

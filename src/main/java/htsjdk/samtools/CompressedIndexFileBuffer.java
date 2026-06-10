@@ -4,7 +4,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -16,16 +15,6 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
 
     private final BlockCompressedInputStream mCompressedStream;
     private final BinaryCodec binaryCodec;
-
-    /**
-     * Constructs a buffer over the given BGZF-compressed CSI index file.
-     *
-     * @deprecated use {@link #CompressedIndexFileBuffer(Path)} instead.
-     */
-    @Deprecated
-    CompressedIndexFileBuffer(File file) {
-        this(file.toPath());
-    }
 
     CompressedIndexFileBuffer(Path path) {
         try {

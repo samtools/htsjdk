@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-import java.io.File;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.function.Function;
@@ -60,16 +59,6 @@ public class BAMIndexer {
      */
     public BAMIndexer(final Path output, final SAMFileHeader fileHeader) {
         this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
-    }
-
-    /**
-     * @param output     binary BAM Index (.bai) file
-     * @param fileHeader header for the corresponding bam file
-     * @deprecated since 06/2026 use {@link #BAMIndexer(Path, SAMFileHeader)} instead.
-     */
-    @Deprecated
-    public BAMIndexer(final File output, final SAMFileHeader fileHeader) {
-        this(output.toPath(), fileHeader);
     }
 
     /**
@@ -179,8 +168,7 @@ public class BAMIndexer {
         final int n_ref = existingIndex.getNumberOfReferences();
         final BAMIndexWriter outputWriter;
         if (textOutput) {
-            // TextualBAMIndexWriter is local, test-only output; it currently only accepts a File.
-            outputWriter = new TextualBAMIndexWriter(n_ref, output.toFile());
+            outputWriter = new TextualBAMIndexWriter(n_ref, output);
         } else {
             outputWriter = new BinaryBAMIndexWriter(n_ref, output);
         }
@@ -196,20 +184,6 @@ public class BAMIndexer {
         } catch (final Exception e) {
             throw new SAMException("Exception creating BAM index", e);
         }
-    }
-
-    /**
-     * Generates a BAM index file, either textual or binary, from an input BAI file.
-     * Only used for testing, but located here for visibility into CachingBAMFileIndex.
-     *
-     * @param input      Input BAM Index (.bai) file
-     * @param output     Output BAM Index (.bai) file (or bai.txt file when text)
-     * @param textOutput Whether to create text output or binary
-     * @deprecated since 06/2026 use {@link #createAndWriteIndex(Path, Path, boolean)} instead.
-     */
-    @Deprecated
-    public static void createAndWriteIndex(final File input, final File output, final boolean textOutput) {
-        createAndWriteIndex(input.toPath(), output.toPath(), textOutput);
     }
 
     /**
@@ -344,18 +318,6 @@ public class BAMIndexer {
      * Generates a BAM index file from an input BAM file
      *
      * @param reader SamReader for input BAM file
-     * @param output File for output index file
-     * @deprecated since 06/2026 use {@link #createIndex(SamReader, Path)} instead.
-     */
-    @Deprecated
-    public static void createIndex(SamReader reader, File output) {
-        createIndex(reader, output.toPath(), null);
-    }
-
-    /**
-     * Generates a BAM index file from an input BAM file
-     *
-     * @param reader SamReader for input BAM file
      * @param output Path for output index file
      * @param log    Optional logger for progress messages
      */
@@ -373,18 +335,5 @@ public class BAMIndexer {
             indexer.processAlignment(rec);
         }
         indexer.finish();
-    }
-
-    /**
-     * Generates a BAM index file from an input BAM file
-     *
-     * @param reader SamReader for input BAM file
-     * @param output File for output index file
-     * @param log    Optional logger for progress messages
-     * @deprecated since 06/2026 use {@link #createIndex(SamReader, Path, Log)} instead.
-     */
-    @Deprecated
-    public static void createIndex(SamReader reader, File output, Log log) {
-        createIndex(reader, output.toPath(), log);
     }
 }

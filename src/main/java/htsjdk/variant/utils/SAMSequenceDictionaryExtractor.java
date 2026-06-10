@@ -32,7 +32,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFFileReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -126,23 +125,7 @@ public class SAMSequenceDictionaryExtractor {
             applicableExtensions = extensions;
         }
 
-        /**
-         * @deprecated in favor of {@link #extractDictionary(Path)}
-         */
-        @Deprecated
-        SAMSequenceDictionary extractDictionary(final File file) {
-            return extractDictionary(file.toPath());
-        }
-
         abstract SAMSequenceDictionary extractDictionary(final Path file);
-
-        /**
-         * @deprecated in favor of {@link #forFile(Path)}
-         */
-        @Deprecated
-        static TYPE forFile(final File dictionaryExtractable) {
-            return forFile(dictionaryExtractable.toPath());
-        }
 
         static TYPE forFile(final Path dictionaryExtractable) {
             for (final TYPE type : TYPE.values()) {
@@ -162,14 +145,6 @@ public class SAMSequenceDictionaryExtractor {
         public String toString() {
             return super.toString() + ": " + applicableExtensions.toString();
         }
-    }
-
-    /**
-     * @deprecated in favor of {@link SAMSequenceDictionaryExtractor#extractDictionary(Path) }
-     */
-    @Deprecated
-    public static SAMSequenceDictionary extractDictionary(final File file) {
-        return extractDictionary(file.toPath());
     }
 
     public static SAMSequenceDictionary extractDictionary(final Path path) {

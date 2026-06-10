@@ -86,16 +86,6 @@ public class SamInputResource {
         return String.format("data=%s;index=%s", source, index);
     }
 
-    /**
-     * Creates a {@link SamInputResource} reading from the provided resource, with no index.
-     *
-     * @deprecated since 6.0; use {@link #of(Path)} instead.
-     */
-    @Deprecated
-    public static SamInputResource of(final File file) {
-        return new SamInputResource(new FileInputResource(file.toPath()));
-    }
-
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
 
@@ -196,16 +186,6 @@ public class SamInputResource {
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
-    }
-
-    /**
-     * Updates the index to point at the provided resource, then returns itself.
-     *
-     * @deprecated since 6.0; use {@link #index(Path)} instead.
-     */
-    @Deprecated
-    public SamInputResource index(final File file) {
-        return index(file.toPath());
     }
 
     /** Updates the index to point at the provided resource, then returns itself. */
@@ -315,7 +295,7 @@ class FileInputResource extends InputResource {
         @Override
         public SeekableStream get() {
             try {
-                return new SeekableFileStream(pathResource.toFile());
+                return new SeekableFileStream(pathResource);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeIOException(e);
             }

@@ -25,9 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SamLineReader;
-import java.io.File;
 import java.io.InputStream;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
 /**
@@ -75,22 +73,6 @@ class SAMTextReader extends SamReader.ReaderImplementation {
             final SAMRecordFactory factory) {
         this(stream, validationStringency, factory);
         mPath = path;
-    }
-
-    /**
-     * Prepare to read a SAM text file.
-     *
-     * @param stream Need not be buffered, as this class provides buffered reading.
-     * @param file   For error reporting only.
-     * @deprecated since 06/2025 Use {@link #SAMTextReader(InputStream, Path, ValidationStringency, SAMRecordFactory)} instead.
-     */
-    @Deprecated
-    public SAMTextReader(
-            final InputStream stream,
-            final File file,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory factory) {
-        this(stream, file == null ? null : file.toPath(), validationStringency, factory);
     }
 
     /**
@@ -246,14 +228,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      */
     private class RecordIterator implements CloseableIterator<SAMRecord> {
 
-        // SAMLineParser still accepts only a File for error-reporting purposes. The path is converted to a File
-        // when it lives on the default filesystem; otherwise null is passed (the value is only used in messages).
-        private final SAMLineParser parser = new SAMLineParser(
-                samRecordFactory,
-                validationStringency,
-                mFileHeader,
-                mParentReader,
-                (mPath != null && mPath.getFileSystem() == FileSystems.getDefault()) ? mPath.toFile() : null);
+        private final SAMLineParser parser =
+                new SAMLineParser(samRecordFactory, validationStringency, mFileHeader, mParentReader, mPath);
 
         private RecordIterator() {
             if (mReader == null) {

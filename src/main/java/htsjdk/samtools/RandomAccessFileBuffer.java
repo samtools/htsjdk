@@ -1,7 +1,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -44,14 +43,6 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
         } catch (final IOException exc) {
             throw new RuntimeIOException(exc.getMessage(), exc);
         }
-    }
-
-    /**
-     * @deprecated since the migration to {@link Path}; use {@link #RandomAccessFileBuffer(Path)} instead.
-     */
-    @Deprecated
-    RandomAccessFileBuffer(final File file) {
-        this(file.toPath());
     }
 
     @Override

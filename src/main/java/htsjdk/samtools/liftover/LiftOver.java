@@ -26,7 +26,6 @@ package htsjdk.samtools.liftover;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.*;
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -77,16 +76,6 @@ public class LiftOver {
      */
     public long getFailedIntervalsBelowThreshold() {
         return totalFailedIntervalsBelowThreshold;
-    }
-
-    /**
-     * Load UCSC chain file in order to lift over Intervals.
-     *
-     * @deprecated since 6/2024 use {@link #LiftOver(Path)} instead.
-     */
-    @Deprecated
-    public LiftOver(File chainFile) {
-        this(chainFile.toPath());
     }
 
     /**

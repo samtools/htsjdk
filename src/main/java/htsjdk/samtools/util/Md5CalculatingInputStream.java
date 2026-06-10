@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -62,17 +61,6 @@ public class Md5CalculatingInputStream extends InputStream {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
-    }
-
-    /**
-     * Constructor that takes in the InputStream that we are wrapping
-     * and creates the MD5 MessageDigest.
-     *
-     * @deprecated since 06/2026 use {@link #Md5CalculatingInputStream(InputStream, Path)} instead.
-     */
-    @Deprecated
-    public Md5CalculatingInputStream(InputStream is, File digestFile) {
-        this(is, digestFile == null ? null : digestFile.toPath());
     }
 
     @Override

@@ -1,9 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,20 +12,6 @@ import java.nio.file.Path;
 public class SamFiles {
 
     private static final Log LOG = Log.getInstance(SamFiles.class);
-
-    /**
-     * Finds the index file associated with the provided SAM file.  The index file must exist and be reachable to be found.
-     *
-     * If the file is a symlink and the index cannot be found, try to unsymlink the file and look for the bai in the actual file path.
-     *
-     * @return The index for the provided SAM, or null if one was not found.
-     * @deprecated since 5.0; use {@link #findIndex(Path)} instead.
-     */
-    @Deprecated
-    public static File findIndex(final File samFile) {
-        final Path path = findIndex(IOUtil.toPath(samFile));
-        return path == null ? null : path.toFile();
-    }
 
     /**
      * Finds the index file associated with the provided SAM file.  The index file must exist and be reachable to be found.

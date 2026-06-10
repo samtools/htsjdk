@@ -46,11 +46,9 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -184,24 +182,6 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             currentReference++;
             indexBuilder.startNewReference();
         }
-    }
-
-    /**
-     * Generates a BAI index file from an input CRAM stream
-     *
-     * @param stream CRAM stream to index
-     * @param output File for output index file
-     * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
-     * @param validationStringency validation stringency for processing
-     * @deprecated since 5.0, use {@link #createIndex(SeekableStream, Path, Log, ValidationStringency)} instead.
-     */
-    @Deprecated
-    public static void createIndex(
-            final SeekableStream stream,
-            final File output,
-            final Log log,
-            final ValidationStringency validationStringency) {
-        createIndex(stream, IOUtil.toPath(output), log, validationStringency);
     }
 
     /**

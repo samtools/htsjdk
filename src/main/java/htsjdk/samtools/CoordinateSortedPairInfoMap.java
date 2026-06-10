@@ -115,8 +115,8 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
 
             // Load map from disk if it existed
             Path mapOnDisk = makeFileForSequence(sequenceIndex);
-            if (outputStreams.containsKey(mapOnDisk.toFile())) {
-                outputStreams.remove(mapOnDisk.toFile()).close();
+            if (outputStreams.containsKey(mapOnDisk)) {
+                outputStreams.remove(mapOnDisk).close();
             }
             final Integer numRecords = sizeOfMapOnDisk.remove(sequenceIndex);
             if (Files.exists(mapOnDisk)) {
@@ -176,7 +176,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     }
 
     private OutputStream getOutputStreamForSequence(final int mateSequenceIndex) {
-        return outputStreams.get(makeFileForSequence(mateSequenceIndex).toFile());
+        return outputStreams.get(makeFileForSequence(mateSequenceIndex));
     }
 
     public int size() {

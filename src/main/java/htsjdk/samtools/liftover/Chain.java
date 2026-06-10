@@ -28,7 +28,6 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.OverlapDetector;
-import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -329,17 +328,6 @@ class Chain {
         result = 31 * result + id;
         result = 31 * result + (blockList != null ? blockList.hashCode() : 0);
         return result;
-    }
-
-    /**
-     * Read all the chains and load into an OverlapDetector.
-     * @param chainFile File in UCSC chain format.
-     * @return OverlapDetector with all Chains from reader loaded into it.
-     * @deprecated use {@link #loadChains(Path)} instead.
-     */
-    @Deprecated
-    static OverlapDetector<Chain> loadChains(final File chainFile) {
-        return loadChains(chainFile.toPath());
     }
 
     /**

@@ -25,7 +25,6 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.util.ParsingUtils;
-import java.io.File;
 import java.nio.file.Path;
 
 /**
@@ -51,18 +50,6 @@ public class Tribble {
     }
 
     /**
-     * Return the File of the index file for the provided {@code file}
-     * Does not actually create an index
-     * @param file  the file
-     * @return a non-null File representing the index
-     * @deprecated since June 2025 Use {@link #indexPath(Path)} instead.
-     */
-    @Deprecated
-    public static File indexFile(final File file) {
-        return indexPath(file.getAbsoluteFile().toPath()).toFile();
-    }
-
-    /**
      * Return the Path of the index file for the provided {@code path}
      * Does not actually create an index
      * @param path the path
@@ -80,18 +67,6 @@ public class Tribble {
      */
     public static String tabixIndexFile(final String filename) {
         return indexFile(filename, FileExtensions.TABIX_INDEX);
-    }
-
-    /**
-     * Return the File of the tabix index file for the provided {@code file}
-     * Does not actually create an index
-     * @param file  the file
-     * @return a non-null File representing the index
-     * @deprecated since June 2025 Use {@link #tabixIndexPath(Path)} instead.
-     */
-    @Deprecated
-    public static File tabixIndexFile(final File file) {
-        return tabixIndexPath(file.getAbsoluteFile().toPath()).toFile();
     }
 
     /**

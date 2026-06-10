@@ -2,7 +2,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,15 +18,6 @@ class StreamInflatingIndexingOutputStream extends OutputStream {
     private final OutputStream s1;
     private final PipedOutputStream s2;
     private final Thread thread;
-
-    /**
-     * @deprecated since File is being phased out in favor of {@link Path}; use
-     *     {@link #StreamInflatingIndexingOutputStream(OutputStream, Path)} instead.
-     */
-    @Deprecated
-    public StreamInflatingIndexingOutputStream(final OutputStream s1, final File indexFile) {
-        this(s1, indexFile.toPath());
-    }
 
     public StreamInflatingIndexingOutputStream(final OutputStream s1, final Path indexPath) {
         try {

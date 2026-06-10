@@ -27,7 +27,6 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -85,22 +84,6 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final InputStream stream, InflaterFactory inflaterFactory) {
         super(stream, true, inflaterFactory);
-    }
-
-    /**
-     * @deprecated since 5.0; use {@link #AsyncBlockCompressedInputStream(Path)} instead.
-     */
-    @Deprecated
-    public AsyncBlockCompressedInputStream(final File file) throws IOException {
-        this(file.toPath());
-    }
-
-    /**
-     * @deprecated since 5.0; use {@link #AsyncBlockCompressedInputStream(Path, InflaterFactory)} instead.
-     */
-    @Deprecated
-    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory) throws IOException {
-        this(file.toPath(), inflaterFactory);
     }
 
     public AsyncBlockCompressedInputStream(final Path path) throws IOException {

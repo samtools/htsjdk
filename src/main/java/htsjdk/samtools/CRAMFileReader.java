@@ -392,13 +392,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             final SAMSequenceDictionary dictionary = getFileHeader().getSequenceDictionary();
             final String indexFileName = mIndexPath.getFileName().toString();
             if (indexFileName.endsWith(FileExtensions.BAI_INDEX)) {
-                // The BAI index readers are backed by memory-mapped or random-access local files, so
-                // the index path must be resolvable to a java.io.File. Migrating these index readers to
-                // Path is tracked separately (see issue #1783, index reader phase).
-                final File indexFile = mIndexPath.toFile();
                 mIndex = mEnableIndexCaching
-                        ? new CachingBAMFileIndex(indexFile, dictionary, mEnableIndexMemoryMapping)
-                        : new DiskBasedBAMFileIndex(indexFile, dictionary, mEnableIndexMemoryMapping);
+                        ? new CachingBAMFileIndex(mIndexPath, dictionary, mEnableIndexMemoryMapping)
+                        : new DiskBasedBAMFileIndex(mIndexPath, dictionary, mEnableIndexMemoryMapping);
                 return mIndex;
             }
 

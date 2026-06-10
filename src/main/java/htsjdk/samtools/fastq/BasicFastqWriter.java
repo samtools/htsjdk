@@ -25,7 +25,6 @@ package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
-import java.io.File;
 import java.io.Flushable;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -38,22 +37,6 @@ import java.nio.file.Path;
 public class BasicFastqWriter implements FastqWriter, Flushable {
     private final String path;
     private final PrintStream writer;
-
-    /**
-     * @deprecated since 6/2026, use {@link #BasicFastqWriter(Path)} instead.
-     */
-    @Deprecated
-    public BasicFastqWriter(final File file) {
-        this(file == null ? null : file.toPath());
-    }
-
-    /**
-     * @deprecated since 6/2026, use {@link #BasicFastqWriter(Path, boolean)} instead.
-     */
-    @Deprecated
-    public BasicFastqWriter(final File file, final boolean createMd5) {
-        this(file == null ? null : file.toPath(), createMd5);
-    }
 
     public BasicFastqWriter(final Path path) {
         this(path, false);

@@ -29,7 +29,6 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -53,26 +52,10 @@ public class BAMFileWriter extends SAMFileWriterImpl {
         outputBinaryCodec.setOutputFileName(path.toAbsolutePath().toString());
     }
 
-    /**
-     * @deprecated since 5.0.0; use {@link #BAMFileWriter(Path)} instead.
-     */
-    @Deprecated
-    protected BAMFileWriter(final File path) {
-        this(path.toPath());
-    }
-
     protected BAMFileWriter(final Path path, final int compressionLevel) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(path, compressionLevel);
         outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(path.toAbsolutePath().toString());
-    }
-
-    /**
-     * @deprecated since 5.0.0; use {@link #BAMFileWriter(Path, int)} instead.
-     */
-    @Deprecated
-    protected BAMFileWriter(final File path, final int compressionLevel) {
-        this(path.toPath(), compressionLevel);
     }
 
     protected BAMFileWriter(final OutputStream os, final Path path) {
@@ -87,28 +70,11 @@ public class BAMFileWriter extends SAMFileWriterImpl {
         outputBinaryCodec.setOutputFileName(getPathString(path));
     }
 
-    /**
-     * @deprecated since 5.0.0; use {@link #BAMFileWriter(OutputStream, Path, int)} instead.
-     */
-    @Deprecated
-    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel) {
-        this(os, IOUtil.toPath(file), compressionLevel);
-    }
-
     protected BAMFileWriter(
             final OutputStream os, final Path path, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(os, path, compressionLevel, deflaterFactory);
         outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(getPathString(path));
-    }
-
-    /**
-     * @deprecated since 5.0.0; use {@link #BAMFileWriter(OutputStream, Path, int, DeflaterFactory)} instead.
-     */
-    @Deprecated
-    protected BAMFileWriter(
-            final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
-        this(os, IOUtil.toPath(file), compressionLevel, deflaterFactory);
     }
 
     protected BAMFileWriter(

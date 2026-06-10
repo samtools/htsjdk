@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -44,36 +43,6 @@ import java.nio.file.StandardOpenOption;
 public class FileAppendStreamLRUCache extends ResourceLimitedMap<Path, OutputStream> {
     public FileAppendStreamLRUCache(final int cacheSize) {
         super(cacheSize, new Functor());
-    }
-
-    /**
-     * Return an existing value, or create a new one if necessary.
-     *
-     * @deprecated use {@link #get(Path)} instead.
-     */
-    @Deprecated
-    public OutputStream get(final File file) {
-        return get(file.toPath());
-    }
-
-    /**
-     * Remove the value associated with the given key.
-     *
-     * @deprecated use {@link #remove(Path)} instead.
-     */
-    @Deprecated
-    public OutputStream remove(final File file) {
-        return remove(file.toPath());
-    }
-
-    /**
-     * Determine if the map contains the given key.
-     *
-     * @deprecated use {@link #containsKey(Path)} instead.
-     */
-    @Deprecated
-    public boolean containsKey(final File file) {
-        return containsKey(file.toPath());
     }
 
     private static class Functor implements ResourceLimitedMapFunctor<Path, OutputStream> {

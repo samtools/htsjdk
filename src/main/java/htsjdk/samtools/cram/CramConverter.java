@@ -3,7 +3,7 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.structure.CRAMCompressionProfile;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -110,7 +110,7 @@ public class CramConverter {
             die("--reference is required when reading or writing CRAM files");
         }
 
-        final Path refPath = referencePath != null ? new File(referencePath).toPath() : null;
+        final Path refPath = referencePath != null ? Path.of(referencePath) : null;
         final CRAMEncodingStrategy strategy = profile.toStrategy();
 
         if (outputPath != null) {
@@ -130,17 +130,19 @@ public class CramConverter {
 
         long count = 0;
         final long startTime = System.currentTimeMillis();
+        final Path inputFilePath = Path.of(inputPath);
 
-        try (final SamReader reader = readerFactory.open(new File(inputPath))) {
+        try (final SamReader reader = readerFactory.open(inputFilePath)) {
             final SAMFileHeader header = reader.getFileHeader();
 
             if (outputPath != null) {
                 // Read and write
                 final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory().setCRAMEncodingStrategy(strategy);
 
+                final Path outputFilePath = Path.of(outputPath);
                 try (final SAMFileWriter writer = outputIsCram
-                        ? writerFactory.makeCRAMWriter(header, true, new File(outputPath).toPath(), refPath)
-                        : writerFactory.makeWriter(header, true, new File(outputPath).toPath(), refPath)) {
+                        ? writerFactory.makeCRAMWriter(header, true, outputFilePath, refPath)
+                        : writerFactory.makeWriter(header, true, outputFilePath, refPath)) {
 
                     for (final SAMRecord record : reader) {
                         writer.addAlignment(record);
@@ -165,10 +167,10 @@ public class CramConverter {
         }
 
         final long elapsed = System.currentTimeMillis() - startTime;
-        final long inputSize = new File(inputPath).length();
+        final long inputSize = fileSizeOrZero(inputFilePath);
 
         if (outputPath != null) {
-            final long outputSize = new File(outputPath).length();
+            final long outputSize = fileSizeOrZero(Path.of(outputPath));
             System.err.printf(
                     "Done. %,d records in %.1fs. Input: %,d bytes, Output: %,d bytes (%.1f%%)%n",
                     count,
@@ -186,6 +188,14 @@ public class CramConverter {
             if (flag.equals(arg)) return true;
         }
         return false;
+    }
+
+    private static long fileSizeOrZero(final Path path) {
+        try {
+            return Files.size(path);
+        } catch (final java.io.IOException e) {
+            return 0;
+        }
     }
 
     private static void die(final String message) {

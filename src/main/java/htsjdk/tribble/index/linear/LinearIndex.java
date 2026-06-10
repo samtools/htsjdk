@@ -18,13 +18,11 @@
 
 package htsjdk.tribble.index.linear;
 
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.AbstractIndex;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -73,17 +71,6 @@ public class LinearIndex extends AbstractIndex {
     public LinearIndex(final List<ChrIndex> indices, final Path featureFile) {
         super(featureFile);
         for (final ChrIndex index : indices) chrIndices.put(index.getName(), index);
-    }
-
-    /**
-     * Initialize using the specified {@code indices}
-     * @param indices
-     * @param featureFile
-     * @deprecated since 5.0; use {@link #LinearIndex(List, Path)} instead.
-     */
-    @Deprecated
-    public LinearIndex(final List<ChrIndex> indices, final File featureFile) {
-        this(indices, IOUtil.toPath(featureFile));
     }
 
     private LinearIndex(final LinearIndex parent, final List<ChrIndex> indices) {

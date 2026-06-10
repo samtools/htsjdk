@@ -28,7 +28,6 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -116,35 +115,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     /**
      * Prepare to read BAM from a stream (not seekable)
      * @param stream source of bytes.
-     * @param indexFile BAM index file
-     * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
-     * @param useAsynchronousIO if true, use asynchronous I/O
-     * @param validationStringency Controls how to handle invalidate reads or header lines.
-     * @param samRecordFactory SAM record factory
-     * @throws IOException
-     * @deprecated since this uses a {@link File} for the index; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    BAMFileReader(
-            final InputStream stream,
-            final File indexFile,
-            final boolean eagerDecode,
-            final boolean useAsynchronousIO,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory samRecordFactory)
-            throws IOException {
-        this(
-                stream,
-                indexFile == null ? null : indexFile.toPath(),
-                eagerDecode,
-                useAsynchronousIO,
-                validationStringency,
-                samRecordFactory);
-    }
-
-    /**
-     * Prepare to read BAM from a stream (not seekable)
-     * @param stream source of bytes.
      * @param indexPath BAM index file path
      * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
      * @param useAsynchronousIO if true, use asynchronous I/O
@@ -175,38 +145,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
-     * Prepare to read BAM from a stream (not seekable)
-     * @param stream source of bytes.
-     * @param indexFile BAM index file
-     * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
-     * @param useAsynchronousIO if true, use asynchronous I/O
-     * @param validationStringency Controls how to handle invalidate reads or header lines.
-     * @param samRecordFactory SAM record factory
-     * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
-     * @throws IOException
-     * @deprecated since this uses a {@link File} for the index; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    BAMFileReader(
-            final InputStream stream,
-            final File indexFile,
-            final boolean eagerDecode,
-            final boolean useAsynchronousIO,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
-            throws IOException {
-        this(
-                stream,
-                indexFile == null ? null : indexFile.toPath(),
-                eagerDecode,
-                useAsynchronousIO,
-                validationStringency,
-                samRecordFactory,
-                inflaterFactory);
-    }
-
-    /**
      * Prepare to read BAM from a file (seekable)
      * @param path source of bytes.
      * @param indexPath BAM index file path
@@ -232,35 +170,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 validationStringency,
                 samRecordFactory,
                 BlockGunzipper.getDefaultInflaterFactory());
-    }
-
-    /**
-     * Prepare to read BAM from a file (seekable)
-     * @param file source of bytes.
-     * @param indexFile BAM index file
-     * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
-     * @param useAsynchronousIO if true, use asynchronous I/O
-     * @param validationStringency Controls how to handle invalidate reads or header lines.
-     * @param samRecordFactory SAM record factory
-     * @throws IOException
-     * @deprecated since this uses {@link File}s; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    BAMFileReader(
-            final File file,
-            final File indexFile,
-            final boolean eagerDecode,
-            final boolean useAsynchronousIO,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory samRecordFactory)
-            throws IOException {
-        this(
-                file == null ? null : file.toPath(),
-                indexFile == null ? null : indexFile.toPath(),
-                eagerDecode,
-                useAsynchronousIO,
-                validationStringency,
-                samRecordFactory);
     }
 
     /**
@@ -305,38 +214,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         // Provide better error message when there is an error reading.
         mStream.setInputFileName(path.toAbsolutePath().toString());
-    }
-
-    /**
-     * Prepare to read BAM from a file (seekable)
-     * @param file source of bytes.
-     * @param indexFile BAM index file
-     * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
-     * @param useAsynchronousIO if true, use asynchronous I/O
-     * @param validationStringency Controls how to handle invalidate reads or header lines.
-     * @param samRecordFactory SAM record factory
-     * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
-     * @throws IOException
-     * @deprecated since this uses {@link File}s; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    BAMFileReader(
-            final File file,
-            final File indexFile,
-            final boolean eagerDecode,
-            final boolean useAsynchronousIO,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
-            throws IOException {
-        this(
-                file == null ? null : file.toPath(),
-                indexFile == null ? null : indexFile.toPath(),
-                eagerDecode,
-                useAsynchronousIO,
-                validationStringency,
-                samRecordFactory,
-                inflaterFactory);
     }
 
     /**
@@ -386,35 +263,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     /**
      * Prepare to read BAM from a stream (seekable)
      * @param strm source of bytes
-     * @param indexFile BAM index file
-     * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
-     * @param useAsynchronousIO if true, use asynchronous I/O
-     * @param validationStringency Controls how to handle invalidate reads or header lines.
-     * @param samRecordFactory SAM record factory
-     * @throws IOException
-     * @deprecated since this uses a {@link File} for the index; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    BAMFileReader(
-            final SeekableStream strm,
-            final File indexFile,
-            final boolean eagerDecode,
-            final boolean useAsynchronousIO,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory samRecordFactory)
-            throws IOException {
-        this(
-                strm,
-                indexFile == null ? null : indexFile.toPath(),
-                eagerDecode,
-                useAsynchronousIO,
-                validationStringency,
-                samRecordFactory);
-    }
-
-    /**
-     * Prepare to read BAM from a stream (seekable)
-     * @param strm source of bytes
      * @param indexPath BAM index file path
      * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
      * @param useAsynchronousIO if true, use asynchronous I/O
@@ -442,38 +290,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 strm.getSource(),
                 validationStringency,
                 samRecordFactory);
-    }
-
-    /**
-     * Prepare to read BAM from a stream (seekable)
-     * @param strm source of bytes
-     * @param indexFile BAM index file
-     * @param eagerDecode if true, decode all BAM fields as reading rather than lazily.
-     * @param useAsynchronousIO if true, use asynchronous I/O
-     * @param validationStringency Controls how to handle invalidate reads or header lines.
-     * @param samRecordFactory SAM record factory
-     * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
-     * @throws IOException
-     * @deprecated since this uses a {@link File} for the index; use the {@link Path}-based constructor instead.
-     */
-    @Deprecated
-    BAMFileReader(
-            final SeekableStream strm,
-            final File indexFile,
-            final boolean eagerDecode,
-            final boolean useAsynchronousIO,
-            final ValidationStringency validationStringency,
-            final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
-            throws IOException {
-        this(
-                strm,
-                indexFile == null ? null : indexFile.toPath(),
-                eagerDecode,
-                useAsynchronousIO,
-                validationStringency,
-                samRecordFactory,
-                inflaterFactory);
     }
 
     /**
@@ -609,15 +425,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     /**
      * Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file.
-     * @deprecated use {@link #findVirtualOffsetOfFirstRecord(Path)} instead.
-     */
-    @Deprecated
-    static long findVirtualOffsetOfFirstRecord(final File bam) throws IOException {
-        return findVirtualOffsetOfFirstRecord(bam.toPath());
-    }
-
-    /**
-     * Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file.
      * The caller is responsible for closing the stream.
      */
     static long findVirtualOffsetOfFirstRecord(final SeekableStream seekableStream) throws IOException {
@@ -703,16 +510,12 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             final SamIndexes samIndexType = getIndexType();
             final SAMSequenceDictionary sequenceDictionary = getFileHeader().getSequenceDictionary();
             if (mIndexPath != null) {
-                // The memory-mapped / random-access index readers below are inherently local-file based
-                // and have not yet been migrated to Path, so convert the index Path to a File here. This
-                // is safe because these readers can only operate on regular files on the default filesystem.
-                final File indexFile = mIndexPath.toFile();
                 if (samIndexType.equals(SamIndexes.BAI)) {
                     mIndex = mEnableIndexCaching
-                            ? new CachingBAMFileIndex(indexFile, sequenceDictionary, mEnableIndexMemoryMapping)
-                            : new DiskBasedBAMFileIndex(indexFile, sequenceDictionary, mEnableIndexMemoryMapping);
+                            ? new CachingBAMFileIndex(mIndexPath, sequenceDictionary, mEnableIndexMemoryMapping)
+                            : new DiskBasedBAMFileIndex(mIndexPath, sequenceDictionary, mEnableIndexMemoryMapping);
                 } else if (samIndexType.equals(SamIndexes.CSI)) {
-                    mIndex = new CSIIndex(indexFile, mEnableIndexMemoryMapping, sequenceDictionary);
+                    mIndex = new CSIIndex(mIndexPath, mEnableIndexMemoryMapping, sequenceDictionary);
                 } else {
                     throw new SAMFormatException("Unsupported BAM index file format: " + mIndexPath.getFileName());
                 }

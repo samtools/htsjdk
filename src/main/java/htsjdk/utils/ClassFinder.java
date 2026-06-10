@@ -25,7 +25,6 @@ package htsjdk.utils;
  */
 
 import htsjdk.samtools.util.Log;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -63,17 +62,6 @@ public class ClassFinder {
 
     public ClassFinder(final ClassLoader loader) {
         this.loader = loader;
-    }
-
-    /**
-     * Constructs a ClassFinder that will only look for classes within the specified jar file.
-     *
-     * @param jarFile the jar file to scan for classes
-     * @deprecated use {@link #ClassFinder(Path)} instead
-     */
-    @Deprecated
-    public ClassFinder(final File jarFile) throws IOException {
-        this(jarFile.toPath());
     }
 
     /**
@@ -151,17 +139,6 @@ public class ClassFinder {
      * Scans the entries in a ZIP/JAR file for classes under the parent package.
      * @param file the jar file to be scanned
      * @param packagePath the top level package to start from
-     * @deprecated use {@link #scanJar(Path, String)} instead
-     */
-    @Deprecated
-    protected void scanJar(final File file, final String packagePath) throws IOException {
-        scanJar(file.toPath(), packagePath);
-    }
-
-    /**
-     * Scans the entries in a ZIP/JAR file for classes under the parent package.
-     * @param file the jar file to be scanned
-     * @param packagePath the top level package to start from
      */
     protected void scanJar(final Path file, final String packagePath) throws IOException {
         final ZipFile zip = new ZipFile(file.toFile());
@@ -173,17 +150,6 @@ public class ClassFinder {
                 handleItem(name);
             }
         }
-    }
-
-    /**
-     * Scans a directory on the filesystem for classes.
-     * @param file the directory or file to examine
-     * @param path the package path acculmulated so far (e.g. edu/mit/broad)
-     * @deprecated use {@link #scanDir(Path, String)} instead
-     */
-    @Deprecated
-    protected void scanDir(final File file, final String path) {
-        scanDir(file.toPath(), path);
     }
 
     /**

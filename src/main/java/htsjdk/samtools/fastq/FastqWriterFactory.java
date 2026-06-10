@@ -1,7 +1,6 @@
 package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.Defaults;
-import java.io.File;
 import java.nio.file.Path;
 
 /**
@@ -30,22 +29,11 @@ public class FastqWriterFactory {
      * @return a {@link FastqWriter}, wrapped for asynchronous writing if {@link #useAsyncIo} is set
      */
     public FastqWriter newWriter(final Path out) {
-        // BasicFastqWriter is still File-based (migrated separately); convert here to keep the tree compiling.
-        final FastqWriter writer = new BasicFastqWriter(out.toFile(), createMd5);
+        final FastqWriter writer = new BasicFastqWriter(out, createMd5);
         if (useAsyncIo) {
             return new AsyncFastqWriter(writer, AsyncFastqWriter.DEFAULT_QUEUE_SIZE);
         } else {
             return writer;
         }
-    }
-
-    /**
-     * Creates a {@link FastqWriter} that writes to the given file.
-     *
-     * @deprecated since 5.0; use {@link #newWriter(Path)} instead.
-     */
-    @Deprecated
-    public FastqWriter newWriter(final File out) {
-        return newWriter(out.toPath());
     }
 }

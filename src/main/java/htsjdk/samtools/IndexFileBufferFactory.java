@@ -4,7 +4,6 @@ import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -18,14 +17,6 @@ class IndexFileBufferFactory {
      */
     static boolean isNonLocalPath(final Path path) {
         return !path.getFileSystem().equals(FileSystems.getDefault());
-    }
-
-    /**
-     * @deprecated use {@link #getBuffer(Path, boolean)} instead.
-     */
-    @Deprecated
-    static IndexFileBuffer getBuffer(File file, boolean enableMemoryMapping) {
-        return getBuffer(file.toPath(), enableMemoryMapping);
     }
 
     static IndexFileBuffer getBuffer(Path path, boolean enableMemoryMapping) {
@@ -44,11 +35,9 @@ class IndexFileBufferFactory {
             throw (new RuntimeIOException(ioe));
         }
 
-        // Local paths back the File-based buffer implementations directly.
-        final File file = path.toFile();
         return isCompressed
-                ? new CompressedIndexFileBuffer(file)
-                : (enableMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file));
+                ? new CompressedIndexFileBuffer(path)
+                : (enableMemoryMapping ? new MemoryMappedFileBuffer(path) : new RandomAccessFileBuffer(path));
     }
 
     static IndexFileBuffer getBuffer(SeekableStream seekableStream) {

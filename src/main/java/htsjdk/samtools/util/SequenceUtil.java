@@ -34,7 +34,6 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.fastq.FastqConstants;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -365,17 +364,6 @@ public class SequenceUtil {
             throw new SequenceListsDifferException(
                     "In files " + p1.toAbsolutePath() + " and " + p2.toAbsolutePath(), e);
         }
-    }
-
-    /**
-     * Throws an exception if both parameters are non-null and unequal, including the filenames.
-     *
-     * @deprecated use {@link #assertSequenceDictionariesEqual(SAMSequenceDictionary, SAMSequenceDictionary, Path, Path)} instead.
-     */
-    @Deprecated
-    public static void assertSequenceDictionariesEqual(
-            final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final File f1, final File f2) {
-        assertSequenceDictionariesEqual(s1, s2, f1.toPath(), f2.toPath());
     }
 
     /**

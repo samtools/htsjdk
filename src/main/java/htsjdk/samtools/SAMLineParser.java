@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.StringUtil;
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
@@ -130,20 +129,6 @@ public class SAMLineParser {
     }
 
     /**
-     * Public constructor. Use the default SAMRecordFactory and stringency.
-     *
-     * @param samFileHeader SAM file header
-     * @param samFileReader SAM file reader For passing to SAMRecord.setFileSource, may be null.
-     * @param samFile       SAM file being read (for error message only, may be null)
-     * @deprecated Use {@link #SAMLineParser(SAMFileHeader, SamReader, Path)} instead.
-     */
-    @Deprecated
-    public SAMLineParser(final SAMFileHeader samFileHeader, final SamReader samFileReader, final File samFile) {
-
-        this(samFileHeader, samFileReader, samFile == null ? null : samFile.toPath());
-    }
-
-    /**
      * Public constructor.
      *
      * @param samRecordFactory     SamRecord Factory
@@ -175,33 +160,6 @@ public class SAMLineParser {
 
         // Can be null
         this.mPath = samPath;
-    }
-
-    /**
-     * Public constructor.
-     *
-     * @param samRecordFactory     SamRecord Factory
-     * @param validationStringency validation stringency
-     * @param samFileHeader        SAM file header
-     * @param samFileReader        SAM file reader For passing to SAMRecord.setFileSource, may be null.
-     * @param samFile              SAM file being read (for error message only, may be null)
-     * @deprecated Use {@link #SAMLineParser(SAMRecordFactory, ValidationStringency, SAMFileHeader, SamReader, Path)}
-     *     instead.
-     */
-    @Deprecated
-    public SAMLineParser(
-            final SAMRecordFactory samRecordFactory,
-            final ValidationStringency validationStringency,
-            final SAMFileHeader samFileHeader,
-            final SamReader samFileReader,
-            final File samFile) {
-
-        this(
-                samRecordFactory,
-                validationStringency,
-                samFileHeader,
-                samFileReader,
-                samFile == null ? null : samFile.toPath());
     }
 
     /**

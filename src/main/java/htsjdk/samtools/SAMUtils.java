@@ -32,7 +32,6 @@ import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.annotation.Strand;
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -544,19 +543,6 @@ public final class SAMUtils {
      * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
      * header. This hash code changes any time read groups are added or removed. Comparing one file's
      * hash code to another's tells you if the read groups in the BAM files are different.
-     *
-     * @deprecated since 5.0.0; use {@link #calculateReadGroupRecordChecksum(Path, Path)} instead.
-     */
-    @Deprecated
-    public static String calculateReadGroupRecordChecksum(final File input, final File referenceFasta) {
-        return calculateReadGroupRecordChecksum(
-                input.toPath(), referenceFasta == null ? null : referenceFasta.toPath());
-    }
-
-    /**
-     * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
-     * header. This hash code changes any time read groups are added or removed. Comparing one file's
-     * hash code to another's tells you if the read groups in the BAM files are different.
      */
     public static String calculateReadGroupRecordChecksum(final Path input, final Path referenceFasta) {
         final String ENCODING = "UTF-8";
@@ -754,17 +740,6 @@ public final class SAMUtils {
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);
         }
-    }
-
-    /**
-     * Returns the virtual file offset of the first record in a BAM file - i.e. the virtual file
-     * offset after skipping over the text header and the sequence records.
-     *
-     * @deprecated since 5.0.0; use {@link #findVirtualOffsetOfFirstRecordInBam(Path)} instead.
-     */
-    @Deprecated
-    public static long findVirtualOffsetOfFirstRecordInBam(final File bamFile) {
-        return findVirtualOffsetOfFirstRecordInBam(bamFile.toPath());
     }
 
     /**

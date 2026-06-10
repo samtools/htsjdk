@@ -3,7 +3,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -52,16 +51,7 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
      * @param dictionary the sequence dictionary associated with the index
      */
     public CSIIndex(final Path path, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
-        this(IndexFileBufferFactory.getBuffer(path.toFile(), enableMemoryMapping), path.toString(), dictionary);
-    }
-
-    /**
-     * @deprecated since the migration to {@link Path}; use
-     *     {@link #CSIIndex(Path, boolean, SAMSequenceDictionary)} instead.
-     */
-    @Deprecated
-    public CSIIndex(final File file, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
-        this(file.toPath(), enableMemoryMapping, dictionary);
+        this(IndexFileBufferFactory.getBuffer(path, enableMemoryMapping), path.toString(), dictionary);
     }
 
     private CSIIndex(

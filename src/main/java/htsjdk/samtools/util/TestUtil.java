@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -58,22 +57,6 @@ public class TestUtil {
         } catch (IOException e) {
             throw new SAMException("Failed to create temporary directory.", e);
         }
-    }
-
-    /**
-     * @deprecated Prefer {@link #getTempDirectoryAsPath(String, String)} which returns a {@link Path}.
-     */
-    @Deprecated
-    public static File getTempDirectory(final String prefix, final String suffix) {
-        return getTempDirectoryAsPath(prefix, suffix).toFile();
-    }
-
-    /**
-     * @deprecated Use properly spelled method. {@link #getTempDirectoryAsPath}
-     */
-    @Deprecated
-    public static File getTempDirecory(final String prefix, final String suffix) {
-        return getTempDirectory(prefix, suffix);
     }
 
     /**
@@ -113,17 +96,5 @@ public class TestUtil {
         } catch (RuntimeIOException e) {
             // bury exception
         }
-    }
-
-    /**
-     * Little test utility to help tests that create multiple levels of subdirectories
-     * clean up after themselves.
-     *
-     * @param directory The directory to be deleted (along with its subdirectories)
-     * @deprecated Since 3/19, prefer {@link IOUtil#recursiveDelete(Path)}
-     */
-    @Deprecated
-    public static void recursiveDelete(final File directory) {
-        recursiveDelete(directory.toPath());
     }
 }

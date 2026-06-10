@@ -25,8 +25,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-import htsjdk.samtools.util.IOUtil;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -44,18 +42,6 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
     protected final Path output;
     private final PrintWriter pw;
     private int count = 0;
-
-    /**
-     * constructor
-     *
-     * @param nRef    Number of reference sequences
-     * @param output   BAM Index output file
-     * @deprecated since 5.0, use {@link #TextualBAMIndexWriter(int, Path)} instead.
-     */
-    @Deprecated
-    public TextualBAMIndexWriter(final int nRef, final File output) {
-        this(nRef, IOUtil.toPath(output));
-    }
 
     /**
      * constructor

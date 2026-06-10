@@ -23,12 +23,10 @@
  */
 package htsjdk.tribble.index.linear;
 
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.TribbleIndexCreator;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -54,22 +52,6 @@ public class LinearIndexCreator extends TribbleIndexCreator {
     public LinearIndexCreator(final Path inputPath, final int binSize) {
         this.inputFile = inputPath;
         binWidth = binSize;
-    }
-
-    /**
-     * @deprecated use {@link #LinearIndexCreator(Path, int)} instead.
-     */
-    @Deprecated
-    public LinearIndexCreator(final File inputFile, final int binSize) {
-        this(IOUtil.toPath(inputFile), binSize);
-    }
-
-    /**
-     * @deprecated use {@link #LinearIndexCreator(Path)} instead.
-     */
-    @Deprecated
-    public LinearIndexCreator(final File inputFile) {
-        this(IOUtil.toPath(inputFile));
     }
 
     public LinearIndexCreator(final Path inputPath) {

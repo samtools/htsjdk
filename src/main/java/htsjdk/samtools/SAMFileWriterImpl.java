@@ -27,7 +27,6 @@ import static htsjdk.samtools.SAMFileHeader.SortOrder;
 
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.SortingCollection;
-import java.io.File;
 import java.io.StringWriter;
 import java.nio.file.Path;
 
@@ -141,17 +140,6 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter {
         if (tmpDir != null) {
             this.tmpDir = tmpDir;
         }
-    }
-
-    /**
-     * When writing records that are not presorted, specify the path of the temporary directory
-     * for spilling to disk.  Must be called before setHeader().
-     * @param tmpDir path to the temporary directory
-     * @deprecated since 06/2025. Use {@link #setTempDirectory(Path)} instead.
-     */
-    @Deprecated
-    protected void setTempDirectory(final File tmpDir) {
-        setTempDirectory(tmpDir == null ? null : tmpDir.toPath());
     }
 
     protected Path getTempDirectory() {

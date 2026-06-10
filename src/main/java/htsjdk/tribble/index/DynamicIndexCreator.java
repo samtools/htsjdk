@@ -24,13 +24,11 @@
 
 package htsjdk.tribble.index;
 
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
 import htsjdk.tribble.index.linear.LinearIndexCreator;
 import htsjdk.tribble.util.MathUtils;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,14 +60,6 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
         this.iba = iba;
         // get a list of index creators
         creators = getIndexCreators(inputPath, iba);
-    }
-
-    /**
-     * @deprecated since 5.0.0; use {@link #DynamicIndexCreator(Path, IndexFactory.IndexBalanceApproach)} instead.
-     */
-    @Deprecated
-    public DynamicIndexCreator(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
-        this(IOUtil.toPath(inputFile), iba);
     }
 
     @Override

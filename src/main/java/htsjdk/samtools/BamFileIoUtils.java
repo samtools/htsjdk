@@ -13,14 +13,12 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class BamFileIoUtils {
     private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
@@ -30,14 +28,6 @@ public class BamFileIoUtils {
      */
     @Deprecated
     public static final String BAM_FILE_EXTENSION = FileExtensions.BAM;
-
-    /**
-     * @deprecated since June 2024 Use {@link #isBamFile(Path)} instead.
-     */
-    @Deprecated
-    public static boolean isBamFile(final File file) {
-        return (file != null) && isBamFile(file.toPath());
-    }
 
     /**
      * Checks whether the given path points to a file with a valid BAM extension.
@@ -53,22 +43,6 @@ public class BamFileIoUtils {
 
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile) {
         reheaderBamFile(samFileHeader, inputFile, outputFile, true, true);
-    }
-
-    /**
-     * Support File input types for backward compatibility. Use {@link #reheaderBamFile(SAMFileHeader, Path, Path,
-     * boolean, boolean)} with Path inputs instead.
-     *
-     * @deprecated since June 2024 Use the {@link Path}-based overload instead.
-     */
-    @Deprecated
-    public static void reheaderBamFile(
-            final SAMFileHeader samFileHeader,
-            final File inputFile,
-            final File outputFile,
-            final boolean createMd5,
-            final boolean createIndex) {
-        reheaderBamFile(samFileHeader, IOUtil.toPath(inputFile), IOUtil.toPath(outputFile), createMd5, createIndex);
     }
 
     /**
@@ -105,18 +79,6 @@ public class BamFileIoUtils {
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
         }
-    }
-
-    /**
-     * @deprecated since June 2024 Use {@link #blockCopyBamFile(Path, OutputStream, boolean, boolean)} instead.
-     */
-    @Deprecated
-    public static void blockCopyBamFile(
-            final File inputFile,
-            final OutputStream outputStream,
-            final boolean skipHeader,
-            final boolean skipTerminator) {
-        blockCopyBamFile(IOUtil.toPath(inputFile), outputStream, skipHeader, skipTerminator);
     }
 
     /**
@@ -180,22 +142,6 @@ public class BamFileIoUtils {
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
         }
-    }
-
-    /**
-     * Support File input types for backward compatibility. Use {@link #gatherWithBlockCopying(List, Path, boolean,
-     * boolean)} with Path inputs instead.
-     *
-     * @deprecated since June 2024 Use the {@link Path}-based overload instead.
-     */
-    @Deprecated
-    public static void gatherWithBlockCopying(
-            final List<File> bams, final File output, final boolean createIndex, final boolean createMd5) {
-        gatherWithBlockCopying(
-                bams.stream().map(File::toPath).collect(Collectors.toList()),
-                IOUtil.toPath(output),
-                createIndex,
-                createMd5);
     }
 
     /**

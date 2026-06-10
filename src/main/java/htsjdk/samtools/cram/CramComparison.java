@@ -2,6 +2,7 @@ package htsjdk.samtools.cram;
 
 import htsjdk.samtools.*;
 import java.io.*;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -90,7 +91,7 @@ public class CramComparison {
         final SamReaderFactory factory =
                 SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
         if (referencePath != null) {
-            factory.referenceSequence(new File(referencePath));
+            factory.referenceSequence(Paths.get(referencePath));
         }
 
         try (final PrintWriter out =
@@ -116,8 +117,8 @@ public class CramComparison {
         long recordCount = 0;
         int diffCount = 0;
 
-        try (final SamReader reader1 = factory.open(new File(file1));
-                final SamReader reader2 = factory.open(new File(file2))) {
+        try (final SamReader reader1 = factory.open(Paths.get(file1));
+                final SamReader reader2 = factory.open(Paths.get(file2))) {
 
             final Iterator<SAMRecord> it1 = reader1.iterator();
             final Iterator<SAMRecord> it2 = reader2.iterator();

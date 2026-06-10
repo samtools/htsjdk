@@ -652,7 +652,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                         return written;
                     }
                 });
-                final SamInputResource res = usePath ? SamInputResource.of(fifo) : SamInputResource.of(fifo.toFile());
+                final SamInputResource res = SamInputResource.of(fifo);
 
                 int count = 0;
                 try (final SamReader in = SamReaderFactory.make().open(res)) {

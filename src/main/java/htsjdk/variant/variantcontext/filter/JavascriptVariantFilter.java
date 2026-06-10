@@ -26,7 +26,6 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.samtools.filter.AbstractJavascriptFilter;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;
@@ -67,20 +66,6 @@ public class JavascriptVariantFilter extends AbstractJavascriptFilter<VCFHeader,
      */
     public JavascriptVariantFilter(final Path scriptPath, final VCFHeader header) throws IOException {
         super(scriptPath, header);
-    }
-
-    /**
-     * constructor using a javascript File
-     *
-     * @param scriptFile
-     *            the javascript file to be compiled
-     * @param header
-     *            the SAMHeader
-     * @deprecated use {@link #JavascriptVariantFilter(Path, VCFHeader)} instead.
-     */
-    @Deprecated
-    public JavascriptVariantFilter(final File scriptFile, final VCFHeader header) throws IOException {
-        this(scriptFile.toPath(), header);
     }
 
     /**
