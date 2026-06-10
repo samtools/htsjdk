@@ -170,6 +170,13 @@ public abstract class AbstractIndex implements MutableIndex {
         }
     }
 
+    /**
+     * create an index file from the target feature file
+     *
+     * @param featureFile the feature file to create an index from
+     * @deprecated Use {@link #AbstractIndex(Path)} instead.
+     */
+    @Deprecated
     public AbstractIndex(final File featureFile) {
         this(IOUtil.toPath(featureFile));
     }

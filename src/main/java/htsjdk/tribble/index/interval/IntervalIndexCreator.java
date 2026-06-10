@@ -59,10 +59,18 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
         this.featuresPerInterval = featuresPerInterval;
     }
 
+    /**
+     * @deprecated since the File -&gt; Path migration; use {@link #IntervalIndexCreator(Path, int)} instead.
+     */
+    @Deprecated
     public IntervalIndexCreator(final File inputFile, final int featuresPerInterval) {
         this(IOUtil.toPath(inputFile), featuresPerInterval);
     }
 
+    /**
+     * @deprecated since the File -&gt; Path migration; use {@link #IntervalIndexCreator(Path)} instead.
+     */
+    @Deprecated
     public IntervalIndexCreator(final File inputFile) {
         this(IOUtil.toPath(inputFile));
     }

@@ -53,7 +53,9 @@ public class BAMIndexer {
     private static final Log log = Log.getInstance(BAMIndexer.class);
 
     /**
-     * @param output     binary BAM Index (.bai) file
+     * Prepare to index a BAM.
+     *
+     * @param output     binary BAM Index (.bai) file path
      * @param fileHeader header for the corresponding bam file
      */
     public BAMIndexer(final Path output, final SAMFileHeader fileHeader) {
@@ -63,7 +65,9 @@ public class BAMIndexer {
     /**
      * @param output     binary BAM Index (.bai) file
      * @param fileHeader header for the corresponding bam file
+     * @deprecated since 06/2026 use {@link #BAMIndexer(Path, SAMFileHeader)} instead.
      */
+    @Deprecated
     public BAMIndexer(final File output, final SAMFileHeader fileHeader) {
         this(output.toPath(), fileHeader);
     }
@@ -163,10 +167,11 @@ public class BAMIndexer {
      * Generates a BAM index file, either textual or binary, from an input BAI file.
      * Only used for testing, but located here for visibility into CachingBAMFileIndex.
      *
-     * @param output     BAM Index (.bai) file (or bai.txt file when text)
+     * @param input      Input BAM Index (.bai) file path
+     * @param output     Output BAM Index (.bai) file path (or bai.txt file when text)
      * @param textOutput Whether to create text output or binary
      */
-    public static void createAndWriteIndex(final File input, final File output, final boolean textOutput) {
+    public static void createAndWriteIndex(final Path input, final Path output, final boolean textOutput) {
 
         // content is from an existing bai file.
 
@@ -174,7 +179,8 @@ public class BAMIndexer {
         final int n_ref = existingIndex.getNumberOfReferences();
         final BAMIndexWriter outputWriter;
         if (textOutput) {
-            outputWriter = new TextualBAMIndexWriter(n_ref, output);
+            // TextualBAMIndexWriter is local, test-only output; it currently only accepts a File.
+            outputWriter = new TextualBAMIndexWriter(n_ref, output.toFile());
         } else {
             outputWriter = new BinaryBAMIndexWriter(n_ref, output);
         }
@@ -190,6 +196,20 @@ public class BAMIndexer {
         } catch (final Exception e) {
             throw new SAMException("Exception creating BAM index", e);
         }
+    }
+
+    /**
+     * Generates a BAM index file, either textual or binary, from an input BAI file.
+     * Only used for testing, but located here for visibility into CachingBAMFileIndex.
+     *
+     * @param input      Input BAM Index (.bai) file
+     * @param output     Output BAM Index (.bai) file (or bai.txt file when text)
+     * @param textOutput Whether to create text output or binary
+     * @deprecated since 06/2026 use {@link #createAndWriteIndex(Path, Path, boolean)} instead.
+     */
+    @Deprecated
+    public static void createAndWriteIndex(final File input, final File output, final boolean textOutput) {
+        createAndWriteIndex(input.toPath(), output.toPath(), textOutput);
     }
 
     /**
@@ -325,7 +345,9 @@ public class BAMIndexer {
      *
      * @param reader SamReader for input BAM file
      * @param output File for output index file
+     * @deprecated since 06/2026 use {@link #createIndex(SamReader, Path)} instead.
      */
+    @Deprecated
     public static void createIndex(SamReader reader, File output) {
         createIndex(reader, output.toPath(), null);
     }
@@ -335,6 +357,7 @@ public class BAMIndexer {
      *
      * @param reader SamReader for input BAM file
      * @param output Path for output index file
+     * @param log    Optional logger for progress messages
      */
     public static void createIndex(SamReader reader, Path output, Log log) {
 
@@ -357,7 +380,10 @@ public class BAMIndexer {
      *
      * @param reader SamReader for input BAM file
      * @param output File for output index file
+     * @param log    Optional logger for progress messages
+     * @deprecated since 06/2026 use {@link #createIndex(SamReader, Path, Log)} instead.
      */
+    @Deprecated
     public static void createIndex(SamReader reader, File output, Log log) {
         createIndex(reader, output.toPath(), log);
     }

@@ -64,6 +64,10 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
         creators = getIndexCreators(inputPath, iba);
     }
 
+    /**
+     * @deprecated since 5.0.0; use {@link #DynamicIndexCreator(Path, IndexFactory.IndexBalanceApproach)} instead.
+     */
+    @Deprecated
     public DynamicIndexCreator(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
         this(IOUtil.toPath(inputFile), iba);
     }

@@ -79,7 +79,9 @@ public class LinearIndex extends AbstractIndex {
      * Initialize using the specified {@code indices}
      * @param indices
      * @param featureFile
+     * @deprecated since 5.0; use {@link #LinearIndex(List, Path)} instead.
      */
+    @Deprecated
     public LinearIndex(final List<ChrIndex> indices, final File featureFile) {
         this(indices, IOUtil.toPath(featureFile));
     }

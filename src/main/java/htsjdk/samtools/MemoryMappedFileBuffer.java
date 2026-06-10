@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
@@ -14,13 +15,21 @@ import java.nio.file.StandardOpenOption;
 class MemoryMappedFileBuffer implements IndexFileBuffer {
     private MappedByteBuffer mFileBuffer;
 
-    MemoryMappedFileBuffer(final File file) {
-        try (final FileChannel fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ); ) {
+    MemoryMappedFileBuffer(final Path path) {
+        try (final FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ); ) {
             mFileBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0L, fileChannel.size());
             mFileBuffer.order(ByteOrder.LITTLE_ENDIAN);
         } catch (final IOException exc) {
             throw new RuntimeIOException(exc.getMessage(), exc);
         }
+    }
+
+    /**
+     * @deprecated since 5.0.0; use {@link #MemoryMappedFileBuffer(Path)} instead.
+     */
+    @Deprecated
+    MemoryMappedFileBuffer(final File file) {
+        this(file.toPath());
     }
 
     @Override

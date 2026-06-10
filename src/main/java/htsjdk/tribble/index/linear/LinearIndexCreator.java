@@ -56,10 +56,18 @@ public class LinearIndexCreator extends TribbleIndexCreator {
         binWidth = binSize;
     }
 
+    /**
+     * @deprecated use {@link #LinearIndexCreator(Path, int)} instead.
+     */
+    @Deprecated
     public LinearIndexCreator(final File inputFile, final int binSize) {
         this(IOUtil.toPath(inputFile), binSize);
     }
 
+    /**
+     * @deprecated use {@link #LinearIndexCreator(Path)} instead.
+     */
+    @Deprecated
     public LinearIndexCreator(final File inputFile) {
         this(IOUtil.toPath(inputFile));
     }

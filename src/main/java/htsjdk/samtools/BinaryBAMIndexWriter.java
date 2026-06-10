@@ -42,18 +42,22 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
     private int count = 0;
 
     /**
+     * Constructs a binary BAM index writer.
      *
      * @param nRef    Number of reference sequences
      * @param output  BAM Index output file
+     * @deprecated since 5.0, use {@link #BinaryBAMIndexWriter(int, Path)} instead.
      */
+    @Deprecated
     public BinaryBAMIndexWriter(final int nRef, final File output) {
         this(nRef, IOUtil.toPath(output));
     }
 
     /**
+     * Constructs a binary BAM index writer.
      *
      * @param nRef    Number of reference sequences
-     * @param output  BAM Index output file
+     * @param output  BAM Index output file path
      */
     public BinaryBAMIndexWriter(final int nRef, final Path output) {
 
@@ -68,6 +72,7 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
     }
 
     /**
+     * Constructs a binary BAM index writer.
      *
      * @param nRef Number of reference sequences.
      * @param output BAM index output stream.  This stream will be closed when BinaryBAMIndexWriter.close() is called.

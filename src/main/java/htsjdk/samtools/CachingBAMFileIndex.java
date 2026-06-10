@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -42,8 +43,16 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
     private long cacheHits = 0;
     private long cacheMisses = 0;
 
+    public CachingBAMFileIndex(final Path path, final SAMSequenceDictionary dictionary) {
+        super(path.toFile(), dictionary);
+    }
+
+    /**
+     * @deprecated since 06/2026 use {@link #CachingBAMFileIndex(Path, SAMSequenceDictionary)} instead.
+     */
+    @Deprecated
     public CachingBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
-        super(file, dictionary);
+        this(file.toPath(), dictionary);
     }
 
     public CachingBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
@@ -51,8 +60,17 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
     }
 
     public CachingBAMFileIndex(
+            final Path path, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+        super(path.toFile(), dictionary, useMemoryMapping);
+    }
+
+    /**
+     * @deprecated since 06/2026 use {@link #CachingBAMFileIndex(Path, SAMSequenceDictionary, boolean)} instead.
+     */
+    @Deprecated
+    public CachingBAMFileIndex(
             final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
-        super(file, dictionary, useMemoryMapping);
+        this(file.toPath(), dictionary, useMemoryMapping);
     }
 
     /**

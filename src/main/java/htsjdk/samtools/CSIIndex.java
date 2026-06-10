@@ -41,8 +41,27 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
         this(new SeekablePathStream(path), dictionary);
     }
 
+    /**
+     * Open a CSI index backed by a local file path.
+     *
+     * <p>The index is read from a memory-mapped or random-access buffer, so {@code path} must
+     * refer to a regular file on the default (local) file system.</p>
+     *
+     * @param path the local path to the CSI index file
+     * @param enableMemoryMapping whether to memory-map the index file
+     * @param dictionary the sequence dictionary associated with the index
+     */
+    public CSIIndex(final Path path, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
+        this(IndexFileBufferFactory.getBuffer(path.toFile(), enableMemoryMapping), path.toString(), dictionary);
+    }
+
+    /**
+     * @deprecated since the migration to {@link Path}; use
+     *     {@link #CSIIndex(Path, boolean, SAMSequenceDictionary)} instead.
+     */
+    @Deprecated
     public CSIIndex(final File file, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
-        this(IndexFileBufferFactory.getBuffer(file, enableMemoryMapping), file.getName(), dictionary);
+        this(file.toPath(), enableMemoryMapping, dictionary);
     }
 
     private CSIIndex(

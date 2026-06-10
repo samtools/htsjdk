@@ -77,7 +77,9 @@ public interface Index {
      *
      * @param idxFile Where to write the index.
      * @throws IOException if the index is unable to write to the specified file
+     * @deprecated since 5/2025, use {@link #write(Path)} instead.
      */
+    @Deprecated
     public default void write(final File idxFile) throws IOException {
         write(IOUtil.toPath(idxFile));
     }
@@ -97,7 +99,9 @@ public interface Index {
      *
      * @param featureFile
      * @throws IOException if featureFile is not a normal file.
+     * @deprecated since 5/2025, use {@link #writeBasedOnFeaturePath(Path)} instead.
      */
+    @Deprecated
     public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
         writeBasedOnFeaturePath(IOUtil.toPath(featureFile));
     }

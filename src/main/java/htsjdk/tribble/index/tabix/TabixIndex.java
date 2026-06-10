@@ -92,16 +92,19 @@ public class TabixIndex implements Index {
 
     /**
      * Convenient ctor that opens the file, wraps with with BGZF reader, and closes after reading index.
+     *
+     * @deprecated since 5/2026 use {@link #TabixIndex(Path)} instead.
      */
+    @Deprecated
     public TabixIndex(final File tabixFile) throws IOException {
-        this(new BlockCompressedInputStream(tabixFile), true);
+        this(tabixFile.toPath());
     }
 
     /**
      * Convenient ctor that opens the path, wraps with with BGZF reader, and closes after reading index.
      */
     public TabixIndex(final Path tabixPath) throws IOException {
-        this(new BlockCompressedInputStream(Files.newInputStream(tabixPath)), true);
+        this(new BlockCompressedInputStream(tabixPath), true);
     }
 
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {

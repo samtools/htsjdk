@@ -46,6 +46,7 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -53,6 +54,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -72,7 +74,7 @@ import java.util.*;
  * is called on each {@link CRAIEntry} and {@link CRAMBAIIndexer#finish()} is called at the end.
  *
  * NOTE: a third pattern of building a BAI from a CRAM file is also supported by this class,
- * but it is unused.  This would be accomplished via {@link #createIndex(SeekableStream, File, Log, ValidationStringency)}.
+ * but it is unused.  This would be accomplished via {@link #createIndex(SeekableStream, Path, Log, ValidationStringency)}.
  */
 public class CRAMBAIIndexer implements CRAMIndexer {
 
@@ -91,10 +93,10 @@ public class CRAMBAIIndexer implements CRAMIndexer {
     /**
      * Create a CRAM indexer that writes BAI to a file.
      *
-     * @param output     binary BAM Index (.bai) file
+     * @param output     binary BAM Index (.bai) file path
      * @param fileHeader header for the corresponding bam file
      */
-    private CRAMBAIIndexer(final File output, final SAMFileHeader fileHeader) {
+    private CRAMBAIIndexer(final Path output, final SAMFileHeader fileHeader) {
         if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException("CRAM file must be coordinate-sorted for indexing.");
         }
@@ -190,10 +192,29 @@ public class CRAMBAIIndexer implements CRAMIndexer {
      * @param stream CRAM stream to index
      * @param output File for output index file
      * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
+     * @param validationStringency validation stringency for processing
+     * @deprecated since 5.0, use {@link #createIndex(SeekableStream, Path, Log, ValidationStringency)} instead.
      */
+    @Deprecated
     public static void createIndex(
             final SeekableStream stream,
             final File output,
+            final Log log,
+            final ValidationStringency validationStringency) {
+        createIndex(stream, IOUtil.toPath(output), log, validationStringency);
+    }
+
+    /**
+     * Generates a BAI index file from an input CRAM stream
+     *
+     * @param stream CRAM stream to index
+     * @param output Path for output index file
+     * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
+     * @param validationStringency validation stringency for processing
+     */
+    public static void createIndex(
+            final SeekableStream stream,
+            final Path output,
             final Log log,
             final ValidationStringency validationStringency) {
 
