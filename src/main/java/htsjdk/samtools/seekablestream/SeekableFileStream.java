@@ -26,13 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 
 /**
- * A {@link SeekableStream} backed by a local file via {@link RandomAccessFile}.
- *
- * <p>The file length is captured at construction time and the read position is tracked locally,
- * so {@link #length()}, {@link #eof()}, {@link #position()}, and {@link #available()} do not
- * issue per-call syscalls. This is fine for the typical SAM/BAM/CRAM use case (open, read
- * sequentially, close) but means callers should not expect to observe growth of a file being
- * actively written by another process.</p>
  *
  * @author jrobinso
  */
@@ -48,71 +41,37 @@ public class SeekableFileStream extends SeekableStream {
     File file;
     RandomAccessFile fis;
 
-    /**
-     * File length cached at construction time. Callers that read SAM/BAM/CRAM open the file once
-     * and read it sequentially without other writers, so caching avoids repeated stat syscalls
-     * inside the hot read loop (notably {@link #available()}, which is called once per
-     * {@link java.io.InputStreamReader} fill via {@code StreamDecoder.inReady}).
-     */
-    private final long length;
-
-    /**
-     * Position tracked locally so that {@link #available()} does not need a per-call
-     * {@code lseek(SEEK_CUR)} syscall via {@link RandomAccessFile#getFilePointer()}. All mutation
-     * paths in this class keep this in sync with the underlying {@link RandomAccessFile}.
-     */
-    private long pos;
-
     public SeekableFileStream(final File file) throws FileNotFoundException {
         this.file = file;
         fis = new RandomAccessFile(file, "r");
-        this.length = file.length();
-        this.pos = 0;
         allInstances.add(this);
     }
 
     @Override
     public long length() {
-        return length;
+        return file.length();
     }
 
     @Override
     public boolean eof() throws IOException {
-        return pos >= length;
-    }
-
-    @Override
-    public int available() throws IOException {
-        final long remaining = length - pos;
-        if (remaining <= 0) {
-            return 0;
-        }
-        return (int) Math.min(Integer.MAX_VALUE, remaining);
+        return fis.length() == fis.getFilePointer();
     }
 
     @Override
     public void seek(final long position) throws IOException {
         fis.seek(position);
-        pos = position;
     }
 
     @Override
     public long position() throws IOException {
-        return pos;
+        return fis.getChannel().position();
     }
 
     @Override
-    public long skip(final long n) throws IOException {
-        if (n <= 0) {
-            return 0L;
-        }
-        // Clamp to file length so we honour the InputStream.skip contract: return the number of
-        // bytes actually skipped, never reporting more than remain in the file.
-        final long target = Math.min(pos + n, length);
-        fis.seek(target);
-        final long actual = target - pos;
-        pos = target;
-        return actual;
+    public long skip(long n) throws IOException {
+        long initPos = position();
+        fis.getChannel().position(initPos + n);
+        return position() - initPos;
     }
 
     @Override
@@ -125,7 +84,6 @@ public class SeekableFileStream extends SeekableStream {
             final int count = fis.read(buffer, offset + n, length - n);
             if (count < 0) {
                 if (n > 0) {
-                    pos += n;
                     return n;
                 } else {
                     return count;
@@ -133,26 +91,17 @@ public class SeekableFileStream extends SeekableStream {
             }
             n += count;
         }
-        pos += n;
         return n;
     }
 
     @Override
     public int read() throws IOException {
-        final int b = fis.read();
-        if (b >= 0) {
-            pos++;
-        }
-        return b;
+        return fis.read();
     }
 
     @Override
     public int read(byte[] b) throws IOException {
-        final int n = fis.read(b);
-        if (n > 0) {
-            pos += n;
-        }
-        return n;
+        return fis.read(b);
     }
 
     @Override

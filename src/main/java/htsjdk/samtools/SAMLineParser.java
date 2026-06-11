@@ -238,7 +238,8 @@ public class SAMLineParser {
         // SAM alignment lines are restricted to printable ASCII by the spec, so ISO-8859-1 is
         // lossless and turns getBytes() into a bulk arraycopy on compact-string JVMs.
         final byte[] bytes = line.getBytes(StandardCharsets.ISO_8859_1);
-        this.currentLine = line;
+        // No need to set this.currentLine here: parseLineFromBytes clears it to null up front and
+        // reconstructs the error-message line lazily from the byte buffer when needed.
         return parseLineFromBytes(bytes, 0, bytes.length, lineNumber);
     }
 
