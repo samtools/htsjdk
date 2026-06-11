@@ -28,6 +28,7 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -228,7 +229,7 @@ public class VCFUtils {
      */
     public static Path createTemporaryIndexedVcfPath(final String prefix, final String suffix) throws IOException {
         final Path out = Files.createTempFile(prefix, suffix);
-        out.toFile().deleteOnExit();
+        IOUtil.deleteOnExit(out);
         String indexFileExtension = null;
         if (suffix.endsWith(FileExtensions.COMPRESSED_VCF)) {
             indexFileExtension = FileExtensions.COMPRESSED_VCF_INDEX;
@@ -237,7 +238,7 @@ public class VCFUtils {
         }
         if (indexFileExtension != null) {
             final Path indexOut = out.resolveSibling(out.getFileName().toString() + indexFileExtension);
-            indexOut.toFile().deleteOnExit();
+            IOUtil.deleteOnExit(indexOut);
         }
         return out;
     }

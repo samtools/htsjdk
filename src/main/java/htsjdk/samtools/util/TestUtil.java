@@ -52,7 +52,7 @@ public class TestUtil {
     public static Path getTempDirectoryAsPath(final String prefix, final String suffix) {
         try {
             final Path tempDirectory = Files.createTempDirectory(prefix + suffix);
-            tempDirectory.toFile().deleteOnExit();
+            IOUtil.deleteOnExit(tempDirectory);
             return tempDirectory;
         } catch (IOException e) {
             throw new SAMException("Failed to create temporary directory.", e);

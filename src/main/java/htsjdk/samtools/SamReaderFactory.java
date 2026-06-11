@@ -170,7 +170,9 @@ public abstract class SamReaderFactory {
      * @return this factory
      * @throws IOException if the URI cannot be resolved to a usable Path
      */
-    public abstract SamReaderFactory referenceSequence(URI referenceUri) throws IOException;
+    public SamReaderFactory referenceSequence(final URI referenceUri) throws IOException {
+        return referenceSequence(IOUtil.getPath(referenceUri));
+    }
 
     /** Sets the specified reference sequence * */
     public abstract SamReaderFactory referenceSource(CRAMReferenceSource referenceSequence);
@@ -189,7 +191,9 @@ public abstract class SamReaderFactory {
      * @return the file header
      * @throws IOException if the URI cannot be resolved to a usable Path
      */
-    public abstract SAMFileHeader getFileHeader(URI samUri) throws IOException;
+    public SAMFileHeader getFileHeader(final URI samUri) throws IOException {
+        return getFileHeader(IOUtil.getPath(samUri));
+    }
 
     /** Reapplies any changed options to the reader * */
     public abstract void reapplyOptions(SamReader reader);
@@ -310,11 +314,6 @@ public abstract class SamReaderFactory {
         }
 
         @Override
-        public SamReaderFactory referenceSequence(final URI referenceUri) throws IOException {
-            return referenceSequence(IOUtil.getPath(referenceUri));
-        }
-
-        @Override
         public SamReaderFactory referenceSource(final CRAMReferenceSource referenceSource) {
             this.referenceSource = referenceSource;
             return this;
@@ -326,11 +325,6 @@ public abstract class SamReaderFactory {
             final SAMFileHeader header = reader.getFileHeader();
             CloserUtil.close(reader);
             return header;
-        }
-
-        @Override
-        public SAMFileHeader getFileHeader(final URI samUri) throws IOException {
-            return getFileHeader(IOUtil.getPath(samUri));
         }
 
         @Override

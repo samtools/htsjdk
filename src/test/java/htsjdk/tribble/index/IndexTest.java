@@ -13,7 +13,6 @@ import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.variant.vcf.VCFCodec;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileSystem;
@@ -63,7 +62,7 @@ public class IndexTest extends HtsjdkTest {
     @Test()
     public void testLoadFromStream() throws IOException {
         LinearIndex index = (LinearIndex)
-                IndexFactory.loadIndex(MassiveIndexFile.toString(), new FileInputStream(MassiveIndexFile.toFile()));
+                IndexFactory.loadIndex(MassiveIndexFile.toString(), Files.newInputStream(MassiveIndexFile));
         List<String> sequenceNames = index.getSequenceNames();
         Assert.assertEquals(sequenceNames.size(), 1);
         Assert.assertEquals(sequenceNames.get(0), CHR);

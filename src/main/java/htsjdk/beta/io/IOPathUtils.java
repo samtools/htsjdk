@@ -3,6 +3,7 @@ package htsjdk.beta.io;
 import htsjdk.beta.exception.HtsjdkIOException;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
+import htsjdk.samtools.util.IOUtil;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -24,7 +25,7 @@ public class IOPathUtils {
     public static IOPath createTempPath(final String prefix, final String suffix) {
         try {
             final Path tempPath = Files.createTempFile(prefix, suffix);
-            tempPath.toFile().deleteOnExit();
+            IOUtil.deleteOnExit(tempPath);
             return new HtsPath(tempPath.toAbsolutePath().toString());
         } catch (final IOException e) {
             throw new HtsjdkIOException(e);

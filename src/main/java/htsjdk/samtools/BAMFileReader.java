@@ -226,9 +226,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         if (!Files.exists(path)) {
             throw new IOException("BAM file not found: " + path.toAbsolutePath());
         }
-        if (!Files.isReadable(path)) {
-            throw new IOException("BAM file is not readable (permission denied): " + path.toAbsolutePath());
-        }
+        // Intentionally no Files.isReadable() check: some NIO filesystem providers (e.g. S3/HDFS
+        // adapters) report paths as non-readable even when they can be opened, which would cause
+        // spurious failures. Let the actual open surface any real permission error.
         return path;
     }
 

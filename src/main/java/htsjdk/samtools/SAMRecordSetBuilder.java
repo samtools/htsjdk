@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMReadGroupRecord.PlatformValue;
 import htsjdk.samtools.reference.FastaReferenceWriter;
 import htsjdk.samtools.reference.FastaReferenceWriterBuilder;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.TestUtil;
@@ -668,7 +669,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
         try {
             tempFile = Files.createTempFile("temp", this.useBamFile ? ".bam" : ".sam");
-            tempFile.toFile().deleteOnExit();
+            IOUtil.deleteOnExit(tempFile);
         } catch (final IOException e) {
             throw new RuntimeIOException("problems creating tempfile", e);
         }

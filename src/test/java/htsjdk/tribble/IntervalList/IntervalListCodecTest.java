@@ -114,8 +114,8 @@ public class IntervalListCodecTest extends HtsjdkTest {
     public void testDecodeIntervalListFile_bad(Path file) throws Exception {
         IntervalListCodec codec = new IntervalListCodec();
 
-        try (FeatureReader<Interval> intervalListReader = AbstractFeatureReader.getFeatureReader(
-                        file.toAbsolutePath().toString(), codec, false);
+        try (FeatureReader<Interval> intervalListReader =
+                        AbstractFeatureReader.getFeatureReader(file.toRealPath().toString(), codec, false);
                 CloseableTribbleIterator<Interval> iter = intervalListReader.iterator()) {
             for (final Feature unused : iter) {}
         }

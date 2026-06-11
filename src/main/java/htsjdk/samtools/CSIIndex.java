@@ -41,13 +41,15 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
     }
 
     /**
-     * Open a CSI index backed by a local file path.
+     * Open a CSI index from the given path.
      *
-     * <p>The index is read from a memory-mapped or random-access buffer, so {@code path} must
-     * refer to a regular file on the default (local) file system.</p>
+     * <p>For paths on the default (local) file system, the index is read via a memory-mapped or
+     * random-access buffer as controlled by {@code enableMemoryMapping}.  For paths on any other
+     * file system, {@code enableMemoryMapping} is ignored and the index is read through a stream
+     * fallback via {@link IndexFileBufferFactory#getBuffer(Path, boolean)}.</p>
      *
-     * @param path the local path to the CSI index file
-     * @param enableMemoryMapping whether to memory-map the index file
+     * @param path the path to the CSI index file; local or non-local file systems are both supported
+     * @param enableMemoryMapping whether to memory-map the index file (ignored for non-local paths)
      * @param dictionary the sequence dictionary associated with the index
      */
     public CSIIndex(final Path path, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {

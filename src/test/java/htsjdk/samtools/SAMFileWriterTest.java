@@ -2,7 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CollectionUtil;
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ public class SAMFileWriterTest extends HtsjdkTest {
 
         // First check that it all fails when writing without turning off checking
         for (final String ext : CollectionUtil.makeList(".sam", ".bam")) {
-            final Path file = File.createTempFile("test.", ext).toPath();
+            final Path file = Files.createTempFile("test.", ext);
             final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), true, file);
 
             try {
@@ -40,7 +40,7 @@ public class SAMFileWriterTest extends HtsjdkTest {
 
         // Then test that it succeeds with checking turned off
         for (final String ext : CollectionUtil.makeList(".sam", ".bam")) {
-            final Path file = File.createTempFile("test.", ext).toPath();
+            final Path file = Files.createTempFile("test.", ext);
             final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), true, file);
             writer.setSortOrderChecking(false);
             builder.forEach(writer::addAlignment);

@@ -71,7 +71,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
 
     public CoordinateSortedPairInfoMap(final int maxOpenFiles, final Codec<KEY, REC> elementCodec) {
         this.elementCodec = elementCodec;
-        workDir.toFile().deleteOnExit();
+        IOUtil.deleteOnExit(workDir);
         outputStreams = new FileAppendStreamLRUCache(maxOpenFiles);
     }
 
@@ -171,7 +171,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
 
     private Path makeFileForSequence(final int index) {
         final Path file = workDir.resolve(index + ".tmp");
-        file.toFile().deleteOnExit();
+        IOUtil.deleteOnExit(file);
         return file;
     }
 

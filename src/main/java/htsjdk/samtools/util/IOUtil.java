@@ -473,7 +473,14 @@ public class IOUtil {
     public static void assertFileIsWritable(final Path path) {
         if (path == null) {
             throw new IllegalArgumentException("Cannot check writability of null path.");
-        } else if (!Files.exists(path)) {
+        }
+        // The file/parent-directory writability checks below assume default-filesystem semantics.
+        // For other providers (S3, GCS, jimfs, ...) those semantics may not apply, so skip the check
+        // rather than risk a spurious failure (matching the historical behavior of this method).
+        if (path.getFileSystem() != FileSystems.getDefault()) {
+            return;
+        }
+        if (!Files.exists(path)) {
             // If the file doesn't exist, check that it's parent directory does and is writable
             final Path parent = path.toAbsolutePath().getParent();
             if (parent == null || !Files.exists(parent)) {
@@ -1133,9 +1140,10 @@ public class IOUtil {
      * Copy input to output, overwriting output if it already exists.
      */
     public static void copyPath(final Path input, final Path output) {
-        // Copy through an output stream opened on the target (rather than Files.copy with
-        // REPLACE_EXISTING, which would delete-then-recreate the target) so that an existing
-        // but non-writable destination causes a failure, matching the historical copyFile behavior.
+        // Copy through an output stream opened on the target so that an existing but non-writable
+        // destination causes a failure, matching the historical File-based copyFile (which wrote via
+        // a FileOutputStream). Files.copy(..., REPLACE_EXISTING) would instead overwrite a
+        // non-writable destination, silently changing that behavior.
         try (final InputStream in = Files.newInputStream(input);
                 final OutputStream out = Files.newOutputStream(output)) {
             in.transferTo(out);

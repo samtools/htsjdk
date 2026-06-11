@@ -10,6 +10,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
 
@@ -34,7 +35,19 @@ public enum SamIndexes {
 
     public static InputStream openIndexFileAsBaiOrNull(final Path path, final SAMSequenceDictionary dictionary)
             throws IOException {
-        return openIndexUrlAsBaiOrNull(path.toUri().toURL(), dictionary);
+        // Resolve via the path's own filesystem rather than java.net.URL.openStream(), which is not
+        // NIO-SPI aware and would fail for non-default-filesystem paths (e.g. jimfs, S3, GCS).
+        final String name = path.getFileName().toString().toLowerCase();
+        if (name.endsWith(BAI.fileNameSuffix.toLowerCase())) {
+            return Files.newInputStream(path);
+        }
+        if (name.endsWith(CRAI.fileNameSuffix.toLowerCase())) {
+            return CRAIIndex.openCraiFileAsBaiStream(Files.newInputStream(path), dictionary);
+        }
+        if (name.endsWith(CSI.fileNameSuffix.toLowerCase())) {
+            return Files.newInputStream(path);
+        }
+        return null;
     }
 
     public static InputStream openIndexUrlAsBaiOrNull(final URL url, final SAMSequenceDictionary dictionary)

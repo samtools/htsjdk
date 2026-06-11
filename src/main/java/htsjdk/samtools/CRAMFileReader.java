@@ -100,7 +100,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 cramPath != null || inputStream != null, "Either path or input stream is required.");
 
         this.cramPath = cramPath;
-        this.inputStream = new BufferedInputStream(inputStream);
+        // inputStream may legitimately be null when a path is supplied (reads then go through the path);
+        // only wrap a non-null stream to avoid a NullPointerException from BufferedInputStream.
+        this.inputStream = inputStream == null ? null : new BufferedInputStream(inputStream);
         this.referenceSource = referenceSource;
         if (cramPath != null) {
             mIndexPath = findIndexForPath(null, cramPath);
