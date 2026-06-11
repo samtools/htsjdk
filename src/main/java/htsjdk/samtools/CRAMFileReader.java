@@ -162,7 +162,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Deprecated
     public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource) {
         this(
-                cramFile == null ? null : cramFile.toPath(),
+                ValidationUtils.nonNull(cramFile, "cramFile").toPath(),
                 indexFile == null ? null : indexFile.toPath(),
                 referenceSource);
     }
@@ -196,7 +196,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      */
     @Deprecated
     public CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource) {
-        this(cramFile == null ? null : cramFile.toPath(), referenceSource);
+        this(ValidationUtils.nonNull(cramFile, "cramFile").toPath(), referenceSource);
     }
 
     /**
@@ -318,7 +318,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             final ValidationStringency validationStringency)
             throws IOException {
         this(
-                cramFile == null ? null : cramFile.toPath(),
+                ValidationUtils.nonNull(cramFile, "cramFile").toPath(),
                 indexFile == null ? null : indexFile.toPath(),
                 referenceSource,
                 validationStringency);
