@@ -93,7 +93,6 @@ public class SAMLineParser {
     private final TextTagCodec tagCodec = new TextTagCodec();
 
     private int currentLineNumber;
-    private String currentLine;
     private byte[] currentLineBuf;
     private int currentLineOff;
     private int currentLineLen;
@@ -238,8 +237,6 @@ public class SAMLineParser {
         // SAM alignment lines are restricted to printable ASCII by the spec, so ISO-8859-1 is
         // lossless and turns getBytes() into a bulk arraycopy on compact-string JVMs.
         final byte[] bytes = line.getBytes(StandardCharsets.ISO_8859_1);
-        // No need to set this.currentLine here: parseLineFromBytes clears it to null up front and
-        // reconstructs the error-message line lazily from the byte buffer when needed.
         return parseLineFromBytes(bytes, 0, bytes.length, lineNumber);
     }
 
@@ -262,9 +259,6 @@ public class SAMLineParser {
         this.currentLineBuf = buf;
         this.currentLineOff = off;
         this.currentLineLen = len;
-        // Clear any String set by an earlier parseLine(String) call so makeErrorString reads from
-        // the current byte buffer rather than the stale prior line.
-        this.currentLine = null;
 
         final int numFields = splitFieldsByTab(buf, off, len, mFieldOffsets, mFieldLengths);
         if (numFields < NUM_REQUIRED_FIELDS) {
@@ -724,16 +718,11 @@ public class SAMLineParser {
         if (mFile != null) {
             fileMessage = "File " + mFile + "; ";
         }
-        final String lineText;
-        if (this.currentLine != null) {
-            lineText = this.currentLine;
-        } else if (this.currentLineBuf != null) {
-            // Byte-based parseLine path: materialize the line lazily so we don't pay the
-            // String allocation on the (much more common) success path.
-            lineText = new String(currentLineBuf, currentLineOff, currentLineLen, StandardCharsets.ISO_8859_1);
-        } else {
-            lineText = "";
-        }
+        // Materialize the offending line lazily from the byte buffer so we don't pay the String
+        // allocation on the (much more common) success path.
+        final String lineText = this.currentLineBuf != null
+                ? new String(currentLineBuf, currentLineOff, currentLineLen, StandardCharsets.ISO_8859_1)
+                : "";
         return "Error parsing text SAM file. "
                 + reason + "; " + fileMessage + "Line "
                 + (this.currentLineNumber <= 0 ? "unknown" : this.currentLineNumber)

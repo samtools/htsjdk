@@ -191,20 +191,15 @@ public class SAMTextReaderTest extends HtsjdkTest {
     @Test
     public void testErrorMessageReportsCurrentLineAfterMixedParseModes() {
         // Regression test: after a successful parseLine(String) call, parseLineFromBytes on the
-        // same parser must produce error messages referencing the BYTE line, not the stale
-        // String line from the earlier call.
-        final SAMLineParser parser =
-                new SAMLineParser(new SAMFileHeader(), null, null).withSamFlagField(SamFlagField.DECIMAL);
-        // First, parse a well-formed line through the String API to seed currentLine.
-        final String good = "Read\t4\tchr1\t1\t0\t*\t*\t0\t0\tG\t%";
-        parser.parseLine(good);
-
-        // Now feed a malformed line through the bytes API and force STRICT to surface the message.
+        // same parser must produce error messages referencing the BYTE line just handed to it,
+        // not a stale line from the earlier call (the error message is reconstructed from the byte
+        // range that parseLineFromBytes records on every call).
         final SAMLineParser strict = new SAMLineParser(
                 new DefaultSAMRecordFactory(), ValidationStringency.STRICT, new SAMFileHeader(), null, null);
-        // Same warm-up via parseLine(String) on the strict parser:
+        // Warm up the same parser with a well-formed line through the String API.
+        final String good = "Read\t4\tchr1\t1\t0\t*\t*\t0\t0\tG\t%";
         strict.parseLine(good);
-        // Now an obviously malformed byte line (too few tab-separated fields):
+        // Now feed an obviously malformed byte line (too few tab-separated fields); STRICT surfaces it.
         final byte[] bad = "Read\tNOT-AN-INT\t".getBytes();
         try {
             strict.parseLineFromBytes(bad, 0, bad.length, 7);
