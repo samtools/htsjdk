@@ -42,15 +42,8 @@ import java.util.Map;
  * instance is used in multiple threads.
  */
 public class TextTagCodec {
-    // 3 fields for non-empty strings 2 fields if the string is empty.
-    private static final int NUM_TAG_FIELDS = 3;
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
-
-    /**
-     * This is really a local variable of decode(), but allocated here to reduce allocations.
-     */
-    private final String[] fields = new String[NUM_TAG_FIELDS];
 
     /**
      * Convert in-memory representation of tag to SAM text representation.
@@ -174,16 +167,14 @@ public class TextTagCodec {
      * to be retrieved by {@link #getLastValue}. Faster than {@link #decode} because it skips the
      * 2-character key substring and the {@link Map.Entry} bookkeeping; the caller is responsible
      * for computing the binary tag directly from the input String.
+     *
+     * <p>Delegates to the byte overload by encoding as {@code ISO-8859-1}, which is lossless for the
+     * printable ASCII the SAM spec permits in tag values. This keeps a single decode implementation
+     * and mirrors how {@link SAMLineParser#parseLine(String)} hands off to its byte path.
      */
     void decodeValue(final String tag) {
-        // Tags follow the fixed layout KEY:T:VALUE where KEY is 2 chars and T is 1 char,
-        // so a direct character index walk is cheaper than splitting into a String[].
-        if (tag.length() < 4 || tag.charAt(2) != ':' || (tag.length() > 4 && tag.charAt(4) != ':')) {
-            throw new SAMFormatException("Malformed tag '" + tag + "'");
-        }
-        final char typeChar = tag.charAt(3);
-        final String stringVal = tag.length() == 4 ? "" : tag.substring(5);
-        lastValue = convertStringToObject(typeChar, stringVal);
+        final byte[] bytes = tag.getBytes(StandardCharsets.ISO_8859_1);
+        decodeValue(bytes, 0, bytes.length);
     }
 
     /**
@@ -208,6 +199,14 @@ public class TextTagCodec {
         lastValue = convertBytesToObject(typeChar, buf, valueOff, valueLen);
     }
 
+    /**
+     * Fast path for the {@code 'i'} tag value: parse a signed decimal directly from the value bytes
+     * into a {@code Number}. The vast majority of SAM integer tags (e.g. {@code AS}, {@code NM},
+     * {@code MQ}) are small signed integers that fit in {@code int}, so we accumulate digits manually
+     * and skip {@link Long#parseLong}. Values outside the signed 32-bit range fall through to
+     * {@link #parseIntegerTagValueSlow} so the SAM-allowed unsigned 32-bit range [-2^31, 2^32) is
+     * still handled correctly. Returns {@link Integer} when the value fits, {@link Long} otherwise.
+     */
     private static Number parseIntegerTagValue(final byte[] buf, final int off, final int len) {
         if (len == 0) {
             throw new SAMFormatException("Tag of type i should have signed decimal value");
@@ -276,56 +275,6 @@ public class TextTagCodec {
         }
     }
 
-    /**
-     * Fast path for the {@code 'i'} tag value: parse a signed decimal directly into a
-     * {@code Number}. The vast majority of SAM integer tags (e.g. {@code AS}, {@code NM},
-     * {@code MQ}, {@code MAPQ}) are small signed integers that fit in {@code int}, so we
-     * accumulate digits manually and skip {@link Long#parseLong}. Values outside the signed
-     * 32-bit range fall through to {@link Long#parseLong} so that the SAM-allowed unsigned
-     * 32-bit range [-2^31, 2^32) is still handled correctly. Returns {@link Integer} when the
-     * value fits, {@link Long} otherwise (matching the prior contract).
-     */
-    private static Number parseIntegerTagValue(final String stringVal) {
-        final int len = stringVal.length();
-        if (len == 0) {
-            throw new SAMFormatException("Tag of type i should have signed decimal value");
-        }
-        int i = 0;
-        final boolean negative;
-        final char first = stringVal.charAt(0);
-        if (first == '-') {
-            negative = true;
-            i = 1;
-        } else if (first == '+') {
-            negative = false;
-            i = 1;
-        } else {
-            negative = false;
-        }
-        if (i == len) {
-            throw new SAMFormatException("Tag of type i should have signed decimal value");
-        }
-        // Accumulate into long to detect overflow past Integer range. If overflow occurs we
-        // fall back to the Long path which handles the unsigned-32-bit case correctly.
-        long acc = 0;
-        for (; i < len; i++) {
-            final char c = stringVal.charAt(i);
-            if (c < '0' || c > '9') {
-                throw new SAMFormatException("Tag of type i should have signed decimal value");
-            }
-            acc = acc * 10 + (c - '0');
-            if (acc > Integer.MAX_VALUE + 1L) {
-                // Out of signed int range -- defer to the broader spec path.
-                return parseIntegerTagValueSlow(stringVal);
-            }
-        }
-        final long signed = negative ? -acc : acc;
-        if (signed >= Integer.MIN_VALUE && signed <= Integer.MAX_VALUE) {
-            return (int) signed;
-        }
-        return parseIntegerTagValueSlow(stringVal);
-    }
-
     private static Number parseIntegerTagValueSlow(final String stringVal) {
         final long lValue;
         try {
@@ -340,37 +289,6 @@ public class TextTagCodec {
         } else {
             throw new SAMFormatException(
                     "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
-        }
-    }
-
-    private static Object convertStringToObject(final char type, final String stringVal) {
-        switch (type) {
-            case 'Z':
-                return stringVal;
-            case 'A':
-                if (stringVal.length() != 1) {
-                    throw new SAMFormatException("Tag of type A should have a single-character value");
-                }
-                return stringVal.charAt(0);
-            case 'i':
-                return parseIntegerTagValue(stringVal);
-            case 'f':
-                try {
-                    return Float.parseFloat(stringVal);
-                } catch (NumberFormatException e) {
-                    throw new SAMFormatException("Tag of type f should have single-precision floating point value");
-                }
-            case 'H':
-                try {
-                    return StringUtil.hexStringToBytes(stringVal);
-                } catch (NumberFormatException e) {
-                    throw new SAMFormatException(
-                            "Tag of type H should have valid hex string with even number of digits");
-                }
-            case 'B':
-                return covertStringArrayToObject(stringVal);
-            default:
-                throw new SAMFormatException("Unrecognized tag type: " + type);
         }
     }
 
