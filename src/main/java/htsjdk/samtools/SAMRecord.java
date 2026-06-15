@@ -247,11 +247,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
         if (NULL_SEQUENCE_STRING.equals(value)) {
             mReadBases = NULL_SEQUENCE;
         } else {
-            final byte[] bases = StringUtil.stringToBytes(value);
-            if (bases != null) {
-                SAMUtils.normalizeBases(bases);
-            }
-            setReadBases(bases);
+            setReadBases(SAMUtils.readStringToNormalizedBases(value));
         }
     }
 

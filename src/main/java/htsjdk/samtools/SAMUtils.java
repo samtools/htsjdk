@@ -302,6 +302,54 @@ public final class SAMUtils {
     }
 
     /**
+     * Fused decode of an ASCII read-bases String into a canonical byte[] (upper-cased,
+     * '.' replaced with 'N'). Single pass and a single allocation, avoiding the separate
+     * {@code stringToBytes} + {@code normalizeBases} traversals used by callers that go
+     * via String.
+     */
+    @SuppressWarnings("deprecation")
+    static byte[] readStringToNormalizedBases(final String value) {
+        if (value == null) {
+            return null;
+        }
+        final int length = value.length();
+        final byte[] bases = new byte[length];
+        value.getBytes(0, length, bases, 0);
+        for (int i = 0; i < length; ++i) {
+            byte b = bases[i];
+            if (b >= 'a' && b <= 'z') {
+                b = (byte) (b - ('a' - 'A'));
+            }
+            if (b == '.') {
+                b = 'N';
+            }
+            bases[i] = b;
+        }
+        return bases;
+    }
+
+    /**
+     * Decode a byte range holding ASCII read bases into a canonical byte[] (upper-cased,
+     * '.' replaced with 'N'). Skips the round-trip through {@link String} for callers that
+     * already have the bases as bytes.
+     */
+    static byte[] readStringToNormalizedBases(final byte[] src, final int off, final int len) {
+        final byte[] bases = new byte[len];
+        final int end = off + len;
+        for (int i = off, j = 0; i < end; i++, j++) {
+            byte b = src[i];
+            if (b >= 'a' && b <= 'z') {
+                b = (byte) (b - ('a' - 'A'));
+            }
+            if (b == '.') {
+                b = 'N';
+            }
+            bases[j] = b;
+        }
+        return bases;
+    }
+
+    /**
      * Convert bases in place into canonical form, upper case, and with no-call represented as N.
      *
      * @param bases byte array of bases to "normalize", in place.
@@ -374,8 +422,35 @@ public final class SAMUtils {
         }
         final int length = fastq.length();
         final byte[] scores = new byte[length];
+        // Validate per-char from the String first to catch non-ASCII chars (> 0xFF) that the
+        // deprecated bulk getBytes() would silently narrow to a misleading byte. On JVMs with
+        // compact strings the charAt() loop is intrinsified for Latin-1 strings and remains
+        // very fast.
         for (int i = 0; i < length; i++) {
-            scores[i] = (byte) fastqToPhred(fastq.charAt(i));
+            final int c = fastq.charAt(i);
+            final int v = c - 33;
+            if (v < 0 || v > MAX_PHRED_SCORE) {
+                throw new IllegalArgumentException("Invalid fastq character: " + (char) c);
+            }
+            scores[i] = (byte) v;
+        }
+        return scores;
+    }
+
+    /**
+     * Convert a byte range holding printable ASCII FASTQ phred scores (Sanger encoding, value +
+     * 33) into binary phred scores. Skips the round-trip through {@link String} for callers that
+     * already have the qualities as bytes.
+     */
+    public static byte[] fastqToPhred(final byte[] src, final int off, final int len) {
+        final byte[] scores = new byte[len];
+        final int end = off + len;
+        for (int i = off, j = 0; i < end; i++, j++) {
+            final int v = (src[i] & 0xff) - 33;
+            if (v < 0 || v > MAX_PHRED_SCORE) {
+                throw new IllegalArgumentException("Invalid fastq character: " + (char) (src[i] & 0xff));
+            }
+            scores[j] = (byte) v;
         }
         return scores;
     }

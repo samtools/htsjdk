@@ -100,4 +100,53 @@ public class TextTagCodecTest extends HtsjdkTest {
         final TextTagCodec textTagCodec = new TextTagCodec();
         textTagCodec.decode(badTag);
     }
+
+    // -- byte-based decodeValue: malformed-tag boundary cases (regression tests for crash on len < 5) ---
+
+    @Test
+    public void testDecodeValueBytesLen4ZeroValueZTag() {
+        // "XY:Z" (no trailing colon) is treated as a Z-type with empty value, mirroring the
+        // String overload. Previously the byte overload crashed with NegativeArraySize because
+        // it computed valueLen = len - 5 = -1.
+        final TextTagCodec codec = new TextTagCodec();
+        final byte[] buf = "XY:Z".getBytes();
+        codec.decodeValue(buf, 0, buf.length);
+        Assert.assertEquals(codec.getLastValue(), "");
+    }
+
+    @Test(expectedExceptions = SAMFormatException.class)
+    public void testDecodeValueBytesRejectsLen3Tag() {
+        final TextTagCodec codec = new TextTagCodec();
+        final byte[] buf = "XY:".getBytes();
+        codec.decodeValue(buf, 0, buf.length);
+    }
+
+    @Test
+    public void testDecodeValueBytesAcceptsEmptyZValue() {
+        // "XY:Z:" -- valid: Z-type with empty string value.
+        final TextTagCodec codec = new TextTagCodec();
+        final byte[] buf = "XY:Z:".getBytes();
+        codec.decodeValue(buf, 0, buf.length);
+        Assert.assertEquals(codec.getLastValue(), "");
+    }
+
+    // --- byte-based decodeValue: unsigned 32-bit i-type values via the byte path -----------------
+
+    @Test
+    public void testDecodeValueBytesUnsignedIntMax() {
+        // 4294967295 is the largest spec-allowed i value; it doesn't fit in a signed int and
+        // should be returned as a Long.
+        final TextTagCodec codec = new TextTagCodec();
+        final byte[] buf = "XX:i:4294967295".getBytes();
+        codec.decodeValue(buf, 0, buf.length);
+        Assert.assertEquals(codec.getLastValue(), 4294967295L);
+    }
+
+    @Test
+    public void testDecodeValueBytesSignedIntMinAsLong() {
+        final TextTagCodec codec = new TextTagCodec();
+        final byte[] buf = "XX:i:-2147483648".getBytes();
+        codec.decodeValue(buf, 0, buf.length);
+        Assert.assertEquals(codec.getLastValue(), Integer.MIN_VALUE);
+    }
 }

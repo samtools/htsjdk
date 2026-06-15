@@ -28,8 +28,10 @@ import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.StringUtil;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.AbstractMap;
 import java.util.Date;
 import java.util.Map;
 
@@ -40,15 +42,8 @@ import java.util.Map;
  * instance is used in multiple threads.
  */
 public class TextTagCodec {
-    // 3 fields for non-empty strings 2 fields if the string is empty.
-    private static final int NUM_TAG_FIELDS = 3;
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
-
-    /**
-     * This is really a local variable of decode(), but allocated here to reduce allocations.
-     */
-    private final String[] fields = new String[NUM_TAG_FIELDS];
 
     /**
      * Convert in-memory representation of tag to SAM text representation.
@@ -143,77 +138,157 @@ public class TextTagCodec {
 
     /**
      * Convert typed tag in SAM text format (name:type:value) into tag name and Object value representation.
+     *
      * @param tag SAM text format name:type:value tag.
      * @return Tag name as 2-character String, and tag value in appropriate class based on tag type.
      * If value is an unsigned array, then the value is a TagValueAndUnsignedArrayFlag object.
      */
     public Map.Entry<String, Object> decode(final String tag) {
-        final int numFields = StringUtil.splitConcatenateExcessTokens(tag, fields, ':');
-        if (numFields != TextTagCodec.NUM_TAG_FIELDS && numFields != TextTagCodec.NUM_TAG_FIELDS - 1) {
-            throw new SAMFormatException("Not enough fields in tag '" + tag + "'");
-        }
-        final String key = fields[0];
-        final String type = fields[1];
-        final String stringVal = numFields == TextTagCodec.NUM_TAG_FIELDS ? fields[2] : "";
-        final Object val = convertStringToObject(type, stringVal);
-        return new Map.Entry<String, Object>() {
-            @Override
-            public String getKey() {
-                return key;
-            }
-
-            @Override
-            public Object getValue() {
-                return val;
-            }
-
-            @Override
-            public Object setValue(final Object o) {
-                throw new UnsupportedOperationException();
-            }
-        };
+        decodeValue(tag);
+        return new AbstractMap.SimpleImmutableEntry<>(tag.substring(0, 2), lastValue);
     }
 
-    private static Object convertStringToObject(final String type, final String stringVal) {
-        if (type.equals("Z")) {
-            return stringVal;
-        } else if (type.equals("A")) {
-            if (stringVal.length() != 1) {
-                throw new SAMFormatException("Tag of type A should have a single-character value");
-            }
-            return stringVal.charAt(0);
-        } else if (type.equals("i")) {
-            final long lValue;
-            try {
-                lValue = Long.parseLong(stringVal);
-            } catch (NumberFormatException e) {
+    /**
+     * Holds the most recently-decoded value when {@link #decodeValue} is used to avoid
+     * the {@link Map.Entry} allocation in {@link #decode}. This is the value associated
+     * with the most recent {@link #decodeValue} call.
+     */
+    private Object lastValue;
+
+    /**
+     * @return the value decoded by the most recent {@link #decodeValue} call.
+     */
+    Object getLastValue() {
+        return lastValue;
+    }
+
+    /**
+     * Decode a tag string ({@code KEY:T:VALUE}) and store the decoded value in {@link #lastValue},
+     * to be retrieved by {@link #getLastValue}. Faster than {@link #decode} because it skips the
+     * 2-character key substring and the {@link Map.Entry} bookkeeping; the caller is responsible
+     * for computing the binary tag directly from the input String.
+     *
+     * <p>Delegates to the byte overload by encoding as {@code ISO-8859-1}, which is lossless for the
+     * printable ASCII the SAM spec permits in tag values. This keeps a single decode implementation
+     * and mirrors how {@link SAMLineParser#parseLine(String)} hands off to its byte path.
+     */
+    void decodeValue(final String tag) {
+        final byte[] bytes = tag.getBytes(StandardCharsets.ISO_8859_1);
+        decodeValue(bytes, 0, bytes.length);
+    }
+
+    /**
+     * Byte-based variant of {@link #decodeValue(String)}. Parses a tag from a {@code KEY:T:VALUE}
+     * byte range without allocating a {@link String} for the tag substring. For value types whose
+     * parsers operate on bytes directly ({@code i}, {@code A}, {@code H}) no value-side
+     * {@link String} is allocated either; types whose parsers require a {@link String}
+     * ({@code Z}, {@code f}, {@code B}) construct one lazily for just the value bytes.
+     */
+    void decodeValue(final byte[] buf, final int off, final int len) {
+        if (len < 4 || buf[off + 2] != ':' || (len > 4 && buf[off + 4] != ':')) {
+            // Build the error message from the bytes so the user can see what we got.
+            throw new SAMFormatException(
+                    "Malformed tag '" + new String(buf, off, len, StandardCharsets.ISO_8859_1) + "'");
+        }
+        final char typeChar = (char) (buf[off + 3] & 0xff);
+        // When len == 4 (e.g. "XY:Z" with no trailing colon+value) the tag has an empty value;
+        // mirror the String overload which treats this as "". Without the guard we'd produce a
+        // negative valueLen and crash inside the type-specific value parsers.
+        final int valueOff = len > 4 ? off + 5 : off;
+        final int valueLen = len > 4 ? len - 5 : 0;
+        lastValue = convertBytesToObject(typeChar, buf, valueOff, valueLen);
+    }
+
+    /**
+     * Fast path for the {@code 'i'} tag value: parse a signed decimal directly from the value bytes
+     * into a {@code Number}. The vast majority of SAM integer tags (e.g. {@code AS}, {@code NM},
+     * {@code MQ}) are small signed integers that fit in {@code int}, so we accumulate digits manually
+     * and skip {@link Long#parseLong}. Values outside the signed 32-bit range fall through to
+     * {@link #parseIntegerTagValueSlow} so the SAM-allowed unsigned 32-bit range [-2^31, 2^32) is
+     * still handled correctly. Returns {@link Integer} when the value fits, {@link Long} otherwise.
+     */
+    private static Number parseIntegerTagValue(final byte[] buf, final int off, final int len) {
+        if (len == 0) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        int i = 0;
+        final boolean negative;
+        final byte first = buf[off];
+        if (first == '-') {
+            negative = true;
+            i = 1;
+        } else if (first == '+') {
+            negative = false;
+            i = 1;
+        } else {
+            negative = false;
+        }
+        if (i == len) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        long acc = 0;
+        for (; i < len; i++) {
+            final byte b = buf[off + i];
+            if (b < '0' || b > '9') {
                 throw new SAMFormatException("Tag of type i should have signed decimal value");
             }
+            acc = acc * 10 + (b - '0');
+            if (acc > Integer.MAX_VALUE + 1L) {
+                return parseIntegerTagValueSlow(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+            }
+        }
+        final long signed = negative ? -acc : acc;
+        if (signed >= Integer.MIN_VALUE && signed <= Integer.MAX_VALUE) {
+            return (int) signed;
+        }
+        return parseIntegerTagValueSlow(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+    }
 
-            if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
-                return (int) lValue;
-            } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
-                return lValue;
-            } else {
-                throw new SAMFormatException(
-                        "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
-            }
-        } else if (type.equals("f")) {
-            try {
-                return Float.parseFloat(stringVal);
-            } catch (NumberFormatException e) {
-                throw new SAMFormatException("Tag of type f should have single-precision floating point value");
-            }
-        } else if (type.equals("H")) {
-            try {
-                return StringUtil.hexStringToBytes(stringVal);
-            } catch (NumberFormatException e) {
-                throw new SAMFormatException("Tag of type H should have valid hex string with even number of digits");
-            }
-        } else if (type.equals("B")) {
-            return covertStringArrayToObject(stringVal);
+    private static Object convertBytesToObject(final char type, final byte[] buf, final int off, final int len) {
+        switch (type) {
+            case 'Z':
+                return new String(buf, off, len, StandardCharsets.ISO_8859_1);
+            case 'A':
+                if (len != 1) {
+                    throw new SAMFormatException("Tag of type A should have a single-character value");
+                }
+                return (char) (buf[off] & 0xff);
+            case 'i':
+                return parseIntegerTagValue(buf, off, len);
+            case 'f':
+                try {
+                    return Float.parseFloat(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException("Tag of type f should have single-precision floating point value");
+                }
+            case 'H':
+                try {
+                    return StringUtil.hexStringToBytes(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+                } catch (NumberFormatException e) {
+                    throw new SAMFormatException(
+                            "Tag of type H should have valid hex string with even number of digits");
+                }
+            case 'B':
+                return covertStringArrayToObject(new String(buf, off, len, StandardCharsets.ISO_8859_1));
+            default:
+                throw new SAMFormatException("Unrecognized tag type: " + type);
+        }
+    }
+
+    private static Number parseIntegerTagValueSlow(final String stringVal) {
+        final long lValue;
+        try {
+            lValue = Long.parseLong(stringVal);
+        } catch (NumberFormatException e) {
+            throw new SAMFormatException("Tag of type i should have signed decimal value");
+        }
+        if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
+            return (int) lValue;
+        } else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+            return lValue;
         } else {
-            throw new SAMFormatException("Unrecognized tag type: " + type);
+            throw new SAMFormatException(
+                    "Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
         }
     }
 

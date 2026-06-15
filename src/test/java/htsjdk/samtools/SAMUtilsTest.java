@@ -371,4 +371,81 @@ public class SAMUtilsTest extends HtsjdkTest {
     public void testOAValues(final SAMRecord record, final String expectedOA) {
         Assert.assertEquals(SAMUtils.calculateOATagValue(record), expectedOA);
     }
+
+    // ----- byte[] overloads: fastqToPhred / readStringToNormalizedBases ------------------------
+
+    @Test
+    public void testFastqToPhredBytesProducesSameResultAsStringOverload() {
+        final String fastq = "!\"#0?I~"; // spans the full valid range: 0..93
+        final byte[] expected = SAMUtils.fastqToPhred(fastq);
+        final byte[] src = ("xxx" + fastq + "yyy").getBytes();
+        final byte[] actual = SAMUtils.fastqToPhred(src, 3, fastq.length());
+        Assert.assertEquals(actual, expected);
+    }
+
+    @Test
+    public void testFastqToPhredBytesEmptyRange() {
+        Assert.assertEquals(SAMUtils.fastqToPhred(new byte[] {'A', 'B', 'C'}, 1, 0), new byte[0]);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testFastqToPhredBytesRejectsBelowMin() {
+        // ASCII 32 (space) is below the valid FASTQ range (>= 33)
+        SAMUtils.fastqToPhred(new byte[] {(byte) 32}, 0, 1);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testFastqToPhredBytesRejectsAboveMax() {
+        // ASCII 127 (DEL) is above the valid FASTQ range (<= 33 + MAX_PHRED_SCORE)
+        SAMUtils.fastqToPhred(new byte[] {(byte) 127}, 0, 1);
+    }
+
+    @Test
+    public void testReadStringToNormalizedBasesByteOverloadUppercasesAndReplacesDot() {
+        final String bases = "AcGt.NnaAcCgGtT";
+        final byte[] expected = SAMUtils.readStringToNormalizedBases(bases);
+        final byte[] src = ("xxx" + bases + "yyy").getBytes();
+        final byte[] actual = SAMUtils.readStringToNormalizedBases(src, 3, bases.length());
+        Assert.assertEquals(actual, expected);
+        // Sanity check: result is upper case with '.' -> 'N'
+        Assert.assertEquals(new String(actual), "ACGTNNNAACCGGTT");
+    }
+
+    @Test
+    public void testReadStringToNormalizedBasesByteOverloadEmpty() {
+        Assert.assertEquals(SAMUtils.readStringToNormalizedBases(new byte[] {'X', 'Y', 'Z'}, 1, 0), new byte[0]);
+    }
+
+    @Test
+    public void testReadStringToNormalizedBasesByteOverloadLeavesIupacUntouched() {
+        // IUPAC ambiguity codes (other than lowercase) should remain unchanged
+        final byte[] src = "RYSWKMBDHV".getBytes();
+        final byte[] result = SAMUtils.readStringToNormalizedBases(src, 0, src.length);
+        Assert.assertEquals(new String(result), "RYSWKMBDHV");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testFastqToPhredStringRejectsNonAsciiCharacter() {
+        // Non-ASCII chars (> 0xFF) must not be silently narrowed and accepted by the optimized
+        // bulk-copy path. A char of ġ narrows to byte 0x21 ('!') which would correspond to
+        // a valid phred 0; old code threw because phredScore was 288 (out of range). We must
+        // throw here too.
+        SAMUtils.fastqToPhred("!" + "ġ" + "I");
+    }
+
+    @Test
+    public void testFastqToPhredStringBoundaryValues() {
+        // Sanger FASTQ offset 33 -> phred 0; 33 + MAX_PHRED_SCORE -> MAX.
+        final byte[] r = SAMUtils.fastqToPhred("!" + (char) (33 + SAMUtils.MAX_PHRED_SCORE));
+        Assert.assertEquals(r[0], (byte) 0);
+        Assert.assertEquals(r[1], (byte) SAMUtils.MAX_PHRED_SCORE);
+    }
+
+    @Test
+    public void testFastqToPhredBytesBoundaryValues() {
+        final byte[] src = new byte[] {(byte) 33, (byte) (33 + SAMUtils.MAX_PHRED_SCORE)};
+        final byte[] r = SAMUtils.fastqToPhred(src, 0, src.length);
+        Assert.assertEquals(r[0], (byte) 0);
+        Assert.assertEquals(r[1], (byte) SAMUtils.MAX_PHRED_SCORE);
+    }
 }

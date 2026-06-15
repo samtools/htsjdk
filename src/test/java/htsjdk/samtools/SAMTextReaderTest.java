@@ -154,4 +154,65 @@ public class SAMTextReaderTest extends HtsjdkTest {
         final SAMRecord record = samLineParser.parseLine(samRecord);
         Assert.assertEquals(record.getAttribute(ARRAY_TAG), array);
     }
+
+    @Test
+    public void testFlagAboveSignedIntRangeIsRejected() {
+        // The fast FLAG parser must not silently sign-extend values > Integer.MAX_VALUE.
+        // The spec restricts FLAG to 16 bits; the legacy path threw, and we want to preserve that.
+        final SAMLineParser parser = new SAMLineParser(new SAMFileHeader());
+        final String line = "Read\t4294967295\tchr1\t1\t0\t*\t*\t0\t0\t*\t*";
+        try {
+            parser.parseLine(line);
+            Assert.fail("Expected SAMFormatException for FLAG above signed-int range");
+        } catch (final SAMFormatException expected) {
+            // expected
+        }
+    }
+
+    @Test
+    public void testMrnmEqualsWithRnameNotInDictionaryDoesNotNpe() {
+        // Regression: when RNAME is specified but the name is not present in the sequence
+        // dictionary, parsing a record with MRNM='=' must not pass a null mate reference name
+        // through to setMateReferenceNameAndIndex (which would NPE callers downstream).
+        // The mate reference name should mirror the record's reference name.
+        final SAMFileHeader header = new SAMFileHeader();
+        // Header has no @SQ records, so any RNAME lookup will miss.
+        final SAMLineParser parser =
+                new SAMLineParser(new DefaultSAMRecordFactory(), ValidationStringency.SILENT, header, null, null);
+        // FLAG 99 = paired + proper-pair + mate-reverse + first-of-pair; mate must be mapped.
+        final String line = "Read\t99\tchrUnknown\t100\t30\t50M\t=\t150\t100\t"
+                + "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTAC\t"
+                + "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+        final SAMRecord record = parser.parseLine(line);
+        Assert.assertEquals(record.getReferenceName(), "chrUnknown");
+        Assert.assertEquals(record.getMateReferenceName(), "chrUnknown");
+    }
+
+    @Test
+    public void testErrorMessageReportsCurrentLineAfterMixedParseModes() {
+        // Regression test: after a successful parseLine(String) call, parseLineFromBytes on the
+        // same parser must produce error messages referencing the BYTE line just handed to it,
+        // not a stale line from the earlier call (the error message is reconstructed from the byte
+        // range that parseLineFromBytes records on every call).
+        final SAMLineParser strict = new SAMLineParser(
+                new DefaultSAMRecordFactory(), ValidationStringency.STRICT, new SAMFileHeader(), null, null);
+        // Warm up the same parser with a well-formed line through the String API.
+        final String good = "Read\t4\tchr1\t1\t0\t*\t*\t0\t0\tG\t%";
+        strict.parseLine(good);
+        // Now feed an obviously malformed byte line (too few tab-separated fields); STRICT surfaces it.
+        final byte[] bad = "Read\tNOT-AN-INT\t".getBytes();
+        try {
+            strict.parseLineFromBytes(bad, 0, bad.length, 7);
+            Assert.fail("Expected an exception");
+        } catch (final SAMFormatException e) {
+            // The error message must reference the byte line "Read\tNOT-AN-INT\t", not the
+            // earlier "good" line.
+            final String message = e.getMessage();
+            Assert.assertTrue(
+                    message.contains("NOT-AN-INT") || message.contains("Read\tNOT-AN-INT"),
+                    "Expected error message to reference the byte line; got: " + message);
+            Assert.assertFalse(
+                    message.contains("chr1"), "Error message must not reference the stale prior line; got: " + message);
+        }
+    }
 }

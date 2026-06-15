@@ -23,8 +23,8 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.SamLineReader;
 import java.io.File;
 import java.io.InputStream;
 
@@ -34,9 +34,9 @@ import java.io.InputStream;
 class SAMTextReader extends SamReader.ReaderImplementation {
 
     private SAMRecordFactory samRecordFactory;
-    private BufferedLineReader mReader;
+    private SamLineReader mReader;
     private SAMFileHeader mFileHeader = null;
-    private String mCurrentLine = null;
+    private boolean mHasCurrentLine = false;
     private RecordIterator mIterator = null;
     private File mFile = null;
 
@@ -54,7 +54,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      */
     public SAMTextReader(
             final InputStream stream, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
-        mReader = new BufferedLineReader(stream);
+        mReader = new SamLineReader(stream);
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
         readHeader();
@@ -219,9 +219,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         advanceLine();
     }
 
-    private String advanceLine() {
-        mCurrentLine = mReader.readLine();
-        return mCurrentLine;
+    private void advanceLine() {
+        mHasCurrentLine = mReader.readNextLine();
     }
 
     /**
@@ -245,7 +244,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
 
         @Override
         public boolean hasNext() {
-            return mCurrentLine != null;
+            return mHasCurrentLine;
         }
 
         @Override
@@ -254,7 +253,11 @@ class SAMTextReader extends SamReader.ReaderImplementation {
                 throw new IllegalStateException("Cannot call next() on exhausted iterator");
             }
             try {
-                return parseLine();
+                return parser.parseLineFromBytes(
+                        mReader.getLineBuffer(),
+                        mReader.getLineOffset(),
+                        mReader.getLineLength(),
+                        mReader.getLineNumber());
             } finally {
                 advanceLine();
             }
@@ -263,11 +266,6 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         @Override
         public void remove() {
             throw new UnsupportedOperationException("Not supported: remove");
-        }
-
-        private SAMRecord parseLine() {
-
-            return parser.parseLine(mCurrentLine, mReader.getLineNumber());
         }
     }
 }
