@@ -115,8 +115,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Compile with Gradle
-        run: ./gradlew spotBugsMain spotBugsTest
+      - name: SpotBugs and File->Path migration guard
+        run: ./gradlew spotBugsMain spotBugsTest enforceFilePathMigration
       - name: Upload spotBugs Report
         if: failure()
         uses: actions/upload-artifact@v4
