@@ -24,7 +24,13 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class TestUtil {
@@ -36,25 +42,21 @@ public class TestUtil {
      */
     public static final String BASE_URL_FOR_HTTP_TESTS = "https://personal.broadinstitute.org/picard/testdata/";
 
-    public static File getTempDirectory(final String prefix, final String suffix) {
-        final File tempDirectory;
-        try {
-            tempDirectory = File.createTempFile(prefix, suffix);
-        } catch (IOException e) {
-            throw new SAMException("Failed to create temporary file.", e);
-        }
-        if (!tempDirectory.delete()) throw new SAMException("Failed to delete file: " + tempDirectory);
-        if (!tempDirectory.mkdir()) throw new SAMException("Failed to make directory: " + tempDirectory);
-        tempDirectory.deleteOnExit();
-        return tempDirectory;
-    }
-
     /**
-     * @deprecated Use properly spelled method. {@link #getTempDirectory}
+     * Creates a new temporary directory that will be deleted on JVM exit.
+     *
+     * @param prefix the prefix for the temporary directory name
+     * @param suffix the suffix appended to the prefix for the temporary directory name
+     * @return the {@link Path} of the newly created temporary directory
      */
-    @Deprecated
-    public static File getTempDirecory(final String prefix, final String suffix) {
-        return getTempDirectory(prefix, suffix);
+    public static Path getTempDirectoryAsPath(final String prefix, final String suffix) {
+        try {
+            final Path tempDirectory = Files.createTempDirectory(prefix + suffix);
+            IOUtil.deleteOnExit(tempDirectory);
+            return tempDirectory;
+        } catch (IOException e) {
+            throw new SAMException("Failed to create temporary directory.", e);
+        }
     }
 
     /**
@@ -87,12 +89,10 @@ public class TestUtil {
      * clean up after themselves.
      *
      * @param directory The directory to be deleted (along with its subdirectories)
-     * @deprecated Since 3/19, prefer {@link IOUtil#recursiveDelete(Path)}
      */
-    @Deprecated
-    public static void recursiveDelete(final File directory) {
+    public static void recursiveDelete(final Path directory) {
         try {
-            IOUtil.recursiveDelete(directory.toPath());
+            IOUtil.recursiveDelete(directory);
         } catch (RuntimeIOException e) {
             // bury exception
         }

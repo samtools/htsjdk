@@ -1,9 +1,11 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Alternative implementation of BAM index file access using regular I/O instead of memory mapping.
@@ -22,20 +24,20 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     private static final int PAGE_OFFSET_MASK = PAGE_SIZE - 1;
     private static final int PAGE_MASK = ~PAGE_OFFSET_MASK;
     private static final int INVALID_PAGE = 1;
-    private final File mFile;
-    private RandomAccessFile mRandomAccessFile;
+    private final Path mPath;
+    private FileChannel mFileChannel;
     private final int mFileLength;
     private long mFilePointer = 0;
     private int mCurrentPage = INVALID_PAGE;
     private final byte[] mBuffer = new byte[PAGE_SIZE];
 
-    RandomAccessFileBuffer(final File file) {
-        mFile = file;
+    RandomAccessFileBuffer(final Path path) {
+        mPath = path;
         try {
-            mRandomAccessFile = new RandomAccessFile(file, "r");
-            final long fileLength = mRandomAccessFile.length();
+            mFileChannel = FileChannel.open(path, StandardOpenOption.READ);
+            final long fileLength = mFileChannel.size();
             if (fileLength > Integer.MAX_VALUE) {
-                throw new RuntimeIOException("BAM index file " + mFile + " is too large: " + fileLength);
+                throw new RuntimeIOException("BAM index file " + mPath + " is too large: " + fileLength);
             }
             mFileLength = (int) fileLength;
         } catch (final IOException exc) {
@@ -48,7 +50,7 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
         int resultOffset = 0;
         int resultLength = bytes.length;
         if (mFilePointer + resultLength > mFileLength) {
-            throw new RuntimeIOException("Attempt to read past end of BAM index file (file is truncated?): " + mFile);
+            throw new RuntimeIOException("Attempt to read past end of BAM index file (file is truncated?): " + mPath);
         }
         while (resultLength > 0) {
             loadPage(mFilePointer);
@@ -101,13 +103,13 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
     public void close() {
         mFilePointer = 0;
         mCurrentPage = INVALID_PAGE;
-        if (mRandomAccessFile != null) {
+        if (mFileChannel != null) {
             try {
-                mRandomAccessFile.close();
+                mFileChannel.close();
             } catch (final IOException exc) {
                 throw new RuntimeIOException(exc.getMessage(), exc);
             }
-            mRandomAccessFile = null;
+            mFileChannel = null;
         }
     }
 
@@ -117,12 +119,19 @@ class RandomAccessFileBuffer implements IndexFileBuffer {
             return;
         }
         try {
-            mRandomAccessFile.seek(page);
+            mFileChannel.position(page);
             final int readLength = Math.min(mFileLength - page, PAGE_SIZE);
-            mRandomAccessFile.readFully(mBuffer, 0, readLength);
+            int totalRead = 0;
+            while (totalRead < readLength) {
+                final int bytesRead = mFileChannel.read(ByteBuffer.wrap(mBuffer, totalRead, readLength - totalRead));
+                if (bytesRead < 0) {
+                    throw new IOException("Unexpected end of file");
+                }
+                totalRead += bytesRead;
+            }
             mCurrentPage = page;
         } catch (final IOException exc) {
-            throw new RuntimeIOException("Exception reading BAM index file " + mFile + ": " + exc.getMessage(), exc);
+            throw new RuntimeIOException("Exception reading BAM index file " + mPath + ": " + exc.getMessage(), exc);
         }
     }
 }

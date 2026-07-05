@@ -4,8 +4,8 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * CSI index files produced by SAMtools are BGZF compressed by default. This class
@@ -16,9 +16,9 @@ class CompressedIndexFileBuffer implements IndexFileBuffer {
     private final BlockCompressedInputStream mCompressedStream;
     private final BinaryCodec binaryCodec;
 
-    CompressedIndexFileBuffer(File file) {
+    CompressedIndexFileBuffer(Path path) {
         try {
-            mCompressedStream = new BlockCompressedInputStream(file);
+            mCompressedStream = new BlockCompressedInputStream(path);
             binaryCodec = new BinaryCodec(mCompressedStream);
         } catch (IOException ioe) {
             throw (new RuntimeIOException("Construction error of CSI compressed stream: " + ioe));

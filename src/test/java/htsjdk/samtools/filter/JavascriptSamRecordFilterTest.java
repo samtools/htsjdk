@@ -28,11 +28,11 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.RuntimeScriptException;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.testng.Assert;
@@ -97,9 +97,9 @@ public class JavascriptSamRecordFilterTest extends HtsjdkTest {
 
     @Test
     public void fileConstructor_compilesAndRuns() throws IOException {
-        File scriptFile = File.createTempFile("filter", ".js");
-        scriptFile.deleteOnExit();
-        Files.writeString(scriptFile.toPath(), "true;", StandardCharsets.UTF_8);
+        Path scriptFile = Files.createTempFile("filter", ".js");
+        scriptFile.toFile().deleteOnExit();
+        Files.writeString(scriptFile, "true;", StandardCharsets.UTF_8);
         SAMFileHeader h = header();
         JavascriptSamRecordFilter f = new JavascriptSamRecordFilter(scriptFile, h);
         Assert.assertFalse(f.filterOut(record(h, "r", 100, "AAAA")));

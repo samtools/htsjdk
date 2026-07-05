@@ -10,11 +10,12 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.SequenceUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -49,7 +50,7 @@ public class CRAMSliceMD5Test extends HtsjdkTest {
         // check the CRAM file reads:
         final CRAMFileReader reader = new CRAMFileReader(
                 new ByteArrayInputStream(test.cramData),
-                (File) null,
+                (Path) null,
                 test.referenceSourceUpperCased,
                 ValidationStringency.STRICT);
         final SAMRecordIterator iterator = reader.getIterator();
@@ -64,7 +65,7 @@ public class CRAMSliceMD5Test extends HtsjdkTest {
         // try reading the CRAM file with the incorrect ref source that does not upper case bases:
         final CRAMFileReader reader = new CRAMFileReader(
                 new ByteArrayInputStream(test.cramData),
-                (File) null,
+                (SeekableStream) null,
                 test.referenceSourceMixedCase,
                 ValidationStringency.STRICT);
         final SAMRecordIterator iterator = reader.getIterator();

@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble.index.tabix;
 
-import com.google.common.io.Files;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
@@ -42,8 +41,9 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -52,8 +52,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class TabixIndexTest extends HtsjdkTest {
-    private static final File SMALL_TABIX_FILE = new File(TestUtils.DATA_DIR, "tabix/trioDup.vcf.gz.tbi");
-    private static final File BIGGER_TABIX_FILE = new File(TestUtils.DATA_DIR, "tabix/bigger.vcf.gz.tbi");
+    private static final Path SMALL_TABIX_FILE = Path.of(TestUtils.DATA_DIR, "tabix/trioDup.vcf.gz.tbi");
+    private static final Path BIGGER_TABIX_FILE = Path.of(TestUtils.DATA_DIR, "tabix/bigger.vcf.gz.tbi");
 
     /**
      * Read an existing index from disk, write it to a temp file, read that in, and assert that both in-memory
@@ -61,13 +61,14 @@ public class TabixIndexTest extends HtsjdkTest {
      * compression differences.
      */
     @Test(dataProvider = "readWriteTestDataProvider")
-    public void readWriteTest(final File tabixFile) throws Exception {
+    public void readWriteTest(final Path tabixFile) throws Exception {
         final TabixIndex index = new TabixIndex(tabixFile);
-        final File indexFile = File.createTempFile("TabixIndexTest.", FileExtensions.TABIX_INDEX);
-        indexFile.deleteOnExit();
-        final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(indexFile));
-        index.write(los);
-        los.close();
+        final Path indexFile = Files.createTempFile("TabixIndexTest.", FileExtensions.TABIX_INDEX);
+        indexFile.toFile().deleteOnExit();
+        try (final LittleEndianOutputStream los = new LittleEndianOutputStream(
+                new BlockCompressedOutputStream(Files.newOutputStream(indexFile), (Path) null))) {
+            index.write(los);
+        }
         final TabixIndex index2 = new TabixIndex(indexFile);
         Assert.assertEquals(index, index2);
         // Unfortunately, can't do byte comparison of original file and temp file, because 1) different compression
@@ -85,12 +86,12 @@ public class TabixIndexTest extends HtsjdkTest {
     public void testQueryProvidedItemsAmount() throws IOException {
         final String VCF = "src/test/resources/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf";
         // Note that we store only compressed files
-        final File plainTextVcfInputFile = new File(VCF);
-        plainTextVcfInputFile.deleteOnExit();
-        final File plainTextVcfIndexFile = new File(VCF + ".tbi");
-        plainTextVcfIndexFile.deleteOnExit();
-        final File compressedVcfInputFile = new File(VCF + ".gz");
-        final File compressedTbiIndexFile = new File(VCF + ".gz.tbi");
+        final Path plainTextVcfInputFile = Path.of(VCF);
+        plainTextVcfInputFile.toFile().deleteOnExit();
+        final Path plainTextVcfIndexFile = Path.of(VCF + ".tbi");
+        plainTextVcfIndexFile.toFile().deleteOnExit();
+        final Path compressedVcfInputFile = Path.of(VCF + ".gz");
+        final Path compressedTbiIndexFile = Path.of(VCF + ".gz.tbi");
         final VCFFileReader compressedVcfReader = new VCFFileReader(compressedVcfInputFile, compressedTbiIndexFile);
 
         // create plain text VCF without "index on the fly" option
@@ -157,46 +158,45 @@ public class TabixIndexTest extends HtsjdkTest {
         return new Object[][] {
             new Object[] {
                 // BGZP BED file with no header, 2 features
-                new File(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"),
+                Path.of(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"),
                 Arrays.asList(new Interval("chr1", 1, 10), new Interval("chr1", 100, 1000000))
             },
             new Object[] {
                 // BGZP BED file with no header, 3 features; one feature falls in between the query intervals
-                new File(TestUtils.DATA_DIR, "bed/3featuresNoHeader.bed.gz"),
+                Path.of(TestUtils.DATA_DIR, "bed/3featuresNoHeader.bed.gz"),
                 Arrays.asList(new Interval("chr1", 1, 10), new Interval("chr1", 100, 1000000))
             },
             new Object[] {
                 // same file as above (BGZP BED file with no header, 3 features), but change the query to return
                 // only the single interval for the feature that falls in between the other features
-                new File(TestUtils.DATA_DIR, "bed/3featuresNoHeader.bed.gz"),
-                Arrays.asList(new Interval("chr1", 15, 20))
+                Path.of(TestUtils.DATA_DIR, "bed/3featuresNoHeader.bed.gz"), Arrays.asList(new Interval("chr1", 15, 20))
             },
             new Object[] {
                 // BGZP BED file with one line header, 2 features
-                new File(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"),
+                Path.of(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"),
                 Arrays.asList(new Interval("chr1", 1, 10), new Interval("chr1", 100, 1000000))
             },
         };
     }
 
     @Test(dataProvider = "bedTabixIndexTestData")
-    public void testBedTabixIndex(final File inputBed, final List<Interval> queryIntervals) throws Exception {
+    public void testBedTabixIndex(final Path inputBed, final List<Interval> queryIntervals) throws Exception {
         // copy the input file and create an index for the copy
-        final File tempDir = IOUtil.createTempDir("testBedTabixIndex.tmp").toFile();
-        tempDir.deleteOnExit();
-        final File tmpBed = new File(tempDir, inputBed.getName());
+        final Path tempDir = IOUtil.createTempDir("testBedTabixIndex.tmp");
+        tempDir.toFile().deleteOnExit();
+        final Path tmpBed = tempDir.resolve(inputBed.getFileName().toString());
         Files.copy(inputBed, tmpBed);
-        tmpBed.deleteOnExit();
+        tmpBed.toFile().deleteOnExit();
         final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(tmpBed, new BEDCodec(), null);
-        tabixIndexGz.writeBasedOnFeatureFile(tmpBed);
-        final File tmpIndex = Tribble.tabixIndexFile(tmpBed);
-        tmpIndex.deleteOnExit();
+        tabixIndexGz.writeBasedOnFeaturePath(tmpBed);
+        final Path tmpIndex = Tribble.tabixIndexPath(tmpBed);
+        tmpIndex.toFile().deleteOnExit();
 
         // iterate over the query intervals and validate the query results
-        try (final FeatureReader<BEDFeature> originalReader =
-                        AbstractFeatureReader.getFeatureReader(inputBed.getAbsolutePath(), new BEDCodec());
-                final FeatureReader<BEDFeature> createdReader =
-                        AbstractFeatureReader.getFeatureReader(tmpBed.getAbsolutePath(), new BEDCodec())) {
+        try (final FeatureReader<BEDFeature> originalReader = AbstractFeatureReader.getFeatureReader(
+                        inputBed.toAbsolutePath().toString(), new BEDCodec());
+                final FeatureReader<BEDFeature> createdReader = AbstractFeatureReader.getFeatureReader(
+                        tmpBed.toAbsolutePath().toString(), new BEDCodec())) {
             for (final Interval interval : queryIntervals) {
                 final Iterator<BEDFeature> originalIt =
                         originalReader.query(interval.getContig(), interval.getStart(), interval.getEnd());

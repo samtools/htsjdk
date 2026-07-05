@@ -37,7 +37,7 @@ import org.testng.annotations.Test;
 public class HtsBAMDecoderQueryTest extends HtsjdkTest {
     private final IOPath TEST_BAM = new HtsPath("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final IOPath TEST_BAI =
-            new HtsPath(SamFiles.findIndex(TEST_BAM.toPath().toFile()).toString());
+            new HtsPath(SamFiles.findIndex(TEST_BAM.toPath()).toString());
     private final boolean mVerbose = false;
 
     @DataProvider(name = "queryMethodsCases")

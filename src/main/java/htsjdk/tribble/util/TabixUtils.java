@@ -29,7 +29,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.TabixReader;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,10 +80,10 @@ public class TabixUtils {
     /**
      * Generates the SAMSequenceDictionary from the given tabix index file
      *
-     * @param tabixIndex the tabix index file
+     * @param tabixIndex the path to the tabix index file
      * @return non-null sequence dictionary
      */
-    public static SAMSequenceDictionary getSequenceDictionary(final File tabixIndex) {
+    public static SAMSequenceDictionary getSequenceDictionary(final Path tabixIndex) {
         if (tabixIndex == null) throw new IllegalArgumentException();
 
         try {

@@ -10,7 +10,12 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -27,9 +32,9 @@ public class CramIOTest extends HtsjdkTest {
     @Test(dataProvider = "cramHeaderAndEOF")
     public void testCheckHeaderAndEOF(final CRAMVersion cramVersion) throws IOException {
         final CramHeader cramHeader = new CramHeader(cramVersion, testID);
-        final File file = File.createTempFile("test", ".cram");
-        file.deleteOnExit();
-        try (final FileOutputStream fos = new FileOutputStream(file)) {
+        final Path file = Files.createTempFile("test", ".cram");
+        file.toFile().deleteOnExit();
+        try (final OutputStream fos = Files.newOutputStream(file)) {
             CramIO.writeCramHeader(cramHeader, fos);
             CramIO.writeCramEOF(cramHeader.getCRAMVersion(), fos);
         }
@@ -80,7 +85,7 @@ public class CramIOTest extends HtsjdkTest {
      * @param file the CRAM file to check
      * @return true if the file is a valid CRAM file and is properly terminated with respect to the version.
      */
-    private static boolean checkHeaderAndEOF(final File file) {
+    private static boolean checkHeaderAndEOF(final Path file) {
         try (final SeekableStream seekableStream = new SeekableFileStream(file)) {
             final CramHeader cramHeader = readCramHeader(seekableStream);
             return checkEOF(cramHeader.getCRAMVersion(), seekableStream);

@@ -33,7 +33,10 @@ public class Gff3Writer implements Closeable {
         }
 
         final OutputStream outputStream = IOUtil.hasGzipFileExtension(path)
-                ? new BlockCompressedOutputStream(path.toFile())
+                ? new BlockCompressedOutputStream(
+                        path,
+                        BlockCompressedOutputStream.getDefaultCompressionLevel(),
+                        BlockCompressedOutputStream.getDefaultDeflaterFactory())
                 : Files.newOutputStream(path);
         out = new BufferedOutputStream(outputStream);
         // start with version directive

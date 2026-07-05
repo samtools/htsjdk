@@ -28,14 +28,12 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.variant.VariantBaseTest;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
@@ -79,21 +77,21 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     @Test(dataProvider = "VariantFiles")
     public void testUsingFile(final String file, final int nVariants) throws IOException {
-        final VCFIterator r = new VCFIteratorBuilder().open(new File(file));
+        final VCFIterator r = new VCFIteratorBuilder().open(Path.of(file));
         assertExpectedNumberOfVariants(r, nVariants);
     }
 
     private void testUsingZippedInput(
-            final String filepath, final int nVariants, final Function<File, OutputStream> outputStreamProvider)
+            final String filepath, final int nVariants, final Function<Path, OutputStream> outputStreamProvider)
             throws IOException {
-        File tmp = new File(filepath);
+        Path tmp = Path.of(filepath);
         /* TODO fix this when VCFFileReader will support BCF see
          * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
          * https://github.com/samtools/htsjdk/issues/946
          */
-        if (tmp.getName().endsWith(FileExtensions.VCF)) {
-            tmp = File.createTempFile("tmp", FileExtensions.COMPRESSED_VCF);
-            tmp.deleteOnExit();
+        if (tmp.getFileName().toString().endsWith(FileExtensions.VCF)) {
+            tmp = Files.createTempFile("tmp", FileExtensions.COMPRESSED_VCF);
+            tmp.toFile().deleteOnExit();
             try (FileInputStream in = new FileInputStream(filepath);
                     OutputStream out = outputStreamProvider.apply(tmp); ) {
                 IOUtil.copyStream(in, out);
@@ -109,14 +107,14 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     @Test(dataProvider = "VcfFiles")
     public void testUsingBGZippedInput(final String filepath, final int nVariants) throws IOException {
-        testUsingZippedInput(filepath, nVariants, (F) -> new BlockCompressedOutputStream(F));
+        testUsingZippedInput(filepath, nVariants, (P) -> new BlockCompressedOutputStream(P));
     }
 
     @Test(dataProvider = "VcfFiles")
     public void testUsingGZippedInput(final String filepath, final int nVariants) throws IOException {
-        testUsingZippedInput(filepath, nVariants, (F) -> {
+        testUsingZippedInput(filepath, nVariants, (P) -> {
             try {
-                return new GZIPOutputStream(new FileOutputStream(F));
+                return new GZIPOutputStream(Files.newOutputStream(P));
             } catch (final IOException err) {
                 throw new RuntimeIOException(err);
             }
@@ -133,7 +131,7 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     @Test(dataProvider = "VariantFiles")
     public void testUsingPath(final String path, final int nVariants) throws IOException {
-        final Path a_path = Paths.get(path);
+        final Path a_path = Path.of(path);
         final VCFIterator r = new VCFIteratorBuilder().open(a_path);
         assertExpectedNumberOfVariants(r, nVariants);
     }

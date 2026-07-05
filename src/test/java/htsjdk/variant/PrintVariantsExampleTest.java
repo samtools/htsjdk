@@ -29,9 +29,9 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.example.PrintVariantsExample;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.testng.Assert;
@@ -40,19 +40,21 @@ import org.testng.annotations.Test;
 public class PrintVariantsExampleTest extends HtsjdkTest {
     @Test
     public void testExampleWriteFile() throws IOException {
-        final File tempFile = File.createTempFile("example", FileExtensions.VCF);
-        tempFile.deleteOnExit();
-        File f1 = new File(
+        final Path tempFile = Files.createTempFile("example", FileExtensions.VCF);
+        tempFile.toFile().deleteOnExit();
+        Path f1 = Path.of(
                 "src/test/resources/htsjdk/variant/ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf");
-        final String[] args = {f1.getAbsolutePath(), tempFile.getAbsolutePath()};
-        Assert.assertEquals(tempFile.length(), 0);
+        final String[] args = {
+            f1.toAbsolutePath().toString(), tempFile.toAbsolutePath().toString()
+        };
+        Assert.assertEquals(Files.size(tempFile), 0);
         PrintVariantsExample.main(args);
-        Assert.assertNotEquals(tempFile.length(), 0);
+        Assert.assertNotEquals(Files.size(tempFile), 0);
 
         assertFilesEqualSkipHeaders(tempFile, f1);
     }
 
-    private void assertFilesEqualSkipHeaders(File tempFile, File f1) throws FileNotFoundException {
+    private void assertFilesEqualSkipHeaders(Path tempFile, Path f1) {
         final List<String> lines1 = IOUtil.slurpLines(f1);
         final List<String> lines2 = IOUtil.slurpLines(tempFile);
         final int firstNonComment1 = IntStream.range(0, lines1.size())

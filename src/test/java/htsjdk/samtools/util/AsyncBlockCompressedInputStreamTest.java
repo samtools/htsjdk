@@ -25,14 +25,15 @@ package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class AsyncBlockCompressedInputStreamTest extends HtsjdkTest {
-    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private final Path BAM_FILE = Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
     @Test
     public void testAsync() throws Exception {

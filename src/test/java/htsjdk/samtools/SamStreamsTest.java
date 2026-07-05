@@ -28,24 +28,29 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SamStreamsTest extends HtsjdkTest {
 
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "makeData")
     @SuppressWarnings("deprecated") // we're testing a deprecated method here deliberately
     public void testDataFormat(
             final String inputFile, final boolean isGzippedSAMFile, final boolean isBAMFile, final boolean isCRAMFile)
             throws Exception {
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
         try (final InputStream fis = new BufferedInputStream(
-                new FileInputStream(input))) { // must be buffered or the isGzippedSAMFile will blow up
+                Files.newInputStream(input))) { // must be buffered or the isGzippedSAMFile will blow up
             Assert.assertEquals(SamStreams.isGzippedSAMFile(fis), isGzippedSAMFile, "isGzippedSAMFile:" + inputFile);
             Assert.assertEquals(SamStreams.isBAMFile(fis), isBAMFile, "isBAMFile:" + inputFile);
             Assert.assertEquals(SamStreams.isCRAMFile(fis), isCRAMFile, "isCRAMFile:" + inputFile);
@@ -86,7 +91,7 @@ public class SamStreamsTest extends HtsjdkTest {
     public void sourceLikeCram(final String resourceName, final boolean isFile, final boolean expected)
             throws IOException {
         SeekableStream strm = isFile
-                ? new SeekableFileStream(new File(TEST_DATA_DIR, resourceName))
+                ? new SeekableFileStream(TEST_DATA_DIR.resolve(resourceName))
                 : SeekableStreamFactory.getInstance().getStreamFor(new URL(resourceName));
         Assert.assertEquals(SamStreams.sourceLikeCram(strm), expected);
     }
@@ -131,7 +136,7 @@ public class SamStreamsTest extends HtsjdkTest {
     public void sourceLikeBamImpl(final String resourceName, final boolean isFile, final boolean expected)
             throws IOException {
         SeekableStream strm = isFile
-                ? new SeekableFileStream(new File(TEST_DATA_DIR, resourceName))
+                ? new SeekableFileStream(TEST_DATA_DIR.resolve(resourceName))
                 : SeekableStreamFactory.getInstance().getStreamFor(new URL(resourceName));
         Assert.assertEquals(SamStreams.sourceLikeBam(strm), expected);
     }

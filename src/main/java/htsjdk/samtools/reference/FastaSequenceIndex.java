@@ -27,7 +27,6 @@ package htsjdk.samtools.reference;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,15 +49,6 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      */
     private final Map<String, FastaSequenceIndexEntry> sequenceEntries =
             new LinkedHashMap<String, FastaSequenceIndexEntry>();
-
-    /**
-     * Build a sequence index from the specified file.
-     * @param indexFile File to open.
-     * @throws FileNotFoundException if the index file cannot be found.
-     */
-    public FastaSequenceIndex(File indexFile) {
-        this(IOUtil.toPath(indexFile));
-    }
 
     /**
      * Build a sequence index from the specified file.

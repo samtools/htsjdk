@@ -16,7 +16,6 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -86,7 +85,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "blockCompressedExtensionExtensionStrings", dataProviderClass = IOUtilTest.class)
     public void testBlockCompressionExtensionFile(final String testString, final boolean expected) {
-        Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(new File(testString)), expected);
+        Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(Path.of(testString)), expected);
     }
 
     @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings", dataProviderClass = IOUtilTest.class)

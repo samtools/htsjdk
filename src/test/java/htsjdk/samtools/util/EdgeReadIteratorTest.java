@@ -28,9 +28,9 @@ import static org.testng.Assert.assertEquals;
 import htsjdk.samtools.*;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import org.testng.Assert;
@@ -349,7 +349,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
     @Test
     public void testNoGapsInLocusAccumulator() {
         final SamReader reader =
-                SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/util/sliver.sam"));
+                SamReaderFactory.make().open(Path.of("src/test/resources/htsjdk/samtools/util/sliver.sam"));
         final EdgeReadIterator iterator = new EdgeReadIterator(reader, null);
 
         AbstractLocusInfo<EdgingRecordAndOffset> previous = null;

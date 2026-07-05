@@ -24,12 +24,13 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -85,12 +86,12 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         super(stream, true, inflaterFactory);
     }
 
-    public AsyncBlockCompressedInputStream(final File file) throws IOException {
-        super(file);
+    public AsyncBlockCompressedInputStream(final Path path) throws IOException {
+        super(path);
     }
 
-    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory) throws IOException {
-        super(file, inflaterFactory);
+    public AsyncBlockCompressedInputStream(final Path path, InflaterFactory inflaterFactory) throws IOException {
+        super(new SeekablePathStream(path), inflaterFactory);
     }
 
     public AsyncBlockCompressedInputStream(final URL url) {

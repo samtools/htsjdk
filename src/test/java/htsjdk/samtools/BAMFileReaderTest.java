@@ -3,19 +3,18 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class BAMFileReaderTest extends HtsjdkTest {
-    private static final File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private static final File baiFileIndex = new File(bamFile.getPath() + ".bai");
-    private static final File csiFileIndex = new File(bamFile.getPath() + ".csi");
-    private static final File iiiFileIndex = new File(bamFile.getPath() + ".iii");
+    private static final Path bamFile = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final Path baiFileIndex = Path.of(bamFile + ".bai");
+    private static final Path csiFileIndex = Path.of(bamFile + ".csi");
+    private static final Path iiiFileIndex = Path.of(bamFile + ".iii");
     private static final int nofMappedReads = 9721;
     private static final int nofUnmappedReads = 279;
     private static final int noChrMReads = 23;
@@ -52,7 +51,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
                 DefaultSAMRecordFactory.getInstance());
         bamFileReaderNull = new BAMFileReader(
                 bamFile,
-                null,
+                (Path) null,
                 true,
                 false,
                 ValidationStringency.DEFAULT_STRINGENCY,
@@ -62,8 +61,8 @@ public class BAMFileReaderTest extends HtsjdkTest {
     @Test
     public static void testCSIFromURL() throws IOException {
         // https://github.com/samtools/htsjdk/issues/1507
-        final URL bamURL = Paths.get(bamFile.toURI()).toUri().toURL();
-        final URL csiURL = Paths.get(csiFileIndex.toURI()).toUri().toURL();
+        final URL bamURL = bamFile.toUri().toURL();
+        final URL csiURL = csiFileIndex.toUri().toURL();
         final SamInputResource resource = SamInputResource.of(bamURL).index(csiURL);
         final SamReaderFactory factory =
                 SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);

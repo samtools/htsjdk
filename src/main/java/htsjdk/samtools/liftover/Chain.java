@@ -28,8 +28,8 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.OverlapDetector;
-import java.io.File;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -332,10 +332,10 @@ class Chain {
 
     /**
      * Read all the chains and load into an OverlapDetector.
-     * @param chainFile File in UCSC chain format.
+     * @param chainFile Path in UCSC chain format.
      * @return OverlapDetector with all Chains from reader loaded into it.
      */
-    static OverlapDetector<Chain> loadChains(final File chainFile) {
+    static OverlapDetector<Chain> loadChains(final Path chainFile) {
         IOUtil.assertFileIsReadable(chainFile);
         try (final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile))) {
             return loadChains(reader, chainFile.toString());

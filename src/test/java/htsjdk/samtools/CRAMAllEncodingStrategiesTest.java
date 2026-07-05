@@ -11,7 +11,9 @@ import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.SamtoolsTestUtils;
-import java.io.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.SkipException;
@@ -30,7 +32,7 @@ import org.testng.annotations.Test;
  */
 public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/cram");
     private final CompressorCache compressorCache = new CompressorCache();
 
     @DataProvider(name = "defaultStrategyRoundTripTestFiles")
@@ -38,29 +40,29 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
         return new Object[][] {
             // a test file with artificially small slices and containers to force multiple slices and containers
             {
-                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                TEST_DATA_DIR.resolve("NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta"),
                 false,
                 false
             },
             // the same file without the artificially small container constraints
             {
-                new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram"),
-                new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
+                TEST_DATA_DIR.resolve("CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram"),
+                Path.of("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
                 false,
                 false
             },
             // a test file with only unmapped reads
             {
-                new File(TEST_DATA_DIR, "NA12878.unmapped.cram"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                TEST_DATA_DIR.resolve("NA12878.unmapped.cram"),
+                TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta"),
                 false,
                 false
             },
             // generated with samtools 1.19 from the gatk bam file CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam
             {
-                new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram"),
-                new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
+                TEST_DATA_DIR.resolve("CEUTrio.HiSeq.WGS.b37.NA12878.20.21.v3.0.samtools.cram"),
+                Path.of("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz"),
                 true,
                 false
             },
@@ -71,15 +73,15 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             // a user-contributed file with reads aligned only to the mito contig that has been rewritten (long ago)
             // with GATK
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTestGATKGen.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTestGATKGen.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 true,
                 false
             },
             // the original user-contributed file with reads aligned only to the mito contig
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 true,
                 false
             },
@@ -89,14 +91,14 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
             // 10,000 or 20,000 times, to create a file with 2 or 3 containers, respectively, that have reads aligned to
             // position 1 of the contig
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest_2_containers_aligned_to_pos_1.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest_2_containers_aligned_to_pos_1.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 true,
                 false
             },
             {
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest_3_containers_aligned_to_pos_1.cram"),
-                new File(TEST_DATA_DIR, "mitoAlignmentStartTest.fa"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest_3_containers_aligned_to_pos_1.cram"),
+                TEST_DATA_DIR.resolve("mitoAlignmentStartTest.fa"),
                 true,
                 false
             }
@@ -105,12 +107,12 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     @Test(dataProvider = "defaultStrategyRoundTripTestFiles")
     public final void testRoundTripDefaultEncodingStrategy(
-            final File sourceFile, final File referenceFile, final boolean lenientEquality, final boolean emitDetail)
+            final Path sourceFile, final Path referenceFile, final boolean lenientEquality, final boolean emitDetail)
             throws IOException {
         // test the default encoding strategy
         final CRAMEncodingStrategy testStrategy = new CRAMEncodingStrategy();
-        final File tempOutCRAM = File.createTempFile("testRoundTrip", ".cram");
-        tempOutCRAM.deleteOnExit();
+        final Path tempOutCRAM = Files.createTempFile("testRoundTrip", ".cram");
+        tempOutCRAM.toFile().deleteOnExit();
         CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy, sourceFile, tempOutCRAM, referenceFile);
         assertRoundTripFidelity(sourceFile, tempOutCRAM, referenceFile, lenientEquality, emitDetail);
         // test interop with samtools using this encoding
@@ -121,8 +123,8 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     public Object[][] encodingStrategiesTestFiles() {
         return new Object[][] {
             {
-                new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
-                new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta"),
+                TEST_DATA_DIR.resolve("NA12878.20.21.1-100.100-SeqsPerSlice.500-unMapped.cram"),
+                TEST_DATA_DIR.resolve("human_g1k_v37.20.21.1-100.fasta"),
                 false,
                 false
             },
@@ -131,14 +133,14 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
 
     @Test(dataProvider = "encodingStrategiesTestFiles")
     public final void testAllEncodingStrategyCombinations(
-            final File cramSourceFile,
-            final File referenceFile,
+            final Path cramSourceFile,
+            final Path referenceFile,
             final boolean lenientEquality,
             final boolean emitDetail)
             throws IOException {
         for (final Tuple<String, CRAMEncodingStrategy> testStrategy : getAllEncodingStrategies()) {
-            final File tempOutCRAM = File.createTempFile("allEncodingStrategyCombinations", ".cram");
-            tempOutCRAM.deleteOnExit();
+            final Path tempOutCRAM = Files.createTempFile("allEncodingStrategyCombinations", ".cram");
+            tempOutCRAM.toFile().deleteOnExit();
             CRAMTestUtils.writeToCRAMWithEncodingStrategy(testStrategy.b, cramSourceFile, tempOutCRAM, referenceFile);
             assertRoundTripFidelity(cramSourceFile, tempOutCRAM, referenceFile, lenientEquality, emitDetail);
             // test interop with samtools using this encoding
@@ -173,9 +175,9 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     public void assertRoundTripFidelity(
-            final File sourceFile,
-            final File targetCRAMFile,
-            final File referenceFile,
+            final Path sourceFile,
+            final Path targetCRAMFile,
+            final Path referenceFile,
             final boolean lenientEquality,
             final boolean emitDetail)
             throws IOException {
@@ -214,15 +216,14 @@ public class CRAMAllEncodingStrategiesTest extends HtsjdkTest {
     }
 
     private void assertRoundtripFidelityWithSamtools(
-            final File sourceCRAM, final File referenceFile, final boolean lenientEquality, final boolean emitDetail)
+            final Path sourceCRAM, final Path referenceFile, final boolean lenientEquality, final boolean emitDetail)
             throws IOException {
         if (SamtoolsTestUtils.isSamtoolsAvailable()) {
             final IOPath samtoolsOutFile = SamtoolsTestUtils.convertToCRAM(
-                    new HtsPath(sourceCRAM.getAbsolutePath()),
-                    new HtsPath(referenceFile.getAbsolutePath()),
+                    new HtsPath(sourceCRAM.toAbsolutePath().toString()),
+                    new HtsPath(referenceFile.toAbsolutePath().toString()),
                     "--input-fmt-option decode_md=0 --output-fmt-option store_md=0 --output-fmt-option store_nm=0");
-            assertRoundTripFidelity(
-                    sourceCRAM, samtoolsOutFile.toPath().toFile(), referenceFile, lenientEquality, emitDetail);
+            assertRoundTripFidelity(sourceCRAM, samtoolsOutFile.toPath(), referenceFile, lenientEquality, emitDetail);
         } else {
             throw new SkipException("samtools is not installed, skipping test");
         }

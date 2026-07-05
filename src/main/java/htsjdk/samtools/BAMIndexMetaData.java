@@ -25,8 +25,8 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -228,12 +228,12 @@ public class BAMIndexMetaData {
      * Statistics include count of aligned and unaligned reads for each reference sequence
      * and a count of all records with no start coordinate
      */
-    public static void printIndexStats(final File inputBamFile) {
+    public static void printIndexStats(final Path inputBamPath) {
         try {
             final BAMFileReader bam = new BAMFileReader(
-                    inputBamFile, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+                    inputBamPath, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
             if (!bam.hasIndex() || bam.getIndexType() == null) {
-                throw new SAMException("No index for bam file " + inputBamFile);
+                throw new SAMException("No index for bam file " + inputBamPath);
             }
 
             BAMIndexMetaData[] data = getIndexStats(bam);

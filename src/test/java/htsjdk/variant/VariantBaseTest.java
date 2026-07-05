@@ -35,8 +35,8 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,19 +52,19 @@ import org.testng.Assert;
 public class VariantBaseTest extends HtsjdkTest {
 
     public static final String variantTestDataRoot =
-            new File("src/test/resources/htsjdk/variant/").getAbsolutePath() + "/";
+            Path.of("src/test/resources/htsjdk/variant/").toAbsolutePath() + "/";
 
     /**
      * Creates a temp file that will be deleted on exit after tests are complete.
      * @param name Prefix of the file.
      * @param extension Extension to concat to the end of the file.
-     * @return A file in the temporary directory starting with name, ending with extension, which will be deleted after the program exits.
+     * @return A Path in the temporary directory starting with name, ending with extension, which will be deleted after the program exits.
      */
-    public static File createTempFile(String name, String extension) {
+    public static Path createTempFile(String name, String extension) {
         try {
-            File file = File.createTempFile(name, extension);
-            file.deleteOnExit();
-            return file;
+            Path path = Files.createTempFile(name, extension);
+            path.toFile().deleteOnExit();
+            return path;
         } catch (IOException ex) {
             throw new RuntimeException("Cannot create temp file: " + ex.getMessage(), ex);
         }

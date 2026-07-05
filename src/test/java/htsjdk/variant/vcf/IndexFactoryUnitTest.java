@@ -37,8 +37,9 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 import org.testng.annotations.BeforeMethod;
@@ -49,9 +50,9 @@ import org.testng.annotations.Test;
  */
 public class IndexFactoryUnitTest extends VariantBaseTest {
 
-    File inputFile = new File(variantTestDataRoot + "HiSeq.10000.vcf");
-    File outputFile = createTempFile("onTheFlyOutputTest", FileExtensions.VCF);
-    File outputFileIndex = Tribble.indexFile(outputFile);
+    Path inputFile = Path.of(variantTestDataRoot + "HiSeq.10000.vcf");
+    Path outputFile = createTempFile("onTheFlyOutputTest", FileExtensions.VCF);
+    Path outputFileIndex = Tribble.indexPath(outputFile);
 
     private SAMSequenceDictionary dict;
 
@@ -66,18 +67,18 @@ public class IndexFactoryUnitTest extends VariantBaseTest {
     @Test
     public void testOnTheFlyIndexing1() throws IOException {
         final Index indexFromInputFile = IndexFactory.createDynamicIndex(inputFile, new VCFCodec());
-        if (outputFileIndex.exists()) {
+        if (Files.exists(outputFileIndex)) {
             System.err.println("Deleting " + outputFileIndex);
-            outputFileIndex.delete();
+            Files.delete(outputFileIndex);
         }
 
         for (int maxRecords : Arrays.asList(0, 1, 10, 100, 1000, -1)) {
             final AbstractFeatureReader source = AbstractFeatureReader.getFeatureReader(
-                    inputFile.getAbsolutePath(), new VCFCodec(), indexFromInputFile);
+                    inputFile.toAbsolutePath().toString(), new VCFCodec(), indexFromInputFile);
 
             int counter = 0;
             VariantContextWriter writer = new VariantContextWriterBuilder()
-                    .setOutputFile(outputFile)
+                    .setOutputPath(outputFile)
                     .setReferenceDictionary(dict)
                     .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER))
                     .build();

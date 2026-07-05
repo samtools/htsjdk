@@ -22,7 +22,6 @@
  */
 package htsjdk.samtools.apps;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -33,7 +32,7 @@ import java.io.RandomAccessFile;
 @Deprecated
 public class TimeRandomAccessFile {
     public static void main(String[] args) throws Exception {
-        RandomAccessFile raf = new RandomAccessFile(new File(args[0]), "r");
+        RandomAccessFile raf = new RandomAccessFile(args[0], "r");
         byte[] buf = new byte[64 * 1024];
         long totalBytesRead = 0;
         int bytesRead;

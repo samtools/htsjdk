@@ -24,12 +24,14 @@
 
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class IndexToTable {
 
@@ -49,11 +51,21 @@ public class IndexToTable {
         // check yourself before you wreck yourself - we require one arg, the input file
         if (args.length != 2) printUsage();
 
-        // LinearIndex.enableAdaptiveIndexing = false;
-        LinearIndex idx = (LinearIndex) IndexFactory.loadIndex(new File(args[0]).getAbsolutePath());
         try {
-            idx.writeTable(new PrintStream(new FileOutputStream(new File(args[1]))));
-        } catch (FileNotFoundException e) {
+            // LinearIndex.enableAdaptiveIndexing = false;
+            // Resolve the input in a scheme-aware way so file/http/https/ftp/gcs/custom NIO SPI
+            // inputs all work; loadIndex(String) does the actual scheme-aware stream opening. Local
+            // (default filesystem) inputs are made absolute to preserve the prior File behavior,
+            // while remote inputs are passed through unchanged.
+            final Path inputPath = IOUtil.getPath(args[0]);
+            final String indexSource = inputPath.getFileSystem() == FileSystems.getDefault()
+                    ? inputPath.toAbsolutePath().toString()
+                    : args[0];
+            LinearIndex idx = (LinearIndex) IndexFactory.loadIndex(indexSource);
+
+            final Path outputPath = IOUtil.getPath(args[1]);
+            idx.writeTable(new PrintStream(Files.newOutputStream(outputPath)));
+        } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
         }

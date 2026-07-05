@@ -31,7 +31,8 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -40,8 +41,8 @@ import org.testng.annotations.Test;
 public class IupacTest extends HtsjdkTest {
     @Test(dataProvider = "basicDataProvider")
     public void basic(final String tempFileExtension) throws Exception {
-        final File outputFile = File.createTempFile("iupacTest.", tempFileExtension);
-        outputFile.deleteOnExit();
+        final Path outputFile = Files.createTempFile("iupacTest.", tempFileExtension);
+        IOUtil.deleteOnExit(outputFile);
         final SAMFileWriter writer =
                 new SAMFileWriterFactory().makeSAMOrBAMWriter(new SAMFileHeader(), false, outputFile);
         final String bases1 = "=ACMGRSVTWYHKDBNA";

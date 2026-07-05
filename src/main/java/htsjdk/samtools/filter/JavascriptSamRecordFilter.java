@@ -25,9 +25,9 @@ package htsjdk.samtools.filter;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.file.Path;
 
 /**
  * JavaScript-based {@link SamRecordFilter}.
@@ -56,15 +56,17 @@ import java.io.Reader;
 public class JavascriptSamRecordFilter extends AbstractJavascriptFilter<SAMFileHeader, SAMRecord>
         implements SamRecordFilter {
     /**
-     * constructor using a javascript File
+     * Constructor using a JavaScript file path.
      *
-     * @param scriptFile
-     *            the javascript file to be compiled
-     * @param header
-     *            the SAMHeader
+     * <p>Using a {@link Path} enables compatibility with the Java NIO Service Provider Interface
+     * (SPI) and custom filesystems.
+     *
+     * @param scriptPath the path to the JavaScript file to be compiled
+     * @param header the SAM file header
+     * @throws IOException if the script file cannot be read
      */
-    public JavascriptSamRecordFilter(final File scriptFile, final SAMFileHeader header) throws IOException {
-        super(scriptFile, header);
+    public JavascriptSamRecordFilter(final Path scriptPath, final SAMFileHeader header) throws IOException {
+        super(scriptPath, header);
     }
 
     /**

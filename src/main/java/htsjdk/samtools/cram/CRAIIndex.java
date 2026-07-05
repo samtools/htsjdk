@@ -10,6 +10,8 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -64,11 +66,30 @@ public class CRAIIndex {
         addEntries(container.getCRAIEntries(compressorCache));
     }
 
+    /**
+     * Open a CRAI index file and convert it to a BAI-style seekable stream.
+     * @param cramIndexFile the CRAI index file
+     * @param dictionary the sequence dictionary
+     * @return a {@link SeekableStream} over the converted BAI index
+     * @deprecated Use {@link #openCraiFileAsBaiStream(Path, SAMSequenceDictionary)} instead.
+     */
+    @Deprecated
     public static SeekableStream openCraiFileAsBaiStream(
             final File cramIndexFile, final SAMSequenceDictionary dictionary) {
+        return openCraiFileAsBaiStream(cramIndexFile.toPath(), dictionary);
+    }
+
+    /**
+     * Open a CRAI index and convert it to a BAI-style seekable stream.
+     * @param cramIndexPath the CRAI index path
+     * @param dictionary the sequence dictionary
+     * @return a {@link SeekableStream} over the converted BAI index
+     */
+    public static SeekableStream openCraiFileAsBaiStream(
+            final Path cramIndexPath, final SAMSequenceDictionary dictionary) {
         try {
-            return openCraiFileAsBaiStream(new FileInputStream(cramIndexFile), dictionary);
-        } catch (final FileNotFoundException e) {
+            return openCraiFileAsBaiStream(Files.newInputStream(cramIndexPath), dictionary);
+        } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
     }

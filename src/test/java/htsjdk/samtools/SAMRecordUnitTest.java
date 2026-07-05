@@ -30,7 +30,7 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,13 +46,13 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
-            {new File("src/test/resources/htsjdk/samtools/serialization_test.sam")},
-            {new File("src/test/resources/htsjdk/samtools/serialization_test.bam")}
+            {Path.of("src/test/resources/htsjdk/samtools/serialization_test.sam")},
+            {Path.of("src/test/resources/htsjdk/samtools/serialization_test.bam")}
         };
     }
 
     @Test(dataProvider = "serializationTestData")
-    public void testSAMRecordSerialization(final File inputFile) throws Exception {
+    public void testSAMRecordSerialization(final Path inputFile) throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
         final SAMRecord initialSAMRecord = reader.iterator().next();
         reader.close();
@@ -761,7 +761,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "serializationTestData")
-    public void testNullHeaderSerialization(final File inputFile) throws Exception {
+    public void testNullHeaderSerialization(final Path inputFile) throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
         final SAMRecord initialSAMRecord = reader.iterator().next();
         reader.close();
@@ -1125,7 +1125,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @DataProvider(name = "attributeAccessTestData")
     private Object[][] hasAttributeTestData() throws IOException {
         final SamReader reader = SamReaderFactory.makeDefault()
-                .open(new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest/variousAttributes.sam"));
+                .open(Path.of("src/test/resources/htsjdk/samtools/SAMIntegerTagTest/variousAttributes.sam"));
         final SAMRecord samRecordWithAttributes = reader.iterator().next();
         final SAMRecord samRecordWithoutAnyAttributes = new SAMRecord(reader.getFileHeader());
         reader.close();

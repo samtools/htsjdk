@@ -7,7 +7,7 @@ import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -24,7 +24,7 @@ public class IntervalFilterTest extends HtsjdkTest {
         final SAMFileHeader fileHeader;
         final IntervalList list;
 
-        fileHeader = IntervalList.fromFile(new File(
+        fileHeader = IntervalList.fromPath(Path.of(
                         "src/test/resources/htsjdk/samtools/intervallist/IntervalListchr123_empty.interval_list"))
                 .getHeader();
         fileHeader.setSortOrder(SAMFileHeader.SortOrder.unsorted);

@@ -37,12 +37,12 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.testng.Assert;
@@ -50,11 +50,10 @@ import org.testng.annotations.Test;
 
 public class CRAMMergerTest extends HtsjdkTest {
 
-    private static final Path CRAM_FILE = new File(
-                    "src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram")
-            .toPath();
+    private static final Path CRAM_FILE =
+            Paths.get("src/test/resources/htsjdk/samtools/cram/CEUTrio.HiSeq.WGS.b37.NA12878.20.21.10m-10m100.cram");
     private static final Path CRAM_REF =
-            new File("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz").toPath();
+            Paths.get("src/test/resources/htsjdk/samtools/reference/human_g1k_v37.20.21.fasta.gz");
 
     /**
      * Writes a <i>partitioned CRAM</i>.
@@ -204,16 +203,14 @@ public class CRAMMergerTest extends HtsjdkTest {
         final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp");
         IOUtil.deleteOnExit(outputDir);
 
-        final Path outputCram = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.CRAM)
-                .toPath();
+        final Path outputCram = Files.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.CRAM);
         IOUtil.deleteOnExit(outputCram);
 
         final Path outputCrai = IOUtil.addExtension(outputCram, FileExtensions.CRAM_INDEX);
         IOUtil.deleteOnExit(outputCrai);
 
-        final Path outputCraiMerged = File.createTempFile(
-                        this.getClass().getSimpleName() + ".", FileExtensions.CRAM_INDEX)
-                .toPath();
+        final Path outputCraiMerged =
+                Files.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.CRAM_INDEX);
         IOUtil.deleteOnExit(outputCraiMerged);
 
         // 1. Read an input CRAM and write it out in partitioned form (header, parts, terminator)
@@ -235,8 +232,6 @@ public class CRAMMergerTest extends HtsjdkTest {
         indexCram(outputCram, outputCrai);
 
         // 4. Assert that the merged index is the same as the index produced from the merged file
-        Assert.assertEquals(
-                com.google.common.io.Files.toByteArray(outputCrai.toFile()),
-                com.google.common.io.Files.toByteArray(outputCraiMerged.toFile()));
+        Assert.assertEquals(Files.readAllBytes(outputCrai), Files.readAllBytes(outputCraiMerged));
     }
 }

@@ -32,7 +32,6 @@ import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.annotation.Strand;
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
@@ -545,7 +544,7 @@ public final class SAMUtils {
      * header. This hash code changes any time read groups are added or removed. Comparing one file's
      * hash code to another's tells you if the read groups in the BAM files are different.
      */
-    public static String calculateReadGroupRecordChecksum(final File input, final File referenceFasta) {
+    public static String calculateReadGroupRecordChecksum(final Path input, final Path referenceFasta) {
         final String ENCODING = "UTF-8";
 
         final MessageDigest digest;
@@ -738,18 +737,6 @@ public final class SAMUtils {
     public static long findVirtualOffsetOfFirstRecordInBam(final Path bamFile) {
         try (SeekableStream ss = new SeekablePathStream(bamFile)) {
             return BAMFileReader.findVirtualOffsetOfFirstRecord(ss);
-        } catch (final IOException ioe) {
-            throw new RuntimeEOFException(ioe);
-        }
-    }
-
-    /**
-     * Returns the virtual file offset of the first record in a BAM file - i.e. the virtual file
-     * offset after skipping over the text header and the sequence records.
-     */
-    public static long findVirtualOffsetOfFirstRecordInBam(final File bamFile) {
-        try {
-            return BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile);
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);
         }

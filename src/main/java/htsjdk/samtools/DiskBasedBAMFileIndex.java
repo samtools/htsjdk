@@ -24,7 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,8 +32,8 @@ import java.util.List;
  * A class for reading BAM file indices, hitting the disk once per query.
  */
 public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex {
-    public DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
-        super(file, dictionary);
+    public DiskBasedBAMFileIndex(final Path path, final SAMSequenceDictionary dictionary) {
+        super(path, dictionary);
     }
 
     public DiskBasedBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
@@ -41,8 +41,8 @@ public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex {
     }
 
     public DiskBasedBAMFileIndex(
-            final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
-        super(file, dictionary, useMemoryMapping);
+            final Path path, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+        super(path, dictionary, useMemoryMapping);
     }
 
     /**

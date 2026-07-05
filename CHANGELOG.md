@@ -10,6 +10,53 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.0
+
+Major release.
+
+### Headlines
+
+- **htsjdk now uses `java.nio.file.Path` (not `java.io.File`) throughout its public API.**  This makes the whole library work with any NIO `FileSystemProvider` (SPI) — Amazon S3, Google Cloud Storage, HDFS, in-memory filesystems such as [jimfs](https://github.com/google/jimfs), and so on — through the same reader, writer, factory and index APIs you already use, with no File-specific code paths.
+- **String- and URI-based entry points are scheme-aware.**  Where an API takes a path as a `String`, it is resolved with `IOUtil.getPath`, which honours the URI scheme (e.g. `file:`, `gs:`, `s3:`, custom providers) and falls back to the local filesystem for plain paths (including paths containing spaces).  Existing HTTP/HTTPS and FTP behaviour is unchanged — those continue to flow through htsjdk's `SeekableStream` machinery rather than NIO.
+
+### ⚠️ Breaking changes
+
+Consumers should review these before upgrading.
+
+- **`java.io.File`-based public APIs have been removed in favour of `java.nio.file.Path`** across factories, readers, writers, indexes, reference-sequence access and the utility classes (224 methods/constructors).  Update call sites to pass a `Path` (or a `String`/`URI`, which are resolved via `IOUtil.getPath`).  For example:
+
+  ```java
+  // Before (htsjdk 5.x)
+  SamReader r = SamReaderFactory.makeDefault().open(new File("/data/x.bam"));
+  SAMFileWriter w = new SAMFileWriterFactory().makeBAMWriter(header, true, new File("/data/out.bam"));
+  ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(new File("/data/ref.fasta"));
+
+  // After (htsjdk 6.0.0)
+  SamReader r = SamReaderFactory.makeDefault().open(Path.of("/data/x.bam"));
+  SAMFileWriter w = new SAMFileWriterFactory().makeBAMWriter(header, true, Path.of("/data/out.bam"));
+  ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(Path.of("/data/ref.fasta"));
+
+  // Or open something on a custom filesystem (requires that provider on the classpath)
+  SamReader s3 = SamReaderFactory.makeDefault().open(URI.create("s3://bucket/x.bam"));
+  ```
+
+  To bridge a `File` you already hold, call `file.toPath()` (or `IOUtil.toPath(file)`, which is null-safe).
+
+- **`Defaults.REFERENCE_FASTA` is now a `Path`** (previously a `File`).  It is resolved from the `samjdk.reference_fasta` system property; an unparseable value is logged and treated as unset rather than failing class initialisation.
+
+### Retained `File` APIs
+
+A small, deliberate set of `java.io.File` APIs remains because they are inherently tied to the local filesystem or ease migration; they do not affect NIO-SPI support:
+
+- `IOUtil.newTempFile`, `IOUtil.getDefaultTmpDir`, `IOUtil.createTempDir` — temporary files/directories are always local.
+- `IOUtil.toPath(File)` and `IOUtil.filesToPaths(Collection<File>)` — `File`→`Path` bridge helpers.
+
+### Testing
+
+- The test suite was migrated to `Path`, and a focused `NioSpiCompatibilityTest` exercises the major read/write/index APIs (BAM/CRAM/VCF/FASTQ, reference access and index discovery/creation) against an in-memory jimfs filesystem to validate NIO-SPI compatibility end to end.
+
+---
+
 ## 5.0.0
 
 Major release.  

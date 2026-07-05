@@ -25,13 +25,15 @@ package htsjdk.utils;
  */
 
 import htsjdk.samtools.util.Log;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -62,12 +64,17 @@ public class ClassFinder {
         this.loader = loader;
     }
 
-    public ClassFinder(final File jarFile) throws IOException {
+    /**
+     * Constructs a ClassFinder that will only look for classes within the specified jar file.
+     *
+     * @param jarFile the jar file to scan for classes
+     */
+    public ClassFinder(final Path jarFile) throws IOException {
         // The class loader must have the context in order to load dependent classes when loading a class,
         // but the jarPath is remembered so that the iteration over the classpath skips anything other than
         // the jarPath.
-        jarPath = jarFile.getCanonicalPath();
-        final URL[] urls = {new File(jarPath).toURI().toURL()};
+        jarPath = jarFile.toRealPath().toString();
+        final URL[] urls = {Path.of(jarPath).toUri().toURL()};
         loader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
     }
 
@@ -116,11 +123,11 @@ public class ClassFinder {
                 }
 
                 // Log.info("Looking for classes in location: " + urlPath);
-                final File file = new File(urlPath);
-                if (file.isDirectory()) {
-                    scanDir(file, packageName);
+                final Path path = Path.of(urlPath);
+                if (Files.isDirectory(path)) {
+                    scanDir(path, packageName);
                 } else {
-                    scanJar(file, packageName);
+                    scanJar(path, packageName);
                 }
             } catch (IOException ioe) {
                 log.warn("could not read entries", ioe);
@@ -133,8 +140,8 @@ public class ClassFinder {
      * @param file the jar file to be scanned
      * @param packagePath the top level package to start from
      */
-    protected void scanJar(final File file, final String packagePath) throws IOException {
-        final ZipFile zip = new ZipFile(file);
+    protected void scanJar(final Path file, final String packagePath) throws IOException {
+        final ZipFile zip = new ZipFile(file.toFile());
         final Enumeration<? extends ZipEntry> entries = zip.entries();
         while (entries.hasMoreElements()) {
             final ZipEntry entry = entries.nextElement();
@@ -147,17 +154,23 @@ public class ClassFinder {
 
     /**
      * Scans a directory on the filesystem for classes.
-     * @param file the directory or file to examine
+     * @param dir the directory or file to examine
      * @param path the package path acculmulated so far (e.g. edu/mit/broad)
      */
-    protected void scanDir(final File file, final String path) {
-        for (final File child : file.listFiles()) {
-            final String newPath = (path == null ? child.getName() : path + '/' + child.getName());
-            if (child.isDirectory()) {
-                scanDir(child, newPath);
-            } else {
-                handleItem(newPath);
+    protected void scanDir(final Path dir, final String path) {
+        try (final DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (final Path child : stream) {
+                final String newPath = (path == null
+                        ? child.getFileName().toString()
+                        : path + '/' + child.getFileName().toString());
+                if (Files.isDirectory(child)) {
+                    scanDir(child, newPath);
+                } else {
+                    handleItem(newPath);
+                }
             }
+        } catch (IOException e) {
+            log.warn("Could not scan directory: " + dir, e);
         }
     }
 

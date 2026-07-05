@@ -30,9 +30,10 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,9 +49,9 @@ import org.testng.annotations.Test;
  * @author alecw@broadinstitute.org
  */
 public class SAMIntegerTagTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest");
-    private static final File REF_FILE =
-            new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/SAMIntegerTagTest");
+    private static final Path REF_FILE =
+            Path.of("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
     private SAMSequenceDictionary DICTIONARY_BACKED_BY_REF_FILE;
 
     private static final String BYTE_TAG = "BY";
@@ -221,7 +222,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
      * @return The same record, after having being written and read back.
      */
     private SAMRecord writeAndReadSamRecord(final String format, SAMRecord rec) throws IOException {
-        final File bamFile = File.createTempFile("htsjdk-writeAndReadSamRecord.", "." + format);
+        final Path bamFile = Files.createTempFile("htsjdk-writeAndReadSamRecord.", "." + format);
         final SAMFileWriter bamWriter =
                 new SAMFileWriterFactory().makeWriter(rec.getHeader(), false, bamFile, REF_FILE);
         bamWriter.addAlignment(rec);
@@ -234,7 +235,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
             Assert.assertTrue(iterator.hasNext());
             rec = iterator.next();
         }
-        bamFile.delete();
+        Files.delete(bamFile);
         return rec;
     }
 
@@ -322,12 +323,12 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     @DataProvider(name = "legalIntegerAttributesFiles")
     public Object[][] getLegalIntegerAttributesFiles() {
         return new Object[][] {
-            {new File(TEST_DATA_DIR, "variousAttributes.sam")}, {new File(TEST_DATA_DIR, "variousAttributes.bam")}
+            {TEST_DATA_DIR.resolve("variousAttributes.sam")}, {TEST_DATA_DIR.resolve("variousAttributes.bam")}
         };
     }
 
     @Test(dataProvider = "legalIntegerAttributesFiles")
-    public void testLegalIntegerAttributesFilesStrict(final File inputFile) {
+    public void testLegalIntegerAttributesFilesStrict(final Path inputFile) {
         final SamReader reader = SamReaderFactory.makeDefault()
                 .enable(SamReaderFactory.Option.EAGERLY_DECODE)
                 .validationStringency(ValidationStringency.STRICT)
@@ -409,7 +410,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
                 w = new SAMFileWriterFactory().makeBAMWriter(header, false, baos);
                 break;
             case CRAM:
-                w = new SAMFileWriterFactory().makeCRAMWriter(header, baos, (File) null);
+                w = new SAMFileWriterFactory().makeCRAMWriter(header, baos, (Path) null);
                 break;
             default:
                 throw new RuntimeException("Unknown format: " + format);
@@ -428,7 +429,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
         final SamReader reader = SamReaderFactory.make()
                 .validationStringency(validationStringency)
-                .referenceSource(new ReferenceSource((File) null))
+                .referenceSource(new ReferenceSource((Path) null))
                 .open(SamInputResource.of(new ByteArrayInputStream(baos.toByteArray())));
         final SAMRecordIterator iterator = reader.iterator();
         Assert.assertTrue(iterator.hasNext());

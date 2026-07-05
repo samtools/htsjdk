@@ -7,10 +7,10 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SequenceUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -109,7 +109,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
         // read all the records back in
         final CRAMFileReader cReader =
-                new CRAMFileReader(null, new ByteArrayInputStream(outStream.toByteArray()), refSource);
+                new CRAMFileReader((Path) null, new ByteArrayInputStream(outStream.toByteArray()), refSource);
         final SAMRecordIterator iterator = cReader.getIterator();
         int count = 0;
         while (iterator.hasNext()) {
@@ -164,7 +164,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
         // now iterate through all the records in the aggregate file
         final CRAMFileReader cReader =
-                new CRAMFileReader(null, new ByteArrayInputStream(aggregateStream.toByteArray()), refSource);
+                new CRAMFileReader((Path) null, new ByteArrayInputStream(aggregateStream.toByteArray()), refSource);
         final SAMRecordIterator iterator = cReader.getIterator();
         int count = 0;
         while (iterator.hasNext()) {
@@ -204,18 +204,14 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
             ByteArrayOutputStream outStream, ByteArrayOutputStream indexStream, String indexExtension)
             throws IOException {
         // write the file out
-        final File cramTempFile = File.createTempFile("cramContainerStreamTest", ".cram");
-        cramTempFile.deleteOnExit();
-        final OutputStream cramFileStream = new FileOutputStream(cramTempFile);
-        cramFileStream.write(outStream.toByteArray());
-        cramFileStream.close();
+        final Path cramTempFile = Files.createTempFile("cramContainerStreamTest", ".cram");
+        cramTempFile.toFile().deleteOnExit();
+        Files.write(cramTempFile, outStream.toByteArray());
 
         // write the index out
-        final File indexTempFile = File.createTempFile("cramContainerStreamTest", indexExtension);
-        indexTempFile.deleteOnExit();
-        OutputStream indexFileStream = new FileOutputStream(indexTempFile);
-        indexFileStream.write(indexStream.toByteArray());
-        indexFileStream.close();
+        final Path indexTempFile = Files.createTempFile("cramContainerStreamTest", indexExtension);
+        indexTempFile.toFile().deleteOnExit();
+        Files.write(indexTempFile, indexStream.toByteArray());
 
         final ReferenceSource refSource = createReferenceSource();
         final CRAMFileReader reader =

@@ -12,8 +12,12 @@ import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
-import htsjdk.samtools.util.IOUtil;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import org.testng.Assert;
@@ -29,15 +33,15 @@ import org.testng.annotations.Test;
  * CRAM file the query returns the same records from the CRAM file.
  */
 public class CRAMFileCRAIIndexTest extends HtsjdkTest {
-    private static final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final Path BAM_FILE = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
     private static final int nofReads = 10000;
     private static final int nofReadsPerContainer = 1000;
     private static final int nofUnmappedReads = 279;
     private static final int nofMappedReads = 9721;
 
-    private static File tmpCramFile;
-    private static File tmpCraiFile;
+    private static Path tmpCramFile;
+    private static Path tmpCraiFile;
     private static byte[] cramBytes;
     private static byte[] craiBytes;
     private static ReferenceSource source;
@@ -86,7 +90,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     @Test(expectedExceptions = SAMException.class)
     public void testFileFileConstructorNoIndex() throws IOException {
         try (final CRAMFileReader reader = new CRAMFileReader(
-                new SeekableFileStream(tmpCramFile), (File) null, source, ValidationStringency.STRICT)) {
+                new SeekableFileStream(tmpCramFile), (Path) null, source, ValidationStringency.STRICT)) {
             reader.queryAlignmentStart("chrM", 1519);
         }
     }
@@ -170,11 +174,11 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     @Test
     public void testIteratorConstructor() throws IOException {
-        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
+        final Path CRAMFile = Path.of("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
+        final Path refFile = Path.of("src/test/resources/htsjdk/samtools/cram/auxf.fa");
         ReferenceSource refSource = new ReferenceSource(refFile);
 
-        long[] boundaries = new long[] {0, (CRAMFile.length() - 1) << 16};
+        long[] boundaries = new long[] {0, (Files.size(CRAMFile) - 1) << 16};
         try (final CRAMIterator iterator = new CRAMIterator(
                 new SeekableFileStream(CRAMFile), refSource, ValidationStringency.STRICT, null, boundaries)) {
             long count = getIteratorCount(iterator);
@@ -303,10 +307,10 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
 
     @BeforeClass
     public static void prepare() throws IOException {
-        tmpCramFile = File.createTempFile(BAM_FILE.getName(), ".cram");
-        tmpCramFile.deleteOnExit();
-        tmpCraiFile = new File(tmpCramFile.getAbsolutePath() + ".crai");
-        tmpCraiFile.deleteOnExit();
+        tmpCramFile = Files.createTempFile(BAM_FILE.getFileName().toString(), ".cram");
+        tmpCramFile.toFile().deleteOnExit();
+        tmpCraiFile = tmpCramFile.resolveSibling(tmpCramFile.getFileName().toString() + ".crai");
+        tmpCraiFile.toFile().deleteOnExit();
 
         source = new ReferenceSource(new FakeReferenceSequenceFile(SamReaderFactory.makeDefault()
                 .getFileHeader(BAM_FILE)
@@ -314,25 +318,19 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                 .getSequences()));
         cramBytes = cramBytesFromBAMFile(BAM_FILE, source);
 
-        try (final FileOutputStream fios = new FileOutputStream(tmpCraiFile)) {
-            try (final FileOutputStream fos = new FileOutputStream(tmpCramFile)) {
-                fos.write(cramBytes);
-            }
+        try (final OutputStream fios = Files.newOutputStream(tmpCraiFile)) {
+            Files.write(tmpCramFile, cramBytes);
             CRAMCRAIIndexer.writeIndex(new SeekableFileStream(tmpCramFile), fios);
         }
-        craiBytes = bytesFromFile(tmpCraiFile);
+        craiBytes = bytesFromPath(tmpCraiFile);
     }
 
     // TODO: these are duplicated in CRAMFileCRAIIndexTest
-    private static byte[] bytesFromFile(final File file) throws IOException {
-        try (final FileInputStream fis = new FileInputStream(file)) {
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            IOUtil.copyStream(fis, baos);
-            return baos.toByteArray();
-        }
+    private static byte[] bytesFromPath(final Path file) throws IOException {
+        return Files.readAllBytes(file);
     }
 
-    private static byte[] cramBytesFromBAMFile(final File bamFile, final ReferenceSource source) throws IOException {
+    private static byte[] cramBytesFromBAMFile(final Path bamFile, final ReferenceSource source) throws IOException {
         try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
                 final SAMRecordIterator samIterator = samReader.iterator();
                 final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -348,7 +346,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                     true,
                     source,
                     samReader.getFileHeader(),
-                    bamFile.getName())) {
+                    bamFile.getFileName().toString())) {
                 while (samIterator.hasNext()) {
                     SAMRecord record = samIterator.next();
                     cramWriter.addAlignment(record);

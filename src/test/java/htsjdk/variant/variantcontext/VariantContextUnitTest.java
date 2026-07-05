@@ -36,7 +36,7 @@ import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -1688,15 +1688,15 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
-            {new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), new VCFCodec()},
-            {new File("src/test/resources/htsjdk/variant/serialization_test.bcf"), new BCF2Codec()}
+            {Path.of("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), new VCFCodec()},
+            {Path.of("src/test/resources/htsjdk/variant/serialization_test.bcf"), new BCF2Codec()}
         };
     }
 
     @Test(dataProvider = "serializationTestData")
-    public void testSerialization(final File testFile, final FeatureCodec<VariantContext, ?> codec) throws Exception {
+    public void testSerialization(final Path testPath, final FeatureCodec<VariantContext, ?> codec) throws Exception {
         final AbstractFeatureReader<VariantContext, ?> featureReader =
-                AbstractFeatureReader.getFeatureReader(testFile.getAbsolutePath(), codec, false);
+                AbstractFeatureReader.getFeatureReader(testPath.toAbsolutePath().toString(), codec, false);
         final VariantContext initialVC = featureReader.iterator().next();
 
         final VariantContext vcDeserialized = TestUtil.serializeAndDeserialize(initialVC);
@@ -1781,11 +1781,11 @@ public class VariantContextUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "structuralVariationsTestData")
     public Object[][] getStructuralVariationsTestData() {
-        return new Object[][] {{new File("src/test/resources/htsjdk/variant/structuralvariants.vcf")}};
+        return new Object[][] {{Path.of("src/test/resources/htsjdk/variant/structuralvariants.vcf")}};
     }
 
     @Test(dataProvider = "structuralVariationsTestData")
-    public void testExtractStructuralVariationsData(final File vcfFile) {
+    public void testExtractStructuralVariationsData(final Path vcfFile) {
         VCFFileReader reader = null;
         CloseableIterator<VariantContext> iter = null;
         try {

@@ -17,13 +17,14 @@
  */
 package htsjdk.tribble.readers;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * A wrapper around an {@code InputStream} which performs it's own buffering, and keeps track of the position.
@@ -175,7 +176,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
     }
 
     public static void main(String[] args) throws Exception {
-        final File testFile = new File(args[0]);
+        final Path testFile = IOUtil.getPath(args[0]);
         final int iterations = Integer.parseInt(args[1]);
         final boolean includeInputStream = Boolean.valueOf(args[2]);
         final boolean doReadFileInChunks = Boolean.valueOf(args[3]);
@@ -183,13 +184,13 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         System.out.printf("Testing %s%n", args[0]);
         for (int i = 0; i < iterations; i++) {
             if (includeInputStream) {
-                final InputStream is = new FileInputStream(testFile);
+                final InputStream is = Files.newInputStream(testFile);
                 if (doReadFileInChunks) readFileInChunks("InputStream", is);
                 else readFileByLine("InputStream", is);
                 is.close();
             }
 
-            final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(testFile));
+            final PositionalBufferedStream pbs = new PositionalBufferedStream(Files.newInputStream(testFile));
             if (doReadFileInChunks) readFileInChunks("PositionalBufferedStream", pbs);
             else readFileByLine("PositionalBufferedStream", pbs);
             pbs.close();

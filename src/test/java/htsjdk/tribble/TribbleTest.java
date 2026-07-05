@@ -2,7 +2,7 @@ package htsjdk.tribble;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.FileExtensions;
-import java.io.File;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -16,7 +16,8 @@ public class TribbleTest extends HtsjdkTest {
 
         Assert.assertEquals(Tribble.indexFile(vcf), expectedIndex);
         Assert.assertEquals(
-                Tribble.indexFile(new File(vcf).getAbsolutePath()), new File(expectedIndex).getAbsolutePath());
+                Tribble.indexFile(Path.of(vcf).toAbsolutePath().toString()),
+                Path.of(expectedIndex).toAbsolutePath().toString());
     }
 
     @Test
@@ -27,6 +28,7 @@ public class TribbleTest extends HtsjdkTest {
 
         Assert.assertEquals(Tribble.tabixIndexFile(vcf), expectedIndex);
         Assert.assertEquals(
-                Tribble.tabixIndexFile(new File(vcf).getAbsolutePath()), new File(expectedIndex).getAbsolutePath());
+                Tribble.tabixIndexFile(Path.of(vcf).toAbsolutePath().toString()),
+                Path.of(expectedIndex).toAbsolutePath().toString());
     }
 }

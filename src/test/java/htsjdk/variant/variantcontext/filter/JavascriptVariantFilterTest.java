@@ -30,11 +30,11 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -103,9 +103,9 @@ public class JavascriptVariantFilterTest extends HtsjdkTest {
 
     @Test
     public void fileConstructor_compilesAndRuns() throws IOException {
-        File scriptFile = File.createTempFile("filter", ".js");
-        scriptFile.deleteOnExit();
-        Files.writeString(scriptFile.toPath(), "true;", StandardCharsets.UTF_8);
+        Path scriptFile = Files.createTempFile("filter", ".js");
+        scriptFile.toFile().deleteOnExit();
+        Files.writeString(scriptFile, "true;", StandardCharsets.UTF_8);
         VCFHeader h = header();
         JavascriptVariantFilter f = new JavascriptVariantFilter(scriptFile, h);
         Assert.assertTrue(f.test(snv("chr1", 100, "A", "C")));

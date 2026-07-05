@@ -9,11 +9,11 @@ import htsjdk.beta.io.bundle.BundleResourceType;
 import htsjdk.beta.plugin.registry.HaploidReferenceResolver;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -26,25 +26,49 @@ public class HaploidReferenceResolverTest extends HtsjdkTest {
         final String dataDir = "src/test/resources/htsjdk/samtools/reference";
 
         return new Object[][] {
-            {new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta").getAbsolutePath()), null, null, null
-            },
             {
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta").getAbsolutePath()),
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.dict").getAbsolutePath()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta")
+                        .toAbsolutePath()
+                        .toString()),
+                null,
                 null,
                 null
             },
             {
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta").getAbsolutePath()),
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.dict").getAbsolutePath()),
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.fai").getAbsolutePath()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta")
+                        .toAbsolutePath()
+                        .toString()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.dict")
+                        .toAbsolutePath()
+                        .toString()),
+                null,
                 null
             },
             {
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz").getAbsolutePath()),
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.dict").getAbsolutePath()),
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz.fai").getAbsolutePath()),
-                new HtsPath(new File(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz.gzi").getAbsolutePath()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta")
+                        .toAbsolutePath()
+                        .toString()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.dict")
+                        .toAbsolutePath()
+                        .toString()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.fai")
+                        .toAbsolutePath()
+                        .toString()),
+                null
+            },
+            {
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz")
+                        .toAbsolutePath()
+                        .toString()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.dict")
+                        .toAbsolutePath()
+                        .toString()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz.fai")
+                        .toAbsolutePath()
+                        .toString()),
+                new HtsPath(Paths.get(dataDir, "Homo_sapiens_assembly18.trimmed.fasta.gz.gzi")
+                        .toAbsolutePath()
+                        .toString()),
             },
         };
     }

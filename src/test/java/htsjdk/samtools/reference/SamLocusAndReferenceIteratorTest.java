@@ -4,18 +4,18 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.*;
-import java.io.File;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools/reference");
 
     @Test
     public void testSamLocusAndReferenceIterator() {
 
-        final File reference = new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.trimmed.fasta");
-        final File samFile = new File(TEST_DATA_DIR, "simpleSmallFile.sam");
+        final Path reference = TEST_DATA_DIR.resolve("Homo_sapiens_assembly18.trimmed.fasta");
+        final Path samFile = TEST_DATA_DIR.resolve("simpleSmallFile.sam");
         final ReferenceSequenceFile referenceSequenceFile = new FastaSequenceFile(reference, false);
         final ReferenceSequenceFileWalker referenceSequenceFileWalker =
                 new ReferenceSequenceFileWalker(referenceSequenceFile);
@@ -52,8 +52,8 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testSamLocusAndReferenceIteratorMismatch() {
-        final File reference = new File(TEST_DATA_DIR, "reference_with_trailing_whitespace.fasta");
-        final File samFile = new File(TEST_DATA_DIR, "simpleSmallFile.sam");
+        final Path reference = TEST_DATA_DIR.resolve("reference_with_trailing_whitespace.fasta");
+        final Path samFile = TEST_DATA_DIR.resolve("simpleSmallFile.sam");
         final ReferenceSequenceFile referenceSequenceFile = new FastaSequenceFile(reference, false);
         final ReferenceSequenceFileWalker referenceSequenceFileWalker =
                 new ReferenceSequenceFileWalker(referenceSequenceFile);
@@ -65,8 +65,8 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
 
     @Test
     public void testSamLocusAndReferenceIteratorLeadingInsertion() {
-        final File reference = new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.trimmed.fasta");
-        final File samFile = new File(TEST_DATA_DIR, "leading_insertion.sam");
+        final Path reference = TEST_DATA_DIR.resolve("Homo_sapiens_assembly18.trimmed.fasta");
+        final Path samFile = TEST_DATA_DIR.resolve("leading_insertion.sam");
         final ReferenceSequenceFile referenceSequenceFile = new FastaSequenceFile(reference, false);
         final ReferenceSequenceFileWalker referenceSequenceFileWalker =
                 new ReferenceSequenceFileWalker(referenceSequenceFile);

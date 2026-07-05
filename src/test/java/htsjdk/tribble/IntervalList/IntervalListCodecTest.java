@@ -34,9 +34,9 @@ import htsjdk.samtools.util.IntervalList;
 import htsjdk.samtools.util.IntervalListTest;
 import htsjdk.tribble.*;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -68,16 +68,16 @@ public class IntervalListCodecTest extends HtsjdkTest {
     @DataProvider
     Object[][] TribbleDecodeData() {
         return new Object[][] {
-            {new File(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list")},
-            {new File(TestUtils.DATA_DIR, "interval_list/shortExampleWithEmptyLine.interval_list")}
+            {Path.of(TestUtils.DATA_DIR, "interval_list/shortExample.interval_list")},
+            {Path.of(TestUtils.DATA_DIR, "interval_list/shortExampleWithEmptyLine.interval_list")}
         };
     }
 
     @Test(dataProvider = "TribbleDecodeData")
-    public void testTribbleDecode(final File file) throws IOException {
-        final IntervalList intervalListLocal = IntervalList.fromFile(file);
-        try (final FeatureReader<Interval> intervalListReader =
-                        AbstractFeatureReader.getFeatureReader(file.getAbsolutePath(), new IntervalListCodec(), false);
+    public void testTribbleDecode(final Path file) throws IOException {
+        final IntervalList intervalListLocal = IntervalList.fromPath(file);
+        try (final FeatureReader<Interval> intervalListReader = AbstractFeatureReader.getFeatureReader(
+                        file.toAbsolutePath().toString(), new IntervalListCodec(), false);
                 final CloseableTribbleIterator<Interval> iterator = intervalListReader.iterator()) {
             Assert.assertEquals(intervalListLocal.getHeader(), intervalListReader.getHeader());
 
@@ -90,18 +90,18 @@ public class IntervalListCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "TribbleDecodeData")
-    public void testTribbleDecodeCompressed(final File file) throws IOException {
+    public void testTribbleDecodeCompressed(final Path file) throws IOException {
         // compress 'file' to bgzf
-        File tmpGz = File.createTempFile("htsjdk.", FileExtensions.COMPRESSED_INTERVAL_LIST);
+        Path tmpGz = Files.createTempFile("htsjdk.", FileExtensions.COMPRESSED_INTERVAL_LIST);
         try (BlockCompressedOutputStream bgz = new BlockCompressedOutputStream(tmpGz);
-                FileInputStream fis = new FileInputStream(file)) {
+                InputStream fis = Files.newInputStream(file)) {
             IOUtil.copyStream(fis, bgz);
             bgz.flush();
         }
         // test dictonary can be extracted
         Assert.assertNotNull(SAMSequenceDictionaryExtractor.extractDictionary(tmpGz));
         testTribbleDecode(tmpGz);
-        tmpGz.delete();
+        Files.deleteIfExists(tmpGz);
     }
 
     /**
@@ -114,8 +114,8 @@ public class IntervalListCodecTest extends HtsjdkTest {
     public void testDecodeIntervalListFile_bad(Path file) throws Exception {
         IntervalListCodec codec = new IntervalListCodec();
 
-        try (FeatureReader<Interval> intervalListReader = AbstractFeatureReader.getFeatureReader(
-                        IOUtil.getFullCanonicalPath(file.toFile()), codec, false);
+        try (FeatureReader<Interval> intervalListReader =
+                        AbstractFeatureReader.getFeatureReader(file.toRealPath().toString(), codec, false);
                 CloseableTribbleIterator<Interval> iter = intervalListReader.iterator()) {
             for (final Feature unused : iter) {}
         }

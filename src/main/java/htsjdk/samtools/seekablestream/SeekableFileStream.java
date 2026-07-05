@@ -17,10 +17,10 @@
  */
 package htsjdk.samtools.seekablestream;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,18 +38,25 @@ public class SeekableFileStream extends SeekableStream {
     static Collection<SeekableFileStream> allInstances =
             Collections.synchronizedCollection(new HashSet<SeekableFileStream>());
 
-    File file;
+    private final Path path;
     RandomAccessFile fis;
 
-    public SeekableFileStream(final File file) throws FileNotFoundException {
-        this.file = file;
-        fis = new RandomAccessFile(file, "r");
+    /**
+     * Create a {@code SeekableFileStream} over a local file represented by a {@link Path}.
+     *
+     * @param path the path to the local file to open; must be backed by the default (local) filesystem
+     *             because the underlying {@link RandomAccessFile} requires a local file
+     * @throws FileNotFoundException if the file does not exist or cannot be opened for reading
+     */
+    public SeekableFileStream(final Path path) throws FileNotFoundException {
+        this.path = path;
+        fis = new RandomAccessFile(path.toFile(), "r");
         allInstances.add(this);
     }
 
     @Override
     public long length() {
-        return file.length();
+        return path.toFile().length();
     }
 
     @Override
@@ -106,7 +113,7 @@ public class SeekableFileStream extends SeekableStream {
 
     @Override
     public String getSource() {
-        return file.getAbsolutePath();
+        return path.toAbsolutePath().toString();
     }
 
     @Override

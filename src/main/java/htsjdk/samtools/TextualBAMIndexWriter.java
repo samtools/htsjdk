@@ -25,9 +25,10 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ import java.util.List;
 class TextualBAMIndexWriter implements BAMIndexWriter {
 
     protected final int nRef;
-    protected final File output;
+    protected final Path output;
     private final PrintWriter pw;
     private int count = 0;
 
@@ -46,15 +47,15 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
      * constructor
      *
      * @param nRef    Number of reference sequences
-     * @param output   BAM Index output file
+     * @param output   BAM Index output file path
      */
-    public TextualBAMIndexWriter(final int nRef, final File output) {
+    public TextualBAMIndexWriter(final int nRef, final Path output) {
         this.output = output;
         this.nRef = nRef;
         try {
-            pw = new PrintWriter(output);
-        } catch (final FileNotFoundException e) {
-            throw new SAMException("Can't find output file " + output, e);
+            pw = new PrintWriter(Files.newBufferedWriter(output));
+        } catch (final IOException e) {
+            throw new SAMException("Can't open output file " + output, e);
         }
         writeHeader();
     }

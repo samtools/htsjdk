@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble.index;
 
-import com.google.common.io.Files;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
@@ -44,9 +43,9 @@ import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -64,13 +63,13 @@ public class IndexFactoryTest extends HtsjdkTest {
     @DataProvider(name = "bedDataProvider")
     public Object[][] getLinearIndexFactoryTypes() {
         return new Object[][] {
-            {new File(TestUtils.DATA_DIR, "bed/Unigene.sample.bed")},
-            {new File(TestUtils.DATA_DIR, "bed/Unigene.sample.bed.gz")}
+            {Path.of(TestUtils.DATA_DIR, "bed/Unigene.sample.bed")},
+            {Path.of(TestUtils.DATA_DIR, "bed/Unigene.sample.bed.gz")}
         };
     }
 
     @Test(dataProvider = "bedDataProvider")
-    public void testCreateLinearIndexFromBED(final File inputBEDFIle) {
+    public void testCreateLinearIndexFromBED(final Path inputBEDFIle) {
         Index index = IndexFactory.createLinearIndex(inputBEDFIle, new BEDCodec());
         String chr = "chr2";
 
@@ -86,13 +85,13 @@ public class IndexFactoryTest extends HtsjdkTest {
 
     @Test(expectedExceptions = TribbleException.MalformedFeatureFile.class, dataProvider = "indexFactoryProvider")
     public void testCreateIndexUnsorted(IndexFactory.IndexType type) {
-        final File unsortedBedFile = new File(TestUtils.DATA_DIR, "bed/unsorted.bed");
+        final Path unsortedBedFile = Path.of(TestUtils.DATA_DIR, "bed/unsorted.bed");
         IndexFactory.createIndex(unsortedBedFile, new BEDCodec(), type);
     }
 
     @Test(expectedExceptions = TribbleException.MalformedFeatureFile.class, dataProvider = "indexFactoryProvider")
     public void testCreateIndexDiscontinuousContigs(IndexFactory.IndexType type) throws Exception {
-        final File discontinuousFile = new File(TestUtils.DATA_DIR, "bed/disconcontigs.bed");
+        final Path discontinuousFile = Path.of(TestUtils.DATA_DIR, "bed/disconcontigs.bed");
         IndexFactory.createIndex(discontinuousFile, new BEDCodec(), type);
     }
 
@@ -150,29 +149,30 @@ public class IndexFactoryTest extends HtsjdkTest {
     public Object[][] getVCFIndexData() {
         return new Object[][] {
             new Object[] {
-                new File(TestUtils.DATA_DIR, "tabix/4featuresHG38Header.vcf.gz"),
+                Path.of(TestUtils.DATA_DIR, "tabix/4featuresHG38Header.vcf.gz"),
                 new Interval("chr6", 33414233, 118314029)
             },
             new Object[] {
-                new File(TestUtils.DATA_DIR, "tabix/4featuresHG38Header.vcf"), new Interval("chr6", 33414233, 118314029)
+                Path.of(TestUtils.DATA_DIR, "tabix/4featuresHG38Header.vcf"), new Interval("chr6", 33414233, 118314029)
             },
         };
     }
 
     @Test(dataProvider = "vcfDataProvider")
-    public void testCreateTabixIndexFromVCF(final File inputVCF, final Interval queryInterval) throws IOException {
+    public void testCreateTabixIndexFromVCF(final Path inputVCF, final Interval queryInterval) throws IOException {
         // copy the original file and create the index for the copy
-        final File tempDir = IOUtil.createTempDir("testCreateTabixIndexFromVCF").toFile();
-        tempDir.deleteOnExit();
-        final File tmpVCF = new File(tempDir, inputVCF.getName());
+        final Path tempDir = IOUtil.createTempDir("testCreateTabixIndexFromVCF");
+        tempDir.toFile().deleteOnExit();
+        final Path tmpVCF = tempDir.resolve(inputVCF.getFileName().toString());
         Files.copy(inputVCF, tmpVCF);
-        tmpVCF.deleteOnExit();
+        tmpVCF.toFile().deleteOnExit();
 
         // this test creates a TABIX index (.tbi)
-        final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(tmpVCF, new VCFCodec(), null);
-        tabixIndexGz.writeBasedOnFeatureFile(tmpVCF);
-        final File tmpIndex = Tribble.tabixIndexFile(tmpVCF);
-        tmpIndex.deleteOnExit();
+        final TabixIndex tabixIndexGz =
+                IndexFactory.createTabixIndex(tmpVCF, new VCFCodec(), (SAMSequenceDictionary) null);
+        tabixIndexGz.writeBasedOnFeaturePath(tmpVCF);
+        final Path tmpIndex = Tribble.tabixIndexPath(tmpVCF);
+        tmpIndex.toFile().deleteOnExit();
 
         try (final VCFFileReader originalReader = new VCFFileReader(inputVCF, false);
                 final VCFFileReader tmpReader = new VCFFileReader(tmpVCF, tmpIndex, true)) {
@@ -196,24 +196,24 @@ public class IndexFactoryTest extends HtsjdkTest {
             // TODO: this needs more test cases, including block compressed and indexed, but bcftools can't
             // generate indices for BCF2.1 files, which is all HTSJDK can read, and htsjdk also can't read/write
             // block compressed BCFs (https://github.com/samtools/htsjdk/issues/946)
-            new Object[] {new File("src/test/resources/htsjdk/variant/serialization_test.bcf")}
+            new Object[] {Path.of("src/test/resources/htsjdk/variant/serialization_test.bcf")}
         };
     }
 
     @Test(dataProvider = "bcfDataFactory")
-    public void testCreateLinearIndexFromBCF(final File inputBCF) throws IOException {
+    public void testCreateLinearIndexFromBCF(final Path inputBCF) throws IOException {
         // copy the original file and create the index for the copy
-        final File tempDir = IOUtil.createTempDir("testCreateIndexFromBCF").toFile();
-        tempDir.deleteOnExit();
-        final File tmpBCF = new File(tempDir, inputBCF.getName());
+        final Path tempDir = IOUtil.createTempDir("testCreateIndexFromBCF");
+        tempDir.toFile().deleteOnExit();
+        final Path tmpBCF = tempDir.resolve(inputBCF.getFileName().toString());
         Files.copy(inputBCF, tmpBCF);
-        tmpBCF.deleteOnExit();
+        tmpBCF.toFile().deleteOnExit();
 
         // NOTE: this test creates a LINEAR index (.idx)
         final Index index = IndexFactory.createIndex(tmpBCF, new BCF2Codec(), IndexFactory.IndexType.LINEAR);
-        index.writeBasedOnFeatureFile(tmpBCF);
-        final File tempIndex = Tribble.indexFile(tmpBCF);
-        tempIndex.deleteOnExit();
+        index.writeBasedOnFeaturePath(tmpBCF);
+        final Path tempIndex = Tribble.indexPath(tmpBCF);
+        tempIndex.toFile().deleteOnExit();
 
         try (final VCFFileReader originalReader = new VCFFileReader(inputBCF, false);
                 final VCFFileReader tmpReader = new VCFFileReader(tmpBCF, tempIndex, true)) {
@@ -246,30 +246,32 @@ public class IndexFactoryTest extends HtsjdkTest {
     @Test(dataProvider = "getRedirectFiles")
     public void testIndexRedirectedFiles(String input, IndexFactory.IndexType type) throws IOException {
         final VCFRedirectCodec codec = new VCFRedirectCodec();
-        final File dir = IOUtil.createTempDir("redirec-test.dir").toFile();
+        final Path dir = IOUtil.createTempDir("redirec-test.dir");
         try {
-            final File tmpInput = new File(dir, new File(input).getName());
-            Files.copy(new File(input), tmpInput);
-            final File tmpDataFile = new File(codec.getPathToDataFile(tmpInput.toString()));
-            Assert.assertTrue(new File(tmpDataFile.getAbsoluteFile().getParent()).mkdir());
-            final File originalDataFile = new File(codec.getPathToDataFile(input));
+            final Path tmpInput = dir.resolve(Path.of(input).getFileName().toString());
+            Files.copy(Path.of(input), tmpInput);
+            final Path tmpDataFile = Path.of(codec.getPathToDataFile(tmpInput.toString()));
+            Files.createDirectories(tmpDataFile.getParent());
+            final Path originalDataFile = Path.of(codec.getPathToDataFile(input));
             Files.copy(originalDataFile, tmpDataFile);
 
             try (final AbstractFeatureReader<VariantContext, LineIterator> featureReader =
-                    AbstractFeatureReader.getFeatureReader(tmpInput.getAbsolutePath(), codec, false)) {
+                    AbstractFeatureReader.getFeatureReader(
+                            tmpInput.toAbsolutePath().toString(), codec, false)) {
                 Assert.assertFalse(featureReader.hasIndex());
             }
             final Index index = IndexFactory.createIndex(tmpInput, codec, type);
-            index.writeBasedOnFeatureFile(tmpDataFile);
+            index.writeBasedOnFeaturePath(tmpDataFile);
 
             try (final AbstractFeatureReader<VariantContext, LineIterator> featureReader =
-                    AbstractFeatureReader.getFeatureReader(tmpInput.getAbsolutePath(), codec)) {
+                    AbstractFeatureReader.getFeatureReader(
+                            tmpInput.toAbsolutePath().toString(), codec)) {
                 Assert.assertTrue(featureReader.hasIndex());
                 Assert.assertEquals(
                         featureReader.query("20", 1110696, 1230237).stream().count(), 2);
             }
         } finally {
-            IOUtil.recursiveDelete(dir.toPath());
+            IOUtil.recursiveDelete(dir);
         }
     }
 }

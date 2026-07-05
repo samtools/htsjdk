@@ -46,10 +46,10 @@ import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -73,30 +73,30 @@ import org.testng.annotations.Test;
 public class VCFWriterUnitTest extends VariantBaseTest {
     private Set<VCFHeaderLine> metaData;
     private Set<String> additionalColumns;
-    private File tempDir;
+    private Path tempDir;
 
     @BeforeClass
     private void createTemporaryDirectory() {
-        tempDir = TestUtil.getTempDirectory("VCFWriter", "StaleIndex");
-        tempDir.deleteOnExit();
+        tempDir = TestUtil.getTempDirectoryAsPath("VCFWriter", "StaleIndex");
+        tempDir.toFile().deleteOnExit();
     }
 
     /** test, using the writer and reader, that we can output and input a VCF file without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testBasicWriteAndRead(final String extension) throws IOException {
-        final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension, tempDir);
-        fakeVCFFile.deleteOnExit();
+        final Path fakeVCFPath = Files.createTempFile(tempDir, "testBasicWriteAndRead.", extension);
+        fakeVCFPath.toFile().deleteOnExit();
         if (FileExtensions.COMPRESSED_VCF.equals(extension) || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension)) {
-            new File(fakeVCFFile.getAbsolutePath() + FileExtensions.VCF_INDEX);
+            Path.of(fakeVCFPath.toAbsolutePath() + FileExtensions.VCF_INDEX);
         } else {
-            Tribble.indexFile(fakeVCFFile).deleteOnExit();
+            Tribble.indexPath(fakeVCFPath).toFile().deleteOnExit();
         }
         metaData = new HashSet<>();
         additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
+                .setOutputPath(fakeVCFPath)
                 .setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
@@ -105,8 +105,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         writer.add(createVC(header));
         writer.close();
         final VCFCodec codec = new VCFCodec();
-        final FeatureReader<VariantContext> reader =
-                AbstractFeatureReader.getFeatureReader(fakeVCFFile.getAbsolutePath(), codec, false);
+        final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(
+                fakeVCFPath.toAbsolutePath().toString(), codec, false);
         final VCFHeader headerFromFile = (VCFHeader) reader.getHeader();
 
         int counter = 0;
@@ -129,19 +129,19 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
-        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
-        fakeVCFFile.deleteOnExit();
+        final Path fakeVCFPath = Files.createTempFile(tempDir, "testWriteAndReadVCFHeaderless.", extension);
+        fakeVCFPath.toFile().deleteOnExit();
         if (FileExtensions.COMPRESSED_VCF.equals(extension) || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension)) {
-            new File(fakeVCFFile.getAbsolutePath() + ".tbi");
+            Path.of(fakeVCFPath.toAbsolutePath() + ".tbi");
         } else {
-            Tribble.indexFile(fakeVCFFile).deleteOnExit();
+            Tribble.indexPath(fakeVCFPath).toFile().deleteOnExit();
         }
         metaData = new HashSet<>();
         additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
+                .setOutputPath(fakeVCFPath)
                 .setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build()) {
@@ -152,8 +152,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final VCFCodec codec = new VCFCodec();
         codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
 
-        try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFFile);
-                FileInputStream fis = new FileInputStream(fakeVCFFile)) {
+        try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFPath);
+                InputStream fis = Files.newInputStream(fakeVCFPath)) {
             AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(
                     FileExtensions.COMPRESSED_VCF.equals(extension)
                                     || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension)
@@ -170,13 +170,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testWriteHeaderTwice() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
-        fakeVCFFile.deleteOnExit();
+        final Path fakeVCFPath = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
+        fakeVCFPath.toFile().deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent writing header twice
         try (final VariantContextWriter writer1 = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
+                .setOutputPath(fakeVCFPath)
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
             writer1.writeHeader(header);
@@ -186,13 +186,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingHeader() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
-        fakeVCFFile.deleteOnExit();
+        final Path fakeVCFPath = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
+        fakeVCFPath.toFile().deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent changing header if it's already written
         try (final VariantContextWriter writer2 = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
+                .setOutputPath(fakeVCFPath)
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
             writer2.writeHeader(header);
@@ -202,13 +202,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingBody() {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
-        fakeVCFFile.deleteOnExit();
+        final Path fakeVCFPath = VariantBaseTest.createTempFile("testBasicWriteAndRead.", FileExtensions.VCF);
+        fakeVCFPath.toFile().deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent changing header if part of body is already written
         try (final VariantContextWriter writer3 = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
+                .setOutputPath(fakeVCFPath)
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
             writer3.setHeader(header);
@@ -292,7 +292,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "vcfExtensionsDataProvider")
-    public void TestWritingLargeVCF(final String extension) throws FileNotFoundException, InterruptedException {
+    public void TestWritingLargeVCF(final String extension) throws IOException, InterruptedException {
 
         final Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
         final Set<String> Columns = new HashSet<String>();
@@ -304,19 +304,19 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary dict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, Columns, dict);
 
-        final File vcf = new File(tempDir, "test" + extension);
+        final Path vcf = tempDir.resolve("test" + extension);
         final String indexExtension;
         if (extension.equals(FileExtensions.COMPRESSED_VCF) || extension.equals(FileExtensions.COMPRESSED_VCF_BGZ)) {
             indexExtension = FileExtensions.TABIX_INDEX;
         } else {
             indexExtension = FileExtensions.TRIBBLE_INDEX;
         }
-        final File vcfIndex = new File(vcf.getAbsolutePath() + indexExtension);
-        vcfIndex.deleteOnExit();
+        final Path vcfIndex = Path.of(vcf.toAbsolutePath() + indexExtension);
+        vcfIndex.toFile().deleteOnExit();
 
         for (int count = 1; count < 2; count++) {
             final VariantContextWriter writer = new VariantContextWriterBuilder()
-                    .setOutputFile(vcf)
+                    .setOutputPath(vcf)
                     .setReferenceDictionary(dict)
                     .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                     .build();
@@ -329,7 +329,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             }
             writer.close();
 
-            Assert.assertTrue(vcf.lastModified() <= vcfIndex.lastModified());
+            Assert.assertTrue(vcf.toFile().lastModified() <= vcfIndex.toFile().lastModified());
         }
     }
 
@@ -348,16 +348,16 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      */
     @Test
     public void testModifyHeader() {
-        final File originalVCF = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
+        final Path originalVCF = Path.of("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(originalVCF, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();
 
         header.addMetaDataLine(new VCFHeaderLine("FOOBAR", "foovalue"));
 
-        final File outputVCF = createTempFile("testModifyHeader", FileExtensions.VCF);
+        final Path outputVCF = createTempFile("testModifyHeader", FileExtensions.VCF);
         final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(outputVCF)
+                .setOutputPath(outputVCF)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER))
                 .build();
         writer.writeHeader(header);
@@ -382,13 +382,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      */
     @Test(dataProvider = "vcfExtensionsDataProvider", expectedExceptions = IllegalStateException.class)
     public void testWriteWithEmptyHeader(final String extension) throws IOException {
-        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
+        final Path fakeVCFPath = Files.createTempFile(tempDir, "testWriteAndReadVCFHeaderless.", extension);
         metaData = new HashSet<>();
         additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
+                .setOutputPath(fakeVCFPath)
                 .setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build()) {

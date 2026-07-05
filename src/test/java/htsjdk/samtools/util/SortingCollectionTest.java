@@ -24,15 +24,19 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.stream.Stream;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -41,10 +45,9 @@ import org.testng.annotations.Test;
 
 public class SortingCollectionTest extends HtsjdkTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
-    protected File tmpDir() {
-        return new File(
-                System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"),
-                getClass().getSimpleName());
+    protected Path tmpDir() {
+        return Paths.get(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"))
+                .resolve(getClass().getSimpleName());
     }
 
     @BeforeMethod
@@ -61,12 +64,23 @@ public class SortingCollectionTest extends HtsjdkTest {
     void resetTmpDir() {
         System.err.println("Resetting tmpdir");
         IOUtil.deleteDirectoryTree(tmpDir());
-        if (!tmpDir().mkdirs())
-            throw new IllegalStateException("Could not create tmpdir: " + tmpDir().getAbsolutePath());
+        try {
+            Files.createDirectories(tmpDir());
+        } catch (final IOException e) {
+            throw new IllegalStateException("Could not create tmpdir: " + tmpDir().toAbsolutePath(), e);
+        }
     }
 
     protected boolean tmpDirIsEmpty() {
-        return tmpDir().listFiles().length == 0;
+        return countTmpDirEntries() == 0;
+    }
+
+    private long countTmpDirEntries() {
+        try (final Stream<Path> entries = Files.list(tmpDir())) {
+            return entries.count();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @DataProvider(name = "test1")
@@ -106,7 +120,7 @@ public class SortingCollectionTest extends HtsjdkTest {
         assertIteratorEqualsList(strings, sortingCollection.iterator());
 
         sortingCollection.cleanup();
-        Assert.assertEquals(tmpDir().list().length, 0);
+        Assert.assertEquals(countTmpDirEntries(), 0L);
     }
 
     @Test
@@ -118,14 +132,14 @@ public class SortingCollectionTest extends HtsjdkTest {
             sortingCollection.add(str);
         }
 
-        Assert.assertEquals(tmpDir().list().length, 0);
+        Assert.assertEquals(countTmpDirEntries(), 0L);
         sortingCollection.spillToDisk();
-        Assert.assertEquals(tmpDir().list().length, 1);
+        Assert.assertEquals(countTmpDirEntries(), 1L);
 
         assertIteratorEqualsList(strings, sortingCollection.iterator());
 
         sortingCollection.cleanup();
-        Assert.assertEquals(tmpDir().list().length, 0);
+        Assert.assertEquals(countTmpDirEntries(), 0L);
     }
 
     private void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {

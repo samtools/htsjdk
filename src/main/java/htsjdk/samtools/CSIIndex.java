@@ -3,7 +3,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -41,8 +40,20 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
         this(new SeekablePathStream(path), dictionary);
     }
 
-    public CSIIndex(final File file, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
-        this(IndexFileBufferFactory.getBuffer(file, enableMemoryMapping), file.getName(), dictionary);
+    /**
+     * Open a CSI index from the given path.
+     *
+     * <p>For paths on the default (local) file system, the index is read via a memory-mapped or
+     * random-access buffer as controlled by {@code enableMemoryMapping}.  For paths on any other
+     * file system, {@code enableMemoryMapping} is ignored and the index is read through a stream
+     * fallback via {@link IndexFileBufferFactory#getBuffer(Path, boolean)}.</p>
+     *
+     * @param path the path to the CSI index file; local or non-local file systems are both supported
+     * @param enableMemoryMapping whether to memory-map the index file (ignored for non-local paths)
+     * @param dictionary the sequence dictionary associated with the index
+     */
+    public CSIIndex(final Path path, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
+        this(IndexFileBufferFactory.getBuffer(path, enableMemoryMapping), path.toString(), dictionary);
     }
 
     private CSIIndex(

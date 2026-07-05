@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -311,58 +310,6 @@ public class SortingCollection<T> implements Iterable<T> {
         this.cleanedUp = true;
 
         IOUtil.deletePaths(this.files);
-    }
-
-    /**
-     * Syntactic sugar around the ctor, to save some typing of type parameters
-     *
-     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec           For writing records to file and reading them back into RAM
-     * @param comparator      Defines output sort order
-     * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
-     * @param tmpDir          Where to write files of records that will not fit in RAM
-     * @deprecated since 2017-09. Use {@link #newInstance(Class, Codec, Comparator, int, Path...)} instead
-     */
-    @Deprecated
-    public static <T> SortingCollection<T> newInstance(
-            final Class<T> componentType,
-            final SortingCollection.Codec<T> codec,
-            final Comparator<T> comparator,
-            final int maxRecordsInRAM,
-            final File... tmpDir) {
-        return new SortingCollection<>(
-                componentType,
-                codec,
-                comparator,
-                maxRecordsInRAM,
-                false,
-                Arrays.stream(tmpDir).map(File::toPath).toArray(Path[]::new));
-    }
-
-    /**
-     * Syntactic sugar around the ctor, to save some typing of type parameters
-     *
-     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec           For writing records to file and reading them back into RAM
-     * @param comparator      Defines output sort order
-     * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
-     * @param tmpDirs         Where to write files of records that will not fit in RAM
-     * @deprecated since 2017-09. Use {@link #newInstanceFromPaths(Class, Codec, Comparator, int, Collection)} instead
-     */
-    @Deprecated
-    public static <T> SortingCollection<T> newInstance(
-            final Class<T> componentType,
-            final SortingCollection.Codec<T> codec,
-            final Comparator<T> comparator,
-            final int maxRecordsInRAM,
-            final Collection<File> tmpDirs) {
-        return new SortingCollection<>(
-                componentType,
-                codec,
-                comparator,
-                maxRecordsInRAM,
-                false,
-                tmpDirs.stream().map(File::toPath).toArray(Path[]::new));
     }
 
     /**

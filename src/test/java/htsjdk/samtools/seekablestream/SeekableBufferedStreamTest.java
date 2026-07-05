@@ -27,19 +27,21 @@ package htsjdk.samtools.seekablestream;
 import static org.testng.Assert.assertEquals;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class SeekableBufferedStreamTest extends HtsjdkTest {
 
-    //    private final File BAM_INDEX_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
-    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    //    private final Path BAM_INDEX_FILE = Paths.get("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    private final Path BAM_FILE = Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final String BAM_URL_STRING = "http://broadinstitute.github.io/picard/testdata/index_test.bam";
-    private static File TestFile = new File("src/test/resources/htsjdk/samtools/seekablestream/megabyteZeros.dat");
+    private static Path TestFile = Paths.get("src/test/resources/htsjdk/samtools/seekablestream/megabyteZeros.dat");
 
     /**
      * Test reading across a buffer boundary (buffer size is 512000).   The test first reads a range of
@@ -91,7 +93,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
     public void testEOF() throws IOException {
 
         int remainder = 149;
-        long fileLength = BAM_FILE.length();
+        long fileLength = Files.size(BAM_FILE);
         long startPosition = fileLength - remainder;
         int length = 1000;
 
@@ -143,7 +145,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
         final int length = 5000;
 
         class LimitedSeekableFileStream extends SeekableFileStream {
-            LimitedSeekableFileStream(File file) throws FileNotFoundException {
+            LimitedSeekableFileStream(Path file) throws FileNotFoundException {
                 super(file);
             }
 

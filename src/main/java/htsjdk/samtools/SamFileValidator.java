@@ -43,7 +43,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -203,10 +202,6 @@ public class SamFileValidator {
         final boolean result = errorsByType.isEmpty();
         cleanup();
         return result;
-    }
-
-    public void validateBamFileTermination(final File inputFile) {
-        validateBamFileTermination(IOUtil.toPath(inputFile));
     }
 
     public void validateBamFileTermination(final Path inputFile) {

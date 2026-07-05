@@ -26,9 +26,9 @@ package htsjdk.samtools.util;
 import com.google.common.base.Charsets;
 import htsjdk.HtsjdkTest;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -47,7 +47,7 @@ public class Md5CalculatingOutputStreamTest extends HtsjdkTest {
     public void testMd5(final String contents, final String expectedMd5) throws IOException {
         byte[] bytes = contents.getBytes(Charsets.US_ASCII);
         OutputStream outputStream = new ByteArrayOutputStream(bytes.length);
-        Md5CalculatingOutputStream md5 = new Md5CalculatingOutputStream(outputStream, (File) null);
+        Md5CalculatingOutputStream md5 = new Md5CalculatingOutputStream(outputStream, (Path) null);
         md5.write(bytes);
         md5.close(); // Cannot use try-with-resources because we need a value after closing the stream
         Assert.assertEquals(md5.md5(), expectedMd5);

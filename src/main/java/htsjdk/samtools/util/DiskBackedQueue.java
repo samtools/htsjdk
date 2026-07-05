@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,7 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.stream.Collectors;
 
 /**
  * A single-ended FIFO queue. Writes elements to temporary files when the queue gets too big.
@@ -96,19 +94,6 @@ public class DiskBackedQueue<E> implements Queue<E> {
                 ? 0
                 : maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
         this.ramRecords = new ArrayDeque<E>(this.maxRecordsInRamQueue);
-    }
-
-    /**
-     * Syntactic sugar around the ctor, to save some typing of type parameters
-     *
-     * @param codec For writing records to file and reading them back into RAM
-     * @param maxRecordsInRam how many records to accumulate in memory before spilling to disk
-     * @param tmpDir Where to write files of records that will not fit in RAM
-     */
-    public static <T> DiskBackedQueue<T> newInstance(
-            final SortingCollection.Codec<T> codec, final int maxRecordsInRam, final List<File> tmpDir) {
-        return new DiskBackedQueue<T>(
-                codec, maxRecordsInRam, tmpDir.stream().map(File::toPath).collect(Collectors.toList()));
     }
 
     /**

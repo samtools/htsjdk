@@ -13,12 +13,11 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 
 public class BamFileIoUtils {
@@ -30,24 +29,20 @@ public class BamFileIoUtils {
     @Deprecated
     public static final String BAM_FILE_EXTENSION = FileExtensions.BAM;
 
-    public static boolean isBamFile(final File file) {
-        return ((file != null) && SamReader.Type.BAM_TYPE.hasValidFileExtension(file.getName()));
+    /**
+     * Checks whether the given path points to a file with a valid BAM extension.
+     *
+     * @param path the path to check; may be {@code null}
+     * @return true if the path is non-null and has a valid BAM file extension
+     */
+    public static boolean isBamFile(final Path path) {
+        return (path != null)
+                && SamReader.Type.BAM_TYPE.hasValidFileExtension(
+                        path.getFileName().toString());
     }
 
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final Path inputFile, final Path outputFile) {
         reheaderBamFile(samFileHeader, inputFile, outputFile, true, true);
-    }
-
-    /**
-     * Support File input types for backward compatibility. Use the same method with Path inputs below.
-     */
-    public static void reheaderBamFile(
-            final SAMFileHeader samFileHeader,
-            final File inputFile,
-            final File outputFile,
-            final boolean createMd5,
-            final boolean createIndex) {
-        reheaderBamFile(samFileHeader, IOUtil.toPath(inputFile), IOUtil.toPath(outputFile), createMd5, createIndex);
     }
 
     /**
@@ -84,14 +79,6 @@ public class BamFileIoUtils {
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
         }
-    }
-
-    public static void blockCopyBamFile(
-            final File inputFile,
-            final OutputStream outputStream,
-            final boolean skipHeader,
-            final boolean skipTerminator) {
-        blockCopyBamFile(IOUtil.toPath(inputFile), outputStream, skipHeader, skipTerminator);
     }
 
     /**
@@ -158,27 +145,34 @@ public class BamFileIoUtils {
     }
 
     /**
-     * Assumes that all inputs and outputs are block compressed VCF files and copies them without decompressing and parsing
-     * most of the gzip blocks. Will decompress and parse blocks up to the one containing the end of the header in each file
-     * (often the first block) and re-compress any data remaining in that block into a new block in the output file. Subsequent
-     * blocks (excluding a terminator block if present) are copied directly from input to output.
+     * Assumes that all inputs and outputs are block compressed BAM files and copies them without decompressing and
+     * parsing most of the gzip blocks. Will decompress and parse blocks up to the one containing the end of the header
+     * in each file (often the first block) and re-compress any data remaining in that block into a new block in the
+     * output file. Subsequent blocks (excluding a terminator block if present) are copied directly from input to output.
+     *
+     * @param bams        the BAM files to gather, in order
+     * @param output      the output BAM file to create
+     * @param createIndex whether to create an index file for the output
+     * @param createMd5   whether to create an MD5 file for the output
      */
     public static void gatherWithBlockCopying(
-            final List<File> bams, final File output, final boolean createIndex, final boolean createMd5) {
+            final List<Path> bams, final Path output, final boolean createIndex, final boolean createMd5) {
         try {
-            OutputStream out = new FileOutputStream(output);
-            if (createMd5) out = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
-            File indexFile = null;
+            OutputStream out = Files.newOutputStream(output);
+            if (createMd5) {
+                out = new Md5CalculatingOutputStream(out, IOUtil.addExtension(output, FileExtensions.MD5));
+            }
+            Path indexFile = null;
             if (createIndex) {
-                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + FileExtensions.BAI_INDEX);
+                indexFile = output.resolveSibling(IOUtil.basename(output) + FileExtensions.BAI_INDEX);
                 out = new StreamInflatingIndexingOutputStream(out, indexFile);
             }
 
             boolean isFirstFile = true;
 
-            for (final File f : bams) {
-                LOG.info(String.format("Block copying %s ...", f.getAbsolutePath()));
-                blockCopyBamFile(IOUtil.toPath(f), out, !isFirstFile, true);
+            for (final Path f : bams) {
+                LOG.info(String.format("Block copying %s ...", f.toUri()));
+                blockCopyBamFile(f, out, !isFirstFile, true);
                 isFirstFile = false;
             }
 
@@ -189,22 +183,23 @@ public class BamFileIoUtils {
             // It is possible that the modified time on the index file is ever so slightly older than the original BAM
             // file
             // and this makes ValidateSamFile unhappy.
-            if (createIndex && (output.lastModified() > indexFile.lastModified())) {
-                final boolean success = indexFile.setLastModified(System.currentTimeMillis());
-                if (!success) {
+            if (createIndex && indexFile != null) {
+                try {
+                    final long outputModified =
+                            Files.getLastModifiedTime(output).toMillis();
+                    final long indexModified =
+                            Files.getLastModifiedTime(indexFile).toMillis();
+                    if (outputModified > indexModified) {
+                        Files.setLastModifiedTime(indexFile, FileTime.fromMillis(System.currentTimeMillis()));
+                    }
+                } catch (final IOException e) {
                     System.err.print(String.format(
-                            "Index file is older than BAM file for %s and unable to resolve this",
-                            output.getAbsolutePath()));
+                            "Index file is older than BAM file for %s and unable to resolve this", output.toUri()));
                 }
             }
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
         }
-    }
-
-    private static OutputStream buildOutputStream(
-            final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
-        return buildOutputStream(IOUtil.toPath(outputFile), createMd5, createIndex);
     }
 
     private static OutputStream buildOutputStream(
@@ -219,12 +214,6 @@ public class BamFileIoUtils {
                     outputStream, outputFile.resolveSibling(outputFile.getFileName() + FileExtensions.BAI_INDEX));
         }
         return outputStream;
-    }
-
-    @Deprecated
-    private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final File inputFile)
-            throws IOException {
-        assertSortOrdersAreEqual(newHeader, IOUtil.toPath(inputFile));
     }
 
     private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final Path inputFile)

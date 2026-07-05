@@ -26,8 +26,8 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.PeekableIterator;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.testng.Assert;
@@ -35,11 +35,11 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SamReaderTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final Path TEST_DATA_DIR = Path.of("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void variousFormatReaderTest(final String inputFile) throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
         try (final SamReader reader = SamReaderFactory.makeDefault().open(input)) {
             for (final SAMRecord rec : reader) {
                 // just scan through the lines
@@ -61,8 +61,8 @@ public class SamReaderTest extends HtsjdkTest {
     public void CRAMIndexTest(
             final String inputFile, final String referenceFile, QueryInterval queryInterval, String expectedReadName)
             throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
-        final File reference = new File(TEST_DATA_DIR, referenceFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
+        final Path reference = TEST_DATA_DIR.resolve(referenceFile);
         try (final SamReader reader =
                 SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
             Assert.assertTrue(reader.hasIndex());
@@ -86,8 +86,8 @@ public class SamReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "NoIndexCRAMTest")
     public void CRAMNoIndexTest(final String inputFile, final String referenceFile) throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
-        final File reference = new File(TEST_DATA_DIR, referenceFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
+        final Path reference = TEST_DATA_DIR.resolve(referenceFile);
         try (final SamReader reader =
                 SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
             Assert.assertFalse(reader.hasIndex());
@@ -148,7 +148,7 @@ public class SamReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void samRecordFactoryTest(final String inputFile) throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
         final SAMRecordFactoryTester factory = new SAMRecordFactoryTester();
         int i = 0;
         try (final SamReader reader =
@@ -169,7 +169,7 @@ public class SamReaderTest extends HtsjdkTest {
     @Test(dataProvider = "cramTestCases", expectedExceptions = IllegalArgumentException.class)
     public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile)
             throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
         try (final SamReader reader = SamReaderFactory.makeDefault().open(input)) {
             for (final SAMRecord rec : reader) {}
         }
@@ -186,8 +186,8 @@ public class SamReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "cramTestCases")
     public void testIterateCRAMWithIndex(final String inputFile, final String referenceFile) throws IOException {
-        final File input = new File(TEST_DATA_DIR, inputFile);
-        final File reference = new File(TEST_DATA_DIR, referenceFile);
+        final Path input = TEST_DATA_DIR.resolve(inputFile);
+        final Path reference = TEST_DATA_DIR.resolve(referenceFile);
         try (final SamReader reader =
                 SamReaderFactory.makeDefault().referenceSequence(reference).open(input)) {
             for (final SAMRecord rec : reader) {}

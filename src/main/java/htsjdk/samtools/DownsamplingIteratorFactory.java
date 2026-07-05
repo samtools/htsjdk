@@ -24,7 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.IOUtil;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -112,7 +112,7 @@ public class DownsamplingIteratorFactory {
      * See {@link DownsamplingIteratorFactory#make(Iterator, Strategy, double, double, int)} for detailed parameter information.
      */
     public static DownsamplingIterator make(
-            final File samFile,
+            final Path samFile,
             final Strategy strategy,
             final double proportion,
             final double accuracy,

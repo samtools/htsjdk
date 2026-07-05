@@ -35,7 +35,6 @@ import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -49,58 +48,10 @@ public class VCFFileReader implements VCFReader {
     private final FeatureReader<VariantContext> reader;
 
     /**
-     * Returns true if the given file appears to be a BCF file.
-     */
-    public static boolean isBCF(final File file) {
-        return isBCF(file.toPath());
-    }
-
-    /**
      * Returns true if the given path appears to be a BCF file.
      */
     public static boolean isBCF(final Path path) {
         return path.toUri().getRawPath().endsWith(FileExtensions.BCF);
-    }
-
-    /**
-     * Returns the SAMSequenceDictionary from the provided VCF file.
-     */
-    public static SAMSequenceDictionary getSequenceDictionary(final File file) {
-        try (final VCFFileReader vcfFileReader = new VCFFileReader(file, false)) {
-            return vcfFileReader.getFileHeader().getSequenceDictionary();
-        }
-    }
-
-    /**
-     * Constructs a VCFFileReader that requires the index to be present.
-     */
-    public VCFFileReader(final File file) {
-        this(file, true);
-    }
-
-    /**
-     * Constructs a VCFFileReader with a specified index.
-     */
-    public VCFFileReader(final File file, final File indexFile) {
-        this(file, indexFile, true);
-    }
-
-    /**
-     * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
-     */
-    public VCFFileReader(final File file, final boolean requireIndex) {
-        // Note how we deal with type safety here, just casting to (FeatureCodec)
-        // in the call to getFeatureReader is not enough for Java 8.
-        this(file.toPath(), requireIndex);
-    }
-
-    /**
-     * Allows construction of a VCFFileReader with a specified index file.
-     */
-    public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
-        // Note how we deal with type safety here, just casting to (FeatureCodec)
-        // in the call to getFeatureReader is not enough for Java 8.
-        this(file.toPath(), indexFile.toPath(), requireIndex);
     }
 
     /**
@@ -115,7 +66,7 @@ public class VCFFileReader implements VCFReader {
     }
 
     /**
-     * Returns the SAMSequenceDictionary from the provided VCF file.
+     * Returns the SAMSequenceDictionary from the provided VCF path.
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path path) {
         try (final VCFFileReader r = new VCFFileReader(path, false)) {
@@ -168,33 +119,6 @@ public class VCFFileReader implements VCFReader {
         try (final VCFFileReader vcfReader = new VCFFileReader(path, false)) {
             return vcfReader.toIntervalList(includeFiltered);
         }
-    }
-
-    /**
-     * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
-     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     *
-     * @param file a VCF
-     * @return an {@link IntervalList}
-     *
-     * @deprecated since July 2018 use {@link #toIntervalList(Path)} instead
-     */
-    @Deprecated
-    public static IntervalList fromVcf(final File file) {
-        return toIntervalList(file.toPath());
-    }
-
-    /**
-     * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
-     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     *
-     * @param file
-     * @return
-     * @deprecated since July 2018 use {@link #toIntervalList(Path, boolean)} instead
-     */
-    @Deprecated
-    public static IntervalList fromVcf(final File file, final boolean includeFiltered) {
-        return toIntervalList(file.toPath(), includeFiltered);
     }
 
     /**

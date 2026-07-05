@@ -19,8 +19,8 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 public class HtsgetBAMCodecTest extends HtsjdkTest {
     private static final IOPath htsgetBAM = new HtsPath(
             HtsgetBAMFileReaderTest.HTSGET_ENDPOINT + HtsgetBAMFileReaderTest.LOCAL_PREFIX + "index_test.bam");
-    private static final File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final Path bamFile = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testThrowOnGetEncoder() {

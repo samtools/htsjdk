@@ -5,7 +5,6 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -19,7 +18,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SeekableStreamFactoryTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools");
 
     @DataProvider
     public Object[][] getSpecialCasePaths() {
@@ -55,17 +54,35 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
     public Object[][] getStreamForData() throws MalformedURLException {
         return new Object[][] {
             {
-                new File(TEST_DATA_DIR, "BAMFileIndexTest/index_test.bam").getAbsolutePath(),
-                new File(TEST_DATA_DIR, "BAMFileIndexTest/index_test.bam").getAbsolutePath()
+                TEST_DATA_DIR
+                        .resolve("BAMFileIndexTest/index_test.bam")
+                        .toAbsolutePath()
+                        .toString(),
+                TEST_DATA_DIR
+                        .resolve("BAMFileIndexTest/index_test.bam")
+                        .toAbsolutePath()
+                        .toString()
             },
             {
-                new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath(),
-                new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath()
+                TEST_DATA_DIR
+                        .resolve("cram_with_bai_index.cram")
+                        .toAbsolutePath()
+                        .toString(),
+                TEST_DATA_DIR
+                        .resolve("cram_with_bai_index.cram")
+                        .toAbsolutePath()
+                        .toString()
             },
             {
-                new URL("file://" + new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath())
+                new URL("file://"
+                                + TEST_DATA_DIR
+                                        .resolve("cram_with_bai_index.cram")
+                                        .toAbsolutePath())
                         .toExternalForm(),
-                new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath()
+                TEST_DATA_DIR
+                        .resolve("cram_with_bai_index.cram")
+                        .toAbsolutePath()
+                        .toString()
             },
             {
                 new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm(),
@@ -86,18 +103,18 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
 
     @Test
     public void testPathWithEmbeddedSpace() throws IOException {
-        final File testBam = new File(TEST_DATA_DIR, "BAMFileIndexTest/index_test.bam");
+        final Path testBam = TEST_DATA_DIR.resolve("BAMFileIndexTest/index_test.bam");
 
         // create a temp dir with a space in the name and copy the test file there
-        final File tempDir = IOUtil.createTempDir("test spaces").toFile();
-        Assert.assertTrue(tempDir.getAbsolutePath().contains(" "));
-        tempDir.deleteOnExit();
-        final File inputBam = new File(tempDir, "index_test.bam");
-        inputBam.deleteOnExit();
-        IOUtil.copyFile(testBam, inputBam);
+        final Path tempDir = IOUtil.createTempDir("test spaces");
+        Assert.assertTrue(tempDir.toAbsolutePath().toString().contains(" "));
+        IOUtil.deleteOnExit(tempDir);
+        final Path inputBam = tempDir.resolve("index_test.bam");
+        IOUtil.deleteOnExit(inputBam);
+        IOUtil.copyPath(testBam, inputBam);
 
         // make sure the input string we use is URL-encoded
-        final String inputString = Paths.get(inputBam.getAbsolutePath()).toUri().toString();
+        final String inputString = inputBam.toAbsolutePath().toUri().toString();
         Assert.assertFalse(inputString.contains(" "));
         Assert.assertTrue(inputString.contains("%20"));
 

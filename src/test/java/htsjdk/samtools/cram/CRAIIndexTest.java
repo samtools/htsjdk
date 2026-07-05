@@ -4,7 +4,13 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -140,10 +146,10 @@ public class CRAIIndexTest extends HtsjdkTest {
     private SeekableStream getBaiStreamFromFileAsSeekableStream(
             final SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
         try {
-            final File file = File.createTempFile("test", ".crai");
-            file.deleteOnExit();
+            final Path file = Files.createTempFile("test", ".crai");
+            file.toFile().deleteOnExit();
 
-            try (final FileOutputStream fos = new FileOutputStream(file)) {
+            try (final OutputStream fos = Files.newOutputStream(file)) {
                 doIndexing(index, fos);
             }
 
@@ -159,10 +165,10 @@ public class CRAIIndexTest extends HtsjdkTest {
 
     private SeekableStream getBaiStreamFromFile(final SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
         try {
-            final File file = File.createTempFile("test", ".crai");
-            file.deleteOnExit();
+            final Path file = Files.createTempFile("test", ".crai");
+            file.toFile().deleteOnExit();
 
-            try (final FileOutputStream fos = new FileOutputStream(file)) {
+            try (final OutputStream fos = Files.newOutputStream(file)) {
                 doIndexing(index, fos);
             }
 

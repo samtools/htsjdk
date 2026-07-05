@@ -25,8 +25,8 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import java.io.File;
 import java.math.RoundingMode;
+import java.nio.file.Path;
 import java.security.InvalidParameterException;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -223,7 +223,7 @@ public class FormatUtil {
         if (returnType == Character.class || returnType == Character.TYPE) return parseChar(value);
         if (returnType == Iso8601Date.class) return parseIso8601Date(value);
         if (returnType == Date.class) return parseDate(value);
-        if (returnType == File.class) return new File(value);
+        if (returnType == Path.class) return Path.of(value);
         if (Enum.class.isAssignableFrom(returnType)) return parseEnum(value, (Class<? extends Enum>) returnType);
         if (returnType == String.class) return value;
 

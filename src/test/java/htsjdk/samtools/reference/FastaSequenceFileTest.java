@@ -27,8 +27,9 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.StringUtil;
-import java.io.File;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -38,9 +39,9 @@ import org.testng.annotations.Test;
 public class FastaSequenceFileTest extends HtsjdkTest {
     @Test
     public void testTrailingWhitespace() throws Exception {
-        final File fasta = File.createTempFile("test", ".fasta");
-        fasta.deleteOnExit();
-        final PrintWriter writer = new PrintWriter(fasta);
+        final Path fasta = Files.createTempFile("test", ".fasta");
+        fasta.toFile().deleteOnExit();
+        final PrintWriter writer = new PrintWriter(fasta.toFile());
         final String chr1 = "chr1";
         writer.println(">" + chr1);
         final String sequence = "ACGTACGT";
@@ -55,9 +56,9 @@ public class FastaSequenceFileTest extends HtsjdkTest {
 
     @Test
     public void testIntermediateWhitespace() throws Exception {
-        final File fasta = File.createTempFile("test", ".fasta");
-        fasta.deleteOnExit();
-        final PrintWriter writer = new PrintWriter(fasta);
+        final Path fasta = Files.createTempFile("test", ".fasta");
+        fasta.toFile().deleteOnExit();
+        final PrintWriter writer = new PrintWriter(fasta.toFile());
         final String chr1 = "chr1";
         writer.println(">" + chr1 + " extra stuff after sequence name");
         final String sequence = "ACGTACGT";
@@ -74,8 +75,8 @@ public class FastaSequenceFileTest extends HtsjdkTest {
     // There was a bug when reading a fasta with trailing whitespace, only when a sequence dictionary exists.
     @Test
     public void testTrailingWhitespaceWithPreexistingSequenceDictionary() throws Exception {
-        final File fasta =
-                new File("src/test/resources/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
+        final Path fasta =
+                Path.of("src/test/resources/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
         final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
         ReferenceSequence referenceSequence = fastaReader.nextSequence();
         Assert.assertEquals(referenceSequence.getName(), "chr1");
@@ -87,9 +88,9 @@ public class FastaSequenceFileTest extends HtsjdkTest {
 
     @Test
     public void testStream() throws Exception {
-        final File fasta = File.createTempFile("test", ".fasta");
-        fasta.deleteOnExit();
-        final PrintWriter writer = new PrintWriter(fasta);
+        final Path fasta = Files.createTempFile("test", ".fasta");
+        fasta.toFile().deleteOnExit();
+        final PrintWriter writer = new PrintWriter(fasta.toFile());
         final String chr1 = "chr1";
         writer.println(">" + chr1);
         final String sequence = "ACGTACGT";
@@ -98,7 +99,7 @@ public class FastaSequenceFileTest extends HtsjdkTest {
         writer.close();
         try (SeekableStream seekableStream = new SeekableFileStream(fasta)) {
             final FastaSequenceFile fastaReader =
-                    new FastaSequenceFile(fasta.getAbsolutePath(), seekableStream, null, true);
+                    new FastaSequenceFile(fasta.toAbsolutePath().toString(), seekableStream, null, true);
             final ReferenceSequence referenceSequence1 = fastaReader.nextSequence();
             Assert.assertEquals(referenceSequence1.getName(), chr1);
             Assert.assertEquals(StringUtil.bytesToString(referenceSequence1.getBases()), sequence + sequence);

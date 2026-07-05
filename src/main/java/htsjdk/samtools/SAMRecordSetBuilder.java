@@ -28,11 +28,12 @@ import htsjdk.samtools.SAMReadGroupRecord.PlatformValue;
 import htsjdk.samtools.reference.FastaReferenceWriter;
 import htsjdk.samtools.reference.FastaReferenceWriterBuilder;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.TestUtil;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -664,11 +665,11 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      */
     public SamReader getSamReader() {
 
-        final File tempFile;
+        final Path tempFile;
 
         try {
-            tempFile = File.createTempFile("temp", this.useBamFile ? ".bam" : ".sam");
-            tempFile.deleteOnExit();
+            tempFile = Files.createTempFile("temp", this.useBamFile ? ".bam" : ".sam");
+            IOUtil.deleteOnExit(tempFile);
         } catch (final IOException e) {
             throw new RuntimeIOException("problems creating tempfile", e);
         }

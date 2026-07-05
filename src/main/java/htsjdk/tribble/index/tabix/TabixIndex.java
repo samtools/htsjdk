@@ -38,7 +38,6 @@ import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -91,17 +90,10 @@ public class TabixIndex implements Index {
     }
 
     /**
-     * Convenient ctor that opens the file, wraps with with BGZF reader, and closes after reading index.
-     */
-    public TabixIndex(final File tabixFile) throws IOException {
-        this(new BlockCompressedInputStream(tabixFile), true);
-    }
-
-    /**
      * Convenient ctor that opens the path, wraps with with BGZF reader, and closes after reading index.
      */
     public TabixIndex(final Path tabixPath) throws IOException {
-        this(new BlockCompressedInputStream(Files.newInputStream(tabixPath)), true);
+        this(new BlockCompressedInputStream(tabixPath), true);
     }
 
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {

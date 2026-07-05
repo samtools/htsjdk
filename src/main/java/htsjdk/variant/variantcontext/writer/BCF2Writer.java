@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -45,7 +44,6 @@ import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFUtils;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -130,15 +128,6 @@ class BCF2Writer extends IndexingVariantContextWriter {
     private boolean outputHasBeenWritten;
 
     public BCF2Writer(
-            final File location,
-            final OutputStream output,
-            final SAMSequenceDictionary refDict,
-            final boolean enableOnTheFlyIndexing,
-            final boolean doNotWriteGenotypes) {
-        this(IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing, doNotWriteGenotypes);
-    }
-
-    public BCF2Writer(
             final Path location,
             final OutputStream output,
             final SAMSequenceDictionary refDict,
@@ -147,16 +136,6 @@ class BCF2Writer extends IndexingVariantContextWriter {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
-    }
-
-    public BCF2Writer(
-            final File location,
-            final OutputStream output,
-            final SAMSequenceDictionary refDict,
-            final IndexCreator indexCreator,
-            final boolean enableOnTheFlyIndexing,
-            final boolean doNotWriteGenotypes) {
-        this(IOUtil.toPath(location), output, refDict, indexCreator, enableOnTheFlyIndexing, doNotWriteGenotypes);
     }
 
     public BCF2Writer(
@@ -246,7 +225,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
                     System.err.println(
                             "No contig dictionary found in header, falling back to reference sequence dictionary");
                 }
-                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
+                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), (Path) null));
             } else {
                 throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
             }

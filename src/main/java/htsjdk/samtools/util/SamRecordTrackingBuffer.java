@@ -28,7 +28,7 @@ import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.BitSet;
 import java.util.Deque;
@@ -56,7 +56,7 @@ import java.util.NoSuchElementException;
 public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     private int availableRecordsInMemory; // how many more records can we store in memory
     private final int blockSize; // the size of each block
-    private final List<File> tmpDirs; // the list of temporary directories to use
+    private final List<Path> tmpDirs; // the list of temporary directories to use
     private long queueHeadRecordIndex; // the index of the head of the buffer
     private long queueTailRecordIndex; // the index of the tail of the buffer
     private final Deque<BufferBlock> blocks; // the queue of blocks, in which records are contained
@@ -74,7 +74,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     public SamRecordTrackingBuffer(
             final int maxRecordsInRam,
             final int blockSize,
-            final List<File> tmpDirs,
+            final List<Path> tmpDirs,
             final SAMFileHeader header,
             final Class<T> clazz) {
         this.availableRecordsInMemory = maxRecordsInRam;
@@ -227,11 +227,11 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         public BufferBlock(
                 final int maxBlockSize,
                 final int maxBlockRecordsInMemory,
-                final List<File> tmpDirs,
+                final List<Path> tmpDirs,
                 final SAMFileHeader header,
                 final long originalStartIndex) {
             this.recordsQueue =
-                    DiskBackedQueue.newInstance(new BAMRecordCodec(header), maxBlockRecordsInMemory, tmpDirs);
+                    DiskBackedQueue.newInstanceFromPaths(new BAMRecordCodec(header), maxBlockRecordsInMemory, tmpDirs);
             this.maxBlockSize = maxBlockSize;
             this.currentStartIndex = 0;
             this.endIndex = -1;

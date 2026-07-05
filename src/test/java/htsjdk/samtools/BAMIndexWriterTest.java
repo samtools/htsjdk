@@ -30,8 +30,10 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -42,24 +44,24 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     // Two input files for basic test
     private final String BAM_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
     private final String BAI_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai";
-    private final File BAM_FILE = new File(BAM_FILE_LOCATION);
-    private final File BAI_FILE = new File(BAI_FILE_LOCATION);
+    private final Path BAM_FILE = Paths.get(BAM_FILE_LOCATION);
+    private final Path BAI_FILE = Paths.get(BAI_FILE_LOCATION);
 
     private final boolean mVerbose = true;
 
     @Test(enabled = true)
     public void testWriteText() throws Exception {
         // Compare the text form of the c-generated bai file and a java-generated one
-        final File cBaiTxtFile = File.createTempFile("cBai.", ".bai.txt");
+        final Path cBaiTxtFile = Files.createTempFile("cBai.", ".bai.txt");
         BAMIndexer.createAndWriteIndex(BAI_FILE, cBaiTxtFile, true);
         verbose("Wrote textual C BAM Index file " + cBaiTxtFile);
 
-        final File javaBaiFile = File.createTempFile("javaBai.", "java.bai");
-        final File javaBaiTxtFile = new File(javaBaiFile.getAbsolutePath() + ".txt");
+        final Path javaBaiFile = Files.createTempFile("javaBai.", "java.bai");
+        final Path javaBaiTxtFile = javaBaiFile.resolveSibling(javaBaiFile.getFileName() + ".txt");
         final SamReader bam = SamReaderFactory.makeDefault()
                 .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
                 .open(BAM_FILE);
-        BAMIndexer.createIndex(bam, javaBaiFile.toPath());
+        BAMIndexer.createIndex(bam, javaBaiFile);
         verbose("Wrote binary Java BAM Index file " + javaBaiFile);
 
         // now, turn the bai file into text
@@ -67,31 +69,31 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         // and compare them
         verbose("diff " + javaBaiTxtFile + " " + cBaiTxtFile);
         IOUtil.assertFilesEqual(javaBaiTxtFile, cBaiTxtFile);
-        cBaiTxtFile.deleteOnExit();
-        javaBaiFile.deleteOnExit();
-        javaBaiTxtFile.deleteOnExit();
+        cBaiTxtFile.toFile().deleteOnExit();
+        javaBaiFile.toFile().deleteOnExit();
+        javaBaiTxtFile.toFile().deleteOnExit();
         CloserUtil.close(bam);
     }
 
     @Test(enabled = true)
     public void testWriteBinary() throws Exception {
         // Compare java-generated bai file with c-generated and sorted bai file
-        final File javaBaiFile = File.createTempFile("javaBai.", ".bai");
+        final Path javaBaiFile = Files.createTempFile("javaBai.", ".bai");
         final SamReader bam = SamReaderFactory.makeDefault()
                 .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
                 .open(BAM_FILE);
-        BAMIndexer.createIndex(bam, javaBaiFile.toPath());
+        BAMIndexer.createIndex(bam, javaBaiFile);
         verbose("Wrote binary java BAM Index file " + javaBaiFile);
 
-        final File cRegeneratedBaiFile = File.createTempFile("cBai.", ".bai");
+        final Path cRegeneratedBaiFile = Files.createTempFile("cBai.", ".bai");
         BAMIndexer.createAndWriteIndex(BAI_FILE, cRegeneratedBaiFile, false);
         verbose("Wrote sorted C binary BAM Index file " + cRegeneratedBaiFile);
 
         // Binary compare of javaBaiFile and cRegeneratedBaiFile should be the same
         verbose("diff " + javaBaiFile + " " + cRegeneratedBaiFile);
         IOUtil.assertFilesEqual(javaBaiFile, cRegeneratedBaiFile);
-        javaBaiFile.deleteOnExit();
-        cRegeneratedBaiFile.deleteOnExit();
+        javaBaiFile.toFile().deleteOnExit();
+        cRegeneratedBaiFile.toFile().deleteOnExit();
         CloserUtil.close(bam);
     }
 
@@ -104,7 +106,7 @@ public class BAMIndexWriterTest extends HtsjdkTest {
             int problemWindowStart,
             int problemWindowEnd,
             int expectedCount) {
-        final SamReader sfr = SamReaderFactory.makeDefault().open(new File(filepath));
+        final SamReader sfr = SamReaderFactory.makeDefault().open(Paths.get(filepath));
         for (int problemWindow = problemWindowStart; problemWindow <= problemWindowEnd; problemWindow++) {
             int count = countAlignmentsInWindow(problemReference, problemWindow, sfr, expectedCount);
             if (expectedCount != -1) assertEquals(expectedCount, count);
@@ -152,15 +154,15 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         // 3. count bamIndex references comparing counts
 
         // 1. generate bai file
-        File bam = new File(bamFile);
-        assertTrue(bam.exists(), testName + " input bam file doesn't exist: " + bamFile);
+        Path bam = Paths.get(bamFile);
+        assertTrue(Files.exists(bam), testName + " input bam file doesn't exist: " + bamFile);
 
-        File indexFile1 = createIndexFile(bam);
-        assertTrue(indexFile1.exists(), testName + " generated bam file's index doesn't exist: " + indexFile1);
+        Path indexFile1 = createIndexFile(bam);
+        assertTrue(Files.exists(indexFile1), testName + " generated bam file's index doesn't exist: " + indexFile1);
 
         // 2. count its references
-        File indexFile2 = new File(bamIndexFile);
-        assertTrue(indexFile2.exists(), testName + " input index file doesn't exist: " + indexFile2);
+        Path indexFile2 = Paths.get(bamIndexFile);
+        assertTrue(Files.exists(indexFile2), testName + " input index file doesn't exist: " + indexFile2);
 
         final CachingBAMFileIndex existingIndex1 =
                 new CachingBAMFileIndex(indexFile1, null); // todo null sequence dictionary?
@@ -199,7 +201,7 @@ public class BAMIndexWriterTest extends HtsjdkTest {
             }
         }
 
-        indexFile1.deleteOnExit();
+        indexFile1.toFile().deleteOnExit();
     }
 
     @DataProvider(name = "indexComparisonData")
@@ -219,10 +221,10 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     }
 
     /** generates the index file using the latest java index generating code */
-    private File createIndexFile(File bamFile) throws IOException {
-        final File bamIndexFile = File.createTempFile("Bai.", ".bai");
-        final SamReader bam = SamReaderFactory.makeDefault().open(bamFile);
-        BAMIndexer.createIndex(bam, bamIndexFile.toPath());
+    private Path createIndexFile(Path bamPath) throws IOException {
+        final Path bamIndexFile = Files.createTempFile("Bai.", ".bai");
+        final SamReader bam = SamReaderFactory.makeDefault().open(bamPath);
+        BAMIndexer.createIndex(bam, bamIndexFile);
         verbose("Wrote BAM Index file " + bamIndexFile);
         bam.close();
         return bamIndexFile;

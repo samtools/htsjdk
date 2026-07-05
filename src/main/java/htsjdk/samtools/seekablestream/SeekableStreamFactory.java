@@ -135,7 +135,7 @@ public class SeekableStreamFactory {
                 final IOPath path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
             if (path.hasFileSystemProvider()) {
                 return path.getScheme().equals(FILE_SCHEME)
-                        ? new SeekableFileStream(path.toPath().toFile()) // don't apply the wrapper to local files
+                        ? new SeekableFileStream(path.toPath()) // don't apply the wrapper to local files
                         : new SeekablePathStream(path.toPath(), wrapper);
             } else {
                 return switch (path.getScheme()) {

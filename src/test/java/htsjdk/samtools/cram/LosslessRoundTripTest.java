@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 import java.io.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.testng.Assert;
@@ -52,7 +53,7 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         }
 
         try (CRAMFileReader reader = new CRAMFileReader(
-                new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT)) {
+                new ByteArrayInputStream(baos.toByteArray()), (Path) null, source, ValidationStringency.STRICT)) {
             final SAMRecordIterator iterator = reader.getIterator();
             for (int i = 0; i < records.length; i++) {
                 Assert.assertTrue(iterator.hasNext(), testName + ": too few records returned from CRAM");

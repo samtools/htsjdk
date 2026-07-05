@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -62,10 +61,6 @@ public class Md5CalculatingOutputStream extends OutputStream {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
-    }
-
-    public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
-        this(os, IOUtil.toPath(digestFile));
     }
 
     @Override

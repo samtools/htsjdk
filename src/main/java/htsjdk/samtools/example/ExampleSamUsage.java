@@ -32,10 +32,10 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 
 public class ExampleSamUsage {
     public static SeekableStream myIndexSeekableStream() {
@@ -47,7 +47,7 @@ public class ExampleSamUsage {
         /**
          * Simplest case
          */
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File("/my.bam"));
+        final SamReader reader = SamReaderFactory.makeDefault().open(Path.of("/my.bam"));
 
         /**
          * With different reader options
@@ -56,7 +56,7 @@ public class ExampleSamUsage {
                 .enable(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX)
                 .validationStringency(ValidationStringency.SILENT)
                 .samRecordFactory(DefaultSAMRecordFactory.getInstance())
-                .open(new File("/my.bam"));
+                .open(Path.of("/my.bam"));
 
         /**
          * With a more complicated source
@@ -73,7 +73,7 @@ public class ExampleSamUsage {
                 .validationStringency(ValidationStringency.LENIENT);
 
         final SamInputResource resource =
-                SamInputResource.of(new File("/my.bam")).index(new URL("http://broadinstitute.org/my.bam.bai"));
+                SamInputResource.of(Path.of("/my.bam")).index(new URL("http://broadinstitute.org/my.bam.bai"));
 
         final SamReader myReader = factory.open(resource);
 
@@ -86,7 +86,7 @@ public class ExampleSamUsage {
      * Read a SAM or BAM file, convert each read name to upper case, and write a new
      * SAM or BAM file.
      */
-    public void convertReadNamesToUpperCase(final File inputSamOrBamFile, final File outputSamOrBamFile)
+    public void convertReadNamesToUpperCase(final Path inputSamOrBamFile, final Path outputSamOrBamFile)
             throws IOException {
 
         final SamReader reader = SamReaderFactory.makeDefault().open(inputSamOrBamFile);

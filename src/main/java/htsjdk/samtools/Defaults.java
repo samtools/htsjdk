@@ -1,9 +1,9 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -71,7 +71,7 @@ public class Defaults {
      * The reference FASTA file.  If this is not set, the file is null.  This file may be required for reading
      * writing SAM files (ex. CRAM).  Default = null.
      */
-    public static final File REFERENCE_FASTA;
+    public static final Path REFERENCE_FASTA;
 
     /** Custom reader factory able to handle URL based resources like ga4gh.
      *  Expected format: <url prefix>,<fully qualified factory class name>[,<jar file name>]
@@ -131,7 +131,7 @@ public class Defaults {
         } else {
             NON_ZERO_BUFFER_SIZE = BUFFER_SIZE;
         }
-        REFERENCE_FASTA = getFileProperty("reference_fasta", null);
+        REFERENCE_FASTA = getPathProperty("reference_fasta", null);
         USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
         EBI_REFERENCE_SERVICE_URL_MASK = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
@@ -206,19 +206,36 @@ public class Defaults {
         return Integer.parseInt(value);
     }
 
-    /** Gets a File system property, prefixed with "samjdk." using the default if the property does not exist. */
-    private static File getFileProperty(final String name, final String def) {
+    /**
+     * Gets a Path system property, prefixed with "samjdk." using the default if the property does not exist.
+     *
+     * <p>This resolves the value with {@link Path#of(String, String...)} rather than the scheme-aware
+     * {@code IOUtil.getPath} on purpose: {@code Defaults} and {@code IOUtil} reference each other during
+     * static initialization, and routing through {@code IOUtil} here would risk a class-initialization
+     * cycle. A value that cannot be parsed into a Path is logged and treated as unset rather than failing
+     * class initialization.
+     */
+    private static Path getPathProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
-        Optional<File> maybeFile = Optional.ofNullable(value).map(File::new);
-        maybeFile.ifPresent(f -> {
-            if (!f.exists()) {
-                log.warn(String.format(
-                        "File property for %s has value %s. However file %s doesn't exist.",
-                        SAMJDK_PREFIX + name, value, f.getAbsolutePath()));
-            } else {
-                log.info(String.format("Found file for property %s: %s ", SAMJDK_PREFIX + name, f.getAbsolutePath()));
-            }
-        });
-        return maybeFile.orElse(null);
+        if (value == null) {
+            return null;
+        }
+        final Path path;
+        try {
+            path = Path.of(value);
+        } catch (final RuntimeException e) {
+            log.warn(String.format(
+                    "Path property for %s has value %s which could not be parsed as a path: %s",
+                    SAMJDK_PREFIX + name, value, e.getMessage()));
+            return null;
+        }
+        if (!Files.exists(path)) {
+            log.warn(String.format(
+                    "File property for %s has value %s. However file %s doesn't exist.",
+                    SAMJDK_PREFIX + name, value, path.toAbsolutePath()));
+        } else {
+            log.info(String.format("Found file for property %s: %s ", SAMJDK_PREFIX + name, path.toAbsolutePath()));
+        }
+        return path;
     }
 }

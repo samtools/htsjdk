@@ -5,7 +5,7 @@ import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import java.io.File;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -43,7 +43,7 @@ public class CramStats {
         int sliceCount = 0;
         int recordCount = 0;
 
-        try (final SeekableFileStream stream = new SeekableFileStream(new File(path))) {
+        try (final SeekableFileStream stream = new SeekableFileStream(Paths.get(path))) {
             final CramContainerIterator iter = new CramContainerIterator(stream);
             System.out.printf("CRAM version: %s%n", iter.getCramHeader().getCRAMVersion());
             while (iter.hasNext()) {

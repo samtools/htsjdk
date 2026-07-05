@@ -31,7 +31,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -47,14 +46,6 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     private final Path path;
     private final String source;
     private final Lazy<SAMSequenceDictionary> dictionary;
-
-    /**
-     * Finds and loads the sequence file dictionary.
-     * @param file Fasta file to read.  Also acts as a prefix for supporting files.
-     */
-    AbstractFastaSequenceFile(final File file) {
-        this(IOUtil.toPath(file));
-    }
 
     /**
      * Finds and loads the sequence file dictionary.
@@ -105,13 +96,6 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         } catch (final IOException e) {
             throw new SAMException("Could not open sequence dictionary file: " + dictPath, e);
         }
-    }
-
-    /** @deprecated use findSequenceDictionary(Path) instead. */
-    @Deprecated
-    protected static File findSequenceDictionary(final File file) {
-        final Path dict = findSequenceDictionary(file.toPath());
-        return dict == null ? null : dict.toFile();
     }
 
     /** Attempts to locate the sequence dictionary file adjacent to the reference fasta file. */

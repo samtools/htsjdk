@@ -102,7 +102,7 @@ java {
 //
 // To change the planned bump (e.g. after a release lands), update nextVersionBump
 // below and commit.
-final nextVersionBump = "x.x.x"
+final nextVersionBump = "x"
 
 final isRelease = Boolean.getBoolean("release")
 final details = versionDetails()
@@ -301,6 +301,54 @@ spotbugsTest {
         html.required = true
     }
 }
+
+// --- File->Path migration guard ---------------------------------------------------------------
+// htsjdk's public API migrated from java.io.File to java.nio.file.Path in 6.0.0. This guard fails
+// the build if java.io.File is referenced in *main* sources outside the small set of files where it
+// is deliberately retained: IOUtil (the inherently-local temp helpers and the File<->Path bridges)
+// and SamInputResource (the package-private File boundary still consumed internally). Javadoc/comment
+// mentions of the old API are ignored. If you are adding a sanctioned File boundary, add the file's
+// package-relative path to the allowlist below; otherwise switch to java.nio.file.Path.
+tasks.register('enforceFilePathMigration') {
+    group = 'verification'
+    description = 'Fail if java.io.File is used in main sources outside approved files (File->Path migration guard).'
+    doLast {
+        final allowlist = [
+            'htsjdk/samtools/util/IOUtil.java',
+            'htsjdk/samtools/SamInputResource.java',
+        ]
+        final filePattern = ~/\bjava\.io\.File\b/
+        final violations = []
+        fileTree('src/main/java') { include '**/*.java' }.each { f ->
+            final normalized = f.path.replace('\\', '/')
+            if (allowlist.any { normalized.endsWith(it) }) {
+                return
+            }
+            int lineNo = 0
+            f.eachLine('UTF-8') { rawLine ->
+                lineNo++
+                final trimmed = rawLine.trim()
+                // Skip javadoc/block-comment lines and trailing line comments so documentation
+                // references to the old API (e.g. {@link java.io.File}) don't trip the guard.
+                if (trimmed.startsWith('*') || trimmed.startsWith('/*') || trimmed.startsWith('//')) {
+                    return
+                }
+                final code = rawLine.replaceFirst(/\/\/.*$/, '')
+                if (filePattern.matcher(code).find()) {
+                    violations << "${normalized.replaceFirst('.*/src/main/java/', '')}:${lineNo}: ${trimmed}"
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException(
+                "java.io.File is no longer allowed in htsjdk main sources (migrated to java.nio.file.Path in 6.0.0).\n" +
+                "Use java.nio.file.Path / IOUtil helpers instead, or — if this is a sanctioned boundary — add the file\n" +
+                "to the allowlist in build.gradle (enforceFilePathMigration). Offending references:\n  " +
+                violations.join('\n  '))
+        }
+    }
+}
+tasks.named('check') { dependsOn 'enforceFilePathMigration' }
 
 // Fat JAR with all dependencies for standalone CLI tools (CramConverter, CramComparison, etc.)
 shadowJar {

@@ -5,9 +5,15 @@ import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,8 +24,8 @@ import org.testng.annotations.Test;
 
 public class BlockCompressedInputStreamTest extends HtsjdkTest {
     // random data pulled from /dev/random then compressed using bgzip from tabix
-    private static final File BLOCK_UNCOMPRESSED = new File("src/test/resources/htsjdk/samtools/util/random.bin");
-    private static final File BLOCK_COMPRESSED = new File("src/test/resources/htsjdk/samtools/util/random.bin.gz");
+    private static final Path BLOCK_UNCOMPRESSED = Paths.get("src/test/resources/htsjdk/samtools/util/random.bin");
+    private static final Path BLOCK_COMPRESSED = Paths.get("src/test/resources/htsjdk/samtools/util/random.bin.gz");
     private static final long[] BLOCK_COMPRESSED_OFFSETS = new long[] {
         0, 0xfc2e, 0x1004d, 0x1fc7b, 0x2009a,
     };
@@ -27,7 +33,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @Test
     public void testTruncatedStream() throws Exception {
-        byte[] compressed = Files.readAllBytes(BLOCK_COMPRESSED.toPath());
+        byte[] compressed = Files.readAllBytes(BLOCK_COMPRESSED);
         byte[] truncated = Arrays.copyOf(compressed, compressed.length * 2 / 3);
         try (BlockCompressedInputStream stream = new BlockCompressedInputStream(new ByteArrayInputStream(truncated))) {
             Assert.expectThrows(FileTruncatedException.class, () -> InputStreamUtils.readFully(stream));
@@ -36,9 +42,9 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @Test
     public void stream_should_match_uncompressed_stream() throws Exception {
-        byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED.toPath());
+        byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED);
         try (BlockCompressedInputStream stream =
-                new BlockCompressedInputStream(new FileInputStream(BLOCK_COMPRESSED))) {
+                new BlockCompressedInputStream(Files.newInputStream(BLOCK_COMPRESSED))) {
             for (int i = 0; i < uncompressed.length; i++) {
                 Assert.assertEquals(stream.read(), Byte.toUnsignedInt(uncompressed[i]));
             }
@@ -48,7 +54,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @Test
     public void endOfBlock_should_be_true_only_when_entire_block_is_read() throws Exception {
-        long size = BLOCK_UNCOMPRESSED.length();
+        long size = Files.size(BLOCK_UNCOMPRESSED);
         // input file contains 5 blocks
         List<Long> offsets = new ArrayList<>();
         for (int i = 0; i < BLOCK_UNCOMPRESSED_END_POSITIONS.length; i++) {
@@ -56,7 +62,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         }
         List<Long> endOfBlockTrue = new ArrayList<>();
         try (BlockCompressedInputStream stream =
-                new BlockCompressedInputStream(new FileInputStream(BLOCK_COMPRESSED))) {
+                new BlockCompressedInputStream(Files.newInputStream(BLOCK_COMPRESSED))) {
             for (long i = 0; i < size; i++) {
                 if (stream.endOfBlock()) {
                     endOfBlockTrue.add(i);
@@ -69,9 +75,9 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @Test
     public void decompression_should_cross_block_boundries() throws Exception {
-        byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED.toPath());
+        byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED);
         try (BlockCompressedInputStream stream =
-                new BlockCompressedInputStream(new FileInputStream(BLOCK_COMPRESSED))) {
+                new BlockCompressedInputStream(Files.newInputStream(BLOCK_COMPRESSED))) {
             byte[] decompressed = new byte[uncompressed.length];
             stream.read(decompressed);
             Assert.assertEquals(decompressed, uncompressed);
@@ -82,7 +88,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @Test
     public void seek_should_read_block() throws Exception {
-        byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED.toPath());
+        byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED);
         try (SeekableFileStream sfs = new SeekableFileStream(BLOCK_COMPRESSED)) {
             try (BlockCompressedInputStream stream = new BlockCompressedInputStream(sfs)) {
                 // seek to the start of the first block
@@ -138,7 +144,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         InputStream get() throws IOException;
     }
 
-    private List<String> writeTempBlockCompressedFileForInflaterTest(final File tempFile) throws IOException {
+    private List<String> writeTempBlockCompressedFileForInflaterTest(final Path tempFile) throws IOException {
         final List<String> linesWritten = new ArrayList<>();
         try (final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(tempFile, 5)) {
             String s = "Hi, Mom!\n";
@@ -162,8 +168,8 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 
     @DataProvider(name = "customInflaterInput")
     public Object[][] customInflateInput() throws IOException {
-        final File tempFile = File.createTempFile("testCustomInflater.", ".bam");
-        tempFile.deleteOnExit();
+        final Path tempFile = Files.createTempFile("testCustomInflater.", ".bam");
+        IOUtil.deleteOnExit(tempFile);
         final List<String> linesWritten = writeTempBlockCompressedFileForInflaterTest(tempFile);
         // wrap our expected output in a lambda to prevent massive string expansion of the test params during test
         // execution
@@ -174,7 +180,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         return new Object[][] {
             {
                 (CheckedExceptionInputStreamSupplier) () ->
-                        new BlockCompressedInputStream(new FileInputStream(tempFile), false, countingInflaterFactory),
+                        new BlockCompressedInputStream(Files.newInputStream(tempFile), false, countingInflaterFactory),
                 expectedOutputSupplier,
                 4
             },

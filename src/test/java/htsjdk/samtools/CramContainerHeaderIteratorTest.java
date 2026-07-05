@@ -7,8 +7,9 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.Iterables;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -16,7 +17,7 @@ import org.testng.annotations.Test;
 public class CramContainerHeaderIteratorTest extends HtsjdkTest {
     @Test
     public void testContainerHeaderIterator() throws IOException {
-        final File cramFile = new File(
+        final Path cramFile = Paths.get(
                 "src/test/resources/htsjdk/samtools/cram/NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
         CramHeader expectedHeader;
         List<Container> fullContainers;

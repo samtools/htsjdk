@@ -33,12 +33,12 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.testng.Assert;
@@ -47,7 +47,7 @@ import org.testng.annotations.Test;
 public class BAMMergerTest extends HtsjdkTest {
 
     private static final Path BAM_FILE =
-            new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam").toPath();
+            Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
     /**
      * Writes a <i>partitioned BAM</i>.
@@ -220,7 +220,7 @@ public class BAMMergerTest extends HtsjdkTest {
     // create a human-readable BAI
     private static Path textIndexBai(Path bai) {
         Path textBai = bai.resolveSibling(bai.getFileName().toString() + ".txt");
-        BAMIndexer.createAndWriteIndex(bai.toFile(), textBai.toFile(), true);
+        BAMIndexer.createAndWriteIndex(bai, textBai, true);
         return textBai;
     }
 
@@ -229,8 +229,7 @@ public class BAMMergerTest extends HtsjdkTest {
         final Path outputDir = IOUtil.createTempDir(this.getClass().getSimpleName() + ".tmp");
         IOUtil.deleteOnExit(outputDir);
 
-        final Path outputBam = File.createTempFile(this.getClass().getSimpleName() + ".", ".bam")
-                .toPath();
+        final Path outputBam = Files.createTempFile(this.getClass().getSimpleName() + ".", ".bam");
         IOUtil.deleteOnExit(outputBam);
 
         final Path outputBai = IOUtil.addExtension(outputBam, FileExtensions.BAI_INDEX);
@@ -239,13 +238,11 @@ public class BAMMergerTest extends HtsjdkTest {
         final Path outputSbi = IOUtil.addExtension(outputBam, FileExtensions.SBI);
         IOUtil.deleteOnExit(outputSbi);
 
-        final Path outputBaiMerged = File.createTempFile(
-                        this.getClass().getSimpleName() + ".", FileExtensions.BAI_INDEX)
-                .toPath();
+        final Path outputBaiMerged =
+                Files.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.BAI_INDEX);
         IOUtil.deleteOnExit(outputBaiMerged);
 
-        final Path outputSbiMerged = File.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.SBI)
-                .toPath();
+        final Path outputSbiMerged = Files.createTempFile(this.getClass().getSimpleName() + ".", FileExtensions.SBI);
         IOUtil.deleteOnExit(outputBaiMerged);
 
         // 1. Read an input BAM and write it out in partitioned form (header, parts, terminator)
@@ -268,13 +265,9 @@ public class BAMMergerTest extends HtsjdkTest {
         // Check equality on object before comparing file contents to get a better indication
         // of the difference in case they are not equal.
         BaiEqualityChecker.assertEquals(outputBam, outputBai, outputBaiMerged);
-        Assert.assertEquals(
-                com.google.common.io.Files.toByteArray(outputBai.toFile()),
-                com.google.common.io.Files.toByteArray(outputBaiMerged.toFile()));
+        Assert.assertEquals(Files.readAllBytes(outputBai), Files.readAllBytes(outputBaiMerged));
 
         // 5. Assert that the merged SBI index is the same as the SBI index produced from the merged file
-        Assert.assertEquals(
-                com.google.common.io.Files.toByteArray(outputSbi.toFile()),
-                com.google.common.io.Files.toByteArray(outputSbiMerged.toFile()));
+        Assert.assertEquals(Files.readAllBytes(outputSbi), Files.readAllBytes(outputSbiMerged));
     }
 }

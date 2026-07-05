@@ -10,7 +10,6 @@ import htsjdk.tribble.index.IndexFactory;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -151,16 +150,16 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
 
     @Test(dataProvider = "all43IndexableFiles")
     public void testVCF43IndexRoundTripQuery(final Path testFile) throws IOException {
-        final File tempDir = TestUtil.getTempDirectory("VCF43Codec", "indextest");
-        tempDir.deleteOnExit();
+        final Path tempDir = TestUtil.getTempDirectoryAsPath("VCF43Codec", "indextest");
+        tempDir.toFile().deleteOnExit();
 
         // copy our input vcf to a temp location, and create a tabix index
-        Files.copy(testFile, (new File(tempDir, testFile.toFile().getName())).toPath());
-        final File vcfFileCopy = new File(tempDir, testFile.toFile().getName());
+        final Path vcfFileCopy = tempDir.resolve(testFile.getFileName().toString());
+        Files.copy(testFile, vcfFileCopy);
         final Index index = IndexFactory.createIndex(vcfFileCopy, new VCFCodec(), IndexFactory.IndexType.TABIX);
-        final File indexFile = new File(tempDir, vcfFileCopy.getName() + FileExtensions.TABIX_INDEX);
-        index.write(indexFile);
-        Assert.assertTrue(indexFile.exists());
+        final Path indexPath = tempDir.resolve(vcfFileCopy.getFileName().toString() + FileExtensions.TABIX_INDEX);
+        index.write(indexPath);
+        Assert.assertTrue(Files.exists(indexPath));
 
         // query for a variant located after any variants containing percent encoded or UTF8 chars
         // 22	327	.	T	C	666.18	GATK_STANDARD;HARD_TO_VALIDATE	AB=0.74;AC=3;AF=0.50;AN=6;DB=0;DP=936;Dels=0

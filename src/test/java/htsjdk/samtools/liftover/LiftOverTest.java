@@ -26,7 +26,12 @@ package htsjdk.samtools.liftover;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.OverlapDetector;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
 import org.testng.Assert;
@@ -38,8 +43,8 @@ import org.testng.annotations.Test;
  * @author alecw@broadinstitute.org
  */
 public class LiftOverTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/liftover");
-    private static final File CHAIN_FILE = new File(TEST_DATA_DIR, "hg18ToHg19.over.chain");
+    private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools/liftover");
+    private static final Path CHAIN_FILE = TEST_DATA_DIR.resolve("hg18ToHg19.over.chain");
 
     private LiftOver liftOver;
     private Map<String, Set<String>> contigMap;
@@ -52,8 +57,8 @@ public class LiftOverTest extends HtsjdkTest {
     }
 
     @BeforeClass
-    public void initLiftOverFromInputStream() throws FileNotFoundException {
-        InputStream chainFileInputStream = new FileInputStream(CHAIN_FILE);
+    public void initLiftOverFromInputStream() throws IOException {
+        InputStream chainFileInputStream = Files.newInputStream(CHAIN_FILE);
         liftOverFromInputStream = new LiftOver(chainFileInputStream, CHAIN_FILE.toString());
     }
 
@@ -662,9 +667,9 @@ public class LiftOverTest extends HtsjdkTest {
     @Test
     public void testWriteChain() throws Exception {
         final OverlapDetector<Chain> chains = Chain.loadChains(CHAIN_FILE);
-        File outFile = File.createTempFile("test.", ".chain");
-        outFile.deleteOnExit();
-        PrintWriter pw = new PrintWriter(outFile);
+        Path outFile = Files.createTempFile("test.", ".chain");
+        outFile.toFile().deleteOnExit();
+        PrintWriter pw = new PrintWriter(Files.newBufferedWriter(outFile));
         final Map<Integer, Chain> originalChainMap = new TreeMap<>();
         for (final Chain chain : chains.getAll()) {
             chain.write(pw);

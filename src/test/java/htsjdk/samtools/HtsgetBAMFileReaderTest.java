@@ -2,9 +2,9 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -18,7 +18,7 @@ public class HtsgetBAMFileReaderTest extends HtsjdkTest {
 
     private static final URI htsgetBAM = URI.create(HTSGET_ENDPOINT + LOCAL_PREFIX + "index_test.bam");
 
-    private static final File bamFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final Path bamFile = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
     private static final int nofMappedReads = 9721;
     private static final int nofUnmappedReads = 279;

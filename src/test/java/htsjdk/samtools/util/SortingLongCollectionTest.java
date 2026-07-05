@@ -24,7 +24,12 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Random;
 import org.testng.Assert;
@@ -35,35 +40,43 @@ import org.testng.annotations.*;
  */
 public class SortingLongCollectionTest extends HtsjdkTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
-    private final File tmpDir = new File(
+    private final Path tmpDir = Paths.get(
             System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), "SortingLongCollectionTest");
 
     @BeforeMethod
-    void setup() {
+    void setup() throws IOException {
         // Clear out any existing files if the directory exists
-        if (tmpDir.exists()) {
-            for (final File f : tmpDir.listFiles()) {
-                f.delete();
-            }
+        if (Files.exists(tmpDir)) {
+            deleteDirectoryContents();
         }
-        tmpDir.mkdir();
+        Files.createDirectories(tmpDir);
     }
 
     @AfterMethod
-    void tearDown() {
-        if (!tmpDir.exists()) {
+    void tearDown() throws IOException {
+        if (!Files.exists(tmpDir)) {
             // I don't know why it wouldn't exist, but sometimes it doesn't, and it causes the unit test
             // to fail.  AW 20-May-2009
             return;
         }
-        for (final File f : tmpDir.listFiles()) {
-            f.delete();
+        deleteDirectoryContents();
+        Files.delete(tmpDir);
+    }
+
+    private void deleteDirectoryContents() throws IOException {
+        try (final DirectoryStream<Path> stream = Files.newDirectoryStream(tmpDir)) {
+            for (final Path f : stream) {
+                Files.delete(f);
+            }
         }
-        tmpDir.delete();
     }
 
     private boolean tmpDirIsEmpty() {
-        return tmpDir.listFiles().length == 0;
+        try (final DirectoryStream<Path> stream = Files.newDirectoryStream(tmpDir)) {
+            return !stream.iterator().hasNext();
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @DataProvider(name = "test1")

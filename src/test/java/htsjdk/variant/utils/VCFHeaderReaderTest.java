@@ -4,8 +4,8 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFHeader;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -25,20 +25,20 @@ public class VCFHeaderReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "files")
     public void testReadHeaderFrom(final String file) throws IOException {
-        VCFHeader vcfHeader = VCFHeaderReader.readHeaderFrom(new SeekableFileStream(new File(file)));
+        VCFHeader vcfHeader = VCFHeaderReader.readHeaderFrom(new SeekableFileStream(Path.of(file)));
         Assert.assertNotNull(vcfHeader);
     }
 
     @DataProvider
     public Object[][] invalidFiles() {
         return new Object[][] {
-            {new File("src/test/resources/htsjdk/samtools/empty.bam")},
-            {new File("src/test/resources/htsjdk/variant/corrupt_file_that_starts_with_#.vcf")}
+            {Path.of("src/test/resources/htsjdk/samtools/empty.bam")},
+            {Path.of("src/test/resources/htsjdk/variant/corrupt_file_that_starts_with_#.vcf")}
         };
     }
 
     @Test(dataProvider = "invalidFiles", expectedExceptions = TribbleException.InvalidHeader.class)
-    public void testReadHeaderForInvalidFile(File file) throws IOException {
-        VCFHeaderReader.readHeaderFrom(new SeekableFileStream(file));
+    public void testReadHeaderForInvalidFile(Path path) throws IOException {
+        VCFHeaderReader.readHeaderFrom(new SeekableFileStream(path));
     }
 }

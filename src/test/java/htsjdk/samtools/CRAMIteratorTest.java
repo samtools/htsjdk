@@ -3,7 +3,7 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import java.io.File;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -31,8 +31,8 @@ public class CRAMIteratorTest extends HtsjdkTest {
     }
 
     private SAMRecordIterator getCramFileIterator(ValidationStringency valStringency) {
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/ce.fa");
-        final File cramFile = new File("src/test/resources/htsjdk/samtools/cram/ce#containsInvalidRecords.3.0.cram");
+        final Path refFile = Path.of("src/test/resources/htsjdk/samtools/cram/ce.fa");
+        final Path cramFile = Path.of("src/test/resources/htsjdk/samtools/cram/ce#containsInvalidRecords.3.0.cram");
         final ReferenceSource source = new ReferenceSource(refFile);
 
         final CRAMFileReader cramFileReader = new CRAMFileReader(cramFile, (SeekableStream) null, source);

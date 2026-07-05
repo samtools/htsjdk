@@ -22,10 +22,10 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
@@ -208,11 +208,11 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     }
 
     /**
-     * @deprecated use {@link IOUtil#hasBlockCompressedExtension(File)}.
+     * @deprecated use {@link IOUtil#hasBlockCompressedExtension(Path)}.
      */
     @Deprecated
-    public static boolean hasBlockCompressedExtension(final File file) {
-        return IOUtil.hasBlockCompressedExtension(file.getName());
+    public static boolean hasBlockCompressedExtension(final Path path) {
+        return IOUtil.hasBlockCompressedExtension(path.getFileName().toString());
     }
 
     /**

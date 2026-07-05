@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
@@ -34,9 +35,9 @@ import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -59,10 +60,15 @@ public class CountRecords {
         // check yourself before you wreck yourself - we require one arg, the input file
         if (args.length > 2) printUsage();
 
-        // our feature file
-        File featureFile = new File(args[0]);
-        if (!featureFile.exists()) {
-            System.err.println("File " + featureFile.getAbsolutePath() + " doesnt' exist");
+        // our feature file; use the scheme-aware resolver so remote inputs keep working
+        final Path featureFile;
+        try {
+            featureFile = IOUtil.getPath(args[0]);
+        } catch (IOException e) {
+            throw new RuntimeIOException("Unable to resolve input path " + args[0], e);
+        }
+        if (!Files.exists(featureFile)) {
+            System.err.println("File " + featureFile.toAbsolutePath() + " doesnt' exist");
             printUsage();
         }
 
@@ -77,12 +83,12 @@ public class CountRecords {
     /**
      *
      * @see htsjdk.tribble.index.linear.LinearIndex#optimize(double)
-     * @param featureInput  File containing features
+     * @param featureInput  Path containing features
      * @param codec  Codec used to read the features
      * @param optimizeThreshold Threshold used to optimize the linear index
-     * @return
+     * @return the number of records seen
      */
-    public static long runWithIndex(File featureInput, FeatureCodec codec, int optimizeThreshold) {
+    public static long runWithIndex(Path featureInput, FeatureCodec codec, int optimizeThreshold) {
         // get an index
         Index index = loadIndex(featureInput, codec);
         if (optimizeThreshold != -1) ((LinearIndex) index).optimize(optimizeThreshold);
@@ -90,7 +96,8 @@ public class CountRecords {
         // get a reader
         AbstractFeatureReader reader = null;
         try {
-            reader = AbstractFeatureReader.getFeatureReader(featureInput.getAbsolutePath(), codec, index);
+            reader = AbstractFeatureReader.getFeatureReader(
+                    featureInput.toAbsolutePath().toString(), codec, index);
 
             // now read iterate over the file
             long recordCount = 0l;
@@ -132,17 +139,17 @@ public class CountRecords {
      * @param codec the codec to decode features with
      * @return an index instance
      */
-    public static Index loadIndex(File featureFile, FeatureCodec codec) {
+    public static Index loadIndex(Path featureFile, FeatureCodec codec) {
         // lets setup a index file name
-        File indexFile = Tribble.indexFile(featureFile);
+        Path indexFile = Tribble.indexPath(featureFile);
 
         // our index instance;
         Index index = null;
 
         // can we read the index file
-        if (indexFile.canRead()) {
+        if (Files.isReadable(indexFile)) {
             System.err.println("Loading index from disk for index file -> " + indexFile);
-            index = IndexFactory.loadIndex(indexFile.getAbsolutePath());
+            index = IndexFactory.loadIndex(indexFile.toAbsolutePath().toString());
             // else we want to make the index, and write it to disk if possible
         } else {
             System.err.println("Creating the index and memory, then writing to disk for index file -> " + indexFile);
@@ -159,13 +166,13 @@ public class CountRecords {
      * @param codec the codec to read features with
      * @return an index instance
      */
-    public static Index createAndWriteNewIndex(File featureFile, File indexFile, FeatureCodec codec) {
+    public static Index createAndWriteNewIndex(Path featureFile, Path indexFile, FeatureCodec codec) {
         try {
             Index index = IndexFactory.createLinearIndex(featureFile, codec);
 
             // try to write it to disk
             LittleEndianOutputStream stream =
-                    new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(indexFile)));
+                    new LittleEndianOutputStream(new BufferedOutputStream(Files.newOutputStream(indexFile)));
 
             index.write(stream);
             stream.close();
@@ -179,13 +186,14 @@ public class CountRecords {
     /**
      * Return a {@code FeatureCodec} instance appropriate for the given
      * {@code featureFile}. Codec is generated based on file extension
-     * @param featureFile
-     * @return
+     * @param featureFile the feature file to determine a codec for
+     * @return a codec appropriate for the file
      * @throws IllegalArgumentException If a codec cannot be found
      */
-    public static FeatureCodec getFeatureCodec(File featureFile) {
+    public static FeatureCodec getFeatureCodec(Path featureFile) {
         // quickly determine the codec type
-        if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED")) return new BEDCodec();
+        final String fileName = featureFile.getFileName().toString();
+        if (fileName.endsWith(".bed") || fileName.endsWith(".BED")) return new BEDCodec();
         throw new IllegalArgumentException(
                 "Unable to determine correct file type based on the file name, for file -> " + featureFile);
     }

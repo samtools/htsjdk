@@ -25,8 +25,9 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -254,7 +255,7 @@ public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
         }
 
         // Sort Bam
-        final File sortedBam = File.createTempFile("testOut", ".bam");
+        final Path sortedBam = Files.createTempFile("testOut", ".bam");
         final SamReader reader = randomSetOfRecords.getSamReader();
         // SamReaderFactory.makeDefault().referenceSequence(Defaults.REFERENCE_FASTA).open(input);
         reader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.duplicate);

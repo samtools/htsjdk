@@ -29,7 +29,6 @@ import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import java.awt.Color;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -403,10 +402,10 @@ public class ParsingUtils {
             }
             URLHelper helper = getURLHelper(url);
             return helper.exists();
-        } else if (IOUtil.hasScheme(resource)) {
-            return Files.exists(IOUtil.getPath(resource));
         } else {
-            return (new File(resource)).exists();
+            // Covers both schemed NIO paths (gcs, custom SPI, file, etc.) and bare local paths;
+            // IOUtil.getPath treats a scheme-less string as a local file path.
+            return Files.exists(IOUtil.getPath(resource));
         }
     }
 

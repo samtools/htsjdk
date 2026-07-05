@@ -9,10 +9,12 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
@@ -23,11 +25,11 @@ public class SamIndexesTest extends HtsjdkTest {
 
     @Test
     public void testEmptyBai() throws IOException {
-        final File baiFile = File.createTempFile("test", ".bai");
-        baiFile.deleteOnExit();
-        final FileOutputStream fos = new FileOutputStream(baiFile);
-        fos.write(SamIndexes.BAI.magic);
-        fos.close();
+        final Path baiFile = Files.createTempFile("test", ".bai");
+        baiFile.toFile().deleteOnExit();
+        try (final OutputStream fos = Files.newOutputStream(baiFile)) {
+            fos.write(SamIndexes.BAI.magic);
+        }
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write(SamIndexes.BAI.magic);
@@ -42,11 +44,11 @@ public class SamIndexesTest extends HtsjdkTest {
 
     @Test
     public void testEmptyCsi() throws IOException {
-        final File csiFile = File.createTempFile("test", ".csi");
-        csiFile.deleteOnExit();
-        final FileOutputStream fos = new FileOutputStream(csiFile);
-        fos.write(SamIndexes.CSI.magic);
-        fos.close();
+        final Path csiFile = Files.createTempFile("test", ".csi");
+        csiFile.toFile().deleteOnExit();
+        try (final OutputStream fos = Files.newOutputStream(csiFile)) {
+            fos.write(SamIndexes.CSI.magic);
+        }
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write(SamIndexes.CSI.magic);
@@ -116,16 +118,16 @@ public class SamIndexesTest extends HtsjdkTest {
 
     @Test
     public void testCraiFromFile() throws IOException {
-        final File file = File.createTempFile("test", ".crai");
-        file.deleteOnExit();
-        final FileOutputStream fos = new FileOutputStream(file);
+        final Path file = Files.createTempFile("test", ".crai");
+        file.toFile().deleteOnExit();
 
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
-        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
-        indexer.finish();
-        fos.close();
+        try (final OutputStream fos = Files.newOutputStream(file)) {
+            final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
+            indexer.finish();
+        }
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
@@ -147,22 +149,22 @@ public class SamIndexesTest extends HtsjdkTest {
     public void testOpenIndexFileAsBaiOrNull_NPE() throws IOException {
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
-        Assert.assertNull(SamIndexes.openIndexFileAsBaiOrNull(null, dictionary));
+        Assert.assertNull(SamIndexes.openIndexFileAsBaiOrNull((Path) null, dictionary));
     }
 
     @Test
     public void testOpenIndexFileAsBaiOrNull_ReturnsNull() throws IOException {
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
-        File file = File.createTempFile("test", ".notbai");
-        file.deleteOnExit();
+        Path file = Files.createTempFile("test", ".notbai");
+        file.toFile().deleteOnExit();
         Assert.assertNull(SamIndexes.openIndexFileAsBaiOrNull(file, dictionary));
-        file.delete();
+        Files.delete(file);
 
-        file = File.createTempFile("test", ".notcrai");
-        file.deleteOnExit();
+        file = Files.createTempFile("test", ".notcrai");
+        file.toFile().deleteOnExit();
         Assert.assertNull(SamIndexes.openIndexFileAsBaiOrNull(file, dictionary));
-        file.delete();
+        Files.delete(file);
     }
 
     @Test
@@ -170,18 +172,18 @@ public class SamIndexesTest extends HtsjdkTest {
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
 
-        final File file = File.createTempFile("test", ".crai");
-        file.deleteOnExit();
-        final FileOutputStream fos = new FileOutputStream(file);
+        final Path file = Files.createTempFile("test", ".crai");
+        file.toFile().deleteOnExit();
         SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         final CRAIEntry entry = new CRAIEntry(0, 1, 2, 5, 3, 4);
-        final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
-        indexer.finish();
-        fos.close();
+        try (final OutputStream fos = Files.newOutputStream(file)) {
+            final CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header, Collections.singleton(entry));
+            indexer.finish();
+        }
 
         final InputStream baiStream =
-                SamIndexes.openIndexUrlAsBaiOrNull(file.toURI().toURL(), dictionary);
+                SamIndexes.openIndexUrlAsBaiOrNull(file.toUri().toURL(), dictionary);
         Assert.assertNotNull(baiStream);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -200,17 +202,17 @@ public class SamIndexesTest extends HtsjdkTest {
     @DataProvider(name = "getSAMIndexTypeFromStreamTests")
     public Object[][] getSAMIndexTypeFromStreamTests() {
         return new Object[][] {
-            {new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), SamIndexes.BAI},
-            {new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), SamIndexes.CSI},
-            {new File("src/test/resources/htsjdk/samtools/cram/cramQueryWithCRAI.cram.crai"), SamIndexes.CRAI},
+            {Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), SamIndexes.BAI},
+            {Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), SamIndexes.CSI},
+            {Paths.get("src/test/resources/htsjdk/samtools/cram/cramQueryWithCRAI.cram.crai"), SamIndexes.CRAI},
         };
     }
 
     @Test(dataProvider = "getSAMIndexTypeFromStreamTests")
-    public void testGetSAMIndexTypeFromStream(final File indexFile, final SamIndexes expectedIndexType)
+    public void testGetSAMIndexTypeFromStream(final Path indexFile, final SamIndexes expectedIndexType)
             throws IOException {
         try (final SeekableStream seekableStream =
-                SeekableStreamFactory.getInstance().getStreamFor(indexFile.getPath())) {
+                SeekableStreamFactory.getInstance().getStreamFor(indexFile.toString())) {
             Assert.assertEquals(SamIndexes.getSAMIndexTypeFromStream(seekableStream), expectedIndexType);
             Assert.assertEquals(seekableStream.position(), 0);
         }

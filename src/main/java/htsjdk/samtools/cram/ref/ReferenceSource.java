@@ -24,16 +24,15 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.utils.ValidationUtils;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,10 +64,6 @@ public class ReferenceSource implements CRAMReferenceSource {
     private byte[] backingReferenceBases;
     private int backingContigIndex;
 
-    public ReferenceSource(final File file) {
-        this(IOUtil.toPath(file));
-    }
-
     public ReferenceSource(final Path path) {
         this(path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
     }
@@ -96,14 +91,14 @@ public class ReferenceSource implements CRAMReferenceSource {
      */
     public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
         if (null != Defaults.REFERENCE_FASTA) {
-            if (Defaults.REFERENCE_FASTA.exists()) {
+            if (Files.exists(Defaults.REFERENCE_FASTA)) {
                 log.info(String.format(
                         "Default reference file %s exists, so going to use that.",
-                        Defaults.REFERENCE_FASTA.getAbsolutePath()));
+                        Defaults.REFERENCE_FASTA.toAbsolutePath()));
                 return new ReferenceSource(Defaults.REFERENCE_FASTA);
             } else {
                 throw new IllegalArgumentException("The file specified by the reference_fasta property does not exist: "
-                        + Defaults.REFERENCE_FASTA.getName());
+                        + Defaults.REFERENCE_FASTA.getFileName());
             }
         } else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
             log.info("USE_CRAM_REF_DOWNLOAD=true, so attempting to download reference file as needed.");

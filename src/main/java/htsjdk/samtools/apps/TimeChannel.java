@@ -22,10 +22,11 @@
  */
 package htsjdk.samtools.apps;
 
-import java.io.File;
+import htsjdk.samtools.util.IOUtil;
 import java.io.FileInputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 
 /**
  * @author alecw@broadinstitute.org
@@ -34,7 +35,9 @@ import java.nio.channels.FileChannel;
 @Deprecated
 public class TimeChannel {
     public static void main(String[] args) throws Exception {
-        long fileSize = new File(args[0]).length();
+        long fileSize = Files.size(IOUtil.getPath(args[0]));
+        // FileInputStream/FileChannel memory-mapping requires a local file, so the channel is opened
+        // from the original path string rather than via NIO.
         FileInputStream in = new FileInputStream(args[0]);
         FileChannel channel = in.getChannel();
         byte[] buf = new byte[64 * 1024];

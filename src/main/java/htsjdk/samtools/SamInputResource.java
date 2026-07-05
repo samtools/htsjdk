@@ -31,7 +31,11 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -83,11 +87,6 @@ public class SamInputResource {
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final File file) {
-        return new SamInputResource(new FileInputResource(file));
-    }
-
-    /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
 
         // in the case of named pipes and other non-seekable paths there's a bug in the implementation of
@@ -103,7 +102,7 @@ public class SamInputResource {
         // To work around this bug, we fall back to using a FileInputResource rather than a PathInputResource
         // when we encounter a non-regular file using the default NIO filesystem (file://)
         if (path.getFileSystem() == FileSystems.getDefault() && !Files.isRegularFile(path)) {
-            return of(path.toFile());
+            return new SamInputResource(new FileInputResource(path));
         } else {
             return new SamInputResource(new PathInputResource(path));
         }
@@ -180,13 +179,13 @@ public class SamInputResource {
         } catch (MalformedURLException e) {
             // ignore
         }
-        return of(new File(string));
-    }
-
-    /** Updates the index to point at the provided resource, then returns itself. */
-    public SamInputResource index(final File file) {
-        this.index = new FileInputResource(file);
-        return this;
+        try {
+            // Use IOUtil.getPath so that scheme-aware NIO providers (gcs, custom SPIs, etc.) are honored;
+            // for a plain local path this resolves against the default file system.
+            return of(IOUtil.getPath(string));
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /** Updates the index to point at the provided resource, then returns itself. */
@@ -291,31 +290,39 @@ abstract class InputResource {
 
 class FileInputResource extends InputResource {
 
-    final File fileResource;
+    final Path pathResource;
     final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Supplier<SeekableStream>() {
         @Override
         public SeekableStream get() {
             try {
-                return new SeekableFileStream(fileResource);
+                return new SeekableFileStream(pathResource);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeIOException(e);
             }
         }
     });
 
-    FileInputResource(final File fileResource) {
+    FileInputResource(final Path pathResource) {
         super(Type.FILE);
-        this.fileResource = fileResource;
+        this.pathResource = pathResource;
+    }
+
+    /**
+     * @deprecated since 6.0; use {@link #FileInputResource(Path)} instead.
+     */
+    @Deprecated
+    FileInputResource(final File fileResource) {
+        this(fileResource.toPath());
     }
 
     @Override
     public File asFile() {
-        return fileResource;
+        return pathResource.toFile();
     }
 
     @Override
     public Path asPath() {
-        return IOUtil.toPath(fileResource);
+        return pathResource;
     }
 
     @Override
@@ -331,7 +338,7 @@ class FileInputResource extends InputResource {
     public SeekableStream asUnbufferedSeekableStream() {
         // if the file doesn't exist, the try to open the stream anyway because users might be expecting the exception
         // if it not a regular file than we won't be able to seek on it, so return null
-        if (!fileResource.exists() || fileResource.isFile()) {
+        if (!Files.exists(pathResource) || Files.isRegularFile(pathResource)) {
             return lazySeekableStream.get();
         } else {
             return null;
@@ -344,8 +351,12 @@ class FileInputResource extends InputResource {
         if (seekableStream != null) {
             return seekableStream;
         } else {
+            // Use FileInputStream (rather than Files.newInputStream) for non-regular files such as named
+            // pipes/FIFOs: the channel-based stream returned by Files.newInputStream reports available()==0
+            // and then mis-handles seeking on non-seekable inputs.
+            // See: https://bugs.java.com/view_bug.do?bug_id=7036144
             try {
-                return new FileInputStream(fileResource);
+                return new FileInputStream(pathResource.toFile());
             } catch (FileNotFoundException e) {
                 throw new RuntimeIOException(e);
             }
@@ -441,7 +452,11 @@ class UrlInputResource extends InputResource {
     public Path asPath() {
         try {
             return IOUtil.getPath(urlResource.toExternalForm());
-        } catch (IOException | IllegalArgumentException | FileSystemNotFoundException | SecurityException e) {
+        } catch (IOException
+                | IllegalArgumentException
+                | FileSystemNotFoundException
+                | ProviderNotFoundException
+                | SecurityException e) {
             return null;
         }
     }
