@@ -30,7 +30,7 @@ import htsjdk.samtools.util.StringUtil;
 import htsjdk.utils.ValidationUtils;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.WeakReference;
+import java.lang.ref.SoftReference;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,13 +56,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     private final ReferenceSequenceFile rsFile;
     private int downloadTriesBeforeFailing = 2;
 
-    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<>();
-
-    // Optimize for locality of reference by maintaining the backing reference bases for the most recent request.
-    // Failure to do this will result in the bases being aggressively GC'd when the only other reference to them
-    // is the weak reference hash map above, resulting in much thrashing.
-    private byte[] backingReferenceBases;
-    private int backingContigIndex;
+    private final Map<String, SoftReference<byte[]>> cache = new HashMap<>();
 
     public ReferenceSource(final Path path) {
         this(path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
@@ -109,7 +103,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     }
 
     private byte[] findInCache(final String name) {
-        final WeakReference<byte[]> weakReference = cacheW.get(name);
+        final SoftReference<byte[]> weakReference = cache.get(name);
         if (weakReference != null) {
             final byte[] bytes = weakReference.get();
             if (bytes != null) return bytes;
@@ -125,7 +119,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         for (int i = 0; i < bases.length; i++) {
             bases[i] = StringUtil.toUpperCase(bases[i]);
         }
-        cacheW.put(sequenceName, new WeakReference<>(bases));
+        cache.put(sequenceName, new SoftReference<>(bases));
         return bases;
     }
 
@@ -182,13 +176,9 @@ public class ReferenceSource implements CRAMReferenceSource {
 
         // this implementation maintains the entire reference sequence, and hands out whatever region
         // of it is requested
-        final byte[] bases = getBackingBases(sequenceRecord);
+        final byte[] bases = getReferenceBases(sequenceRecord, false);
 
         if (bases != null) {
-            // cache the backing bases to prevent thrashing due to aggressive GC
-            backingReferenceBases = bases;
-            backingContigIndex = sequenceRecord.getSequenceIndex();
-
             if (zeroBasedStart >= bases.length) {
                 throw new IllegalArgumentException(String.format(
                         "Requested start %d is beyond the sequence length %s",
@@ -198,14 +188,6 @@ public class ReferenceSource implements CRAMReferenceSource {
                     bases, zeroBasedStart, Math.min(bases.length, zeroBasedStart + requestedRegionLength));
         }
         return bases;
-    }
-
-    private byte[] getBackingBases(final SAMSequenceRecord sequenceRecord) {
-        if (backingReferenceBases != null && backingContigIndex == sequenceRecord.getSequenceIndex()) {
-            return backingReferenceBases;
-        } else {
-            return getReferenceBases(sequenceRecord, false);
-        }
     }
 
     private byte[] findBasesByName(final String name, final boolean tryVariants) {
