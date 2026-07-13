@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  * This is a example program showing how to use SAM readers and (optionally) writers.
  * It's also useful for measuring time.
  * An example invocation is:
- * <code>java -cp dist/htsjdk-2.1.1.jar htsjdk.samtools.example.PrintReadsExample in.bam false a.bam</code>
+ * <code>java -cp build/libs/htsjdk-VERSION.jar htsjdk.samtools.example.PrintReadsExample src/test/resources/htsjdk/samtools/example.bam false out.bam</code>
  * Arguments:
  * - the first argument is the input file (SAM or BAM)
  * - the second argument is a boolean (true or false) that indicates whether reads are to be eagerly decoded (useful for benchmarking)
