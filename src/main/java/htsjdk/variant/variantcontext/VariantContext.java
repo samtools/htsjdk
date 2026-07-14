@@ -831,8 +831,25 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         return !hasID();
     }
 
+    /**
+     * @return the ID field of the record, this may be {@linkplain VCFConstants#EMPTY_ID_FIELD}, a single ID, or a semi-colon
+     * separated list of IDs
+     */
     public String getID() {
         return ID;
+    }
+
+    /**
+     * Splits the ID field into its individual IDs.
+     *
+     * @return a list of IDs for this record, possibly empty but never null
+     */
+    public List<String> getIDs() {
+        if (hasID()) {
+            return ParsingUtils.split(getID(), VCFConstants.ID_FIELD_SEPARATOR_CHAR);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     // ---------------------------------------------------------------------------------------------------------
@@ -1390,8 +1407,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     public void validateRSIDs(Set<String> rsIDs) {
-        if (rsIDs != null && hasID()) {
-            for (String id : getID().split(VCFConstants.ID_FIELD_SEPARATOR)) {
+        if (rsIDs != null) {
+            for (String id : getIDs()) {
                 if (id.startsWith("rs") && !rsIDs.contains(id))
                     throw new TribbleException.InternalCodecException(String.format(
                             "the rsID %s for the record at position %s:%d is not in dbSNP",
