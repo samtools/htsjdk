@@ -61,6 +61,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
             }
             this.channel = Files.newByteChannel(path);
+            sanityCheckFastaAgainstIndex(path, index);
         } catch (IOException e) {
             throw new SAMException("FASTA file should be readable but is not: " + path, e);
         }
@@ -120,6 +121,63 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
             return (Files.exists(fastaFile) && findFastaIndex(fastaFile) != null);
         } catch (IOException e) {
             return false;
+        }
+    }
+
+    /**
+     * Do some basic checking to make sure the fasta and its index are consistent with one another.
+     * <p>
+     * Verifies that the fasta file is at least as long as the last base position claimed by the index, and
+     * that any bytes beyond that last base are only whitespace. A mismatch usually indicates a corrupt fasta
+     * or a stale/incorrect index (which would otherwise silently return the wrong bases), and should be
+     * resolved by reindexing the fasta.
+     * <p>
+     * This is a cheap, necessary-but-not-sufficient check: it reads only the file length and the trailing
+     * bytes, so it catches truncation, wrong-file, and appended-content mismatches, but not an index whose
+     * internal offsets are wrong yet happen to end at the right place. It applies only to plain (non
+     * block-compressed) fasta files, where the on-disk length equals the uncompressed length; block-compressed
+     * references (see {@link BlockCompressedIndexedFastaSequenceFile}) are not checked.
+     *
+     * @param fastaFile Path to the fasta file
+     * @param fastaSequenceIndex the index to check against the fasta file
+     * @throws IOException if an io-error occurs while reading fastaFile
+     */
+    private void sanityCheckFastaAgainstIndex(final Path fastaFile, final FastaSequenceIndex fastaSequenceIndex)
+            throws IOException {
+
+        final FastaSequenceIndexEntry lastSequence = fastaSequenceIndex.getLastIndexEntry();
+        // 0-based byte offset of the last base of the last contig; that base occupies exactly this one byte.
+        final long lastBaseOffset = lastSequence.getLocation() + lastSequence.getOffset(lastSequence.getSize());
+        final long fastaLength = Files.size(fastaFile);
+
+        // The file must actually contain the last base byte, i.e. be strictly longer than its offset.
+        if (lastBaseOffset >= fastaLength) {
+            throw new IllegalArgumentException(
+                    ("The fasta file (%s) is shorter (%d bytes) than its index claims: the last base is expected at "
+                                    + "byte %d. Please reindex the fasta.")
+                            .formatted(fastaFile.toUri(), fastaLength, lastBaseOffset));
+        }
+
+        // Everything strictly after the last base (its line terminator plus any trailing blank lines) must be
+        // whitespace; a non-whitespace byte there means the index does not account for all of the fasta's content.
+        long position = lastBaseOffset + 1;
+        final ByteBuffer buffer = ByteBuffer.allocate(100);
+        while (position < fastaLength) {
+            buffer.clear();
+            final int bytesRead = readFromPosition(buffer, position);
+            if (bytesRead <= 0) {
+                break;
+            }
+            for (int i = 0; i < bytesRead; i++) {
+                final byte b = buffer.get(i);
+                if (!Character.isWhitespace((char) b)) {
+                    throw new IllegalArgumentException(
+                            ("The fasta file (%s) is longer than its index accounts for: found a non-whitespace "
+                                            + "character (%c) at byte %d, past the last base at byte %d. Please reindex the fasta.")
+                                    .formatted(fastaFile.toUri(), (char) b, position + i, lastBaseOffset));
+                }
+            }
+            position += bytesRead;
         }
     }
 

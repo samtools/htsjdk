@@ -58,6 +58,13 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private static final Path SEQUENCE_FILE_GZI = TEST_DATA_DIR.resolve("Homo_sapiens_assembly18.trimmed.fasta.gz.gzi");
     private static final Path SEQUENCE_FILE_NODICT =
             TEST_DATA_DIR.resolve("Homo_sapiens_assembly18.trimmed.nodict.fasta");
+    private static final Path HEADER_WITH_WHITESPACE = TEST_DATA_DIR.resolve("header_with_white_space.fasta");
+    private static final Path HEADER_WITH_EXTRA_WHITESPACE =
+            TEST_DATA_DIR.resolve("header_with_extra_white_space.fasta");
+    private static final Path CRLF = TEST_DATA_DIR.resolve("crlf.fasta");
+    private static final Path HEADER_WITH_WHITESPACE_INDEX =
+            AbstractIndexedFastaSequenceFile.findFastaIndex(HEADER_WITH_WHITESPACE);
+    private static final Path CRLF_INDEX = AbstractIndexedFastaSequenceFile.findFastaIndex(CRLF);
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
     private final String extendedBasesOfChrM =
@@ -65,6 +72,14 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
                     + "GAGCCGGAGCACCCTATGTCGCAGTATCTGTCTTTGATTCCTGCCTCATT";
     private final String lastBasesOfChr20 = "ttgtctgatgctcatattgt";
     private final int CHR20_LENGTH = 1000000;
+
+    @DataProvider(name = "mismatched_indexes")
+    public Object[][] provideMismatchedIndexes() {
+        return new Object[][] {
+            {HEADER_WITH_WHITESPACE, CRLF_INDEX},
+            {CRLF, HEADER_WITH_WHITESPACE_INDEX}
+        };
+    }
 
     @DataProvider(name = "homosapiens")
     public Object[][] provideSequenceFile() throws FileNotFoundException {
@@ -516,6 +531,61 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
                     remoteFasta, null, fsi, GZIIndex.loadIndex(remoteGZI.toPath()));
             final ReferenceSequence rs = ifsf.getSubsequenceAt("chrM", 4, 10);
             Assert.assertEquals(rs.getBaseString(), "CACAGGT");
+        }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "mismatched_indexes")
+    public void testWrongIndex(final Path fasta, final Path index) throws IOException {
+        // Opening a fasta with an index that does not match it should fail the sanity check.
+        try (IndexedFastaSequenceFile ignored = new IndexedFastaSequenceFile(fasta, new FastaSequenceIndex(index))) {
+            Assert.fail("Expected an IllegalArgumentException for a mismatched fasta/index.");
+        }
+    }
+
+    @Test
+    public void testExtraWhitespace() throws IOException {
+        // Trailing whitespace beyond the last base (here, extra blank lines) should be tolerated.
+        try (IndexedFastaSequenceFile ignored = new IndexedFastaSequenceFile(
+                HEADER_WITH_EXTRA_WHITESPACE, new FastaSequenceIndex(HEADER_WITH_WHITESPACE_INDEX))) {
+            // no exception expected
+        }
+    }
+
+    @Test
+    public void testSanityCheckAcceptsFastaWithoutTrailingNewline() throws IOException {
+        // A single-line fasta whose final line has no trailing newline (terminator length 0) is valid and
+        // must open without a false positive from the sanity check.
+        final Path dir = Files.createTempDirectory("fastaSanity");
+        final Path fasta = dir.resolve("noNewline.fasta");
+        try {
+            Files.write(fasta, ">c\nACGTACGT".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            final FastaSequenceIndex index = FastaSequenceIndexCreator.buildFromFasta(fasta);
+            try (IndexedFastaSequenceFile ignored = new IndexedFastaSequenceFile(fasta, index)) {
+                // no exception expected
+            }
+        } finally {
+            Files.deleteIfExists(fasta);
+            Files.deleteIfExists(dir);
+        }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testSanityCheckRejectsTruncatedFasta() throws IOException {
+        // Truncating the fasta so it ends exactly where the last base should start (the boundary case) must
+        // be detected against an index that still claims the base is present.
+        final Path dir = Files.createTempDirectory("fastaSanity");
+        final Path fasta = dir.resolve("trunc.fasta");
+        try {
+            Files.write(fasta, ">c\nACGTACGT\n".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            final FastaSequenceIndex index = FastaSequenceIndexCreator.buildFromFasta(fasta); // index for the full file
+            Files.write(
+                    fasta, ">c\nACGTACG".getBytes(java.nio.charset.StandardCharsets.US_ASCII)); // drop the last base
+            try (IndexedFastaSequenceFile ignored = new IndexedFastaSequenceFile(fasta, index)) {
+                Assert.fail("Expected the sanity check to reject a truncated fasta.");
+            }
+        } finally {
+            Files.deleteIfExists(fasta);
+            Files.deleteIfExists(dir);
         }
     }
 }

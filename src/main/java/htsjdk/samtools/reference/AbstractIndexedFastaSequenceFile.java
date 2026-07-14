@@ -214,7 +214,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         final int bytesPerLine = indexEntry.getBytesPerLine();
         final int terminatorLength = bytesPerLine - basesPerLine;
 
-        long startOffset = ((start - 1) / basesPerLine) * bytesPerLine + (start - 1) % basesPerLine;
+        long startOffset = indexEntry.getOffset(start);
         // Cast to long so the second argument cannot overflow a signed integer.
         final long minBufferSize = Math.min(
                 (long) Defaults.NON_ZERO_BUFFER_SIZE, (long) (length / basesPerLine + 2) * (long) bytesPerLine);
