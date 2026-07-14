@@ -55,7 +55,6 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<Path, OutputStr
                 // In case the file could not be opened because of too many file handles, try to force
                 // file handles to be closed.
                 System.gc();
-                System.runFinalization();
                 try {
                     return IOUtil.maybeBufferOutputStream(
                             Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND));
