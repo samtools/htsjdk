@@ -382,15 +382,13 @@ public abstract class AbstractIndex implements MutableIndex {
             chrIndices = new LinkedHashMap<String, ChrIndex>(nChromosomes);
 
             while (nChromosomes-- > 0) {
-                final ChrIndex chrIdx = (ChrIndex) getChrIndexClass().newInstance();
+                final ChrIndex chrIdx =
+                        (ChrIndex) getChrIndexClass().getDeclaredConstructor().newInstance();
                 chrIdx.read(dis);
                 chrIndices.put(chrIdx.getName(), chrIdx);
             }
 
-        } catch (final InstantiationException e) {
-            throw new TribbleException.UnableToCreateCorrectIndexType(
-                    "Unable to create class " + getChrIndexClass(), e);
-        } catch (final IllegalAccessException e) {
+        } catch (final ReflectiveOperationException e) {
             throw new TribbleException.UnableToCreateCorrectIndexType(
                     "Unable to create class " + getChrIndexClass(), e);
         } finally {

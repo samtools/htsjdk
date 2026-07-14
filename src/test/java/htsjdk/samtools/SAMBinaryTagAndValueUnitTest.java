@@ -11,7 +11,7 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
     @DataProvider(name = "allowedAttributeTypes")
     public Object[][] allowedTypes() {
         return new Object[][] {
-            {new String("a string")},
+            {"a string"},
             {Byte.valueOf((byte) 7)},
             {Short.valueOf((short) 8)},
             {Integer.valueOf(0)},
@@ -97,17 +97,8 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
     public Object[][] hashCopyEquals() {
         final short tag = SAMTag.makeBinaryTag("UI");
         return new Object[][] {
-            {
-                new SAMBinaryTagAndValue(tag, new String("a string")),
-                new SAMBinaryTagAndValue(tag, new String("a string")),
-                true,
-                true
-            },
-            {
-                new SAMBinaryTagAndValue(tag, new String("a string")),
-                new SAMBinaryTagAndValue(tag, new String("different string")),
-                false,
-                false
+            {new SAMBinaryTagAndValue(tag, "a string"), new SAMBinaryTagAndValue(tag, "a string"), true, true},
+            {new SAMBinaryTagAndValue(tag, "a string"), new SAMBinaryTagAndValue(tag, "different string"), false, false
             },
             {
                 new SAMBinaryTagAndValue(tag, Byte.valueOf((byte) 0)),
