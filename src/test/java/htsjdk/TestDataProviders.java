@@ -53,9 +53,9 @@ public class TestDataProviders extends HtsjdkTest {
     // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
     @Test(dataProvider = "DataprovidersThatDontTestThemselves")
     public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz)
-            throws IllegalAccessException, InstantiationException {
+            throws ReflectiveOperationException {
 
-        Object instance = clazz.newInstance();
+        Object instance = clazz.getDeclaredConstructor().newInstance();
 
         Assert.assertTrue(
                 HtsjdkTest.class.isAssignableFrom(clazz), "Test Classes must extend HtsJdkTest: " + clazz.getName());

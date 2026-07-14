@@ -333,7 +333,9 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                     final String className =
                             line.substring(MAJOR_HEADER_PREFIX.length()).trim();
                     try {
-                        header = (Header) loadClass(className, true).newInstance();
+                        header = (Header) loadClass(className, true)
+                                .getDeclaredConstructor()
+                                .newInstance();
                     } catch (final Exception e) {
                         throw new SAMException("Error load and/or instantiating an instance of " + className, e);
                     }
@@ -390,7 +392,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                             BEAN bean = null;
 
                             try {
-                                bean = (BEAN) type.newInstance();
+                                bean = (BEAN) type.getDeclaredConstructor().newInstance();
                             } catch (final Exception e) {
                                 throw new SAMException("Error instantiating a " + type.getName(), e);
                             }

@@ -109,7 +109,7 @@ public class CustomReaderFactory {
                     clazz = Class.forName(factoryClassName);
                 }
 
-                factory = (ICustomReaderFactory) clazz.newInstance();
+                factory = (ICustomReaderFactory) clazz.getDeclaredConstructor().newInstance();
                 LOG.info("Created custom factory for " + urlPrefix + " from " + factoryClassName + " loaded from "
                         + (jarFile.isEmpty() ? " this jar" : jarFile));
             } catch (Exception e) {
