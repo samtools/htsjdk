@@ -309,4 +309,46 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
         final FastaSequenceIndex writtenIndex = new FastaSequenceIndex(fileToWrite);
         Assert.assertEquals(writtenIndex, originalIndex);
     }
+
+    private static FastaSequenceIndex twoContigIndex() {
+        final FastaSequenceIndex index = new FastaSequenceIndex();
+        index.add(new FastaSequenceIndexEntry("chr1", 0, 100, 60, 61, 0));
+        index.add(new FastaSequenceIndexEntry("chr2", 200, 100, 60, 61, 1));
+        return index;
+    }
+
+    @Test
+    public void testRenameToNewName() {
+        final FastaSequenceIndex index = twoContigIndex();
+        index.rename(index.getIndexEntry("chr1"), "chrOne");
+
+        Assert.assertFalse(index.hasIndexEntry("chr1"));
+        Assert.assertTrue(index.hasIndexEntry("chrOne"));
+        Assert.assertEquals(index.getIndexEntry("chrOne").getContig(), "chrOne");
+        Assert.assertEquals(index.size(), 2);
+        // renaming preserves list position: the renamed entry is still first.
+        Assert.assertEquals(index.iterator().next().getContig(), "chrOne");
+    }
+
+    @Test
+    public void testRenameToOwnNameIsNoOp() {
+        final FastaSequenceIndex index = twoContigIndex();
+        index.rename(index.getIndexEntry("chr1"), "chr1");
+
+        Assert.assertTrue(index.hasIndexEntry("chr1"));
+        Assert.assertEquals(index.size(), 2);
+    }
+
+    @Test
+    public void testRenameToExistingNameThrowsAndLeavesIndexUnchanged() {
+        final FastaSequenceIndex index = twoContigIndex();
+
+        Assert.assertThrows(SAMException.class, () -> index.rename(index.getIndexEntry("chr1"), "chr2"));
+
+        // A failed rename must not corrupt the index (the name lookup and the ordered list must stay in sync).
+        Assert.assertTrue(index.hasIndexEntry("chr1"), "chr1 must remain looked-up-able after a failed rename");
+        Assert.assertTrue(index.hasIndexEntry("chr2"));
+        Assert.assertEquals(index.getIndexEntry("chr1").getContig(), "chr1");
+        Assert.assertEquals(index.size(), 2);
+    }
 }

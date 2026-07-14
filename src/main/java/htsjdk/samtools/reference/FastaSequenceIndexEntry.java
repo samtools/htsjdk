@@ -108,6 +108,18 @@ public class FastaSequenceIndexEntry {
         return sequenceIndex;
     }
 
+    /** Return the offset to pos as determined by the number of bases and bytes per line
+     *
+     * @param pos the (1-based) position in the contig that is requested
+     * @return the offset (0-based) from 'location' where pos is located in the file.
+     */
+    public long getOffset(long pos) {
+        final int basesPerLine = this.getBasesPerLine();
+        final int bytesPerLine = this.getBytesPerLine();
+
+        return ((pos - 1) / basesPerLine) * bytesPerLine + ((pos - 1) % basesPerLine);
+    }
+
     /**
      * For debugging.  Emit the contents of each contig line.
      * @return A string representation of the contig line.
