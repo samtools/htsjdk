@@ -41,11 +41,12 @@ public class SAMRecordQueryNameNaturalComparatorTest extends HtsjdkTest {
     }
 
     @Test
-    public void specExampleSortsInDocumentedOrder() {
-        // The worked example of natural ordering from the SAMv1 specification, already in sorted order.
+    public void mixedNamesSortInNaturalOrder() {
+        // A set of names with a single, unambiguous natural ordering (no leading-zero ties, which
+        // samtools treats as equal). Numeric runs order by value: abc03 (3) < abc5 (5) < abc8 (8) < abc17 (17).
         final List<String> names = CollectionUtil.makeList(
-                "abc", "abc+5", "abc- 5", "abc.d", "abc03", "abc5", "abc008", "abc08", "abc8", "abc17", "abc17.+",
-                "abc17.2", "abc17.d", "abc59", "abcd");
+                "abc", "abc+5", "abc- 5", "abc.d", "abc03", "abc5", "abc8", "abc17", "abc17.+", "abc17.2", "abc17.d",
+                "abc59", "abcd");
 
         final List<String> shuffled = new ArrayList<>(names);
         Collections.reverse(shuffled); // start from a non-sorted order so sorting does real work
@@ -70,19 +71,20 @@ public class SAMRecordQueryNameNaturalComparatorTest extends HtsjdkTest {
     }
 
     @Test
-    public void moreLeadingZerosSortFirstAmongEqualValues() {
-        // All three have numeric value 8; the one with the most leading zeros sorts first.
-        Assert.assertEquals(cmp("x008", "x08"), -1);
-        Assert.assertEquals(cmp("x08", "x8"), -1);
-        Assert.assertEquals(cmp("x008", "x8"), -1);
+    public void leadingZerosDoNotAffectOrder() {
+        // Numeric runs with equal value compare equal regardless of leading zeros, matching samtools.
+        Assert.assertEquals(cmp("x008", "x08"), 0);
+        Assert.assertEquals(cmp("x08", "x8"), 0);
+        Assert.assertEquals(cmp("x008", "x8"), 0);
+        // All-zero runs are likewise equal regardless of how many zeros.
+        Assert.assertEquals(cmp("00", "0"), 0);
     }
 
     @Test
-    public void leadingZeroRunsWithEqualValueButDifferentDigitsAreOrdered() {
+    public void runsWithDifferentValuesAreOrderedRegardlessOfLeadingZeros() {
         // "010" (value 10) vs "09" (value 9): compared by value, not by the leading zero.
         Assert.assertEquals(cmp("010", "09"), 1);
-        // "00" and "0" are both zero; more leading zeros sorts first.
-        Assert.assertEquals(cmp("00", "0"), -1);
+        Assert.assertEquals(cmp("007", "8"), -1);
     }
 
     @Test

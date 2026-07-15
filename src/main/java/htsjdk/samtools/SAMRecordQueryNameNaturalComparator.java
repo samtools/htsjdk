@@ -45,9 +45,9 @@ public class SAMRecordQueryNameNaturalComparator extends SAMRecordQueryNameCompa
      * Compares two read names using natural ordering, matching htslib's {@code strnum_cmp}.
      *
      * <p>Maximal runs of ASCII digits are compared as numbers; all other characters are compared by
-     * their code point. When two numeric runs have the same value, the run with more leading zeros
-     * sorts first. Because the comparison never parses a run into a number, it is correct (and matches
-     * samtools) for numeric runs of arbitrary length.</p>
+     * their code point. Leading zeros are ignored, so numeric runs with the same value compare equal
+     * (e.g. {@code 8}, {@code 08} and {@code 008}), matching samtools. Because the comparison never
+     * parses a run into a number, it is correct for numeric runs of arbitrary length.</p>
      *
      * @return a negative number if {@code a < b}, zero if they are equal, a positive number if {@code a > b}
      */
@@ -94,11 +94,9 @@ public class SAMRecordQueryNameNaturalComparator extends SAMRecordQueryNameCompa
                     return 1; // a's numeric run is longer, so it is the larger number
                 } else if (bHasDigit) {
                     return -1; // b's numeric run is longer, so it is the larger number
-                } else if (ia != ib) {
-                    // Equal numeric value but a different number of leading zeros; more zeros sorts first.
-                    return ia < ib ? 1 : -1;
                 }
-                // Otherwise the two runs are identical (including leading zeros); keep comparing after them.
+                // Otherwise the two runs have the same numeric value. Leading zeros do not affect the
+                // ordering (matching samtools), so we simply keep comparing the characters that follow.
             } else {
                 if (chA != chB) return chA - chB;
                 ia++;
