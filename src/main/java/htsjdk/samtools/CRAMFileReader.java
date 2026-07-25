@@ -429,6 +429,17 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             }
             seekableStream = deferredCloseSeekableStream;
         }
+
+        if (seekableStream == null) {
+            // Query and index operations require the ability to seek. Historically this method returned null
+            // here, which turned into an unhelpful NullPointerException further down the call stack.
+            // See https://github.com/samtools/htsjdk/issues/426.
+            throw new IllegalStateException(
+                    "This CRAM reader cannot satisfy query or index operations because it was created from an "
+                            + "input stream that is not a SeekableStream. Construct the reader with a File or Path, "
+                            + "or with an input stream that implements SeekableStream, in order to query by "
+                            + "interval or to use an index.");
+        }
         return seekableStream;
     }
 
