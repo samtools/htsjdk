@@ -123,11 +123,30 @@ public class CRAMContainerStreamWriter {
     }
 
     /**
-     * Finish writing to the stream. Flushes the record cache and optionally emits an EOF container.
+     * Finish writing to the stream. Flushes the record cache, optionally emits an EOF container, and then
+     * closes the underlying output stream.
+     *
+     * <p>Note that this closes a stream that was supplied by the caller. Callers that own the lifecycle of
+     * the stream themselves should use {@link #finish(boolean, boolean)} with {@code closeStream} set to
+     * false, and close the stream on their own terms.
+     *
      * @param writeEOFContainer true if an EOF container should be written. Only use false if writing a CRAM file
      *                          fragment which will later be aggregated into a complete CRAM file.
      */
     public void finish(final boolean writeEOFContainer) {
+        finish(writeEOFContainer, true);
+    }
+
+    /**
+     * Finish writing to the stream. Flushes the record cache and optionally emits an EOF container.
+     *
+     * @param writeEOFContainer true if an EOF container should be written. Only use false if writing a CRAM file
+     *                          fragment which will later be aggregated into a complete CRAM file.
+     * @param closeStream true if the underlying output stream should be closed once writing is complete. Pass
+     *                    false when the caller created the stream and is responsible for closing it; the stream
+     *                    is always flushed regardless.
+     */
+    public void finish(final boolean writeEOFContainer, final boolean closeStream) {
         try {
             final Container container = containerFactory.getFinalContainer(streamOffset);
             if (container != null) {
@@ -140,7 +159,9 @@ public class CRAMContainerStreamWriter {
             if (cramIndexer != null) {
                 cramIndexer.finish();
             }
-            outputStream.close();
+            if (closeStream) {
+                outputStream.close();
+            }
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
