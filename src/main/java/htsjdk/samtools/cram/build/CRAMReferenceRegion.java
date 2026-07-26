@@ -171,8 +171,16 @@ public class CRAMReferenceRegion {
         referenceBases =
                 referenceSource.getReferenceBasesByRegion(sequenceRecord, zeroBasedStart, requestedFragmentLength);
         if (referenceBases == null) {
-            throw new IllegalArgumentException(
-                    String.format("Failure getting reference bases for sequence %s", sequenceRecord.getSequenceName()));
+            // The reference source could not supply bases for a sequence that IS in the sequence dictionary.
+            // In practice this almost always means the reference fasta is missing its companion .fai index (or
+            // .dict, or .gzi for a bgzipped fasta), or that it simply does not contain this sequence, so say so
+            // rather than reporting a bare failure. See https://github.com/samtools/htsjdk/issues/1732.
+            throw new IllegalArgumentException(String.format(
+                    "Failure getting reference bases for sequence '%s'. The reference source did not return any "
+                            + "bases for this sequence. Verify that the reference fasta contains a sequence named "
+                            + "'%s', and that it has been indexed -- a CRAM requires a fasta with a companion .fai "
+                            + "index (plus a .gzi index if the fasta is bgzipped) and a .dict sequence dictionary.",
+                    sequenceRecord.getSequenceName(), sequenceRecord.getSequenceName()));
         } else if (referenceBases.length < requestedFragmentLength) {
             log.warn("The bases of length " + referenceBases.length
                     + " returned by the reference source do not satisfy the requested fragment length "
