@@ -68,7 +68,7 @@ public class CRAMContainerStreamWriterClosureTest extends HtsjdkTest {
     }
 
     @Test
-    public void finish_does_not_close_stream_when_close_stream_is_false() {
+    public void testFinishDoesNotCloseStreamWhenCloseStreamIsFalse() {
         final SAMFileHeader header = makeHeader();
         final CloseRecordingStream stream = new CloseRecordingStream();
 
@@ -81,7 +81,7 @@ public class CRAMContainerStreamWriterClosureTest extends HtsjdkTest {
     }
 
     @Test
-    public void finish_closes_stream_when_close_stream_is_true() {
+    public void testFinishClosesStreamWhenCloseStreamIsTrue() {
         final SAMFileHeader header = makeHeader();
         final CloseRecordingStream stream = new CloseRecordingStream();
 
@@ -94,7 +94,7 @@ public class CRAMContainerStreamWriterClosureTest extends HtsjdkTest {
 
     /** The single-argument overload must keep its historical behaviour of closing the stream. */
     @Test
-    public void single_argument_finish_still_closes_stream() {
+    public void testSingleArgumentFinishStillClosesStream() {
         final SAMFileHeader header = makeHeader();
         final CloseRecordingStream stream = new CloseRecordingStream();
 
@@ -107,7 +107,7 @@ public class CRAMContainerStreamWriterClosureTest extends HtsjdkTest {
 
     /** A caller that keeps ownership of the stream can go on using it after the writer has finished. */
     @Test
-    public void caller_can_continue_using_stream_after_finish_without_close() throws IOException {
+    public void testCallerCanContinueUsingStreamAfterFinishWithoutClose() throws IOException {
         final SAMFileHeader header = makeHeader();
         final CloseRecordingStream stream = new CloseRecordingStream();
 

@@ -84,7 +84,7 @@ public class ReferenceSourceConcurrencyTest extends HtsjdkTest {
      * verifies every thread only ever receives bases belonging to the contig it asked for.
      */
     @Test
-    public void concurrent_region_requests_never_return_another_contigs_bases() throws Exception {
+    public void testConcurrentRegionRequestsNeverReturnAnotherContigsBases() throws Exception {
         final ReferenceSource source = new ReferenceSource(new UniformBaseReferenceFile());
 
         final int iterations = 2000;
@@ -123,7 +123,7 @@ public class ReferenceSourceConcurrencyTest extends HtsjdkTest {
 
     /** The single-threaded caching behaviour must be unaffected. */
     @Test
-    public void repeated_requests_for_the_same_contig_return_correct_bases() {
+    public void testRepeatedRequestsForSameContigReturnCorrectBases() {
         final ReferenceSource source = new ReferenceSource(new UniformBaseReferenceFile());
         final SAMSequenceRecord record = new SAMSequenceRecord(contigName(1), CONTIG_LENGTH);
         record.setSequenceIndex(1);
@@ -139,7 +139,7 @@ public class ReferenceSourceConcurrencyTest extends HtsjdkTest {
 
     /** Alternating contigs on one thread must still return the right bases each time. */
     @Test
-    public void alternating_contigs_return_correct_bases() {
+    public void testAlternatingContigsReturnCorrectBases() {
         final ReferenceSource source = new ReferenceSource(new UniformBaseReferenceFile());
 
         for (int i = 0; i < 20; i++) {

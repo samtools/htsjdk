@@ -90,7 +90,7 @@ public class CRAMFileReaderNonSeekableStreamTest extends HtsjdkTest {
     }
 
     @Test
-    public void query_over_non_seekable_stream_throws_a_descriptive_exception() throws IOException {
+    public void testQueryOverNonSeekableStreamThrowsDescriptiveException() throws IOException {
         try (CRAMFileReader reader = readerOverNonSeekableStream()) {
             try {
                 reader.query(new QueryInterval[] {new QueryInterval(0, 1, 100)}, false);
@@ -108,7 +108,7 @@ public class CRAMFileReaderNonSeekableStreamTest extends HtsjdkTest {
 
     /** Sequential iteration does not require seeking and must keep working. */
     @Test
-    public void sequential_iteration_over_non_seekable_stream_still_works() throws IOException {
+    public void testSequentialIterationOverNonSeekableStreamStillWorks() throws IOException {
         try (CRAMFileReader reader = readerOverNonSeekableStream()) {
             int count = 0;
             final htsjdk.samtools.SAMRecordIterator iterator = reader.getIterator();
