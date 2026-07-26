@@ -21,14 +21,27 @@ public class CRAMContainerStreamWriterClosureTest extends HtsjdkTest {
     private static final String CONTIG = "1";
     private static final int REF_LENGTH = 200;
 
-    /** An output stream that records whether it has been closed. */
+    /**
+     * An output stream that records whether it has been closed and whether it has been flushed.
+     *
+     * <p>Both have to be tracked explicitly. {@link ByteArrayOutputStream} makes writes visible
+     * immediately and inherits a no-op {@code flush()}, so the contents of the stream say nothing about
+     * whether the writer actually flushed it.
+     */
     private static final class CloseRecordingStream extends ByteArrayOutputStream {
         private boolean closed = false;
+        private boolean flushed = false;
 
         @Override
         public void close() throws IOException {
             closed = true;
             super.close();
+        }
+
+        @Override
+        public void flush() throws IOException {
+            flushed = true;
+            super.flush();
         }
     }
 
@@ -64,7 +77,7 @@ public class CRAMContainerStreamWriterClosureTest extends HtsjdkTest {
         writer.finish(true, false);
 
         Assert.assertFalse(stream.closed, "finish(true, false) must not close a stream supplied by the caller");
-        Assert.assertTrue(stream.size() > 0, "expected CRAM bytes to have been flushed to the stream");
+        Assert.assertTrue(stream.flushed, "declining the close must still flush the stream, or data can be lost");
     }
 
     @Test
