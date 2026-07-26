@@ -58,11 +58,27 @@ public class ReferenceSource implements CRAMReferenceSource {
 
     private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<>();
 
+    /**
+     * The bases of a single contig together with the index of the contig they belong to. These two values are
+     * only meaningful as a pair, so they are held in one immutable object and published through a single
+     * volatile field. Storing them in two separate mutable fields allowed concurrent callers to interleave
+     * their writes and leave the cache claiming one contig while holding another contig's bases, which was
+     * silently returned as if correct. See https://github.com/samtools/htsjdk/issues/1643.
+     */
+    private static final class CachedContigBases {
+        private final int contigIndex;
+        private final byte[] bases;
+
+        private CachedContigBases(final int contigIndex, final byte[] bases) {
+            this.contigIndex = contigIndex;
+            this.bases = bases;
+        }
+    }
+
     // Optimize for locality of reference by maintaining the backing reference bases for the most recent request.
     // Failure to do this will result in the bases being aggressively GC'd when the only other reference to them
     // is the weak reference hash map above, resulting in much thrashing.
-    private byte[] backingReferenceBases;
-    private int backingContigIndex;
+    private volatile CachedContigBases backingBases;
 
     public ReferenceSource(final Path path) {
         this(path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
@@ -185,9 +201,9 @@ public class ReferenceSource implements CRAMReferenceSource {
         final byte[] bases = getBackingBases(sequenceRecord);
 
         if (bases != null) {
-            // cache the backing bases to prevent thrashing due to aggressive GC
-            backingReferenceBases = bases;
-            backingContigIndex = sequenceRecord.getSequenceIndex();
+            // cache the backing bases to prevent thrashing due to aggressive GC. The contig index and the
+            // bases are published together so that another thread can never observe a mismatched pair.
+            backingBases = new CachedContigBases(sequenceRecord.getSequenceIndex(), bases);
 
             if (zeroBasedStart >= bases.length) {
                 throw new IllegalArgumentException(String.format(
@@ -201,8 +217,10 @@ public class ReferenceSource implements CRAMReferenceSource {
     }
 
     private byte[] getBackingBases(final SAMSequenceRecord sequenceRecord) {
-        if (backingReferenceBases != null && backingContigIndex == sequenceRecord.getSequenceIndex()) {
-            return backingReferenceBases;
+        // read the pair once, so the index check and the bases returned always come from the same snapshot
+        final CachedContigBases cached = backingBases;
+        if (cached != null && cached.contigIndex == sequenceRecord.getSequenceIndex()) {
+            return cached.bases;
         } else {
             return getReferenceBases(sequenceRecord, false);
         }
