@@ -54,4 +54,52 @@ public class SAMFileWriterTest extends HtsjdkTest {
             Assert.assertEquals(recs.get(9).getReadName(), "q10");
         }
     }
+
+    @Test
+    public void testOutOfOrderMessageNamesPrecedingCoordinateRecord() throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        builder.addFrag("q1", 0, 100, false);
+        builder.addFrag("q2", 0, 500, false);
+        builder.addFrag("q3", 0, 200, false); // out of order relative to q2
+
+        for (final String ext : CollectionUtil.makeList(".sam", ".bam")) {
+            final Path file = Files.createTempFile("test.", ext);
+            final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), true, file);
+
+            try {
+                builder.forEach(writer::addAlignment);
+                writer.close();
+                Assert.fail("Should have thrown an exception on out of order records to a " + ext + " file.");
+            } catch (IllegalArgumentException e) {
+                // The message must name the record that precedes the offending one, not the offending
+                // record twice.
+                Assert.assertTrue(
+                        e.getMessage().contains("Offending records are at [chr1:500] and [chr1:200]"),
+                        "Unexpected message for a " + ext + " file: " + e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testOutOfOrderMessageNamesPrecedingQuerynameRecord() throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.queryname);
+        builder.addFrag("q1", 0, 1000, false);
+        builder.addFrag("q3", 0, 1000, false);
+        builder.addFrag("q2", 0, 1000, false); // out of order relative to q3
+
+        for (final String ext : CollectionUtil.makeList(".sam", ".bam")) {
+            final Path file = Files.createTempFile("test.", ext);
+            final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), true, file);
+
+            try {
+                builder.forEach(writer::addAlignment);
+                writer.close();
+                Assert.fail("Should have thrown an exception on out of order records to a " + ext + " file.");
+            } catch (IllegalArgumentException e) {
+                Assert.assertTrue(
+                        e.getMessage().contains("Offending records are at [q3] and [q2]"),
+                        "Unexpected message for a " + ext + " file: " + e.getMessage());
+            }
+        }
+    }
 }
