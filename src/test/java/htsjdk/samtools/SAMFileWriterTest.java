@@ -64,6 +64,7 @@ public class SAMFileWriterTest extends HtsjdkTest {
 
         for (final String ext : CollectionUtil.makeList(".sam", ".bam")) {
             final Path file = Files.createTempFile("test.", ext);
+            file.toFile().deleteOnExit();
             final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), true, file);
 
             try {
@@ -76,6 +77,8 @@ public class SAMFileWriterTest extends HtsjdkTest {
                 Assert.assertTrue(
                         e.getMessage().contains("Offending records are at [chr1:500] and [chr1:200]"),
                         "Unexpected message for a " + ext + " file: " + e.getMessage());
+            } finally {
+                writer.close();
             }
         }
     }
@@ -89,6 +92,7 @@ public class SAMFileWriterTest extends HtsjdkTest {
 
         for (final String ext : CollectionUtil.makeList(".sam", ".bam")) {
             final Path file = Files.createTempFile("test.", ext);
+            file.toFile().deleteOnExit();
             final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), true, file);
 
             try {
@@ -99,6 +103,8 @@ public class SAMFileWriterTest extends HtsjdkTest {
                 Assert.assertTrue(
                         e.getMessage().contains("Offending records are at [q3] and [q2]"),
                         "Unexpected message for a " + ext + " file: " + e.getMessage());
+            } finally {
+                writer.close();
             }
         }
     }
