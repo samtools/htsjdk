@@ -31,7 +31,7 @@ public interface HtsQueryIndex extends Closeable {
      * this method addresses the records that collect at the end of the file instead.
      *
      * @return the byte ranges; empty for a format with no such concept, such as a tabix-indexed
-     *     VCF, and for a file that has no unplaced records to point at
+     *     VCF, and when the index has nothing to point at
      */
     default Optional<HtsFileSpan> getSpanOfUnplaced() {
         return Optional.empty();

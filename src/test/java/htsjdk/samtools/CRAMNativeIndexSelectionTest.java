@@ -87,8 +87,19 @@ public class CRAMNativeIndexSelectionTest extends HtsjdkTest {
         try (final SamReader reader = open(cramFileName)) {
             final Optional<HtsFileSpan> unplaced =
                     reader.indexing().getHtsIndex().getSpanOfUnplaced();
-            Assert.assertTrue(unplaced.isPresent(), "Every one of these files has placed records");
+            Assert.assertTrue(unplaced.isPresent(), "Every one of these files has unplaced records");
             Assert.assertFalse(unplaced.get().isEmpty());
+        }
+    }
+
+    @Test
+    public void testTheNativeIndexReportsNoUnplacedSpanWhenTheFileHasNoUnplacedRecords() throws IOException {
+        try (final SamReader reader = open("NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram")) {
+            Assert.assertTrue(
+                    reader.indexing().getHtsIndex().getSpanOfUnplaced().isEmpty());
+            try (final SAMRecordIterator unplaced = reader.queryUnmapped()) {
+                Assert.assertFalse(unplaced.hasNext());
+            }
         }
     }
 

@@ -47,8 +47,8 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     /** Entries for placed references, keyed by reference index. */
     private final Map<Integer, ReferenceEntries> entriesByReference;
 
-    /** Container offset of the last container holding a placed record, if there is one. */
-    private final OptionalLong lastPlacedContainerOffset;
+    /** Offset of the first container holding an unplaced record, if there is one. */
+    private final OptionalLong firstUnplacedContainerOffset;
 
     /**
      * Build a queryable index from CRAI entries, as read by
@@ -59,7 +59,7 @@ public class CRAIQueryIndex implements HtsQueryIndex {
      */
     public CRAIQueryIndex(final Collection<CRAIEntry> entries) {
         final Map<Integer, List<CRAIEntry>> grouped = new HashMap<>();
-        long lastPlaced = -1;
+        long firstUnplaced = Long.MAX_VALUE;
         for (final CRAIEntry entry : entries) {
             final int sequenceId = entry.getSequenceId();
             if (sequenceId < ReferenceContext.UNMAPPED_UNPLACED_ID) {
@@ -67,16 +67,19 @@ public class CRAIQueryIndex implements HtsQueryIndex {
                 throw new CRAMException("Malformed CRAI entry with reference id " + sequenceId + ": " + entry);
             }
             if (sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID) {
+                // A multi-reference slice holding unplaced records has an entry for them too, so
+                // this finds them whether or not they share a container with placed records.
+                firstUnplaced = Math.min(firstUnplaced, entry.getContainerStartByteOffset());
                 continue;
             }
             grouped.computeIfAbsent(sequenceId, id -> new ArrayList<>()).add(entry);
-            lastPlaced = Math.max(lastPlaced, entry.getContainerStartByteOffset());
         }
 
         this.entriesByReference = new HashMap<>(grouped.size());
         grouped.forEach((referenceIndex, referenceEntries) ->
                 entriesByReference.put(referenceIndex, new ReferenceEntries(referenceEntries)));
-        this.lastPlacedContainerOffset = lastPlaced < 0 ? OptionalLong.empty() : OptionalLong.of(lastPlaced);
+        this.firstUnplacedContainerOffset =
+                firstUnplaced == Long.MAX_VALUE ? OptionalLong.empty() : OptionalLong.of(firstUnplaced);
     }
 
     /**
@@ -92,14 +95,15 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     /**
      * {@inheritDoc}
      *
-     * <p>From the last container holding a placed record to the end of the file.
+     * <p>From the first container holding an unplaced record to the end of the file; empty when
+     * the index has no unplaced entries.
      */
     @Override
     public Optional<HtsFileSpan> getSpanOfUnplaced() {
-        if (lastPlacedContainerOffset.isEmpty()) {
+        if (firstUnplacedContainerOffset.isEmpty()) {
             return Optional.empty();
         }
-        final long containerStart = lastPlacedContainerOffset.getAsLong() << CONTAINER_OFFSET_SHIFT;
+        final long containerStart = firstUnplacedContainerOffset.getAsLong() << CONTAINER_OFFSET_SHIFT;
         return Optional.of(new BAMFileSpan(new Chunk(containerStart, Long.MAX_VALUE)));
     }
 
@@ -108,14 +112,13 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     public void close() {}
 
     /**
-     * The byte offset of the last container that holds a placed record. Unplaced records sort to the
-     * end of a coordinate-sorted CRAM, so reading forward from here reaches all of them; it is this
-     * container rather than the next because one container can hold both.
+     * The byte offset of the first container that holds an unplaced record. Unplaced records sort to
+     * the end of a coordinate-sorted CRAM, so reading forward from here reaches all of them.
      *
-     * @return the offset, or empty if the file holds no placed records at all
+     * @return the offset, or empty if the index has no unplaced entries
      */
-    public OptionalLong getLastPlacedContainerOffset() {
-        return lastPlacedContainerOffset;
+    public OptionalLong getFirstUnplacedContainerOffset() {
+        return firstUnplacedContainerOffset;
     }
 
     /**

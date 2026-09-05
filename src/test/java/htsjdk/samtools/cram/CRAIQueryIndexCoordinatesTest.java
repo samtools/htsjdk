@@ -119,28 +119,35 @@ public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
     }
 
     @Test
-    public void testLastPlacedContainerOffsetIsTheHighestPlacedContainer() {
-        final CRAIQueryIndex index =
-                new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000), entry(1, 1, 100, 7000), entry(-1, 0, 0, 9000)));
-        Assert.assertEquals(index.getLastPlacedContainerOffset(), OptionalLong.of(7000));
+    public void testFirstUnplacedContainerOffsetIsTheLowestUnplacedContainer() {
+        final CRAIQueryIndex index = new CRAIQueryIndex(
+                List.of(entry(0, 1, 100, 1000), entry(-1, 0, 0, 9500), entry(-1, 0, 0, 9000), entry(-1, 0, 0, 9800)));
+        Assert.assertEquals(index.getFirstUnplacedContainerOffset(), OptionalLong.of(9000));
     }
 
     @Test
-    public void testLastPlacedContainerOffsetIgnoresInputOrder() {
-        final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(1, 1, 100, 7000), entry(0, 1, 100, 1000)));
-        Assert.assertEquals(index.getLastPlacedContainerOffset(), OptionalLong.of(7000));
+    public void testFirstUnplacedContainerOffsetFindsUnplacedRecordsSharingAContainerWithPlacedOnes() {
+        // A multi-reference slice with both kinds has an entry for each, on the same container.
+        final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000), entry(-1, 0, 0, 1000)));
+        Assert.assertEquals(index.getFirstUnplacedContainerOffset(), OptionalLong.of(1000));
     }
 
     @Test
-    public void testLastPlacedContainerOffsetIsEmptyWhenNothingIsPlaced() {
-        // The reader falls back to iterating from the start of the file in this case.
+    public void testFirstUnplacedContainerOffsetIsPresentWhenNothingIsPlaced() {
         final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(-1, 0, 0, 9000)));
-        Assert.assertEquals(index.getLastPlacedContainerOffset(), OptionalLong.empty());
+        Assert.assertEquals(index.getFirstUnplacedContainerOffset(), OptionalLong.of(9000));
     }
 
     @Test
-    public void testLastPlacedContainerOffsetIsEmptyForAnEmptyIndex() {
-        Assert.assertEquals(new CRAIQueryIndex(List.of()).getLastPlacedContainerOffset(), OptionalLong.empty());
+    public void testFirstUnplacedContainerOffsetIsEmptyWhenNothingIsUnplaced() {
+        final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000), entry(1, 1, 100, 7000)));
+        Assert.assertEquals(index.getFirstUnplacedContainerOffset(), OptionalLong.empty());
+        Assert.assertTrue(index.getSpanOfUnplaced().isEmpty());
+    }
+
+    @Test
+    public void testFirstUnplacedContainerOffsetIsEmptyForAnEmptyIndex() {
+        Assert.assertEquals(new CRAIQueryIndex(List.of()).getFirstUnplacedContainerOffset(), OptionalLong.empty());
     }
 
     @Test

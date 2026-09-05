@@ -171,6 +171,10 @@ public class CramQueryBenchmark {
                 return 2;
             }
         }
+        if (iterations < 1 || warmups < 0) {
+            System.err.println("--iterations must be at least 1 and --warmups at least 0.");
+            return 2;
+        }
         if (label == null) {
             label = cramPath.getFileName().toString();
         }
@@ -244,13 +248,14 @@ public class CramQueryBenchmark {
                     regions.size(), queryBytes, queryBytes / regions.size());
         }
 
+        long retainedHeap = -1;
         if (phases.contains("memory")) {
-            final long retained = measureRetainedHeap(factory, cram, index, dictionary);
-            System.out.printf("%nHeap retained by an open, queried reader: %,d bytes%n", retained);
+            retainedHeap = measureRetainedHeap(factory, cram, index, dictionary);
+            System.out.printf("%nHeap retained by an open, queried reader: %,d bytes%n", retainedHeap);
         }
 
         if (tsvPath != null) {
-            writeTsv(tsvPath, label, regions.size(), regionWidth, results, queryBytes);
+            writeTsv(tsvPath, label, regions.size(), regionWidth, results, queryBytes, retainedHeap);
             System.out.printf("%nAppended results to %s%n", tsvPath);
         }
 
@@ -447,21 +452,28 @@ public class CramQueryBenchmark {
         }
     }
 
+    /**
+     * One row per measured phase. The timed phases fill the timing columns; the bytes and memory
+     * phases fill their own column and leave the rest as {@code NA}, so a run of only those phases
+     * still records its result.
+     */
     private static void writeTsv(
             final Path tsvPath,
             final String label,
             final int regionCount,
             final int regionWidth,
             final List<Result> results,
-            final long queryBytes)
+            final long queryBytes,
+            final long retainedHeap)
             throws IOException {
         final StringBuilder rows = new StringBuilder();
         if (!Files.exists(tsvPath)) {
-            rows.append("label\tphase\tregions\twidth\tmin_ms\tmedian_ms\tmax_ms\trecords\tquery_bytes\n");
+            rows.append(
+                    "label\tphase\tregions\twidth\tmin_ms\tmedian_ms\tmax_ms\trecords\tquery_bytes\tretained_bytes\n");
         }
         for (final Result result : results) {
             rows.append(String.format(
-                    "%s\t%s\t%d\t%d\t%.2f\t%.2f\t%.2f\t%d\t%s%n",
+                    "%s\t%s\t%d\t%d\t%.2f\t%.2f\t%.2f\t%d\tNA\tNA%n",
                     label,
                     result.phase(),
                     regionCount,
@@ -469,8 +481,15 @@ public class CramQueryBenchmark {
                     result.minMillis(),
                     result.medianMillis(),
                     result.maxMillis(),
-                    result.records(),
-                    queryBytes < 0 ? "NA" : Long.toString(queryBytes)));
+                    result.records()));
+        }
+        if (queryBytes >= 0) {
+            rows.append(String.format(
+                    "%s\tbytes\t%d\t%d\tNA\tNA\tNA\tNA\t%d\tNA%n", label, regionCount, regionWidth, queryBytes));
+        }
+        if (retainedHeap >= 0) {
+            rows.append(String.format(
+                    "%s\tmemory\t%d\t%d\tNA\tNA\tNA\tNA\tNA\t%d%n", label, regionCount, regionWidth, retainedHeap));
         }
         Files.writeString(
                 tsvPath, rows.toString(), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);

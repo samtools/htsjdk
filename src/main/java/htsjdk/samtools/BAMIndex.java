@@ -78,8 +78,10 @@ public interface BAMIndex extends HtsQueryIndex {
     /**
      * {@inheritDoc}
      *
-     * <p>Derived from the last linear bin: unplaced records sort to the end of a coordinate-sorted
-     * BAM, so everything from there to the end of the file is the span that can hold them.
+     * <p>Derived from the last linear bin, which is all a BAI records about where unplaced records
+     * start: present from there to the end of the file, whether or not any record there is
+     * unplaced. Empty when the file has no mapped reads; any unplaced records then start at the
+     * first record, a position a BAI cannot express.
      */
     @Override
     default Optional<HtsFileSpan> getSpanOfUnplaced() {

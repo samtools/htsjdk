@@ -587,14 +587,27 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        final OptionalLong lastPlacedContainerOffset = offsetOfLastContainerHoldingPlacedRecords();
+        final OptionalLong startOffset;
+        final CRAIQueryIndex craiIndex = getCRAIQueryIndexOrNull();
+        if (craiIndex != null) {
+            startOffset = craiIndex.getFirstUnplacedContainerOffset();
+            if (startOffset.isEmpty()) {
+                return emptyIterator;
+            }
+        } else {
+            // A BAI for a CRAM stores container offsets shifted up 16 bits. -1 means nothing is
+            // placed, so any unplaced records start at the beginning of the file.
+            final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
+            startOffset =
+                    startOfLastLinearBin == -1 ? OptionalLong.empty() : OptionalLong.of(startOfLastLinearBin >>> 16);
+        }
+
         final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
         try {
             seekableStream.seek(0);
             iterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
-            // No placed records at all means the whole file is unplaced; start from the beginning.
-            if (lastPlacedContainerOffset.isPresent()) {
-                seekableStream.seek(lastPlacedContainerOffset.getAsLong());
+            if (startOffset.isPresent()) {
+                seekableStream.seek(startOffset.getAsLong());
             }
             boolean atAlignments;
             do {
@@ -606,20 +619,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         }
 
         return iterator;
-    }
-
-    /**
-     * The byte offset of the last container holding a placed record, which is where reading must
-     * start to reach every unplaced record. Empty when the file holds no placed records.
-     */
-    private OptionalLong offsetOfLastContainerHoldingPlacedRecords() {
-        final CRAIQueryIndex craiIndex = getCRAIQueryIndexOrNull();
-        if (craiIndex != null) {
-            return craiIndex.getLastPlacedContainerOffset();
-        }
-        // A BAI for a CRAM stores container offsets shifted up 16 bits, and -1 for "nothing placed".
-        final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
-        return startOfLastLinearBin == -1 ? OptionalLong.empty() : OptionalLong.of(startOfLastLinearBin >>> 16);
     }
 
     private SeekableStream getSeekableStreamOrFailWithRTE() {
