@@ -44,6 +44,30 @@ Consumers should review these before upgrading.
 
 - **`Defaults.REFERENCE_FASTA` is now a `Path`** (previously a `File`).  It is resolved from the `samjdk.reference_fasta` system property; an unparseable value is logged and treated as unset rather than failing class initialisation.
 
+### CRAM indexing
+
+- **CRAM region queries are answered from the CRAI directly** by the new `CRAIQueryIndex`, instead of rebuilding the whole CRAI as an in-memory BAI on every reader open (issue #851).  The index is not read until a query needs it, so opening a reader for sequential reading no longer touches it.  Measured on a 102 MB GRCh38 CRAM (2,395 CRAI entries, 3,366 sequences):
+
+  | | 5.x | 6.0.0 | |
+  |---|---:|---:|---|
+  | Open a CRAI-indexed CRAM | 30–38 ms | 9 ms | −70% |
+  | Bytes read for 200 × 1 kbp region queries | 86.0 MB | 78.6 MB | −8.6% |
+  | Heap retained by an open reader | 4.97 MB | 3.22 MB | −35% |
+  | 200 × 1 kbp region queries | 8.3–8.8 s | 8.6 s | unchanged |
+  | Full sequential read | 16.3–16.4 s | 16.4–16.6 s | unchanged |
+
+  Query wall time is dominated by decoding the matching container, so it does not move.  Fewer bytes are read because BAI bins are coarse: the old path also read containers whose slices did not overlap the query and then skipped them, whereas the CRAI path checks overlap directly.  Over 2,000 random 1 kbp queries on that file the BAI path resolved 8,465 containers to the CRAI path's 1,953.
+
+- **A CRAM on a reference sequence longer than 512 Mbp is now queryable** (issue #1747).  BAI bins top out at 2<sup>29</sup>−1, which is why large genomes failed; a CRAI has no binning and no such ceiling.  CSI for CRAM is not supported, matching samtools.
+
+- **New: `SamReader.Indexing.getHtsIndex()`**, returning the index in whatever form the file has: a `CRAIQueryIndex` for a CRAI, a `BAMIndex` for a BAI.  Format-specific capabilities are reached by asking for the type: `getHtsIndex(BAMIndex.class)` for per-reference record counts, `getHtsIndex(BrowseableBAMIndex.class)` for bin traversal, `getHtsIndex(CRAIQueryIndex.class)` for container offsets; each returns empty when the file's index is not of that kind.  `iterator(HtsFileSpan)` accepts a span from `getHtsIndex()` directly.  `getIndex()` is deprecated and will be removed in 7.0.0; it still returns a `BAMIndex`, synthesised on demand for a CRAI.
+
+- **New: format-neutral `htsjdk.index.HtsQueryIndex` and `htsjdk.index.HtsFileSpan`**, covering the one question every coordinate index answers: given a region, which byte ranges could hold its records.  `SAMFileSpan` extends `HtsFileSpan` and `BAMIndex` extends `HtsQueryIndex`; both changes are source- and binary-compatible.  References are addressed by ordinal rather than by name, because a BAI file contains no sequence names.
+
+- **A CRAI-backed index has no record counts, and no longer pretends to** (issue #531).  `CRAIQueryIndex` has no metadata method.  Counts reached through the deprecated `getIndex()` on a CRAI-indexed CRAM are still zeroes; real counts come from indexing the CRAM itself with `CRAMBAIIndexer`.
+
+- **The index caching and memory-mapping flags are documented as BAI-only** (issue #535).  A CRAI is read fully into memory, so there is nothing to cache or memory-map.
+
 ### Retained `File` APIs
 
 A small, deliberate set of `java.io.File` APIs remains because they are inherently tied to the local filesystem or ease migration; they do not affect NIO-SPI support:

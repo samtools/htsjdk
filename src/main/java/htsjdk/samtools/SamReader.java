@@ -24,8 +24,11 @@
 
 package htsjdk.samtools;
 
+import htsjdk.index.HtsFileSpan;
+import htsjdk.index.HtsQueryIndex;
 import htsjdk.samtools.util.CloseableIterator;
 import java.io.Closeable;
+import java.util.Optional;
 
 /**
  * Describes functionality for objects that produce {@link SAMRecord}s and associated information.
@@ -97,11 +100,43 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      */
     public interface Indexing {
         /**
-         * Retrieves the index for the given file type.  Ensure that the index is of the specified type.
+         * Retrieves the index as a {@link BAMIndex}, synthesising one in memory if the file's own
+         * index is a CRAI.
          *
-         * @return An index of the given type.
+         * @return the index as a BAMIndex
+         * @deprecated use {@link #getHtsIndex()} for the index in its own form, or
+         *     {@link #getHtsIndex(Class)} for a BAMIndex when the file really has one. A BAMIndex
+         *     synthesised from a CRAI reports record counts the CRAI never stored. This method will
+         *     be removed in the next major release.
          */
+        @Deprecated
         public BAMIndex getIndex();
+
+        /**
+         * Retrieves the index in its own form, without converting it to some other format first.
+         *
+         * @return an index that can resolve a region to the byte ranges that may hold its records
+         * @throws SAMException if no index is available
+         */
+        @SuppressWarnings("deprecation")
+        public default HtsQueryIndex getHtsIndex() {
+            return getIndex();
+        }
+
+        /**
+         * Retrieves the index in a specific form, for capabilities that only some index formats
+         * have: {@link BAMIndex} for per-reference record counts, {@link BrowseableBAMIndex} for bin
+         * traversal, {@link htsjdk.samtools.cram.CRAIQueryIndex} for container offsets.
+         *
+         * @param indexType the index type wanted
+         * @param <T> the index type wanted
+         * @return the index, or empty if the file's index is not of that type
+         * @throws SAMException if no index is available
+         */
+        public default <T extends HtsQueryIndex> Optional<T> getHtsIndex(final Class<T> indexType) {
+            final HtsQueryIndex index = getHtsIndex();
+            return indexType.isInstance(index) ? Optional.of(indexType.cast(index)) : Optional.empty();
+        }
 
         /**
          * Returns true if the supported index is browseable, meaning the bins in it can be traversed
@@ -127,6 +162,22 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
          * @return An iterator over the given chunks.
          */
         public SAMRecordIterator iterator(final SAMFileSpan chunks);
+
+        /**
+         * Iterate through the given span in the file, as returned by this reader's own index.
+         *
+         * @param span a span from {@link #getHtsIndex()}
+         * @return an iterator over the span
+         * @throws IllegalArgumentException if the span did not come from an index of this reader's
+         *     kind, and so cannot be interpreted
+         */
+        public default SAMRecordIterator iterator(final HtsFileSpan span) {
+            if (!(span instanceof SAMFileSpan)) {
+                throw new IllegalArgumentException("Cannot iterate a span of type "
+                        + span.getClass().getName() + "; it did not come from this reader's index");
+            }
+            return iterator((SAMFileSpan) span);
+        }
 
         /**
          * Gets a pointer spanning all reads in the BAM file.
@@ -358,7 +409,20 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         boolean hasIndex();
 
+        /**
+         * @deprecated use {@link #getHtsIndex()}. See {@link Indexing#getIndex()}.
+         */
+        @Deprecated
         BAMIndex getIndex();
+
+        /**
+         * The index in its own form. Defaults to {@link #getIndex()} for readers whose index really
+         * is a BAI.
+         */
+        @SuppressWarnings("deprecation")
+        default HtsQueryIndex getHtsIndex() {
+            return getIndex();
+        }
 
         SAMFileHeader getFileHeader();
 
@@ -477,15 +541,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         @Override
         public boolean hasBrowseableIndex() {
-            return hasIndex() && getIndex() instanceof BrowseableBAMIndex;
+            return hasIndex() && getHtsIndex(BrowseableBAMIndex.class).isPresent();
         }
 
         @Override
         public BrowseableBAMIndex getBrowseableIndex() {
-            final BAMIndex index = getIndex();
-            if (!(index instanceof BrowseableBAMIndex))
-                throw new SAMException("Cannot return index: index created by BAM is not browseable.");
-            return BrowseableBAMIndex.class.cast(index);
+            return getHtsIndex(BrowseableBAMIndex.class)
+                    .orElseThrow(() -> new SAMException("Cannot return index: the index is not browseable."));
         }
 
         @Override
@@ -539,8 +601,14 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public BAMIndex getIndex() {
             return p.getIndex();
+        }
+
+        @Override
+        public HtsQueryIndex getHtsIndex() {
+            return p.getHtsIndex();
         }
 
         @Override

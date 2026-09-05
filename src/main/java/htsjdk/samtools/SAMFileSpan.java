@@ -23,11 +23,16 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.index.HtsFileSpan;
+
 /**
  * A interface representing a collection of (possibly) discontinuous segments in the
  * BAM file, possibly representing the results of an index query.
+ *
+ * <p>This is the SAM-specific form of {@link HtsFileSpan}, adding the two navigation operations
+ * that only make sense once the addressing scheme is known to be BGZF virtual offsets.
  */
-public interface SAMFileSpan extends Cloneable {
+public interface SAMFileSpan extends HtsFileSpan, Cloneable {
     /**
      * Gets a pointer over the data immediately following this span.
      * @return The a pointer to data immediately following this span.
@@ -45,5 +50,6 @@ public interface SAMFileSpan extends Cloneable {
      * Does this file span point to any data, or is it completely empty?
      * @return True if the file span is empty, false otherwise.
      */
+    @Override
     public boolean isEmpty();
 }

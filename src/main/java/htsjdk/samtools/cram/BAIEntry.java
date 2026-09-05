@@ -68,15 +68,14 @@ public class BAIEntry implements Comparable<BAIEntry> {
     }
 
     /**
-     * Create a BAIEntry from a CRAIEntry (used to read a .crai as a .bai). Note that
-     * there are no mapped/unmapped/unplaced counts present in the crai, which makes
-     * BAIEntries created this way less full featured (i.e., wrong), but that is inherent
-     * in the idea of converting a CRAi to a BAI to satisfy an index query).
+     * Create a BAIEntry from a CRAIEntry, for reading a .crai as if it were a .bai.
      *
-     * HTSJDK needs a native implementation satisfying queries using a CRAI directly.
-     * see https://github.com/samtools/htsjdk/issues/851
+     * <p>A CRAI carries no record counts, so the mapped, unmapped and unplaced counts are zero here,
+     * meaning "never recorded" rather than "none found" (issue #531). The landmark index is zero
+     * because CRAM seeking is container-granular and never consults it. This conversion only serves
+     * the deprecated {@code SamReader.Indexing.getIndex()}; region queries use {@link CRAIQueryIndex}.
      *
-     * @param craiEntry
+     * @param craiEntry the CRAI entry to convert
      */
     public BAIEntry(final CRAIEntry craiEntry) {
         this(
