@@ -16,12 +16,25 @@ Major release.
 
 ### Headlines
 
+- **An indexed CRAM is now written with a `.crai`, not a `.cram.bai`, and CRAM region queries are answered from the CRAI directly.**  Opening a CRAI-indexed CRAM is several times faster, queries read fewer containers, and a CRAM on a reference longer than 512 Mbp is finally queryable.  See below for the migration path.
 - **htsjdk now uses `java.nio.file.Path` (not `java.io.File`) throughout its public API.**  This makes the whole library work with any NIO `FileSystemProvider` (SPI) — Amazon S3, Google Cloud Storage, HDFS, in-memory filesystems such as [jimfs](https://github.com/google/jimfs), and so on — through the same reader, writer, factory and index APIs you already use, with no File-specific code paths.
 - **String- and URI-based entry points are scheme-aware.**  Where an API takes a path as a `String`, it is resolved with `IOUtil.getPath`, which honours the URI scheme (e.g. `file:`, `gs:`, `s3:`, custom providers) and falls back to the local filesystem for plain paths (including paths containing spaces).  Existing HTTP/HTTPS and FTP behaviour is unchanged — those continue to flow through htsjdk's `SeekableStream` machinery rather than NIO.
 
 ### ⚠️ Breaking changes
 
 Consumers should review these before upgrading.
+
+- **An indexed CRAM is written with a `.crai`, not a `.cram.bai`.**  Reading is unaffected, since `SamFiles.findIndex` resolves either, but anything that globs for `*.cram.bai` or names the index file explicitly needs updating.  samtools never wrote a BAI for a CRAM and cannot read one.
+
+  ```java
+  // htsjdk 5.x wrote out.cram + out.cram.bai
+  // htsjdk 6.0.0 writes  out.cram + out.cram.crai
+  SAMFileWriter w = new SAMFileWriterFactory().setCreateIndex(true).makeCRAMWriter(header, true, cram, reference);
+
+  // To keep writing a BAI for one more release (deprecated on arrival, removed in 7.0.0):
+  SAMFileWriter w = new SAMFileWriterFactory().setCreateIndex(true).setCreateBaiIndexForCram(true)
+                        .makeCRAMWriter(header, true, cram, reference);
+  ```
 
 - **`java.io.File`-based public APIs have been removed in favour of `java.nio.file.Path`** across factories, readers, writers, indexes, reference-sequence access and the utility classes (224 methods/constructors).  Update call sites to pass a `Path` (or a `String`/`URI`, which are resolved via `IOUtil.getPath`).  For example:
 

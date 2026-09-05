@@ -62,6 +62,7 @@ public class SAMFileWriterFactory implements Cloneable {
     private Integer maxRecordsInRam = null;
     private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
     private CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
+    private boolean createBaiIndexForCram = false;
 
     /** simple constructor */
     public SAMFileWriterFactory() {}
@@ -78,6 +79,7 @@ public class SAMFileWriterFactory implements Cloneable {
         this.compressionLevel = other.compressionLevel;
         this.maxRecordsInRam = other.maxRecordsInRam;
         this.cramEncodingStrategy = other.cramEncodingStrategy;
+        this.createBaiIndexForCram = other.createBaiIndexForCram;
     }
 
     @Override
@@ -154,13 +156,31 @@ public class SAMFileWriterFactory implements Cloneable {
      * Convenience method allowing newSAMFileWriterFactory().setCreateIndex(true);
      * Equivalent to SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true); newSAMFileWriterFactory();
      * If a BAM or CRAM (not SAM) file is created, the setting is true, and the file header specifies coordinate order,
-     * then a BAM index file will be written along with the BAM file.
+     * then an index file will be written along with the alignment file: a {@code .bai} for a BAM, and a
+     * {@code .crai} for a CRAM.
      *
-     * @param setting whether to attempt to create a BAM index while creating the BAM file.
+     * @param setting whether to attempt to create an index while creating the alignment file.
      * @return this factory object
      */
     public SAMFileWriterFactory setCreateIndex(final boolean setting) {
         this.createIndex = setting;
+        return this;
+    }
+
+    /**
+     * Write a CRAM's index as a {@code .cram.bai} rather than the default {@code .cram.crai}.
+     *
+     * <p>samtools neither writes nor reads a BAI for a CRAM, and htsjdk queries a CRAI faster, so
+     * this exists only for consumers that have not moved to CRAI yet.
+     *
+     * @param setting true to write a BAI instead of a CRAI. Ignored for non-CRAM output.
+     * @return this factory object
+     * @deprecated will be removed, along with BAI-for-CRAM writing, in the next major release.
+     *     Reading a CRAM that has a BAI will continue to work.
+     */
+    @Deprecated
+    public SAMFileWriterFactory setCreateBaiIndexForCram(final boolean setting) {
+        this.createBaiIndexForCram = setting;
         return this;
     }
 
@@ -548,7 +568,7 @@ public class SAMFileWriterFactory implements Cloneable {
         return new CRAMFileWriter(
                 cramEncodingStrategy,
                 stream,
-                null, // no index
+                (OutputStream) null, // no index
                 true, // presorted
                 new ReferenceSource(referenceFasta),
                 header,
@@ -632,7 +652,8 @@ public class SAMFileWriterFactory implements Cloneable {
                 log.warn("Cannot create index for CRAM because output file is not a regular file: "
                         + outputFile.toUri());
             } else {
-                final Path indexPath = IOUtil.addExtension(outputFile, FileExtensions.BAI_INDEX);
+                final Path indexPath = IOUtil.addExtension(
+                        outputFile, createBaiIndexForCram ? FileExtensions.BAI_INDEX : FileExtensions.CRAM_INDEX);
                 try {
 
                     indexOS = Files.newOutputStream(indexPath);
@@ -648,11 +669,19 @@ public class SAMFileWriterFactory implements Cloneable {
             throw new RuntimeIOException("Error creating CRAM file: " + outputFile.toUri(), ioe);
         }
 
+        final CRAMIndexer indexer;
+        if (indexOS == null) {
+            indexer = null;
+        } else {
+            indexer =
+                    createBaiIndexForCram ? new CRAMBAIIndexer(indexOS, header) : new CRAMCRAIIndexer(indexOS, header);
+        }
+
         final Path md5Path = IOUtil.addExtension(outputFile, ".md5");
-        final CRAMFileWriter writer = new CRAMFileWriter(
+        final CRAMFileWriter writer = CRAMFileWriter.withIndexer(
                 cramEncodingStrategy,
                 createMd5File ? new Md5CalculatingOutputStream(cramOS, md5Path) : cramOS,
-                indexOS,
+                indexer,
                 presorted,
                 referenceSource,
                 header,
@@ -666,6 +695,6 @@ public class SAMFileWriterFactory implements Cloneable {
         return "SAMFileWriterFactory [createIndex=" + createIndex + ", createMd5File=" + createMd5File + ", useAsyncIo="
                 + useAsyncIo + ", asyncOutputBufferSize=" + asyncOutputBufferSize + ", bufferSize=" + bufferSize
                 + ", tmpDir=" + tmpDir + ", compressionLevel=" + compressionLevel + ", maxRecordsInRam="
-                + maxRecordsInRam + "]";
+                + maxRecordsInRam + ", createBaiIndexForCram=" + createBaiIndexForCram + "]";
     }
 }

@@ -91,7 +91,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     }
 
     /**
-     * Create a CRAMFileWriter and optional index on output streams.
+     * Create a CRAMFileWriter and optional index on output streams. The index is written as a CRAI.
      *
      * @param encodingStrategy encoding strategy to use when writing
      * @param outputStream where to write the output. Can not be null.
@@ -111,6 +111,54 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             final CRAMReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
             final String fileName) {
+        this(
+                encodingStrategy,
+                outputStream,
+                indexOS == null ? null : new CRAMCRAIIndexer(indexOS, samFileHeader),
+                presorted,
+                referenceSource,
+                samFileHeader,
+                fileName);
+    }
+
+    /**
+     * Create a CRAMFileWriter with an explicit indexer, for callers that need an index format other
+     * than the default CRAI, such as a {@link CRAMBAIIndexer}.
+     *
+     * <p>A static factory rather than a constructor: a constructor taking a {@link CRAMIndexer} would
+     * be ambiguous with the {@link OutputStream} one for callers passing a literal null.
+     *
+     * @param encodingStrategy encoding strategy to use when writing
+     * @param outputStream where to write the output. Can not be null.
+     * @param indexer where and how to write the output index. Can be null if no index is required.
+     * @param presorted if true records written to this writer must already be sorted in the order specified by the header
+     * @param referenceSource reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
+     * @param fileName used for display in error message display
+     * @return a writer that indexes through {@code indexer}
+     *
+     * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
+     */
+    public static CRAMFileWriter withIndexer(
+            final CRAMEncodingStrategy encodingStrategy,
+            final OutputStream outputStream,
+            final CRAMIndexer indexer,
+            final boolean presorted,
+            final CRAMReferenceSource referenceSource,
+            final SAMFileHeader samFileHeader,
+            final String fileName) {
+        return new CRAMFileWriter(
+                encodingStrategy, outputStream, indexer, presorted, referenceSource, samFileHeader, fileName);
+    }
+
+    private CRAMFileWriter(
+            final CRAMEncodingStrategy encodingStrategy,
+            final OutputStream outputStream,
+            final CRAMIndexer indexer,
+            final boolean presorted,
+            final CRAMReferenceSource referenceSource,
+            final SAMFileHeader samFileHeader,
+            final String fileName) {
         if (outputStream == null) {
             throw new IllegalArgumentException("CRAMWriter output stream can not be null.");
         }
@@ -124,12 +172,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         this.fileName = fileName;
         setSortOrder(samFileHeader.getSortOrder(), presorted);
         cramContainerStream = new CRAMContainerStreamWriter(
-                encodingStrategy,
-                referenceSource,
-                samFileHeader,
-                outputStream,
-                indexOS == null ? null : new CRAMBAIIndexer(indexOS, samFileHeader),
-                fileName);
+                encodingStrategy, referenceSource, samFileHeader, outputStream, indexer, fileName);
         setHeader(samFileHeader);
     }
 
