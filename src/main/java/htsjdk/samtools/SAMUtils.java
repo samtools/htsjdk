@@ -1129,7 +1129,9 @@ public final class SAMUtils {
             final CigarOperator operator = el.getOperator();
             final int refBasesLength = operator.consumesReferenceBases() ? el.getLength() : 0;
             if (refStartPos <= refPos + refBasesLength - 1) { // add to clipped bases
-                if (operator == CigarOperator.MATCH_OR_MISMATCH) { // M
+                if (operator == CigarOperator.MATCH_OR_MISMATCH
+                        || operator == CigarOperator.EQ
+                        || operator == CigarOperator.X) { // M, =, X
                     if (refStartPos < refPos) numBasesToClip += refBasesLength; // use all of the bases
                     else
                         numBasesToClip += (refPos + refBasesLength)
