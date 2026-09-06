@@ -100,22 +100,20 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      */
     public interface Indexing {
         /**
-         * Retrieves the index as a {@link BAMIndex}, synthesising one in memory if the file's own
-         * index is a CRAI.
+         * Retrieves the index as a {@link BAMIndex}, synthesising one if the index is a CRAI.
          *
-         * @return the index as a BAMIndex
-         * @deprecated use {@link #getHtsIndex()} for the index in its own form, or
-         *     {@link #getHtsIndex(Class)} for a BAMIndex when the file really has one. A BAMIndex
-         *     synthesised from a CRAI reports record counts the CRAI never stored. This method will
-         *     be removed in the next major release.
+         * @return the index
+         * @deprecated use {@link #getHtsIndex()} or {@link #getHtsIndex(Class)}. A BAMIndex
+         *     synthesised from a CRAI reports record counts of zero. Removed in the next major
+         *     release.
          */
         @Deprecated
         public BAMIndex getIndex();
 
         /**
-         * Retrieves the index in its own form, without converting it to some other format first.
+         * Retrieves the index in its native form.
          *
-         * @return an index that can resolve a region to the byte ranges that may hold its records
+         * @return the index
          * @throws SAMException if no index is available
          */
         @SuppressWarnings("deprecation")
@@ -124,13 +122,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         /**
-         * Retrieves the index in a specific form, for capabilities that only some index formats
-         * have: {@link BAMIndex} for per-reference record counts, {@link BrowseableBAMIndex} for bin
-         * traversal, {@link htsjdk.samtools.cram.CRAIQueryIndex} for container offsets.
+         * Retrieves the index as a specific type, for format-specific capabilities: e.g.
+         * {@link BAMIndex} for record counts, {@link BrowseableBAMIndex} for bins,
+         * {@link htsjdk.samtools.cram.CRAIQueryIndex} for container offsets.
          *
-         * @param indexType the index type wanted
-         * @param <T> the index type wanted
-         * @return the index, or empty if the file's index is not of that type
+         * @param indexType the type wanted
+         * @param <T> the type wanted
+         * @return the index, or empty if it is not of that type
          * @throws SAMException if no index is available
          */
         public default <T extends HtsQueryIndex> Optional<T> getHtsIndex(final Class<T> indexType) {
@@ -164,12 +162,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         public SAMRecordIterator iterator(final SAMFileSpan chunks);
 
         /**
-         * Iterate through the given span in the file, as returned by this reader's own index.
+         * Iterates over the given span.
          *
          * @param span a span from {@link #getHtsIndex()}
          * @return an iterator over the span
-         * @throws IllegalArgumentException if the span did not come from an index of this reader's
-         *     kind, and so cannot be interpreted
+         * @throws IllegalArgumentException if the span is not a {@link SAMFileSpan}
          */
         public default SAMRecordIterator iterator(final HtsFileSpan span) {
             if (!(span instanceof SAMFileSpan)) {
@@ -416,8 +413,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         BAMIndex getIndex();
 
         /**
-         * The index in its own form. Defaults to {@link #getIndex()} for readers whose index really
-         * is a BAI.
+         * The index in its native form; defaults to {@link #getIndex()}.
          */
         @SuppressWarnings("deprecation")
         default HtsQueryIndex getHtsIndex() {

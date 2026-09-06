@@ -1,20 +1,16 @@
 package htsjdk.index;
 
 /**
- * An ordered, possibly empty set of byte ranges in a data file, as returned by an index query.
- *
- * <p>How the ranges are addressed is defined by the data format, not by this interface: a BAM index
- * yields BGZF virtual offsets, a CRAM index container offsets. Callers pass the span back to the
- * reader that produced it rather than interpreting it themselves.
+ * An ordered set of byte ranges in a data file, as returned by an index query. The addressing
+ * scheme is the data format's (BGZF virtual offsets for BAM, container offsets for CRAM); pass the
+ * span back to the reader that produced it.
  *
  * @see HtsQueryIndex
  */
 public interface HtsFileSpan {
 
     /**
-     * Whether this span points at any data at all.
-     *
-     * @return true if there is nothing to read
+     * @return true if the span covers no data
      */
     boolean isEmpty();
 }

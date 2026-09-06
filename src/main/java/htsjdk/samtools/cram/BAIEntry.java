@@ -68,12 +68,9 @@ public class BAIEntry implements Comparable<BAIEntry> {
     }
 
     /**
-     * Create a BAIEntry from a CRAIEntry, for reading a .crai as if it were a .bai.
-     *
-     * <p>A CRAI carries no record counts, so the mapped, unmapped and unplaced counts are zero here,
-     * meaning "never recorded" rather than "none found" (issue #531). The landmark index is zero
-     * because CRAM seeking is container-granular and never consults it. This conversion only serves
-     * the deprecated {@code SamReader.Indexing.getIndex()}; region queries use {@link CRAIQueryIndex}.
+     * Create a BAIEntry from a CRAIEntry, for reading a .crai as a .bai. Record counts are zero
+     * because a CRAI has none (issue #531); the landmark index is zero because CRAM seeks by
+     * container. Used only by the deprecated {@code SamReader.Indexing.getIndex()}.
      *
      * @param craiEntry the CRAI entry to convert
      */

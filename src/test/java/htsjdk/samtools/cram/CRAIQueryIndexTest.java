@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
  */
 public class CRAIQueryIndexTest extends HtsjdkTest {
 
-    /** A CRAI entry with the slice offset and size fixed, since queries never look at them. */
+    /** A CRAI entry; slice offset and size are irrelevant to queries. */
     static CRAIEntry entry(final int sequenceId, final int start, final int span, final long containerOffset) {
         return new CRAIEntry(sequenceId, start, span, containerOffset, 0, 100);
     }
@@ -37,8 +37,7 @@ public class CRAIQueryIndexTest extends HtsjdkTest {
 
     @Test
     public void testQueryInAGapBetweenSlicesFindsNothing() {
-        // htslib would return the nearest slice here; htsjdk does not, because a CRAI entry's span
-        // covers every record in its slice.
+        // htslib would return the nearest slice; see CRAIQueryIndex.
         Assert.assertEquals(threeSlices().getContainerOffsets(0, 150, 160), new long[0]);
     }
 
@@ -76,20 +75,19 @@ public class CRAIQueryIndexTest extends HtsjdkTest {
 
     @Test
     public void testSliceContainedInAnEarlierLongerSliceIsStillFound() {
-        // Slice 1 covers 100-10099 and swallows the two that follow it, so a search that stopped at
-        // the first entry starting at or before the query would miss it.
+        // The first slice contains the two that follow it.
         final CRAIQueryIndex index = new CRAIQueryIndex(
                 List.of(entry(0, 100, 10000, 1000), entry(0, 200, 50, 2000), entry(0, 300, 50, 3000)));
         // Inside the containing slice and the contained one.
         Assert.assertEquals(index.getContainerOffsets(0, 210, 220), new long[] {1000, 2000});
-        // Inside the containing slice only, in the gap between the two it contains.
+        // In the containing slice only.
         Assert.assertEquals(index.getContainerOffsets(0, 260, 270), new long[] {1000});
         Assert.assertEquals(index.getContainerOffsets(0, 300, 310), new long[] {1000, 3000});
     }
 
     @Test
     public void testLongSpanningSliceIsFoundFromAQueryFarToItsRight() {
-        // The running-maximum-end search must not stop at entries that start before the query.
+        // The search must not stop at entries starting before the query.
         final CRAIQueryIndex index = new CRAIQueryIndex(
                 List.of(entry(0, 1, 1_000_000, 1000), entry(0, 10, 20, 2000), entry(0, 30, 20, 3000)));
         Assert.assertEquals(index.getContainerOffsets(0, 999_000, 999_100), new long[] {1000});
@@ -129,7 +127,7 @@ public class CRAIQueryIndexTest extends HtsjdkTest {
 
     @Test
     public void testMultiReferenceSliceIsFoundThroughEachOfItsReferences() {
-        // A multi-ref slice is written as one entry per constituent reference, all sharing a container.
+        // One entry per reference, sharing a container.
         final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, 50, 100, 5000), entry(1, 70, 100, 5000)));
         Assert.assertEquals(index.getContainerOffsets(0, 60, 60), new long[] {5000});
         Assert.assertEquals(index.getContainerOffsets(1, 80, 80), new long[] {5000});
@@ -144,7 +142,7 @@ public class CRAIQueryIndexTest extends HtsjdkTest {
 
     @Test(expectedExceptions = CRAMException.class)
     public void testAnEntryWithAMultiReferenceIdIsRejected() {
-        // A multi-reference slice must be indexed as one entry per reference; -2 is never valid.
+        // -2 is never valid in a CRAI.
         new CRAIQueryIndex(List.of(entry(-2, 1, 100, 1000)));
     }
 
@@ -155,8 +153,7 @@ public class CRAIQueryIndexTest extends HtsjdkTest {
 
     @Test
     public void testCoordinatesBeyondTheBaiCeilingAreQueryable() {
-        // BAI bins top out at 2^29-1 (~536Mbp), which is why large genomes fail through the
-        // CRAI-to-BAI path. A CRAI has no such ceiling and neither does this index (issue #1747).
+        // BAI bins top out at 2^29-1; a CRAI has no ceiling (issue #1747).
         final int beyondBaiCeiling = 600_000_000;
         final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, beyondBaiCeiling, 1000, 4242)));
         Assert.assertEquals(

@@ -21,13 +21,9 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
- * Runs {@link CRAIQueryIndex} over the CRAI files that ship with the test suite and cross-checks it
- * against the CRAI-to-BAI path it replaces.
- *
- * <p>The two are not expected to agree exactly: BAI bins are coarse, so the BAI path also returns
- * containers whose slices do not overlap the query. What must hold is that every container the
- * native path returns, the BAI path returns too. Real files cover the multi-reference and unplaced
- * entries that hand-built fixtures tend to miss.
+ * Cross-checks {@link CRAIQueryIndex} against the CRAI-to-BAI path on the test-suite CRAI files. BAI
+ * bins are coarse, so the BAI path may return extra containers; every container the native path
+ * returns must also be returned by the BAI path.
  */
 public class CRAIQueryIndexRealFileTest extends HtsjdkTest {
 
@@ -53,7 +49,7 @@ public class CRAIQueryIndexRealFileTest extends HtsjdkTest {
         }
     }
 
-    /** The container byte offsets the CRAI-to-BAI path would read for this query. */
+    /** Container offsets the BAI path would read. */
     private static TreeSet<Long> baiContainers(
             final BAMIndex baiIndex, final int reference, final int start, final int end) {
         final TreeSet<Long> containers = new TreeSet<>();
@@ -106,7 +102,7 @@ public class CRAIQueryIndexRealFileTest extends HtsjdkTest {
 
     @Test(dataProvider = "cramsWithCrai")
     public void testEveryPlacedEntryIsFoundByQueryingItsOwnSpan(final String cramFileName) throws IOException {
-        // Independent of the BAI path: whatever the entries themselves say must come back.
+        // Independent of the BAI path.
         final List<CRAIEntry> entries = readEntries(TEST_DATA_DIR.resolve(cramFileName + ".crai"));
         final CRAIQueryIndex index = new CRAIQueryIndex(entries);
 
@@ -124,8 +120,7 @@ public class CRAIQueryIndexRealFileTest extends HtsjdkTest {
 
     @Test(dataProvider = "cramsWithCrai")
     public void testContainersComeBackInAscendingFileOrder(final String cramFileName) throws IOException {
-        // CramSpanContainerIterator only ever seeks forward, so out-of-order offsets would silently
-        // skip containers.
+        // CramSpanContainerIterator only seeks forward.
         final List<CRAIEntry> entries = readEntries(TEST_DATA_DIR.resolve(cramFileName + ".crai"));
         final CRAIQueryIndex index = new CRAIQueryIndex(entries);
 

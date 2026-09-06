@@ -11,9 +11,7 @@ import org.testng.annotations.Test;
 
 /**
  * The coordinate array {@link CRAIQueryIndex} hands to {@code CramSpanContainerIterator}, and the
- * unplaced-record entry point. The iterator needs ascending pairs, each with start strictly below
- * end, and reads every container up to {@code end >> 16}; these are the properties that keep it
- * from over- or under-reading.
+ * first unplaced container offset.
  */
 public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
 
@@ -35,7 +33,7 @@ public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
 
     @Test
     public void testEveryPairHasStartStrictlyBelowEnd() {
-        // CramSpanContainerIterator.Boundary throws outright when start >= end.
+        // CramSpanContainerIterator.Boundary requires start < end.
         final CRAIQueryIndex index =
                 new CRAIQueryIndex(List.of(entry(0, 1, 100, 0), entry(0, 201, 100, 2000), entry(0, 401, 100, 3000)));
         final long[] coordinates = index.getCoordinatesForQueries(intervals(new QueryInterval(0, 1, 500)));
@@ -50,7 +48,7 @@ public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
 
     @Test
     public void testPairsAreInAscendingFileOrder() {
-        // The iterator only ever seeks forward, so out-of-order pairs would silently skip containers.
+        // The iterator only seeks forward.
         final CRAIQueryIndex index =
                 new CRAIQueryIndex(List.of(entry(0, 401, 100, 3000), entry(0, 1, 100, 1000), entry(0, 201, 100, 2000)));
         final long[] coordinates = index.getCoordinatesForQueries(intervals(new QueryInterval(0, 1, 500)));
@@ -62,7 +60,7 @@ public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
 
     @Test
     public void testContainersFarApartDoNotDragInEverythingBetween() {
-        // One wide pair would make the iterator read containers 1000 through 9000 inclusive.
+        // A single wide pair would read containers 1000 through 9000.
         final CRAIQueryIndex index =
                 new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000), entry(0, 201, 100, 5000), entry(0, 401, 100, 9000)));
         final long[] coordinates =
@@ -106,8 +104,7 @@ public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
 
     @Test
     public void testNoMatchProducesAnEmptyArray() {
-        // CRAMFileReader checks for this and hands back an empty iterator; a zero-length pair list
-        // would make CramSpanContainerIterator throw in its constructor.
+        // CRAMFileReader returns an empty iterator for this; CramSpanContainerIterator would throw.
         final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000)));
         Assert.assertEquals(index.getCoordinatesForQueries(intervals(new QueryInterval(0, 500, 600))).length, 0);
     }
@@ -127,7 +124,7 @@ public class CRAIQueryIndexCoordinatesTest extends HtsjdkTest {
 
     @Test
     public void testFirstUnplacedContainerOffsetFindsUnplacedRecordsSharingAContainerWithPlacedOnes() {
-        // A multi-reference slice with both kinds has an entry for each, on the same container.
+        // A multi-reference slice with both kinds has an entry for each.
         final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000), entry(-1, 0, 0, 1000)));
         Assert.assertEquals(index.getFirstUnplacedContainerOffset(), OptionalLong.of(1000));
     }

@@ -36,8 +36,8 @@ import java.util.OptionalLong;
 
 /**
  * {@link htsjdk.samtools.BAMFileReader BAMFileReader} analogue for CRAM files.
- * Supports random access using a CRAI (natively, through {@link CRAIQueryIndex}) or a BAI.
- * The index is not read until a query needs it.
+ * Supports random access using a CRAI (via {@link CRAIQueryIndex}) or a BAI. The index is read
+ * lazily.
  *
  * @author vadim
  */
@@ -52,10 +52,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     private boolean mEnableIndexCaching;
     private boolean mEnableIndexMemoryMapping;
 
-    /** The index as a stream, when the reader was built from streams rather than a path. */
+    /** Index stream, if the reader was built from streams. */
     private SeekableStream indexStream;
 
-    /** Native CRAI query engine; null once resolved if the index is not a CRAI. */
+    /** Set on first use; null if the index is not a CRAI. */
     private CRAIQueryIndex craiQueryIndex;
 
     private boolean craiQueryIndexResolved;
@@ -306,7 +306,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         this.cramPath = cramPath;
         this.referenceSource = referenceSource;
         this.mIndexPath = findIndexForPath(indexPath, cramPath);
-        // The index is opened lazily from mIndexPath, so a reader that never queries never pays for it.
+        // The index is opened lazily from mIndexPath.
         initWithStreams(new BufferedInputStream(Files.newInputStream(cramPath)), null, validationStringency);
     }
 
@@ -364,16 +364,13 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return indexPath;
     }
 
-    /**
-     * Only affects a BAI index. A CRAI is read fully into memory, so there is nothing to cache or
-     * memory-map and this is a no-op for it (issue #535).
-     */
+    /** No-op for a CRAI, which is held fully in memory (issue #535). */
     @Override
     void enableIndexCaching(final boolean enabled) {
         mEnableIndexCaching = enabled;
     }
 
-    /** Only affects a BAI index; see {@link #enableIndexCaching(boolean)}. */
+    /** No-op for a CRAI; see {@link #enableIndexCaching(boolean)}. */
     @Override
     void enableIndexMemoryMapping(final boolean enabled) {
         mEnableIndexMemoryMapping = enabled;
@@ -392,10 +389,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return mIndex != null || mIndexPath != null || indexStream != null;
     }
 
-    /**
-     * The index in its own form: a {@link CRAIQueryIndex} for a CRAI, or the BAI itself for a BAI.
-     * Unlike {@link #getIndex()} this never converts one into the other.
-     */
+    /** Returns a {@link CRAIQueryIndex} for a CRAI or a {@link BAMIndex} for a BAI, with no conversion. */
     @Override
     public HtsQueryIndex getHtsIndex() {
         if (!hasIndex()) {
@@ -423,14 +417,14 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 }
             }
 
-            // A CRAI has to be converted into the BAI this method's return type demands. Region
-            // queries never come through here; they use the native engine.
+            // Convert a CRAI to the BAI this method's return type demands. Region queries do not use
+            // this path.
             final SeekableStream baiStream;
             try {
                 final SeekableStream indexSource = openIndexStream();
                 final SamIndexes indexType = SamIndexes.getSAMIndexTypeFromStream(indexSource);
                 if (indexType == SamIndexes.CRAI) {
-                    // The conversion reads the whole CRAI into memory, so the source is done with.
+                    // The conversion reads the whole CRAI, so the source can be closed.
                     try (indexSource) {
                         baiStream = CRAIIndex.openCraiFileAsBaiStream(indexSource, dictionary);
                     }
@@ -452,9 +446,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     }
 
     /**
-     * A stream positioned at the start of the index. The caller may close it: an index reached by
-     * path is a fresh stream, and one supplied as a stream is wrapped so that close is a no-op until
-     * {@link #close()}.
+     * A stream at the start of the index, safe for the caller to close: a fresh stream for a path, or
+     * a deferred-close wrapper for a supplied stream.
      */
     private SeekableStream openIndexStream() throws IOException {
         if (mIndexPath != null) {
@@ -464,7 +457,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return new DeferredCloseSeekableStream(indexStream);
     }
 
-    /** The native CRAI engine, built on first use; null if the index is not a CRAI. */
+    /** Built on first use; null if the index is not a CRAI. */
     private CRAIQueryIndex getCRAIQueryIndexOrNull() {
         if (craiQueryIndexResolved) {
             return craiQueryIndex;
@@ -474,11 +467,11 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             return null;
         }
         if (mIndexPath != null && mIndexPath.getFileName().toString().endsWith(FileExtensions.BAI_INDEX)) {
-            // Trusted by name, as getIndex() does, so a BAI is not opened just to be sniffed.
+            // Trust the .bai extension, as getIndex() does.
             return null;
         }
         try (final SeekableStream stream = openIndexStream()) {
-            // Decided by content: a CSI is gzipped too, and must not be parsed as a CRAI.
+            // Sniff content: a CSI is also gzipped and must not be parsed as a CRAI.
             if (SamIndexes.getSAMIndexTypeFromStream(stream) == SamIndexes.CRAI) {
                 stream.seek(0);
                 craiQueryIndex =
@@ -595,8 +588,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 return emptyIterator;
             }
         } else {
-            // A BAI for a CRAM stores container offsets shifted up 16 bits. -1 means nothing is
-            // placed, so any unplaced records start at the beginning of the file.
+            // A BAI for a CRAM stores container offsets shifted up 16 bits; -1 means no placed records.
             final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
             startOffset =
                     startOfLastLinearBin == -1 ? OptionalLong.empty() : OptionalLong.of(startOfLastLinearBin >>> 16);
@@ -772,10 +764,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return new CRAMIntervalIterator(intervals, contained, filePointers);
     }
 
-    /**
-     * Resolve query intervals to the container coordinates {@link CRAMIterator} reads from, using
-     * the native CRAI engine when there is one and a BAI otherwise.
-     */
+    /** Resolves query intervals to container coordinates for {@link CRAMIterator}, via the CRAI if present, else the BAI. */
     private long[] coordinatesFromQueryIntervals(final QueryInterval[] queries) {
         final CRAIQueryIndex craiIndex = getCRAIQueryIndexOrNull();
         return craiIndex != null

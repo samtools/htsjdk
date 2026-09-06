@@ -14,10 +14,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-/**
- * Guards which index engine a CRAM reader uses. Record-level tests would still pass if the reader
- * quietly fell back to converting the CRAI into a BAI, since both paths return the same records.
- */
+/** Which index engine a CRAM reader uses; record-level tests cannot tell the two apart. */
 public class CRAMNativeIndexSelectionTest extends HtsjdkTest {
 
     private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools/cram");
@@ -50,7 +47,7 @@ public class CRAMNativeIndexSelectionTest extends HtsjdkTest {
 
     @Test
     public void testABaiIndexedCramQueriesThroughTheBaiIndex() throws IOException {
-        // The BAI path has to keep working: files indexed with a .bai still exist in the wild.
+        // BAI-indexed CRAMs exist in the wild.
         try (final SamReader reader = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT)
                 .open(TEST_DATA_DIR.resolve("cramQueryWithBAI.cram"))) {
@@ -60,8 +57,8 @@ public class CRAMNativeIndexSelectionTest extends HtsjdkTest {
 
     @Test(dataProvider = "cramsWithCrai")
     public void testTheNativeSpanIsSomethingTheReaderAccepts(final String cramFileName) throws IOException {
-        // A span from getHtsIndex() has to satisfy iterator(SAMFileSpan). Records are not decoded
-        // here, since that needs each fixture's reference; CRAMIndexPermutationsTests covers that.
+        // Records are not decoded (that needs each fixture's reference); CRAMIndexPermutationsTests
+        // covers that.
         try (final SamReader reader = open(cramFileName)) {
             final SAMSequenceRecord sequence =
                     reader.getFileHeader().getSequenceDictionary().getSequence(0);
@@ -113,7 +110,7 @@ public class CRAMNativeIndexSelectionTest extends HtsjdkTest {
 
     @Test(dataProvider = "cramsWithCrai")
     public void testGetIndexStillSynthesisesABaiForCallersThatNeedOne(final String cramFileName) throws IOException {
-        // Deprecated, but it has to keep working for the whole of this major release.
+        // Deprecated but must keep working this major release.
         try (final SamReader reader = open(cramFileName)) {
             @SuppressWarnings("deprecation")
             final BAMIndex index = reader.indexing().getIndex();

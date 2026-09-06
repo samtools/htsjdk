@@ -27,10 +27,8 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * Measures the cost of indexed access to a CRAM file, so that a change to the index path can be
- * shown not to regress sequential reading and to improve region queries. Not a test: run it by hand
- * from the test classpath, and compare runs of the exact same command since phase timings depend on
- * JIT state.
+ * Benchmarks indexed access to a CRAM file. Not a test; run by hand from the test classpath and
+ * compare runs of the same command, since phase timings depend on JIT state.
  *
  * <pre>
  * ./gradlew compileTestJava shadowJar
@@ -38,16 +36,13 @@ import java.util.Set;
  *     --cram sample.cram --reference ref.fa
  * </pre>
  *
- * <p>Phases, each independently selectable: <b>open</b> (open and close a reader, which is where
- * eager index work shows up), <b>query</b> (N seeded pseudo-random regions, queried and consumed),
- * <b>sequential</b> (full-file iteration, which must not regress), <b>bytes</b> (the same regions
- * again, counting bytes read from the CRAM stream rather than timing them) and <b>memory</b> (a
- * coarse estimate of the heap an open, index-ready reader retains).
+ * <p>Phases: <b>open</b> (open and close a reader), <b>query</b> (N seeded random regions),
+ * <b>sequential</b> (full-file iteration), <b>bytes</b> (bytes read from the CRAM stream for the
+ * query regions) and <b>memory</b> (heap retained by an open, queried reader).
  *
- * <p>Two confounds: decoding needs reference bases and the reference source caches one contig at a
- * time, so regions are queried in coordinate order and {@code --sequences} can restrict the run to
- * one contig. And the {@code bytes} phase must open the CRAM as a stream to count it, a different
- * reader code path from the timed phases, so only its byte count is reported.
+ * <p>Regions are queried in coordinate order because the reference source caches one contig at a
+ * time; {@code --sequences} restricts the run to the given contigs. The {@code bytes} phase opens
+ * the CRAM as a stream, a different reader code path, so only its byte count is reported.
  */
 public class CramQueryBenchmark {
 
@@ -94,10 +89,7 @@ public class CramQueryBenchmark {
         }
     }
 
-    /**
-     * Run the benchmark and return the exit code (0 = completed, 2 = error).
-     * Separated from {@link #main} so it can be driven from a test or another tool.
-     */
+    /** Runs the benchmark; returns 0 on completion, 2 on error. */
     public static int run(final String[] args) throws IOException {
         Path cramPath = null;
         Path referencePath = null;
@@ -208,7 +200,7 @@ public class CramQueryBenchmark {
                 regions.stream().map(Region::sequence).distinct().count());
         System.out.printf("Iterations: %d measured, %d warmup%n%n", iterations, warmups);
 
-        // The lambdas below capture these, so they need to be effectively final.
+        // Effectively-final copies for the lambdas below.
         final Path cram = cramPath;
         final Path index = indexPath;
         final long recordCap = maxRecords;
@@ -217,8 +209,7 @@ public class CramQueryBenchmark {
         if (phases.contains("open")) {
             results.add(measure("open", warmups, iterations, () -> {
                 try (final SamReader reader = openReader(factory, cram, index)) {
-                    // Opening is the whole measurement; touching the header keeps the call from
-                    // being optimised away and confirms the reader is actually usable.
+                    // Touch the header so the open cannot be optimised away.
                     return reader.getFileHeader().getSequenceDictionary().size();
                 }
             }));
@@ -269,7 +260,7 @@ public class CramQueryBenchmark {
         return factory.open(resource);
     }
 
-    /** Query every region and return the total number of records returned. */
+    /** Queries every region; returns the total record count. */
     private static long countQueriedRecords(final SamReader reader, final List<Region> regions) {
         long records = 0;
         for (final Region region : regions) {
@@ -284,7 +275,7 @@ public class CramQueryBenchmark {
         return records;
     }
 
-    /** Iterate the whole file, stopping after {@code maxRecords}, and return the count. */
+    /** Iterates the whole file, up to {@code maxRecords}; returns the count. */
     private static long countSequentialRecords(final SamReader reader, final long maxRecords) {
         long records = 0;
         try (final CloseableIterator<SAMRecord> iterator = reader.iterator()) {
@@ -297,10 +288,9 @@ public class CramQueryBenchmark {
     }
 
     /**
-     * Re-run the queries against a byte-counting stream and return the number of CRAM bytes read.
-     * This deliberately opens the CRAM as a stream rather than a path, because that is the only way
-     * to interpose a counter; the resulting timings are not comparable to the timed phases and so
-     * are not reported.
+     * Re-runs the queries against a byte-counting stream and returns the bytes read. Opens the CRAM
+     * as a stream (the only way to interpose a counter), so its timings are not comparable and not
+     * reported.
      */
     private static long countQueryBytes(
             final SamReaderFactory factory, final Path cramPath, final Path indexPath, final List<Region> regions)
@@ -322,15 +312,9 @@ public class CramQueryBenchmark {
     }
 
     /**
-     * Estimate the heap an open, index-ready reader holds on to.
-     *
-     * <p>The reader is forced into an index-ready state by running one real query rather than by
-     * asking for the index object, so that the measurement does not name any particular index
-     * implementation. The query targets the shortest sequence in the dictionary, because decoding a
-     * record caches that sequence's bases and a long contig would dwarf the index itself.
-     *
-     * <p>This is a coarse {@code Runtime}-based estimate, not a heap dump: treat a difference of a
-     * few megabytes as real and anything smaller as noise.
+     * Estimates the heap retained by an open, queried reader. One query on the shortest sequence
+     * loads the index without caching a large contig. A coarse {@code Runtime}-based estimate:
+     * differences under a few MB are noise.
      */
     private static long measureRetainedHeap(
             final SamReaderFactory factory,
@@ -352,7 +336,7 @@ public class CramQueryBenchmark {
 
     private static long usedHeapAfterGc() {
         final Runtime runtime = Runtime.getRuntime();
-        // Repeat because a single collection often leaves recently-dead objects uncollected.
+        // One collection often leaves recently-dead objects.
         for (int i = 0; i < 3; i++) {
             System.gc();
         }
@@ -360,14 +344,13 @@ public class CramQueryBenchmark {
     }
 
     /**
-     * Draw {@code count} regions of {@code width} bases, choosing sequences in proportion to their
-     * length so that the sample resembles a genome-wide access pattern.
+     * Draws {@code count} regions of {@code width} bases, weighting sequences by length.
      *
      * @param dictionary the sequence dictionary to draw from
      * @param allowedSequences if non-null, only these sequence names are considered
      * @param count number of regions to produce
      * @param width region width in bases
-     * @param seed seed for the sampler, so runs are reproducible
+     * @param seed sampler seed
      * @return the sampled regions, or an empty list if no sequence is at least {@code width} long
      */
     static List<Region> sampleRegions(
@@ -384,7 +367,7 @@ public class CramQueryBenchmark {
             return List.of();
         }
 
-        // Cumulative lengths let a single uniform draw pick a sequence in proportion to its length.
+        // Length-weighted sequence choice via cumulative lengths.
         final long[] cumulativeLengths = new long[candidates.size()];
         long total = 0;
         for (int i = 0; i < candidates.size(); i++) {
@@ -405,10 +388,8 @@ public class CramQueryBenchmark {
             regions.add(new Region(sequence.getSequenceName(), start, start + width - 1));
         }
 
-        // Query in coordinate order. Decoding a CRAM record needs its reference sequence, and the
-        // reference source caches only the contig it last served, so jumping between contigs reloads
-        // hundreds of megabases per query and swamps everything the index does. Coordinate order is
-        // also how tools that walk an interval list actually query.
+        // Coordinate order: the reference source caches one contig, so jumping between contigs would
+        // swamp the index cost.
         regions.sort(Comparator.comparingInt((final Region region) -> dictionary.getSequenceIndex(region.sequence()))
                 .thenComparingInt(Region::start));
         return regions;
@@ -452,11 +433,7 @@ public class CramQueryBenchmark {
         }
     }
 
-    /**
-     * One row per measured phase. The timed phases fill the timing columns; the bytes and memory
-     * phases fill their own column and leave the rest as {@code NA}, so a run of only those phases
-     * still records its result.
-     */
+    /** One row per measured phase; unmeasured columns are {@code NA}. */
     private static void writeTsv(
             final Path tsvPath,
             final String label,
@@ -502,7 +479,7 @@ public class CramQueryBenchmark {
     /** A region to query, in 1-based inclusive coordinates. */
     record Region(String sequence, int start, int end) {}
 
-    /** One phase's timings; {@code sortedNanos} is ascending so the quantiles are cheap. */
+    /** One phase's timings; {@code sortedNanos} is ascending. */
     private record Result(String phase, long[] sortedNanos, long records) {
         double minMillis() {
             return sortedNanos[0] / 1_000_000.0;
@@ -523,7 +500,7 @@ public class CramQueryBenchmark {
         long run() throws IOException;
     }
 
-    /** Wraps a {@link SeekableStream} to count the bytes actually delivered to the caller. */
+    /** Counts bytes read from a {@link SeekableStream}. */
     private static final class CountingSeekableStream extends SeekableStream {
         private final SeekableStream delegate;
         private long bytesRead;

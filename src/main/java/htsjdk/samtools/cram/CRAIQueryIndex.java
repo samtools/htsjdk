@@ -18,28 +18,27 @@ import java.util.OptionalLong;
 import java.util.TreeSet;
 
 /**
- * Answers CRAM region queries directly from a CRAI index: which containers can hold records
- * overlapping a region, and where the unplaced records start.
+ * Answers CRAM region queries from a CRAI index: which containers may hold records overlapping a
+ * region, and where unplaced records start.
  *
- * <p>Entries are grouped by reference and sorted by alignment start, alongside a running maximum of
- * their ends. The running maximum is non-decreasing, so a binary search on it finds the first entry
- * that can reach the query, and a forward scan from there stops at the first entry starting past the
- * query. That resolves slices nested inside longer ones without htslib's nested containment list.
+ * <p>Entries are grouped by reference and sorted by start, with a running maximum end. A binary
+ * search on the running maximum finds the first entry that can reach the query; a forward scan
+ * stops at the first entry starting past it. This handles nested slices without htslib's nested
+ * containment list.
  *
- * <p>Unlike htslib, an entry whose span misses the query is never returned. htslib returns the
- * nearest slice in that case because it tolerates an index with missing entries; every CRAI htsjdk
- * reads or writes has one entry per slice, and a slice's span covers the alignment end of every
- * record in it, so a non-overlapping entry cannot hold a matching record.
+ * <p>Unlike htslib, an entry whose span misses the query is never returned. htslib does so to
+ * tolerate missing entries; a CRAI written by htsjdk or samtools has one entry per slice, and a
+ * slice's span covers every record in it.
  *
- * <p>A CRAI stores no record counts, so there is no metadata method (issue #531).
+ * <p>There is no metadata method: a CRAI stores no record counts (issue #531).
  *
- * <p>Spans are {@link SAMFileSpan}s so they can be handed back to
- * {@link htsjdk.samtools.SamReader.Indexing#iterator(SAMFileSpan)}. Each coordinate is a container
- * byte offset shifted left 16 bits, the form the CRAM container iterator expects.
+ * <p>Spans are {@link SAMFileSpan}s, usable with
+ * {@link htsjdk.samtools.SamReader.Indexing#iterator(SAMFileSpan)}. Coordinates are container byte
+ * offsets shifted left 16 bits.
  */
 public class CRAIQueryIndex implements HtsQueryIndex {
 
-    /** Low bits of a CRAM file pointer, reserved for a slice landmark; the iterator only uses the rest. */
+    /** Low bits of a CRAM file pointer hold a slice landmark, which the container iterator ignores. */
     private static final int CONTAINER_OFFSET_SHIFT = 16;
 
     private static final long LANDMARK_MASK = (1L << CONTAINER_OFFSET_SHIFT) - 1;
@@ -51,11 +50,8 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     private final OptionalLong firstUnplacedContainerOffset;
 
     /**
-     * Build a queryable index from CRAI entries, as read by
-     * {@link htsjdk.samtools.CRAMCRAIIndexer#readIndex}.
-     *
-     * @param entries the CRAI entries; neither the collection nor its order is retained
-     * @throws CRAMException if an entry has a reference id below -1, which no valid CRAI contains
+     * @param entries the CRAI entries, in any order
+     * @throws CRAMException if an entry has a reference id below -1
      */
     public CRAIQueryIndex(final Collection<CRAIEntry> entries) {
         final Map<Integer, List<CRAIEntry>> grouped = new HashMap<>();
@@ -63,12 +59,12 @@ public class CRAIQueryIndex implements HtsQueryIndex {
         for (final CRAIEntry entry : entries) {
             final int sequenceId = entry.getSequenceId();
             if (sequenceId < ReferenceContext.UNMAPPED_UNPLACED_ID) {
-                // A multi-reference slice is indexed as one entry per reference, never as -2.
+                // Multi-reference slices are indexed as one entry per reference, never as -2.
                 throw new CRAMException("Malformed CRAI entry with reference id " + sequenceId + ": " + entry);
             }
             if (sequenceId == ReferenceContext.UNMAPPED_UNPLACED_ID) {
-                // A multi-reference slice holding unplaced records has an entry for them too, so
-                // this finds them whether or not they share a container with placed records.
+                // A multi-reference slice with unplaced records has an entry for them, so this finds
+                // them even when they share a container with placed records.
                 firstUnplaced = Math.min(firstUnplaced, entry.getContainerStartByteOffset());
                 continue;
             }
@@ -95,8 +91,7 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     /**
      * {@inheritDoc}
      *
-     * <p>From the first container holding an unplaced record to the end of the file; empty when
-     * the index has no unplaced entries.
+     * <p>From the first container with an unplaced record to end of file.
      */
     @Override
     public Optional<HtsFileSpan> getSpanOfUnplaced() {
@@ -107,29 +102,26 @@ public class CRAIQueryIndex implements HtsQueryIndex {
         return Optional.of(new BAMFileSpan(new Chunk(containerStart, Long.MAX_VALUE)));
     }
 
-    /** Nothing to release: the whole index is held in memory. */
+    /** No-op; the index is held in memory. */
     @Override
     public void close() {}
 
     /**
-     * The byte offset of the first container that holds an unplaced record. Unplaced records sort to
-     * the end of a coordinate-sorted CRAM, so reading forward from here reaches all of them.
+     * Byte offset of the first container holding an unplaced record; all unplaced records follow it.
      *
-     * @return the offset, or empty if the index has no unplaced entries
+     * @return the offset, or empty if there are none
      */
     public OptionalLong getFirstUnplacedContainerOffset() {
         return firstUnplacedContainerOffset;
     }
 
     /**
-     * The offsets of every container that may hold a record overlapping the region, ascending and
-     * without duplicates. A multi-reference slice contributes one entry per reference, all sharing
-     * a container, which is why duplicates arise.
+     * Offsets of the containers that may hold records overlapping the region, ascending and distinct.
      *
-     * @param referenceIndex reference to query, as an index into the sequence dictionary
-     * @param start 1-based inclusive start; anything below 1 means the start of the reference
-     * @param end 1-based inclusive end; anything below 1 means the end of the reference
-     * @return ascending distinct container offsets, empty if nothing matches
+     * @param referenceIndex index into the sequence dictionary
+     * @param start 1-based inclusive start; below 1 means the start of the reference
+     * @param end 1-based inclusive end; below 1 means the end of the reference
+     * @return the offsets; empty if nothing matches
      */
     public long[] getContainerOffsets(final int referenceIndex, final int start, final int end) {
         final ReferenceEntries entries = entriesByReference.get(referenceIndex);
@@ -142,12 +134,11 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     }
 
     /**
-     * Coordinate pairs addressing every container that may hold a record matching any of the
-     * intervals, in the form {@code CRAMIterator} expects: one {@code (start, end)} pair per
-     * container, ascending and disjoint.
+     * Coordinate pairs for {@code CRAMIterator}: one ascending, disjoint {@code (start, end)} pair
+     * per container that may hold records matching any interval.
      *
-     * @param intervals the intervals to resolve; may be empty
-     * @return coordinate pairs, or an empty array if no container matches
+     * @param intervals the intervals to resolve
+     * @return the pairs; empty if nothing matches
      */
     public long[] getCoordinatesForQueries(final QueryInterval[] intervals) {
         final TreeSet<Long> offsets = new TreeSet<>();
@@ -180,8 +171,8 @@ public class CRAIQueryIndex implements HtsQueryIndex {
     }
 
     /**
-     * The container iterator reads while its position is at or below {@code end >> 16}, so setting
-     * every landmark bit addresses exactly this container and keeps start strictly below end.
+     * Setting all landmark bits makes {@code end >> 16} this container and keeps start below end, as
+     * the container iterator requires.
      */
     private static long containerEndCoordinate(final long containerOffset) {
         return containerStartCoordinate(containerOffset) | LANDMARK_MASK;
@@ -196,12 +187,12 @@ public class CRAIQueryIndex implements HtsQueryIndex {
         return array;
     }
 
-    /** The entries for one reference, sorted by alignment start, with a running maximum of their ends. */
+    /** One reference's entries, sorted by start, with a running maximum end. */
     private static final class ReferenceEntries {
         /** Sorted by alignment start; ties broken by container then slice offset. */
         private final CRAIEntry[] entries;
 
-        /** Exclusive ends, as {@code long} so a span reaching past {@link Integer#MAX_VALUE} is safe. */
+        /** Exclusive ends; {@code long} to avoid overflow. */
         private final long[] ends;
 
         /** {@code maxEndThrough[i]} is the largest end among entries {@code 0..i}; non-decreasing. */
@@ -229,8 +220,7 @@ public class CRAIQueryIndex implements HtsQueryIndex {
          * @param offsets collector for the matching container offsets
          */
         void collectOverlapping(final int queryStart, final int queryEnd, final Collection<Long> offsets) {
-            // Same bounds convention as the BAI path (GenomicIndexUtil.regionToBins): a non-positive
-            // start or end means "as far as the reference goes" in that direction.
+            // As in GenomicIndexUtil.regionToBins, a non-positive bound means the reference's own bound.
             final long start = queryStart < 1 ? 1 : queryStart;
             final long end = queryEnd < 1 ? Long.MAX_VALUE : queryEnd;
             if (start > end) {
@@ -241,7 +231,7 @@ public class CRAIQueryIndex implements HtsQueryIndex {
                 if (entries[i].getAlignmentStart() > end) {
                     break;
                 }
-                // ends[i] is exclusive, so it must be strictly past a 1-based inclusive start.
+                // Ends are exclusive.
                 if (ends[i] > start) {
                     offsets.add(entries[i].getContainerStartByteOffset());
                 }
@@ -249,8 +239,8 @@ public class CRAIQueryIndex implements HtsQueryIndex {
         }
 
         /**
-         * The index of the first entry whose end reaches {@code start}, or {@code entries.length} if
-         * none does. Relies on {@link #maxEndThrough} being non-decreasing.
+         * Index of the first entry whose end reaches {@code start}, or {@code entries.length}; a
+         * binary search on {@link #maxEndThrough}.
          */
         private int firstEntryReaching(final long start) {
             int low = 0;

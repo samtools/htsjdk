@@ -8,18 +8,13 @@ import java.util.TreeSet;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * Checks {@link CRAIQueryIndex}'s binary search against an obviously-correct linear scan over
- * randomly generated indexes. The binary search plus running-maximum-end is the one piece of this
- * class with a real chance of an off-by-one, and hand-written cases only cover the shapes someone
- * thought of.
- */
+/** Checks {@link CRAIQueryIndex} against a linear scan over random indexes. */
 public class CRAIQueryIndexBruteForceTest extends HtsjdkTest {
 
     private static final int REFERENCE_COUNT = 4;
     private static final int MAX_POSITION = 5000;
 
-    /** The definition of the query, written the slow obvious way. */
+    /** The query, as a linear scan. */
     private static long[] bruteForce(
             final List<CRAIEntry> entries, final int referenceIndex, final int start, final int end) {
         final long queryStart = start < 1 ? 1 : start;
@@ -38,11 +33,7 @@ public class CRAIQueryIndexBruteForceTest extends HtsjdkTest {
         return offsets.stream().mapToLong(Long::longValue).toArray();
     }
 
-    /**
-     * Build an index whose slices look like real CRAM: mostly coordinate-ordered and abutting, but
-     * with occasional long spans that swallow their neighbours, gaps, and containers shared by
-     * several slices.
-     */
+    /** Random entries resembling real CRAM: mostly abutting, with occasional long spans, gaps, and shared containers. */
     private static List<CRAIEntry> randomEntries(final Random random, final int entriesPerReference) {
         final List<CRAIEntry> entries = new ArrayList<>();
         long containerOffset = 0;
@@ -51,8 +42,7 @@ public class CRAIQueryIndexBruteForceTest extends HtsjdkTest {
             for (int i = 0; i < entriesPerReference; i++) {
                 final int span = random.nextInt(10) == 0 ? 1 + random.nextInt(2000) : 1 + random.nextInt(60);
                 entries.add(new CRAIEntry(referenceIndex, position, span, containerOffset, 0, 100));
-                // Sometimes leave a gap, sometimes overlap, sometimes put the next slice in the same
-                // container the way a multi-slice container does.
+                // Gaps, overlaps, and shared containers.
                 position += random.nextInt(80);
                 if (position < 1) {
                     position = 1;

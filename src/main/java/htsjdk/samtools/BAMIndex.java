@@ -31,8 +31,8 @@ import java.util.Optional;
 /**
  * A basic interface for querying BAM indices.
  *
- * <p>This is {@link HtsQueryIndex} plus the parts of a BAI that do not generalise to other index
- * formats: linear bins, and the per-reference record counts a CRAI does not carry.
+ * <p>Extends {@link HtsQueryIndex} with BAI-specific structure: linear bins and per-reference record
+ * counts.
  *
  * @author mhanna
  * @version 0.1
@@ -69,8 +69,7 @@ public interface BAMIndex extends HtsQueryIndex {
     BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos);
 
     /**
-     * Gets the start of the last linear bin in the index. {@link #getSpanOfUnplaced()} is the
-     * format-neutral form of the same information.
+     * Gets the start of the last linear bin in the index. See also {@link #getSpanOfUnplaced()}.
      * @return The chunk indicating the start of the last bin in the linear index.
      */
     long getStartOfLastLinearBin();
@@ -78,15 +77,13 @@ public interface BAMIndex extends HtsQueryIndex {
     /**
      * {@inheritDoc}
      *
-     * <p>Derived from the last linear bin, which is all a BAI records about where unplaced records
-     * start: present from there to the end of the file, whether or not any record there is
-     * unplaced. Empty when the file has no mapped reads; any unplaced records then start at the
-     * first record, a position a BAI cannot express.
+     * <p>Derived from the last linear bin: present from there to end of file, whether or not any
+     * record there is unplaced; empty when the file has no mapped reads, since a BAI cannot express
+     * the first record's position.
      */
     @Override
     default Optional<HtsFileSpan> getSpanOfUnplaced() {
         final long startOfLastLinearBin = getStartOfLastLinearBin();
-        // -1 means the file has no mapped reads, so there is no "after the mapped reads" to point at.
         return startOfLastLinearBin == -1
                 ? Optional.empty()
                 : Optional.of(new BAMFileSpan(new Chunk(startOfLastLinearBin, Long.MAX_VALUE)));

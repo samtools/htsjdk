@@ -122,11 +122,10 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     }
 
     /**
-     * Create a CRAMFileWriter with an explicit indexer, for callers that need an index format other
-     * than the default CRAI, such as a {@link CRAMBAIIndexer}.
+     * Create a CRAMFileWriter with an explicit indexer, e.g. a {@link CRAMBAIIndexer}.
      *
-     * <p>A static factory rather than a constructor: a constructor taking a {@link CRAMIndexer} would
-     * be ambiguous with the {@link OutputStream} one for callers passing a literal null.
+     * <p>A static factory because a {@link CRAMIndexer} constructor would be ambiguous with the
+     * {@link OutputStream} one when passed null.
      *
      * @param encodingStrategy encoding strategy to use when writing
      * @param outputStream where to write the output. Can not be null.
@@ -135,7 +134,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      * @param referenceSource reference source
      * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
      * @param fileName used for display in error message display
-     * @return a writer that indexes through {@code indexer}
+     * @return the writer
      *
      * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
      */

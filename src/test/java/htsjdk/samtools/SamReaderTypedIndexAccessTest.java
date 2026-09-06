@@ -9,11 +9,7 @@ import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * {@link SamReader.Indexing#getHtsIndex(Class)}: format-specific index capabilities are reached by
- * asking for the type, and a file whose index is not of that type answers empty rather than
- * synthesising one.
- */
+/** {@link SamReader.Indexing#getHtsIndex(Class)}: typed access to format-specific index capabilities. */
 public class SamReaderTypedIndexAccessTest extends HtsjdkTest {
 
     private static final Path INDEXED_BAM =
@@ -55,7 +51,7 @@ public class SamReaderTypedIndexAccessTest extends HtsjdkTest {
 
     @Test
     public void testACraiIndexedCramDoesNotSynthesiseABamIndex() throws IOException {
-        // The deprecated getIndex() would build a BAI here; the typed accessor must not.
+        // Unlike the deprecated getIndex(), no BAI is synthesised.
         try (final SamReader reader = open(CRAI_INDEXED_CRAM)) {
             Assert.assertTrue(reader.indexing().getHtsIndex(BAMIndex.class).isEmpty());
         }

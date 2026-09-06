@@ -29,8 +29,7 @@ import htsjdk.index.HtsFileSpan;
  * A interface representing a collection of (possibly) discontinuous segments in the
  * BAM file, possibly representing the results of an index query.
  *
- * <p>This is the SAM-specific form of {@link HtsFileSpan}, adding the two navigation operations
- * that only make sense once the addressing scheme is known to be BGZF virtual offsets.
+ * <p>The SAM/BAM/CRAM form of {@link HtsFileSpan}.
  */
 public interface SAMFileSpan extends HtsFileSpan, Cloneable {
     /**

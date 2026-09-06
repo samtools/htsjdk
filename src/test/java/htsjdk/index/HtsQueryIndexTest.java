@@ -9,14 +9,10 @@ import java.util.Optional;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * The format-neutral index contract, and the way {@link BAMIndex} satisfies it. The type
- * relationships asserted here are what let existing BAM callers keep compiling against
- * {@code BAMFileSpan}.
- */
+/** The format-neutral index contract and {@link BAMIndex}'s implementation of it. */
 public class HtsQueryIndexTest extends HtsjdkTest {
 
-    /** A BAMIndex that answers nothing, so the inherited default behaviour is what gets tested. */
+    /** A BAMIndex stub; exercises the inherited defaults. */
     private static class StubBAMIndex implements BAMIndex {
         private final long startOfLastLinearBin;
 
@@ -43,7 +39,7 @@ public class HtsQueryIndexTest extends HtsjdkTest {
         public void close() {}
     }
 
-    /** An index that opts out of everything optional. */
+    /** An index with only the required methods. */
     private static class MinimalQueryIndex implements HtsQueryIndex {
         @Override
         public HtsFileSpan getSpanOverlapping(final int referenceIndex, final int start, final int end) {
@@ -61,7 +57,7 @@ public class HtsQueryIndexTest extends HtsjdkTest {
 
     @Test
     public void testBamFileSpanIsAnHtsFileSpan() {
-        // The covariant override on BAMIndex.getSpanOverlapping only compiles because of this.
+        // Required for BAMIndex.getSpanOverlapping's covariant return.
         Assert.assertTrue(HtsFileSpan.class.isAssignableFrom(BAMFileSpan.class));
     }
 
@@ -89,8 +85,7 @@ public class HtsQueryIndexTest extends HtsjdkTest {
 
     @Test
     public void testBamIndexReportsNoUnplacedSpanWhenNothingIsMapped() {
-        // getStartOfLastLinearBin() answers -1 for a file with no mapped reads; there is no
-        // "after the mapped reads" position to hand back in that case.
+        // -1: no mapped reads.
         try (final BAMIndex index = new StubBAMIndex(-1L)) {
             Assert.assertEquals(index.getSpanOfUnplaced(), Optional.empty());
         }

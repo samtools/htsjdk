@@ -12,13 +12,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-/**
- * Which index format {@link SAMFileWriterFactory} writes beside a CRAM.
- *
- * <p>The artifact name is the one user-visible break in this change — pipelines that glob for
- * {@code *.cram.bai} will stop finding anything — so it gets its own assertions rather than being
- * implied by tests that only care that querying still works.
- */
+/** Which index format {@link SAMFileWriterFactory} writes beside a CRAM. */
 public class CRAMDefaultIndexFormatTest extends HtsjdkTest {
 
     private static final String SEQUENCE_NAME = "chr1";
@@ -26,11 +20,7 @@ public class CRAMDefaultIndexFormatTest extends HtsjdkTest {
 
     private Path referenceFasta;
 
-    /**
-     * Write a real indexed FASTA rather than using an in-memory reference: CRAM encoding is
-     * sensitive to how the reference is served, and an indexed file on disk is what production
-     * code actually sees.
-     */
+    /** Writes an indexed FASTA; an in-memory reference produces spurious CRAM failures. */
     @BeforeClass
     public void writeReference() throws IOException {
         final Path directory = Files.createTempDirectory("cramIndexFormatReference");
@@ -55,7 +45,7 @@ public class CRAMDefaultIndexFormatTest extends HtsjdkTest {
         return header;
     }
 
-    /** Write a small coordinate-sorted CRAM through the factory and return its path. */
+    /** Writes a small coordinate-sorted CRAM through the factory. */
     private Path writeCram(final SAMFileWriterFactory factory) throws IOException {
         final Path directory = Files.createTempDirectory("cramIndexFormat");
         directory.toFile().deleteOnExit();

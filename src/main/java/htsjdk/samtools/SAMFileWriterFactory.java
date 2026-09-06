@@ -156,8 +156,7 @@ public class SAMFileWriterFactory implements Cloneable {
      * Convenience method allowing newSAMFileWriterFactory().setCreateIndex(true);
      * Equivalent to SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true); newSAMFileWriterFactory();
      * If a BAM or CRAM (not SAM) file is created, the setting is true, and the file header specifies coordinate order,
-     * then an index file will be written along with the alignment file: a {@code .bai} for a BAM, and a
-     * {@code .crai} for a CRAM.
+     * then an index (.bai for BAM, .crai for CRAM) will be written along with the file.
      *
      * @param setting whether to attempt to create an index while creating the alignment file.
      * @return this factory object
@@ -168,15 +167,13 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
-     * Write a CRAM's index as a {@code .cram.bai} rather than the default {@code .cram.crai}.
-     *
-     * <p>samtools neither writes nor reads a BAI for a CRAM, and htsjdk queries a CRAI faster, so
-     * this exists only for consumers that have not moved to CRAI yet.
+     * Write a {@code .cram.bai} instead of the default {@code .cram.crai}. samtools cannot read a
+     * BAI for a CRAM; use only for consumers that still require one.
      *
      * @param setting true to write a BAI instead of a CRAI. Ignored for non-CRAM output.
      * @return this factory object
-     * @deprecated will be removed, along with BAI-for-CRAM writing, in the next major release.
-     *     Reading a CRAM that has a BAI will continue to work.
+     * @deprecated removed in the next major release along with BAI-for-CRAM writing; reading a
+     *     BAI-indexed CRAM will still work.
      */
     @Deprecated
     public SAMFileWriterFactory setCreateBaiIndexForCram(final boolean setting) {

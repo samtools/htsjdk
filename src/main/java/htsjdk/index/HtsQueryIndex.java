@@ -4,40 +4,35 @@ import java.io.Closeable;
 import java.util.Optional;
 
 /**
- * An index that answers one question: given a region, which byte ranges of the data file could hold
- * records overlapping it? This is the part of every coordinate index (BAI, CSI, CRAI, tabix) that
- * does not depend on the index format. Format-specific structure such as BAI's linear bins and
- * per-reference record counts stays on the format's own interface.
+ * An index that maps genomic regions to candidate byte ranges. Applicable to all index formats.
  *
- * <p>References are addressed by ordinal into the index's own reference ordering, because a BAI
- * file carries no sequence names at all. For BAI, CSI and CRAI that ordering is the sequence
- * dictionary's.
+ * <p>References are addressed by ordinal, since a BAI carries no sequence names. For BAI, CSI and
+ * CRAI the ordinal is the sequence dictionary index.
  */
 public interface HtsQueryIndex extends Closeable {
 
     /**
-     * The byte ranges that could hold records overlapping the region.
+     * Byte ranges that may hold records overlapping the region.
      *
-     * @param referenceIndex ordinal of the reference in the index's own reference ordering
-     * @param start 1-based inclusive start of the region
-     * @param end 1-based inclusive end of the region
-     * @return the byte ranges to read; empty if the region cannot match anything
+     * @param referenceIndex ordinal of the reference in the index's reference ordering
+     * @param start 1-based inclusive start
+     * @param end 1-based inclusive end
+     * @return the byte ranges; empty if nothing can match
      */
     HtsFileSpan getSpanOverlapping(int referenceIndex, int start, int end);
 
     /**
-     * The byte ranges holding records that have no position at all. "Unplaced" rather than
-     * "unmapped": an unmapped read placed beside its mapped mate is found by a region query, and
-     * this method addresses the records that collect at the end of the file instead.
+     * Byte ranges holding records with no position (unmapped and unplaced), which sort to the end
+     * of an alignment file.
      *
-     * @return the byte ranges; empty for a format with no such concept, such as a tabix-indexed
-     *     VCF, and when the index has nothing to point at
+     * @return the byte ranges; empty if the format has no such concept or the index has none to
+     *     point at
      */
     default Optional<HtsFileSpan> getSpanOfUnplaced() {
         return Optional.empty();
     }
 
-    /** Close the index and release anything it holds. */
+    /** Closes the index. */
     @Override
     void close();
 }

@@ -10,10 +10,7 @@ import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * Tests for the region sampler behind {@link CramQueryBenchmark}: before/after comparisons depend on
- * the same seed drawing the same regions.
- */
+/** The region sampler behind {@link CramQueryBenchmark}. */
 public class CramQueryBenchmarkTest extends HtsjdkTest {
 
     private static SAMSequenceDictionary dictionary() {
@@ -95,8 +92,7 @@ public class CramQueryBenchmarkTest extends HtsjdkTest {
 
     @Test
     public void testEverySequenceLongEnoughIsReachable() {
-        // With a length-weighted draw both long sequences must show up in a large enough sample,
-        // otherwise the benchmark would silently measure only part of the file.
+        // Both long sequences must appear in a large enough length-weighted sample.
         final List<Region> regions = CramQueryBenchmark.sampleRegions(dictionary(), null, 500, 1000, 7);
         final Set<String> sampled = regions.stream().map(Region::sequence).collect(Collectors.toSet());
         Assert.assertEquals(sampled, Set.of("chr1", "chr2"));
