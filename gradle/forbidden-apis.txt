@@ -3,3 +3,9 @@
 
 @defaultMessage GZIPInputStream silently truncates multi-member gzip (including BGZF) on JDKs affected by JDK-7036144; use IOUtil.openGzipOrBgzfStream
 java.util.zip.GZIPInputStream#<init>(**)
+
+@defaultMessage htsjdk's API uses java.nio.file.Path so that it works with any NIO FileSystemProvider; use Path and the IOUtil helpers
+java.io.File
+# Banned separately because the java.io.File rule cannot see a File that is produced and handed
+# straight to another API: the class then appears only in the descriptors of the called methods.
+java.nio.file.Path#toFile()

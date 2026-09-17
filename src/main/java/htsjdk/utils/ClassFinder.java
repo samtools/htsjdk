@@ -24,6 +24,7 @@ package htsjdk.utils;
  * THE SOFTWARE.
  */
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.samtools.util.Log;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -140,6 +141,7 @@ public class ClassFinder {
      * @param file the jar file to be scanned
      * @param packagePath the top level package to start from
      */
+    @SuppressForbidden(reason = "ZipFile can only be opened from a File or a file name")
     protected void scanJar(final Path file, final String packagePath) throws IOException {
         final ZipFile zip = new ZipFile(file.toFile());
         final Enumeration<? extends ZipEntry> entries = zip.entries();

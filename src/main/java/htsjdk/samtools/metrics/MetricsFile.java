@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.metrics;
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FormatUtil;
@@ -158,6 +159,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @deprecated use {@link #write(Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public void write(final File f) {
         write(f.toPath());
     }
@@ -575,6 +577,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @deprecated use {@link #readBeans(Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static <T extends MetricBase> List<T> readBeans(final File file) {
         return readBeans(file.toPath());
     }
@@ -598,6 +601,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @deprecated use {@link #readHeaders(Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static List<Header> readHeaders(final File file) {
         return readHeaders(file.toPath());
     }
@@ -623,6 +627,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @deprecated use {@link #areMetricsEqual(Path, Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static boolean areMetricsEqual(final File file1, final File file2) {
         return areMetricsEqual(file1.toPath(), file2.toPath());
     }
@@ -650,6 +655,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @deprecated use {@link #areMetricsAndHistogramsEqual(Path, Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static boolean areMetricsAndHistogramsEqual(final File file1, final File file2) {
         return areMetricsAndHistogramsEqual(file1.toPath(), file2.toPath());
     }

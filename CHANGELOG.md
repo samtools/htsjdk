@@ -87,6 +87,13 @@ A small, deliberate set of `java.io.File` APIs remains because they are inherent
 
 - `IOUtil.newTempFile`, `IOUtil.getDefaultTmpDir`, `IOUtil.createTempDir` — temporary files/directories are always local.
 - `IOUtil.toPath(File)` and `IOUtil.filesToPaths(Collection<File>)` — `File`→`Path` bridge helpers.
+- Sixteen `File` overloads that are deprecated in this release and will be removed in a later one.  Each has an identical `Path` overload, which is the replacement:
+  - `CRAMFileReader`: the six constructors taking a `File` for the CRAM, the index, or both.
+  - `MetricsFile`: `write(File)`, `readBeans(File)`, `readHeaders(File)`, `areMetricsEqual(File, File)` and `areMetricsAndHistogramsEqual(File, File)`.
+  - `BlockCompressedInputStream`: the `(File)` and `(File, InflaterFactory)` constructors, `checkTermination(File)`, and `assertNonDefectiveFile(File)` (use `assertNonDefectivePath(Path)`).
+  - `CRAIIndex.openCraiFileAsBaiStream(File, SAMSequenceDictionary)`.
+
+The build enforces this list.  Main sources are checked at the bytecode level by the [forbiddenapis](https://github.com/policeman-tools/forbidden-apis) Gradle plugin, which bans `java.io.File` and `Path.toFile()`; each permitted use carries an `@SuppressForbidden` annotation stating why it is needed.
 
 ### Bug fixes
 

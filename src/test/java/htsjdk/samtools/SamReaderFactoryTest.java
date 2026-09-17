@@ -12,7 +12,6 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -280,7 +279,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         final URL url = forIndex ? bamIndexUrl : bamUrl;
         switch (type) {
             case FILE:
-                return new FileInputResource(f.toFile());
+                return new FileInputResource(f);
             case PATH:
                 return new PathInputResource(f, Function.identity());
             case URL:
@@ -408,25 +407,10 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         }
     }
 
-    /**
-     * A path that pretends it's not based upon a file.  This helps in cases where we want to test branches
-     * that apply to non-file based paths without actually having to use non-file based resources (like cloud urls)
-     */
-    private static class NeverFilePathInputResource extends PathInputResource {
-        public NeverFilePathInputResource(Path pathResource) {
-            super(pathResource);
-        }
-
-        @Override
-        public File asFile() {
-            return null;
-        }
-    }
-
     @Test
-    public void checkHasIndexForStreamingPathBamWithFileIndex() throws IOException {
-        InputResource bam = new NeverFilePathInputResource(localBam);
-        InputResource index = new FileInputResource(localBamIndex.toFile());
+    public void checkHasIndexForPathBamWithFileIndex() throws IOException {
+        InputResource bam = new PathInputResource(localBam);
+        InputResource index = new FileInputResource(localBamIndex);
 
         // ensure that the index is being used, not checked in queryInputResourcePermutation
         try (final SamReader reader = SamReaderFactory.makeDefault().open(new SamInputResource(bam, index))) {
@@ -435,9 +419,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     }
 
     @Test
-    public void queryStreamingPathBamWithFileIndex() throws IOException {
-        InputResource bam = new NeverFilePathInputResource(localBam);
-        InputResource index = new FileInputResource(localBamIndex.toFile());
+    public void queryPathBamWithFileIndex() throws IOException {
+        InputResource bam = new PathInputResource(localBam);
+        InputResource index = new FileInputResource(localBamIndex);
 
         queryInputResourcePermutation(new SamInputResource(bam, index));
     }

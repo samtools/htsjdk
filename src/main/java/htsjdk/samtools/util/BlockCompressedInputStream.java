@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
@@ -119,6 +120,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @deprecated since 5.0; use {@link #BlockCompressedInputStream(Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public BlockCompressedInputStream(final File file) throws IOException {
         this(IOUtil.toPath(file));
     }
@@ -140,6 +142,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @deprecated since 5.0; use {@link #BlockCompressedInputStream(Path, InflaterFactory)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public BlockCompressedInputStream(final File file, final InflaterFactory inflaterFactory) throws IOException {
         this(IOUtil.toPath(file), inflaterFactory);
     }
@@ -641,6 +644,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @deprecated since 5.0; use {@link #checkTermination(Path)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static FileTermination checkTermination(final File file) throws IOException {
         return checkTermination(IOUtil.toPath(file));
     }
@@ -741,6 +745,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     }
 
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static void assertNonDefectiveFile(final File file) throws IOException {
         assertNonDefectivePath(IOUtil.toPath(file));
     }
