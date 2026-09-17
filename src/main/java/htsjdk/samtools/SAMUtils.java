@@ -1101,7 +1101,8 @@ public final class SAMUtils {
 
     /**
      * Returns the number of bases that need to be clipped due to overlapping pairs.  If the record is not paired,
-     * or the given record's start position is greater than its mate's start position, zero is automatically returned.
+     * the mates map to different reference sequences, or the given record's start position is greater than its mate's
+     * start position, zero is automatically returned.
      * NB: This method assumes that the record's mate is not contained within the given record's alignment.
      *
      * @param rec SAMRecord that needs clipping due to overlapping pairs.
@@ -1113,6 +1114,9 @@ public final class SAMUtils {
         // in the record.
 
         if (!rec.getReadPairedFlag() || rec.getReadUnmappedFlag() || rec.getMateUnmappedFlag()) return 0;
+
+        // Alignment coordinates are only comparable on the same reference sequence.
+        if (!rec.getReferenceName().equals(rec.getMateReferenceName())) return 0;
 
         // Only clip records that are left-most in genomic order and overlapping.
         if (rec.getMateAlignmentStart() < rec.getAlignmentStart()) return 0; // right-most, so ignore.
