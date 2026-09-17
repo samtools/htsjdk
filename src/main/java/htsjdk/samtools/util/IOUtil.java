@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
@@ -310,6 +311,7 @@ public class IOUtil {
      * Creates a new tmp file on one of the available temp filesystems, registers it for deletion
      * on JVM exit and then returns it.
      */
+    @SuppressForbidden(reason = "temporary files are always on the local filesystem")
     public static File newTempFile(
             final String prefix, final String suffix, final File[] tmpDirs, final long minBytesFree)
             throws IOException {
@@ -327,11 +329,13 @@ public class IOUtil {
     }
 
     /** Creates a new tmp file on one of the potential filesystems that has at least 5GB free. */
+    @SuppressForbidden(reason = "temporary files are always on the local filesystem")
     public static File newTempFile(final String prefix, final String suffix, final File[] tmpDirs) throws IOException {
         return newTempFile(prefix, suffix, tmpDirs, FIVE_GBS);
     }
 
     /** Returns a default tmp directory. */
+    @SuppressForbidden(reason = "the temporary directory is always on the local filesystem")
     public static File getDefaultTmpDir() {
         final String user = System.getProperty("user.name");
         final String tmp = System.getProperty("java.io.tmpdir");
@@ -690,6 +694,7 @@ public class IOUtil {
      *              extraneous morePrefix argument it is recommended to use the 1 argument form.
      */
     @Deprecated
+    @SuppressForbidden(reason = "the temporary directory is always on the local filesystem")
     public static File createTempDir(final String prefix, final String morePrefix) {
         final String dotSeparatedSuffix =
                 morePrefix == null ? ".tmp" : morePrefix.startsWith(".") ? morePrefix : "." + morePrefix;
@@ -883,6 +888,7 @@ public class IOUtil {
      * @param fileOrNull a File, or null
      * @return           the corresponding Path (or null)
      */
+    @SuppressForbidden(reason = "bridge for callers that still hold a File")
     public static Path toPath(File fileOrNull) {
         return (null == fileOrNull ? null : fileOrNull.toPath());
     }
@@ -893,6 +899,7 @@ public class IOUtil {
      * @param files a {@link List} of {@link File}s to convert to {@link Path}s
      * @return a new List containing the results of running toPath on the elements of the input
      */
+    @SuppressForbidden(reason = "bridge for callers that still hold Files")
     public static List<Path> filesToPaths(Collection<File> files) {
         return files.stream().map(File::toPath).collect(Collectors.toList());
     }

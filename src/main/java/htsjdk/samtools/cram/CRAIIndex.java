@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram;
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
 import htsjdk.samtools.SAMFileHeader;
@@ -74,6 +75,7 @@ public class CRAIIndex {
      * @deprecated Use {@link #openCraiFileAsBaiStream(Path, SAMSequenceDictionary)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public static SeekableStream openCraiFileAsBaiStream(
             final File cramIndexFile, final SAMSequenceDictionary dictionary) {
         return openCraiFileAsBaiStream(cramIndexFile.toPath(), dictionary);

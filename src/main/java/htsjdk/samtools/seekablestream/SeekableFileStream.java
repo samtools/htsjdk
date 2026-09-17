@@ -17,9 +17,11 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.annotations.SuppressForbidden;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,15 +50,21 @@ public class SeekableFileStream extends SeekableStream {
      *             because the underlying {@link RandomAccessFile} requires a local file
      * @throws FileNotFoundException if the file does not exist or cannot be opened for reading
      */
+    @SuppressForbidden(reason = "RandomAccessFile can only be opened from a File or a file name")
     public SeekableFileStream(final Path path) throws FileNotFoundException {
         this.path = path;
         fis = new RandomAccessFile(path.toFile(), "r");
         allInstances.add(this);
     }
 
+    /** Returns the length of the file in bytes, or 0 if it cannot be determined. */
     @Override
     public long length() {
-        return path.toFile().length();
+        try {
+            return Files.size(path);
+        } catch (final IOException e) {
+            return 0;
+        }
     }
 
     @Override

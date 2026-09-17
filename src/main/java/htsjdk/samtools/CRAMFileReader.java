@@ -15,6 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools;
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.index.HtsQueryIndex;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
@@ -92,6 +93,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @deprecated use {@link #CRAMFileReader(Path, InputStream)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public CRAMFileReader(final File cramFile, final InputStream inputStream) {
         this(cramFile == null ? null : cramFile.toPath(), inputStream);
     }
@@ -136,6 +138,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @deprecated use {@link #CRAMFileReader(Path, InputStream, CRAMReferenceSource)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public CRAMFileReader(
             final File cramFile, final InputStream inputStream, final CRAMReferenceSource referenceSource) {
         this(cramFile == null ? null : cramFile.toPath(), inputStream, referenceSource);
@@ -173,6 +176,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @deprecated use {@link #CRAMFileReader(Path, Path, CRAMReferenceSource)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource) {
         this(
                 ValidationUtils.nonNull(cramFile, "cramFile").toPath(),
@@ -208,6 +212,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @deprecated use {@link #CRAMFileReader(Path, CRAMReferenceSource)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource) {
         this(ValidationUtils.nonNull(cramFile, "cramFile").toPath(), referenceSource);
     }
@@ -274,6 +279,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @deprecated use {@link #CRAMFileReader(InputStream, Path, CRAMReferenceSource, ValidationStringency)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public CRAMFileReader(
             final InputStream stream,
             final File indexFile,
@@ -324,6 +330,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * @deprecated use {@link #CRAMFileReader(Path, Path, CRAMReferenceSource, ValidationStringency)} instead.
      */
     @Deprecated
+    @SuppressForbidden(reason = "deprecated File overload kept to ease migration to Path")
     public CRAMFileReader(
             final File cramFile,
             final File indexFile,

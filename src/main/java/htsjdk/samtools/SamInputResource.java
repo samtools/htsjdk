@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.annotations.SuppressForbidden;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -31,7 +32,6 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -244,9 +244,6 @@ abstract class InputResource {
         return type;
     }
 
-    /** Returns null if this resource cannot be represented as a {@link File}. */
-    abstract File asFile();
-
     /** Returns null if this resource cannot be represented as a {@link Path}. */
     abstract Path asPath();
 
@@ -264,8 +261,6 @@ abstract class InputResource {
         final String childToString;
         switch (type()) {
             case FILE:
-                childToString = asFile().toString();
-                break;
             case PATH:
                 childToString = asPath().toString();
                 break;
@@ -307,19 +302,6 @@ class FileInputResource extends InputResource {
         this.pathResource = pathResource;
     }
 
-    /**
-     * @deprecated since 6.0; use {@link #FileInputResource(Path)} instead.
-     */
-    @Deprecated
-    FileInputResource(final File fileResource) {
-        this(fileResource.toPath());
-    }
-
-    @Override
-    public File asFile() {
-        return pathResource.toFile();
-    }
-
     @Override
     public Path asPath() {
         return pathResource;
@@ -346,6 +328,7 @@ class FileInputResource extends InputResource {
     }
 
     @Override
+    @SuppressForbidden(reason = "non-regular local files such as named pipes must be opened with FileInputStream")
     public InputStream asUnbufferedInputStream() {
         final SeekableStream seekableStream = asUnbufferedSeekableStream();
         if (seekableStream != null) {
@@ -388,15 +371,6 @@ class PathInputResource extends InputResource {
         super(Type.PATH);
         this.pathResource = pathResource;
         this.wrapper = wrapper;
-    }
-
-    @Override
-    public File asFile() {
-        try {
-            return asPath().toFile();
-        } catch (UnsupportedOperationException e) {
-            return null;
-        }
     }
 
     @Override
@@ -444,11 +418,6 @@ class UrlInputResource extends InputResource {
     }
 
     @Override
-    public File asFile() {
-        return null;
-    }
-
-    @Override
     public Path asPath() {
         try {
             return IOUtil.getPath(urlResource.toExternalForm());
@@ -487,11 +456,6 @@ class SeekableStreamInputResource extends InputResource {
     }
 
     @Override
-    File asFile() {
-        return null;
-    }
-
-    @Override
     Path asPath() {
         return null;
     }
@@ -519,11 +483,6 @@ class InputStreamInputResource extends InputResource {
     InputStreamInputResource(final InputStream inputStreamResource) {
         super(Type.INPUT_STREAM);
         this.inputStreamResource = inputStreamResource;
-    }
-
-    @Override
-    File asFile() {
-        return null;
     }
 
     @Override
@@ -556,11 +515,6 @@ class HtsgetInputResource extends InputResource {
     public HtsgetInputResource(final URI uri) {
         super(Type.HTSGET);
         this.uri = uri;
-    }
-
-    @Override
-    File asFile() {
-        return null;
     }
 
     @Override
