@@ -1115,7 +1115,8 @@ public final class SAMUtils {
 
         if (!rec.getReadPairedFlag() || rec.getReadUnmappedFlag() || rec.getMateUnmappedFlag()) return 0;
 
-        // Alignment coordinates are only comparable on the same reference sequence.
+        // Mates on different references cannot overlap. Compare names rather than indices: the name is always
+        // populated, whereas resolving an index requires a header.
         if (!rec.getReferenceName().equals(rec.getMateReferenceName())) return 0;
 
         // Only clip records that are left-most in genomic order and overlapping.
@@ -1133,9 +1134,7 @@ public final class SAMUtils {
             final CigarOperator operator = el.getOperator();
             final int refBasesLength = operator.consumesReferenceBases() ? el.getLength() : 0;
             if (refStartPos <= refPos + refBasesLength - 1) { // add to clipped bases
-                if (operator == CigarOperator.MATCH_OR_MISMATCH
-                        || operator == CigarOperator.EQ
-                        || operator == CigarOperator.X) { // M, =, X
+                if (operator.isAlignment()) { // M, =, X
                     if (refStartPos < refPos) numBasesToClip += refBasesLength; // use all of the bases
                     else
                         numBasesToClip += (refPos + refBasesLength)
