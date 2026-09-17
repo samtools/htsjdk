@@ -23,16 +23,21 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.index.HtsFileSpan;
+import htsjdk.index.HtsQueryIndex;
 import htsjdk.samtools.util.FileExtensions;
-import java.io.Closeable;
+import java.util.Optional;
 
 /**
  * A basic interface for querying BAM indices.
  *
+ * <p>Extends {@link HtsQueryIndex} with BAI-specific structure: linear bins and per-reference record
+ * counts.
+ *
  * @author mhanna
  * @version 0.1
  */
-public interface BAMIndex extends Closeable {
+public interface BAMIndex extends HtsQueryIndex {
 
     /**
      * @deprecated since June 2019 Use {@link FileExtensions#BAI_INDEX} instead.
@@ -60,13 +65,29 @@ public interface BAMIndex extends Closeable {
      * @param endPos Genomic end of query.
      * @return A file span listing the chunks in the BAM file.
      */
+    @Override
     BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos);
 
     /**
-     * Gets the start of the last linear bin in the index.
+     * Gets the start of the last linear bin in the index. See also {@link #getSpanOfUnplaced()}.
      * @return The chunk indicating the start of the last bin in the linear index.
      */
     long getStartOfLastLinearBin();
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Derived from the last linear bin: present from there to end of file, whether or not any
+     * record there is unplaced; empty when the file has no mapped reads, since a BAI cannot express
+     * the first record's position.
+     */
+    @Override
+    default Optional<HtsFileSpan> getSpanOfUnplaced() {
+        final long startOfLastLinearBin = getStartOfLastLinearBin();
+        return startOfLastLinearBin == -1
+                ? Optional.empty()
+                : Optional.of(new BAMFileSpan(new Chunk(startOfLastLinearBin, Long.MAX_VALUE)));
+    }
 
     /**
      * Gets meta data for the given reference including information about number of aligned, unaligned, and noCoordinate records

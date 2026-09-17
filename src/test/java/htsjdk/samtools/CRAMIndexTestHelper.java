@@ -37,10 +37,11 @@ public class CRAMIndexTestHelper {
         try (final SamReader samReader = samReadFactory.open(sourceFile);
                 final OutputStream cramFileOutputStream = Files.newOutputStream(temporaryCRAM);
                 final OutputStream cramIndexOutputStream = Files.newOutputStream(temporaryBAI);
-                final CRAMFileWriter cramWriter = new CRAMFileWriter(
+                // Request a BAI explicitly; this helper exercises the BAI path.
+                final CRAMFileWriter cramWriter = CRAMFileWriter.withIndexer(
                         cramEncodingStrategy,
                         cramFileOutputStream,
-                        cramIndexOutputStream,
+                        new CRAMBAIIndexer(cramIndexOutputStream, samReader.getFileHeader()),
                         true,
                         referenceSource,
                         samReader.getFileHeader(),
@@ -75,7 +76,7 @@ public class CRAMIndexTestHelper {
                 final CRAMFileWriter cramWriter = new CRAMFileWriter(
                         cramEncodingStrategy,
                         cramFileOutputStream,
-                        null, // suppress BAI index creation and manually create CRAI after the fact (see below)
+                        null, // suppress index creation and manually create the CRAI after the fact (see below)
                         true,
                         referenceSource,
                         samReader.getFileHeader(),
@@ -86,8 +87,7 @@ public class CRAMIndexTestHelper {
                 cramWriter.addAlignment(samIterator.next());
             }
         }
-        // since CRAMFileWriter creates a BAI by default if an index is requested, make sure some codepath
-        // didn't accidentally request one, since we want to ensure we use a .crai
+        // No index was requested.
         Assert.assertFalse(Files.exists(temporaryCRAM.resolveSibling(temporaryCRAM.getFileName() + ".bai")));
 
         // now manually create the CRAI
