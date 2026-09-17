@@ -16,7 +16,6 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.zip.GZIPInputStream;
 
 /**
  * InternalAPI
@@ -66,7 +65,7 @@ public abstract class VCFCodec implements VariantsCodec {
         final byte[] signatureBytes = new byte[getSignatureLength()];
         try {
             final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(probingInputStream)
-                    ? new GZIPInputStream(probingInputStream)
+                    ? IOUtil.openGzipOrBgzfStream(probingInputStream)
                     : probingInputStream;
             final int numRead = wrappedInputStream.read(signatureBytes);
             if (numRead < 0) {

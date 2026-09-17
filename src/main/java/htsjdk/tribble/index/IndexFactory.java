@@ -59,7 +59,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Factory class for creating indexes.  It is the responsibility of this class to determine and create the
@@ -229,7 +228,7 @@ public class IndexFactory {
             throws IOException {
         final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile, indexWrapper);
         if (indexFile.endsWith(".gz")) {
-            return new GZIPInputStream(inputStreamInitial);
+            return IOUtil.openGzipOrBgzfStream(inputStreamInitial);
         } else if (indexFile.endsWith(FileExtensions.TABIX_INDEX)) {
             return new BlockCompressedInputStream(inputStreamInitial);
         } else {

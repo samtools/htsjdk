@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.zip.GZIPInputStream;
 
 /**
  * A helper class to read BAI and CRAI indexes. Main goal is to provide BAI stream as a sort of common API for all index types.
@@ -129,8 +128,7 @@ public enum SamIndexes {
 
             if (IOUtil.isGZIPInputStream(bss)) {
                 bss.seek(0);
-                GZIPInputStream gzipStream = new GZIPInputStream(bss);
-                if (doesStreamStartWith(gzipStream, CSI.magic)) {
+                if (doesStreamStartWith(IOUtil.openGzipOrBgzfStream(bss), CSI.magic)) {
                     indexType = CSI;
                 } else {
                     // the CRAI format has no signature bytes, so optimistically call it CRAI

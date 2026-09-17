@@ -39,7 +39,6 @@ import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.function.Function;
-import java.util.zip.GZIPInputStream;
 
 /**
  * A Class building {@link htsjdk.variant.vcf.VCFIterator}
@@ -79,9 +78,10 @@ public class VCFIteratorBuilder {
                 new BufferedInputStream(in, Math.max(BCF2Codec.SIZEOF_BCF_HEADER, IOUtil.GZIP_HEADER_READ_LENGTH));
         // test for gzipped inputstream
         if (IOUtil.isGZIPInputStream(bufferedinput)) {
-            // this is a gzipped input stream, wrap it into GZIPInputStream
+            // this is a gzipped or bgzipped input stream, wrap it in a decompressing stream
             // and re-wrap it into BufferedInputStream so we can test for the BCF header
-            bufferedinput = new BufferedInputStream(new GZIPInputStream(bufferedinput), BCF2Codec.SIZEOF_BCF_HEADER);
+            bufferedinput =
+                    new BufferedInputStream(IOUtil.openGzipOrBgzfStream(bufferedinput), BCF2Codec.SIZEOF_BCF_HEADER);
         }
 
         // try to read a BCF header

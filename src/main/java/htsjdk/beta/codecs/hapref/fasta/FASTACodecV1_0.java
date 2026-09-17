@@ -18,7 +18,6 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.zip.GZIPInputStream;
 
 /**
  * The v1.0 FASTA codec.
@@ -47,8 +46,9 @@ public class FASTACodecV1_0 implements HaploidReferenceCodec {
         ValidationUtils.nonNull(sourceName, "sourceName");
 
         try {
-            final InputStream wrappedInputStream =
-                    IOUtil.isGZIPInputStream(signatureStream) ? new GZIPInputStream(signatureStream) : signatureStream;
+            final InputStream wrappedInputStream = IOUtil.isGZIPInputStream(signatureStream)
+                    ? IOUtil.openGzipOrBgzfStream(signatureStream)
+                    : signatureStream;
             int ch = wrappedInputStream.read();
             if (ch == -1) {
                 throw new HtsjdkIOException(String.format(

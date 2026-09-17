@@ -1,10 +1,14 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.GzipTestStreams;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
@@ -50,6 +54,22 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     @Test(dataProvider = "thingsToTryToDecode")
     public void testCanDecodeFile(String potentialInput, boolean canDecode) {
         Assert.assertEquals(AbstractVCFCodec.canDecodeFile(potentialInput, VCFCodec.VCF4_MAGIC_HEADER), canDecode);
+    }
+
+    @Test
+    public void canDecodeFileAcceptsPlainGzippedVcf() throws IOException {
+        final Path vcf = Files.createTempFile("AbstractVCFCodecTest.", ".vcf.gz");
+        IOUtil.deleteOnExit(vcf);
+        Files.write(vcf, GzipTestStreams.multiMemberGzip("##fileformat=VCFv4.2\n"));
+        Assert.assertTrue(AbstractVCFCodec.canDecodeFile(vcf.toString(), VCFCodec.VCF4_MAGIC_HEADER));
+    }
+
+    @Test
+    public void canDecodeFileRejectsGzippedNonVcf() throws IOException {
+        final Path notVcf = Files.createTempFile("AbstractVCFCodecTest.", ".txt.gz");
+        IOUtil.deleteOnExit(notVcf);
+        Files.write(notVcf, GzipTestStreams.multiMemberGzip("this is not a VCF\n"));
+        Assert.assertFalse(AbstractVCFCodec.canDecodeFile(notVcf.toString(), VCFCodec.VCF4_MAGIC_HEADER));
     }
 
     @Test

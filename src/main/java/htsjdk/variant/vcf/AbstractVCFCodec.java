@@ -25,7 +25,6 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
@@ -36,13 +35,13 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.*;
+import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
     public static final int MAX_ALLELE_SIZE_BEFORE_WARNING = (int) Math.pow(2, 20);
@@ -727,10 +726,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
         try {
             Path path = IOUtil.getPath(potentialInput);
-            // isVCFStream closes the stream that's passed in
-            return isVCFStream(Files.newInputStream(path), MAGIC_HEADER_LINE)
-                    || isVCFStream(new GZIPInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE)
-                    || isVCFStream(new BlockCompressedInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE);
+            try (InputStream in = new BufferedInputStream(Files.newInputStream(path))) {
+                return isVCFStream(
+                        IOUtil.isGZIPInputStream(in) ? IOUtil.openGzipOrBgzfStream(in) : in, MAGIC_HEADER_LINE);
+            }
         } catch (FileNotFoundException e) {
             return false;
         } catch (IOException e) {

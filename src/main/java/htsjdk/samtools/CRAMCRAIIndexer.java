@@ -6,6 +6,7 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -13,7 +14,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Scanner;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -129,7 +129,7 @@ public class CRAMCRAIIndexer implements CRAMIndexer {
         Scanner scanner = null;
 
         try {
-            scanner = new Scanner(new GZIPInputStream(is));
+            scanner = new Scanner(IOUtil.openGzipOrBgzfStream(is));
             while (scanner.hasNextLine()) {
                 final String line = scanner.nextLine();
                 craiIndex.addEntry(new CRAIEntry(line));

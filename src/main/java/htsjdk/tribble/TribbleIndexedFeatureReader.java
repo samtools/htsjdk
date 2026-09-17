@@ -42,13 +42,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.zip.GZIPInputStream;
 
 /**
  * A reader for text feature files  (i.e. not tabix files).   This includes tribble-indexed and non-indexed files.  If
  * index both iterate() and query() methods are supported.
  * <p/>
- * Note: Non-indexed files can be gzipped, but not bgzipped.
+ * Note: Non-indexed files can be gzipped or bgzipped.
  *
  * @author Jim Robinson
  * @since 2/11/12
@@ -271,7 +270,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (IOUtil.hasBlockCompressedExtension(new HtsPath(path).getURI())) {
                 // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
-                is = new GZIPInputStream(new BufferedInputStream(is));
+                is = IOUtil.openGzipOrBgzfStream(new BufferedInputStream(is));
             }
             pbs = new PositionalBufferedStream(is);
             final SOURCE source = codec.makeSourceFromStream(pbs);
@@ -344,9 +343,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
             final PositionalBufferedStream pbs;
             if (IOUtil.hasBlockCompressedExtension(path)) {
-                // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
+                // Gzipped -- we need to buffer the underlying stream as the decompressor makes read() calls,
                 // and seekableStream does not support single byte reads
-                final InputStream is = new GZIPInputStream(new BufferedInputStream(inputStream, 512000));
+                final InputStream is = IOUtil.openGzipOrBgzfStream(new BufferedInputStream(inputStream, 512000));
                 pbs = new PositionalBufferedStream(is, 1000); // Small buffer as this is buffered already.
             } else {
                 pbs = new PositionalBufferedStream(inputStream, 512000);

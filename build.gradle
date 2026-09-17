@@ -14,6 +14,7 @@ plugins {
     id 'com.github.spotbugs' version "6.5.9"
     id 'com.gradleup.nmcp' version '1.6.1'
     id 'com.diffplug.spotless' version '8.8.0'
+    id 'de.thetaphi.forbiddenapis' version '3.10'
 }
 
 spotless {
@@ -301,6 +302,15 @@ spotbugsTest {
         html.required = true
     }
 }
+
+// Bytecode-level ban on specific JDK APIs in main sources; the banned signatures and the reason for
+// each live in gradle/forbidden-apis.txt. Tests are exempt because they legitimately use the banned
+// classes to build and verify fixtures.
+forbiddenApis {
+    bundledSignatures = []
+    signaturesFiles = files('gradle/forbidden-apis.txt')
+}
+tasks.named('forbiddenApisTest') { enabled = false }
 
 // --- File->Path migration guard ---------------------------------------------------------------
 // htsjdk's public API migrated from java.io.File to java.nio.file.Path in 6.0.0. This guard fails

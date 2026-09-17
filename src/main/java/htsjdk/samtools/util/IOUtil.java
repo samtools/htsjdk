@@ -71,7 +71,7 @@ import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.Deflater;
-import java.util.zip.GZIPInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 /**
  * Miscellaneous stateless static IO-oriented methods.
@@ -152,8 +152,11 @@ public class IOUtil {
     @Deprecated
     public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = FileExtensions.BLOCK_COMPRESSED;
 
-    /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
+    /** The read-ahead limit {@link #isGZIPInputStream(InputStream)} sets when it marks the stream. */
     public static final int GZIP_HEADER_READ_LENGTH = 8000;
+
+    /** The first three bytes of every gzip member (RFC 1952): ID1, ID2, and CM=8 for deflate. */
+    private static final byte[] GZIP_MAGIC_AND_METHOD = {0x1f, (byte) 0x8b, 8};
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
     /**
@@ -540,7 +543,8 @@ public class IOUtil {
     }
 
     /**
-     * Opens a GZIP-encoded file for reading, decompressing it if necessary
+     * Opens a GZIP-encoded file for reading, decompressing it if necessary. Both BGZF and plain gzip
+     * are supported; see {@link #openGzipOrBgzfStream(InputStream)}.
      *
      * @param path  The file to open
      * @return the input stream to read from
@@ -548,10 +552,35 @@ public class IOUtil {
     public static InputStream openGzipFileForReading(final Path path) {
 
         try {
-            return new GZIPInputStream(Files.newInputStream(path));
+            return openGzipOrBgzfStream(Files.newInputStream(path));
         } catch (IOException ioe) {
             throw new SAMException("Error opening file: " + path, ioe);
         }
+    }
+
+    /**
+     * Wraps a gzip-compressed stream in a stream that decompresses every member of it. BGZF input is
+     * read with {@link BlockCompressedInputStream}; any other gzip input is read with a decoder that
+     * handles concatenated members.
+     *
+     * <p>Use this rather than {@link java.util.zip.GZIPInputStream}, which decides whether another
+     * member follows by calling {@link InputStream#available()}. On pipes, sockets and other streams
+     * where that legitimately returns 0 it stops at a member boundary and reports a clean end of
+     * stream, silently truncating the data (JDK-7036144).
+     *
+     * @param stream a stream positioned at the start of gzip data
+     * @return a stream of the decompressed bytes of all members
+     * @throws IOException if the stream cannot be read or does not start with a gzip header
+     */
+    public static InputStream openGzipOrBgzfStream(final InputStream stream) throws IOException {
+        final InputStream markable = stream.markSupported() ? stream : toBufferedStream(stream);
+        if (BlockCompressedInputStream.isValidFile(markable)) {
+            return new BlockCompressedInputStream(markable);
+        }
+        return GzipCompressorInputStream.builder()
+                .setInputStream(markable)
+                .setDecompressConcatenated(true)
+                .get();
     }
 
     /**
@@ -883,9 +912,10 @@ public class IOUtil {
         stream.mark(GZIP_HEADER_READ_LENGTH);
 
         try {
-            final GZIPInputStream gunzip = new GZIPInputStream(stream);
-            final int ch = gunzip.read();
-            return true;
+            // Only the header is inspected: a decompressor would read ahead by its own buffer size,
+            // which can exceed the mark limit and make the reset below fail.
+            final byte[] header = stream.readNBytes(GZIP_MAGIC_AND_METHOD.length);
+            return Arrays.equals(header, GZIP_MAGIC_AND_METHOD);
         } catch (final IOException ioe) {
             return false;
         } finally {
