@@ -88,6 +88,11 @@ A small, deliberate set of `java.io.File` APIs remains because they are inherent
 - `IOUtil.newTempFile`, `IOUtil.getDefaultTmpDir`, `IOUtil.createTempDir` — temporary files/directories are always local.
 - `IOUtil.toPath(File)` and `IOUtil.filesToPaths(Collection<File>)` — `File`→`Path` bridge helpers.
 
+### Bug fixes
+
+- **Gzipped and bgzipped input read from pipes, sockets and URLs is no longer silently truncated** (issue #1691).  htsjdk read such input with `java.util.zip.GZIPInputStream`, which on JDKs affected by [JDK-7036144](https://bugs.openjdk.org/browse/JDK-7036144) stops at a gzip member boundary and reports a clean end of stream whenever `InputStream.available()` returns 0.  Every BGZF file is multi-member, so a bgzipped VCF streamed over HTTP could yield a fraction of its records with no error.  All such reads now go through the new `IOUtil.openGzipOrBgzfStream`, which reads BGZF with `BlockCompressedInputStream` and any other gzip with a decoder that handles concatenated members.  This covers `VCFIteratorBuilder`, `VCFHeaderReader`, plain-gzipped SAM, unindexed `.vcf.gz`/`.bed.gz` via `TribbleIndexedFeatureReader`, gzipped Tribble indexes, CRAI, and everything opened with `IOUtil.openFileForReading` (FASTQ, interval lists, metrics, chain files, FASTA).
+- `IOUtil.isGZIPInputStream` now inspects only the gzip header rather than inflating the first byte.  A stream with a valid gzip header but corrupt compressed data is therefore reported as gzip and fails when read, instead of being treated as uncompressed.
+
 ### Testing
 
 - The test suite was migrated to `Path`, and a focused `NioSpiCompatibilityTest` exercises the major read/write/index APIs (BAM/CRAM/VCF/FASTQ, reference access and index discovery/creation) against an in-memory jimfs filesystem to validate NIO-SPI compatibility end to end.

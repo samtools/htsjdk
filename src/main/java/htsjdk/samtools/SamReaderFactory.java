@@ -39,7 +39,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.function.Function;
-import java.util.zip.GZIPInputStream;
 
 /**
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
@@ -142,8 +141,8 @@ public abstract class SamReaderFactory {
      * Set this factory's {@link htsjdk.samtools.util.zip.InflaterFactory} to the provided one, then returns itself.
      * Note: The inflaterFactory provided here is used for BAM decompression by {@link BAMFileReader} and for
      * BGZF-compressed SAM decompression by {@link BlockCompressedInputStream}; it is not used for CRAM or for
-     * plain (non-BGZF) gzipped SAM files (those go through {@link java.util.zip.GZIPInputStream}, which is
-     * not parameterized by {@link InflaterFactory}).
+     * plain (non-BGZF) gzipped SAM files (those go through {@link IOUtil#openGzipOrBgzfStream}, whose
+     * streaming gzip decoder is not parameterized by {@link InflaterFactory}).
      */
     public abstract SamReaderFactory inflaterFactory(final InflaterFactory inflaterFactory);
 
@@ -468,7 +467,9 @@ public abstract class SamReaderFactory {
                                 this.samRecordFactory);
                     } else if (IOUtil.isGZIPInputStream(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(
-                                new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                                IOUtil.openGzipOrBgzfStream(bufferedStream),
+                                validationStringency,
+                                this.samRecordFactory);
                     } else if (SamStreams.isCRAMFile(bufferedStream)) {
                         if (referenceSource == null) {
                             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();

@@ -1,0 +1,5 @@
+# APIs that must not be used in htsjdk main sources. Checked by the forbiddenApisMain task.
+# Format: https://jenkins.thetaphi.de/job/Forbidden-APIs/javadoc/signatures-syntax.html
+
+@defaultMessage GZIPInputStream silently truncates multi-member gzip (including BGZF) on JDKs affected by JDK-7036144; use IOUtil.openGzipOrBgzfStream
+java.util.zip.GZIPInputStream#<init>(**)
