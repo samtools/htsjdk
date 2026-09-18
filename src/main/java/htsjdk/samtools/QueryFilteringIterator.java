@@ -18,7 +18,14 @@ final class QueryFilteringIterator implements CloseableIterator<SAMRecord> {
     QueryFilteringIterator(final CloseableIterator<SAMRecord> records, final BAMIteratorFilter filter) {
         this.records = records;
         this.filter = filter;
-        next = advance();
+        try {
+            next = advance();
+        } catch (final RuntimeException e) {
+            // The caller gets no iterator to close, and the records beneath may be all that stands between their
+            // reader and its next query
+            records.close();
+            throw e;
+        }
     }
 
     @Override

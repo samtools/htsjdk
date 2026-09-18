@@ -30,13 +30,16 @@ import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexType;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.utils.SamtoolsTestUtils;
 import htsjdk.utils.TabixTestUtils;
 import java.io.ByteArrayInputStream;
@@ -1150,6 +1153,69 @@ public class SAMTextReaderTest extends HtsjdkTest {
         indexAsTabixWould(samGz, TabixIndexType.CSI, TabixFormat.SAM, name -> "chr2", false);
         try (SamReader sam = SamReaderFactory.makeDefault().open(samGz)) {
             sam.queryOverlapping("chr2", 1, 1_000);
+        }
+    }
+
+    @Test(expectedExceptions = SAMFormatException.class)
+    public void testCsiWhoseTabixHeaderNamesFewerSequencesThanItIndexesIsRefused() throws IOException {
+        final ByteArrayOutputStream csiOfOneSequence = new ByteArrayOutputStream();
+        new TabixIndex(
+                        TabixFormat.SAM,
+                        List.of("chr2"),
+                        new BinningIndex.Builder(14, 5, true).build(1),
+                        TabixIndexType.CSI)
+                .write(new LittleEndianOutputStream(csiOfOneSequence));
+        final byte[] auxNamingOneSequence = BinningIndex.readCsi(
+                        new BinaryCodec(new ByteArrayInputStream(csiOfOneSequence.toByteArray())))
+                .aux();
+
+        final Path samGz = writeSparseSamGz();
+        indexWithCsiCarrying(samGz, auxNamingOneSequence);
+        try (SamReader sam = SamReaderFactory.makeDefault().open(samGz)) {
+            sam.queryOverlapping("chr2", 1, 1_000);
+        }
+    }
+
+    @Test
+    public void testIndexIsClosedEvenIfClosingTheFileFails() throws IOException {
+        final BlockCompressedInputStream failsToClose = new BlockCompressedInputStream(samGzWithoutIndex) {
+            @Override
+            public void close() throws IOException {
+                super.close();
+                throw new IOException("injected failure");
+            }
+        };
+        final int[] closes = {0};
+        final SeekablePathStream index = new SeekablePathStream(samGzWithBai.resolveSibling("bai.sam.gz.bai")) {
+            @Override
+            public void close() throws IOException {
+                closes[0]++;
+                super.close();
+            }
+        };
+        final SAMTextReader reader = new SAMTextReader(
+                failsToClose,
+                true,
+                samGzWithoutIndex,
+                null,
+                index,
+                ValidationStringency.DEFAULT_STRINGENCY,
+                new DefaultSAMRecordFactory());
+
+        Assert.assertThrows(RuntimeIOException.class, reader::close);
+        Assert.assertEquals(closes[0], 1);
+    }
+
+    @Test
+    public void testIteratorClosedASecondTimeDoesNotFreeTheReaderForAnother() throws IOException {
+        try (SamReader sam = SamReaderFactory.makeDefault().open(samGzWithBai)) {
+            final SAMRecordIterator first = sam.iterator();
+            first.close();
+            try (SAMRecordIterator second = sam.iterator()) {
+                first.close();
+                Assert.assertThrows(IllegalStateException.class, sam::iterator);
+                Assert.assertTrue(second.hasNext());
+            }
         }
     }
 }

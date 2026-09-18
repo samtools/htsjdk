@@ -270,6 +270,13 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      */
     private ReferenceBinsSource numberedAsTheHeaderDoes(
             final ReferenceBinsSource source, final TabixIndex.Header header) {
+        if (header.sequenceNames().size() != source.getReferenceCount()) {
+            throw new SAMFormatException(String.format(
+                    "The index %s covers %d references but names %d sequences",
+                    describeIndex(),
+                    source.getReferenceCount(),
+                    header.sequenceNames().size()));
+        }
         if (!TabixFormat.SAM.equals(header.format())) {
             throw new SAMFormatException(
                     "The index " + describeIndex() + " was made by tabix for a format other than SAM");
@@ -307,24 +314,33 @@ class SAMTextReader extends SamReader.ReaderImplementation {
 
     @Override
     public void close() {
-        if (mReader != null) {
-            try {
-                mReader.close();
-            } finally {
-                mReader = null;
+        try {
+            if (mReader != null) {
+                try {
+                    mReader.close();
+                } finally {
+                    mReader = null;
+                }
             }
+        } finally {
+            closeIndex();
         }
-        if (mIndex != null) {
-            mIndex.close();
-            mIndex = null;
-        } else if (mIndexStream != null && !mIndexStreamHandedOver) {
-            try {
+    }
+
+    /** Closes the index, or the stream it was to be read from if it never was. */
+    private void closeIndex() {
+        try {
+            if (mIndex != null) {
+                mIndex.close();
+            } else if (mIndexStream != null && !mIndexStreamHandedOver) {
                 mIndexStream.close();
-            } catch (final IOException e) {
-                throw new RuntimeIOException(e);
             }
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        } finally {
+            mIndex = null;
+            mIndexStream = null;
         }
-        mIndexStream = null;
     }
 
     @Override
@@ -501,10 +517,12 @@ class SAMTextReader extends SamReader.ReaderImplementation {
 
         @Override
         public void close() {
-            if (mIsSeekable) {
-                mIterator = null;
-            } else {
+            if (!mIsSeekable) {
                 SAMTextReader.this.close();
+            } else if (mIterator == this) {
+                // Only the iterator in progress makes way for another: one closed a second time, after another has
+                // been started, must not free the reader for a third to read alongside that one.
+                mIterator = null;
             }
         }
 

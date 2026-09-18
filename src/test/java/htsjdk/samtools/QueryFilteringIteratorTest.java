@@ -89,4 +89,15 @@ public class QueryFilteringIteratorTest extends HtsjdkTest {
                 new ListIterator(records()), record -> FilteringIteratorState.STOP_ITERATION);
         none.next();
     }
+
+    @Test
+    public void testRecordsBeneathAreClosedWhenTheFirstMatchCannotBeFound() {
+        final ListIterator all = new ListIterator(records());
+        Assert.assertThrows(
+                SAMFormatException.class,
+                () -> new QueryFilteringIterator(all, record -> {
+                    throw new SAMFormatException("cannot make sense of " + record.getReadName());
+                }));
+        Assert.assertTrue(all.closed);
+    }
 }
