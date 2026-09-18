@@ -53,20 +53,20 @@ public final class BinningIndex implements HtsQueryIndex {
     // Slack htslib adds to the longest sequence before choosing a scheme for it.
     private static final int SEQUENCE_LENGTH_SLACK = 256;
 
-    private static final long NO_COORDINATE_COUNT_ABSENT = -1;
-
+    // Virtual offsets are unsigned 64-bit values, so chunks are ordered by an unsigned comparison of their starts.
     private static final Comparator<long[]> BY_UNSIGNED_START = (a, b) -> Long.compareUnsigned(a[0], b[0]);
 
     private final int minShift;
     private final int depth;
     private final ReferenceBins[] references;
+    // The trailing count every format allows a file to leave out; negative when it did.
     private final long noCoordinateCount;
 
     /**
      * @param minShift log2 of the span of the smallest bins
      * @param depth number of bin levels above the smallest bins
      * @param references one entry per reference, in reference order
-     * @param noCoordinateCount number of records with no position, or {@link #NO_COORDINATE_COUNT_ABSENT}
+     * @param noCoordinateCount number of records with no position, or negative if the index does not record it
      */
     BinningIndex(
             final int minShift, final int depth, final List<ReferenceBins> references, final long noCoordinateCount) {
@@ -138,9 +138,7 @@ public final class BinningIndex implements HtsQueryIndex {
      * @return the number of records that have no position, if the index records it
      */
     public OptionalLong getNoCoordinateCount() {
-        return noCoordinateCount == NO_COORDINATE_COUNT_ABSENT
-                ? OptionalLong.empty()
-                : OptionalLong.of(noCoordinateCount);
+        return noCoordinateCount < 0 ? OptionalLong.empty() : OptionalLong.of(noCoordinateCount);
     }
 
     /**
@@ -332,15 +330,6 @@ public final class BinningIndex implements HtsQueryIndex {
         if (!Arrays.equals(magic, CSI_MAGIC)) {
             throw new IllegalArgumentException("Not a CSI index: magic number is " + Arrays.toString(magic));
         }
-        return readCsiAfterMagic(codec);
-    }
-
-    /**
-     * Reads a CSI file whose magic number the caller has already consumed, typically to tell formats apart.
-     *
-     * @param codec positioned just after the magic number
-     */
-    public static CsiContents readCsiAfterMagic(final BinaryCodec codec) {
         final int minShift = codec.readInt();
         final int depth = codec.readInt();
         validateGeometry(minShift, depth);
@@ -408,13 +397,17 @@ public final class BinningIndex implements HtsQueryIndex {
         return new BinningIndex(minShift, depth, references, readNoCoordinateCount(codec));
     }
 
-    /** The trailing count of records without a position, which every format allows a file to leave out. */
+    /**
+     * The trailing count of records without a position, which every format allows a file to leave out: negative
+     * if it is not there. A read may return fewer bytes than asked for short of end-of-stream (a BGZF stream
+     * stops at block boundaries), hence the loop. A trailer cut short is taken as absent, as htslib takes it.
+     */
     private static long readNoCoordinateCount(final BinaryCodec codec) {
         final byte[] trailer = new byte[8];
         int read = 0;
         while (read < trailer.length) {
             final int n = codec.readBytesOrFewer(trailer, read, trailer.length - read);
-            if (n <= 0) return NO_COORDINATE_COUNT_ABSENT;
+            if (n <= 0) return -1;
             read += n;
         }
         return ByteBuffer.wrap(trailer).order(ByteOrder.LITTLE_ENDIAN).getLong();
@@ -460,7 +453,7 @@ public final class BinningIndex implements HtsQueryIndex {
      */
     public void writeBaiLayout(final BinaryCodec codec) {
         writeReferences(codec, false);
-        if (noCoordinateCount != NO_COORDINATE_COUNT_ABSENT) {
+        if (noCoordinateCount >= 0) {
             codec.writeLong(noCoordinateCount);
         }
     }
@@ -478,7 +471,7 @@ public final class BinningIndex implements HtsQueryIndex {
         codec.writeBytes(aux);
         codec.writeInt(references.length);
         writeReferences(codec, true);
-        codec.writeLong(noCoordinateCount == NO_COORDINATE_COUNT_ABSENT ? 0 : noCoordinateCount);
+        codec.writeLong(Math.max(noCoordinateCount, 0));
     }
 
     /** The counterpart of {@link #readReferences}, without the trailer. */
@@ -535,7 +528,7 @@ public final class BinningIndex implements HtsQueryIndex {
                         "Cannot merge indexes with different binning schemes or reference counts");
             }
         }
-        long noCoordinateCount = NO_COORDINATE_COUNT_ABSENT;
+        long noCoordinateCount = -1;
         final List<ReferenceBins> merged = new ArrayList<>(first.references.length);
         for (int referenceIndex = 0; referenceIndex < first.references.length; referenceIndex++) {
             final Builder.ReferenceAccumulator accumulator = new Builder.ReferenceAccumulator();
@@ -579,9 +572,8 @@ public final class BinningIndex implements HtsQueryIndex {
         }
         // Absent unless some part has it; then the sum over the parts that do.
         for (final BinningIndex part : parts) {
-            if (part.noCoordinateCount != NO_COORDINATE_COUNT_ABSENT) {
-                noCoordinateCount = (noCoordinateCount == NO_COORDINATE_COUNT_ABSENT ? 0 : noCoordinateCount)
-                        + part.noCoordinateCount;
+            if (part.noCoordinateCount >= 0) {
+                noCoordinateCount = Math.max(noCoordinateCount, 0) + part.noCoordinateCount;
             }
         }
         return new BinningIndex(first.minShift, first.depth, merged, noCoordinateCount);
@@ -713,8 +705,7 @@ public final class BinningIndex implements HtsQueryIndex {
             if (forCsi) recordCount++;
         }
 
-        // Kept out of add() so that it stays under the JIT's size limit for inlining hot methods; over it, every
-        // record pays for a call.
+        // Kept out of add() so that it stays under the JIT's size limit for inlining hot methods.
         private IllegalArgumentException beyondReach(final int referenceIndex, final int start, final int end) {
             final boolean baiScheme = minShift == BAI_MIN_SHIFT && depth == BAI_DEPTH;
             return new IllegalArgumentException(String.format(
@@ -792,7 +783,7 @@ public final class BinningIndex implements HtsQueryIndex {
             while (finished.size() < referenceCount) {
                 finished.add(ReferenceBins.EMPTY);
             }
-            return new BinningIndex(minShift, depth, finished, NO_COORDINATE_COUNT_ABSENT);
+            return new BinningIndex(minShift, depth, finished, -1);
         }
 
         /** Collects the chunks of one reference's bins. Within a bin, chunks must be added in file order. */

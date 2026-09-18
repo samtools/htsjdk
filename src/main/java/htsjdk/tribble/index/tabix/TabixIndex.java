@@ -40,6 +40,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
@@ -145,13 +146,20 @@ public class TabixIndex implements Index {
      * @param closeInputStream whether to close the stream once the index is read, even on failure
      */
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {
-        final BinaryCodec codec = new BinaryCodec(inputStream);
+        // The magic number decides the format, and each format's reader wants to see it, so peek and put it back.
+        final PushbackInputStream stream = new PushbackInputStream(inputStream, 4);
+        final BinaryCodec codec = new BinaryCodec(stream);
         try {
-            final int magic = codec.readInt();
+            final byte[] magic = new byte[4];
+            codec.readBytes(magic);
+            stream.unread(magic);
+            final int magicNumber =
+                    ByteBuffer.wrap(magic).order(ByteOrder.LITTLE_ENDIAN).getInt();
             final TabixFormat formatSpec = new TabixFormat();
             final List<String> sequenceNames;
-            if (magic == MAGIC_NUMBER) {
+            if (magicNumber == MAGIC_NUMBER) {
                 indexType = TabixIndexType.TBI;
+                codec.readInt(); // the magic number, again
                 final int numSequences = codec.readInt();
                 readFormat(codec, formatSpec);
                 final byte[] nameBlock = new byte[codec.readInt()];
@@ -163,9 +171,9 @@ public class TabixIndex implements Index {
                 }
                 binningIndex = BinningIndex.readBaiLayout(
                         codec, numSequences, BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
-            } else if (magic == CSI_MAGIC_NUMBER) {
+            } else if (magicNumber == CSI_MAGIC_NUMBER) {
                 indexType = TabixIndexType.CSI;
-                final BinningIndex.CsiContents contents = BinningIndex.readCsiAfterMagic(codec);
+                final BinningIndex.CsiContents contents = BinningIndex.readCsi(codec);
                 binningIndex = contents.index();
                 sequenceNames = parseAux(contents.aux(), formatSpec);
                 if (sequenceNames.size() != binningIndex.getReferenceCount()) {
@@ -175,7 +183,7 @@ public class TabixIndex implements Index {
                 }
             } else {
                 throw new TribbleException(
-                        String.format("Unexpected magic number 0x%x; not a TBI or CSI index", magic));
+                        String.format("Unexpected magic number 0x%x; not a TBI or CSI index", magicNumber));
             }
             this.formatSpec = formatSpec;
             this.sequenceNames = Collections.unmodifiableList(sequenceNames);
