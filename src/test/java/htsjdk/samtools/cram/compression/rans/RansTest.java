@@ -5,6 +5,7 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
+import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +21,7 @@ import org.testng.annotations.Test;
  * Tests for rANS 4x8 and Nx16 codecs.
  *
  * Encoder and decoder instances are shared across all test cases to avoid excessive memory allocation.
- * Each encoder/decoder eagerly allocates large internal symbol tables, and creating hundreds of instances
+ * Each encoder/decoder that has coded order-1 data holds large internal symbol tables, and creating hundreds of instances
  * (one per DataProvider row) causes heap exhaustion when tests run in parallel.
  *
  * !!!This precludes running these tests in PARALLEL!!!
@@ -234,6 +235,72 @@ public class RansTest extends HtsjdkTest {
         final byte[] compressedData = new byte[] {(byte) RANSNx16Params.PACK_FLAG_MASK, (byte) 0x00, (byte) 0x00};
         final RANSNx16Decode ransDecode = new RANSNx16Decode();
         ransDecode.uncompress(compressedData);
+    }
+
+    // An order-1 codec holds a row of symbols for each of 256 contexts, which is megabytes; row 0 alone is kilobytes.
+    private static final long FAR_LESS_THAN_THE_ORDER_1_ROWS = 512 * 1024;
+
+    private static final byte[] A_LITTLE_DATA =
+            "ACGTTTGACCAGTNACGGTACCAGGTTACGATTACA".repeat(20).getBytes();
+
+    /** Bytes allocated so far by the calling thread alone, so that tests running in parallel do not disturb it. */
+    private static long bytesAllocatedByThisThread() {
+        return ((com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean()).getCurrentThreadAllocatedBytes();
+    }
+
+    @Test
+    public void ransNx16EncoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
+        final long before = bytesAllocatedByThisThread();
+        new RANSNx16Encode().compress(A_LITTLE_DATA, new RANSNx16Params(0));
+        final long allocated = bytesAllocatedByThisThread() - before;
+        Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
+    }
+
+    @Test
+    public void rans4x8EncoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
+        final long before = bytesAllocatedByThisThread();
+        new RANS4x8Encode().compress(A_LITTLE_DATA, new RANS4x8Params(RANSParams.ORDER.ZERO));
+        final long allocated = bytesAllocatedByThisThread() - before;
+        Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
+    }
+
+    @Test
+    public void ransNx16DecoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
+        final byte[] compressed = ransNx16Encoder.compress(A_LITTLE_DATA, new RANSNx16Params(0));
+        final long before = bytesAllocatedByThisThread();
+        final byte[] uncompressed = new RANSNx16Decode().uncompress(compressed);
+        final long allocated = bytesAllocatedByThisThread() - before;
+        Assert.assertEquals(uncompressed, A_LITTLE_DATA);
+        Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
+    }
+
+    @Test
+    public void rans4x8DecoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
+        final byte[] compressed = rans4x8Encoder.compress(A_LITTLE_DATA, new RANS4x8Params(RANSParams.ORDER.ZERO));
+        final long before = bytesAllocatedByThisThread();
+        final byte[] uncompressed = new RANS4x8Decode().uncompress(compressed);
+        final long allocated = bytesAllocatedByThisThread() - before;
+        Assert.assertEquals(uncompressed, A_LITTLE_DATA);
+        Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
+    }
+
+    @Test
+    public void ransNx16CodecsThatHaveOnlyCodedOrder0GoOnToCodeOrder1() {
+        final RANSNx16Encode encoder = new RANSNx16Encode();
+        final RANSNx16Decode decoder = new RANSNx16Decode();
+        ransRoundTrip(encoder, decoder, new RANSNx16Params(0), ByteBuffer.wrap(A_LITTLE_DATA));
+        ransRoundTrip(
+                encoder, decoder, new RANSNx16Params(RANSNx16Params.ORDER_FLAG_MASK), ByteBuffer.wrap(A_LITTLE_DATA));
+        ransRoundTrip(encoder, decoder, new RANSNx16Params(0), ByteBuffer.wrap(A_LITTLE_DATA));
+    }
+
+    @Test
+    public void rans4x8CodecsThatHaveOnlyCodedOrder0GoOnToCodeOrder1() {
+        final RANS4x8Encode encoder = new RANS4x8Encode();
+        final RANS4x8Decode decoder = new RANS4x8Decode();
+        ransRoundTrip(encoder, decoder, new RANS4x8Params(RANSParams.ORDER.ZERO), ByteBuffer.wrap(A_LITTLE_DATA));
+        ransRoundTrip(encoder, decoder, new RANS4x8Params(RANSParams.ORDER.ONE), ByteBuffer.wrap(A_LITTLE_DATA));
+        ransRoundTrip(encoder, decoder, new RANS4x8Params(RANSParams.ORDER.ZERO), ByteBuffer.wrap(A_LITTLE_DATA));
     }
 
     private static void ransRoundTrip(

@@ -4,21 +4,30 @@ package htsjdk.samtools.cram.compression.rans;
  * Abstract base class for rANS encoders (both 4x8 and Nx16). Holds the shared encoding
  * symbol matrix and provides helper methods for frequency-to-symbol setup.
  *
- * <p>The encoding symbol matrix is allocated once at construction and reused across
- * compress calls. Between calls, only the symbols that were actually used are reset.
+ * <p>The matrix has a row of symbols per order-1 context. Row 0, which is all that order-0 coding
+ * uses, is allocated at construction; the other rows are allocated together the first time an
+ * order-1 stream is encoded, since they are most of an encoder's memory and many encoders never
+ * encode one. Rows are reused across compress calls without being reset.
  */
 public abstract class RANSEncode<T extends RANSParams> {
-    private final RANSEncodingSymbol[][] encodingSymbols;
+    private final RANSEncodingSymbol[][] encodingSymbols = new RANSEncodingSymbol[Constants.NUMBER_OF_SYMBOLS][];
 
     protected RANSEncode() {
-        encodingSymbols = new RANSEncodingSymbol[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-        for (int i = 0; i < encodingSymbols.length; i++) {
-            for (int j = 0; j < encodingSymbols[i].length; j++) {
-                encodingSymbols[i][j] = new RANSEncodingSymbol();
-            }
-        }
+        encodingSymbols[0] = newSymbolRow();
     }
 
+    private static RANSEncodingSymbol[] newSymbolRow() {
+        final RANSEncodingSymbol[] row = new RANSEncodingSymbol[Constants.NUMBER_OF_SYMBOLS];
+        for (int j = 0; j < row.length; j++) {
+            row[j] = new RANSEncodingSymbol();
+        }
+        return row;
+    }
+
+    /**
+     * @return the symbol matrix, indexed by context and then by symbol. Only row 0 is sure to be there
+     *     until {@link #buildSymsOrder1} has been called.
+     */
     protected final RANSEncodingSymbol[][] getEncodingSymbols() {
         return encodingSymbols;
     }
@@ -45,6 +54,11 @@ public abstract class RANSEncode<T extends RANSParams> {
      * Each row corresponds to one context symbol.
      */
     protected final void buildSymsOrder1(final int[][] frequencies) {
+        if (encodingSymbols[1] == null) {
+            for (int i = 1; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+                encodingSymbols[i] = newSymbolRow();
+            }
+        }
         for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
             resetAndUpdateEncodingSymbols(frequencies[i], encodingSymbols[i]);
         }

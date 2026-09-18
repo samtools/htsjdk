@@ -4,27 +4,43 @@ package htsjdk.samtools.cram.compression.rans;
  * Abstract base class for rANS decoders (both 4x8 and Nx16). Holds the shared decoding
  * state: per-context frequency tables, reverse-lookup tables, and decoding symbols.
  *
- * <p>State is allocated once at construction and reused across calls. Between calls,
- * only the rows that were actually used in the previous decode are reset, avoiding
- * the O(65536) full reset that would otherwise be required.
+ * <p>Each table has a row per order-1 context. Row 0, which is all that order-0 decoding uses, is
+ * allocated at construction; the other rows are allocated together by {@link #allocateOrder1Rows}
+ * the first time an order-1 stream is decoded, since they are most of a decoder's memory and many
+ * decoders never decode one. Rows are reused across calls: between calls, only the rows that were
+ * actually used in the previous decode are reset, avoiding the O(65536) full reset that would
+ * otherwise be required.
  */
 public abstract class RANSDecode {
-    private final int[][] frequencies;
-    private final byte[][] reverseLookup;
-    private final RANSDecodingSymbol[][] decodingSymbols;
-    private final boolean[] usedRows;
+    private final int[][] frequencies = new int[Constants.NUMBER_OF_SYMBOLS][];
+    private final byte[][] reverseLookup = new byte[Constants.NUMBER_OF_SYMBOLS][];
+    private final RANSDecodingSymbol[][] decodingSymbols = new RANSDecodingSymbol[Constants.NUMBER_OF_SYMBOLS][];
+    private final boolean[] usedRows = new boolean[Constants.NUMBER_OF_SYMBOLS];
     private int usedRowCount;
 
     protected RANSDecode() {
-        frequencies = new int[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-        reverseLookup = new byte[Constants.NUMBER_OF_SYMBOLS][Constants.TOTAL_FREQ];
-        decodingSymbols = new RANSDecodingSymbol[Constants.NUMBER_OF_SYMBOLS][Constants.NUMBER_OF_SYMBOLS];
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
-            for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
-                decodingSymbols[i][j] = new RANSDecodingSymbol();
+        allocateRow(0);
+    }
+
+    private void allocateRow(final int row) {
+        frequencies[row] = new int[Constants.NUMBER_OF_SYMBOLS];
+        reverseLookup[row] = new byte[Constants.TOTAL_FREQ];
+        decodingSymbols[row] = new RANSDecodingSymbol[Constants.NUMBER_OF_SYMBOLS];
+        for (int j = 0; j < Constants.NUMBER_OF_SYMBOLS; j++) {
+            decodingSymbols[row][j] = new RANSDecodingSymbol();
+        }
+    }
+
+    /**
+     * Make sure that the rows of every context are there. Must be called before an order-1 frequency
+     * table is read; the tables returned by the getters have only row 0 until then.
+     */
+    protected final void allocateOrder1Rows() {
+        if (frequencies[1] == null) {
+            for (int i = 1; i < Constants.NUMBER_OF_SYMBOLS; i++) {
+                allocateRow(i);
             }
         }
-        usedRows = new boolean[Constants.NUMBER_OF_SYMBOLS];
     }
 
     protected final int[][] getFrequencies() {

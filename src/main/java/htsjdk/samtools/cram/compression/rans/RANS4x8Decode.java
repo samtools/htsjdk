@@ -184,6 +184,7 @@ public class RANS4x8Decode extends RANSDecode {
     }
 
     private void readStatsOrder1(final byte[] in, final int[] inPos) {
+        allocateOrder1Rows();
         final int[][] freq = getFrequencies();
         final byte[][] revLookup = getReverseLookup();
         final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();
