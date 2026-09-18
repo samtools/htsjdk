@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -325,8 +326,10 @@ public class VariantCodecBenchmark {
             rows.append("label\tphase\tmin_ms\tmedian_ms\tmax_ms\trecords\n");
         }
         for (final Result result : results) {
+            // the root locale, so that the numbers read the same whatever machine wrote them
             rows.append(String.format(
-                    "%s\t%s\t%.2f\t%.2f\t%.2f\t%d%n",
+                    Locale.ROOT,
+                    "%s\t%s\t%.2f\t%.2f\t%.2f\t%d\n",
                     label,
                     result.phase(),
                     result.minMillis(),

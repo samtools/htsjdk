@@ -138,9 +138,11 @@ public class VCFSpecCorpusTest extends HtsjdkTest {
     private static DecodeFailure decodeFully(final Path vcf) {
         try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
             reader.getFileHeader();
-            final CloseableIterator<VariantContext> records = reader.iterator();
-            String where = "the header";
-            try {
+            // creating the iterator decodes the first record, and each next() decodes the record after the one it
+            // returns
+            String where = "the first record";
+            // the iterator reads from a stream of its own, which closing the reader does not close
+            try (final CloseableIterator<VariantContext> records = reader.iterator()) {
                 while (records.hasNext()) {
                     where = "the record after " + where;
                     final VariantContext vc = records.next();

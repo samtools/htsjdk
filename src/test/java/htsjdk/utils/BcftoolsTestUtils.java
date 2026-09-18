@@ -35,7 +35,10 @@ public class BcftoolsTestUtils {
                     return path;
                 }
             }
-        } catch (final IOException | InterruptedException e) {
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            // fall through to the default
+        } catch (final IOException e) {
             // fall through to the default
         }
         return "/usr/local/bin/bcftools";
@@ -96,7 +99,10 @@ public class BcftoolsTestUtils {
             } finally {
                 Files.deleteIfExists(stderrFile);
             }
-        } catch (final IOException | InterruptedException e) {
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while running " + command, e);
+        } catch (final IOException e) {
             throw new RuntimeException("Could not run " + command, e);
         }
     }
