@@ -2,6 +2,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -109,25 +110,66 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
     private Object[][] getInvalidHeaderLines() {
         List<String> idDesc = Arrays.asList("ID", "Description");
         List<Object> none = Collections.emptyList();
-        List<String> sourceVersion = Arrays.asList("Source", "Version");
         return new Object[][] {
             // to parse, expected, recommended, error message
-            {"<Description=\"Y\",ID=X>", idDesc, none, "Tag Description in wrong order (was #1, expected #2)"},
-            {"<ID=X,Desc=\"Y\">", idDesc, none, "Unexpected tag Desc"},
-            {"<>", idDesc, none, "Unexpected tag  "},
-            {
-                "<Source=\"source\",ID=X,Description=\"Y\">",
-                idDesc,
-                sourceVersion,
-                "Recommended tag Source must be listed after all expected tags"
-            },
-            {
-                "<ID=X,Source=\"E\",Description=\"Y\">",
-                idDesc,
-                sourceVersion,
-                "Recommended tag Source must be listed after all expected tags"
-            }
+            {"<ID=X,Description=\"Y>", idDesc, none, "Unclosed quote"},
         };
+    }
+
+    /** Attribute order and unknown attributes are the file's business: a parser must not rely on either. */
+    @Test
+    public void attributesMayComeInAnyOrderAndAnyMayBePresent() {
+        final List<String> idDesc = Arrays.asList("ID", "Description");
+        final List<String> sourceVersion = Arrays.asList("Source", "Version");
+        final Map<String, String> reordered = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<Description=\"Y\",ID=X>", idDesc, sourceVersion);
+        Assert.assertEquals(reordered, Map.of("ID", "X", "Description", "Y"));
+        Assert.assertEquals(new ArrayList<>(reordered.keySet()), List.of("Description", "ID"));
+
+        final Map<String, String> extra =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=X,Desc=\"Y\">", idDesc, none());
+        Assert.assertEquals(extra, Map.of("ID", "X", "Desc", "Y"));
+
+        final Map<String, String> sourceFirst = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<Source=\"s\",ID=X,Description=\"Y\">", idDesc, sourceVersion);
+        Assert.assertEquals(sourceFirst, Map.of("Source", "s", "ID", "X", "Description", "Y"));
+
+        Assert.assertEquals(VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<>", idDesc, none()), Map.of());
+    }
+
+    @Test
+    public void onlyTheFirstEqualsSplitsKeyFromValue() {
+        final Map<String, String> parsed =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_3, "<ID=a=b,Description=\"x=y\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "a=b", "Description", "x=y"));
+    }
+
+    @Test
+    public void aQuoteInsideAnUnquotedValueIsLiteral() {
+        // the hts-specs 4.3 corpus has an ALT ID made of every printable symbol, double quote included
+        final String id = "complexcustomcontig!\"#$%&'()*+-./;=?@[\\]^_`{|}~";
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_3, "<ID=" + id + ",Description=\"Valid ALT\">", null);
+        Assert.assertEquals(parsed.get("ID"), id);
+        Assert.assertEquals(parsed.get("Description"), "Valid ALT");
+    }
+
+    @Test
+    public void quotedValuesKeepStructureCharactersAndEscapes() {
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"a,b=c<d> \\\"quoted\\\" back\\\\slash \\n\">", null);
+        Assert.assertEquals(parsed.get("Description"), "a,b=c<d> \"quoted\" back\\slash \\n");
+    }
+
+    @Test
+    public void aTokenWithoutAValueIsKeptWithAnEmptyOne() {
+        final Map<String, String> parsed =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=X,Flag,Description=\"Y\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Flag", "", "Description", "Y"));
+    }
+
+    private static List<String> none() {
+        return Collections.emptyList();
     }
 
     private static void callTranslator(

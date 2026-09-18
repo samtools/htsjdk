@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -41,5 +42,82 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         new VCFInfoHeaderLine(line, VCFHeaderVersion.VCF4_2);
         // if we don't support version fields then we should fail before we ever get here
         Assert.assertTrue(true);
+    }
+
+    @Test
+    public void unknownAttributesSurviveARoundTrip() {
+        final VCFInfoHeaderLine line = new VCFInfoHeaderLine(
+                "<ID=FOO,Number=1,Type=Float,Description=\"foo\",IDX=7,Custom=\"a b\">", VCFHeaderVersion.VCF4_2);
+        Assert.assertEquals(line.getGenericFieldValue("IDX"), "7");
+        Assert.assertEquals(line.getGenericFieldValue("Custom"), "a b");
+        Assert.assertEquals(line.getGenericFieldValue("ID"), "FOO");
+        Assert.assertEquals(line.getGenericFieldValue("Number"), "1");
+        Assert.assertNull(line.getGenericFieldValue("Missing"));
+        Assert.assertEquals(
+                line.toString(), "INFO=<ID=FOO,Number=1,Type=Float,Description=\"foo\",IDX=7,Custom=\"a b\">");
+        Assert.assertEquals(new VCFInfoHeaderLine(line.toString().substring(5), VCFHeaderVersion.VCF4_2), line);
+    }
+
+    @Test
+    public void attributesMayComeInAnyOrder() {
+        final VCFFormatHeaderLine line =
+                new VCFFormatHeaderLine("<Description=\"depth\",Type=Integer,ID=DP,Number=1>", VCFHeaderVersion.VCF4_4);
+        Assert.assertEquals(line.getID(), "DP");
+        Assert.assertEquals(line.getType(), VCFHeaderLineType.Integer);
+        Assert.assertEquals(line.getCount(), 1);
+        Assert.assertEquals(line.getDescription(), "depth");
+        // written in the conventional order regardless
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"depth\">");
+    }
+
+    @Test
+    public void sourceAndVersionAreReadForEveryVersion() {
+        final VCFInfoHeaderLine line = new VCFInfoHeaderLine(
+                "<ID=FOO,Number=1,Type=Float,Description=\"foo\",Source=\"dbsnp\",Version=\"138\">",
+                VCFHeaderVersion.VCF4_1);
+        Assert.assertEquals(line.getSource(), "dbsnp");
+        Assert.assertEquals(line.getVersion(), "138");
+    }
+
+    @Test
+    public void linesDifferingOnlyInUnknownAttributesAreNotEqual() {
+        final VCFInfoHeaderLine a = new VCFInfoHeaderLine(
+                "<ID=FOO,Number=1,Type=Float,Description=\"foo\",IDX=7>", VCFHeaderVersion.VCF4_2);
+        final VCFInfoHeaderLine b = new VCFInfoHeaderLine(
+                "<ID=FOO,Number=1,Type=Float,Description=\"foo\",IDX=8>", VCFHeaderVersion.VCF4_2);
+        final VCFInfoHeaderLine c = new VCFInfoHeaderLine(
+                "<ID=FOO,Number=1,Type=Float,Description=\"foo\",IDX=7>", VCFHeaderVersion.VCF4_2);
+        Assert.assertNotEquals(a, b);
+        Assert.assertEquals(a, c);
+        Assert.assertEquals(a.hashCode(), c.hashCode());
+    }
+
+    @Test
+    public void programmaticLinesHaveNoUnknownAttributes() {
+        final VCFInfoHeaderLine line = new VCFInfoHeaderLine("FOO", 1, VCFHeaderLineType.Float, "foo");
+        Assert.assertEquals(
+                line.getGenericFields().keySet().toArray(), new String[] {"ID", "Number", "Type", "Description"});
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void missingNumberIsRejected() {
+        new VCFInfoHeaderLine("<ID=FOO,Type=Float,Description=\"foo\">", VCFHeaderVersion.VCF4_2);
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void missingTypeIsRejected() {
+        new VCFFormatHeaderLine("<ID=FOO,Number=1,Description=\"foo\">", VCFHeaderVersion.VCF4_2);
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void missingIdIsRejected() {
+        new VCFInfoHeaderLine("<Number=1,Type=Float,Description=\"foo\">", VCFHeaderVersion.VCF4_2);
+    }
+
+    @Test
+    public void missingDescriptionIsTolerated() {
+        final VCFInfoHeaderLine line = new VCFInfoHeaderLine("<ID=FOO,Number=1,Type=Float>", VCFHeaderVersion.VCF4_2);
+        Assert.assertEquals(line.getID(), "FOO");
+        Assert.assertNotNull(line.getDescription());
     }
 }

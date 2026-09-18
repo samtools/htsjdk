@@ -157,8 +157,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
             builder.append(entry.getKey());
             builder.append('=');
             builder.append(
-                    entry.getValue().toString().contains(",")
-                                    || entry.getValue().toString().contains(" ")
+                    needsQuoting(entry.getValue().toString())
                                     || entry.getKey().equals("Description")
                                     || entry.getKey().equals("Source")
                                     || // As per VCFv4.2, Source and Version should be surrounded by double quotes
@@ -168,6 +167,17 @@ public class VCFHeaderLine implements Comparable, Serializable {
         }
         builder.append('>');
         return builder.toString();
+    }
+
+    /** A value is quoted when it holds a character that would otherwise be read as structure. */
+    private static boolean needsQuoting(final String value) {
+        for (int i = 0; i < value.length(); i++) {
+            final char c = value.charAt(i);
+            if (c == ',' || c == ' ' || c == '=' || c == '"' || c == '>' || c == '<') {
+                return true;
+            }
+        }
+        return value.isEmpty();
     }
 
     private static String escapeQuotes(final String value) {
