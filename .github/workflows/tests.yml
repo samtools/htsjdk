@@ -12,6 +12,7 @@ jobs:
     env:
       HTSJDK_SAMTOOLS_BIN: /usr/local/bin/samtools
       HTSJDK_TABIX_BIN: /usr/local/bin/tabix
+      HTSJDK_BCFTOOLS_BIN: /usr/local/bin/bcftools
       SAMTOOLS_VERSION: 1.23.1
     runs-on: ubuntu-latest
     strategy:
@@ -36,6 +37,9 @@ jobs:
         run: chmod +x gradlew
       - name: Compile with Gradle
         run: ./gradlew compileJava
+      # nothing else compiles src/benches, and JMH checks the shape of the benchmarks as it compiles them
+      - name: Build the benchmarks
+        run: ./gradlew benchesJar
       - name: Cache samtools
         id: cache-samtools
         uses: actions/cache@v4
@@ -43,7 +47,9 @@ jobs:
           path: |
             /usr/local/bin/samtools
             /usr/local/bin/tabix
-          key: samtools-tabix-${{ env.SAMTOOLS_VERSION }}-${{ runner.os }}
+            /usr/local/bin/bcftools
+            /usr/local/libexec/bcftools
+          key: samtools-tabix-bcftools-${{ env.SAMTOOLS_VERSION }}-${{ runner.os }}
       - name: Install Samtools
         if: steps.cache-samtools.outputs.cache-hit != 'true'
         run: scripts/install-samtools.sh

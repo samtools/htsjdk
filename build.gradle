@@ -314,6 +314,40 @@ forbiddenApis {
 }
 tasks.named('forbiddenApisTest') { enabled = false }
 
+// Benchmarks live in src/benches/java, are written with JMH, and see main only. JMH's annotation processor
+// generates the harness code at compile time, so the source set's output is everything a benchmark run needs.
+// `./gradlew benchesJar` builds a self-contained jar of the benchmarks and this build of htsjdk; run it with
+// `java -jar build/libs/htsjdk-<version>-benches.jar <regex> [options]` (`-h` lists the options). Comparing two
+// commits means building one jar from each and running them alternately.
+sourceSets {
+    benches {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    benchesImplementation.extendsFrom implementation
+    benchesRuntimeOnly.extendsFrom runtimeOnly
+}
+dependencies {
+    benchesImplementation 'org.openjdk.jmh:jmh-core:1.37'
+    benchesAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+}
+tasks.register('benchesJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    group = 'build'
+    description = 'Builds a self-contained jar of the JMH benchmarks and this build of htsjdk.'
+    archiveClassifier.set('benches')
+    from sourceSets.benches.output, sourceSets.main.output
+    configurations = [project.configurations.benchesRuntimeClasspath]
+    manifest {
+        attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    }
+    mergeServiceFiles()
+}
+// benchmarks build fixtures with the banned classes just as tests do, and JMH's generated code is not ours to lint
+tasks.named('forbiddenApisBenches') { enabled = false }
+tasks.named('spotbugsBenches') { enabled = false }
+
 // Fat JAR with all dependencies for standalone CLI tools (CramConverter, CramComparison, etc.)
 shadowJar {
     archiveClassifier.set('all')

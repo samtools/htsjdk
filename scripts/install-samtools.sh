@@ -12,3 +12,11 @@ cd samtools-${SAMTOOLS_VERSION} && ./configure --prefix=/usr/local && make && su
 
 # tabix comes from the htslib bundled in the samtools tarball; samtools' configure has already configured it
 cd htslib-${SAMTOOLS_VERSION} && make tabix && sudo install tabix /usr/local/bin/tabix
+cd ../..
+
+# bcftools is released in step with samtools and bundles the same htslib
+export BCFTOOLS_VERSION=${SAMTOOLS_VERSION}
+wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSION}/bcftools-${BCFTOOLS_VERSION}.tar.bz2
+tar -xjvf bcftools-${BCFTOOLS_VERSION}.tar.bz2
+# the plugins (+tag2tag etc.) land in /usr/local/libexec/bcftools
+cd bcftools-${BCFTOOLS_VERSION} && ./configure --prefix=/usr/local && make && sudo make install
