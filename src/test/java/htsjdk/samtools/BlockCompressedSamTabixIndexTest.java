@@ -3,6 +3,8 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
 import htsjdk.index.FileBackedBinningIndex;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
@@ -279,6 +281,63 @@ public class BlockCompressedSamTabixIndexTest extends HtsjdkTest {
                 Assert.assertEquals(
                         TabixTestUtils.executeTabix(samGz.toString(), region).size(), count, "tabix, " + region);
             }
+        }
+    }
+
+    /** A CSI of the file, references numbered as the header numbers them, with the given bytes as its aux block. */
+    private Path indexWithCsiCarrying(final Path samGz, final byte[] aux) throws IOException {
+        final BinningIndex.Builder builder = new BinningIndex.Builder(14, 5, true);
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(samGz)) {
+            for (final SAMRecord record : reader) {
+                if (record.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                    break;
+                }
+                final Chunk chunk = ((BAMFileSpan) record.getFileSource().getFilePointer()).getSingleChunk();
+                builder.add(
+                        record.getReferenceIndex(),
+                        record.getAlignmentStart(),
+                        record.getAlignmentEnd(),
+                        chunk.getChunkStart(),
+                        chunk.getChunkEnd());
+            }
+        }
+        final Path csi = samGz.resolveSibling(samGz.getFileName() + ".csi");
+        IOUtil.deleteOnExit(csi);
+        try (BinaryCodec codec =
+                new BinaryCodec(new BlockCompressedOutputStream(Files.newOutputStream(csi), (Path) null))) {
+            builder.build(header.getSequenceDictionary().size()).writeCsi(codec, aux);
+        }
+        return csi;
+    }
+
+    @Test(expectedExceptions = SAMFormatException.class)
+    public void testCsiWhoseAuxBlockIsNotATabixHeaderIsRefused() throws IOException {
+        final Path samGz = writeSamGz();
+        indexWithCsiCarrying(samGz, new byte[] {1, 2, 3});
+        try (SamReader sam = SamReaderFactory.makeDefault().open(samGz)) {
+            sam.queryOverlapping("chr2", 1, 1_000);
+        }
+    }
+
+    @Test(expectedExceptions = SAMFormatException.class)
+    public void testFileNamedAsATabixIndexThatIsNotOneIsRefused() throws IOException {
+        final Path samGz = writeSamGz();
+        final Path bareCsi = indexWithCsiCarrying(samGz, new byte[0]);
+        Files.move(bareCsi, samGz.resolveSibling(samGz.getFileName() + ".tbi"));
+        IOUtil.deleteOnExit(samGz.resolveSibling(samGz.getFileName() + ".tbi"));
+        try (SamReader sam = SamReaderFactory.makeDefault().open(samGz)) {
+            sam.queryOverlapping("chr2", 1, 1_000);
+        }
+    }
+
+    @Test(expectedExceptions = SAMFormatException.class)
+    public void testTabixIndexListingASequenceTwiceIsRefused() throws IOException {
+        final Path samGz = writeSamGz();
+        indexAsTabixWould(samGz, TabixIndexType.CSI, TabixFormat.SAM, name -> "chr2", false);
+        try (SamReader sam = SamReaderFactory.makeDefault().open(samGz)) {
+            sam.queryOverlapping("chr2", 1, 1_000);
         }
     }
 }

@@ -32,6 +32,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SamLineReader;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import java.io.IOException;
@@ -141,7 +142,13 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         }
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
-        readHeader();
+        try {
+            readHeader();
+        } catch (final RuntimeException e) {
+            // There will be no reader for the caller to close, so what it was given is closed here
+            close();
+            throw e;
+        }
     }
 
     /**
@@ -217,6 +224,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
                 tabix = new TabixIndex(mIndexPath);
             } catch (final IOException e) {
                 throw new RuntimeIOException("Error reading index " + mIndexPath, e);
+            } catch (final TribbleException e) {
+                throw new SAMFormatException("The index " + mIndexPath + " is not a tabix index", e);
             }
             return new BinningBAMIndex(numberedAsTheHeaderDoes(
                     tabix.getBinningIndex(), new TabixIndex.Header(tabix.getFormatSpec(), tabix.getSequenceNames())));
@@ -229,7 +238,16 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         try {
             final ReferenceBinsSource source = index.getSource();
             if (source instanceof FileBackedBinningIndex file && file.getAux().length > 0) {
-                return new BinningBAMIndex(numberedAsTheHeaderDoes(source, TabixIndex.readCsiAux(file.getAux())));
+                final TabixIndex.Header tabixHeader;
+                try {
+                    tabixHeader = TabixIndex.readCsiAux(file.getAux());
+                } catch (final TribbleException e) {
+                    throw new SAMFormatException(
+                            "The index " + describeIndex() + " has something other than a tabix header in its aux "
+                                    + "block, so there is no telling how it numbers the sequences",
+                            e);
+                }
+                return new BinningBAMIndex(numberedAsTheHeaderDoes(source, tabixHeader));
             }
             final int sequenceCount = mFileHeader.getSequenceDictionary().size();
             if (index.getNumberOfReferences() != sequenceCount) {
@@ -269,6 +287,10 @@ class SAMTextReader extends SamReader.ReaderImplementation {
                         "The index %s names the sequence %s, which the header of %s does not have, so it was not "
                                 + "made for this file",
                         describeIndex(), name, describeFile()));
+            }
+            if (indexOrdinals[headerOrdinal] != -1) {
+                throw new SAMFormatException(
+                        "The index " + describeIndex() + " lists the sequence " + name + " more than once");
             }
             indexOrdinals[headerOrdinal] = i;
         }

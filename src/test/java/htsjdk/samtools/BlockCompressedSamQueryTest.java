@@ -363,4 +363,26 @@ public class BlockCompressedSamQueryTest extends HtsjdkTest {
             }
         }
     }
+
+    @Test
+    public void testIndexStreamIsClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final Path badHeader = Files.createTempFile("badHeader.", ".sam.gz");
+        IOUtil.deleteOnExit(badHeader);
+        try (java.io.OutputStream out = new htsjdk.samtools.util.BlockCompressedOutputStream(badHeader, 5)) {
+            out.write("@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:notANumber\n"
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        final int[] closes = {0};
+        final SeekablePathStream index = new SeekablePathStream(bam.resolveSibling("records.bai")) {
+            @Override
+            public void close() throws IOException {
+                closes[0]++;
+                super.close();
+            }
+        };
+
+        Assert.assertThrows(RuntimeException.class, () -> SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(badHeader).index(index)));
+        Assert.assertEquals(closes[0], 1);
+    }
 }
