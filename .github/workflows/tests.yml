@@ -37,6 +37,9 @@ jobs:
         run: chmod +x gradlew
       - name: Compile with Gradle
         run: ./gradlew compileJava
+      # nothing else compiles src/benches, and JMH checks the shape of the benchmarks as it compiles them
+      - name: Build the benchmarks
+        run: ./gradlew benchesJar
       - name: Cache samtools
         id: cache-samtools
         uses: actions/cache@v4
