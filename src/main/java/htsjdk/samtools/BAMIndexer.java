@@ -29,11 +29,18 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.tribble.index.tabix.TabixIndexType;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Class for both constructing BAM index content and writing it out, as a BAI or a CSI.
@@ -52,6 +59,9 @@ public class BAMIndexer {
 
     // The number of references (chromosomes) in the BAM file
     private final int numReferences;
+    private final List<String> sequenceNames;
+    // Set when what is being indexed is SAM text, which tabix may be asked to read as well as samtools.
+    private boolean namesSequencesInCsi;
 
     // BAI or CSI; never AUTO
     private final BamIndexType indexType;
@@ -159,6 +169,9 @@ public class BAMIndexer {
         }
         final SAMSequenceDictionary dictionary = fileHeader.getSequenceDictionary();
         this.numReferences = dictionary.size();
+        this.sequenceNames = dictionary.getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .collect(Collectors.toList());
         this.indexType = indexType.resolve(dictionary);
         final boolean csi = this.indexType == BamIndexType.CSI;
         final BinningIndex.Geometry geometry = csi
@@ -224,10 +237,22 @@ public class BAMIndexer {
         // samtools writes a CSI BGZF-compressed
         final OutputStream stream =
                 indexType == BamIndexType.CSI ? new BlockCompressedOutputStream(output, (Path) null) : output;
-        // The codec owns the output, so that it is closed even when the index cannot be built or written.
+        // The codec owns the output, so that it is closed even when the index cannot be built or written. Where the
+        // index is written through a TabixIndex below, closing is all the codec is for: it holds nothing of its
+        // own, so writing to the stream beneath it is safe.
         try (BinaryCodec codec = new BinaryCodec(stream)) {
             final BinningIndex index = indexBuilder.build(numReferences);
-            if (indexType == BamIndexType.CSI) {
+            if (indexType == BamIndexType.CSI && namesSequencesInCsi) {
+                // samtools asks a CSI by the header's numbering and ignores its format-specific block; tabix asks
+                // by name, from a tabix header there. Naming every sequence of the header, in the header's order,
+                // makes the two numberings one, so both tools read the index rightly.
+                try {
+                    new TabixIndex(TabixFormat.SAM, sequenceNames, index, TabixIndexType.CSI)
+                            .write(new LittleEndianOutputStream(stream));
+                } catch (final IOException e) {
+                    throw new RuntimeIOException("Error writing the index", e);
+                }
+            } else if (indexType == BamIndexType.CSI) {
                 // samtools puts nothing in the format-specific block for a BAM
                 index.writeCsi(codec, new byte[0]);
             } else {
@@ -294,11 +319,13 @@ public class BAMIndexer {
      * @param reader    SamReader for input BAM file
      * @param output    Path for output index file; see {@link #BAMIndexer(Path, SAMFileHeader, BamIndexType)}
      * @param log       Optional logger for progress messages
-     * @param indexType the kind of index to write
+     * @param indexType the kind of index to write. A CSI for block-compressed SAM text names the header's sequences
+     *                  in the way of tabix, so that tabix reads it as well as samtools does
      */
     public static void createIndex(SamReader reader, Path output, Log log, BamIndexType indexType) {
 
         BAMIndexer indexer = new BAMIndexer(output, reader.getFileHeader(), indexType);
+        indexer.namesSequencesInCsi = reader.type() == SamReader.Type.SAM_TYPE;
 
         long totalRecords = 0;
 

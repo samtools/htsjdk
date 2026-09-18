@@ -2,10 +2,12 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
+import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexType;
+import htsjdk.utils.SamtoolsTestUtils;
 import htsjdk.utils.TabixTestUtils;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -208,5 +210,75 @@ public class BlockCompressedSamTabixIndexTest extends HtsjdkTest {
             files.forEach(IOUtil::deleteOnExit);
         }
         assertAnswersAsTheBamDoes(samGz);
+    }
+
+    /** Indexes block-compressed SAM with a CSI of htsjdk's own making, placed beside it. */
+    private static Path indexWithCsi(final Path samGz) throws IOException {
+        final Path csi = samGz.resolveSibling(samGz.getFileName() + ".csi");
+        IOUtil.deleteOnExit(csi);
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(samGz)) {
+            BAMIndexer.createIndex(reader, csi, null, BamIndexType.CSI);
+        }
+        return csi;
+    }
+
+    @Test
+    public void testCsiWrittenForSamTextNamesEverySequenceOfTheHeaderInOrder() throws IOException {
+        final Path samGz = writeSamGz();
+        try (FileBackedBinningIndex csi = FileBackedBinningIndex.open(indexWithCsi(samGz), false)) {
+            final TabixIndex.Header tabixHeader = TabixIndex.readCsiAux(csi.getAux());
+            Assert.assertEquals(tabixHeader.format(), TabixFormat.SAM);
+            Assert.assertEquals(
+                    tabixHeader.sequenceNames(),
+                    header.getSequenceDictionary().getSequences().stream()
+                            .map(SAMSequenceRecord::getSequenceName)
+                            .collect(Collectors.toList()));
+        }
+        assertAnswersAsTheBamDoes(samGz);
+    }
+
+    @Test
+    public void testCsiWrittenForABamNamesNoSequences() throws IOException {
+        final Path csi = Files.createTempFile("bam.", ".csi");
+        IOUtil.deleteOnExit(csi);
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            BAMIndexer.createIndex(reader, csi, null, BamIndexType.CSI);
+        }
+        try (FileBackedBinningIndex index = FileBackedBinningIndex.open(csi, false)) {
+            Assert.assertEquals(index.getAux().length, 0);
+        }
+    }
+
+    /**
+     * samtools asks a CSI by the header's numbering and tabix by the names in it; the file's first sequence has no
+     * reads, so an index that served only one of the two would give the other some other sequence's reads, or none.
+     */
+    @Test
+    public void testCsiWrittenForSamTextIsReadRightlyBySamtoolsAndByTabix() throws IOException {
+        if (!TabixTestUtils.isTabixAvailable() || !SamtoolsTestUtils.isSamtoolsAvailable()) {
+            throw new SkipException("samtools and tabix are not both available");
+        }
+        final Path samGz = writeSamGz();
+        indexWithCsi(samGz);
+        try (SamReader expected = SamReaderFactory.makeDefault().open(bam)) {
+            for (final String region : List.of("chr2:1-20000", "chr4:30000-50000", "chr1", "chr3")) {
+                final String sequence = region.split(":")[0];
+                final int start = region.contains(":") ? Integer.parseInt(region.split("[:-]")[1]) : 0;
+                final int end = region.contains(":") ? Integer.parseInt(region.split("[:-]")[2]) : 0;
+                final int count =
+                        drain(expected.queryOverlapping(sequence, start, end)).size();
+
+                final String samtoolsCount = SamtoolsTestUtils.executeSamToolsCommand("view -c " + samGz + " " + region)
+                        .stdout
+                        .trim();
+                Assert.assertEquals(samtoolsCount, Integer.toString(count), "samtools, " + region);
+                Assert.assertEquals(
+                        TabixTestUtils.executeTabix(samGz.toString(), region).size(), count, "tabix, " + region);
+            }
+        }
     }
 }
