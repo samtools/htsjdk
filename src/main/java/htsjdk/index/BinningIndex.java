@@ -52,6 +52,8 @@ public final class BinningIndex implements HtsQueryIndex {
     private static final int TABIX_MAX_SHIFT = 31;
     // Slack htslib adds to the longest sequence before choosing a scheme for it.
     private static final int SEQUENCE_LENGTH_SLACK = 256;
+    // The most bits a position may take: minShift + 3 * depth may not exceed it.
+    private static final int MAX_POSITION_BITS = 62;
 
     // Virtual offsets are unsigned 64-bit values, so chunks are ordered by an unsigned comparison of their starts.
     private static final Comparator<long[]> BY_UNSIGNED_START = (a, b) -> Long.compareUnsigned(a[0], b[0]);
@@ -79,7 +81,7 @@ public final class BinningIndex implements HtsQueryIndex {
 
     /** Rejects a binning scheme whose bin numbers or positions would overflow, or that has no levels at all. */
     private static void validateGeometry(final int minShift, final int depth) {
-        if (minShift < 1 || depth < 1 || depth > MAX_DEPTH || minShift + 3 * depth > 62) {
+        if (minShift < 1 || depth < 1 || depth > MAX_DEPTH || minShift + 3 * depth > MAX_POSITION_BITS) {
             throw new IllegalArgumentException(
                     String.format("Unsupported binning scheme: minShift=%d, depth=%d", minShift, depth));
         }
@@ -99,15 +101,46 @@ public final class BinningIndex implements HtsQueryIndex {
         }
         if (longestSequence <= 0) {
             final int depth = minShift < 10 ? MAX_DEPTH : minShift < 25 ? MAX_DEPTH - (minShift - 10) / 3 : 4;
-            return new Geometry(minShift, depth);
+            return deepenToReach(minShift, Math.min(depth, Math.max(1, (MAX_POSITION_BITS - minShift) / 3)), 0);
+        }
+        final int startingDepth = Math.min(MAX_DEPTH, Math.max(1, (TABIX_MAX_SHIFT - minShift + 2) / 3));
+        return deepenToReach(minShift, startingDepth, longestSequence);
+    }
+
+    /**
+     * The scheme samtools chooses for a CSI index of alignments (BAM, or BGZF-compressed SAM): the shallowest
+     * that reaches the longest sequence, where tabix never goes below a span of 2^31. A port of how
+     * {@code sam_index} calls htslib's {@code hts_adjust_csi_settings}, except that the depth is at least 1.
+     *
+     * @param minShift log2 of the span of the smallest bins; samtools' default is 14
+     * @param longestSequence length of the longest sequence to be indexed
+     */
+    public static Geometry shallowestCsiGeometry(final int minShift, final long longestSequence) {
+        if (minShift < 1) {
+            throw new IllegalArgumentException("minShift must be at least 1, but was " + minShift);
+        }
+        return deepenToReach(minShift, 1, Math.max(longestSequence, 0));
+    }
+
+    /**
+     * htslib's {@code hts_adjust_csi_settings}: adds levels until the scheme reaches the longest sequence, and
+     * once there are no more levels to add, widens the smallest bins instead.
+     */
+    private static Geometry deepenToReach(final int minShift, final int startingDepth, final long longestSequence) {
+        // Positions are held to 62 bits (see validateGeometry), so that is as far as any scheme can reach, and a
+        // scheme with wider smallest bins has room for fewer levels.
+        if (minShift > MAX_POSITION_BITS - 3 || longestSequence > (1L << MAX_POSITION_BITS) - SEQUENCE_LENGTH_SLACK) {
+            throw new IllegalArgumentException(String.format(
+                    "No binning scheme with minShift=%d reaches a sequence of %d bases", minShift, longestSequence));
         }
         final long needed = longestSequence + SEQUENCE_LENGTH_SLACK;
+        final int deepest = Math.min(MAX_DEPTH, (MAX_POSITION_BITS - minShift) / 3);
         int shift = minShift;
-        int depth = Math.min(MAX_DEPTH, Math.max(1, (TABIX_MAX_SHIFT - shift + 2) / 3));
-        if (needed <= maxPosition(shift, MAX_DEPTH)) {
+        int depth = Math.min(startingDepth, deepest);
+        if (needed <= maxPosition(shift, deepest)) {
             while (needed > maxPosition(shift, depth)) depth++;
         } else {
-            depth = MAX_DEPTH;
+            depth = deepest;
             while (needed > maxPosition(shift, depth)) shift++;
         }
         return new Geometry(shift, depth);
@@ -631,6 +664,13 @@ public final class BinningIndex implements HtsQueryIndex {
         private int windowCount;
         private long recordCount;
 
+        // Set by reportingRecordCounts(): the caller, not add(), says how many records each reference has.
+        private boolean countsAreReported;
+        private long mappedCount;
+        private long unmappedCount;
+        private long noCoordinateCount = -1;
+        private boolean fillEmptyWindows = true;
+
         /**
          * @param minShift log2 of the span of the smallest bins
          * @param depth number of bin levels above the smallest bins
@@ -656,11 +696,76 @@ public final class BinningIndex implements HtsQueryIndex {
         }
 
         /**
+         * Makes the caller responsible for the record counts, through {@link #addRecordCounts} and
+         * {@link #addNoCoordinateRecords}, as BAM and CRAM indexing need: they tell mapped records from unmapped
+         * ones, and an entry may stand for many records. Every reference with records then gets a metadata
+         * pseudo-bin, whichever layout the index is bound for, and the index records a count of records without a
+         * position even when that is zero.
+         *
+         * @return this builder
+         */
+        public Builder reportingRecordCounts() {
+            countsAreReported = true;
+            noCoordinateCount = 0;
+            return this;
+        }
+
+        /**
+         * Leaves a linear-index window that no record overlaps unset (-1) rather than giving it the offset of the
+         * window before. Such an index is not fit to query; it is for the index of a part of a file, whose merger
+         * needs to tell a window the part has no records for from one it has.
+         *
+         * @return this builder
+         */
+        public Builder leavingEmptyWindowsUnset() {
+            fillEmptyWindows = false;
+            return this;
+        }
+
+        /**
          * @return the number of bases the binning scheme can address, i.e. one past the largest position a record
          *     may end at
          */
         public long getMaxPosition() {
             return maxPosition;
+        }
+
+        /**
+         * Counts records of the reference most recently passed to {@link #add}. Requires
+         * {@link #reportingRecordCounts()}.
+         *
+         * @param mapped number of mapped records to add to the reference's count
+         * @param unmapped number of placed but unmapped records to add
+         */
+        public void addRecordCounts(final long mapped, final long unmapped) {
+            requireReportedCounts();
+            if (mapped < 0 || unmapped < 0) {
+                throw new IllegalArgumentException(
+                        String.format("Record counts must not be negative, but were %d and %d", mapped, unmapped));
+            }
+            if (accumulator == null) {
+                throw new IllegalStateException("No record has been added for the counts to belong to");
+            }
+            mappedCount += mapped;
+            unmappedCount += unmapped;
+        }
+
+        /**
+         * Counts records that have no position, which no reference's bins hold. Requires
+         * {@link #reportingRecordCounts()}.
+         */
+        public void addNoCoordinateRecords(final long count) {
+            requireReportedCounts();
+            if (count < 0) {
+                throw new IllegalArgumentException("Record count must not be negative, but was " + count);
+            }
+            noCoordinateCount += count;
+        }
+
+        private void requireReportedCounts() {
+            if (!countsAreReported) {
+                throw new IllegalStateException("Record counts are only accepted after reportingRecordCounts()");
+            }
         }
 
         /**
@@ -742,6 +847,8 @@ public final class BinningIndex implements HtsQueryIndex {
             Arrays.fill(linearIndex, UNSET);
             windowCount = 0;
             recordCount = 0;
+            mappedCount = 0;
+            unmappedCount = 0;
         }
 
         /** Freezes the reference being built, if any, into its {@link ReferenceBins}; a no-op otherwise. */
@@ -755,14 +862,19 @@ public final class BinningIndex implements HtsQueryIndex {
             }
             // The stored linear index instead gives such a window the nearest preceding offset, as samtools does.
             long previous = 0;
-            for (int window = 0; window < windowCount; window++) {
+            for (int window = 0; fillEmptyWindows && window < windowCount; window++) {
                 if (linearIndex[window] == UNSET) {
                     linearIndex[window] = previous;
                 } else {
                     previous = linearIndex[window];
                 }
             }
-            final ReferenceBins.Metadata metadata = forCsi ? accumulator.metadata(recordCount) : null;
+            final ReferenceBins.Metadata metadata;
+            if (countsAreReported) {
+                metadata = accumulator.metadata(mappedCount, unmappedCount);
+            } else {
+                metadata = forCsi ? accumulator.metadata(recordCount, 0) : null;
+            }
             finished.add(accumulator.toReferenceBins(
                     forCsi ? bin -> loffsetFromLinearIndex(bin, loffsetSource, depth) : null,
                     Arrays.copyOf(linearIndex, windowCount),
@@ -785,7 +897,7 @@ public final class BinningIndex implements HtsQueryIndex {
             while (finished.size() < referenceCount) {
                 finished.add(ReferenceBins.EMPTY);
             }
-            return new BinningIndex(minShift, depth, finished, -1);
+            return new BinningIndex(minShift, depth, finished, noCoordinateCount);
         }
 
         /** Collects the chunks of one reference's bins. Within a bin, chunks must be added in file order. */
@@ -805,7 +917,7 @@ public final class BinningIndex implements HtsQueryIndex {
             }
 
             /** The metadata pseudo-bin's view of the reference: the span of the file its records occupy. */
-            ReferenceBins.Metadata metadata(final long recordCount) {
+            ReferenceBins.Metadata metadata(final long mappedCount, final long unmappedCount) {
                 long firstOffset = -1; // unsigned: the largest value
                 long lastOffset = 0;
                 for (final ChunkList chunks : bins.values()) {
@@ -813,7 +925,7 @@ public final class BinningIndex implements HtsQueryIndex {
                     final long end = chunks.offsets[chunks.size - 1];
                     if (Long.compareUnsigned(end, lastOffset) > 0) lastOffset = end;
                 }
-                return new ReferenceBins.Metadata(firstOffset, lastOffset, recordCount, 0);
+                return new ReferenceBins.Metadata(firstOffset, lastOffset, mappedCount, unmappedCount);
             }
 
             /**
