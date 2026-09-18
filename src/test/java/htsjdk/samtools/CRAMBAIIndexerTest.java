@@ -1,13 +1,18 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.index.BinningIndex;
+import htsjdk.index.ReferenceBins;
+import htsjdk.samtools.cram.BAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.RuntimeIOException;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -199,5 +204,100 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
+    }
+
+    private static SAMFileHeader headerWithOneSequence(final int length) {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", length));
+        return header;
+    }
+
+    private static BAIEntry mappedEntry(final int start, final int span, final long containerOffset) {
+        return new BAIEntry(new ReferenceContext(0), new AlignmentSpan(start, span, 10, 2, 0), containerOffset, 100, 0);
+    }
+
+    private static BinningIndex readBai(final ByteArrayOutputStream bai) {
+        final BinaryCodec codec = new BinaryCodec(new ByteArrayInputStream(bai.toByteArray()));
+        codec.readBytes(new byte[4]);
+        return BinningIndex.readBaiLayout(codec, codec.readInt(), BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+    }
+
+    @Test
+    public void testSliceCountsAndContainerOffsetsReachTheIndex() {
+        final ByteArrayOutputStream bai = new ByteArrayOutputStream();
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(bai, headerWithOneSequence(1_000_000));
+        indexer.processBAIEntry(mappedEntry(1_000, 5_000, 4_096));
+        indexer.processBAIEntry(mappedEntry(40_000, 5_000, 90_000));
+        indexer.finish();
+
+        final ReferenceBins.Metadata metadata =
+                readBai(bai).getReference(0).getMetadata().orElseThrow();
+        Assert.assertEquals(metadata.mappedCount(), 20);
+        Assert.assertEquals(metadata.unmappedCount(), 4);
+        Assert.assertEquals(metadata.firstOffset(), 4_096L << 16);
+        Assert.assertEquals(metadata.lastOffset(), (90_000L << 16) + 1);
+    }
+
+    @Test
+    public void testSliceEndingOnAWindowBoundaryDoesNotReachIntoTheNextWindow() {
+        final ByteArrayOutputStream bai = new ByteArrayOutputStream();
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(bai, headerWithOneSequence(1_000_000));
+        indexer.processBAIEntry(mappedEntry(1, 16_384, 4_096)); // exactly the first 16 kb window
+        indexer.finish();
+
+        Assert.assertEquals(readBai(bai).getReference(0).getLinearIndex(), new long[] {4_096L << 16});
+    }
+
+    @Test
+    public void testMappedSliceWithoutAStartIsFiledAtTheFirstBase() {
+        final ByteArrayOutputStream bai = new ByteArrayOutputStream();
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(bai, headerWithOneSequence(1_000_000));
+        indexer.processBAIEntry(mappedEntry(0, 0, 4_096));
+        indexer.finish();
+
+        Assert.assertEquals(readBai(bai).getReference(0).getBinNumber(0), 4681); // the first 16 kb bin
+    }
+
+    @Test
+    public void testSliceBeyondTheBaiLimitFailsPointingAtCrai() {
+        final CRAMBAIIndexer indexer =
+                new CRAMBAIIndexer(new ByteArrayOutputStream(), headerWithOneSequence(600_000_000));
+        try {
+            indexer.processBAIEntry(mappedEntry(550_000_000, 5_000, 4_096));
+            Assert.fail("a slice beyond 2^29 was indexed in a BAI");
+        } catch (final SAMException e) {
+            Assert.assertTrue(e.getMessage().contains("CRAI"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void testSliceWhoseEndOverflowsAnIntIsRejectedNotFiledAsOneBase() {
+        final CRAMBAIIndexer indexer =
+                new CRAMBAIIndexer(new ByteArrayOutputStream(), headerWithOneSequence(1_000_000));
+        try {
+            indexer.processBAIEntry(mappedEntry(1_000, Integer.MAX_VALUE, 4_096));
+            Assert.fail("a slice whose end overflows an int was indexed");
+        } catch (final SAMException e) {
+            Assert.assertTrue(e.getMessage().contains("CRAI"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void testOutputIsClosedWhenTheIndexCannotBeBuilt() {
+        final boolean[] closed = {false};
+        final ByteArrayOutputStream bai = new ByteArrayOutputStream() {
+            @Override
+            public void close() {
+                closed[0] = true;
+            }
+        };
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(bai, headerWithOneSequence(1_000_000));
+        // A slice on a reference the header does not have, which only comes to light when the index is built.
+        indexer.processBAIEntry(
+                new BAIEntry(new ReferenceContext(1), new AlignmentSpan(1_000, 5_000, 10, 2, 0), 4_096, 100, 0));
+
+        Assert.assertThrows(IllegalArgumentException.class, indexer::finish);
+        Assert.assertTrue(closed[0], "the output should be closed even though nothing could be written");
     }
 }

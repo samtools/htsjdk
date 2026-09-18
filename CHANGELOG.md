@@ -118,6 +118,8 @@ Consumers should review these before upgrading.
 
 - `BAMIndexer` now builds through `htsjdk.index.BinningIndex` and writes the index when `finish()` is called, rather than reference by reference.  A BAI built for a real BAM is byte-for-byte what 5.x wrote, with one exception: a placed but unmapped read whose position is the first base of a 16 kb window is now entered in the linear index under that window, as samtools enters it, rather than under the window before.  An attempt to index a read beyond 2<sup>29</sup> in a BAI fails with a message pointing at CSI.
 
+- `CRAMBAIIndexer` builds through `BinningIndex` too.  Queries through a `.cram.bai` return what they did; the bytes differ in two places: the metadata pseudo-bin's offsets, which were a placeholder that nothing read (issue #401) and are now the offsets of the reference's first and last slices, and the linear index, which no longer marks the window after a slice that ends exactly on a 16 kb boundary.  A slice beyond 2<sup>29</sup> fails with a message pointing at CRAI rather than with an array-bounds error.
+
 ### Bgzipped SAM
 
 - **New: `SAMFileWriterFactory` writes BGZF-compressed SAM** when the output name is `.sam` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case, through `makeWriter`, `makeSAMOrBAMWriter` or `makeSAMWriter`.  The factory's compression level and deflater factory apply, the file ends with the BGZF end-of-file block, and an MD5 file, if requested, is of the compressed bytes.  samtools and `SamReaderFactory` read the result.  No index is written for it yet.
