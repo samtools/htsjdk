@@ -24,6 +24,8 @@
 package htsjdk.tribble.index.tabix;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.index.BinningIndex;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -32,6 +34,7 @@ import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.index.IndexFactory;
@@ -41,6 +44,8 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -212,6 +217,31 @@ public class TabixIndexTest extends HtsjdkTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testReadCsiAuxGivesTheFormatAndSequenceNamesOfATabixMadeCsi() throws IOException {
+        final List<String> names = List.of("chr2", "chr10", "*");
+        final TabixIndex index = new TabixIndex(
+                TabixFormat.SAM, names, new BinningIndex.Builder(14, 6, true).build(names.size()), TabixIndexType.CSI);
+        final ByteArrayOutputStream csi = new ByteArrayOutputStream();
+        index.write(new LittleEndianOutputStream(csi));
+        final byte[] aux = BinningIndex.readCsi(new BinaryCodec(new ByteArrayInputStream(csi.toByteArray())))
+                .aux();
+
+        final TabixIndex.Header header = TabixIndex.readCsiAux(aux);
+        Assert.assertEquals(header.format(), TabixFormat.SAM);
+        Assert.assertEquals(header.sequenceNames(), names);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testReadCsiAuxRejectsABlockTooShortForATabixHeader() {
+        TabixIndex.readCsiAux(new byte[] {1, 2, 3});
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testReadCsiAuxRejectsAnEmptyBlockAsSamtoolsWritesForABam() {
+        TabixIndex.readCsiAux(new byte[0]);
     }
 
     private static int countIteratedElements(final Iterator iterator) {

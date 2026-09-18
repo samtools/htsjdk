@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Log;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 /**
  * @author mccowan
@@ -91,7 +92,22 @@ public class SamFiles {
             }
         }
 
+        // Block-compressed SAM may have been indexed by tabix rather than samtools
+        if (isBlockCompressedSamName(fileName)) {
+            indexPath = samPath.resolveSibling(fileName + FileExtensions.TABIX_INDEX);
+            if (Files.isRegularFile(indexPath)) {
+                return indexPath;
+            }
+        }
+
         return null;
+    }
+
+    /** True for {@code x.sam.gz} and the like, in any case. */
+    private static boolean isBlockCompressedSamName(final String fileName) {
+        final String name = fileName.toLowerCase(Locale.ROOT);
+        return FileExtensions.BLOCK_COMPRESSED.stream()
+                .anyMatch(extension -> name.endsWith(FileExtensions.SAM + extension));
     }
 
     /**

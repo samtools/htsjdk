@@ -108,6 +108,28 @@ public class SamFilesTest extends HtsjdkTest {
     }
 
     @Test
+    public void testFindIndexFindsATabixIndexBesideBlockCompressedSam() throws IOException {
+        final Path directory = Files.createTempDirectory("testFindIndexTbiForSam");
+        final Path samGz = Files.createFile(directory.resolve("reads.SAM.gz"));
+        final Path tbi = Files.createFile(directory.resolve("reads.SAM.gz.tbi"));
+        IOUtil.deleteOnExit(directory);
+        IOUtil.deleteOnExit(samGz);
+        IOUtil.deleteOnExit(tbi);
+        Assert.assertEquals(SamFiles.findIndex(samGz), tbi);
+    }
+
+    @Test
+    public void testFindIndexDoesNotTakeTheTabixIndexOfAnotherFormat() throws IOException {
+        final Path directory = Files.createTempDirectory("testFindIndexTbiForVcf");
+        final Path vcfGz = Files.createFile(directory.resolve("calls.vcf.gz"));
+        final Path tbi = Files.createFile(directory.resolve("calls.vcf.gz.tbi"));
+        IOUtil.deleteOnExit(directory);
+        IOUtil.deleteOnExit(vcfGz);
+        IOUtil.deleteOnExit(tbi);
+        Assert.assertNull(SamFiles.findIndex(vcfGz));
+    }
+
+    @Test
     public void testFileTypeChecksIgnoreCase() {
         Assert.assertTrue(SamFiles.isBAMFile(Path.of("reads.BAM")));
         Assert.assertTrue(SamFiles.isCRAMFile(Path.of("reads.Cram")));

@@ -399,6 +399,79 @@ public class SamLineReaderTest extends HtsjdkTest {
     }
 
     @Test
+    public void testBytesConsumedCountsEachLineWithItsTerminator() {
+        try (final SamLineReader reader = readerFrom("ab\ncdef\r\ng\n")) {
+            Assert.assertEquals(reader.getBytesConsumed(), 0);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 3);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 9);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 11);
+        }
+    }
+
+    @Test
+    public void testBytesConsumedIsUnaffectedByWhereTheBufferEnds() {
+        // A buffer of 4 splits lines across fills, and leaves the \n of a \r\n to be found by a further fill.
+        try (final SamLineReader reader = readerFrom("abcdefg\nhi\r\njk\n", 4)) {
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 8);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 12);
+            Assert.assertTrue(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 15);
+            Assert.assertFalse(reader.readNextLine());
+            Assert.assertEquals(reader.getBytesConsumed(), 15);
+        }
+    }
+
+    @Test
+    public void testBytesConsumedIsNotAdvancedByPeeking() {
+        try (final SamLineReader reader = readerFrom("ab\ncd\n")) {
+            reader.peek();
+            Assert.assertEquals(reader.getBytesConsumed(), 0);
+        }
+    }
+
+    @Test
+    public void testResetReadsFromWhereTheStreamNowIs() throws java.io.IOException {
+        final java.io.ByteArrayInputStream stream = new java.io.ByteArrayInputStream(
+                "first\nsecond\nthird\nfourth\n".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+        try (final SamLineReader reader = new SamLineReader(stream)) {
+            Assert.assertEquals(reader.readLine(), "first"); // by now the whole input has been read ahead
+            stream.reset(); // back to the start of the stream...
+            Assert.assertEquals(stream.skip(13), 13); // ...and on to the start of "third"
+            reader.reset();
+            Assert.assertEquals(reader.readLine(), "third");
+            Assert.assertEquals(reader.getLineNumber(), 1);
+        }
+    }
+
+    @Test
+    public void testResetCountsWhatItDropsAsConsumed() {
+        final String content = "first\nsecond\n";
+        try (final SamLineReader reader = readerFrom(content)) {
+            Assert.assertTrue(reader.readNextLine());
+            reader.reset();
+            Assert.assertEquals(reader.getBytesConsumed(), content.length());
+        }
+    }
+
+    @Test
+    public void testResetAtTheEndOfTheStreamAllowsFurtherReading() throws java.io.IOException {
+        final java.io.ByteArrayInputStream stream =
+                new java.io.ByteArrayInputStream("only\n".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
+        try (final SamLineReader reader = new SamLineReader(stream)) {
+            Assert.assertEquals(reader.readLine(), "only");
+            Assert.assertNull(reader.readLine());
+            stream.reset();
+            reader.reset();
+            Assert.assertEquals(reader.readLine(), "only");
+        }
+    }
+
+    @Test
     public void testCloseIsIdempotent() throws java.io.IOException {
         final SamLineReader reader = readerFrom("hello\n");
         reader.close();

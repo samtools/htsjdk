@@ -7,7 +7,10 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.utils.SamtoolsTestUtils;
+import htsjdk.utils.TabixTestUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -265,5 +268,90 @@ public class BAMCsiIndexWritingTest extends HtsjdkTest {
         final String expectedLine = contig + "\t1000000\t" + MAPPED_PER_CONTIG + "\t" + PLACED_UNMAPPED;
         Assert.assertTrue(idxstats.lines().anyMatch(expectedLine::equals), idxstats);
         Assert.assertTrue(idxstats.lines().anyMatch(("*\t0\t0\t" + NO_COORDINATE)::equals), idxstats);
+    }
+
+    /**
+     * Block-compressed SAM whose header's first sequence has no reads, so that an index numbering sequences as the
+     * file meets them would number every one differently from the header; indexed with a CSI by createIndex.
+     */
+    private Path writeSamGzWithCsi(final SAMRecordSetBuilder records) throws IOException {
+        final Path directory = Files.createTempDirectory("BAMCsiIndexWritingTest");
+        directories.add(directory);
+        final Path samGz = directory.resolve("reads.sam.gz");
+        try (SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(records.getHeader(), true, samGz, null)) {
+            records.iterator().forEachRemaining(writer::addAlignment);
+        }
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(samGz)) {
+            BAMIndexer.createIndex(reader, directory.resolve("reads.sam.gz.csi"), null, BamIndexType.CSI);
+        }
+        return samGz;
+    }
+
+    private static SAMRecordSetBuilder recordsOnTheSecondAndFourthSequences() {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        for (int i = 0; i < 2_000; i++) {
+            records.addFrag("read" + i, i < 1_000 ? 1 : 3, 1 + 60 * (i % 1_000), false);
+        }
+        return records;
+    }
+
+    @Test
+    public void testCsiCreatedForSamTextNamesEverySequenceOfTheHeaderInOrder() throws IOException {
+        final SAMRecordSetBuilder records = recordsOnTheSecondAndFourthSequences();
+        final Path samGz = writeSamGzWithCsi(records);
+
+        final TabixIndex.Header tabixHeader = TabixIndex.readCsiAux(
+                readCsi(samGz.resolveSibling("reads.sam.gz.csi")).aux());
+        Assert.assertEquals(tabixHeader.format(), TabixFormat.SAM);
+        Assert.assertEquals(
+                tabixHeader.sequenceNames(),
+                records.getHeader().getSequenceDictionary().getSequences().stream()
+                        .map(SAMSequenceRecord::getSequenceName)
+                        .toList());
+    }
+
+    @Test
+    public void testCsiCreatedForABamNamesNoSequences() throws IOException {
+        final Path bam = writeBam(factory(BamIndexType.BAI), records(1_000_000, 1_000_000));
+        final Path csi = bam.resolveSibling("reads.bam.csi");
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            BAMIndexer.createIndex(reader, csi, null, BamIndexType.CSI);
+        }
+        Assert.assertEquals(readCsi(csi).aux().length, 0);
+    }
+
+    /**
+     * samtools asks a CSI by the header's numbering and tabix by the names in it, so an index that served only one
+     * of them would give the other some other sequence's reads, or none.
+     */
+    @Test
+    public void testCsiCreatedForSamTextIsReadRightlyBySamtoolsAndByTabix() throws IOException {
+        if (!TabixTestUtils.isTabixAvailable() || !SamtoolsTestUtils.isSamtoolsAvailable()) {
+            throw new SkipException("samtools and tabix are not both available");
+        }
+        final SAMRecordSetBuilder records = recordsOnTheSecondAndFourthSequences();
+        final Path samGz = writeSamGzWithCsi(records);
+
+        for (final int contig : new int[] {0, 1, 2, 3}) {
+            final String name = records.getHeader().getSequence(contig).getSequenceName();
+            final String region = name + ":20000-40000";
+            final long expected = records.getRecords().stream()
+                    .filter(record -> record.getReferenceIndex() == contig
+                            && record.getAlignmentStart() <= 40_000
+                            && record.getAlignmentEnd() >= 20_000)
+                    .count();
+            Assert.assertEquals(expected > 0, contig == 1 || contig == 3);
+
+            final String samtoolsCount = SamtoolsTestUtils.executeSamToolsCommand("view -c " + samGz + " " + region)
+                    .stdout
+                    .trim();
+            Assert.assertEquals(samtoolsCount, Long.toString(expected), "samtools, " + region);
+            Assert.assertEquals(
+                    TabixTestUtils.executeTabix(samGz.toString(), region).size(), expected, "tabix, " + region);
+        }
     }
 }

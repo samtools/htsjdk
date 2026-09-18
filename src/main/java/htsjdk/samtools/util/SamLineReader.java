@@ -61,6 +61,8 @@ public class SamLineReader implements LineReader {
     private int limit;
     private int lineNumber;
     private boolean streamExhausted;
+    // Bytes taken from the stream and since dropped from the buffer; kept in fill(), off the per-line path.
+    private long bytesBeforeBuffer;
 
     private byte[] overflow = new byte[512];
     private int overflowLen;
@@ -198,6 +200,30 @@ public class SamLineReader implements LineReader {
         return lineNumber;
     }
 
+    /**
+     * @return how many bytes of the stream lie before the next line to be read, terminators included: what the
+     *     reader has taken from the stream less what it holds unread. With a stream that knows where each of
+     *     its reads came from, this places a line in the underlying file.
+     */
+    public long getBytesConsumed() {
+        return bytesBeforeBuffer + pos;
+    }
+
+    /**
+     * Forgets whatever has been read ahead, for use after the stream beneath has been repositioned: the next line
+     * read is the one the stream now starts with. The bytes dropped count as consumed, so that
+     * {@link #getBytesConsumed()} goes on matching what the stream has handed over, and the line number no longer
+     * means anything, so it restarts at zero.
+     */
+    public void reset() {
+        bytesBeforeBuffer += limit;
+        pos = 0;
+        limit = 0;
+        overflowLen = 0;
+        lineNumber = 0;
+        streamExhausted = false;
+    }
+
     @Override
     public int peek() {
         if (pos < limit) {
@@ -228,10 +254,12 @@ public class SamLineReader implements LineReader {
         }
 
         if (pos > 0 && pos < limit) {
+            bytesBeforeBuffer += pos;
             System.arraycopy(buf, pos, buf, 0, limit - pos);
             limit -= pos;
             pos = 0;
         } else {
+            bytesBeforeBuffer += limit;
             pos = 0;
             limit = 0;
         }

@@ -206,6 +206,21 @@ public class TabixIndex implements Index {
         formatSpec.numHeaderLinesToSkip = codec.readInt();
     }
 
+    /** What a tabix index says of the file it indexes: how to read its columns, and its sequences in index order. */
+    public record Header(TabixFormat format, List<String> sequenceNames) {}
+
+    /**
+     * Reads the tabix header that a CSI file made by tabix carries in its aux block, for a reader that holds the
+     * index proper some other way and needs only to know which sequence each of its references is.
+     *
+     * @param aux the aux block of a CSI file
+     * @throws TribbleException if the block does not hold a tabix header
+     */
+    public static Header readCsiAux(final byte[] aux) {
+        final TabixFormat format = new TabixFormat();
+        return new Header(format, Collections.unmodifiableList(parseAux(aux, format)));
+    }
+
     /**
      * The tabix header a CSI file carries in its aux block: the format fields, the names' length, then the names.
      * A CSI whose aux block lacks this (as those samtools writes for BAM do) is not a tabix index.
