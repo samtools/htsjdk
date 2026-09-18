@@ -120,6 +120,16 @@ Consumers should review these before upgrading.
 
 - `CRAMBAIIndexer` builds through `BinningIndex` too.  Queries through a `.cram.bai` return what they did; the bytes differ in two places: the metadata pseudo-bin's offsets, which were a placeholder that nothing read (issue #401) and are now the offsets of the reference's first and last slices, and the linear index, which no longer marks the window after a slice that ends exactly on a 16 kb boundary.  A slice beyond 2<sup>29</sup> fails with a message pointing at CRAI rather than with an array-bounds error.
 
+- **BAI and CSI indexes are read a reference at a time, and held only while there is memory for them.**  Opening an indexed BAM no longer costs anything until a query is made; a query reads the part of the index for its reference sequence, found by skipping over those before it and remembered thereafter.  What has been read is held through soft references and never evicted by htsjdk: with memory to spare a reader ends up with its whole index in memory, and when memory is short the collector reclaims the least recently used parts, across every open reader, which are read again if wanted.  This replaces three readers that each behaved differently: the default BAI reader, which kept nothing and walked the index file again for every query (1,000 queries on one chromosome of a whole-genome index: 64 ms, now 2 ms); the caching BAI reader behind `CACHE_FILE_BASED_INDEXES`; and the CSI reader, which re-read through BGZF for every query (932 ms, now 11 ms).  Index files are no longer memory-mapped, so an index's memory is ordinary heap that the JVM accounts for; the price is about a millisecond on the first query of a large BAI.
+
+- **New: `SamReaderFactory.indexLoading(IndexLoading)`** chooses when the index is read: `LAZY` as above, `EAGER` to read it whole in one pass when first needed, or `AUTO` (the default), which is eager for an index given as a stream, one that is not on the default file system (a single sequential read suits remote storage better than seeks) and one smaller than a megabyte, and lazy otherwise.  Whatever was read stays reclaimable, so a job holding thousands of remote indexes sheds them under pressure rather than failing, and re-reads a reference by range.
+
+- **`SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES` and `DONT_MEMORY_MAP_INDEX` are deprecated and have no effect.**  What the first asked for is now always the case, for CSI and stream-supplied indexes too, and nothing is memory-mapped for the second to prevent.
+
+- **Every BAI and CSI index is browseable.**  `SamReader.Indexing.hasBrowseableIndex()` was true for a BAI only with `CACHE_FILE_BASED_INDEXES`; it is now true for any BAM index and for a CRAM's BAI.  `getIndex()` still returns a `BAMIndex`, but no longer one of `DiskBasedBAMFileIndex`, `CachingBAMFileIndex` or `CSIIndex`, so code that cast the result to those needs `getHtsIndex(BrowseableBAMIndex.class)` or the `BAMIndex` methods instead.  `BamIndexValidator`, which silently checked nothing for a BAI unless index caching was on, now checks any BAI or CSI.
+
+- New in `htsjdk.index`: `ReferenceBinsSource`, the view of a binning index that its readers need, implemented by `BinningIndex` (all in memory) and by the new `FileBackedBinningIndex` described above.
+
 ### Bgzipped SAM
 
 - **New: `SAMFileWriterFactory` writes BGZF-compressed SAM** when the output name is `.sam` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case, through `makeWriter`, `makeSAMOrBAMWriter` or `makeSAMWriter`.  The factory's compression level and deflater factory apply, the file ends with the BGZF end-of-file block, and an MD5 file, if requested, is of the compressed bytes.  samtools and `SamReaderFactory` read the result.  No index is written for it yet.
@@ -149,6 +159,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - `TabixReader` rejects a plain-gzip (non-BGZF) file when it is opened, with a message saying so, and names the index files it looked for when none exists.
 - `ProcessExecutor.executeAndReturnInterleavedOutput` no longer deadlocks when the child process writes more than a pipe buffer of output.
 - `queryUnmapped()` on a CSI-indexed BAM could seek to the wrong place, including into the BAM header: `CSIIndex.getStartOfLastLinearBin` took the `loffset` of whichever bin came last in the index file, where bins are in no particular order and the last may be the metadata pseudo-bin.  It now takes the largest `loffset` among the real bins.
+- `SeekableMemoryStream.read(buffer, offset, 0)` returned -1 rather than 0, which made `InputStream.readAllBytes()` on one stop after its first 8 KB.
 - `SAMFileWriterFactory.clone()` and its copy constructor now carry over the deflater factory and the SAM flag field format; both were reset to their defaults in the copy.
 
 ### Testing

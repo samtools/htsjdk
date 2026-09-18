@@ -269,7 +269,7 @@ public class BAMIndexMetaData {
      */
     public static BAMIndexMetaData[] getIndexStats(final BAMFileReader bam) {
 
-        AbstractBAMFileIndex index = (AbstractBAMFileIndex) bam.getIndex();
+        final BinningBAMIndex index = (BinningBAMIndex) bam.getIndex();
         // read through all the bins of every reference.
         int nRefs = index.getNumberOfReferences();
         BAMIndexMetaData[] result = new BAMIndexMetaData[nRefs == 0 ? 1 : nRefs];

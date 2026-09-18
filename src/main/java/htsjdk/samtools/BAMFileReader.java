@@ -79,6 +79,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      */
     private boolean mEnableIndexMemoryMapping = true;
 
+    private IndexLoading mIndexLoading = IndexLoading.AUTO;
+
     /**
      * Add information about the origin (reader and position) to SAM records.
      */
@@ -448,26 +450,26 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     /**
-     * If true, uses the caching version of the index reader.
-     * @param enabled true to use the caching version of the reader.
+     * Has no effect: index data is always kept between queries, for as long as there is memory for it.
      */
     @Override
     protected void enableIndexCaching(final boolean enabled) {
-        if (mIndex != null)
-            throw new SAMException("Unable to turn on index caching; index file has already been loaded.");
         this.mEnableIndexCaching = enabled;
     }
 
+    @Override
+    void setIndexLoading(final IndexLoading indexLoading) {
+        if (mIndex != null && indexLoading != mIndexLoading) {
+            throw new SAMException("Unable to change index loading; index file has already been loaded.");
+        }
+        this.mIndexLoading = indexLoading;
+    }
+
     /**
-     * If false, disable the use of memory mapping for accessing index files (default behavior is to use memory mapping).
-     * This is slower but more scalable when accessing large numbers of BAM files sequentially.
-     * @param enabled True to use memory mapping, false to use regular I/O.
+     * Has no effect: index files are no longer memory-mapped.
      */
     @Override
     protected void enableIndexMemoryMapping(final boolean enabled) {
-        if (mIndex != null) {
-            throw new SAMException("Unable to change index memory mapping; index file has already been loaded.");
-        }
         this.mEnableIndexMemoryMapping = enabled;
     }
 
@@ -507,26 +509,11 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             throw new SAMException("No index is available for this BAM file.");
         }
         if (mIndex == null) {
-            final SamIndexes samIndexType = getIndexType();
-            final SAMSequenceDictionary sequenceDictionary = getFileHeader().getSequenceDictionary();
+            getIndexType(); // rejects an index that is neither; the index itself tells BAI from CSI by its magic number
             if (mIndexPath != null) {
-                if (samIndexType.equals(SamIndexes.BAI)) {
-                    mIndex = mEnableIndexCaching
-                            ? new CachingBAMFileIndex(mIndexPath, sequenceDictionary, mEnableIndexMemoryMapping)
-                            : new DiskBasedBAMFileIndex(mIndexPath, sequenceDictionary, mEnableIndexMemoryMapping);
-                } else if (samIndexType.equals(SamIndexes.CSI)) {
-                    mIndex = new CSIIndex(mIndexPath, mEnableIndexMemoryMapping, sequenceDictionary);
-                } else {
-                    throw new SAMFormatException("Unsupported BAM index file format: " + mIndexPath.getFileName());
-                }
+                mIndex = BinningBAMIndex.open(mIndexPath, mIndexLoading);
             } else if (mIndexStream != null) {
-                if (samIndexType.equals(SamIndexes.BAI)) {
-                    mIndex = new CachingBAMFileIndex(mIndexStream, sequenceDictionary);
-                } else if (samIndexType.equals(SamIndexes.CSI)) {
-                    mIndex = new CSIIndex(mIndexStream, sequenceDictionary);
-                } else {
-                    throw new SAMFormatException("Unsupported BAM index file format: " + mIndexStream.getSource());
-                }
+                mIndex = BinningBAMIndex.open(mIndexStream, mIndexLoading);
             }
         }
 

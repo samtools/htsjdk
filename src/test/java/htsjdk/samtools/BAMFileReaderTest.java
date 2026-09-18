@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class BAMFileReaderTest extends HtsjdkTest {
         try (final SamReader samReader = factory.open(resource)) {
             Assert.assertTrue(samReader.hasIndex());
             final BAMIndex index = samReader.indexing().getIndex();
-            Assert.assertTrue(index instanceof CSIIndex);
+            Assert.assertTrue(((FileBackedBinningIndex) ((BinningBAMIndex) index).getSource()).isCsi());
             try (final SAMRecordIterator unusedIterator = samReader.queryAlignmentStart("chr1_random", 1)) {}
             try (final SAMRecordIterator unusedIterator = samReader.queryUnmapped()) {}
         }

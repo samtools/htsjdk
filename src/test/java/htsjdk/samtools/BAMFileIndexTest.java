@@ -28,6 +28,7 @@ import static org.testng.Assert.*;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.*;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +48,27 @@ import org.testng.annotations.Test;
 public class BAMFileIndexTest extends HtsjdkTest {
     private final Path BAM_FILE = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final boolean mVerbose = false;
+
+    @Test
+    public void testMetaDataOfAReferenceTheIndexDoesNotHaveIsNull() throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault().open(BAM_FILE)) {
+            final int referenceCount =
+                    reader.getFileHeader().getSequenceDictionary().size();
+            Assert.assertNull(reader.indexing().getIndex().getMetaData(referenceCount));
+            Assert.assertNull(reader.indexing().getIndex().getMetaData(-1));
+        }
+    }
+
+    @Test
+    public void testSpanOfABinOnAReferenceTheIndexDoesNotHaveIsEmpty() throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault().open(BAM_FILE)) {
+            final int referenceCount =
+                    reader.getFileHeader().getSequenceDictionary().size();
+            final BAMFileSpan span =
+                    reader.indexing().getBrowseableIndex().getSpanOverlapping(new Bin(referenceCount, 0));
+            Assert.assertTrue(span.isEmpty());
+        }
+    }
 
     @Test
     public void testGetSearchBins() throws Exception {
