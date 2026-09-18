@@ -23,19 +23,28 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.index.FileBackedBinningIndex;
+import htsjdk.index.ReferenceBinsSource;
+import htsjdk.index.RenumberedReferenceBinsSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SamLineReader;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Internal class for reading SAM text files. Text that is block-compressed is read a BGZF block at a time, which
  * lets each record say where in the file it lies, as a record of a BAM does; and if the file can be seeked in, it
- * can be read from any such place, and queried through a BAI or CSI index as samtools writes for such a file.
+ * can be read from any such place, and queried through an index: a BAI or CSI as samtools writes for such a file,
+ * or a TBI or CSI as tabix does.
  */
 class SAMTextReader extends SamReader.ReaderImplementation {
 
@@ -181,33 +190,94 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         return mIndexPath != null || mIndexStream != null;
     }
 
-    /**
-     * The file's BAI or CSI, in which references are numbered as the header numbers them, which is how samtools
-     * writes an index for SAM text.
-     */
     @Override
     public BAMIndex getIndex() {
         if (!hasIndex()) {
             throw new UnsupportedOperationException("No index is available for this SAM text");
         }
         if (mIndex == null) {
-            final BinningBAMIndex index = mIndexPath != null
-                    ? BinningBAMIndex.open(mIndexPath, mIndexLoading)
-                    : BinningBAMIndex.open(mIndexStream, mIndexLoading);
-            final int sequenceCount = mFileHeader.getSequenceDictionary().size();
-            if (index.getNumberOfReferences() != sequenceCount) {
-                index.close();
-                throw new SAMFormatException(String.format(
-                        "The index %s covers %d reference sequences but the header of %s has %d, so it was not "
-                                + "made for this file, or numbers the sequences some other way",
-                        mIndexPath != null ? mIndexPath : mIndexStream.getSource(),
-                        index.getNumberOfReferences(),
-                        mPath != null ? mPath : "the SAM text",
-                        sequenceCount));
-            }
-            mIndex = index;
+            mIndex = openIndex();
         }
         return mIndex;
+    }
+
+    /**
+     * Opens the file's index, whichever of the two tools made it. samtools numbers the references of an index as
+     * the header lists them, and says nothing more in it; tabix numbers them as it meets them in the file, and
+     * names them, in a TBI or in the aux block of a CSI. Asking an index of the second kind by header ordinal
+     * would silently give the records of some other reference, so it is asked by name.
+     */
+    private BinningBAMIndex openIndex() {
+        if (mIndexPath != null
+                && mIndexPath.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(FileExtensions.TABIX_INDEX)) {
+            final TabixIndex tabix;
+            try {
+                tabix = new TabixIndex(mIndexPath);
+            } catch (final IOException e) {
+                throw new RuntimeIOException("Error reading index " + mIndexPath, e);
+            }
+            return new BinningBAMIndex(numberedAsTheHeaderDoes(
+                    tabix.getBinningIndex(), new TabixIndex.Header(tabix.getFormatSpec(), tabix.getSequenceNames())));
+        }
+
+        final BinningBAMIndex index = mIndexPath != null
+                ? BinningBAMIndex.open(mIndexPath, mIndexLoading)
+                : BinningBAMIndex.open(mIndexStream, mIndexLoading);
+        try {
+            final ReferenceBinsSource source = index.getSource();
+            if (source instanceof FileBackedBinningIndex file && file.getAux().length > 0) {
+                return new BinningBAMIndex(numberedAsTheHeaderDoes(source, TabixIndex.readCsiAux(file.getAux())));
+            }
+            final int sequenceCount = mFileHeader.getSequenceDictionary().size();
+            if (index.getNumberOfReferences() != sequenceCount) {
+                throw new SAMFormatException(String.format(
+                        "The index %s covers %d reference sequences but the header of %s has %d, so it was not "
+                                + "made for this file",
+                        describeIndex(), index.getNumberOfReferences(), describeFile(), sequenceCount));
+            }
+            return index;
+        } catch (final RuntimeException e) {
+            index.close();
+            throw e;
+        }
+    }
+
+    /**
+     * @param source an index made by tabix
+     * @param header what that index says of the file
+     * @return the index with each reference under the number the header gives the sequence of that name
+     */
+    private ReferenceBinsSource numberedAsTheHeaderDoes(
+            final ReferenceBinsSource source, final TabixIndex.Header header) {
+        if (!TabixFormat.SAM.equals(header.format())) {
+            throw new SAMFormatException(
+                    "The index " + describeIndex() + " was made by tabix for a format other than SAM");
+        }
+        final int[] indexOrdinals = new int[mFileHeader.getSequenceDictionary().size()];
+        Arrays.fill(indexOrdinals, -1);
+        for (int i = 0; i < header.sequenceNames().size(); i++) {
+            final String name = header.sequenceNames().get(i);
+            if (name.equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)) {
+                continue; // tabix lists the reads without a position as a sequence of their own
+            }
+            final int headerOrdinal = mFileHeader.getSequenceIndex(name);
+            if (headerOrdinal == -1) {
+                throw new SAMFormatException(String.format(
+                        "The index %s names the sequence %s, which the header of %s does not have, so it was not "
+                                + "made for this file",
+                        describeIndex(), name, describeFile()));
+            }
+            indexOrdinals[headerOrdinal] = i;
+        }
+        return new RenumberedReferenceBinsSource(source, indexOrdinals);
+    }
+
+    private String describeIndex() {
+        return mIndexPath != null ? mIndexPath.toString() : mIndexStream.getSource();
+    }
+
+    private String describeFile() {
+        return mPath != null ? mPath.toString() : "the SAM text";
     }
 
     @Override
