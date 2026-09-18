@@ -103,28 +103,43 @@ public class BAMFileWriter extends SAMFileWriterImpl {
     // Allow enabling the bam index construction
     // only enabled by factory method before anything is written
     void enableBamIndexConstruction() {
+        enableBamIndexConstruction(BamIndexType.BAI, BAMIndexer.DEFAULT_CSI_MIN_SHIFT);
+    }
+
+    /**
+     * @param indexType the kind of index to write beside the BAM: a BAI is named {@code x.bai} and a CSI
+     *     {@code x.bam.csi}, as samtools names it
+     * @param csiMinShift for a CSI, log2 of the span of its smallest bins
+     */
+    void enableBamIndexConstruction(final BamIndexType indexType, final int csiMinShift) {
         if (!getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)) {
             throw new SAMException("Not creating BAM index since not sorted by coordinates: " + getSortOrder());
         }
         if (getFilename() == null) {
             throw new SAMException("Not creating BAM index since we don't have an output file name");
         }
-        bamIndexer = createBamIndex(getFilename());
+        bamIndexer =
+                createBamIndex(getFilename(), indexType.resolve(getFileHeader().getSequenceDictionary()), csiMinShift);
     }
 
-    private BAMIndexer createBamIndex(final String pathURI) {
+    private BAMIndexer createBamIndex(final String pathURI, final BamIndexType indexType, final int csiMinShift) {
         try {
-            final String indexFileBase = SamReader.Type.BAM_TYPE.hasValidFileExtension(pathURI)
-                    ? pathURI.substring(0, pathURI.lastIndexOf('.'))
-                    : pathURI;
-            final Path indexPath = IOUtil.getPath(indexFileBase + FileExtensions.BAI_INDEX);
+            final Path indexPath;
+            if (indexType == BamIndexType.CSI) {
+                indexPath = IOUtil.getPath(pathURI + FileExtensions.CSI);
+            } else {
+                final String indexFileBase = SamReader.Type.BAM_TYPE.hasValidFileExtension(pathURI)
+                        ? pathURI.substring(0, pathURI.lastIndexOf('.'))
+                        : pathURI;
+                indexPath = IOUtil.getPath(indexFileBase + FileExtensions.BAI_INDEX);
+            }
             if (Files.exists(indexPath)) {
                 if (!Files.isWritable(indexPath)) {
                     throw new SAMException(
                             "Not creating BAM index since unable to write index file " + indexPath.toUri());
                 }
             }
-            return new BAMIndexer(indexPath, getFileHeader());
+            return new BAMIndexer(indexPath, getFileHeader(), indexType, csiMinShift);
         } catch (Exception e) {
             throw new SAMException("Not creating BAM index", e);
         }

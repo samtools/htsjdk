@@ -27,10 +27,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.index.BinningIndex;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -233,6 +236,69 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     private void verbose(final String text) {
         if (mVerbose) {
             System.out.println("#BAMIndexWriterTest " + text);
+        }
+    }
+
+    /**
+     * samtools files a placed but unmapped read under the 16 kb window its position falls in, including when that
+     * position is the first of a window.
+     */
+    @Test
+    public void testPlacedUnmappedReadOnAWindowBoundaryIsFiledUnderItsOwnWindow() throws Exception {
+        final int firstBaseOfSecondWindow = 16_385;
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, 1_000_000);
+        records.addFrag("before", 0, 100, false);
+        records.addFrag("placedUnmapped", 0, firstBaseOfSecondWindow, false, true, null, null, -1);
+        records.addFrag("after", 0, 30_000, false);
+        final Path bam = Files.createTempFile("windowBoundary.", ".bam");
+        bam.toFile().deleteOnExit();
+        try (SAMFileWriter writer = new SAMFileWriterFactory()
+                .setCreateIndex(false)
+                .setCreateMd5File(false)
+                .makeBAMWriter(records.getHeader(), true, bam)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+        final Path bai = Files.createTempFile("windowBoundary.", ".bai");
+        bai.toFile().deleteOnExit();
+        long offsetOfPlacedUnmapped = -1;
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            final BAMIndexer indexer = new BAMIndexer(bai, reader.getFileHeader());
+            for (final SAMRecord record : reader) {
+                if (record.getReadName().equals("placedUnmapped")) {
+                    offsetOfPlacedUnmapped = ((BAMFileSpan)
+                                    record.getFileSource().getFilePointer())
+                            .getSingleChunk()
+                            .getChunkStart();
+                }
+                indexer.processAlignment(record);
+            }
+            indexer.finish();
+        }
+
+        try (InputStream in = Files.newInputStream(bai)) {
+            final BinaryCodec codec = new BinaryCodec(in);
+            codec.readBytes(new byte[4]);
+            final BinningIndex index = BinningIndex.readBaiLayout(
+                    codec, codec.readInt(), BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+            assertEquals(index.getReference(0).getLinearIndex()[1], offsetOfPlacedUnmapped);
+        }
+    }
+
+    @Test
+    public void testArgumentsAreCheckedBeforeTheIndexPathIsOpened() throws IOException {
+        final Path existing = Files.createTempFile("keepMe.", ".bai");
+        existing.toFile().deleteOnExit();
+        Files.writeString(existing, "an index somebody still wants");
+        final SAMFileHeader unindexable = new SAMFileHeader();
+        unindexable.setSortOrder(SAMFileHeader.SortOrder.queryname);
+        try {
+            new BAMIndexer(existing, unindexable);
+            throw new AssertionError("a queryname-sorted header was accepted");
+        } catch (final SAMException expected) {
+            assertEquals(Files.readString(existing), "an index somebody still wants");
         }
     }
 }

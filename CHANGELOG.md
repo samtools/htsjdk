@@ -17,7 +17,7 @@ Major release.
 ### Headlines
 
 - **An indexed CRAM is now written with a `.crai`, not a `.cram.bai`, and CRAM region queries are answered from the CRAI directly.**  Opening a CRAI-indexed CRAM is several times faster, queries read fewer containers, and a CRAM on a reference longer than 512 Mbp is finally queryable.  See below for the migration path.
-- **Tabix-indexed files (VCF, BED, GFF, ...) can be indexed with CSI as well as TBI**, so contigs longer than 512 Mbp are indexable and queryable.  TBI remains the default.
+- **BAM and tabix-indexed files (VCF, BED, GFF, ...) can be indexed with CSI**, so references longer than 512 Mbp are indexable and queryable.  BAI and TBI remain the defaults.
 - **htsjdk now uses `java.nio.file.Path` (not `java.io.File`) throughout its public API.**  This makes the whole library work with any NIO `FileSystemProvider` (SPI) — Amazon S3, Google Cloud Storage, HDFS, in-memory filesystems such as [jimfs](https://github.com/google/jimfs), and so on — through the same reader, writer, factory and index APIs you already use, with no File-specific code paths.
 - **String- and URI-based entry points are scheme-aware.**  Where an API takes a path as a `String`, it is resolved with `IOUtil.getPath`, which honours the URI scheme (e.g. `file:`, `gs:`, `s3:`, custom providers) and falls back to the local filesystem for plain paths (including paths containing spaces).  Existing HTTP/HTTPS and FTP behaviour is unchanged — those continue to flow through htsjdk's `SeekableStream` machinery rather than NIO.
 
@@ -105,6 +105,19 @@ Consumers should review these before upgrading.
 
 - The test suite cross-checks htsjdk against htslib's `tabix` in both directions, for TBI and CSI; CI installs `tabix` alongside samtools.
 
+### BAM indexing
+
+- **New: CSI indexes for BAM**, for references longer than 512 Mbp, which a BAI cannot address.  `SAMFileWriterFactory.setBamIndexType(BamIndexType)` chooses the index written when index creation is on: `BAI` (the default, unchanged, written as `x.bai`), `CSI` (written as `x.bam.csi`, as samtools names it), or `AUTO`, which writes a CSI only when a sequence in the header is too long for a BAI, so that a pipeline expecting `.bai` files keeps getting them.  `setCsiMinShift` sets the span of the smallest bins (default 14, as for samtools); the rest of the binning scheme is chosen as `samtools index -c` chooses it.  `BAMIndexer` takes the same type, as does `BAMIndexer.createIndex(reader, output, log, indexType)` for indexing an existing BAM.  samtools reads the result, record counts included.
+
+  ```java
+  SAMFileWriter w = new SAMFileWriterFactory()
+          .setCreateIndex(true)
+          .setBamIndexType(BamIndexType.AUTO)
+          .makeBAMWriter(header, true, Path.of("out.bam"));
+  ```
+
+- `BAMIndexer` now builds through `htsjdk.index.BinningIndex` and writes the index when `finish()` is called, rather than reference by reference.  A BAI built for a real BAM is byte-for-byte what 5.x wrote, with one exception: a placed but unmapped read whose position is the first base of a 16 kb window is now entered in the linear index under that window, as samtools enters it, rather than under the window before.  An attempt to index a read beyond 2<sup>29</sup> in a BAI fails with a message pointing at CSI.
+
 ### Bgzipped SAM
 
 - **New: `SAMFileWriterFactory` writes BGZF-compressed SAM** when the output name is `.sam` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case, through `makeWriter`, `makeSAMOrBAMWriter` or `makeSAMWriter`.  The factory's compression level and deflater factory apply, the file ends with the BGZF end-of-file block, and an MD5 file, if requested, is of the compressed bytes.  samtools and `SamReaderFactory` read the result.  No index is written for it yet.
@@ -133,6 +146,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - `VariantContextWriterBuilder` no longer replaces an `IndexCreator` supplied by the caller when the output is block-compressed VCF.
 - `TabixReader` rejects a plain-gzip (non-BGZF) file when it is opened, with a message saying so, and names the index files it looked for when none exists.
 - `ProcessExecutor.executeAndReturnInterleavedOutput` no longer deadlocks when the child process writes more than a pipe buffer of output.
+- `queryUnmapped()` on a CSI-indexed BAM could seek to the wrong place, including into the BAM header: `CSIIndex.getStartOfLastLinearBin` took the `loffset` of whichever bin came last in the index file, where bins are in no particular order and the last may be the metadata pseudo-bin.  It now takes the largest `loffset` among the real bins.
 - `SAMFileWriterFactory.clone()` and its copy constructor now carry over the deflater factory and the SAM flag field format; both were reset to their defaults in the copy.
 
 ### Testing
