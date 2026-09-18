@@ -589,7 +589,10 @@ public final class BinningIndex implements ReferenceBinsSource {
     }
 
     /**
-     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation.
+     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation. The
+     * parts' linear indexes may be filled or built with {@link Builder#leavingEmptyWindowsUnset()}; the merged one is
+     * filled either way, but only unset parts let a window a part holds no record of take a later part's offset
+     * rather than the fill.
      *
      * @param parts the part indexes, in file order; all must share a binning scheme and reference count
      * @param partOffsets for each part, the byte offset in the concatenated file at which the part starts
@@ -635,17 +638,23 @@ public final class BinningIndex implements ReferenceBinsSource {
                                 BlockCompressedFilePointerUtil.shift(reference.loffsets()[i], partOffset));
                     }
                 }
-                // For a window covered by several parts the earliest part has the smallest offset.
+                // The earliest part with an offset for a window has the smallest. A part built with
+                // Builder.leavingEmptyWindowsUnset() has none for a window it holds no record of, so a later part
+                // that does can supply it.
                 final long[] partLinearIndex = reference.linearIndex();
                 if (partLinearIndex.length > linearIndex.length) {
                     final int alreadyCovered = linearIndex.length;
                     linearIndex = Arrays.copyOf(linearIndex, partLinearIndex.length);
-                    for (int w = alreadyCovered; w < partLinearIndex.length; w++) {
+                    Arrays.fill(linearIndex, alreadyCovered, linearIndex.length, Builder.UNSET);
+                }
+                for (int w = 0; w < partLinearIndex.length; w++) {
+                    if (linearIndex[w] == Builder.UNSET && partLinearIndex[w] != Builder.UNSET) {
                         linearIndex[w] = BlockCompressedFilePointerUtil.shift(partLinearIndex[w], partOffset);
                     }
                 }
                 metadata = mergeMetadata(metadata, reference.getMetadata().orElse(null), partOffset);
             }
+            Builder.fillUnsetWindows(linearIndex, linearIndex.length);
             merged.add(accumulator.toReferenceBins(
                     linearIndex.length > 0 ? null : loffsets::get, linearIndex, metadata, first.depth));
         }
@@ -904,15 +913,7 @@ public final class BinningIndex implements ReferenceBinsSource {
             for (int window = windowCount - 2; forCsi && window >= 0; window--) {
                 if (loffsetSource[window] == UNSET) loffsetSource[window] = loffsetSource[window + 1];
             }
-            // The stored linear index instead gives such a window the nearest preceding offset, as samtools does.
-            long previous = 0;
-            for (int window = 0; fillEmptyWindows && window < windowCount; window++) {
-                if (linearIndex[window] == UNSET) {
-                    linearIndex[window] = previous;
-                } else {
-                    previous = linearIndex[window];
-                }
-            }
+            if (fillEmptyWindows) fillUnsetWindows(linearIndex, windowCount);
             final ReferenceBins.Metadata metadata;
             if (countsAreReported) {
                 metadata = accumulator.metadata(mappedCount, unmappedCount);
@@ -925,6 +926,21 @@ public final class BinningIndex implements ReferenceBinsSource {
                     metadata,
                     depth));
             accumulator = null;
+        }
+
+        /**
+         * Gives each of the first {@code windowCount} windows that no record overlaps the nearest preceding offset,
+         * or 0 if there is none, as samtools does in the linear index it stores.
+         */
+        private static void fillUnsetWindows(final long[] linearIndex, final int windowCount) {
+            long previous = 0;
+            for (int window = 0; window < windowCount; window++) {
+                if (linearIndex[window] == UNSET) {
+                    linearIndex[window] = previous;
+                } else {
+                    previous = linearIndex[window];
+                }
+            }
         }
 
         /**

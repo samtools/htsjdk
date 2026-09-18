@@ -62,7 +62,15 @@ final class IndexedRecords {
 
     /** Indexes the records under the given binning scheme. */
     BinningIndex index(final int minShift, final int depth, final int referenceCount) {
-        final BinningIndex.Builder builder = new BinningIndex.Builder(minShift, depth);
+        return index(new BinningIndex.Builder(minShift, depth), referenceCount);
+    }
+
+    /** Indexes the records as one part of a file to be merged, leaving windows without records unset. */
+    BinningIndex partIndex(final int minShift, final int depth, final int referenceCount) {
+        return index(new BinningIndex.Builder(minShift, depth).leavingEmptyWindowsUnset(), referenceCount);
+    }
+
+    private BinningIndex index(final BinningIndex.Builder builder, final int referenceCount) {
         for (final Rec rec : records) {
             builder.add(rec.referenceIndex(), rec.start(), rec.end(), rec.chunkStart(), rec.chunkEnd());
         }
