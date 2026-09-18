@@ -24,8 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.io.InputStreamUtils;
-import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
@@ -33,6 +32,7 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -172,11 +172,8 @@ public class BAMMergerTest extends HtsjdkTest {
                 BAMIndexMerger bamIndexMerger = new BAMIndexMerger(out, Files.size(headerPath));
                 int i = 1; // start from 1 since we ignore the header
                 for (Path baiPart : baiParts) {
-                    try (InputStream in = Files.newInputStream(baiPart)) {
-                        // read all bytes into memory since AbstractBAMFileIndex reads lazily
-                        byte[] bytes = InputStreamUtils.readFully(in);
-                        SeekableStream allIn = new ByteArraySeekableStream(bytes);
-                        AbstractBAMFileIndex index = BAMIndexMerger.openIndex(allIn, header.getSequenceDictionary());
+                    try (SeekableStream in = new SeekablePathStream(baiPart)) {
+                        AbstractBAMFileIndex index = BAMIndexMerger.openIndex(in, header.getSequenceDictionary());
                         bamIndexMerger.processIndex(index, Files.size(bamParts.get(i++)));
                     }
                 }
@@ -264,10 +261,16 @@ public class BAMMergerTest extends HtsjdkTest {
         // 4. Assert that the merged index is the same as the index produced from the merged file
         // Check equality on object before comparing file contents to get a better indication
         // of the difference in case they are not equal.
-        BaiEqualityChecker.assertEquals(outputBam, outputBai, outputBaiMerged);
+        BaiEqualityChecker.assertEquals(outputBai, outputBaiMerged);
         Assert.assertEquals(Files.readAllBytes(outputBai), Files.readAllBytes(outputBaiMerged));
 
         // 5. Assert that the merged SBI index is the same as the SBI index produced from the merged file
         Assert.assertEquals(Files.readAllBytes(outputSbi), Files.readAllBytes(outputSbiMerged));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testACsiIsRejectedAsAPartIndex() {
+        final Path csi = Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi");
+        new BAMIndexMerger(new ByteArrayOutputStream(), 0).processIndex(new CSIIndex(csi, false, null), 100);
     }
 }

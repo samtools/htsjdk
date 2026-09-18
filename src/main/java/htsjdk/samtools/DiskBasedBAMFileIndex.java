@@ -25,12 +25,14 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * A class for reading BAM file indices, hitting the disk once per query.
+ * A BAM index opened by its caller rather than by a {@link SamReader}.
+ *
+ * @deprecated ask a {@link SamReader} for its index, or to read an index on its own open it with
+ *     {@link htsjdk.index.FileBackedBinningIndex}
  */
+@Deprecated
 public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex {
     public DiskBasedBAMFileIndex(final Path path, final SAMSequenceDictionary dictionary) {
         super(path, dictionary);
@@ -40,40 +42,11 @@ public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex {
         super(stream, dictionary);
     }
 
+    /**
+     * @param useMemoryMapping has no effect: an index is no longer memory-mapped
+     */
     public DiskBasedBAMFileIndex(
             final Path path, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
         super(path, dictionary, useMemoryMapping);
-    }
-
-    /**
-     * Get list of regions of BAM file that may contain SAMRecords for the given range
-     * @param referenceIndex sequence of desired SAMRecords
-     * @param startPos 1-based start of the desired interval, inclusive
-     * @param endPos 1-based end of the desired interval, inclusive
-     * @return array of pairs of virtual file positions.  Each pair is the first and last
-     * virtual file position in a range that can be scanned to find SAMRecords that overlap the given
-     * positions. The last position in each pair is a virtual file pointer to the first SAMRecord beyond
-     * the range that may contain the indicated SAMRecords.
-     */
-    @Override
-    public BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos) {
-        final BAMIndexContent queryResults = query(referenceIndex, startPos, endPos);
-
-        if (queryResults == null) return null;
-
-        List<Chunk> chunkList = new ArrayList<Chunk>();
-        for (final Chunk chunk : queryResults.getAllChunks()) chunkList.add(chunk.clone());
-        chunkList =
-                Chunk.optimizeChunkList(chunkList, queryResults.getLinearIndex().getMinimumOffset(startPos));
-        return new BAMFileSpan(chunkList);
-    }
-
-    @Override
-    protected BAMIndexContent getQueryResults(final int reference) {
-        throw new UnsupportedOperationException();
-        // todo: there ought to be a way to support this using the first startPos for the reference and the last
-        // return query(reference, 1, -1);
-        // If this were implemented, BAMIndexer.createAndWriteIndex could extend DiskBasedBAMFileIndex -or-
-        // CachingBAMFileIndex
     }
 }

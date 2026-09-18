@@ -68,11 +68,12 @@ public class SamReaderTypedIndexAccessTest extends HtsjdkTest {
 
     @Test
     public void testBrowseableAccessorsAgreeWithTheTypedAccessor() throws IOException {
-        // A disk-based BAI is not browseable; a cached one is.
+        // A BAI is browseable, with or without the option that once made it so.
         try (final SamReader reader = open(INDEXED_BAM)) {
-            Assert.assertFalse(reader.indexing().hasBrowseableIndex());
-            Assert.assertTrue(
-                    reader.indexing().getHtsIndex(BrowseableBAMIndex.class).isEmpty());
+            Assert.assertTrue(reader.indexing().hasBrowseableIndex());
+            Assert.assertSame(
+                    reader.indexing().getBrowseableIndex(),
+                    reader.indexing().getHtsIndex(BrowseableBAMIndex.class).orElseThrow());
         }
         try (final SamReader reader = open(INDEXED_BAM, SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES)) {
             Assert.assertTrue(reader.indexing().hasBrowseableIndex());
@@ -84,7 +85,7 @@ public class SamReaderTypedIndexAccessTest extends HtsjdkTest {
 
     @Test(expectedExceptions = SAMException.class)
     public void testGetBrowseableIndexThrowsWhenTheIndexIsNotBrowseable() throws IOException {
-        try (final SamReader reader = open(INDEXED_BAM)) {
+        try (final SamReader reader = open(CRAI_INDEXED_CRAM)) {
             reader.indexing().getBrowseableIndex();
         }
     }

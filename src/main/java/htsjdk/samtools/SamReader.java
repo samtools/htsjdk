@@ -699,6 +699,9 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         abstract void enableIndexMemoryMapping(final boolean enabled);
 
+        /** Sets when a BAI or CSI index is read from its file; a no-op for readers that have no such index. */
+        void setIndexLoading(final IndexLoading indexLoading) {}
+
         abstract void enableCrcChecking(final boolean enabled);
 
         abstract void setSAMRecordFactory(final SAMRecordFactory factory);

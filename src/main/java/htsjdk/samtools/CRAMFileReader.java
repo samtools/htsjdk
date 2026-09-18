@@ -52,6 +52,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     private Path mIndexPath;
     private boolean mEnableIndexCaching;
     private boolean mEnableIndexMemoryMapping;
+    private IndexLoading mIndexLoading = IndexLoading.AUTO;
 
     /** Index stream, if the reader was built from streams. */
     private SeekableStream indexStream;
@@ -383,6 +384,15 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         mEnableIndexMemoryMapping = enabled;
     }
 
+    /** No-op for a CRAI; see {@link #enableIndexCaching(boolean)}. */
+    @Override
+    void setIndexLoading(final IndexLoading indexLoading) {
+        if (mIndex != null && indexLoading != mIndexLoading) {
+            throw new SAMException("Unable to change index loading; index file has already been loaded.");
+        }
+        mIndexLoading = indexLoading;
+    }
+
     @Override
     void enableCrcChecking(final boolean enabled) {
         // inapplicable to CRAM: do nothing
@@ -417,9 +427,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             if (mIndexPath != null) {
                 final String indexFileName = mIndexPath.getFileName().toString();
                 if (indexFileName.endsWith(FileExtensions.BAI_INDEX)) {
-                    mIndex = mEnableIndexCaching
-                            ? new CachingBAMFileIndex(mIndexPath, dictionary, mEnableIndexMemoryMapping)
-                            : new DiskBasedBAMFileIndex(mIndexPath, dictionary, mEnableIndexMemoryMapping);
+                    mIndex = BinningBAMIndex.open(mIndexPath, mIndexLoading);
                     return mIndex;
                 }
             }
@@ -445,9 +453,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 throw new RuntimeIOException(e);
             }
 
-            mIndex = mEnableIndexCaching
-                    ? new CachingBAMFileIndex(baiStream, dictionary)
-                    : new DiskBasedBAMFileIndex(baiStream, dictionary);
+            mIndex = BinningBAMIndex.open(baiStream, mIndexLoading);
         }
         return mIndex;
     }

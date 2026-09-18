@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.index.BinningIndex;
+import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
@@ -230,44 +231,39 @@ public class BAMIndexer {
                 // samtools puts nothing in the format-specific block for a BAM
                 index.writeCsi(codec, new byte[0]);
             } else {
-                codec.writeBytes(BAMFileConstants.BAM_INDEX_MAGIC);
-                codec.writeInt(numReferences);
-                index.writeBaiLayout(codec);
+                writeBai(index, codec);
             }
         }
     }
 
+    /** Writes a whole BAI file: the magic, the reference count, and the index in the BAI layout. */
+    static void writeBai(final BinningIndex index, final BinaryCodec codec) {
+        codec.writeBytes(BAMFileConstants.BAM_INDEX_MAGIC);
+        codec.writeInt(index.getReferenceCount());
+        index.writeBaiLayout(codec);
+    }
+
     /**
-     * Generates a BAM index file, either textual or binary, from an input BAI file.
-     * Only used for testing, but located here for visibility into CachingBAMFileIndex.
+     * Rewrites a BAI file, as a BAI or as human-readable text. Only used for testing.
      *
      * @param input      Input BAM Index (.bai) file path
      * @param output     Output BAM Index (.bai) file path (or bai.txt file when text)
      * @param textOutput Whether to create text output or binary
      */
     public static void createAndWriteIndex(final Path input, final Path output, final boolean textOutput) {
-
-        // content is from an existing bai file.
-
-        final CachingBAMFileIndex existingIndex = new CachingBAMFileIndex(input, null);
-        final int n_ref = existingIndex.getNumberOfReferences();
-        final BAMIndexWriter outputWriter;
-        if (textOutput) {
-            outputWriter = new TextualBAMIndexWriter(n_ref, output);
-        } else {
-            outputWriter = new BinaryBAMIndexWriter(n_ref, output);
-        }
-
-        // write the content one reference at a time
-        try {
-            for (int i = 0; i < n_ref; i++) {
-                outputWriter.writeReference(existingIndex.getQueryResults(i));
+        final BinningIndex index;
+        try (FileBackedBinningIndex existingIndex = FileBackedBinningIndex.open(input, true)) {
+            if (existingIndex.isCsi()) {
+                throw new SAMException("Expected a BAI but found a CSI: " + input);
             }
-            outputWriter.writeNoCoordinateRecordCount(existingIndex.getNoCoordinateCount());
-            outputWriter.close();
-
-        } catch (final Exception e) {
-            throw new SAMException("Exception creating BAM index", e);
+            index = existingIndex.loadAll();
+        }
+        if (textOutput) {
+            TextualBAMIndexWriter.write(index, output);
+        } else {
+            try (BinaryCodec codec = new BinaryCodec(output, true)) {
+                writeBai(index, codec);
+            }
         }
     }
 

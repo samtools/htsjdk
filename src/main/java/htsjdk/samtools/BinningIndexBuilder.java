@@ -29,7 +29,10 @@ import java.util.Arrays;
 
 /**
  * Builder for a BinningIndexContent object.
+ *
+ * @deprecated nothing in htsjdk builds an index this way any longer; use {@link htsjdk.index.BinningIndex.Builder}
  */
+@Deprecated
 public class BinningIndexBuilder {
     private static final int UNINITIALIZED_WINDOW = -1;
     private final int referenceSequence;

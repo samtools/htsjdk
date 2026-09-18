@@ -197,6 +197,20 @@ public abstract class SamReaderFactory {
     /** Reapplies any changed options to the reader * */
     public abstract void reapplyOptions(SamReader reader);
 
+    /**
+     * Sets when readers created by this factory read a BAI or CSI index from its file; the default is
+     * {@link IndexLoading#AUTO}. Returns the factory itself.
+     *
+     * <p>Not abstract, unlike the setters around it, so that a factory written before it existed still compiles;
+     * such a factory cannot honour a request, so it refuses any but the default.
+     */
+    public SamReaderFactory indexLoading(final IndexLoading indexLoading) {
+        if (indexLoading != IndexLoading.AUTO) {
+            throw new UnsupportedOperationException("This factory does not support index loading " + indexLoading);
+        }
+        return this;
+    }
+
     /** Set this factory's {@link ValidationStringency} to the provided one, then returns itself. */
     public abstract SamReaderFactory validationStringency(final ValidationStringency validationStringency);
 
@@ -248,6 +262,7 @@ public abstract class SamReaderFactory {
         private CustomReaderFactory customReaderFactory;
         private CRAMReferenceSource referenceSource;
         private InflaterFactory inflaterFactory;
+        private IndexLoading indexLoading = IndexLoading.AUTO;
 
         private SamReaderFactoryImpl(
                 final EnumSet<Option> enabledOptions,
@@ -331,6 +346,15 @@ public abstract class SamReaderFactory {
             for (final Option option : enabledOptions) {
                 option.applyTo((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader);
             }
+        }
+
+        @Override
+        public SamReaderFactory indexLoading(final IndexLoading indexLoading) {
+            if (indexLoading == null) {
+                throw new IllegalArgumentException("null index loading");
+            }
+            this.indexLoading = indexLoading;
+            return this;
         }
 
         @Override
@@ -511,6 +535,9 @@ public abstract class SamReaderFactory {
                 for (final Option option : enabledOptions) {
                     option.applyTo(reader);
                 }
+                if (primitiveSamReader instanceof SamReader.ReaderImplementation) {
+                    ((SamReader.ReaderImplementation) primitiveSamReader).setIndexLoading(indexLoading);
+                }
 
                 return reader;
             } catch (final IOException | URISyntaxException e) {
@@ -557,12 +584,14 @@ public abstract class SamReaderFactory {
         },
 
         /**
-         * The factory's {@link SamReader}s' {@link SamReader#indexing()}'s calls to {@link SamReader.Indexing#getIndex()} will produce
-         * {@link BAMIndex}es that do some caching in memory instead of reading the index from the disk for each query operation.
+         * Has no effect. It asked for a BAI's index data to be kept in memory between queries, which every BAI and CSI
+         * index now does for as long as there is memory for it; see {@link IndexLoading}.
          *
+         * @deprecated no longer needed; will be removed in a future release
          * @see SamReader#indexing()
          * @see htsjdk.samtools.SamReader.Indexing#getIndex()
          */
+        @Deprecated
         CACHE_FILE_BASED_INDEXES {
             @Override
             void applyTo(final BAMFileReader underlyingReader, final SamReader reader) {
@@ -586,12 +615,13 @@ public abstract class SamReaderFactory {
         },
 
         /**
-         * The factory's {@link SamReader}s' will not use memory mapping for accessing index files (which is used by default).  This is
-         * slower but more scalable when accessing large numbers of BAM files sequentially.
+         * Has no effect: index files are no longer memory-mapped.
          *
+         * @deprecated no longer needed; will be removed in a future release
          * @see SamReader#indexing()
          * @see htsjdk.samtools.SamReader.Indexing#getIndex()
          */
+        @Deprecated
         DONT_MEMORY_MAP_INDEX {
             @Override
             void applyTo(final BAMFileReader underlyingReader, final SamReader reader) {

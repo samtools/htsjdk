@@ -2,6 +2,7 @@ package htsjdk.samtools.seekablestream;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class SeekableMemoryStream extends SeekableStream {
     private final ByteBuffer buf;
@@ -34,6 +35,10 @@ public class SeekableMemoryStream extends SeekableStream {
 
     @Override
     public int read(final byte[] buffer, final int offset, final int length) throws IOException {
+        Objects.checkFromIndexSize(offset, length, buffer.length);
+        if (length == 0) {
+            return 0; // as InputStream requires; -1 here makes readAllBytes() stop at its first full buffer
+        }
         int availableLength = Math.min(length, buf.remaining());
         if (availableLength < 1) {
             return -1;

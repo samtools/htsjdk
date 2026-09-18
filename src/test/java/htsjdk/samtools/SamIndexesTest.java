@@ -105,8 +105,8 @@ public class SamIndexesTest extends HtsjdkTest {
 
         baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
-        final CachingBAMFileIndex bamIndex =
-                new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
+        final BAMIndex bamIndex =
+                BinningBAMIndex.open(new SeekableMemoryStream(baos.toByteArray(), null), IndexLoading.AUTO);
         final BAMFileSpan span = bamIndex.getSpanOverlapping(
                 entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
@@ -135,7 +135,7 @@ public class SamIndexesTest extends HtsjdkTest {
         final SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(new SeekableFileStream(file), dictionary);
         Assert.assertNotNull(baiStream);
 
-        final CachingBAMFileIndex bamIndex = new CachingBAMFileIndex(baiStream, dictionary);
+        final BAMIndex bamIndex = BinningBAMIndex.open(baiStream, IndexLoading.AUTO);
         final BAMFileSpan span = bamIndex.getSpanOverlapping(
                 entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);
@@ -188,8 +188,8 @@ public class SamIndexesTest extends HtsjdkTest {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOUtil.copyStream(baiStream, baos);
-        final CachingBAMFileIndex bamIndex =
-                new CachingBAMFileIndex(new SeekableMemoryStream(baos.toByteArray(), null), dictionary);
+        final BAMIndex bamIndex =
+                BinningBAMIndex.open(new SeekableMemoryStream(baos.toByteArray(), null), IndexLoading.AUTO);
         final BAMFileSpan span = bamIndex.getSpanOverlapping(
                 entry.getSequenceId(), entry.getAlignmentStart(), entry.getAlignmentStart());
         Assert.assertNotNull(span);

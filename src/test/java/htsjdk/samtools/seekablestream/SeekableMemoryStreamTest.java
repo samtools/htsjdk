@@ -96,4 +96,27 @@ public class SeekableMemoryStreamTest extends HtsjdkTest {
         stream.reset();
         Assert.assertEquals(stream.read(new byte[l]), l);
     }
+
+    @Test
+    public void testReadingZeroBytesReturnsZeroRatherThanEndOfStream() throws IOException {
+        try (SeekableMemoryStream stream = new SeekableMemoryStream(new byte[100], "test")) {
+            Assert.assertEquals(stream.read(new byte[10], 0, 0), 0);
+        }
+    }
+
+    @Test(expectedExceptions = IndexOutOfBoundsException.class)
+    public void testReadingZeroBytesStillRejectsARangeOutsideTheBuffer() throws IOException {
+        try (SeekableMemoryStream stream = new SeekableMemoryStream(new byte[100], "test")) {
+            stream.read(new byte[1], -1, 0);
+        }
+    }
+
+    @Test
+    public void testReadAllBytesReadsPastItsFirstBuffer() throws IOException {
+        final byte[] data = new byte[20_000];
+        java.util.Arrays.fill(data, (byte) 7);
+        try (SeekableMemoryStream stream = new SeekableMemoryStream(data, "test")) {
+            Assert.assertEquals(stream.readAllBytes(), data);
+        }
+    }
 }

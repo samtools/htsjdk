@@ -53,7 +53,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         Assert.assertEquals(
                 mappedSlice.getAlignmentContext().getReferenceContext(),
                 new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
-        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexBytes);
+        final BinningBAMIndex index = openIndex(indexBytes);
 
         // mapped and unmapped reads are counted, no unmapped
         assertIndexMetadata(index, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, mappedCount, 0);
@@ -89,7 +89,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final byte[] indexBytes = executeCRAMBAIIndexer(container, ValidationStringency.SILENT);
         Assert.assertEquals(container.getSlices().size(), 1);
 
-        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexBytes);
+        final BinningBAMIndex index = openIndex(indexBytes);
         assertIndexMetadata(index, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, MAPPED_COUNT, 0);
         Assert.assertEquals(index.getNoCoordinateCount().longValue(), 0);
     }
@@ -110,7 +110,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         final byte[] indexBytes = executeCRAMBAIIndexer(container, ValidationStringency.SILENT);
         Assert.assertEquals(container.getSlices().size(), 1);
 
-        final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexBytes);
+        final BinningBAMIndex index = openIndex(indexBytes);
         assertIndexMetadata(index, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, 0, 0);
         Assert.assertEquals(index.getNoCoordinateCount().longValue(), UNMAPPED_COUNT);
     }
@@ -158,7 +158,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
                     .forEach(r -> cramContainerStreamWriter.writeAlignment(r));
             cramContainerStreamWriter.finish(true);
 
-            final AbstractBAMFileIndex index = getAbstractBAMFileIndex(indexStream.toByteArray());
+            final BinningBAMIndex index = openIndex(indexStream.toByteArray());
 
             assertIndexMetadata(index, refId1, RECORDS_PER_SLICE, 0);
             assertIndexMetadata(index, refId2, RECORDS_PER_SLICE, 0);
@@ -189,7 +189,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
     }
 
     private void assertIndexMetadata(
-            final AbstractBAMFileIndex index,
+            final BinningBAMIndex index,
             final int referenceSequence,
             final int mappedReadsCount,
             final int unmappedPlacedReadsCount) {
@@ -198,9 +198,9 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         Assert.assertEquals(meta.getUnalignedRecordCount(), unmappedPlacedReadsCount);
     }
 
-    private AbstractBAMFileIndex getAbstractBAMFileIndex(final byte[] indexBytes) {
+    private BinningBAMIndex openIndex(final byte[] indexBytes) {
         try (final SeekableMemoryStream ss = new SeekableMemoryStream(indexBytes, null)) {
-            return new CachingBAMFileIndex(ss, CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+            return BinningBAMIndex.open(ss, IndexLoading.AUTO);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }

@@ -2,6 +2,7 @@ package htsjdk.index;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.BAMFileSpan;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -76,6 +77,56 @@ public class BinningIndexMergeTest extends HtsjdkTest {
     public void testMergingASinglePartAtOffsetZeroChangesNothing() {
         final BinningIndex index = new TwoParts().first.index(MIN_SHIFT, DEPTH, 3);
         Assert.assertEquals(BinningIndex.merge(List.of(index), new long[] {0}), index);
+    }
+
+    @Test
+    public void testPartsWithUnsetWindowsMergeToTheIndexOfTheWholeFile() {
+        final IndexedRecords first = new IndexedRecords();
+        final IndexedRecords second = new IndexedRecords();
+        final IndexedRecords whole = new IndexedRecords();
+        for (int start = 1; start < 200_000; start += 1_700) TwoParts.addTo(first, whole, 0, start);
+        while (whole.records().size() % 6 != 0) TwoParts.addTo(first, whole, 0, 200_000);
+        // Reference 0 resumes well past where the first part left it, and reference 1 starts away from its first
+        // window: windows that neither part has a record in, which a whole-file index fills from the window before.
+        for (int start = 500_001; start < 700_000; start += 1_700) TwoParts.addTo(second, whole, 0, start);
+        for (int start = 100_001; start < 300_000; start += 1_700) TwoParts.addTo(second, whole, 1, start);
+
+        final BinningIndex merged = BinningIndex.merge(
+                List.of(first.partIndex(MIN_SHIFT, DEPTH, 2), second.partIndex(MIN_SHIFT, DEPTH, 2)),
+                new long[] {0, first.compressedLength()});
+
+        Assert.assertEquals(merged, whole.index(MIN_SHIFT, DEPTH, 2));
+    }
+
+    @Test
+    public void testAWindowNoPartHasARecordInTakesTheOffsetOfTheWindowBefore() {
+        final IndexedRecords first = new IndexedRecords().add(0, 1, 100);
+        final IndexedRecords second = new IndexedRecords().add(0, 3 * 16_384 + 1, 3 * 16_384 + 100);
+
+        final BinningIndex merged = BinningIndex.merge(
+                List.of(first.partIndex(MIN_SHIFT, DEPTH, 1), second.partIndex(MIN_SHIFT, DEPTH, 1)),
+                new long[] {0, first.compressedLength()});
+
+        final long firstRecord = first.records().get(0).chunkStart();
+        final long secondRecord =
+                BlockCompressedFilePointerUtil.shift(second.records().get(0).chunkStart(), first.compressedLength());
+        Assert.assertEquals(
+                merged.getReference(0).getLinearIndex(),
+                new long[] {firstRecord, firstRecord, firstRecord, secondRecord});
+    }
+
+    @Test
+    public void testAReferenceThatStartsInALaterPartHasZeroBeforeItsFirstRecord() {
+        final IndexedRecords first = new IndexedRecords().add(0, 1, 100);
+        final IndexedRecords second = new IndexedRecords().add(1, 2 * 16_384 + 1, 2 * 16_384 + 100);
+
+        final BinningIndex merged = BinningIndex.merge(
+                List.of(first.partIndex(MIN_SHIFT, DEPTH, 2), second.partIndex(MIN_SHIFT, DEPTH, 2)),
+                new long[] {0, first.compressedLength()});
+
+        final long secondRecord =
+                BlockCompressedFilePointerUtil.shift(second.records().get(0).chunkStart(), first.compressedLength());
+        Assert.assertEquals(merged.getReference(1).getLinearIndex(), new long[] {0, 0, secondRecord});
     }
 
     @Test

@@ -23,8 +23,10 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.index.ReferenceBins;
+import htsjdk.index.ReferenceBinsSource;
 import htsjdk.samtools.util.CloseableIterator;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,192 +43,105 @@ public class BamIndexValidator {
     }
 
     public static int exhaustivelyTestIndex(final SamReader reader) { // throws Exception {
-        // look at all chunk offsets in a linear index to make sure they are valid
-
-        if (reader.indexing().hasBrowseableIndex()) {
-            if (SamIndexes.BAI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
-
-                // content is from an existing bai file
-                final CachingBAMFileIndex existingIndex = (CachingBAMFileIndex)
-                        reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
-                final int numRefs = existingIndex.getNumberOfReferences();
-
-                int chunkCount = 0;
-                int indexCount = 0;
-                for (int i = 0; i < numRefs; i++) {
-                    final BAMIndexContent content = existingIndex.getQueryResults(i);
-                    for (final Chunk c : content.getAllChunks()) {
-                        final CloseableIterator<SAMRecord> iter =
-                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
-                        chunkCount++;
-                        SAMRecord sam = null;
-                        try {
-                            sam = iter.next();
-                            iter.close();
-                        } catch (final Exception e) {
-                            throw new SAMException(
-                                    "Exception in BamIndexValidator. Last good record " + sam + " in chunk " + c
-                                            + " chunkCount=" + chunkCount,
-                                    e);
-                        }
-                    }
-                    // also seek to every position in the linear index
-                    // final BAMRecordCodec bamRecordCodec = new BAMRecordCodec(reader.getFileHeader());
-                    // bamRecordCodec.setInputStream(reader.getInputStream());
-
-                    final LinearIndex linearIndex = content.getLinearIndex();
-                    for (final long l : linearIndex.getIndexEntries()) {
-                        try {
-                            if (l != 0) {
-                                final CloseableIterator<SAMRecord> iter =
-                                        ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader)
-                                                .iterator(new BAMFileSpan(new Chunk(l, l + 1)));
-                                final SAMRecord sam =
-                                        iter.next(); // read the first record identified by the linear index
-                                indexCount++;
-                                iter.close();
-                            }
-                        } catch (final Exception e) {
-                            throw new SAMException(
-                                    "Exception in BamIndexValidator. Linear index access failure " + l + " indexCount="
-                                            + indexCount,
-                                    e);
-                        }
-                    }
+        // look at all chunk offsets in the index, and in a linear index, to make sure they are valid
+        final ReferenceBinsSource index = binningIndexOf(reader);
+        if (index == null) {
+            return 0;
+        }
+        int chunkCount = 0;
+        int indexCount = 0;
+        for (int i = 0; i < index.getReferenceCount(); i++) {
+            final ReferenceBins reference = index.getReference(i);
+            for (final Chunk c : allChunks(reference)) {
+                chunkCount++;
+                readFirstRecord(reader, c, "Exception in BamIndexValidator. Chunk " + c + " chunkCount=" + chunkCount);
+            }
+            // also seek to every position in the linear index, which a CSI does not have
+            for (final long l : reference.getLinearIndex()) {
+                if (l != 0) {
+                    indexCount++;
+                    readFirstRecord(
+                            reader,
+                            new Chunk(l, l + 1),
+                            "Exception in BamIndexValidator. Linear index access failure " + l + " indexCount="
+                                    + indexCount);
                 }
-                return chunkCount;
-                // System.out.println("Found " chunkCount + " chunks in test " + inputBai +
-                // " linearIndex positions = " + indexCount);
-            } else if (SamIndexes.CSI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
-
-                final CSIIndex existingIndex =
-                        (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
-                final int numRefs = existingIndex.getNumberOfReferences();
-
-                int chunkCount = 0;
-                for (int i = 0; i < numRefs; i++) {
-                    final BAMIndexContent content = existingIndex.getQueryResults(i);
-                    for (final Chunk c : content.getAllChunks()) {
-                        final CloseableIterator<SAMRecord> iter =
-                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
-                        chunkCount++;
-                        SAMRecord sam = null;
-                        try {
-                            sam = iter.next();
-                            iter.close();
-                        } catch (final Exception e) {
-                            throw new SAMException(
-                                    "Exception in BamIndexValidator. Last good record " + sam + " in chunk " + c
-                                            + " chunkCount=" + chunkCount,
-                                    e);
-                        }
-                    }
-                }
-                return chunkCount;
             }
         }
-        // else  not a bam file with a browseable index
-        //    System.err.println("No browseableIndex for reader");
-        return 0;
+        return chunkCount;
     }
 
     /**
-     * A less time-consuming index validation that only looks at the first and last references in the index
-     * and the first and last chunks in each of those
+     * A less time-consuming index validation that only looks at the first and last chunks of each reference in
+     * the index, and the first and last entries of its linear index
      *
      * @param reader
      * @return # of chunks examined, or 0 if there is no browseable index for the reader
      */
     public static int lessExhaustivelyTestIndex(final SamReader reader) {
-        // look at all chunk offsets in a linear index to make sure they are valid
-        if (reader.indexing().hasBrowseableIndex()) {
-            if (SamIndexes.BAI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
-
-                // content is from an existing bai file
-                final CachingBAMFileIndex existingIndex =
-                        (CachingBAMFileIndex) reader.indexing().getBrowseableIndex();
-                final int numRefs = existingIndex.getNumberOfReferences();
-
-                int chunkCount = 0;
-                int indexCount = 0;
-                for (int i = 0; i < numRefs; i++) {
-
-                    final BAMIndexContent content = existingIndex.getQueryResults(i);
-
-                    final List<Chunk> chunks = content.getAllChunks();
-                    final int numChunks = chunks.size();
-                    // We are looking only at the first and last chunks
-                    for (final int chunkNo : Arrays.asList(0, numChunks - 1)) {
-                        chunkCount++;
-
-                        final Chunk c = chunks.get(chunkNo);
-                        final CloseableIterator<SAMRecord> iter =
-                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
-                        try {
-                            final SAMRecord sam = iter.next();
-                            iter.close();
-                        } catch (final Exception e) {
-                            throw new SAMException(
-                                    "Exception querying chunk " + chunkNo + " from reference index " + i, e);
-                        }
-                    }
-
-                    // also seek to first and last position in the linear index
-                    final long linearIndexEntries[] = content.getLinearIndex().getIndexEntries();
-                    for (final int binNo : Arrays.asList(0, linearIndexEntries.length - 1)) {
-                        indexCount++;
-                        final long l = linearIndexEntries[binNo];
-                        try {
-                            if (l != 0) {
-                                final CloseableIterator<SAMRecord> iter =
-                                        ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader)
-                                                .iterator(new BAMFileSpan(new Chunk(l, l + 1)));
-                                final SAMRecord sam =
-                                        iter.next(); // read the first record identified by the linear index
-                                iter.close();
-                            }
-                        } catch (final Exception e) {
-                            throw new SAMException(
-                                    "Exception in BamIndexValidator. Linear index access failure " + l + " indexCount="
-                                            + indexCount,
-                                    e);
-                        }
-                    }
+        final ReferenceBinsSource index = binningIndexOf(reader);
+        if (index == null) {
+            return 0;
+        }
+        int chunkCount = 0;
+        for (int i = 0; i < index.getReferenceCount(); i++) {
+            final ReferenceBins reference = index.getReference(i);
+            final List<Chunk> chunks = allChunks(reference);
+            for (final int chunkNo : firstAndLast(chunks.size())) {
+                chunkCount++;
+                readFirstRecord(
+                        reader,
+                        chunks.get(chunkNo),
+                        "Exception querying chunk " + chunkNo + " from reference index " + i);
+            }
+            final long[] linearIndex = reference.getLinearIndex();
+            for (final int window : firstAndLast(linearIndex.length)) {
+                final long l = linearIndex[window];
+                if (l != 0) {
+                    readFirstRecord(
+                            reader,
+                            new Chunk(l, l + 1),
+                            "Exception in BamIndexValidator. Linear index access failure " + l);
                 }
-                return chunkCount;
-            } else if (SamIndexes.CSI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
-
-                final CSIIndex existingIndex =
-                        (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
-                final int numRefs = existingIndex.getNumberOfReferences();
-
-                int chunkCount = 0;
-                for (int i = 0; i < numRefs; i++) {
-
-                    final BAMIndexContent content = existingIndex.getQueryResults(i);
-
-                    final List<Chunk> chunks = content.getAllChunks();
-                    final int numChunks = chunks.size();
-                    // We are looking only at the first and last chunks
-                    for (final int chunkNo : Arrays.asList(0, numChunks - 1)) {
-                        chunkCount++;
-
-                        final Chunk c = chunks.get(chunkNo);
-                        final CloseableIterator<SAMRecord> iter =
-                                ((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader).iterator(new BAMFileSpan(c));
-                        try {
-                            final SAMRecord sam = iter.next();
-                            iter.close();
-                        } catch (final Exception e) {
-                            throw new SAMException(
-                                    "Exception querying chunk " + chunkNo + " from reference index " + i, e);
-                        }
-                    }
-                }
-                return chunkCount;
             }
         }
-        // else it's not a bam file with a browseable index
-        return 0;
+        return chunkCount;
+    }
+
+    /** The first and last ordinals of a list of the given size: none if it is empty, one if they are the same. */
+    private static List<Integer> firstAndLast(final int size) {
+        if (size == 0) {
+            return List.of();
+        }
+        return size == 1 ? List.of(0) : List.of(0, size - 1);
+    }
+
+    /** The reader's BAI or CSI, or null if it has neither. */
+    private static ReferenceBinsSource binningIndexOf(final SamReader reader) {
+        if (!reader.hasIndex()) {
+            return null;
+        }
+        return reader.indexing()
+                .getHtsIndex(BinningBAMIndex.class)
+                .map(BinningBAMIndex::getSource)
+                .orElse(null);
+    }
+
+    /** Every chunk of every bin of a reference, in bin order. */
+    private static List<Chunk> allChunks(final ReferenceBins reference) {
+        final List<Chunk> chunks = new ArrayList<>();
+        for (int bin = 0; bin < reference.getBinCount(); bin++) {
+            chunks.addAll(reference.getChunks(bin));
+        }
+        return chunks;
+    }
+
+    /** Reads the first record of a chunk, which fails if the chunk does not start at one. */
+    private static void readFirstRecord(final SamReader reader, final Chunk chunk, final String failureMessage) {
+        try (CloseableIterator<SAMRecord> records = reader.indexing().iterator(new BAMFileSpan(chunk))) {
+            records.next();
+        } catch (final Exception e) {
+            throw new SAMException(failureMessage, e);
+        }
     }
 }

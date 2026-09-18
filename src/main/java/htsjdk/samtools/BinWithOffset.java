@@ -5,7 +5,10 @@ package htsjdk.samtools;
  * Extends the BAI index bin {@link Bin} with a 64 bit value,
  * representing the virtual file offset of the first
  * overlapping record.
+ *
+ * @deprecated nothing in htsjdk creates one any longer; see {@link htsjdk.index.ReferenceBins#getLoffset(int)}
  */
+@Deprecated
 public class BinWithOffset extends Bin {
 
     private final long lOffset;

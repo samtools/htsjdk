@@ -31,7 +31,7 @@ import java.util.function.IntToLongFunction;
  * <p>The index is format-neutral: it knows nothing of sequence names, tabix columns or file headers, and
  * addresses references by ordinal. Instances are immutable.
  */
-public final class BinningIndex implements HtsQueryIndex {
+public final class BinningIndex implements ReferenceBinsSource {
     /** The {@code minShift} of BAI and TBI. */
     public static final int BAI_MIN_SHIFT = 14;
     /** The {@code depth} of BAI and TBI. */
@@ -80,7 +80,7 @@ public final class BinningIndex implements HtsQueryIndex {
     }
 
     /** Rejects a binning scheme whose bin numbers or positions would overflow, or that has no levels at all. */
-    private static void validateGeometry(final int minShift, final int depth) {
+    static void validateGeometry(final int minShift, final int depth) {
         if (minShift < 1 || depth < 1 || depth > MAX_DEPTH || minShift + 3 * depth > MAX_POSITION_BITS) {
             throw new IllegalArgumentException(
                     String.format("Unsupported binning scheme: minShift=%d, depth=%d", minShift, depth));
@@ -146,14 +146,17 @@ public final class BinningIndex implements HtsQueryIndex {
         return new Geometry(shift, depth);
     }
 
+    @Override
     public int getMinShift() {
         return minShift;
     }
 
+    @Override
     public int getDepth() {
         return depth;
     }
 
+    @Override
     public int getReferenceCount() {
         return references.length;
     }
@@ -163,13 +166,20 @@ public final class BinningIndex implements HtsQueryIndex {
      * @return the reference's bins; never null, but {@link ReferenceBins#isEmpty() empty} if nothing is indexed
      *     on the reference
      */
+    @Override
     public ReferenceBins getReference(final int referenceIndex) {
         return references[referenceIndex];
+    }
+
+    @Override
+    public BinningIndex loadAll() {
+        return this;
     }
 
     /**
      * @return the number of records that have no position, if the index records it
      */
+    @Override
     public OptionalLong getNoCoordinateCount() {
         return noCoordinateCount < 0 ? OptionalLong.empty() : OptionalLong.of(noCoordinateCount);
     }
@@ -246,8 +256,19 @@ public final class BinningIndex implements HtsQueryIndex {
         if (referenceIndex < 0 || referenceIndex >= references.length) {
             return new BAMFileSpan();
         }
-        final ReferenceBins reference = references[referenceIndex];
-        final long maxPosition = getMaxPosition();
+        return spanOverlapping(references[referenceIndex], minShift, depth, start, end);
+    }
+
+    /**
+     * The query itself, as a function of one reference's bins and the binning scheme, so that an index that holds
+     * its references some other way answers exactly as this one does.
+     *
+     * @param start 1-based inclusive start; values below 1 mean the start of the reference
+     * @param end 1-based inclusive end; 0 or less means the end of the reference
+     */
+    static BAMFileSpan spanOverlapping(
+            final ReferenceBins reference, final int minShift, final int depth, final int start, final int end) {
+        final long maxPosition = maxPosition(minShift, depth);
         final long begin = Math.max(start, 1) - 1;
         final long endExclusive = end <= 0 ? maxPosition : Math.min(end, maxPosition);
         if (begin >= endExclusive) {
@@ -256,7 +277,7 @@ public final class BinningIndex implements HtsQueryIndex {
 
         // No record overlapping the query can start before the first record overlapping the query's first
         // window, so chunks that end at or before that record's offset cannot contribute.
-        final long minimumOffset = minimumOffset(reference, (int) (begin >> minShift));
+        final long minimumOffset = minimumOffset(reference, depth, (int) (begin >> minShift));
 
         final int[] binNumbers = reference.binNumbers();
         final long[][] binChunks = reference.binChunks();
@@ -279,11 +300,22 @@ public final class BinningIndex implements HtsQueryIndex {
     }
 
     /**
+     * A lower bound on the file offset of any record of a reference that overlaps a position, which lets a reader
+     * that has gathered chunks by some other route than {@link #spanOverlapping} discard those that end before it.
+     *
+     * @param position 1-based position on the reference
+     */
+    public static long minimumOffset(
+            final ReferenceBins reference, final int minShift, final int depth, final int position) {
+        return minimumOffset(reference, depth, (int) ((long) Math.max(position, 1) - 1 >> minShift));
+    }
+
+    /**
      * A lower bound on the offset of any record overlapping a window: from the linear index when there is one,
      * otherwise the {@code loffset} of the nearest bin at or before the window, searching leftwards and then
      * upwards as htslib does.
      */
-    private long minimumOffset(final ReferenceBins reference, final int window) {
+    private static long minimumOffset(final ReferenceBins reference, final int depth, final int window) {
         final long[] linearIndex = reference.linearIndex();
         if (linearIndex.length > 0) {
             return linearIndex[Math.min(window, linearIndex.length - 1)];
@@ -384,52 +416,64 @@ public final class BinningIndex implements HtsQueryIndex {
             final int minShift,
             final int depth,
             final boolean csiLayout) {
-        final int metadataBin = metadataBin(depth);
         final List<ReferenceBins> references = new ArrayList<>(referenceCount);
         for (int referenceIndex = 0; referenceIndex < referenceCount; referenceIndex++) {
-            final int binCount = codec.readInt();
-            final int[] binNumbers = new int[binCount];
-            final long[][] binChunks = new long[binCount][];
-            final long[] loffsets = csiLayout ? new long[binCount] : null;
-            ReferenceBins.Metadata metadata = null;
-            int realBins = 0;
-            for (int i = 0; i < binCount; i++) {
-                final int binNumber = codec.readInt();
-                final long loffset = csiLayout ? codec.readLong() : 0;
-                final long[] offsets = new long[2 * codec.readInt()];
-                for (int j = 0; j < offsets.length; j++) {
-                    offsets[j] = codec.readLong();
-                }
-                if (binNumber == metadataBin) {
-                    if (offsets.length != 4) {
-                        throw new IllegalArgumentException(String.format(
-                                "Metadata bin of reference %d has %d chunks; expected 2",
-                                referenceIndex, offsets.length / 2));
-                    }
-                    metadata = new ReferenceBins.Metadata(offsets[0], offsets[1], offsets[2], offsets[3]);
-                } else if (offsets.length > 0) {
-                    binNumbers[realBins] = binNumber;
-                    binChunks[realBins] = offsets;
-                    if (csiLayout) loffsets[realBins] = loffset;
-                    realBins++;
-                }
-            }
-            long[] linearIndex = new long[0];
-            if (!csiLayout) {
-                linearIndex = new long[codec.readInt()];
-                for (int i = 0; i < linearIndex.length; i++) {
-                    linearIndex[i] = codec.readLong();
-                }
-            }
-            references.add(sortedByBinNumber(
-                    Arrays.copyOf(binNumbers, realBins),
-                    Arrays.copyOf(binChunks, realBins),
-                    csiLayout ? Arrays.copyOf(loffsets, realBins) : null,
-                    linearIndex,
-                    metadata,
-                    depth));
+            references.add(readReference(codec, referenceIndex, depth, csiLayout));
         }
         return new BinningIndex(minShift, depth, references, readNoCoordinateCount(codec));
+    }
+
+    /**
+     * Reads one reference: its bins, with an {@code loffset} per bin in CSI and a linear index after the bins
+     * otherwise. Standing alone so that a reader which has located a reference in a file can parse just that one.
+     *
+     * @param codec positioned at the reference's bin count
+     * @param referenceIndex ordinal of the reference, for error messages
+     */
+    static ReferenceBins readReference(
+            final BinaryCodec codec, final int referenceIndex, final int depth, final boolean csiLayout) {
+        final int metadataBin = metadataBin(depth);
+        final int binCount = codec.readInt();
+        final int[] binNumbers = new int[binCount];
+        final long[][] binChunks = new long[binCount][];
+        final long[] loffsets = csiLayout ? new long[binCount] : null;
+        ReferenceBins.Metadata metadata = null;
+        int realBins = 0;
+        for (int i = 0; i < binCount; i++) {
+            final int binNumber = codec.readInt();
+            final long loffset = csiLayout ? codec.readLong() : 0;
+            final long[] offsets = new long[2 * codec.readInt()];
+            for (int j = 0; j < offsets.length; j++) {
+                offsets[j] = codec.readLong();
+            }
+            if (binNumber == metadataBin) {
+                if (offsets.length != 4) {
+                    throw new IllegalArgumentException(String.format(
+                            "Metadata bin of reference %d has %d chunks; expected 2",
+                            referenceIndex, offsets.length / 2));
+                }
+                metadata = new ReferenceBins.Metadata(offsets[0], offsets[1], offsets[2], offsets[3]);
+            } else if (offsets.length > 0) {
+                binNumbers[realBins] = binNumber;
+                binChunks[realBins] = offsets;
+                if (csiLayout) loffsets[realBins] = loffset;
+                realBins++;
+            }
+        }
+        long[] linearIndex = new long[0];
+        if (!csiLayout) {
+            linearIndex = new long[codec.readInt()];
+            for (int i = 0; i < linearIndex.length; i++) {
+                linearIndex[i] = codec.readLong();
+            }
+        }
+        return sortedByBinNumber(
+                Arrays.copyOf(binNumbers, realBins),
+                Arrays.copyOf(binChunks, realBins),
+                csiLayout ? Arrays.copyOf(loffsets, realBins) : null,
+                linearIndex,
+                metadata,
+                depth);
     }
 
     /**
@@ -545,7 +589,10 @@ public final class BinningIndex implements HtsQueryIndex {
     }
 
     /**
-     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation.
+     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation. The
+     * parts' linear indexes may be filled or built with {@link Builder#leavingEmptyWindowsUnset()}; the merged one is
+     * filled either way, but only unset parts let a window a part holds no record of take a later part's offset
+     * rather than the fill.
      *
      * @param parts the part indexes, in file order; all must share a binning scheme and reference count
      * @param partOffsets for each part, the byte offset in the concatenated file at which the part starts
@@ -591,17 +638,23 @@ public final class BinningIndex implements HtsQueryIndex {
                                 BlockCompressedFilePointerUtil.shift(reference.loffsets()[i], partOffset));
                     }
                 }
-                // For a window covered by several parts the earliest part has the smallest offset.
+                // The earliest part with an offset for a window has the smallest. A part built with
+                // Builder.leavingEmptyWindowsUnset() has none for a window it holds no record of, so a later part
+                // that does can supply it.
                 final long[] partLinearIndex = reference.linearIndex();
                 if (partLinearIndex.length > linearIndex.length) {
                     final int alreadyCovered = linearIndex.length;
                     linearIndex = Arrays.copyOf(linearIndex, partLinearIndex.length);
-                    for (int w = alreadyCovered; w < partLinearIndex.length; w++) {
+                    Arrays.fill(linearIndex, alreadyCovered, linearIndex.length, Builder.UNSET);
+                }
+                for (int w = 0; w < partLinearIndex.length; w++) {
+                    if (linearIndex[w] == Builder.UNSET && partLinearIndex[w] != Builder.UNSET) {
                         linearIndex[w] = BlockCompressedFilePointerUtil.shift(partLinearIndex[w], partOffset);
                     }
                 }
                 metadata = mergeMetadata(metadata, reference.getMetadata().orElse(null), partOffset);
             }
+            Builder.fillUnsetWindows(linearIndex, linearIndex.length);
             merged.add(accumulator.toReferenceBins(
                     linearIndex.length > 0 ? null : loffsets::get, linearIndex, metadata, first.depth));
         }
@@ -860,15 +913,7 @@ public final class BinningIndex implements HtsQueryIndex {
             for (int window = windowCount - 2; forCsi && window >= 0; window--) {
                 if (loffsetSource[window] == UNSET) loffsetSource[window] = loffsetSource[window + 1];
             }
-            // The stored linear index instead gives such a window the nearest preceding offset, as samtools does.
-            long previous = 0;
-            for (int window = 0; fillEmptyWindows && window < windowCount; window++) {
-                if (linearIndex[window] == UNSET) {
-                    linearIndex[window] = previous;
-                } else {
-                    previous = linearIndex[window];
-                }
-            }
+            if (fillEmptyWindows) fillUnsetWindows(linearIndex, windowCount);
             final ReferenceBins.Metadata metadata;
             if (countsAreReported) {
                 metadata = accumulator.metadata(mappedCount, unmappedCount);
@@ -881,6 +926,21 @@ public final class BinningIndex implements HtsQueryIndex {
                     metadata,
                     depth));
             accumulator = null;
+        }
+
+        /**
+         * Gives each of the first {@code windowCount} windows that no record overlaps the nearest preceding offset,
+         * or 0 if there is none, as samtools does in the linear index it stores.
+         */
+        private static void fillUnsetWindows(final long[] linearIndex, final int windowCount) {
+            long previous = 0;
+            for (int window = 0; window < windowCount; window++) {
+                if (linearIndex[window] == UNSET) {
+                    linearIndex[window] = previous;
+                } else {
+                    previous = linearIndex[window];
+                }
+            }
         }
 
         /**

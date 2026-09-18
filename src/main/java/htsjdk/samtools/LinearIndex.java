@@ -31,7 +31,10 @@ import java.util.Objects;
  *
  * @author mhanna
  * @version 0.1
+ * @deprecated nothing in htsjdk reads or writes an index through this model any longer; see
+ *     {@link htsjdk.index.ReferenceBins#getLinearIndex()}
  */
+@Deprecated
 public class LinearIndex {
 
     public static final int MAX_LINEAR_INDEX_SIZE = GenomicIndexUtil.MAX_LINEAR_INDEX_SIZE;

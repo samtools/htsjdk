@@ -23,96 +23,47 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.RuntimeIOException;
-import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Provides basic, generic capabilities to be used reading BAM index files.  Users can
- * subclass this class to create new BAM index functionality for adding querying facilities,
- * changing caching behavior, etc.
+ * The base of the BAM index readers that callers can construct for themselves, {@link DiskBasedBAMFileIndex} and
+ * {@link CSIIndex}. It reads nothing itself: every question is answered by the index that a {@link SamReader}
+ * uses, which serves a BAI and a CSI alike.
  *
- * Of particular note: the AbstractBAMFileIndex is, by design, the only class aware of the
- * details of the BAM index file format (other than the four classes representing the data,
- * BAMIndexContent, Bin, Chunk, LinearIndex, and the classes for building the BAM index).
- * Anyone wanting to implement a reader for a differing
- * or extended BAM index format should implement BAMIndex directly.
+ * @deprecated ask a {@link SamReader} for its index, or to read an index on its own open it with
+ *     {@link htsjdk.index.FileBackedBinningIndex}
  */
+@Deprecated
 public abstract class AbstractBAMFileIndex implements BAMIndex {
 
-    private final IndexFileBuffer mIndexBuffer;
+    private final BinningBAMIndex delegate;
 
     private final SAMSequenceDictionary mBamDictionary;
 
-    long[] sequenceIndexes;
-
     protected AbstractBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
-        this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
+        delegate = BinningBAMIndex.open(stream, IndexLoading.AUTO);
+        mBamDictionary = dictionary;
     }
 
     protected AbstractBAMFileIndex(final Path path, final SAMSequenceDictionary dictionary) {
-        this(createBufferForPath(path), path.toString(), dictionary);
+        delegate = BinningBAMIndex.open(path, IndexLoading.AUTO);
+        mBamDictionary = dictionary;
     }
 
+    /**
+     * @param useMemoryMapping has no effect: an index is no longer memory-mapped
+     */
     protected AbstractBAMFileIndex(
             final Path path, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
-        this(createBufferForPath(path, useMemoryMapping), path.toString(), dictionary);
+        this(path, dictionary);
     }
 
-    protected AbstractBAMFileIndex(
-            final IndexFileBuffer indexFileBuffer, final String source, final SAMSequenceDictionary dictionary) {
-        mIndexBuffer = indexFileBuffer;
-        mBamDictionary = dictionary;
-        verifyIndexMagicNumber(source);
-        initParameters();
-    }
-
-    /**
-     * Returns true if the given path is not on the default (local) file system.
-     * Non-local paths (e.g., S3, GCS, HDFS, Jimfs) cannot be memory-mapped or
-     * accessed via FileChannel and require a stream-based fallback.
-     */
-    private static boolean isNonLocalPath(final Path path) {
-        return !path.getFileSystem().equals(FileSystems.getDefault());
-    }
-
-    /**
-     * Creates the appropriate IndexFileBuffer for the given path.
-     * Non-local paths use a stream-based buffer; local paths use memory-mapped I/O.
-     */
-    private static IndexFileBuffer createBufferForPath(final Path path) {
-        if (isNonLocalPath(path)) {
-            try {
-                return new IndexStreamBuffer(new SeekablePathStream(path));
-            } catch (final IOException e) {
-                throw new RuntimeIOException("Failed to open index stream for non-local path: " + path, e);
-            }
-        }
-        return new MemoryMappedFileBuffer(path);
-    }
-
-    /**
-     * Creates the appropriate IndexFileBuffer for the given path, respecting the memory-mapping preference.
-     * Non-local paths always use a stream-based buffer regardless of the useMemoryMapping flag.
-     * Local paths use MemoryMappedFileBuffer when useMemoryMapping is true, RandomAccessFileBuffer otherwise.
-     */
-    private static IndexFileBuffer createBufferForPath(final Path path, final boolean useMemoryMapping) {
-        if (isNonLocalPath(path)) {
-            try {
-                return new IndexStreamBuffer(new SeekablePathStream(path));
-            } catch (final IOException e) {
-                throw new RuntimeIOException("Failed to open index stream for non-local path: " + path, e);
-            }
-        }
-        return useMemoryMapping ? new MemoryMappedFileBuffer(path) : new RandomAccessFileBuffer(path);
+    /** The index that answers for this one. */
+    BinningBAMIndex getDelegate() {
+        return delegate;
     }
 
     /**
@@ -120,32 +71,27 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      */
     @Override
     public void close() {
-        mIndexBuffer.close();
+        delegate.close();
     }
 
     /**
-     * Get the number of levels employed by this index.
-     * @return Number of levels in this index.
+     * Get the number of levels employed by a BAI.
+     * @return Number of levels in a BAI.
      */
     public static int getNumIndexLevels() {
         return GenomicIndexUtil.LEVEL_STARTS.length;
     }
 
-    private static void assertLevelIsValid(final int levelNumber) {
-        if (levelNumber >= getNumIndexLevels()) {
-            throw new SAMException("Level number (" + levelNumber + ") is greater than or equal to maximum ("
-                    + getNumIndexLevels() + ").");
-        }
-    }
-
     /**
-     * Gets the first bin in the given level.
+     * Gets the first bin in the given level of a BAI.
      * @param levelNumber Level number.  0-based.
      * @return The first bin in this level.
      */
     public static int getFirstBinInLevel(final int levelNumber) {
-        assertLevelIsValid(levelNumber);
-
+        if (levelNumber >= getNumIndexLevels()) {
+            throw new SAMException("Level number (" + levelNumber + ") is greater than or equal to maximum ("
+                    + getNumIndexLevels() + ").");
+        }
         return GenomicIndexUtil.LEVEL_STARTS[levelNumber];
     }
 
@@ -155,13 +101,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return The size (number of possible bins) of the given level.
      */
     public int getLevelSize(final int levelNumber) {
-        assertLevelIsValid(levelNumber);
-
-        if (levelNumber == getNumIndexLevels() - 1) {
-            return GenomicIndexUtil.MAX_BINS - GenomicIndexUtil.LEVEL_STARTS[levelNumber] - 1;
-        } else {
-            return GenomicIndexUtil.LEVEL_STARTS[levelNumber + 1] - GenomicIndexUtil.LEVEL_STARTS[levelNumber];
-        }
+        return delegate.getLevelSize(levelNumber);
     }
 
     /**
@@ -170,27 +110,16 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return the level associated with the given bin number.
      */
     public int getLevelForBin(final Bin bin) {
-        if (bin.getBinNumber() >= GenomicIndexUtil.MAX_BINS)
-            throw new SAMException("Tried to get level for invalid bin.");
-        for (int i = getNumIndexLevels() - 1; i >= 0; i--) {
-            if (bin.getBinNumber() >= GenomicIndexUtil.LEVEL_STARTS[i]) return i;
-        }
-        throw new SAMException("Unable to find correct bin for bin " + bin);
+        return delegate.getLevelForBin(bin);
     }
 
     /**
      * Gets the first locus that this bin can index into.
      * @param bin The bin to test.
-     * @return The last position that the given bin can represent.
+     * @return The first position that the given bin can represent.
      */
     public int getFirstLocusInBin(final Bin bin) {
-        final int level = getLevelForBin(bin);
-        final int levelStart = GenomicIndexUtil.LEVEL_STARTS[level];
-        final int levelSize = ((level == getNumIndexLevels() - 1)
-                        ? GenomicIndexUtil.MAX_BINS - 1
-                        : GenomicIndexUtil.LEVEL_STARTS[level + 1])
-                - levelStart;
-        return (bin.getBinNumber() - levelStart) * (GenomicIndexUtil.BIN_GENOMIC_SPAN / levelSize) + 1;
+        return delegate.getFirstLocusInBin(bin);
     }
 
     /**
@@ -199,18 +128,16 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return The last position that the given bin can represent.
      */
     public int getLastLocusInBin(final Bin bin) {
-        final int level = getLevelForBin(bin);
-        final int levelStart = GenomicIndexUtil.LEVEL_STARTS[level];
-        final int levelSize = ((level == getNumIndexLevels() - 1)
-                        ? GenomicIndexUtil.MAX_BINS - 1
-                        : GenomicIndexUtil.LEVEL_STARTS[level + 1])
-                - levelStart;
-        return (bin.getBinNumber() - levelStart + 1) * (GenomicIndexUtil.BIN_GENOMIC_SPAN / levelSize);
+        return delegate.getLastLocusInBin(bin);
     }
 
     public int getNumberOfReferences() {
-        seek(4);
-        return readInteger();
+        return delegate.getNumberOfReferences();
+    }
+
+    @Override
+    public BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos) {
+        return delegate.getSpanOverlapping(referenceIndex, startPos, endPos);
     }
 
     /**
@@ -220,180 +147,36 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      */
     @Override
     public long getStartOfLastLinearBin() {
-        seek(4);
-
-        final int sequenceCount = readInteger();
-        // Because no reads may align to the last sequence in the sequence dictionary,
-        // grab the last element of the linear index for each sequence, and return
-        // the last one from the last sequence that has one.
-        long lastLinearIndexPointer = -1;
-        for (int i = 0; i < sequenceCount; i++) {
-            // System.out.println("# Sequence TID: " + i);
-            final int nBins = readInteger();
-            // System.out.println("# nBins: " + nBins);
-            for (int j1 = 0; j1 < nBins; j1++) {
-                // Skip bin #
-                skipBytes(4);
-                final int nChunks = readInteger();
-                // Skip chunks
-                skipBytes(16 * nChunks);
-            }
-            final int nLinearBins = readInteger();
-            if (nLinearBins > 0) {
-                // Skip to last element of list of linear bins
-                skipBytes(8 * (nLinearBins - 1));
-                lastLinearIndexPointer = readLong();
-            }
-        }
-
-        return lastLinearIndexPointer;
+        return delegate.getStartOfLastLinearBin();
     }
 
     /**
      * Return meta data for the given reference including information about number of aligned, unaligned, and noCoordinate records
      *
      * @param reference the reference of interest
-     * @return meta data for the reference
+     * @return meta data for the reference, or null if the index has no such reference
      */
     @Override
     public BAMIndexMetaData getMetaData(final int reference) {
-        seek(4);
-
-        final List<Chunk> metaDataChunks = new ArrayList<Chunk>();
-
-        final int sequenceCount = readInteger();
-
-        if (reference >= sequenceCount) {
-            return null;
-        }
-
-        skipToSequence(reference);
-
-        final int binCount = readInteger();
-        for (int binNumber = 0; binNumber < binCount; binNumber++) {
-            final int indexBin = readInteger();
-            final int nChunks = readInteger();
-            if (indexBin == GenomicIndexUtil.MAX_BINS) {
-                readChunks(nChunks, metaDataChunks);
-            } else {
-                skipBytes(16 * nChunks);
-            }
-        }
-        return new BAMIndexMetaData(metaDataChunks);
+        return delegate.getMetaData(reference);
     }
 
     /**
-     * Returns count of records unassociated with any reference. Call before the index file is closed
+     * Returns count of records unassociated with any reference.
      *
      * @return meta data at the end of the bam index that indicates count of records holding no coordinates
      * or null if no meta data (old index format)
      */
     public Long getNoCoordinateCount() {
-
-        seek(4);
-        final int sequenceCount = readInteger();
-
-        skipToSequence(sequenceCount);
-        try { // in case of old index file without meta data
-            return readLong();
-        } catch (final Exception e) {
-            return null;
-        }
-    }
-
-    protected BAMIndexContent query(final int referenceSequence, final int startPos, final int endPos) {
-        seek(4);
-
-        final List<Chunk> metaDataChunks = new ArrayList<Chunk>();
-
-        final int sequenceCount = readInteger();
-
-        if (referenceSequence >= sequenceCount) {
-            return null;
-        }
-
-        final BitSet regionBins = GenomicIndexUtil.regionToBins(startPos, endPos);
-        if (regionBins == null) {
-            return null;
-        }
-
-        skipToSequence(referenceSequence);
-
-        final int binCount = readInteger();
-        boolean metaDataSeen = false;
-        final Bin[] bins = new Bin[getMaxBinNumberForReference(referenceSequence) + 1];
-        for (int binNumber = 0; binNumber < binCount; binNumber++) {
-            final int indexBin = readInteger();
-            final int nChunks = readInteger();
-            List<Chunk> chunks = null;
-            // System.out.println("# bin[" + i + "] = " + indexBin + ", nChunks = " + nChunks);
-            Chunk lastChunk = null;
-            if (regionBins.get(indexBin)) {
-                chunks = new ArrayList<Chunk>(nChunks);
-                readChunks(nChunks, chunks);
-            } else if (indexBin == GenomicIndexUtil.MAX_BINS) {
-                // meta data - build the bin so that the count of bins is correct;
-                // but don't attach meta chunks to the bin, or normal queries will be off
-                readChunks(nChunks, metaDataChunks);
-                metaDataSeen = true;
-                continue; // don't create a Bin
-            } else {
-                skipBytes(16 * nChunks);
-                chunks = Collections.emptyList();
-            }
-            final Bin bin = new Bin(referenceSequence, indexBin);
-            bin.setChunkList(chunks);
-            bin.setLastChunk(lastChunk);
-            bins[indexBin] = bin;
-        }
-
-        final int nLinearBins = readInteger();
-
-        final int regionLinearBinStart = LinearIndex.convertToLinearIndexOffset(startPos);
-        final int regionLinearBinStop = endPos > 0 ? LinearIndex.convertToLinearIndexOffset(endPos) : nLinearBins - 1;
-        final int actualStop = Math.min(regionLinearBinStop, nLinearBins - 1);
-
-        long[] linearIndexEntries = new long[0];
-        if (regionLinearBinStart < nLinearBins) {
-            linearIndexEntries = new long[actualStop - regionLinearBinStart + 1];
-            skipBytes(8 * regionLinearBinStart);
-            for (int linearBin = regionLinearBinStart; linearBin <= actualStop; linearBin++)
-                linearIndexEntries[linearBin - regionLinearBinStart] = readLong();
-        }
-
-        final LinearIndex linearIndex = new LinearIndex(referenceSequence, regionLinearBinStart, linearIndexEntries);
-
-        return new BAMIndexContent(
-                referenceSequence,
-                bins,
-                binCount - (metaDataSeen ? 1 : 0),
-                new BAMIndexMetaData(metaDataChunks),
-                linearIndex);
+        return delegate.getNoCoordinateCount();
     }
 
     /**
-     * The maximum possible bin number for this reference sequence.
-     * This is based on the maximum coordinate position of the reference
-     * which is based on the size of the reference
-     */
-    private int getMaxBinNumberForReference(final int reference) {
-        try {
-            final int sequenceLength = mBamDictionary.getSequence(reference).getSequenceLength();
-            return getMaxBinNumberForSequenceLength(sequenceLength);
-        } catch (final Exception e) {
-            return GenomicIndexUtil.MAX_BINS;
-        }
-    }
-
-    /**
-     * The maxiumum bin number for a reference sequence of a given length
+     * The maximum possible bin number for a reference sequence of the given length, in a BAI.
      */
     static int getMaxBinNumberForSequenceLength(final int sequenceLength) {
         return getFirstBinInLevel(getNumIndexLevels() - 1) + (sequenceLength >> 14);
-        // return 4680 + (sequenceLength >> 14); // note 4680 = getFirstBinInLevel(getNumIndexLevels() - 1)
     }
-
-    protected abstract BAMIndexContent getQueryResults(int reference);
 
     /**
      * Gets the possible number of bins for a given reference sequence.
@@ -424,101 +207,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         return Chunk.optimizeChunkList(chunks, minimumOffset);
     }
 
-    protected void verifyIndexMagicNumber(final String sourceName) {
-        // Verify the magic number.
-        seek(0);
-        final byte[] buffer = new byte[4];
-        readBytes(buffer);
-        if (!Arrays.equals(buffer, BAMFileConstants.BAI_INDEX_MAGIC)) {
-            throw new RuntimeIOException("Invalid file header in BAM index " + sourceName + ": " + new String(buffer));
-        }
-    }
-
-    /**
-     * Initialization method used for simplifying the constructor
-     * hierarchy.
-     */
-    protected void initParameters() {
-        setSequenceIndexes(getNumberOfReferences());
-    }
-
-    protected void readChunks(int nChunks, List<Chunk> chunks) {
-        Chunk lastChunk;
-        for (int ci = 0; ci < nChunks; ci++) {
-            final long chunkBegin = readLong();
-            final long chunkEnd = readLong();
-            lastChunk = new Chunk(chunkBegin, chunkEnd);
-            chunks.add(lastChunk);
-        }
-    }
-
-    protected void skipToSequence(final int sequenceIndex) {
-        // Use sequence position cache if available
-        if (sequenceIndexes[sequenceIndex] != -1) {
-            seek(sequenceIndexes[sequenceIndex]);
-            return;
-        }
-
-        // Use previous sequence position if in cache, which optimizes for common access pattern
-        // of iterating through sequences in order.
-        final int startSequenceIndex;
-        final int previousSequenceIndex = sequenceIndex - 1;
-        if (sequenceIndex > 0 && sequenceIndexes[previousSequenceIndex] != -1) {
-            seek(sequenceIndexes[previousSequenceIndex]);
-            startSequenceIndex = previousSequenceIndex;
-        } else {
-            startSequenceIndex = 0;
-        }
-
-        for (int i = startSequenceIndex; i < sequenceIndex; i++) {
-            // System.out.println("# Sequence TID: " + i);
-            final int nBins = readInteger();
-            // System.out.println("# nBins: " + nBins);
-            for (int j = 0; j < nBins; j++) {
-                readInteger(); // bin
-                final int nChunks = readInteger();
-                // System.out.println("# bin[" + j + "] = " + bin + ", nChunks = " + nChunks);
-                skipBytes(16 * nChunks);
-            }
-            final int nLinearBins = readInteger();
-            // System.out.println("# nLinearBins: " + nLinearBins);
-            skipBytes(8 * nLinearBins);
-        }
-
-        // Update sequence position cache
-        sequenceIndexes[sequenceIndex] = position();
-    }
-
-    protected final void readBytes(final byte[] bytes) {
-        mIndexBuffer.readBytes(bytes);
-    }
-
-    protected final int readInteger() {
-        return mIndexBuffer.readInteger();
-    }
-
-    protected final long readLong() {
-        return mIndexBuffer.readLong();
-    }
-
-    protected final void skipBytes(final int count) {
-        mIndexBuffer.skipBytes(count);
-    }
-
-    protected final void seek(final long position) {
-        mIndexBuffer.seek(position);
-    }
-
-    protected final long position() {
-        return mIndexBuffer.position();
-    }
-
     protected final SAMSequenceDictionary getBamDictionary() {
         return mBamDictionary;
-    }
-
-    protected final void setSequenceIndexes(int nReferences) {
-        sequenceIndexes = new long[nReferences + 1];
-        Arrays.fill(sequenceIndexes, -1);
     }
 }
