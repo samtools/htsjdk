@@ -289,16 +289,22 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
         }
 
         final int sequenceIndex = getNumberOfReferences();
+        final int metaDataBin = getMaxBins() + 1;
+        // Bins come in no particular order, and the metadata pseudo-bin's loffset is not an offset at all, so
+        // the offset nearest the end of the placed reads is the largest loffset among the real bins.
         long loffset = -1L;
         for (int i = 0; i < sequenceIndex; i++) {
 
             final int nBins = readInteger(); // n_bin
 
             for (int j = 0; j < nBins; j++) {
-                readInteger(); // bin
-                loffset = readLong(); // loffset
+                final int bin = readInteger(); // bin
+                final long binLoffset = readLong(); // loffset
                 final int nChunks = readInteger(); // n_chunk
                 skipBytes(BAMFileConstants.CSI_CHUNK_SIZE * nChunks);
+                if (bin != metaDataBin && (loffset == -1L || Long.compareUnsigned(binLoffset, loffset) > 0)) {
+                    loffset = binLoffset;
+                }
             }
         }
 
