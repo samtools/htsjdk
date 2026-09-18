@@ -5,7 +5,6 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
-import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -243,33 +242,28 @@ public class RansTest extends HtsjdkTest {
     private static final byte[] A_LITTLE_DATA =
             "ACGTTTGACCAGTNACGGTACCAGGTTACGATTACA".repeat(20).getBytes();
 
-    /** Bytes allocated so far by the calling thread alone, so that tests running in parallel do not disturb it. */
-    private static long bytesAllocatedByThisThread() {
-        return ((com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean()).getCurrentThreadAllocatedBytes();
-    }
-
     @Test
     public void ransNx16EncoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
-        final long before = bytesAllocatedByThisThread();
+        final long before = TestNGUtils.bytesAllocatedByCurrentThread();
         new RANSNx16Encode().compress(A_LITTLE_DATA, new RANSNx16Params(0));
-        final long allocated = bytesAllocatedByThisThread() - before;
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - before;
         Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
     }
 
     @Test
     public void rans4x8EncoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
-        final long before = bytesAllocatedByThisThread();
+        final long before = TestNGUtils.bytesAllocatedByCurrentThread();
         new RANS4x8Encode().compress(A_LITTLE_DATA, new RANS4x8Params(RANSParams.ORDER.ZERO));
-        final long allocated = bytesAllocatedByThisThread() - before;
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - before;
         Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
     }
 
     @Test
     public void ransNx16DecoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
         final byte[] compressed = ransNx16Encoder.compress(A_LITTLE_DATA, new RANSNx16Params(0));
-        final long before = bytesAllocatedByThisThread();
+        final long before = TestNGUtils.bytesAllocatedByCurrentThread();
         final byte[] uncompressed = new RANSNx16Decode().uncompress(compressed);
-        final long allocated = bytesAllocatedByThisThread() - before;
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - before;
         Assert.assertEquals(uncompressed, A_LITTLE_DATA);
         Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
     }
@@ -277,9 +271,9 @@ public class RansTest extends HtsjdkTest {
     @Test
     public void rans4x8DecoderOfOrder0DataAloneAllocatesNoOrder1Rows() {
         final byte[] compressed = rans4x8Encoder.compress(A_LITTLE_DATA, new RANS4x8Params(RANSParams.ORDER.ZERO));
-        final long before = bytesAllocatedByThisThread();
+        final long before = TestNGUtils.bytesAllocatedByCurrentThread();
         final byte[] uncompressed = new RANS4x8Decode().uncompress(compressed);
-        final long allocated = bytesAllocatedByThisThread() - before;
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - before;
         Assert.assertEquals(uncompressed, A_LITTLE_DATA);
         Assert.assertTrue(allocated < FAR_LESS_THAN_THE_ORDER_1_ROWS, "allocated " + allocated + " bytes");
     }

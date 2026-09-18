@@ -4,7 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
-import java.lang.management.ManagementFactory;
+import htsjdk.utils.TestNGUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -72,12 +72,9 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
                 "rname", 10, 1, 1, 10, new byte[] {'a', 'c', 'g', 't'}, 2, tags);
         final CompressionHeaderFactory factory = new CompressionHeaderFactory(new CRAMEncodingStrategy());
 
-        // Allocation by this thread alone, so that tests running in parallel do not disturb the measurement.
-        final com.sun.management.ThreadMXBean threads =
-                (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
-        final long allocatedBefore = threads.getCurrentThreadAllocatedBytes();
+        final long allocatedBefore = TestNGUtils.bytesAllocatedByCurrentThread();
         factory.createCompressionHeader(Collections.singletonList(recordWith100Tags), true);
-        final long allocated = threads.getCurrentThreadAllocatedBytes() - allocatedBefore;
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - allocatedBefore;
 
         // One rANS encoder and decoder are several megabytes; a pair per tag would be several hundred.
         final long fiftyMegabytes = 50L * 1024 * 1024;
