@@ -55,6 +55,15 @@ public class BinningIndexGeometryTest extends HtsjdkTest {
     }
 
     @Test
+    public void testLongRecordUnderADeepSchemeGoesInTheSmallestBinThatHoldsIt() {
+        // Depth 8 is what a CSI gets without a dictionary. Its top levels shift by 32 and 35 bits; a record
+        // spanning 600 Mb fits a level-2 bin (2^32 bases), and must not fall through to bin 0.
+        final BinningIndex.Builder builder = new BinningIndex.Builder(14, 8);
+        builder.add(0, 1, 600_000_000, 0, 100);
+        Assert.assertEquals(builder.build(1).getReference(0).getBinNumber(0), 9);
+    }
+
+    @Test
     public void testMaxPositionOfTheBaiSchemeIs512Mb() {
         final BinningIndex index = new BinningIndex.Builder(14, 5).build(0);
         Assert.assertEquals(index.getMaxPosition(), 1L << 29);

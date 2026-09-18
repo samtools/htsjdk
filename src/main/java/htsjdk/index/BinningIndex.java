@@ -190,10 +190,12 @@ public final class BinningIndex implements HtsQueryIndex {
      * @param endExclusive 0-based exclusive end
      */
     private static int binFor(final int begin, final int endExclusive, final int minShift, final int depth) {
-        final int last = endExclusive - 1;
+        // Shifts pass 31 from the seventh level up, which an int shift would wrap.
+        final long first = begin;
+        final long last = endExclusive - 1;
         for (int level = depth, shift = minShift; level > 0; level--, shift += 3) {
-            if (begin >> shift == last >> shift) {
-                return firstBinOfLevel(level) + (begin >> shift);
+            if (first >> shift == last >> shift) {
+                return firstBinOfLevel(level) + (int) (first >> shift);
             }
         }
         return 0;
@@ -689,8 +691,8 @@ public final class BinningIndex implements HtsQueryIndex {
             }
             accumulator.addChunk(binFor(begin, endExclusive, minShift, depth), chunkStart, chunkEnd);
 
-            final int firstWindow = begin >> minShift;
-            final int lastWindow = (endExclusive - 1) >> minShift;
+            final int firstWindow = (int) ((long) begin >> minShift);
+            final int lastWindow = (int) ((long) (endExclusive - 1) >> minShift);
             if (lastWindow >= linearIndex.length) {
                 final int oldLength = linearIndex.length;
                 linearIndex = Arrays.copyOf(linearIndex, Math.max(lastWindow + 1, 2 * oldLength));
