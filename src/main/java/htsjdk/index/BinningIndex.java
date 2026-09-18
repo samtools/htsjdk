@@ -592,10 +592,14 @@ public final class BinningIndex implements ReferenceBinsSource {
      * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation. The
      * parts' linear indexes may be filled or built with {@link Builder#forMerging()}; the merged one is
      * filled either way, but only unset parts let a window a part holds no record of take a later part's offset
-     * rather than the fill.
+     * rather than the fill. Parts read from CSI files have no linear index, only a {@code loffset} for each bin;
+     * the merged index then has the same, each a lower bound, if not always the one that indexing the whole file
+     * would have found.
      *
      * @param parts the part indexes, in file order; all must share a binning scheme and reference count
      * @param partOffsets for each part, the byte offset in the concatenated file at which the part starts
+     * @throws IllegalArgumentException if some parts have a linear index for a reference and others, with records
+     *     for it, have none
      */
     public static BinningIndex merge(final List<BinningIndex> parts, final long[] partOffsets) {
         if (parts.isEmpty() || parts.size() != partOffsets.length) {
@@ -614,7 +618,8 @@ public final class BinningIndex implements ReferenceBinsSource {
         final List<ReferenceBins> merged = new ArrayList<>(first.references.length);
         for (int referenceIndex = 0; referenceIndex < first.references.length; referenceIndex++) {
             final Builder.ReferenceAccumulator accumulator = new Builder.ReferenceAccumulator();
-            final Map<Integer, Long> loffsets = new HashMap<>();
+            final int[] lastWindowReached = new int[parts.size()];
+            boolean someWithoutLinearIndex = false;
             long[] linearIndex = new long[0];
             ReferenceBins.Metadata metadata = null;
             for (int p = 0; p < parts.size(); p++) {
@@ -630,14 +635,9 @@ public final class BinningIndex implements ReferenceBinsSource {
                                 BlockCompressedFilePointerUtil.shift(offsets[j], partOffset),
                                 BlockCompressedFilePointerUtil.shift(offsets[j + 1], partOffset));
                     }
-                    // The earliest part to hold a bin has the smallest offset for it. Only needed when the parts
-                    // have no linear index to derive loffsets from.
-                    if (reference.linearIndex().length == 0) {
-                        loffsets.putIfAbsent(
-                                binNumbers[i],
-                                BlockCompressedFilePointerUtil.shift(reference.loffsets()[i], partOffset));
-                    }
                 }
+                lastWindowReached[p] = lastWindowReached(reference, first.depth);
+                someWithoutLinearIndex |= binNumbers.length > 0 && reference.linearIndex().length == 0;
                 // The earliest part with an offset for a window has the smallest. A part built with
                 // Builder.forMerging() has none for a window it holds no record of, so a later part
                 // that does can supply it.
@@ -654,10 +654,20 @@ public final class BinningIndex implements ReferenceBinsSource {
                 }
                 metadata = mergeMetadata(metadata, reference.getMetadata().orElse(null), partOffset);
             }
+            if (someWithoutLinearIndex && linearIndex.length > 0) {
+                throw new IllegalArgumentException(
+                        "Cannot merge indexes that have a linear index with indexes that have none");
+            }
             Builder.fillUnsetWindows(linearIndex);
             accumulator.foldSmallBinsIntoParents(first.depth);
+            final int reference = referenceIndex;
             merged.add(accumulator.toReferenceBins(
-                    linearIndex.length > 0 ? null : loffsets::get, linearIndex, metadata, first.depth));
+                    someWithoutLinearIndex
+                            ? bin -> loffsetAcrossParts(parts, partOffsets, reference, lastWindowReached, bin)
+                            : null,
+                    linearIndex,
+                    metadata,
+                    first.depth));
         }
         // Absent unless some part has it; then the sum over the parts that do.
         for (final BinningIndex part : parts) {
@@ -666,6 +676,42 @@ public final class BinningIndex implements ReferenceBinsSource {
             }
         }
         return new BinningIndex(first.minShift, first.depth, merged, noCoordinateCount);
+    }
+
+    /** The last window that any bin of a reference covers, whether or not a record lies there; -1 without bins. */
+    private static int lastWindowReached(final ReferenceBins reference, final int depth) {
+        int last = -1;
+        for (final int binNumber : reference.binNumbers()) {
+            final int level = levelOf(binNumber);
+            if (level <= depth) {
+                last = Math.max(last, firstWindowOf(binNumber, depth) + (1 << 3 * (depth - level)) - 1);
+            }
+        }
+        return last;
+    }
+
+    /**
+     * The {@code loffset} of a bin of the merged index, when the parts have no linear index to work it out from. It
+     * must not exceed the offset of any record that overlaps the bin's first window or lies beyond it, whichever bin
+     * and part that record is in; a part that holds the bin says nothing of the parts before it. So it is asked of
+     * the earliest part with a bin that reaches that window, as a query of that part alone would ask. That is a
+     * lower bound for whatever was folded into the bin too, since a bin's first window is not after its children's.
+     */
+    private static long loffsetAcrossParts(
+            final List<BinningIndex> parts,
+            final long[] partOffsets,
+            final int referenceIndex,
+            final int[] lastWindowReached,
+            final int binNumber) {
+        final int depth = parts.get(0).depth;
+        final int firstWindow = firstWindowOf(binNumber, depth);
+        for (int p = 0; p < lastWindowReached.length; p++) {
+            if (lastWindowReached[p] >= firstWindow) {
+                return BlockCompressedFilePointerUtil.shift(
+                        minimumOffset(parts.get(p).references[referenceIndex], depth, firstWindow), partOffsets[p]);
+            }
+        }
+        return 0;
     }
 
     /** Combines two parts' metadata: the earliest start, the latest end, and the counts summed. */

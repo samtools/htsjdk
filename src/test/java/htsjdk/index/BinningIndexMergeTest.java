@@ -25,6 +25,11 @@ public class BinningIndexMergeTest extends HtsjdkTest {
         final BinningIndex merged;
 
         TwoParts() {
+            this(false);
+        }
+
+        /** @param asCsiFiles whether each part's index is one read from a CSI file, so without a linear index */
+        TwoParts(final boolean asCsiFiles) {
             final IndexedRecords whole = new IndexedRecords();
             for (int start = 1; start < 3_000_000; start += 1_700) addTo(first, whole, 0, start);
             for (int start = 1; start < 1_000_000; start += 1_700) addTo(first, whole, 1, start);
@@ -34,7 +39,11 @@ public class BinningIndexMergeTest extends HtsjdkTest {
             for (int start = 1; start < 2_000_000; start += 1_700) addTo(second, whole, 2, start);
             concatenated.addAll(whole.records());
             merged = BinningIndex.merge(
-                    List.of(first.index(MIN_SHIFT, DEPTH, 3), second.index(MIN_SHIFT, DEPTH, 3)),
+                    asCsiFiles
+                            ? List.of(
+                                    first.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 3),
+                                    second.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 3))
+                            : List.of(first.index(MIN_SHIFT, DEPTH, 3), second.index(MIN_SHIFT, DEPTH, 3)),
                     new long[] {0, first.compressedLength()});
         }
 
@@ -190,5 +199,71 @@ public class BinningIndexMergeTest extends HtsjdkTest {
         final BinningIndex.Builder second = new BinningIndex.Builder(MIN_SHIFT, DEPTH).forMerging();
         second.add(0, 16_400, 16_400, 0, 100);
         return List.of(first.build(1), second.build(1));
+    }
+
+    // Parts read from CSI files have an loffset for each bin and no linear index.
+
+    @Test
+    public void testMergedCsiFilesFindRecordsFromBothParts() {
+        final TwoParts parts = new TwoParts(true);
+        Assert.assertEquals(parts.merged.getReference(1).getLinearIndex().length, 0);
+        final Random random = new Random(5);
+        int overlapsSeen = 0;
+        for (int i = 0; i < 300; i++) {
+            final int referenceIndex = random.nextInt(3);
+            final int start = 1 + random.nextInt(4_000_000);
+            final int end = start + random.nextInt(i % 4 == 0 ? 1_500_000 : 4_000);
+            final BAMFileSpan span = parts.merged.getSpanOverlapping(referenceIndex, start, end);
+            overlapsSeen +=
+                    IndexedRecords.assertSpanCoversOverlaps(parts.concatenated, span, referenceIndex, start, end);
+        }
+        Assert.assertTrue(overlapsSeen > 1_000, "queries should have hit plenty of records");
+    }
+
+    @Test
+    public void testRecordOfAnEarlierCsiFileIsFoundWhenALaterOneIsFirstToHoldTheBinItsQueryLooksIn() {
+        // The first part's record spans the first thirteen 16 kb windows, in the 1 Mb bin 73. A query at its start
+        // looks for the offset to read from in the 128 kb bin 585, which only the second part holds, with records
+        // enough that it is not folded into bin 73.
+        final IndexedRecords first = new IndexedRecords().add(0, 1, 200_000);
+        final IndexedRecords second = new IndexedRecords();
+        for (int i = 0; i < 2_000; i++) second.add(0, 16_384, 16_385);
+        final BinningIndex merged = BinningIndex.merge(
+                List.of(
+                        first.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 1),
+                        second.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 1)),
+                new long[] {0, 100_000});
+
+        Assert.assertEquals(merged.getReference(0).getBinCount(), 2);
+        final int found = IndexedRecords.assertSpanCoversOverlaps(
+                first.records(), merged.getSpanOverlapping(0, 10, 10), 0, 10, 10);
+        Assert.assertEquals(found, 1);
+    }
+
+    @Test
+    public void testRecordOfAnEarlierCsiFileIsFoundWhenItsBinIsFoldedIntoOneThatALaterFileIsFirstToHold() {
+        // The first part's record is in the 16 kb bin 4682, which is folded into its parent, the 128 kb bin 585,
+        // which only the second part holds.
+        final IndexedRecords first = new IndexedRecords().add(0, 16_390, 16_390);
+        final IndexedRecords second = new IndexedRecords().add(0, 32_768, 32_769);
+        final BinningIndex merged = BinningIndex.merge(
+                List.of(
+                        first.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 1),
+                        second.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 1)),
+                new long[] {0, 100_000});
+
+        Assert.assertEquals(merged.getReference(0).getBinCount(), 1);
+        final int found = IndexedRecords.assertSpanCoversOverlaps(
+                first.records(), merged.getSpanOverlapping(0, 16_390, 16_390), 0, 16_390, 16_390);
+        Assert.assertEquals(found, 1);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testPartsWithALinearIndexAndPartsWithoutAreRejected() {
+        final IndexedRecords first = new IndexedRecords().add(0, 1, 100);
+        final IndexedRecords second = new IndexedRecords().add(0, 200, 300);
+        BinningIndex.merge(
+                List.of(first.index(MIN_SHIFT, DEPTH, 1), second.csiIndexReadFromAFile(MIN_SHIFT, DEPTH, 1)),
+                new long[] {0, first.compressedLength()});
     }
 }

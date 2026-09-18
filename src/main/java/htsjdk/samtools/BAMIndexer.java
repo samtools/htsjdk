@@ -139,7 +139,7 @@ public class BAMIndexer {
      * @param csiMinShift for a CSI, log2 of the span of its smallest bins; the rest of its binning scheme is
      *                    chosen to reach the header's longest sequence, as samtools chooses it. Ignored for a BAI.
      * @param fillInUninitializedValues as for {@link #BAMIndexer(OutputStream, SAMFileHeader, boolean)}; a CSI
-     *                    stores no linear index, so it makes no difference to one
+     *                    stores no linear index, so for one it only decides whether small bins are folded
      */
     public BAMIndexer(
             final OutputStream output,
