@@ -120,9 +120,10 @@ public class BAMIndexer {
      *
      * @param output     Index will be written here.  output will be closed when finish() method is called.
      * @param fileHeader header for the corresponding bam file.
-     * @param fillInUninitializedValues if true, set uninitialized values (-1) to the last non-zero offset;
-     *                                  if false, leave uninitialized values as -1, which is required when merging index files
-     *                                  (see {@link BAMIndexMerger})
+     * @param fillInUninitializedValues true for an index to query. False for the index of a part of a file, to be
+     *                                  merged with the other parts' (see {@link BAMIndexMerger}): linear-index
+     *                                  windows that no record overlaps are then left as -1, and small bins are not
+     *                                  folded into their parents, both being settled by the merger for the whole file
      */
     public BAMIndexer(
             final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
@@ -180,7 +181,7 @@ public class BAMIndexer {
         this.indexBuilder =
                 new BinningIndex.Builder(geometry.minShift(), geometry.depth(), csi).reportingRecordCounts();
         if (!fillInUninitializedValues) {
-            indexBuilder.leavingEmptyWindowsUnset();
+            indexBuilder.forMerging();
         }
         this.output = outputOpener.get();
     }

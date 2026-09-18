@@ -3,7 +3,10 @@ package htsjdk.index;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.Chunk;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -14,6 +17,13 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
     /** A BGZF virtual offset. */
     private static long offset(final long blockAddress, final int withinBlock) {
         return BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, withinBlock);
+    }
+
+    /** A reference's bins, in bin-number order, each with its chunks. */
+    private static Map<Integer, List<Chunk>> binsOf(final ReferenceBins reference) {
+        final Map<Integer, List<Chunk>> bins = new LinkedHashMap<>();
+        for (int i = 0; i < reference.getBinCount(); i++) bins.put(reference.getBinNumber(i), reference.getChunks(i));
+        return bins;
     }
 
     /** A builder for the BAI/TBI binning scheme. */
@@ -60,13 +70,13 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
     }
 
     @Test
-    public void testLinearIndexWindowsWithoutRecordsTakeThePrecedingOffset() {
+    public void testLinearIndexWindowsWithoutRecordsTakeTheOffsetOfTheNextWindowWithOne() {
         final BinningIndex.Builder builder = baiBuilder();
         builder.add(0, 20_000, 20_000, offset(5, 0), offset(5, 10)); // window 1
         builder.add(0, 70_000, 70_000, offset(9, 0), offset(9, 10)); // window 4
         Assert.assertEquals(
                 builder.build(1).getReference(0).getLinearIndex(),
-                new long[] {0, offset(5, 0), offset(5, 0), offset(5, 0), offset(9, 0)});
+                new long[] {offset(5, 0), offset(5, 0), offset(9, 0), offset(9, 0), offset(9, 0)});
     }
 
     @Test
@@ -194,8 +204,8 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
     }
 
     @Test
-    public void testEmptyWindowsCanBeLeftUnset() {
-        final BinningIndex.Builder builder = baiBuilder().leavingEmptyWindowsUnset();
+    public void testEmptyWindowsAreLeftUnsetWhenBuildingForMerging() {
+        final BinningIndex.Builder builder = baiBuilder().forMerging();
         builder.add(0, 40_000, 40_100, offset(10, 0), offset(10, 50)); // third 16 kb window only
         Assert.assertEquals(builder.build(1).getReference(0).getLinearIndex(), new long[] {-1, -1, offset(10, 0)});
     }
@@ -210,5 +220,103 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNegativeNoCoordinateCountIsRejected() {
         baiBuilder().reportingRecordCounts().addNoCoordinateRecords(-1);
+    }
+
+    // In the tests of folding, a record at 16,384-16,385 straddles the first two 16 kb bins and so goes in the first
+    // 128 kb bin, 585, which is the parent of the 16 kb bins 4681 and 4682; one at 131,072-131,073 goes in the first
+    // 1 Mb bin, 73, the parent of 585.
+
+    @Test
+    public void testBinSpanningLittleOfTheFileIsFoldedIntoItsParent() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50)); // bin 4681
+        builder.add(0, 16_384, 16_385, offset(1_000, 0), offset(1_000, 50)); // its parent, bin 585
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)),
+                Map.of(
+                        585,
+                        List.of(
+                                new Chunk(offset(0, 0), offset(0, 50)),
+                                new Chunk(offset(1_000, 0), offset(1_000, 50)))));
+    }
+
+    @Test
+    public void testSmallBinIsKeptWhenItsParentHasNoChunksOfItsOwn() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50)); // bin 4681
+        builder.add(0, 131_072, 131_073, offset(1_000, 0), offset(1_000, 50)); // bin 73, its grandparent
+        Assert.assertEquals(binsOf(builder.build(1).getReference(0)).keySet(), Set.of(73, 4681));
+    }
+
+    @Test
+    public void testBinSpanningJustUnder64KbOfTheFileIsFolded() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.add(0, 20, 20, offset(65_535, 0), offset(65_535, 50));
+        builder.add(0, 16_384, 16_385, offset(200_000, 0), offset(200_000, 50));
+        Assert.assertEquals(binsOf(builder.build(1).getReference(0)).keySet(), Set.of(585));
+    }
+
+    @Test
+    public void testBinSpanning64KbOfTheFileIsKept() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.add(0, 20, 20, offset(65_536, 0), offset(65_536, 50));
+        builder.add(0, 16_384, 16_385, offset(200_000, 0), offset(200_000, 50));
+        Assert.assertEquals(binsOf(builder.build(1).getReference(0)).keySet(), Set.of(585, 4681));
+    }
+
+    @Test
+    public void testBinMadeUpByItsChildrenIsFoldedInItsTurn() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50)); // bin 4681
+        builder.add(0, 16_384, 16_385, offset(0, 50), offset(0, 100)); // bin 585
+        builder.add(0, 131_072, 131_073, offset(0, 100), offset(0, 150)); // bin 73
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)), Map.of(73, List.of(new Chunk(offset(0, 0), offset(0, 150)))));
+    }
+
+    @Test
+    public void testBinIsJudgedWithWhatItsChildrenGaveIt() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50)); // bin 4681, folded into 585
+        builder.add(0, 16_384, 16_385, offset(100_000, 0), offset(100_000, 50)); // bin 585: small alone, not with 4681
+        builder.add(0, 131_072, 131_073, offset(200_000, 0), offset(200_000, 50)); // bin 73
+        Assert.assertEquals(binsOf(builder.build(1).getReference(0)).keySet(), Set.of(73, 585));
+    }
+
+    @Test
+    public void testFoldedChunksAreFiledInFileOrder() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 16_384, 16_385, offset(0, 0), offset(0, 50)); // bin 585
+        builder.add(0, 16_390, 16_390, offset(1_000, 0), offset(1_000, 50)); // bin 4682, between 585's two chunks
+        builder.add(0, 32_768, 32_769, offset(2_000, 0), offset(2_000, 50)); // bin 585
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)).get(585),
+                List.of(
+                        new Chunk(offset(0, 0), offset(0, 50)),
+                        new Chunk(offset(1_000, 0), offset(1_000, 50)),
+                        new Chunk(offset(2_000, 0), offset(2_000, 50))));
+    }
+
+    @Test
+    public void testFoldedChunkLyingWithinOneOfItsParentsLeavesThatChunkWhole() {
+        final BinningIndex.Builder builder = baiBuilder();
+        // Bin 585's two records are in one block, so they are stored as one chunk, which covers the record of
+        // bin 4682 that lies between them.
+        builder.add(0, 16_384, 16_385, offset(0, 0), offset(0, 50)); // bin 585
+        builder.add(0, 16_390, 16_390, offset(0, 50), offset(0, 100)); // bin 4682
+        builder.add(0, 32_768, 32_769, offset(0, 100), offset(0, 150)); // bin 585
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)),
+                Map.of(585, List.of(new Chunk(offset(0, 0), offset(0, 150)))));
+    }
+
+    @Test
+    public void testBinsAreNotFoldedWhenBuildingForMerging() {
+        final BinningIndex.Builder builder = baiBuilder().forMerging();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.add(0, 16_384, 16_385, offset(1_000, 0), offset(1_000, 50));
+        Assert.assertEquals(binsOf(builder.build(1).getReference(0)).keySet(), Set.of(585, 4681));
     }
 }

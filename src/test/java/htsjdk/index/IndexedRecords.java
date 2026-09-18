@@ -67,7 +67,7 @@ final class IndexedRecords {
 
     /** Indexes the records as one part of a file to be merged, leaving windows without records unset. */
     BinningIndex partIndex(final int minShift, final int depth, final int referenceCount) {
-        return index(new BinningIndex.Builder(minShift, depth).leavingEmptyWindowsUnset(), referenceCount);
+        return index(new BinningIndex.Builder(minShift, depth).forMerging(), referenceCount);
     }
 
     private BinningIndex index(final BinningIndex.Builder builder, final int referenceCount) {

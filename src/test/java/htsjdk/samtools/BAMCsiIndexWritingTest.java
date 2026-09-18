@@ -253,6 +253,24 @@ public class BAMCsiIndexWritingTest extends HtsjdkTest {
                 query(bam, 2, BAI_LIMIT + 1, LONG_SEQUENCE).size());
     }
 
+    /** samtools writes a reference's bins in no particular order, so the indexes are compared as read, not as bytes. */
+    @Test
+    public void testCsiHasTheContentOfTheOneSamtoolsBuilds() throws IOException {
+        if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
+            throw new SkipException("samtools not available on local device");
+        }
+        final Path bam = writeBam(factory(BamIndexType.CSI), records(LONG_SEQUENCE, LONG_SEQUENCE));
+        final Path ours = bam.resolveSibling("reads.bam.csi");
+        final Path theirs = bam.resolveSibling("samtools.csi");
+        final BinningIndex.CsiContents oursRead = readCsi(ours);
+        SamtoolsTestUtils.executeSamToolsCommand(
+                "index -c -m " + oursRead.index().getMinShift() + " -o " + theirs + " " + bam.toAbsolutePath());
+
+        final BinningIndex.CsiContents theirsRead = readCsi(theirs);
+        Assert.assertEquals(oursRead.index(), theirsRead.index());
+        Assert.assertEquals(oursRead.aux(), theirsRead.aux());
+    }
+
     @Test
     public void testSamtoolsReadsTheCountsFromTheCsi() throws IOException {
         if (!SamtoolsTestUtils.isSamtoolsAvailable()) {

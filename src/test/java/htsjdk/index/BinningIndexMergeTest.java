@@ -87,7 +87,8 @@ public class BinningIndexMergeTest extends HtsjdkTest {
         for (int start = 1; start < 200_000; start += 1_700) TwoParts.addTo(first, whole, 0, start);
         while (whole.records().size() % 6 != 0) TwoParts.addTo(first, whole, 0, 200_000);
         // Reference 0 resumes well past where the first part left it, and reference 1 starts away from its first
-        // window: windows that neither part has a record in, which a whole-file index fills from the window before.
+        // window: windows that neither part has a record in, which a whole-file index fills from the next window that
+        // has one.
         for (int start = 500_001; start < 700_000; start += 1_700) TwoParts.addTo(second, whole, 0, start);
         for (int start = 100_001; start < 300_000; start += 1_700) TwoParts.addTo(second, whole, 1, start);
 
@@ -99,7 +100,7 @@ public class BinningIndexMergeTest extends HtsjdkTest {
     }
 
     @Test
-    public void testAWindowNoPartHasARecordInTakesTheOffsetOfTheWindowBefore() {
+    public void testAWindowNoPartHasARecordInTakesTheOffsetOfTheNextWindowWithOne() {
         final IndexedRecords first = new IndexedRecords().add(0, 1, 100);
         final IndexedRecords second = new IndexedRecords().add(0, 3 * 16_384 + 1, 3 * 16_384 + 100);
 
@@ -112,11 +113,11 @@ public class BinningIndexMergeTest extends HtsjdkTest {
                 BlockCompressedFilePointerUtil.shift(second.records().get(0).chunkStart(), first.compressedLength());
         Assert.assertEquals(
                 merged.getReference(0).getLinearIndex(),
-                new long[] {firstRecord, firstRecord, firstRecord, secondRecord});
+                new long[] {firstRecord, secondRecord, secondRecord, secondRecord});
     }
 
     @Test
-    public void testAReferenceThatStartsInALaterPartHasZeroBeforeItsFirstRecord() {
+    public void testAReferenceThatStartsInALaterPartHasItsFirstRecordsOffsetBeforeIt() {
         final IndexedRecords first = new IndexedRecords().add(0, 1, 100);
         final IndexedRecords second = new IndexedRecords().add(1, 2 * 16_384 + 1, 2 * 16_384 + 100);
 
@@ -126,7 +127,8 @@ public class BinningIndexMergeTest extends HtsjdkTest {
 
         final long secondRecord =
                 BlockCompressedFilePointerUtil.shift(second.records().get(0).chunkStart(), first.compressedLength());
-        Assert.assertEquals(merged.getReference(1).getLinearIndex(), new long[] {0, 0, secondRecord});
+        Assert.assertEquals(
+                merged.getReference(1).getLinearIndex(), new long[] {secondRecord, secondRecord, secondRecord});
     }
 
     @Test
@@ -164,5 +166,29 @@ public class BinningIndexMergeTest extends HtsjdkTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNoPartsIsRejected() {
         BinningIndex.merge(List.of(), new long[0]);
+    }
+
+    @Test
+    public void testBinSmallInEachPartButNotOverTheWholeFileIsKept() {
+        final BinningIndex merged = BinningIndex.merge(partsSharingA16KbBin(), new long[] {0, 70_000});
+        final ReferenceBins reference = merged.getReference(0);
+        Assert.assertEquals(List.of(reference.getBinNumber(0), reference.getBinNumber(1)), List.of(585, 4682));
+    }
+
+    @Test
+    public void testBinSmallOverTheWholeFileIsFoldedIntoItsParent() {
+        final BinningIndex merged = BinningIndex.merge(partsSharingA16KbBin(), new long[] {0, 1_000});
+        Assert.assertEquals(merged.getReference(0).getBinCount(), 1);
+        Assert.assertEquals(merged.getReference(0).getBinNumber(0), 585);
+    }
+
+    /** Two parts with a record each in the 16 kb bin 4682, the first also with one in that bin's parent, 585. */
+    private static List<BinningIndex> partsSharingA16KbBin() {
+        final BinningIndex.Builder first = new BinningIndex.Builder(MIN_SHIFT, DEPTH).forMerging();
+        first.add(0, 16_384, 16_385, 0, 100);
+        first.add(0, 16_390, 16_390, 100, 200);
+        final BinningIndex.Builder second = new BinningIndex.Builder(MIN_SHIFT, DEPTH).forMerging();
+        second.add(0, 16_400, 16_400, 0, 100);
+        return List.of(first.build(1), second.build(1));
     }
 }
