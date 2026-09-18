@@ -36,7 +36,6 @@ public class VCFSpecCorpusTest extends HtsjdkTest {
             "the second sample at 1:1900 has GT 0|1 on a record whose ALT is '.': the genotype names an allele the"
                     + " record does not define (htslib accepts it only because it stores GT as bare integers)";
     private static final String END_MINUS_ONE = "END=-1 trips the assert in VariantContext.validateStop";
-    private static final String NON_INTEGER_DP = "DP=1.000 escapes as a bare NumberFormatException";
 
     /** {@code passed/} files the reader cannot fully decode today, keyed by path relative to the corpus root. */
     private static final Map<String, String> PASSED_NOT_YET_DECODABLE = Map.ofEntries(
@@ -58,9 +57,7 @@ public class VCFSpecCorpusTest extends HtsjdkTest {
     private static final Map<String, String> FAILED_WITH_WRONG_EXCEPTION = Map.ofEntries(
             Map.entry("4.1/failed/failed_body_info_016.vcf", END_MINUS_ONE),
             Map.entry("4.2/failed/failed_body_info_016.vcf", END_MINUS_ONE),
-            Map.entry("4.3/failed/failed_body_info_016.vcf", END_MINUS_ONE),
-            Map.entry("4.1/failed/failed_body_format_004.vcf", NON_INTEGER_DP),
-            Map.entry("4.2/failed/failed_body_format_004.vcf", NON_INTEGER_DP));
+            Map.entry("4.3/failed/failed_body_info_016.vcf", END_MINUS_ONE));
 
     @DataProvider
     public Object[][] passedFiles() throws IOException {

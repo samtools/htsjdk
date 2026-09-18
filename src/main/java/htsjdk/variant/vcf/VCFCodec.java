@@ -30,9 +30,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -92,7 +90,7 @@ public class VCFCodec extends AbstractVCFCodec {
         boolean foundHeaderVersion = false;
         while (lineIterator.hasNext()) {
             line = lineIterator.peek();
-            lineNo++;
+            lineCounter.incrementAndGet();
             if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
                 final String[] lineFields = line.substring(2).split("=");
                 if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0])) {
@@ -137,7 +135,7 @@ public class VCFCodec extends AbstractVCFCodec {
      * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value in a VCF)
      */
     @Override
-    protected List<String> parseFilters(final String filterString) {
+    protected List<String> parseFilters(final String filterString, final int lineNo) {
         // null for unfiltered
         if (filterString.equals(VCFConstants.UNFILTERED)) return null;
 
@@ -148,18 +146,7 @@ public class VCFCodec extends AbstractVCFCodec {
             generateException(
                     "The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
 
-        // do we have the filter string cached?
-        if (filterHash.containsKey(filterString)) return filterHash.get(filterString);
-
-        // empty set for passes filters
-        final List<String> fFields = new LinkedList<String>();
-        // otherwise we have to parse and cache the value
-        if (!filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR)) fFields.add(filterString);
-        else fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
-
-        filterHash.put(filterString, Collections.unmodifiableList(fFields));
-
-        return fFields;
+        return cachedFilters(filterString);
     }
 
     @Override

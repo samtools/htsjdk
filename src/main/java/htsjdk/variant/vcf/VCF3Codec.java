@@ -28,7 +28,6 @@ package htsjdk.variant.vcf;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,7 +60,7 @@ public class VCF3Codec extends AbstractVCFCodec {
         VCFHeaderVersion version = null;
         boolean foundHeaderVersion = false;
         while (reader.hasNext()) {
-            lineNo++;
+            lineCounter.incrementAndGet();
             final String line = reader.peek();
             if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
                 final String[] lineFields = line.substring(2).split("=");
@@ -96,28 +95,16 @@ public class VCF3Codec extends AbstractVCFCodec {
      * @return a set of the filters applied
      */
     @Override
-    protected List<String> parseFilters(String filterString) {
-
+    protected List<String> parseFilters(final String filterString, final int lineNo) {
         // null for unfiltered
         if (filterString.equals(VCFConstants.UNFILTERED)) return null;
 
         // empty set for passes filters
-        List<String> fFields = new ArrayList<String>();
+        if (filterString.equals(VCFConstants.PASSES_FILTERS_v3)) return new ArrayList<String>();
 
-        if (filterString.equals(VCFConstants.PASSES_FILTERS_v3)) return new ArrayList<String>(fFields);
+        if (filterString.isEmpty()) generateException("The VCF specification requires a valid filter status", lineNo);
 
-        if (filterString.isEmpty()) generateException("The VCF specification requires a valid filter status");
-
-        // do we have the filter string cached?
-        if (filterHash.containsKey(filterString)) return new ArrayList<String>(filterHash.get(filterString));
-
-        // otherwise we have to parse and cache the value
-        if (filterString.indexOf(VCFConstants.FILTER_CODE_SEPARATOR) == -1) fFields.add(filterString);
-        else fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
-
-        filterHash.put(filterString, fFields);
-
-        return fFields;
+        return new ArrayList<String>(cachedFilters(filterString));
     }
 
     @Override
