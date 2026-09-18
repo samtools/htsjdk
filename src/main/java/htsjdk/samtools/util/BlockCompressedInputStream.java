@@ -478,10 +478,26 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
                 && buffer[13] == BlockCompressedStreamConstants.BGZF_ID2);
     }
 
+    /**
+     * Moves on to the next block. A block that holds no data is not the end of the data: files that were joined
+     * together have the end-of-file marker of each part where the parts meet, and a writer that flushes may leave
+     * an empty block anywhere. So an empty block is passed over if another block follows it. The last block of the
+     * stream is where reading comes to rest even if it is empty, as the end-of-file marker is, so that the file
+     * pointer at the end of a file is the marker's, as it has always been.
+     */
     private void readBlock() throws IOException {
         mCurrentBlock = nextBlock(getBufferForReuse(mCurrentBlock));
         mCurrentOffset = 0;
         checkAndRethrowDecompressionException();
+        while (mCurrentBlock.mBlock.length == 0 && mCurrentBlock.mBlockCompressedSize > 0) {
+            final DecompressedBlock following = nextBlock(null);
+            // Reading found no further block: not an error, and not a block to move on to
+            if (following.mException == null && following.mBlockCompressedSize == 0) {
+                break;
+            }
+            mCurrentBlock = following;
+            checkAndRethrowDecompressionException();
+        }
     }
     /**
      * Reads and decompresses the next block

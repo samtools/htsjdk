@@ -2,15 +2,28 @@ package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordSetBuilder;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -231,5 +244,195 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
     public void testSetNullInflaterFactory() {
         // test catching null InflaterFactory
         BlockGunzipper.setDefaultInflaterFactory(null);
+    }
+
+    // Blocks that hold no data, in mid-stream. Joining block-compressed files end to end, as cat does, leaves the
+    // end-of-file marker of each part where the parts meet, and it is not the end of the data.
+
+    private static final String FIRST_PART = "first part, line 1\nfirst part, line 2\n";
+    private static final String SECOND_PART = "second part, line 1\n";
+
+    /** A whole block-compressed file: the text, then the empty block that marks the end. */
+    private static byte[] blockCompressed(final String text) throws IOException {
+        return blockCompressed(text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static byte[] blockCompressed(final byte[] content) throws IOException {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (BlockCompressedOutputStream out = new BlockCompressedOutputStream(bytes, (Path) null)) {
+            out.write(content);
+        }
+        return bytes.toByteArray();
+    }
+
+    private static byte[] joined(final byte[]... parts) throws IOException {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        for (final byte[] part : parts) {
+            bytes.write(part);
+        }
+        return bytes.toByteArray();
+    }
+
+    /** Reads to the end, each time asking for exactly what is left of the current block, so that every read starts on a block boundary. */
+    private static String readBlockByBlock(final BlockCompressedInputStream in) throws IOException {
+        final ByteArrayOutputStream text = new ByteArrayOutputStream();
+        final byte[] buffer = new byte[1 << 16];
+        while (true) {
+            final int n = in.read(buffer, 0, Math.max(1, in.available()));
+            if (n == -1) {
+                return text.toString(StandardCharsets.UTF_8);
+            }
+            text.write(buffer, 0, n);
+        }
+    }
+
+    @Test
+    public void testReadThatStartsAtAnEmptyBlockGoesOnToTheNextBlock() throws IOException {
+        final byte[] file = joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART));
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            final byte[] buffer = new byte[1 << 16];
+            Assert.assertEquals(in.read(buffer, 0, FIRST_PART.length()), FIRST_PART.length());
+            Assert.assertEquals(in.read(buffer, 0, buffer.length), SECOND_PART.length());
+            Assert.assertEquals(in.read(buffer, 0, buffer.length), -1);
+        }
+    }
+
+    @Test
+    public void testJoinedFilesAreReadToTheEnd() throws IOException {
+        final byte[] file =
+                joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART), blockCompressed(FIRST_PART));
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            Assert.assertEquals(readBlockByBlock(in), FIRST_PART + SECOND_PART + FIRST_PART);
+        }
+    }
+
+    @Test
+    public void testSeveralEmptyBlocksInARow() throws IOException {
+        final byte[] empty = BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK;
+        final byte[] file = joined(blockCompressed(FIRST_PART), empty, empty, blockCompressed(SECOND_PART));
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            Assert.assertEquals(readBlockByBlock(in), FIRST_PART + SECOND_PART);
+        }
+    }
+
+    @Test
+    public void testFileThatStartsWithAnEmptyBlock() throws IOException {
+        final byte[] file = joined(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK, blockCompressed(FIRST_PART));
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            Assert.assertEquals(readBlockByBlock(in), FIRST_PART);
+        }
+    }
+
+    @Test
+    public void testAvailableIsNotZeroWhileThereIsDataToCome() throws IOException {
+        final byte[] file = joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART));
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            Assert.assertEquals(in.read(new byte[FIRST_PART.length()], 0, FIRST_PART.length()), FIRST_PART.length());
+            Assert.assertEquals(in.available(), SECOND_PART.length());
+        }
+    }
+
+    @Test
+    public void testTheEndOfTheStreamStaysTheEnd() throws IOException {
+        try (BlockCompressedInputStream in =
+                new BlockCompressedInputStream(new ByteArrayInputStream(blockCompressed(FIRST_PART)))) {
+            final byte[] buffer = new byte[1 << 16];
+            Assert.assertEquals(in.read(buffer, 0, FIRST_PART.length()), FIRST_PART.length());
+            Assert.assertEquals(in.read(buffer, 0, buffer.length), -1);
+            Assert.assertEquals(in.read(buffer, 0, buffer.length), -1);
+            Assert.assertEquals(in.available(), 0);
+        }
+    }
+
+    @Test
+    public void testFilePointerAtTheEndOfAFileIsThatOfItsEndOfFileMarker() throws IOException {
+        final byte[] file = blockCompressed(FIRST_PART);
+        final long marker = file.length - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length;
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            final byte[] buffer = new byte[1 << 16];
+            Assert.assertEquals(in.read(buffer, 0, FIRST_PART.length()), FIRST_PART.length());
+            Assert.assertEquals(in.getFilePointer(), BlockCompressedFilePointerUtil.makeFilePointer(marker, 0));
+            Assert.assertEquals(in.read(buffer, 0, buffer.length), -1);
+            Assert.assertEquals(in.getFilePointer(), BlockCompressedFilePointerUtil.makeFilePointer(marker, 0));
+        }
+    }
+
+    @Test
+    public void testSeekingToAnEmptyBlockReadsWhatFollowsIt() throws IOException {
+        final byte[] first = blockCompressed(FIRST_PART);
+        final byte[] file = joined(first, blockCompressed(SECOND_PART));
+        // Where the first part's data ends, which is where its end-of-file marker lies
+        final long emptyBlock = first.length - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length;
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new SeekableMemoryStream(file, "joined"))) {
+            in.seek(BlockCompressedFilePointerUtil.makeFilePointer(emptyBlock, 0));
+            Assert.assertEquals(readBlockByBlock(in), SECOND_PART);
+        }
+    }
+
+    @Test
+    public void testFilePointerAfterTheLastByteOfAPartCanBeSeekedTo() throws IOException {
+        final byte[] file = joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART));
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new SeekableMemoryStream(file, "joined"))) {
+            Assert.assertEquals(in.read(new byte[FIRST_PART.length()], 0, FIRST_PART.length()), FIRST_PART.length());
+            final long betweenTheParts = in.getFilePointer();
+            Assert.assertEquals(readBlockByBlock(in), SECOND_PART);
+            in.seek(betweenTheParts);
+            Assert.assertEquals(readBlockByBlock(in), SECOND_PART);
+        }
+    }
+
+    @Test
+    public void testJoinedFilesAreReadToTheEndAsynchronously() throws IOException {
+        final byte[] file =
+                joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART), blockCompressed(FIRST_PART));
+        try (BlockCompressedInputStream in = new AsyncBlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            Assert.assertEquals(readBlockByBlock(in), FIRST_PART + SECOND_PART + FIRST_PART);
+        }
+    }
+
+    /**
+     * A BAM is read a record at a time, so where two block-compressed parts meet between two records, the read of
+     * the second part's first record begins exactly at the first part's end-of-file marker.
+     */
+    @Test
+    public void testBamJoinedBetweenTwoRecordsIsReadToItsEnd() throws IOException {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        for (int i = 0; i < 500; i++) {
+            records.addFrag("read" + i, 0, 1 + 10 * i, false);
+        }
+        final Path bam = Files.createTempFile("joined.", ".bam");
+        IOUtil.deleteOnExit(bam);
+        try (SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(records.getHeader(), true, bam)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+        final byte[] uncompressed;
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(bam)) {
+            uncompressed = in.readAllBytes();
+        }
+
+        // Walk the BAM layout to the end of the 200th record: magic, header text, references, then records, each
+        // field or record preceded by its length.
+        final ByteBuffer layout = ByteBuffer.wrap(uncompressed).order(ByteOrder.LITTLE_ENDIAN);
+        int position = 4;
+        position += 4 + layout.getInt(position);
+        final int references = layout.getInt(position);
+        position += 4;
+        for (int i = 0; i < references; i++) {
+            position += 4 + layout.getInt(position) + 4;
+        }
+        for (int i = 0; i < 200; i++) {
+            position += 4 + layout.getInt(position);
+        }
+        final byte[] joinedBam = joined(
+                blockCompressed(Arrays.copyOfRange(uncompressed, 0, position)),
+                blockCompressed(Arrays.copyOfRange(uncompressed, position, uncompressed.length)));
+
+        try (SamReader expected = SamReaderFactory.makeDefault().open(bam);
+                SamReader reader =
+                        SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(joinedBam)))) {
+            final List<SAMRecord> found = reader.iterator().toList();
+            Assert.assertEquals(found.size(), 500);
+            Assert.assertEquals(found, expected.iterator().toList());
+        }
     }
 }
