@@ -140,6 +140,11 @@ public final class VCFConstants {
     public static final String PER_ALTERNATE_COUNT = "A";
     public static final String PER_ALLELE_COUNT = "R";
     public static final String PER_GENOTYPE_COUNT = "G";
+    public static final String PER_GT_ALLELE_COUNT = "P";
+    public static final String PER_LOCAL_ALTERNATE_COUNT = "LA";
+    public static final String PER_LOCAL_ALLELE_COUNT = "LR";
+    public static final String PER_LOCAL_GENOTYPE_COUNT = "LG";
+    public static final String PER_BASE_MODIFICATION_COUNT = "M";
     public static final String EMPTY_ALLELE = ".";
     public static final String EMPTY_GENOTYPE = "./.";
     public static final int MAX_GENOTYPE_QUAL = 99;

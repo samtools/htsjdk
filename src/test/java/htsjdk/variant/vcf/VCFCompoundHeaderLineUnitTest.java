@@ -27,6 +27,10 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -141,5 +145,108 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         Assert.assertNotEquals(dbsnp138, dbsnp151);
         Assert.assertEquals(dbsnp151, dbsnp151Again);
         Assert.assertEquals(dbsnp151.hashCode(), dbsnp151Again.hashCode());
+    }
+
+    // Number= codes
+
+    private static VCFFormatHeaderLine formatLineWithNumber(final String number) {
+        return new VCFFormatHeaderLine(
+                "<ID=XX,Number=" + number + ",Type=Integer,Description=\"x\">", VCFHeaderVersion.VCF4_5);
+    }
+
+    @Test
+    public void numberPParsesAndIsWrittenBack() {
+        final VCFFormatHeaderLine line = formatLineWithNumber("P");
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.P);
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=XX,Number=P,Type=Integer,Description=\"x\">");
+    }
+
+    @Test
+    public void numberLAParsesAndIsWrittenBack() {
+        final VCFFormatHeaderLine line = formatLineWithNumber("LA");
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.LA);
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=XX,Number=LA,Type=Integer,Description=\"x\">");
+    }
+
+    @Test
+    public void numberLRParsesAndIsWrittenBack() {
+        final VCFFormatHeaderLine line = formatLineWithNumber("LR");
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.LR);
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=XX,Number=LR,Type=Integer,Description=\"x\">");
+    }
+
+    @Test
+    public void numberLGParsesAndIsWrittenBack() {
+        final VCFFormatHeaderLine line = formatLineWithNumber("LG");
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.LG);
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=XX,Number=LG,Type=Integer,Description=\"x\">");
+    }
+
+    @Test
+    public void numberMParsesAndIsWrittenBack() {
+        final VCFFormatHeaderLine line = formatLineWithNumber("M");
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.M);
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=XX,Number=M,Type=Integer,Description=\"x\">");
+    }
+
+    @Test
+    public void aLineBuiltFromACountWritesItsCode() {
+        final VCFFormatHeaderLine line =
+                new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LR, VCFHeaderLineType.Integer, "local depths");
+        Assert.assertEquals(line.toString(), "FORMAT=<ID=LAD,Number=LR,Type=Integer,Description=\"local depths\">");
+    }
+
+    @Test
+    public void numberCodesAreReadWhateverTheHeaderVersion() {
+        final VCFFormatHeaderLine line =
+                new VCFFormatHeaderLine("<ID=XX,Number=LR,Type=Integer,Description=\"x\">", VCFHeaderVersion.VCF4_1);
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.LR);
+    }
+
+    @Test
+    public void aSampleDependentCodeOnAnInfoLineIsKeptAsDeclared() {
+        final VCFInfoHeaderLine line =
+                new VCFInfoHeaderLine("<ID=XX,Number=P,Type=Integer,Description=\"x\">", VCFHeaderVersion.VCF4_5);
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.P);
+        Assert.assertEquals(line.toString(), "INFO=<ID=XX,Number=P,Type=Integer,Description=\"x\">");
+    }
+
+    @Test
+    public void aSampleDependentCountCannotBeWorkedOutFromTheRecord() {
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"), Allele.create("G"));
+        final VariantContext vc = new VariantContextBuilder("test", "1", 100, 100, alleles).make();
+        Assert.assertEquals(formatLineWithNumber("P").getCount(vc), -1);
+        Assert.assertEquals(formatLineWithNumber("LA").getCount(vc), -1);
+        Assert.assertEquals(formatLineWithNumber("LR").getCount(vc), -1);
+        Assert.assertEquals(formatLineWithNumber("LG").getCount(vc), -1);
+        Assert.assertEquals(formatLineWithNumber("M").getCount(vc), -1);
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void aNumberThatIsNeitherACodeNorAnIntegerIsAnInvalidHeader() {
+        formatLineWithNumber("Q");
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void numberCodesAreCaseSensitive() {
+        formatLineWithNumber("lr");
+    }
+
+    @Test
+    public void minusOneMeansUnboundedBeforeVcf4() {
+        // header lines before VCF 4.0 give their attributes by position, without tags
+        final VCFFormatHeaderLine line = new VCFFormatHeaderLine("XX,-1,Integer,\"x\"", VCFHeaderVersion.VCF3_3);
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.UNBOUNDED);
+    }
+
+    @Test
+    public void aDotAlsoMeansUnboundedBeforeVcf4() {
+        final VCFFormatHeaderLine line = new VCFFormatHeaderLine("XX,.,Integer,\"x\"", VCFHeaderVersion.VCF3_3);
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.UNBOUNDED);
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void minusOneIsRejectedFromVcf4On() {
+        new VCFFormatHeaderLine("<ID=XX,Number=-1,Type=Integer,Description=\"x\">", VCFHeaderVersion.VCF4_0);
     }
 }

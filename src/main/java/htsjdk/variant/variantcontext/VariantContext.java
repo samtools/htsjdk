@@ -1764,13 +1764,11 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
             final Object decoded = decodeValue(field, attr.getValue(), format);
 
-            if (decoded != null
-                    && !lenientDecoding
-                    && format.getCountType() != VCFHeaderLineCount.UNBOUNDED
-                    && format.getType() != VCFHeaderLineType.Flag) { // we expect exactly the right number of elements
+            if (decoded != null && !lenientDecoding && format.getType() != VCFHeaderLineType.Flag) {
                 final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
+                // -1 when the header line doesn't fix the number of values for this record
                 final int expSize = format.getCount(this);
-                if (obsSize != expSize) {
+                if (expSize != -1 && obsSize != expSize) {
                     throw new TribbleException.InvalidHeader("Discordant field size detected for field " + field
                             + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values "
                             + "but the header says this should have "

@@ -130,10 +130,10 @@ public abstract class BCF2FieldEncoder {
     /**
      * @return True if the only way to determine how many elements this field contains is by
      * inspecting the actual value directly, such as when the number of elements
-     * is a variable length list per site or per genotype.
+     * is a variable length list per site or per genotype, or depends on each sample's GT or LAA.
      */
     public boolean hasValueDeterminedNumElements() {
-        return getCountType() == VCFHeaderLineCount.UNBOUNDED;
+        return getCountType() == VCFHeaderLineCount.UNBOUNDED || getCountType().variesBySample();
     }
 
     /**
