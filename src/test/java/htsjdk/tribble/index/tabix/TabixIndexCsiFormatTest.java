@@ -12,6 +12,9 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFCodec;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,6 +107,20 @@ public class TabixIndexCsiFormatTest extends HtsjdkTest {
         Assert.assertEquals(((TabixIndex) loaded).getIndexType(), TabixIndexType.CSI);
         Assert.assertEquals(loaded.getSequenceNames(), List.of("c1", "c2"));
         Assert.assertFalse(loaded.getBlocks("c1", 700_000_000, 700_100_000).isEmpty());
+    }
+
+    @Test
+    public void testIndexFactoryCreatesACsiIndexByType() throws IOException {
+        final Path vcf = TestVcfs.write(
+                TestVcfs.tempDir("TabixIndexCsiFormatTest"),
+                TestVcfs.LARGE_CONTIG_DICTIONARY,
+                new VariantContextWriterBuilder().unsetOption(Options.INDEX_ON_THE_FLY),
+                "small",
+                "large");
+        final Index index = IndexFactory.createIndex(
+                vcf, new VCFCodec(), IndexFactory.IndexType.CSI, TestVcfs.LARGE_CONTIG_DICTIONARY);
+        Assert.assertEquals(((TabixIndex) index).getIndexType(), TabixIndexType.CSI);
+        Assert.assertFalse(index.getBlocks("large", 600_000_000, 600_100_000).isEmpty());
     }
 
     @Test

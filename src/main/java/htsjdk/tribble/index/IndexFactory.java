@@ -332,6 +332,9 @@ public class IndexFactory {
                 return createLinearIndex(inputPath, codec);
             case TABIX:
                 return createTabixIndex(inputPath, codec, sequenceDictionary);
+            case CSI:
+                return createTabixIndex(
+                        inputPath, codec, codec.getTabixFormat(), sequenceDictionary, TabixIndexType.CSI);
             default:
                 throw new IllegalArgumentException("Unrecognized IndexType " + type);
         }
