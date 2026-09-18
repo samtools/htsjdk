@@ -80,7 +80,7 @@ public final class BinningIndex implements ReferenceBinsSource {
     }
 
     /** Rejects a binning scheme whose bin numbers or positions would overflow, or that has no levels at all. */
-    private static void validateGeometry(final int minShift, final int depth) {
+    static void validateGeometry(final int minShift, final int depth) {
         if (minShift < 1 || depth < 1 || depth > MAX_DEPTH || minShift + 3 * depth > MAX_POSITION_BITS) {
             throw new IllegalArgumentException(
                     String.format("Unsupported binning scheme: minShift=%d, depth=%d", minShift, depth));
