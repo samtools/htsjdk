@@ -65,6 +65,11 @@ public final class CompressionHeaderFactory {
     // TrialCompressor that learns which of GZIP/rANS-0/rANS-1 works best for that tag's data.
     private final Map<Integer, ExternalCompressor> tagTrialCompressors = new HashMap<>();
 
+    // Every tag's TrialCompressor draws its candidates from this one cache. A candidate's output depends only on the
+    // data it is given, not on earlier calls, and a rANS codec holds megabytes of symbol tables, which must not be
+    // multiplied by the number of distinct tags.
+    private final CompressorCache tagCompressorCache = new CompressorCache();
+
     /**
      * Create a CompressionHeaderFactory using the provided CRAMEncodingStrategy.
      * @param encodingStrategy {@link CRAMEncodingStrategy} to use, may not be null
@@ -265,7 +270,6 @@ public final class CompressionHeaderFactory {
      */
     private ExternalCompressor getTagTrialCompressor(final int tagID) {
         return tagTrialCompressors.computeIfAbsent(tagID, id -> {
-            final CompressorCache cache = new CompressorCache();
             // Extract the two-character tag name from the encoded tag ID
             final char tag1 = (char) ((id >> 16) & 0xFF);
             final char tag2 = (char) ((id >> 8) & 0xFF);
@@ -275,17 +279,17 @@ public final class CompressionHeaderFactory {
             final boolean useBzip2 = (tag1 == 'S' && tag2 == 'A') || (tag1 == 'X' && tag2 == 'A');
             if (useBzip2) {
                 return new TrialCompressor(List.of(
-                        cache.getCompressorForMethod(
+                        tagCompressorCache.getCompressorForMethod(
                                 BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
-                        cache.getCompressorForMethod(
+                        tagCompressorCache.getCompressorForMethod(
                                 BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()),
-                        cache.getCompressorForMethod(
+                        tagCompressorCache.getCompressorForMethod(
                                 BlockCompressionMethod.BZIP2, ExternalCompressor.NO_COMPRESSION_ARG)));
             }
             return new TrialCompressor(List.of(
-                    cache.getCompressorForMethod(
+                    tagCompressorCache.getCompressorForMethod(
                             BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
-                    cache.getCompressorForMethod(
+                    tagCompressorCache.getCompressorForMethod(
                             BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal())));
         });
     }
