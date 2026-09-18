@@ -23,17 +23,14 @@
  */
 package htsjdk.tribble.index.tabix;
 
-import htsjdk.samtools.BAMIndexMerger;
-import htsjdk.samtools.BinningIndexContent;
+import htsjdk.index.BinningIndex;
 import htsjdk.samtools.IndexMerger;
-import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,39 +93,20 @@ public class TabixIndexMerger extends IndexMerger<TabixIndex> {
         if (indexes.isEmpty()) {
             throw new IllegalArgumentException("Cannot merge zero tabix files");
         }
-        final long[] offsets = partLengths.stream().mapToLong(i -> i).toArray();
-        Arrays.parallelPrefix(offsets, (a, b) -> a + b); // cumulative offsets
-
-        final List<BinningIndexContent> mergedBinningIndexContentList = new ArrayList<>();
-        for (int ref = 0; ref < sequenceNames.size(); ref++) {
-            final int r = ref;
-            List<BinningIndexContent> binningIndexContentList =
-                    indexes.stream().map(index -> index.getIndices()[r]).collect(Collectors.toList());
-            final BinningIndexContent binningIndexContent =
-                    mergeBinningIndexContent(ref, binningIndexContentList, offsets);
-            mergedBinningIndexContentList.add(binningIndexContent);
+        // partLengths leads with the header's length, so the running total before each part is where it starts.
+        final long[] partOffsets = new long[indexes.size()];
+        long offset = 0;
+        for (int i = 0; i < partOffsets.length; i++) {
+            offset += partLengths.get(i);
+            partOffsets[i] = offset;
         }
-        final TabixIndex tabixIndex = new TabixIndex(
-                formatSpec, sequenceNames, mergedBinningIndexContentList.toArray(new BinningIndexContent[0]));
+
+        final BinningIndex merged = BinningIndex.merge(
+                indexes.stream().map(TabixIndex::getBinningIndex).collect(Collectors.toList()), partOffsets);
+        final TabixIndex tabixIndex = new TabixIndex(formatSpec, sequenceNames, merged);
         try (LittleEndianOutputStream los =
                 new LittleEndianOutputStream(new BlockCompressedOutputStream(out, (Path) null))) {
             tabixIndex.write(los);
         }
-    }
-
-    private static BinningIndexContent mergeBinningIndexContent(
-            final int referenceSequence,
-            final List<BinningIndexContent> binningIndexContentList,
-            final long[] offsets) {
-        final List<BinningIndexContent.BinList> binLists = new ArrayList<>();
-        final List<LinearIndex> linearIndexes = new ArrayList<>();
-        for (BinningIndexContent binningIndexContent : binningIndexContentList) {
-            binLists.add(binningIndexContent == null ? null : binningIndexContent.getBins());
-            linearIndexes.add(binningIndexContent == null ? null : binningIndexContent.getLinearIndex());
-        }
-        return new BinningIndexContent(
-                referenceSequence,
-                BAMIndexMerger.mergeBins(binLists, offsets),
-                BAMIndexMerger.mergeLinearIndexes(referenceSequence, linearIndexes, offsets));
     }
 }

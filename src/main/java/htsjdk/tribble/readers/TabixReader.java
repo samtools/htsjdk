@@ -23,20 +23,24 @@
  */
 package htsjdk.tribble.readers;
 
+import htsjdk.index.BinningIndex;
+import htsjdk.samtools.Chunk;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.ParsingUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -61,37 +65,10 @@ public class TabixReader implements AutoCloseable {
 
     private Map<String, Integer> mChr2tid;
 
-    private static int MAX_BIN = 37450;
-    // private static int TAD_MIN_CHUNK_GAP = 32768; (not used)
-    private static int TAD_LIDX_SHIFT = 14;
     /** default buffer size for <code>readLine()</code> */
     private static final int DEFAULT_BUFFER_SIZE = 1000;
 
-    protected static class TPair64 implements Comparable<TPair64> {
-        long u, v;
-
-        public TPair64(final long _u, final long _v) {
-            u = _u;
-            v = _v;
-        }
-
-        public TPair64(final TPair64 p) {
-            u = p.u;
-            v = p.v;
-        }
-
-        @Override
-        public int compareTo(final TPair64 p) {
-            return u == p.u ? 0 : ((u < p.u) ^ (u < 0) ^ (p.u < 0)) ? -1 : 1; // unsigned 64-bit comparison
-        }
-    }
-
-    protected static class TIndex {
-        HashMap<Integer, TPair64[]> b; // binning index
-        long[] l; // linear index
-    }
-
-    protected TIndex[] mIndex;
+    private BinningIndex mIndex;
 
     private static class TIntv {
         int tid, beg, end;
@@ -189,20 +166,6 @@ public class TabixReader implements AutoCloseable {
         return this.mFilePath;
     }
 
-    private static int reg2bins(final int beg, final int _end, final int[] list) {
-        int i = 0, k, end = _end;
-        if (beg >= end) return 0;
-        if (end >= 1 << 29) end = 1 << 29;
-        --end;
-        list[i++] = 0;
-        for (k = 1 + (beg >> 26); k <= 1 + (end >> 26); ++k) list[i++] = k;
-        for (k = 9 + (beg >> 23); k <= 9 + (end >> 23); ++k) list[i++] = k;
-        for (k = 73 + (beg >> 20); k <= 73 + (end >> 20); ++k) list[i++] = k;
-        for (k = 585 + (beg >> 17); k <= 585 + (end >> 17); ++k) list[i++] = k;
-        for (k = 4681 + (beg >> 14); k <= 4681 + (end >> 14); ++k) list[i++] = k;
-        return i;
-    }
-
     public static int readInt(final InputStream is) throws IOException {
         byte[] buf = new byte[4];
         is.read(buf);
@@ -242,55 +205,20 @@ public class TabixReader implements AutoCloseable {
      */
     private void readIndex(final SeekableStream fp) throws IOException {
         if (fp == null) return;
-        final BlockCompressedInputStream is = new BlockCompressedInputStream(fp);
-        byte[] buf = new byte[4];
-
-        is.read(buf, 0, 4); // read "TBI\1"
-        mSeq = new String[readInt(is)]; // # sequences
-        mChr2tid = new HashMap<String, Integer>(this.mSeq.length);
-        mPreset = readInt(is);
-        mSc = readInt(is);
-        mBc = readInt(is);
-        mEc = readInt(is);
-        mMeta = readInt(is);
-        readInt(is); // unused
-        // read sequence dictionary
-        int i, j, k, l = readInt(is);
-        buf = new byte[l];
-        is.read(buf);
-        for (i = j = k = 0; i < buf.length; ++i) {
-            if (buf[i] == 0) {
-                byte[] b = new byte[i - j];
-                System.arraycopy(buf, j, b, 0, b.length);
-                final String contig = new String(b);
-                mChr2tid.put(contig, k);
-                mSeq[k++] = contig;
-                j = i + 1;
-            }
+        final TabixIndex index;
+        try (final BlockCompressedInputStream is = new BlockCompressedInputStream(fp)) {
+            index = new TabixIndex(is);
         }
-        // read the index
-        mIndex = new TIndex[mSeq.length];
-        for (i = 0; i < mSeq.length; ++i) {
-            // the binning index
-            int n_bin = readInt(is);
-            mIndex[i] = new TIndex();
-            mIndex[i].b = new HashMap<Integer, TPair64[]>(n_bin);
-            for (j = 0; j < n_bin; ++j) {
-                int bin = readInt(is);
-                TPair64[] chunks = new TPair64[readInt(is)];
-                for (k = 0; k < chunks.length; ++k) {
-                    long u = readLong(is);
-                    long v = readLong(is);
-                    chunks[k] = new TPair64(u, v); // in C, this is inefficient
-                }
-                mIndex[i].b.put(bin, chunks);
-            }
-            // the linear index
-            mIndex[i].l = new long[readInt(is)];
-            for (k = 0; k < mIndex[i].l.length; ++k) mIndex[i].l[k] = readLong(is);
-        }
-        // close
-        is.close();
+        final TabixFormat format = index.getFormatSpec();
+        mPreset = format.flags;
+        mSc = format.sequenceColumn;
+        mBc = format.startPositionColumn;
+        mEc = format.endPositionColumn;
+        mMeta = format.metaCharacter;
+        mSeq = index.getSequenceNames().toArray(new String[0]);
+        mChr2tid = new LinkedHashMap<String, Integer>(this.mSeq.length);
+        for (int i = 0; i < mSeq.length; i++) mChr2tid.put(mSeq[i], i);
+        mIndex = index.getBinningIndex();
     }
 
     /**
@@ -411,11 +339,11 @@ public class TabixReader implements AutoCloseable {
         private int i;
         // private int n_seeks;
         private int tid, beg, end;
-        private TPair64[] off;
+        private final List<Chunk> off;
         private long curr_off;
         private boolean iseof;
 
-        private IteratorImpl(final int _tid, final int _beg, final int _end, final TPair64[] _off) {
+        private IteratorImpl(final int _tid, final int _beg, final int _end, final List<Chunk> _off) {
             i = -1;
             // n_seeks = 0;
             curr_off = 0;
@@ -430,11 +358,13 @@ public class TabixReader implements AutoCloseable {
         public String next() throws IOException {
             if (iseof) return null;
             for (; ; ) {
-                if (curr_off == 0 || !less64(curr_off, off[i].v)) { // then jump to the next chunk
-                    if (i == off.length - 1) break; // no more chunks
-                    if (i >= 0) assert (curr_off == off[i].v); // otherwise bug
-                    if (i < 0 || off[i].v != off[i + 1].u) { // not adjacent chunks; then seek
-                        mFp.seek(off[i + 1].u);
+                if (curr_off == 0 || !less64(curr_off, off.get(i).getChunkEnd())) { // then jump to the next chunk
+                    if (i == off.size() - 1) break; // no more chunks
+                    if (i >= 0) assert (curr_off == off.get(i).getChunkEnd()); // otherwise bug
+                    if (i < 0
+                            || off.get(i).getChunkEnd()
+                                    != off.get(i + 1).getChunkStart()) { // not adjacent chunks; then seek
+                        mFp.seek(off.get(i + 1).getChunkStart());
                         curr_off = mFp.getFilePointer();
                         // ++n_seeks;
                     }
@@ -463,53 +393,11 @@ public class TabixReader implements AutoCloseable {
      * @return an iterator over the specified interval
      */
     public Iterator query(final int tid, final int beg, final int end) {
-        TPair64[] off, chunks;
-        long min_off;
-        if (tid < 0 || beg < 0 || end <= 0 || tid >= this.mIndex.length) return EOF_ITERATOR;
-        TIndex idx = mIndex[tid];
-        int[] bins = new int[MAX_BIN];
-        int i, l, n_off, n_bins = reg2bins(beg, end, bins);
-        if (idx.l.length > 0)
-            min_off = (beg >> TAD_LIDX_SHIFT >= idx.l.length) ? idx.l[idx.l.length - 1] : idx.l[beg >> TAD_LIDX_SHIFT];
-        else min_off = 0;
-        for (i = n_off = 0; i < n_bins; ++i) {
-            if ((chunks = idx.b.get(bins[i])) != null) n_off += chunks.length;
-        }
-        if (n_off == 0) return EOF_ITERATOR;
-        off = new TPair64[n_off];
-        for (i = n_off = 0; i < n_bins; ++i)
-            if ((chunks = idx.b.get(bins[i])) != null)
-                for (int j = 0; j < chunks.length; ++j)
-                    if (less64(min_off, chunks[j].v)) off[n_off++] = new TPair64(chunks[j]);
-        Arrays.sort(off, 0, n_off);
-        // resolve completely contained adjacent blocks
-        for (i = 1, l = 0; i < n_off; ++i) {
-            if (less64(off[l].v, off[i].v)) {
-                ++l;
-                off[l].u = off[i].u;
-                off[l].v = off[i].v;
-            }
-        }
-        n_off = l + 1;
-        // resolve overlaps between adjacent blocks; this may happen due to the merge in indexing
-        for (i = 1; i < n_off; ++i) if (!less64(off[i - 1].v, off[i].u)) off[i - 1].v = off[i].u;
-        // merge adjacent blocks
-        for (i = 1, l = 0; i < n_off; ++i) {
-            if (off[l].v >> 16 == off[i].u >> 16) off[l].v = off[i].v;
-            else {
-                ++l;
-                off[l].u = off[i].u;
-                off[l].v = off[i].v;
-            }
-        }
-        n_off = l + 1;
-        // return
-        TPair64[] ret = new TPair64[n_off];
-        for (i = 0; i < n_off; ++i) {
-            if (off[i] != null) ret[i] = new TPair64(off[i].u, off[i].v); // in C, this is inefficient
-        }
-        if (ret.length == 0 || (ret.length == 1 && ret[0] == null)) return EOF_ITERATOR;
-        return new TabixReader.IteratorImpl(tid, beg, end, ret);
+        if (tid < 0 || beg < 0 || end <= 0 || tid >= this.mSeq.length) return EOF_ITERATOR;
+        // The index takes 1-based inclusive coordinates, in which a 0-based exclusive end is unchanged.
+        final List<Chunk> chunks = mIndex.getSpanOverlapping(tid, beg + 1, end).getChunks();
+        if (chunks.isEmpty()) return EOF_ITERATOR;
+        return new TabixReader.IteratorImpl(tid, beg, end, chunks);
     }
 
     /**

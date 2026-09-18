@@ -23,15 +23,14 @@
  */
 package htsjdk.tribble.index.tabix;
 
-import htsjdk.samtools.Bin;
-import htsjdk.samtools.BinningIndexContent;
+import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.Chunk;
-import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.index.IndexFactory;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import org.testng.Assert;
 
 public class TbiEqualityChecker {
@@ -71,47 +70,25 @@ public class TbiEqualityChecker {
 
         int numReferences = tbi1.getSequenceNames().size();
         for (int i = 0; i < numReferences; i++) {
-            BinningIndexContent binningIndexContent1 = tbi1.getIndices()[i];
-            BinningIndexContent binningIndexContent2 = tbi2.getIndices()[i];
-            assertEquals(binningIndexContent1, binningIndexContent2, identical);
+            assertEquals(
+                    tbi1.getBinningIndex().getReference(i),
+                    tbi2.getBinningIndex().getReference(i),
+                    identical);
         }
     }
 
-    private void assertEquals(
-            BinningIndexContent binningIndexContent1, BinningIndexContent binningIndexContent2, boolean identical)
-            throws IOException {
-
-        assertEquals(binningIndexContent1.getBins(), binningIndexContent2.getBins(), identical);
-        assertEquals(binningIndexContent1.getLinearIndex(), binningIndexContent2.getLinearIndex());
-    }
-
-    private void assertEquals(BinningIndexContent.BinList bins1, BinningIndexContent.BinList bins2, boolean identical)
-            throws IOException {
-        Assert.assertEquals(bins1.maxBinNumber, bins2.maxBinNumber, "Max bin number");
-        Assert.assertEquals(bins1.getNumberOfNonNullBins(), bins2.getNumberOfNonNullBins(), "Number of non-null bins");
-        for (int i = 0; i <= bins1.maxBinNumber; i++) {
-            assertEquals(bins1.getBin(i), bins2.getBin(i), identical);
+    private void assertEquals(ReferenceBins reference1, ReferenceBins reference2, boolean identical) {
+        Assert.assertEquals(reference1.getBinCount(), reference2.getBinCount(), "Number of bins");
+        for (int i = 0; i < reference1.getBinCount(); i++) {
+            Assert.assertEquals(reference1.getBinNumber(i), reference2.getBinNumber(i), "Bin number");
+            final List<Chunk> chunks1 = reference1.getChunks(i);
+            final List<Chunk> chunks2 = reference2.getChunks(i);
+            Assert.assertEquals(chunks1.size(), chunks2.size(), "Chunk list size");
+            for (int j = 0; j < chunks1.size(); j++) {
+                assertEquals(chunks1.get(j), chunks2.get(j), identical);
+            }
         }
-    }
-
-    private void assertEquals(Bin bin1, Bin bin2, boolean identical) throws IOException {
-        if (bin1 == null || bin2 == null) {
-            Assert.assertEquals(bin1, bin2);
-            return;
-        }
-        Assert.assertEquals(bin1.getBinNumber(), bin2.getBinNumber(), "Bin number");
-        Assert.assertEquals(bin1.getChunkList().size(), bin2.getChunkList().size(), "Chunk list size");
-        for (int i = 0; i < bin1.getChunkList().size(); i++) {
-            assertEquals(bin1.getChunkList().get(i), bin2.getChunkList().get(i), identical);
-        }
-    }
-
-    private void assertEquals(LinearIndex linearIndex1, LinearIndex linearIndex2) {
-        Assert.assertEquals(
-                linearIndex1.getReferenceSequence(), linearIndex2.getReferenceSequence(), "Linear index ref");
-        Assert.assertEquals(linearIndex1.size(), linearIndex2.size(), "Linear index size");
-        Assert.assertEquals(linearIndex1.getIndexStart(), linearIndex2.getIndexStart(), "Linear index start");
-        Assert.assertEquals(linearIndex1.getIndexEntries(), linearIndex2.getIndexEntries(), "Linear index entries");
+        Assert.assertEquals(reference1.getLinearIndex(), reference2.getLinearIndex(), "Linear index entries");
     }
 
     private void assertEquals(Chunk chunk1, Chunk chunk2, boolean identical) {
