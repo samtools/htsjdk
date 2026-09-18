@@ -27,8 +27,12 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         assertEquals(encodedAttributes, expectedEncoding);
     }
 
+    /**
+     * A value is taken as it is, not as text someone has already escaped: a backslash before a quote is a backslash,
+     * and is escaped along with the quote, so that the value reads back exactly as it was given.
+     */
     @Test
-    public void testEncodeVCFHeaderLineWithEscapedQuotes() {
+    public void testEncodeVCFHeaderLineWithBackslashesBeforeQuotes() {
 
         final Map<String, String> attributes = new LinkedHashMap<>();
         attributes.put("ID", "VariantFiltration");
@@ -40,8 +44,12 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         assertNotNull(encodedAttributes);
 
         final String expectedEncoding =
-                "<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">";
+                "<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\\\\\"NA\\\\\\\" || ANNOTATION <= 2.0]\">";
         assertEquals(encodedAttributes, expectedEncoding);
+        assertEquals(
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_3, encodedAttributes, null)
+                        .get("CommandLineOptions"),
+                attributes.get("CommandLineOptions"));
     }
 
     @Test(
@@ -64,5 +72,16 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
     public void testNumberExceptionFlag() {
         // Should not raise an exception
         new VCFInfoHeaderLine("test", 0, VCFHeaderLineType.Flag, "");
+    }
+
+    @Test
+    public void quotesAndBackslashesInAQuotedValueSurviveARoundTrip() {
+        // a leading quote, a quote after a backslash, two backslashes together and a trailing backslash
+        final String description = "\"quoted\" a\\\"b c\\\\d e\\";
+        final VCFInfoHeaderLine line = new VCFInfoHeaderLine("X", 1, VCFHeaderLineType.String, description);
+        final VCFInfoHeaderLine reread =
+                new VCFInfoHeaderLine(line.toString().substring("INFO=".length()), VCFHeaderVersion.VCF4_3);
+        assertEquals(reread.getDescription(), description);
+        assertEquals(reread, line);
     }
 }

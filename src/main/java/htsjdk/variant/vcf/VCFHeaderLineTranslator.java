@@ -89,9 +89,10 @@ interface VCFLineParser {
  *
  * <p>Attributes may come in any order and any attribute may be present, since a parser must not rely on either;
  * the expected tags are not checked here, and each header line class checks for the ones it cannot do without. A
- * value is quoted when it starts with a double quote right after its {@code =}, and inside quotes {@code \"} and
- * {@code \\} are escapes. Outside quotes only the first {@code =} of an attribute separates key from value, so IDs
- * and values may themselves contain {@code =} and {@code "}.
+ * value is quoted when a double quote is the first thing after its {@code =}; what is inside the quotes is kept
+ * exactly, whitespace included, with {@code \"} and {@code \\} as escapes. Outside quotes only the first
+ * {@code =} of an attribute separates key from value, so IDs and values may themselves contain {@code =} and
+ * {@code "}, and surrounding whitespace is dropped.
  */
 class VCF4Parser implements VCFLineParser {
 
@@ -103,6 +104,7 @@ class VCF4Parser implements VCFLineParser {
         String key = null; // null while reading a key; set once its '=' has been seen
         boolean inQuote = false;
         boolean escape = false;
+        int quotedLength = -1; // how much of the value was inside quotes, or -1 for a value without quotes
 
         final int last = valueLine.length() - 1;
         for (int index = 0; index <= last; index++) {
@@ -119,21 +121,24 @@ class VCF4Parser implements VCFLineParser {
                     escape = true;
                 } else if (c == '"') {
                     inQuote = false;
+                    quotedLength = builder.length();
                 } else {
                     builder.append(c);
                 }
-            } else if (c == '"' && key != null && builder.length() == 0) {
+            } else if (c == '"' && key != null && quotedLength < 0 && isBlank(builder)) {
                 inQuote = true;
+                builder.setLength(0);
             } else if (c == '<' && index == 0) {
                 // the opening bracket
             } else if (c == '>' && index == last) {
-                putAttribute(ret, key, builder);
+                putAttribute(ret, key, builder, quotedLength);
             } else if (c == '=' && key == null) {
                 key = builder.toString().trim();
                 builder = new StringBuilder();
             } else if (c == ',') {
-                putAttribute(ret, key, builder);
+                putAttribute(ret, key, builder, quotedLength);
                 key = null;
+                quotedLength = -1;
                 builder = new StringBuilder();
             } else {
                 builder.append(c);
@@ -146,10 +151,25 @@ class VCF4Parser implements VCFLineParser {
         return ret;
     }
 
-    /** A token without an {@code =} is kept as a key with an empty value; an empty token is dropped. */
+    private static boolean isBlank(final StringBuilder text) {
+        for (int i = 0; i < text.length(); i++) {
+            if (!Character.isWhitespace(text.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * A token without an {@code =} is kept as a key with an empty value; an empty token is dropped. The first
+     * {@code quotedLength} characters of a quoted value are kept as they are.
+     */
     private static void putAttribute(
-            final Map<String, String> attributes, final String key, final StringBuilder value) {
-        final String text = value.toString().trim();
+            final Map<String, String> attributes, final String key, final StringBuilder value, final int quotedLength) {
+        final String text = quotedLength < 0
+                ? value.toString().trim()
+                : value.substring(0, quotedLength)
+                        + value.substring(quotedLength).trim();
         if (key != null) {
             attributes.put(key, text);
         } else if (!text.isEmpty()) {

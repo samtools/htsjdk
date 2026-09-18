@@ -58,6 +58,11 @@ public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
         super(name, count, type, description, SupportedHeaderLineType.INFO, source, version);
     }
 
+    /** {@code definition}'s ID, Number, Type and Description with every other attribute of {@code attributes}. */
+    VCFInfoHeaderLine(final VCFInfoHeaderLine definition, final VCFInfoHeaderLine attributes) {
+        super(definition, attributes);
+    }
+
     public VCFInfoHeaderLine(String line, VCFHeaderVersion version) {
         super(line, version, SupportedHeaderLineType.INFO);
     }

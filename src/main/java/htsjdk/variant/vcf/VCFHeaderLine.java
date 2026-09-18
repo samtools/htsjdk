@@ -180,11 +180,8 @@ public class VCFHeaderLine implements Comparable, Serializable {
         return value.isEmpty();
     }
 
+    /** Backslashes first, or the ones this adds in front of the quotes would be escaped in their turn. */
     private static String escapeQuotes(final String value) {
-        // java escaping in a string literal makes this harder to read than it should be
-        // without string literal escaping and quoting the regex would be: replaceAll( ([^\])" , $1\" )
-        // ie replace: something that's not a backslash ([^\]) followed by a double quote
-        // with: the thing that wasn't a backslash ($1), followed by a backslash, followed by a double quote
-        return value.replaceAll("([^\\\\])\"", "$1\\\\\"");
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

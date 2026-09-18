@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BinaryOperator;
 
 /**
  * Manages header lines for standard VCF <pre>INFO</pre> and <pre>FORMAT</pre> fields.
@@ -52,8 +53,8 @@ public class VCFStandardHeaderLines {
      */
     private static final boolean REPAIR_BAD_DESCRIPTIONS = false;
 
-    private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<VCFFormatHeaderLine>();
-    private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<VCFInfoHeaderLine>();
+    private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<>(VCFFormatHeaderLine::new);
+    private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<>(VCFInfoHeaderLine::new);
 
     /**
      * Walks over the VCF header and repairs the standard VCF header lines in it, returning a freshly
@@ -230,6 +231,12 @@ public class VCFStandardHeaderLines {
 
     private static class Standards<T extends VCFCompoundHeaderLine> {
         private final Map<String, T> standards = new HashMap<String, T>();
+        // makes a line from the standard definition and the line it repairs, which keeps its other attributes
+        private final BinaryOperator<T> repaired;
+
+        Standards(final BinaryOperator<T> repaired) {
+            this.repaired = repaired;
+        }
 
         public T repair(final T line) {
             final T standard = get(line.getID(), false);
@@ -260,7 +267,7 @@ public class VCFStandardHeaderLines {
                                                 + "' but standard is '" + standard.getDescription() + "'"
                                         : ""));
                     }
-                    return standard;
+                    return repaired.apply(standard, line);
                 } else {
                     return line;
                 }

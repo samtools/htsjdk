@@ -226,4 +226,18 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
         VCFHeaderLineTranslator.parseLine(
                 vcfVersion, "<ID=X,Description=\"Y\">", Arrays.asList("ID"), Arrays.asList("Description"));
     }
+
+    @Test
+    public void aQuotedValueKeepsItsWhitespace() {
+        final Map<String, String> parsed =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"  padded \">", null);
+        Assert.assertEquals(parsed.get("Description"), "  padded ");
+    }
+
+    @Test
+    public void whitespaceAroundAnAttributeIsNotPartOfIt() {
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "< ID = X , Description = \" padded \" , Number = 1 >", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", " padded ", "Number", "1"));
+    }
 }
