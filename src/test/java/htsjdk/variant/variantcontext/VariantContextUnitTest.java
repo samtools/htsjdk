@@ -36,6 +36,9 @@ import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
@@ -1928,5 +1931,17 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test(dataProvider = "getVariantsWithID")
     public void testGetIDs(VariantContext vc, List<String> expectedIDs) {
         Assert.assertEquals(vc.getIDs(), expectedIDs);
+    }
+
+    @Test
+    public void strictDecodingDoesNotCountTheValuesOfASampleDependentInfoField() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(
+                new VCFInfoHeaderLine("<ID=XX,Number=P,Type=Integer,Description=\"x\">", VCFHeaderVersion.VCF4_5));
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "1", 100, 100, Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .attribute("XX", "1,2,3")
+                .make();
+        Assert.assertEquals(vc.fullyDecode(header, false).getAttribute("XX"), Arrays.asList(1, 2, 3));
     }
 }

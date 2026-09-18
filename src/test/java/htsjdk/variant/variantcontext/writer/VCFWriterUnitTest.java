@@ -43,8 +43,11 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFUtils;
 import java.io.IOException;
@@ -56,6 +59,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -432,6 +436,48 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                         reader.getFileHeader().getInfoHeaderLines().size(),
                         in.getInfoHeaderLines().size());
             }
+        }
+    }
+
+    /** A {@code Number=LR} FORMAT field, whose length differs between the samples, is written and read back. */
+    @Test
+    public void aFormatFieldDeclaredNumberLRSurvivesARoundTrip() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
+        lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LR, VCFHeaderLineType.Integer, "local depths"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+
+        final Allele ref = Allele.create("A", true);
+        final Allele alt1 = Allele.create("C");
+        final Allele alt2 = Allele.create("G");
+        final VariantContext vc = new VariantContextBuilder("test", "1", 100, 100, List.of(ref, alt1, alt2))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(ref, alt2))
+                                .attribute("LAD", List.of(10, 5))
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(alt1, alt2))
+                                .attribute("LAD", List.of(0, 7, 3))
+                                .make())
+                .make();
+
+        final Path output = Files.createTempFile(tempDir, "numberLR.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(vc);
+        }
+
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final VCFHeader headerRead = reader.getFileHeader();
+            Assert.assertEquals(headerRead.getFormatHeaderLine("LAD").getCountType(), VCFHeaderLineCount.LR);
+            final VariantContext vcRead = reader.iterator().next().fullyDecode(headerRead, false);
+            Assert.assertEquals(vcRead.getGenotype("s1").getExtendedAttribute("LAD"), List.of(10, 5));
+            Assert.assertEquals(vcRead.getGenotype("s2").getExtendedAttribute("LAD"), List.of(0, 7, 3));
         }
     }
 }
