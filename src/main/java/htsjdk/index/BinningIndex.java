@@ -417,6 +417,9 @@ public final class BinningIndex implements HtsQueryIndex {
          */
         public void add(
                 final int referenceIndex, final int start, final int end, final long chunkStart, final long chunkEnd) {
+            if (referenceIndex < 0) {
+                throw new IllegalArgumentException("Reference index must not be negative, but was " + referenceIndex);
+            }
             if (referenceIndex != currentReference) {
                 advanceTo(referenceIndex);
             }

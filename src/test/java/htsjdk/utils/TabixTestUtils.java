@@ -44,7 +44,8 @@ public class TabixTestUtils {
      * @return true if a local tabix executable is available
      */
     public static boolean isTabixAvailable() {
-        return Files.exists(Paths.get(getTabixBin()));
+        final Path tabix = Paths.get(getTabixBin());
+        return Files.isRegularFile(tabix) && Files.isExecutable(tabix);
     }
 
     /**

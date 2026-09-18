@@ -104,6 +104,11 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNegativeReferenceIndexIsRejected() {
+        baiBuilder().add(-1, 100, 100, offset(0, 0), offset(0, 10));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testStartBelowOneIsRejected() {
         baiBuilder().add(0, 0, 10, offset(0, 0), offset(0, 10));
     }
