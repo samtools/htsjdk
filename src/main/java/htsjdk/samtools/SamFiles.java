@@ -51,7 +51,7 @@ public class SamFiles {
     private static Path lookForIndex(final Path samPath) { // If input is foo.bam, look for foo.bai or foo.csi
         Path indexPath;
         final String fileName = samPath.getFileName().toString(); // works for all path types (e.g. HDFS)
-        if (fileName.endsWith(FileExtensions.BAM)) {
+        if (SamReader.Type.BAM_TYPE.hasValidFileExtension(fileName)) {
             final String bai =
                     fileName.substring(0, fileName.length() - FileExtensions.BAM.length()) + FileExtensions.BAI_INDEX;
             final String csi =
@@ -66,7 +66,7 @@ public class SamFiles {
                 }
             }
 
-        } else if (fileName.endsWith(FileExtensions.CRAM)) {
+        } else if (SamReader.Type.CRAM_TYPE.hasValidFileExtension(fileName)) {
             final String crai =
                     fileName.substring(0, fileName.length() - FileExtensions.CRAM.length()) + FileExtensions.CRAM_INDEX;
             indexPath = samPath.resolveSibling(crai);

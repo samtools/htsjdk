@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,5 +85,33 @@ public class SamFilesTest extends HtsjdkTest {
     @Test(dataProvider = "filesAndIndicies")
     public void testIndexSymlinking(Path bam, Path expected_index) {
         Assert.assertEquals(SamFiles.findIndex(bam), expected_index);
+    }
+
+    @Test
+    public void testFindIndexForUpperCaseCramWithAppendedCrai() throws IOException {
+        final Path directory = Files.createTempDirectory("testFindIndexForUpperCaseCram");
+        final Path cram = Files.createFile(directory.resolve("reads.CRAM"));
+        final Path crai = Files.createFile(directory.resolve("reads.CRAM.crai"));
+
+        Assert.assertEquals(SamFiles.findIndex(cram).toRealPath(), crai.toRealPath());
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testFindIndexForUpperCaseBamWithReplacedExtension() throws IOException {
+        final Path directory = Files.createTempDirectory("testFindIndexForUpperCaseBam");
+        final Path bam = Files.createFile(directory.resolve("reads.BAM"));
+        final Path bai = Files.createFile(directory.resolve("reads.bai"));
+
+        Assert.assertEquals(SamFiles.findIndex(bam).toRealPath(), bai.toRealPath());
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testFileTypeChecksIgnoreCase() {
+        Assert.assertTrue(SamFiles.isBAMFile(Path.of("reads.BAM")));
+        Assert.assertTrue(SamFiles.isCRAMFile(Path.of("reads.Cram")));
+        Assert.assertTrue(SamFiles.isSAMFile(Path.of("reads.SAM")));
+        Assert.assertFalse(SamFiles.isBAMFile(Path.of("reads.bam.txt")));
     }
 }

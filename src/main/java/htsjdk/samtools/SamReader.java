@@ -28,6 +28,7 @@ import htsjdk.index.HtsFileSpan;
 import htsjdk.index.HtsQueryIndex;
 import htsjdk.samtools.util.CloseableIterator;
 import java.io.Closeable;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -90,8 +91,9 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         public static final Type BAM_CSI_TYPE = new TypeImpl("BAM", "bam", "csi");
         public static final Type BAM_HTSGET_TYPE = new TypeImpl("BAM", "bam", null);
 
+        /** True if the name ends with this type's extension, in any case: {@code x.bam} and {@code x.BAM} alike. */
         public boolean hasValidFileExtension(final String fileName) {
-            return fileName != null && fileName.endsWith("." + fileExtension());
+            return fileName != null && fileName.toLowerCase(Locale.ROOT).endsWith("." + fileExtension());
         }
     }
 

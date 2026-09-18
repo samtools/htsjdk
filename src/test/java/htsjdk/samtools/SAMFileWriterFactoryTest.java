@@ -30,21 +30,31 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.zip.DeflaterFactory;
+import htsjdk.utils.SamtoolsTestUtils;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.Deflater;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -519,6 +529,50 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
     }
 
     @Test
+    public void testMakeWriterForUpperCaseBamExtension() throws IOException {
+        final Path tmpPath = Files.createTempFile("testMakeWriterForUpperCaseBamExtension", ".BAM");
+        tmpPath.toFile().deleteOnExit();
+        try (SAMFileWriter ignored =
+                new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, tmpPath, (Path) null)) {}
+
+        Assert.assertTrue(SamStreams.isBAMFile(new BufferedInputStream(new SeekableFileStream(tmpPath))));
+    }
+
+    @Test
+    public void testMakeWriterForUpperCaseCramExtension() throws IOException {
+        final Path cramTmpPath = Files.createTempFile("testMakeWriterForUpperCaseCramExtension", ".CRAM");
+        cramTmpPath.toFile().deleteOnExit();
+        final Path refTmpPath = Files.createTempFile("testMakeWriterForUpperCaseCramExtension", ".fa");
+        refTmpPath.toFile().deleteOnExit();
+        try (SAMFileWriter ignored =
+                new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpPath, refTmpPath)) {}
+
+        Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpPath))));
+    }
+
+    @Test
+    public void testIndexOfUpperCaseBamIsNamedAsForLowerCase() throws IOException {
+        final Path directory = Files.createTempDirectory("testIndexOfUpperCaseBam");
+        final Path bam = directory.resolve("reads.BAM");
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        try (SAMFileWriter writer = new SAMFileWriterFactory()
+                .setCreateIndex(true)
+                .setCreateMd5File(false)
+                .makeWriter(records.getHeader(), true, bam, (Path) null)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+
+        // Listed rather than probed, because a probe succeeds in any case on a case-insensitive filesystem.
+        try (java.util.stream.Stream<Path> files = Files.list(directory)) {
+            final List<String> names = new ArrayList<>();
+            files.forEach(file -> names.add(file.getFileName().toString()));
+            Assert.assertTrue(names.contains("reads.bai"), names.toString());
+        }
+        Assert.assertNotNull(SamFiles.findIndex(bam));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
     public void testMakeWriterForNoExtension() throws IOException {
         final Path tmpPath = Files.createTempFile("testMakeWriterForNoExtension", "");
         Assert.assertFalse(tmpPath.getFileName().toString().contains("."));
@@ -549,5 +603,237 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
                 new SAMFileWriterFactory().makeSAMOrBAMWriter(new SAMFileHeader(), true, tmpPath)) {}
 
         Assert.assertTrue(SamStreams.isBAMFile(new BufferedInputStream(new SeekableFileStream(tmpPath))));
+    }
+
+    @Test
+    public void testCloneKeepsTheDeflaterFactory() throws IOException {
+        final AtomicInteger deflatersMade = new AtomicInteger();
+        final DeflaterFactory countingFactory = new DeflaterFactory() {
+            @Override
+            public Deflater makeDeflater(final int compressionLevel, final boolean gzipCompatible) {
+                deflatersMade.incrementAndGet();
+                return super.makeDeflater(compressionLevel, gzipCompatible);
+            }
+        };
+        final SAMFileWriterFactory clone =
+                factoryWithoutIndexOrMd5().setDeflaterFactory(countingFactory).clone();
+
+        writeRecords(clone, coordinateSortedRecords(), prepareOutputFileWithSuffix(".bam"));
+
+        Assert.assertTrue(deflatersMade.get() > 0, "the clone did not use the configured deflater factory");
+    }
+
+    @Test
+    public void testCloneKeepsTheSamFlagFieldOutput() throws IOException {
+        final SAMFileWriterFactory clone = factoryWithoutIndexOrMd5()
+                .setSamFlagFieldOutput(SamFlagField.HEXADECIMAL)
+                .clone();
+        final Path output = prepareOutputFileWithSuffix(".sam");
+
+        writeRecords(clone, coordinateSortedRecords(), output);
+
+        final String firstRecord = Files.readAllLines(output).stream()
+                .filter(line -> !line.startsWith("@"))
+                .findFirst()
+                .orElseThrow();
+        Assert.assertTrue(firstRecord.split("\t")[1].startsWith("0x"), firstRecord);
+    }
+
+    // SAM text written to a name ending in a block-compression extension comes out BGZF-compressed.
+
+    private static final int BGZIP_SAM_RECORD_COUNT = 50;
+
+    private static SAMRecordSetBuilder coordinateSortedRecords() {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        for (int i = 0; i < BGZIP_SAM_RECORD_COUNT; i++) {
+            builder.addFrag("read" + i, i % 3, 1000 + 10 * i, false);
+        }
+        return builder;
+    }
+
+    private static void writeRecords(
+            final SAMFileWriterFactory factory, final SAMRecordSetBuilder records, final Path path) {
+        try (SAMFileWriter writer = factory.makeWriter(records.getHeader(), true, path, null)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+    }
+
+    private static SAMFileWriterFactory factoryWithoutIndexOrMd5() {
+        return new SAMFileWriterFactory().setCreateIndex(false).setCreateMd5File(false);
+    }
+
+    private static List<String> readNames(final Path path) throws IOException {
+        final List<String> names = new ArrayList<>();
+        try (SamReader reader = SamReaderFactory.makeDefault().open(path)) {
+            reader.forEach(record -> names.add(record.getReadName()));
+        }
+        return names;
+    }
+
+    private static String decompressedText(final Path path) throws IOException {
+        try (InputStream in = new BlockCompressedInputStream(Files.newInputStream(path))) {
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    @Test
+    public void testSamGzIsBgzfCompressedSamText() throws IOException {
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        writeRecords(factoryWithoutIndexOrMd5(), records, output);
+
+        Assert.assertTrue(IOUtil.isBlockCompressed(output), "not BGZF");
+        final String text = decompressedText(output);
+        Assert.assertTrue(text.startsWith("@HD\t"), "not SAM text: " + text.substring(0, Math.min(20, text.length())));
+        Assert.assertEquals(text.lines().filter(line -> !line.startsWith("@")).count(), BGZIP_SAM_RECORD_COUNT);
+    }
+
+    @Test
+    public void testSamGzEndsWithBgzfTerminatorBlock() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        writeRecords(factoryWithoutIndexOrMd5(), coordinateSortedRecords(), output);
+
+        Assert.assertEquals(
+                BlockCompressedInputStream.checkTermination(output),
+                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK);
+    }
+
+    @Test
+    public void testSamGzReadsBackAsSam() throws IOException {
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        writeRecords(factoryWithoutIndexOrMd5(), records, output);
+
+        try (SamReader reader = SamReaderFactory.makeDefault().open(output)) {
+            Assert.assertEquals(reader.type(), SamReader.Type.SAM_TYPE);
+            Assert.assertEquals(
+                    reader.getFileHeader().getSequenceDictionary(),
+                    records.getHeader().getSequenceDictionary());
+        }
+        final List<String> expected = new ArrayList<>();
+        records.getRecords().forEach(record -> expected.add(record.getReadName()));
+        Assert.assertEquals(readNames(output), expected);
+    }
+
+    @Test
+    public void testSamBgzIsBgzfCompressed() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".sam.bgz");
+        writeRecords(factoryWithoutIndexOrMd5(), coordinateSortedRecords(), output);
+
+        Assert.assertTrue(IOUtil.isBlockCompressed(output), "not BGZF");
+        Assert.assertEquals(readNames(output).size(), BGZIP_SAM_RECORD_COUNT);
+    }
+
+    @Test
+    public void testMakeSAMOrBAMWriterWritesSamTextForSamGz() throws IOException {
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        try (SAMFileWriter writer = factoryWithoutIndexOrMd5().makeSAMOrBAMWriter(records.getHeader(), true, output)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+
+        Assert.assertTrue(decompressedText(output).startsWith("@HD\t"));
+    }
+
+    @Test
+    public void testMakeSAMWriterCompressesForACompressedExtension() throws IOException {
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        final Path output = prepareOutputFileWithSuffix(".gz");
+        try (SAMFileWriter writer = factoryWithoutIndexOrMd5().makeSAMWriter(records.getHeader(), true, output)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+
+        Assert.assertTrue(IOUtil.isBlockCompressed(output), "not BGZF");
+        Assert.assertEquals(readNames(output).size(), BGZIP_SAM_RECORD_COUNT);
+    }
+
+    @Test
+    public void testPlainSamStaysUncompressed() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".sam");
+        writeRecords(factoryWithoutIndexOrMd5(), coordinateSortedRecords(), output);
+
+        Assert.assertTrue(Files.readString(output).startsWith("@HD\t"));
+    }
+
+    @Test
+    public void testUpperCaseSamGzIsBgzfCompressedSamText() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".SAM.GZ");
+        writeRecords(factoryWithoutIndexOrMd5(), coordinateSortedRecords(), output);
+
+        Assert.assertTrue(IOUtil.isBlockCompressed(output), "not BGZF");
+        Assert.assertTrue(decompressedText(output).startsWith("@HD\t"));
+    }
+
+    @Test
+    public void testUpperCaseSamIsUncompressedSamText() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".SAM");
+        writeRecords(factoryWithoutIndexOrMd5(), coordinateSortedRecords(), output);
+
+        Assert.assertTrue(Files.readString(output).startsWith("@HD\t"));
+    }
+
+    @Test
+    public void testUnsortedInputIsSortedIntoTheCompressedOutput() throws IOException {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        records.addFrag("second", 0, 5000, false);
+        records.addFrag("first", 0, 100, false);
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        try (SAMFileWriter writer = factoryWithoutIndexOrMd5().makeWriter(records.getHeader(), false, output, null)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+
+        final List<String> names = readNames(output);
+        Assert.assertEquals(names.size(), 2);
+        Assert.assertEquals(names.get(0), "first");
+    }
+
+    @Test
+    public void testAsyncWriterProducesACompleteCompressedFile() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        writeRecords(factoryWithoutIndexOrMd5().setUseAsyncIo(true), coordinateSortedRecords(), output);
+
+        Assert.assertEquals(
+                BlockCompressedInputStream.checkTermination(output),
+                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK);
+        Assert.assertEquals(readNames(output).size(), BGZIP_SAM_RECORD_COUNT);
+    }
+
+    @Test
+    public void testMd5IsOfTheCompressedBytes() throws IOException {
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        final Path md5 = IOUtil.addExtension(output, ".md5");
+        md5.toFile().deleteOnExit();
+        writeRecords(factoryWithoutIndexOrMd5().setCreateMd5File(true), coordinateSortedRecords(), output);
+
+        final Path recomputed = prepareOutputFileWithSuffix(".md5");
+        try (OutputStream out = new Md5CalculatingOutputStream(OutputStream.nullOutputStream(), recomputed)) {
+            out.write(Files.readAllBytes(output));
+        }
+        Assert.assertEquals(Files.readString(md5), Files.readString(recomputed));
+    }
+
+    @Test
+    public void testHigherCompressionLevelGivesASmallerFile() throws IOException {
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        final Path stored = prepareOutputFileWithSuffix(".sam.gz");
+        final Path compressed = prepareOutputFileWithSuffix(".sam.gz");
+        writeRecords(factoryWithoutIndexOrMd5().setCompressionLevel(0), records, stored);
+        writeRecords(factoryWithoutIndexOrMd5().setCompressionLevel(9), records, compressed);
+
+        Assert.assertTrue(
+                Files.size(compressed) < Files.size(stored),
+                Files.size(compressed) + " is not below " + Files.size(stored));
+    }
+
+    @Test
+    public void testSamtoolsReadsTheCompressedSam() throws IOException {
+        if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
+            throw new SkipException("samtools not available on local device");
+        }
+        final Path output = prepareOutputFileWithSuffix(".sam.gz");
+        writeRecords(factoryWithoutIndexOrMd5(), coordinateSortedRecords(), output);
+
+        final String count = SamtoolsTestUtils.executeSamToolsCommand("view -c " + output.toAbsolutePath()).stdout;
+        Assert.assertEquals(count.trim(), Integer.toString(BGZIP_SAM_RECORD_COUNT));
     }
 }
