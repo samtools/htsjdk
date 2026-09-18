@@ -492,6 +492,8 @@ public abstract class SamReaderFactory {
                                     new BlockCompressedInputStream(sourcePath, this.inflaterFactory),
                                     true,
                                     sourcePath,
+                                    indexPath,
+                                    indexPath == null && indexDefined ? indexMaybe.asUnbufferedSeekableStream() : null,
                                     validationStringency,
                                     this.samRecordFactory);
                         } else {
@@ -499,6 +501,8 @@ public abstract class SamReaderFactory {
                                     new BlockCompressedInputStream(bufferedStream, this.inflaterFactory),
                                     false,
                                     sourcePath,
+                                    null,
+                                    null,
                                     validationStringency,
                                     this.samRecordFactory);
                         }

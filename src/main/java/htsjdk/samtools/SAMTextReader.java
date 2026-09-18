@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -34,7 +35,7 @@ import java.nio.file.Path;
 /**
  * Internal class for reading SAM text files. Text that is block-compressed is read a BGZF block at a time, which
  * lets each record say where in the file it lies, as a record of a BAM does; and if the file can be seeked in, it
- * can be read from any such place.
+ * can be read from any such place, and queried through a BAI or CSI index as samtools writes for such a file.
  */
 class SAMTextReader extends SamReader.ReaderImplementation {
 
@@ -56,6 +57,12 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     // Lines can be numbered only while reading on from the header.
     private int mLinesBeforeFirstRecord;
     private boolean mLineNumbersKnown = true;
+
+    // At most one of these is set, and only for text that can be seeked in.
+    private Path mIndexPath;
+    private SeekableStream mIndexStream;
+    private BinningBAMIndex mIndex;
+    private IndexLoading mIndexLoading = IndexLoading.AUTO;
 
     private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
@@ -96,19 +103,31 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      * Prepare to read block-compressed SAM text.
      *
      * @param stream   positioned at the start of the file
-     * @param seekable whether {@code stream} can seek, without which the file can only be read through once
-     * @param path     For error reporting only; may be null.
+     * @param seekable whether {@code stream} can seek, without which the file can only be read through once and
+     *                 an index is of no use
+     * @param path     the file being read, for error reporting and for finding its index; may be null
+     * @param indexPath   the file's index, or null to look for one beside {@code path}
+     * @param indexStream the file's index, if it is not at a path; null otherwise
      */
     SAMTextReader(
             final BlockCompressedInputStream stream,
             final boolean seekable,
             final Path path,
+            final Path indexPath,
+            final SeekableStream indexStream,
             final ValidationStringency validationStringency,
             final SAMRecordFactory factory) {
         mBlockStream = new BlockAtATimeInputStream(stream);
         mIsSeekable = seekable;
         mReader = new SamLineReader(mBlockStream);
         mPath = path;
+        if (seekable && indexPath != null) {
+            mIndexPath = indexPath;
+        } else if (seekable && indexStream != null) {
+            mIndexStream = indexStream;
+        } else if (seekable && path != null) {
+            mIndexPath = SamFiles.findIndex(path);
+        }
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
         readHeader();
@@ -150,13 +169,45 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     }
 
     @Override
-    public boolean hasIndex() {
-        return false;
+    void setIndexLoading(final IndexLoading indexLoading) {
+        if (mIndex != null && indexLoading != mIndexLoading) {
+            throw new SAMException("Unable to change index loading; index file has already been loaded.");
+        }
+        mIndexLoading = indexLoading;
     }
 
     @Override
+    public boolean hasIndex() {
+        return mIndexPath != null || mIndexStream != null;
+    }
+
+    /**
+     * The file's BAI or CSI, in which references are numbered as the header numbers them, which is how samtools
+     * writes an index for SAM text.
+     */
+    @Override
     public BAMIndex getIndex() {
-        throw new UnsupportedOperationException();
+        if (!hasIndex()) {
+            throw new UnsupportedOperationException("No index is available for this SAM text");
+        }
+        if (mIndex == null) {
+            final BinningBAMIndex index = mIndexPath != null
+                    ? BinningBAMIndex.open(mIndexPath, mIndexLoading)
+                    : BinningBAMIndex.open(mIndexStream, mIndexLoading);
+            final int sequenceCount = mFileHeader.getSequenceDictionary().size();
+            if (index.getNumberOfReferences() != sequenceCount) {
+                index.close();
+                throw new SAMFormatException(String.format(
+                        "The index %s covers %d reference sequences but the header of %s has %d, so it was not "
+                                + "made for this file, or numbers the sequences some other way",
+                        mIndexPath != null ? mIndexPath : mIndexStream.getSource(),
+                        index.getNumberOfReferences(),
+                        mPath != null ? mPath : "the SAM text",
+                        sequenceCount));
+            }
+            mIndex = index;
+        }
+        return mIndex;
     }
 
     @Override
@@ -168,6 +219,18 @@ class SAMTextReader extends SamReader.ReaderImplementation {
                 mReader = null;
             }
         }
+        if (mIndex != null) {
+            mIndex.close();
+            mIndex = null;
+        } else if (mIndexStream != null) {
+            // Never opened as an index, which would have closed it
+            try {
+                mIndexStream.close();
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+        mIndexStream = null;
     }
 
     @Override
@@ -247,30 +310,48 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         return new BAMFileSpan(new Chunk(mFirstRecordPointer, Long.MAX_VALUE));
     }
 
-    /**
-     * Unsupported for SAM text files.
-     */
-    public CloseableIterator<SAMRecord> query(
-            final String sequence, final int start, final int end, final boolean contained) {
-        throw new UnsupportedOperationException("Cannot query SAM text files");
-    }
-
+    /** Supported only for block-compressed text that has an index. */
     @Override
     public CloseableIterator<SAMRecord> query(final QueryInterval[] intervals, final boolean contained) {
-        throw new UnsupportedOperationException("Cannot query SAM text files");
+        assertQueryable();
+        QueryInterval.assertIntervalsOptimized(intervals);
+        final BAMFileSpan span = BAMFileReader.getFileSpan(intervals, getIndex());
+        return new QueryFilteringIterator(
+                getIterator(span == null ? new BAMFileSpan() : span),
+                new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
     }
 
-    /**
-     * Unsupported for SAM text files.
-     */
+    /** Supported only for block-compressed text that has an index. */
     @Override
     public CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence, final int start) {
-        throw new UnsupportedOperationException("Cannot query SAM text files");
+        assertQueryable();
+        final int referenceIndex = mFileHeader.getSequenceIndex(sequence);
+        final BAMFileSpan span = referenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX
+                ? new BAMFileSpan()
+                : getIndex().getSpanOverlapping(referenceIndex, start, 0);
+        return new QueryFilteringIterator(getIterator(span), new BAMStartingAtIteratorFilter(referenceIndex, start));
     }
 
+    /** Supported only for block-compressed text that has an index. */
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
-        throw new UnsupportedOperationException("Cannot query SAM text files");
+        assertQueryable();
+        // The reads without a position follow every read that has one, so the search starts from the last place the
+        // index knows of, or from the top if it knows of none.
+        final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
+        final long start = startOfLastLinearBin == -1 ? mFirstRecordPointer : startOfLastLinearBin;
+        return new QueryFilteringIterator(
+                getIterator(new BAMFileSpan(new Chunk(start, Long.MAX_VALUE))),
+                record -> record.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX
+                        ? BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER
+                        : BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION);
+    }
+
+    private void assertQueryable() {
+        if (!hasIndex()) {
+            throw new UnsupportedOperationException(
+                    "Cannot query SAM text files unless block-compressed, seekable and indexed");
+        }
     }
 
     private void readHeader() {
@@ -374,10 +455,11 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         private long chunkEnd = -1; // before everything, so that the first advance moves to the first chunk
 
         /**
-         * @param filePointers the starts and ends of the chunks, as virtual offsets, in the order to read them
+         * @param filePointers the starts and ends of the chunks, as virtual offsets, in the order to read them; null
+         *     if there are none, which is how an empty {@link BAMFileSpan} puts it
          */
         private SpanIterator(final long[] filePointers) {
-            this.filePointers = filePointers;
+            this.filePointers = filePointers == null ? new long[0] : filePointers;
             advance();
         }
 
