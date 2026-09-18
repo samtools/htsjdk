@@ -485,10 +485,23 @@ public abstract class SamReaderFactory {
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                         // Pass the configured inflater factory through so that BGZF-compressed
                         // SAM honors the same factory selection (e.g. libdeflate) as BAM does.
-                        primitiveSamReader = new SAMTextReader(
-                                new BlockCompressedInputStream(bufferedStream, this.inflaterFactory),
-                                validationStringency,
-                                this.samRecordFactory);
+                        if (sourcePath != null && Files.isRegularFile(sourcePath)) {
+                            // A file can be seeked in, which a reader needs in order to read from a given place
+                            bufferedStream.close();
+                            primitiveSamReader = new SAMTextReader(
+                                    new BlockCompressedInputStream(sourcePath, this.inflaterFactory),
+                                    true,
+                                    sourcePath,
+                                    validationStringency,
+                                    this.samRecordFactory);
+                        } else {
+                            primitiveSamReader = new SAMTextReader(
+                                    new BlockCompressedInputStream(bufferedStream, this.inflaterFactory),
+                                    false,
+                                    sourcePath,
+                                    validationStringency,
+                                    this.samRecordFactory);
+                        }
                     } else if (IOUtil.isGZIPInputStream(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(
                                 IOUtil.openGzipOrBgzfStream(bufferedStream),
