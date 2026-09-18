@@ -36,6 +36,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
+import htsjdk.tribble.index.tabix.TabixIndexType;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -127,6 +128,8 @@ public class VariantContextWriterBuilder {
     private Path outPath = null;
     private OutputStream outStream = null;
     private IndexCreator idxCreator = null;
+    private TabixIndexType tabixIndexType = TabixIndexType.TBI;
+    private int csiMinShift = TabixIndexCreator.DEFAULT_CSI_MIN_SHIFT;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private boolean createMD5 = Defaults.CREATE_MD5;
     protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
@@ -271,6 +274,29 @@ public class VariantContextWriterBuilder {
      */
     public VariantContextWriterBuilder setIndexCreator(final IndexCreator idxCreator) {
         this.idxCreator = idxCreator;
+        return this;
+    }
+
+    /**
+     * Choose the format of the index written alongside a block-compressed VCF. Ignored when an
+     * {@link #setIndexCreator(IndexCreator) IndexCreator} is set, which decides the format itself.
+     *
+     * @param tabixIndexType the format; TBI unless set
+     * @return this <code>VariantContextWriterBuilder</code>
+     */
+    public VariantContextWriterBuilder setTabixIndexType(final TabixIndexType tabixIndexType) {
+        this.tabixIndexType = tabixIndexType;
+        return this;
+    }
+
+    /**
+     * For a CSI index, set the log2 of the span of the smallest bins (tabix's {@code -m}). Ignored for TBI.
+     *
+     * @param csiMinShift the shift; {@link TabixIndexCreator#DEFAULT_CSI_MIN_SHIFT} unless set
+     * @return this <code>VariantContextWriterBuilder</code>
+     */
+    public VariantContextWriterBuilder setCsiMinShift(final int csiMinShift) {
+        this.csiMinShift = csiMinShift;
         return this;
     }
 
@@ -483,13 +509,15 @@ public class VariantContextWriterBuilder {
                     throw new IllegalArgumentException(
                             "A reference dictionary is required for creating Tribble indices on the fly");
 
-                writer = createVCFWriter(outPath, outStreamFromFile);
+                writer = createVCFWriter(outPath, outStreamFromFile, idxCreator);
                 break;
             case BLOCK_COMPRESSED_VCF:
-                if (refDict == null) idxCreator = new TabixIndexCreator(TabixFormat.VCF);
-                else idxCreator = new TabixIndexCreator(refDict, TabixFormat.VCF);
-
-                writer = createVCFWriter(outPath, new BlockCompressedOutputStream(outStreamFromFile, outPath));
+                writer = createVCFWriter(
+                        outPath,
+                        new BlockCompressedOutputStream(outStreamFromFile, outPath),
+                        idxCreator != null
+                                ? idxCreator
+                                : new TabixIndexCreator(refDict, TabixFormat.VCF, tabixIndexType, csiMinShift));
                 break;
             case BCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
@@ -499,7 +527,7 @@ public class VariantContextWriterBuilder {
                 writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
             case VCF_STREAM:
-                writer = createVCFWriter(null, outStreamFromFile);
+                writer = createVCFWriter(null, outStreamFromFile, idxCreator);
                 break;
             case BCF_STREAM:
                 if (options.contains(Options.INDEX_ON_THE_FLY)) {
@@ -568,7 +596,8 @@ public class VariantContextWriterBuilder {
         return IOUtil.hasBlockCompressedExtension(outPath);
     }
 
-    private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
+    private VariantContextWriter createVCFWriter(
+            final Path writerPath, final OutputStream writerStream, final IndexCreator idxCreator) {
         if (idxCreator == null) {
             return new VCFWriter(
                     writerPath,

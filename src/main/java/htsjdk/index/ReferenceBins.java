@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The part of a {@link BinningIndex} that describes one reference sequence: its bins, its linear index and,
- * if the index carries one, its metadata pseudo-bin.
+ * The part of a {@link BinningIndex} that describes one reference sequence: its bins, its linear index if the
+ * index has one, and its metadata pseudo-bin if the index carries one.
  *
  * <p>Only bins that hold chunks are stored, so the footprint follows the data rather than the index geometry.
  * Instances are immutable.
@@ -26,25 +26,41 @@ public final class ReferenceBins {
      */
     public record Metadata(long firstOffset, long lastOffset, long mappedCount, long unmappedCount) {}
 
-    static final ReferenceBins EMPTY = new ReferenceBins(new int[0], new long[0][], new long[0], null);
+    static final ReferenceBins EMPTY = new ReferenceBins(new int[0], new long[0][], new long[0], new long[0], null, 1);
 
     // Bin numbers in ascending order, so a level's bins can be range-scanned after a binary search.
     private final int[] binNumbers;
     // binChunks[i] holds the chunks of binNumbers[i] as {start0, end0, start1, end1, ...} virtual offsets.
     private final long[][] binChunks;
+    // loffsets[i] is the smallest virtual offset of any record overlapping the first window of binNumbers[i]: the
+    // linear-index entry for that window, which is what the "l" in the CSI specification's name stands for. CSI
+    // stores one per bin in place of the linear index itself.
+    // Derived from the linear index on first use when the file did not store them, since a TBI never needs them.
+    private volatile long[] loffsets;
     private final long[] linearIndex;
     private final Metadata metadata;
+    private final int depth;
 
     /**
      * @param binNumbers bin numbers, strictly ascending
      * @param binChunks for each bin, its chunks flattened to {start0, end0, start1, end1, ...} virtual offsets
-     * @param linearIndex for each window of the index's smallest bin size, the smallest virtual offset of any
-     *     record overlapping the window; empty if the index has no linear index
+     * @param loffsets for each bin, the smallest virtual offset of any record overlapping the bin's first
+     *     window of the smallest bin size, i.e. a lower bound for every record in the bin; or null to derive
+     *     them from the linear index when first needed (all zero, the trivial bound, if that is empty too)
+     * @param linearIndex for each window of the smallest bin size, the smallest virtual offset of any record
+     *     overlapping the window; empty if the index has no linear index
      * @param metadata the metadata pseudo-bin, or null if there is none
+     * @param depth the index's number of bin levels above the smallest bins, needed to derive loffsets
      */
-    ReferenceBins(final int[] binNumbers, final long[][] binChunks, final long[] linearIndex, final Metadata metadata) {
-        if (binNumbers.length != binChunks.length) {
-            throw new IllegalArgumentException("binNumbers and binChunks differ in length");
+    ReferenceBins(
+            final int[] binNumbers,
+            final long[][] binChunks,
+            final long[] loffsets,
+            final long[] linearIndex,
+            final Metadata metadata,
+            final int depth) {
+        if (binNumbers.length != binChunks.length || (loffsets != null && binNumbers.length != loffsets.length)) {
+            throw new IllegalArgumentException("binNumbers, binChunks and loffsets differ in length");
         }
         for (int i = 0; i < binNumbers.length; i++) {
             if (i > 0 && binNumbers[i] <= binNumbers[i - 1]) {
@@ -56,8 +72,10 @@ public final class ReferenceBins {
         }
         this.binNumbers = binNumbers;
         this.binChunks = binChunks;
+        this.loffsets = loffsets;
         this.linearIndex = linearIndex;
         this.metadata = metadata;
+        this.depth = depth;
     }
 
     /**
@@ -96,6 +114,15 @@ public final class ReferenceBins {
     }
 
     /**
+     * @param ordinal position of the bin among this reference's bins, which are ordered by bin number
+     * @return the smallest virtual offset of any record overlapping the bin's first window; every record in the
+     *     bin lies at or after it
+     */
+    public long getLoffset(final int ordinal) {
+        return loffsets()[ordinal];
+    }
+
+    /**
      * @return a copy of the linear index; empty if there is none
      */
     public long[] getLinearIndex() {
@@ -119,6 +146,18 @@ public final class ReferenceBins {
         return binChunks;
     }
 
+    long[] loffsets() {
+        long[] result = loffsets;
+        if (result == null) {
+            result = new long[binNumbers.length];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = BinningIndex.loffsetFromLinearIndex(binNumbers[i], linearIndex, depth);
+            }
+            loffsets = result; // idempotent, so a race here only repeats the work
+        }
+        return result;
+    }
+
     long[] linearIndex() {
         return linearIndex;
     }
@@ -130,6 +169,7 @@ public final class ReferenceBins {
         final ReferenceBins that = (ReferenceBins) o;
         return Arrays.equals(binNumbers, that.binNumbers)
                 && Arrays.deepEquals(binChunks, that.binChunks)
+                && Arrays.equals(loffsets(), that.loffsets())
                 && Arrays.equals(linearIndex, that.linearIndex)
                 && Objects.equals(metadata, that.metadata);
     }
@@ -138,6 +178,7 @@ public final class ReferenceBins {
     public int hashCode() {
         int result = Arrays.hashCode(binNumbers);
         result = 31 * result + Arrays.deepHashCode(binChunks);
+        result = 31 * result + Arrays.hashCode(loffsets());
         result = 31 * result + Arrays.hashCode(linearIndex);
         result = 31 * result + Objects.hashCode(metadata);
         return result;

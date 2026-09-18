@@ -25,10 +25,11 @@ package htsjdk.tribble.util;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.TabixReader;
+import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.tribble.index.tabix.TabixIndexType;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,40 +46,39 @@ public class TabixUtils {
     public static final String STANDARD_INDEX_EXTENSION = FileExtensions.TABIX_INDEX;
 
     /**
-     * Generates the SAMSequenceDictionary from the given tabix index file
+     * Finds the index of a block-compressed, tabix-indexed file, looking for a CSI index and then a TBI index
+     * beside it, in the order htslib does.
+     *
+     * @param resourcePath path or URL of the indexed file
+     * @return the index's path or URL, or null if neither exists
+     */
+    public static String findIndex(final String resourcePath) throws IOException {
+        for (final TabixIndexType indexType : new TabixIndexType[] {TabixIndexType.CSI, TabixIndexType.TBI}) {
+            final String indexPath = ParsingUtils.appendToPath(resourcePath, indexType.getExtension());
+            if (ParsingUtils.resourceExists(indexPath)) {
+                return indexPath;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Generates the SAMSequenceDictionary from the given tabix index file, TBI or CSI. Sequence lengths are not
+     * recorded in the index and are given as the lengths of the names.
      *
      * @param tabixIndex the path to the tabix index file
      * @return non-null sequence dictionary
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path tabixIndex) {
         if (tabixIndex == null) throw new IllegalArgumentException();
-
         try {
-            final BlockCompressedInputStream is = new BlockCompressedInputStream(tabixIndex);
-
-            // read preliminary bytes
-            byte[] buf = new byte[32];
-            is.read(buf, 0, 32);
-
-            // read sequence dictionary
-            int i, j, len = TabixReader.readInt(is);
-            buf = new byte[len];
-            is.read(buf);
-
-            final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>();
-            for (i = j = 0; i < buf.length; ++i) {
-                if (buf[i] == 0) {
-                    byte[] b = new byte[i - j];
-                    System.arraycopy(buf, j, b, 0, b.length);
-                    sequences.add(new SAMSequenceRecord(new String(b), b.length));
-                    j = i + 1;
-                }
+            final List<SAMSequenceRecord> sequences = new ArrayList<>();
+            for (final String name : new TabixIndex(tabixIndex).getSequenceNames()) {
+                sequences.add(new SAMSequenceRecord(name, name.length()));
             }
-            is.close();
-
             return new SAMSequenceDictionary(sequences);
-        } catch (Exception e) {
-            throw new TribbleException("Unable to read tabix index: " + e.getMessage());
+        } catch (final Exception e) {
+            throw new TribbleException("Unable to read tabix index: " + e.getMessage(), e);
         }
     }
 }

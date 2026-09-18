@@ -42,8 +42,12 @@ public class StreamBasedTabixIndexCreator extends AllRefsTabixIndexCreator {
         private final OutputStream out;
 
         StreamBasedTabixIndex(
-                TabixFormat formatSpec, List<String> sequenceNames, BinningIndex binningIndex, OutputStream out) {
-            super(formatSpec, sequenceNames, binningIndex);
+                TabixFormat formatSpec,
+                List<String> sequenceNames,
+                BinningIndex binningIndex,
+                TabixIndexType indexType,
+                OutputStream out) {
+            super(formatSpec, sequenceNames, binningIndex, indexType);
             this.out = out;
         }
 
@@ -58,9 +62,18 @@ public class StreamBasedTabixIndexCreator extends AllRefsTabixIndexCreator {
 
     private final OutputStream out;
 
+    /** Creates a TBI index. */
     public StreamBasedTabixIndexCreator(
             SAMSequenceDictionary sequenceDictionary, TabixFormat formatSpec, OutputStream out) {
-        super(sequenceDictionary, formatSpec);
+        this(sequenceDictionary, formatSpec, TabixIndexType.TBI, out);
+    }
+
+    public StreamBasedTabixIndexCreator(
+            SAMSequenceDictionary sequenceDictionary,
+            TabixFormat formatSpec,
+            TabixIndexType indexType,
+            OutputStream out) {
+        super(sequenceDictionary, formatSpec, indexType);
         this.out = out;
     }
 
@@ -69,6 +82,10 @@ public class StreamBasedTabixIndexCreator extends AllRefsTabixIndexCreator {
         final Index index = super.finalizeIndex(finalFilePosition);
         final TabixIndex tabixIndex = (TabixIndex) index;
         return new StreamBasedTabixIndex(
-                tabixIndex.getFormatSpec(), tabixIndex.getSequenceNames(), tabixIndex.getBinningIndex(), out);
+                tabixIndex.getFormatSpec(),
+                tabixIndex.getSequenceNames(),
+                tabixIndex.getBinningIndex(),
+                tabixIndex.getIndexType(),
+                out);
     }
 }

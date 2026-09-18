@@ -25,6 +25,7 @@ package htsjdk.tribble.index.tabix;
 
 import htsjdk.index.BinningIndex;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
@@ -38,9 +39,12 @@ import java.util.Set;
  * Features are expected to be 1-based, inclusive.
  */
 public class TabixIndexCreator implements IndexCreator {
+    /** The {@code minShift} tabix uses for a CSI index unless told otherwise: 16 kb smallest bins, as in TBI. */
+    public static final int DEFAULT_CSI_MIN_SHIFT = BinningIndex.BAI_MIN_SHIFT;
+
     private final TabixFormat formatSpec;
-    private final BinningIndex.Builder indexBuilder =
-            new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+    private final TabixIndexType indexType;
+    private final BinningIndex.Builder indexBuilder;
     private final List<String> sequenceNames = new ArrayList<String>();
     // Merely a faster way to ensure that features are added in a specific sequence name order
     private final Set<String> sequenceNamesSeen = new HashSet<String>();
@@ -53,16 +57,72 @@ public class TabixIndexCreator implements IndexCreator {
     private PendingFeature previousFeature = null;
 
     /**
+     * Creates a TBI index.
+     *
      * @param sequenceDictionary is not required, but if present all features added must refer to sequences in the
      *                           dictionary.
      */
     public TabixIndexCreator(final SAMSequenceDictionary sequenceDictionary, final TabixFormat formatSpec) {
-        this.sequenceDictionary = sequenceDictionary;
-        this.formatSpec = formatSpec.clone();
+        this(sequenceDictionary, formatSpec, TabixIndexType.TBI);
     }
 
+    /** Creates a TBI index. */
     public TabixIndexCreator(final TabixFormat formatSpec) {
         this(null, formatSpec);
+    }
+
+    /**
+     * @param sequenceDictionary is not required, but if present all features added must refer to sequences in the
+     *                           dictionary. For a CSI index its longest sequence also decides the binning scheme,
+     *                           as it does for tabix; without it a deep scheme is used.
+     * @param indexType the format to produce
+     */
+    public TabixIndexCreator(
+            final SAMSequenceDictionary sequenceDictionary,
+            final TabixFormat formatSpec,
+            final TabixIndexType indexType) {
+        this(sequenceDictionary, formatSpec, indexType, DEFAULT_CSI_MIN_SHIFT);
+    }
+
+    /**
+     * @param sequenceDictionary is not required, but if present all features added must refer to sequences in the
+     *                           dictionary. For a CSI index its longest sequence also decides the binning scheme,
+     *                           as it does for tabix; without it a deep scheme is used.
+     * @param indexType the format to produce
+     * @param csiMinShift for a CSI index, log2 of the span of the smallest bins (tabix's {@code -m}); must be
+     *                    {@link #DEFAULT_CSI_MIN_SHIFT} for TBI, whose scheme is fixed
+     */
+    public TabixIndexCreator(
+            final SAMSequenceDictionary sequenceDictionary,
+            final TabixFormat formatSpec,
+            final TabixIndexType indexType,
+            final int csiMinShift) {
+        this.sequenceDictionary = sequenceDictionary;
+        this.formatSpec = formatSpec.clone();
+        this.indexType = indexType;
+        this.indexBuilder = newBuilder(sequenceDictionary, indexType, csiMinShift);
+    }
+
+    /**
+     * A builder for the binning scheme an index type calls for: TBI's fixed scheme, or for CSI the one tabix would
+     * choose for the longest sequence in the dictionary.
+     */
+    static BinningIndex.Builder newBuilder(
+            final SAMSequenceDictionary sequenceDictionary, final TabixIndexType indexType, final int csiMinShift) {
+        if (indexType == TabixIndexType.TBI) {
+            if (csiMinShift != DEFAULT_CSI_MIN_SHIFT) {
+                throw new IllegalArgumentException("A TBI index has a fixed binning scheme; minShift cannot be set");
+            }
+            return new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+        }
+        final long longestSequence = sequenceDictionary == null
+                ? 0
+                : sequenceDictionary.getSequences().stream()
+                        .mapToLong(SAMSequenceRecord::getSequenceLength)
+                        .max()
+                        .orElse(0);
+        final BinningIndex.Geometry geometry = BinningIndex.csiGeometry(csiMinShift, longestSequence);
+        return new BinningIndex.Builder(geometry.minShift(), geometry.depth(), true);
     }
 
     @Override
@@ -105,6 +165,6 @@ public class TabixIndexCreator implements IndexCreator {
             previousFeature.addTo(indexBuilder, finalFilePosition);
         }
         // Only sequences that have features are listed, in the order they were seen.
-        return new TabixIndex(formatSpec, sequenceNames, indexBuilder.build(sequenceNames.size()));
+        return new TabixIndex(formatSpec, sequenceNames, indexBuilder.build(sequenceNames.size()), indexType);
     }
 }

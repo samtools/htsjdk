@@ -167,7 +167,9 @@ public class VariantsBundle extends Bundle implements Serializable {
      */
     public static <T extends IOPath> Optional<T> resolveIndex(
             final T variantsHtsPath, final Function<String, T> ioPathConstructor) {
-        final Set<String> indexExtensions = Set.of(FileExtensions.TRIBBLE_INDEX, FileExtensions.TABIX_INDEX);
+        // In the order htslib looks for a tabix index: CSI before TBI.
+        final List<String> indexExtensions =
+                List.of(FileExtensions.TRIBBLE_INDEX, FileExtensions.CSI, FileExtensions.TABIX_INDEX);
         for (final String extension : indexExtensions) {
             final T putativeIndexPath = IOPathUtils.appendExtension(variantsHtsPath, extension, ioPathConstructor);
             if (Files.exists(putativeIndexPath.toPath())) {
