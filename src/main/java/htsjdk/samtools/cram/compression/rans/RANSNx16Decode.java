@@ -273,6 +273,7 @@ public class RANSNx16Decode extends RANSDecode {
     }
 
     private void readFrequencyTableOrder1(final byte[] in, final int[] inPos, final int shift) {
+        allocateOrder1Rows();
         final int[][] freq = getFrequencies();
         final byte[][] revLookup = getReverseLookup();
         final RANSDecodingSymbol[][] decodingSymbols = getDecodingSymbols();

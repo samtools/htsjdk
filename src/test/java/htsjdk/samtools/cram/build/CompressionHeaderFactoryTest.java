@@ -4,8 +4,10 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.utils.TestNGUtils;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -55,6 +57,28 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
         // Verify that the factory can be constructed and used (tag trial compressors are
         // created lazily during createCompressionHeader, so we just verify construction succeeds)
         Assert.assertNotNull(compressionHeaderFactory);
+    }
+
+    @Test
+    public void memoryForTagCompressorsDoesNotGrowWithTheNumberOfDistinctTags() {
+        final List<ReadTag> tags = new ArrayList<>();
+        for (char first = 'A'; first <= 'J'; first++) {
+            for (char second = 'a'; second <= 'j'; second++) {
+                final int tagID = ReadTag.name3BytesToInt(new byte[] {(byte) first, (byte) second, 'c'});
+                tags.add(new ReadTag(tagID, new byte[] {1}, ValidationStringency.STRICT));
+            }
+        }
+        final CRAMCompressionRecord recordWith100Tags = CRAMRecordTestHelper.getCRAMRecordWithTags(
+                "rname", 10, 1, 1, 10, new byte[] {'a', 'c', 'g', 't'}, 2, tags);
+        final CompressionHeaderFactory factory = new CompressionHeaderFactory(new CRAMEncodingStrategy());
+
+        final long allocatedBefore = TestNGUtils.bytesAllocatedByCurrentThread();
+        factory.createCompressionHeader(Collections.singletonList(recordWith100Tags), true);
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - allocatedBefore;
+
+        // One rANS encoder and decoder are several megabytes; a pair per tag would be several hundred.
+        final long fiftyMegabytes = 50L * 1024 * 1024;
+        Assert.assertTrue(allocated < fiftyMegabytes, "allocated " + allocated + " bytes for 100 distinct tags");
     }
 
     @Test

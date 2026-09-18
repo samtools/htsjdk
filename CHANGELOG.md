@@ -173,6 +173,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - `SAMFileWriterFactory.clone()` and its copy constructor now carry over the deflater factory and the SAM flag field format; both were reset to their defaults in the copy.
 
 - **A block-compressed file made by joining others is read to its end.**  Joining BGZF files end to end, as `cat` does and as the spec allows, leaves the empty end-of-file block of each part where the parts meet.  `BlockCompressedInputStream` took such a block for the end of the stream whenever a read began exactly at it (`read` returned -1 and `available()` 0, though a further read would carry on), which truncated the data for any caller that reads a block's worth at a time or a record at a time.  Empty blocks in mid-stream are now passed over, as htslib passes over them.
+- **A CRAM 3.1 writer no longer holds about 6 MB of rANS tables for every distinct tag in its records.**  `CompressionHeaderFactory` built a separate rANS encoder and decoder for each tag it met and kept them for the life of the writer, so a file with 20 distinct tags cost over 100 MB of heap, and one with a thousand several gigabytes.  The tags now share one.
+- **A rANS encoder or decoder builds its order-1 tables the first time it codes an order-1 stream**, not when it is constructed.  The tables are about 2.6 MB in an encoder and 2.9 MB in a decoder, and were paid for by every codec, including the decoders of a CRAM writer and the encoders of a CRAM reader, which are never used.  A codec that only ever sees order-0 data now holds about 12 KB.
 
 ### Testing
 

@@ -127,4 +127,12 @@ public class TestNGUtilsTest extends HtsjdkTest {
         final Object[][] product = TestNGUtils.cartesianProduct(expected);
         assertNestedArraysEqual(product, expected);
     }
+
+    @Test
+    public void bytesAllocatedByCurrentThreadGrowsByAtLeastWhatTheThreadAllocates() {
+        final long before = TestNGUtils.bytesAllocatedByCurrentThread();
+        final byte[] oneMegabyte = new byte[1024 * 1024];
+        final long allocated = TestNGUtils.bytesAllocatedByCurrentThread() - before;
+        Assert.assertTrue(allocated >= oneMegabyte.length, "allocated " + allocated + " bytes");
+    }
 }
