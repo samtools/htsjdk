@@ -58,7 +58,7 @@ public class Defaults {
      */
     public static final String DEFAULT_VCF_EXTENSION;
 
-    // accept VCF 4.4 files for read, but treat them as VCF 4.3
+    // read VCF 4.4 and 4.5 files, on a best-effort basis, while their features are not yet fully supported
     public static final boolean OPTIMISTIC_VCF_4_4;
 
     /**

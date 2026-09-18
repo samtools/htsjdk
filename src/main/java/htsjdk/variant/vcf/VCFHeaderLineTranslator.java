@@ -27,7 +27,6 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,18 +35,8 @@ import java.util.Map;
  * A class for translating between vcf header versions
  */
 public class VCFHeaderLineTranslator {
-    private static final Map<VCFHeaderVersion, VCFLineParser> mapping;
-
-    static {
-        final Map<VCFHeaderVersion, VCFLineParser> map = new HashMap<>();
-        map.put(VCFHeaderVersion.VCF4_0, new VCF4Parser());
-        map.put(VCFHeaderVersion.VCF4_1, new VCF4Parser());
-        map.put(VCFHeaderVersion.VCF4_2, new VCF4Parser());
-        map.put(VCFHeaderVersion.VCF4_3, new VCF4Parser());
-        map.put(VCFHeaderVersion.VCF3_3, new VCF3Parser());
-        map.put(VCFHeaderVersion.VCF3_2, new VCF3Parser());
-        mapping = Collections.unmodifiableMap(map);
-    }
+    private static final VCFLineParser VCF3_PARSER = new VCF3Parser();
+    private static final VCFLineParser VCF4_PARSER = new VCF4Parser();
 
     public static Map<String, String> parseLine(
             VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder) {
@@ -56,7 +45,11 @@ public class VCFHeaderLineTranslator {
 
     public static Map<String, String> parseLine(
             VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
-        return mapping.get(version).parseLine(valueLine, expectedTagOrder, recommendedTags);
+        // the header-line syntax changed between VCF 3 and VCF 4 and has been stable since, so the parser is chosen
+        // by major version rather than looked up per version
+        final VCFLineParser parser =
+                version != null && !version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) ? VCF3_PARSER : VCF4_PARSER;
+        return parser.parseLine(valueLine, expectedTagOrder, recommendedTags);
     }
 }
 

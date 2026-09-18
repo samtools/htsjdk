@@ -40,7 +40,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class VCFUtils {
 
@@ -54,13 +53,27 @@ public class VCFUtils {
         // line ordering.
         final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
-        final Set<VCFHeaderVersion> headerVersions = new HashSet<>(2);
 
-        // todo -- needs to remove all version headers from sources and add its own VCF version line
+        // the merged header declares the highest version any input declares, since each version's additions are a
+        // superset of the last; that line leads the result so that a header built from these lines keeps it
+        VCFHeaderVersion highestVersion = null;
+        for (final VCFHeader source : headers) {
+            final VCFHeaderVersion version = source.getVCFHeaderVersion();
+            if (version != null && (highestVersion == null || version.isAtLeastAsRecentAs(highestVersion))) {
+                highestVersion = version;
+            }
+        }
+        if (highestVersion != null) {
+            final VCFHeaderLine versionLine =
+                    new VCFHeaderLine(highestVersion.getFormatString(), highestVersion.getVersionString());
+            map.put(versionLine.getKey(), versionLine);
+        }
+
         for (final VCFHeader source : headers) {
             for (final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
-
-                enforceHeaderVersionMergePolicy(headerVersions, source.getVCFHeaderVersion());
+                if (VCFHeaderVersion.isFormatString(line.getKey())) {
+                    continue;
+                }
                 String key = line.getKey();
                 if (line instanceof VCFIDHeaderLine) key = key + "-" + ((VCFIDHeaderLine) line).getID();
 
@@ -127,23 +140,6 @@ public class VCFUtils {
 
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
         return new LinkedHashSet<>(map.values());
-    }
-
-    // Reject attempts to merge a VCFv4.3 header with any other version
-    private static void enforceHeaderVersionMergePolicy(
-            final Set<VCFHeaderVersion> headerVersions, final VCFHeaderVersion candidateVersion) {
-        if (candidateVersion != null) {
-            headerVersions.add(candidateVersion);
-            if (headerVersions.size() > 1 && headerVersions.contains(VCFHeaderVersion.VCF4_3)) {
-                throw new IllegalArgumentException(String.format(
-                        "Attempt to merge version %s header with incompatible header version %s",
-                        VCFHeaderVersion.VCF4_3.getVersionString(),
-                        headerVersions.stream()
-                                .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
-                                .map(VCFHeaderVersion::getVersionString)
-                                .collect(Collectors.joining(" "))));
-            }
-        }
     }
 
     /**

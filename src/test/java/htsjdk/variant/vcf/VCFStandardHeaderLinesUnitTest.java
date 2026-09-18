@@ -242,4 +242,19 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
             Assert.assertEquals(repairedLine.getCount(), cfg.expectedResult.getCount());
         }
     }
+
+    @Test
+    public void repairKeepsTheHeadersVersion() {
+        for (final VCFHeaderVersion version : List.of(VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3)) {
+            final VCFHeader header = new VCFHeader(version, Collections.emptySet(), Collections.emptySet());
+            Assert.assertEquals(
+                    VCFStandardHeaderLines.repairStandardHeaderLines(header).getVCFHeaderVersion(), version);
+        }
+    }
+
+    @Test
+    public void repairKeepsAVersionlessHeaderVersionless() {
+        Assert.assertNull(VCFStandardHeaderLines.repairStandardHeaderLines(new VCFHeader())
+                .getVCFHeaderVersion());
+    }
 }

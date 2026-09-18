@@ -63,6 +63,9 @@ public class VCFStandardHeaderLines {
         final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(
                 oldHeader.getMetaDataInInputOrder().size());
         for (VCFHeaderLine line : oldHeader.getMetaDataInInputOrder()) {
+            if (VCFHeaderVersion.isFormatString(line.getKey())) {
+                continue; // the version is carried over below, so a header declaring none stays that way
+            }
             if (line instanceof VCFFormatHeaderLine) {
                 line = formatStandards.repair((VCFFormatHeaderLine) line);
             } else if (line instanceof VCFInfoHeaderLine) {
@@ -73,12 +76,7 @@ public class VCFStandardHeaderLines {
         }
 
         final VCFHeader repairedHeader = new VCFHeader(newLines, oldHeader.getGenotypeSamples());
-        final VCFHeaderVersion oldHeaderVersion = oldHeader.getVCFHeaderVersion();
-        if (oldHeaderVersion != null && oldHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            // this needs to maintain version 4.3 (and not back-version to v4.2), so propagate
-            // the old version only for v4.3
-            repairedHeader.setVCFHeaderVersion(oldHeaderVersion);
-        }
+        repairedHeader.setVCFHeaderVersion(oldHeader.getVCFHeaderVersion());
         return repairedHeader;
     }
 

@@ -164,6 +164,21 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
         return new Object[][] {{VCFHeaderVersion.VCF3_2}, {VCFHeaderVersion.VCF3_3}};
     }
 
+    @Test
+    public void everyVcf4VersionParsesStructuredLines() {
+        for (final VCFHeaderVersion version : VCFHeaderVersion.values()) {
+            if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
+                continue;
+            }
+            final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                    version,
+                    "<ID=DP,Number=1,Type=Integer,Description=\"Depth\">",
+                    List.of("ID", "Number", "Type", "Description"));
+            Assert.assertEquals(parsed.get("ID"), "DP", version.toString());
+            Assert.assertEquals(parsed.get("Description"), "Depth", version.toString());
+        }
+    }
+
     @Test(dataProvider = "vcfv3", expectedExceptions = TribbleException.class)
     public void testVcfV3FailsRecommendedTags(final VCFHeaderVersion vcfVersion) {
         VCFHeaderLineTranslator.parseLine(
