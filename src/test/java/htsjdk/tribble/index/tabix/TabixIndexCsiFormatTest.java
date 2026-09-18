@@ -2,6 +2,7 @@ package htsjdk.tribble.index.tabix;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
+import htsjdk.index.BinningIndexTestUtils;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BinaryCodec;
@@ -49,26 +50,18 @@ public class TabixIndexCsiFormatTest extends HtsjdkTest {
 
     @Test
     public void testIndexSurvivesARoundTrip() throws IOException {
-        // A CSI file has no linear index, so the loaded index is not equal to the built one; what must hold is
-        // that loading and writing again reproduces the file, and that bins, chunks and loffsets come back intact.
         final TabixIndex index = csiIndex();
         final Path csi = tempFile("records.vcf.gz.csi");
         index.write(csi);
         final TabixIndex loaded = new TabixIndex(csi);
-        Assert.assertEquals(loaded.getIndexType(), TabixIndexType.CSI);
-        Assert.assertEquals(loaded.getSequenceNames(), List.of("c1", "c2"));
-        Assert.assertEquals(loaded.getFormatSpec(), TabixFormat.VCF);
-        for (int ref = 0; ref < 2; ref++) {
-            final htsjdk.index.ReferenceBins built = index.getBinningIndex().getReference(ref);
-            final htsjdk.index.ReferenceBins read = loaded.getBinningIndex().getReference(ref);
-            Assert.assertEquals(read.getBinCount(), built.getBinCount());
-            for (int i = 0; i < built.getBinCount(); i++) {
-                Assert.assertEquals(read.getBinNumber(i), built.getBinNumber(i));
-                Assert.assertEquals(read.getChunks(i), built.getChunks(i));
-                Assert.assertEquals(read.getLoffset(i), built.getLoffset(i));
-            }
-            Assert.assertEquals(read.getMetadata(), built.getMetadata());
-        }
+        // A CSI file stores no linear index, so compare against the built index in the form the file holds.
+        Assert.assertEquals(
+                loaded,
+                new TabixIndex(
+                        index.getFormatSpec(),
+                        index.getSequenceNames(),
+                        BinningIndexTestUtils.asStoredInCsi(index.getBinningIndex()),
+                        TabixIndexType.CSI));
         final Path rewritten = tempFile("rewritten.csi");
         loaded.write(rewritten);
         Assert.assertEquals(decompressed(rewritten), decompressed(csi));

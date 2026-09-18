@@ -48,16 +48,10 @@ public class BinningIndexCsiLayoutTest extends HtsjdkTest {
     }
 
     @Test
-    public void testBinsChunksAndLoffsetsSurviveARoundTrip() {
-        final ReferenceBins built = deepRecords().index(14, 6, 1).getReference(0);
-        final ReferenceBins loaded =
-                read(write(deepRecords().index(14, 6, 1), AUX)).index().getReference(0);
-        Assert.assertEquals(loaded.getBinCount(), built.getBinCount());
-        for (int i = 0; i < built.getBinCount(); i++) {
-            Assert.assertEquals(loaded.getBinNumber(i), built.getBinNumber(i));
-            Assert.assertEquals(loaded.getChunks(i), built.getChunks(i));
-            Assert.assertEquals(loaded.getLoffset(i), built.getLoffset(i));
-        }
+    public void testIndexSurvivesARoundTrip() {
+        final BinningIndex built = deepRecords().index(14, 6, 1);
+        final BinningIndex loaded = read(write(built, AUX)).index();
+        Assert.assertEquals(loaded, BinningIndexTestUtils.asStoredInCsi(built));
     }
 
     @Test
