@@ -42,6 +42,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -69,12 +70,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // for performance testing purposes
     public static boolean validate = true;
 
-    // Parsed FILTER strings and interned contig/filter strings, shared across records and threads. Both hold a handful
-    // of values that never change once seen, and are read on every record, so they are copy-on-write: a hit is a plain
-    // HashMap read, and a miss (rare) publishes a new map. Exactly one instance is kept per string, so callers may
-    // still compare interned strings by identity.
-    private volatile Map<String, List<String>> filterCache = new HashMap<>();
-    private volatile Map<String, String> stringCache = new HashMap<>();
+    // Parsed FILTER strings and interned contig/filter strings, shared across records and threads. They are read on
+    // every record and almost every read is a hit, so lookups try get() first: it takes no lock, whereas putIfAbsent
+    // and computeIfAbsent lock the key's bin even when the key is already there. Exactly one instance is kept per
+    // string, so callers may still compare interned strings by identity.
+    private final ConcurrentHashMap<String, List<String>> filterCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> stringCache = new ConcurrentHashMap<>();
 
     // we store a name to give to each of the variant contexts we emit
     protected String name = "Unknown";
@@ -144,20 +145,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (cached != null) {
             return cached;
         }
-        synchronized (this) {
-            final List<String> raced = filterCache.get(filterString);
-            if (raced != null) {
-                return raced;
-            }
-            final List<String> filters = Collections.unmodifiableList(
-                    filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR)
-                            ? Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR))
-                            : List.of(filterString));
-            final Map<String, List<String>> copy = new HashMap<>(filterCache);
-            copy.put(filterString, filters);
-            filterCache = copy;
-            return filters;
-        }
+        final List<String> filters = Collections.unmodifiableList(
+                filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR)
+                        ? Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR))
+                        : List.of(filterString));
+        final List<String> raced = filterCache.putIfAbsent(filterString, filters);
+        return raced == null ? filters : raced;
     }
 
     /**
@@ -533,16 +526,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (cached != null) {
             return cached;
         }
-        synchronized (this) {
-            final String raced = stringCache.get(str);
-            if (raced != null) {
-                return raced;
-            }
-            final Map<String, String> copy = new HashMap<>(stringCache);
-            copy.put(str, str);
-            stringCache = copy;
-            return str;
-        }
+        final String raced = stringCache.putIfAbsent(str, str);
+        return raced == null ? str : raced;
     }
 
     /**

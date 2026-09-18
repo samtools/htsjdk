@@ -162,7 +162,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 ### VCF
 
-- **The VCF codecs are thread-safe once their header is read** (issue #1026).  `VariantContext`s from a VCF reader decode their lazily parsed genotypes on whichever thread first asks for them, and that may now happen on several threads at once, and while the reader keeps reading; `AbstractVCFCodec.decode` may also be called concurrently on one codec.  Previously the codec kept per-record scratch state in fields, so genotypes decoded concurrently leaked between records.  Reading or setting the header remains single-threaded.  For subclasses, `parseFilters` now takes the record's line number, and the scratch fields (`parts`, `genotypeParts`, `alleleMap`, `lineNo`, `filterHash`, `stringCache`) are gone.
+- **The VCF codecs are thread-safe once their header is read** (issue #1026).  `VariantContext`s from a VCF reader decode their lazily parsed genotypes on whichever thread first asks for them, and that may now happen on several threads at once, and while the reader keeps reading; `AbstractVCFCodec.decode` may also be called concurrently on one codec.  Previously the codec kept per-record scratch state in fields, so genotypes decoded concurrently leaked between records.  Reading or setting the header remains single-threaded.  For subclasses, `parseFilters` now takes the record's line number, the scratch fields (`parts`, `genotypeParts`, `alleleMap`, `lineNo`, `filterHash`) are gone, and the `stringCache` field is private: intern strings through `getCachedString`, which is safe to call from any thread.
 - Errors found while decoding genotypes lazily now cite the record's own line number rather than wherever the reader had got to.
 
 ### Bug fixes

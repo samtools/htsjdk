@@ -313,6 +313,24 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         new VCFCodec().decode("chr1\t100\t.\tA\tC\t50\tPASS\tDP=1");
     }
 
+    /**
+     * Each distinct contig is interned once, so the cost of interning must not grow with the number already seen: a
+     * call set on a fragmented assembly has hundreds of thousands of contigs. Generous enough for a slow machine, and
+     * far short of what a cache that copies itself on every new string needs.
+     */
+    @Test(timeOut = 20_000)
+    public void manyDistinctContigsDoNotSlowDecoding() {
+        final String header = "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(header.getBytes(StandardCharsets.UTF_8)))));
+        for (int i = 0; i < 100_000; i++) {
+            final String contig = "scaffold_" + i;
+            Assert.assertEquals(
+                    codec.decode(contig + "\t100\t.\tA\tC\t50\tPASS\t.").getContig(), contig);
+        }
+    }
+
     // malformed genotype values are TribbleExceptions naming the sample, key and position
 
     private static final String ONE_SAMPLE_HEADER = "##fileformat=VCFv4.2\n"
