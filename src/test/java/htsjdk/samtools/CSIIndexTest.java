@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -49,6 +50,11 @@ public class CSIIndexTest extends HtsjdkTest {
             e.printStackTrace();
         }
         ubai = new DiskBasedBAMFileIndex(TEST_DATA_DIR.resolve("uncompressed_index.bam.bai"), null);
+    }
+
+    @Test(expectedExceptions = RuntimeIOException.class)
+    public void testABaiIsNotAcceptedAsACsi() {
+        new CSIIndex(TEST_DATA_DIR.resolve("index_test.bam.bai"), false, null);
     }
 
     @Test

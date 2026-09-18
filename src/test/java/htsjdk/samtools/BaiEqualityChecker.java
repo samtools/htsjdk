@@ -23,89 +23,28 @@
  */
 package htsjdk.samtools;
 
-import java.io.IOException;
+import htsjdk.index.BinningIndex;
+import htsjdk.index.FileBackedBinningIndex;
 import java.nio.file.Path;
 import org.testng.Assert;
 
+/** Asserts that two BAI files hold the same index, reference by reference so that a failure says where. */
 public class BaiEqualityChecker {
 
-    private Path bamFile;
-    private Path baiFile1;
-    private Path baiFile2;
+    public static void assertEquals(final Path baiFile1, final Path baiFile2) {
+        final BinningIndex bai1 = load(baiFile1);
+        final BinningIndex bai2 = load(baiFile2);
 
-    public static void assertEquals(Path bamFile, Path baiFile1, Path baiFile2) throws IOException {
-        new BaiEqualityChecker(bamFile, baiFile1, baiFile2).assertEquals();
-    }
-
-    public BaiEqualityChecker(Path bamFile, Path baiFile1, Path baiFile2) {
-        this.bamFile = bamFile;
-        this.baiFile1 = baiFile1;
-        this.baiFile2 = baiFile2;
-    }
-
-    private void assertEquals() throws IOException {
-        SamReaderFactory readerFactory = SamReaderFactory.makeDefault()
-                .setOption(SamReaderFactory.Option.EAGERLY_DECODE, false)
-                .setUseAsyncIo(false);
-        SAMFileHeader header = readerFactory.getFileHeader(bamFile);
-        SAMSequenceDictionary dict = header.getSequenceDictionary();
-        AbstractBAMFileIndex bai1 = new CachingBAMFileIndex(baiFile1, dict);
-        AbstractBAMFileIndex bai2 = new CachingBAMFileIndex(baiFile2, dict);
-
-        Assert.assertEquals(bai1.getNumberOfReferences(), bai2.getNumberOfReferences(), "Number of references");
+        Assert.assertEquals(bai1.getReferenceCount(), bai2.getReferenceCount(), "Number of references");
         Assert.assertEquals(bai1.getNoCoordinateCount(), bai2.getNoCoordinateCount(), "No coordinate index count");
-        int numReferences = bai1.getNumberOfReferences();
-        for (int i = 0; i < numReferences; i++) {
-            BAMIndexContent bamIndexContent1 = bai1.getQueryResults(i);
-            BAMIndexContent bamIndexContent2 = bai2.getQueryResults(i);
-            assertEquals(bamIndexContent1, bamIndexContent2);
+        for (int i = 0; i < bai1.getReferenceCount(); i++) {
+            Assert.assertEquals(bai1.getReference(i), bai2.getReference(i), "Reference " + i);
         }
     }
 
-    private void assertEquals(BAMIndexContent bamIndexContent1, BAMIndexContent bamIndexContent2) throws IOException {
-        assertEquals(bamIndexContent1.getMetaData(), bamIndexContent2.getMetaData());
-        assertEquals(bamIndexContent1.getBins(), bamIndexContent2.getBins());
-        assertEquals(bamIndexContent1.getLinearIndex(), bamIndexContent2.getLinearIndex());
-    }
-
-    private void assertEquals(BAMIndexMetaData metaData1, BAMIndexMetaData metaData2) {
-        Assert.assertEquals(metaData1.getFirstOffset(), metaData2.getFirstOffset(), "First offset");
-        Assert.assertEquals(metaData1.getLastOffset(), metaData2.getLastOffset(), "Last offset");
-        Assert.assertEquals(metaData1.getAlignedRecordCount(), metaData2.getAlignedRecordCount(), "AlignedRecordCount");
-        Assert.assertEquals(
-                metaData1.getUnalignedRecordCount(), metaData2.getUnalignedRecordCount(), "UnalignedRecordCount");
-    }
-
-    private void assertEquals(BinningIndexContent.BinList bins1, BinningIndexContent.BinList bins2) throws IOException {
-        Assert.assertEquals(bins1.maxBinNumber, bins2.maxBinNumber, "Max bin number");
-        Assert.assertEquals(bins1.getNumberOfNonNullBins(), bins2.getNumberOfNonNullBins(), "Number of non-null bins");
-        for (int i = 0; i <= bins1.maxBinNumber; i++) {
-            assertEquals(bins1.getBin(i), bins2.getBin(i));
+    private static BinningIndex load(final Path baiFile) {
+        try (FileBackedBinningIndex index = FileBackedBinningIndex.open(baiFile, true)) {
+            return index.loadAll();
         }
-    }
-
-    private void assertEquals(Bin bin1, Bin bin2) throws IOException {
-        if (bin1 == null || bin2 == null) {
-            Assert.assertEquals(bin1, bin2);
-            return;
-        }
-        Assert.assertEquals(bin1.getBinNumber(), bin2.getBinNumber(), "Bin number");
-        Assert.assertEquals(bin1.getChunkList().size(), bin2.getChunkList().size(), "Chunk list size");
-        for (int i = 0; i < bin1.getChunkList().size(); i++) {
-            assertEquals(bin1.getChunkList().get(i), bin2.getChunkList().get(i));
-        }
-    }
-
-    private void assertEquals(LinearIndex linearIndex1, LinearIndex linearIndex2) {
-        Assert.assertEquals(
-                linearIndex1.getReferenceSequence(), linearIndex2.getReferenceSequence(), "Linear index ref");
-        Assert.assertEquals(linearIndex1.size(), linearIndex2.size(), "Linear index size");
-        Assert.assertEquals(linearIndex1.getIndexStart(), linearIndex2.getIndexStart(), "Linear index start");
-        Assert.assertEquals(linearIndex1.getIndexEntries(), linearIndex2.getIndexEntries(), "Linear index entries");
-    }
-
-    private void assertEquals(Chunk chunk1, Chunk chunk2) {
-        Assert.assertEquals(chunk1.getChunkStart(), chunk2.getChunkStart(), "Chunk start");
-        Assert.assertEquals(chunk1.getChunkEnd(), chunk2.getChunkEnd(), "Chunk end");
     }
 }

@@ -28,6 +28,8 @@ import static org.testng.Assert.assertTrue;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
+import htsjdk.index.FileBackedBinningIndex;
+import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
@@ -167,11 +169,10 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         Path indexFile2 = Paths.get(bamIndexFile);
         assertTrue(Files.exists(indexFile2), testName + " input index file doesn't exist: " + indexFile2);
 
-        final CachingBAMFileIndex existingIndex1 =
-                new CachingBAMFileIndex(indexFile1, null); // todo null sequence dictionary?
-        final CachingBAMFileIndex existingIndex2 = new CachingBAMFileIndex(indexFile2, null);
-        final int n_ref = existingIndex1.getNumberOfReferences();
-        assertEquals(n_ref, existingIndex2.getNumberOfReferences());
+        final BinningIndex existingIndex1 = loadIndex(indexFile1);
+        final BinningIndex existingIndex2 = loadIndex(indexFile2);
+        final int n_ref = existingIndex1.getReferenceCount();
+        assertEquals(n_ref, existingIndex2.getReferenceCount());
 
         final SamReader reader1 = SamReaderFactory.makeDefault()
                 .disable(SamReaderFactory.Option.EAGERLY_DECODE)
@@ -184,19 +185,20 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         System.out.println("Comparing " + n_ref + " references in " + indexFile1 + " and " + indexFile2);
 
         for (int i = 0; i < n_ref; i++) {
-            final BAMIndexContent content1 = existingIndex1.getQueryResults(i);
-            final BAMIndexContent content2 = existingIndex2.getQueryResults(i);
-            if (content1 == null) {
-                assertTrue(content2 == null, "No content for 1st bam index, but content for second at reference" + i);
+            final ReferenceBins content1 = existingIndex1.getReference(i);
+            final ReferenceBins content2 = existingIndex2.getReference(i);
+            if (content1.getBinCount() == 0) {
+                assertEquals(
+                        content2.getBinCount(),
+                        0,
+                        "No content for 1st bam index, but content for second at reference" + i);
                 continue;
             }
             int[] counts1 = new int[LinearIndex.MAX_LINEAR_INDEX_SIZE];
             int[] counts2 = new int[LinearIndex.MAX_LINEAR_INDEX_SIZE];
-            LinearIndex li1 = content1.getLinearIndex();
-            LinearIndex li2 = content2.getLinearIndex();
             // todo not li1 and li2 sizes may differ. Implies 0's in the smaller index windows
             // 3. count bamIndex references comparing counts
-            int baiSize = Math.max(li1.size(), li2.size());
+            int baiSize = Math.max(content1.getLinearIndex().length, content2.getLinearIndex().length);
             for (int win = 0; win < baiSize; win++) {
                 counts1[win] = countAlignmentsInWindow(i, win, reader1, 0);
                 counts2[win] = countAlignmentsInWindow(i, win, reader2, counts1[win]);
@@ -221,6 +223,12 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         header.setSortOrder(SAMFileHeader.SortOrder.queryname);
 
         new BAMIndexer(new ByteArrayOutputStream(), header);
+    }
+
+    private static BinningIndex loadIndex(final Path indexFile) {
+        try (FileBackedBinningIndex index = FileBackedBinningIndex.open(indexFile, true)) {
+            return index.loadAll();
+        }
     }
 
     /** generates the index file using the latest java index generating code */

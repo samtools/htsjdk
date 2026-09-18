@@ -34,7 +34,11 @@ import java.util.NoSuchElementException;
 /**
  * In-memory representation of the binning index for a single reference.  BAM and Tabix are both binning indices
  * with slightly different disk formats but identical in-memory representations.
+ *
+ * @deprecated nothing in htsjdk reads or writes an index through this model any longer; one reference of an index
+ *     is a {@link htsjdk.index.ReferenceBins}
  */
+@Deprecated
 public class BinningIndexContent {
     /**
      * The reference sequence for the data currently loaded.

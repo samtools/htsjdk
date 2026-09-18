@@ -146,6 +146,23 @@ public class FileBackedBinningIndexTest extends HtsjdkTest {
         }
     }
 
+    /** A stream is free to return fewer bytes than it was asked for, as one over a network often does. */
+    @Test
+    public void testAStreamThatReturnsAFewBytesAtATimeIsReadInFull() {
+        final byte[] bytes = baiBytes(build(14, 5, false, 12), true);
+        for (final boolean prefill : new boolean[] {false, true}) {
+            final SeekableMemoryStream trickle = new SeekableMemoryStream(bytes, "bai") {
+                @Override
+                public int read(final byte[] buffer, final int offset, final int length) throws IOException {
+                    return super.read(buffer, offset, Math.min(length, 3));
+                }
+            };
+            try (FileBackedBinningIndex index = FileBackedBinningIndex.open(trickle, prefill)) {
+                assertAnswersAs(index, wholeBai(bytes));
+            }
+        }
+    }
+
     @Test
     public void testClosingTheIndexClosesTheStreamItWasOpenedFrom() {
         final byte[] bytes = baiBytes(build(14, 5, false, 12), true);

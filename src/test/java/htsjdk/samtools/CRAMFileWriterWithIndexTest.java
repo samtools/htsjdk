@@ -132,7 +132,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         final SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(
                 new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
 
-        BAMIndex index = new CachingBAMFileIndex(baiStream, header.getSequenceDictionary());
+        BAMIndex index = BinningBAMIndex.open(baiStream, IndexLoading.AUTO);
         int refID = 0;
         long start = index.getSpanOverlapping(refID, 1, Integer.MAX_VALUE).getFirstOffset();
         long end = index.getSpanOverlapping(refID + 1, 1, Integer.MAX_VALUE).getFirstOffset();
