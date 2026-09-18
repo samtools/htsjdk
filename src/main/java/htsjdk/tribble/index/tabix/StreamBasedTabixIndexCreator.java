@@ -23,7 +23,7 @@
  */
 package htsjdk.tribble.index.tabix;
 
-import htsjdk.samtools.BinningIndexContent;
+import htsjdk.index.BinningIndex;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.index.Index;
@@ -42,8 +42,8 @@ public class StreamBasedTabixIndexCreator extends AllRefsTabixIndexCreator {
         private final OutputStream out;
 
         StreamBasedTabixIndex(
-                TabixFormat formatSpec, List<String> sequenceNames, BinningIndexContent[] indices, OutputStream out) {
-            super(formatSpec, sequenceNames, indices);
+                TabixFormat formatSpec, List<String> sequenceNames, BinningIndex binningIndex, OutputStream out) {
+            super(formatSpec, sequenceNames, binningIndex);
             this.out = out;
         }
 
@@ -69,6 +69,6 @@ public class StreamBasedTabixIndexCreator extends AllRefsTabixIndexCreator {
         final Index index = super.finalizeIndex(finalFilePosition);
         final TabixIndex tabixIndex = (TabixIndex) index;
         return new StreamBasedTabixIndex(
-                tabixIndex.getFormatSpec(), tabixIndex.getSequenceNames(), tabixIndex.getIndices(), out);
+                tabixIndex.getFormatSpec(), tabixIndex.getSequenceNames(), tabixIndex.getBinningIndex(), out);
     }
 }
