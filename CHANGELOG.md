@@ -62,6 +62,8 @@ Consumers should review these before upgrading.
 
 - **A `.csi` beside a tabix-indexed file is preferred to a `.tbi`**, which is htslib's order.  This applies to `TabixReader`, `AbstractFeatureReader.isTabix` and `VariantsBundle`.
 
+- **Asking `SAMFileWriterFactory` for `x.sam.gz` now writes bgzipped SAM.**  `makeSAMOrBAMWriter` and `makeWriter` used to treat every name not ending in `.sam` as BAM, so `x.sam.gz` received BAM bytes.  File-name detection also ignores case now, so `x.SAM` and `x.CRAM`, which used to be written as BAM, are written as SAM and CRAM.  See "Bgzipped SAM" below.
+
 ### CRAM indexing
 
 - **CRAM region queries are answered from the CRAI directly** by the new `CRAIQueryIndex`, instead of rebuilding the whole CRAI as an in-memory BAI on every reader open (issue #851).  The index is not read until a query needs it, so opening a reader for sequential reading no longer touches it.  Measured on a 102 MB GRCh38 CRAM (2,395 CRAI entries, 3,366 sequences):
@@ -103,6 +105,12 @@ Consumers should review these before upgrading.
 
 - The test suite cross-checks htsjdk against htslib's `tabix` in both directions, for TBI and CSI; CI installs `tabix` alongside samtools.
 
+### Bgzipped SAM
+
+- **New: `SAMFileWriterFactory` writes BGZF-compressed SAM** when the output name is `.sam` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case, through `makeWriter`, `makeSAMOrBAMWriter` or `makeSAMWriter`.  The factory's compression level and deflater factory apply, the file ends with the BGZF end-of-file block, and an MD5 file, if requested, is of the compressed bytes.  samtools and `SamReaderFactory` read the result.  No index is written for it yet.
+
+- **SAM, BAM and CRAM file names are recognised in any case.**  `SamReader.Type.hasValidFileExtension` ignores case, and with it `SAMFileWriterFactory.makeWriter` and `makeSAMOrBAMWriter` (`x.SAM` and `x.CRAM` used to be written as BAM), `SamFiles.isSAMFile`/`isBAMFile`/`isCRAMFile`, `BamFileIoUtils.isBamFile`, index discovery in `SamFiles.findIndex` (the `.crai` beside `x.CRAM` is now found), `CramConverter`, and htsget request validation.  The index written beside `x.BAM` is now `x.bai`, as for `x.bam`, rather than `x.BAM.bai`.  URL sniffing in `SamStreams` and the `htsjdk.beta` codecs already ignored case.
+
 ### Retained `File` APIs
 
 A small, deliberate set of `java.io.File` APIs remains because they are inherently tied to the local filesystem or ease migration; they do not affect NIO-SPI support:
@@ -125,6 +133,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - `VariantContextWriterBuilder` no longer replaces an `IndexCreator` supplied by the caller when the output is block-compressed VCF.
 - `TabixReader` rejects a plain-gzip (non-BGZF) file when it is opened, with a message saying so, and names the index files it looked for when none exists.
 - `ProcessExecutor.executeAndReturnInterleavedOutput` no longer deadlocks when the child process writes more than a pipe buffer of output.
+- `SAMFileWriterFactory.clone()` and its copy constructor now carry over the deflater factory and the SAM flag field format; both were reset to their defaults in the copy.
 
 ### Testing
 

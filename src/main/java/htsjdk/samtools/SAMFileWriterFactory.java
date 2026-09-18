@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.zip.Deflater;
 
 /**
@@ -80,6 +81,8 @@ public class SAMFileWriterFactory implements Cloneable {
         this.maxRecordsInRam = other.maxRecordsInRam;
         this.cramEncodingStrategy = other.cramEncodingStrategy;
         this.createBaiIndexForCram = other.createBaiIndexForCram;
+        this.deflaterFactory = other.deflaterFactory;
+        this.samFlagFieldOutput = other.samFlagFieldOutput;
     }
 
     @Override
@@ -368,7 +371,9 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
-     * @param outputPath where to write the output.
+     * @param outputPath where to write the output. If it ends with one of {@link FileExtensions#BLOCK_COMPRESSED}
+     *                   (for example {@code x.sam.gz}) the SAM text is BGZF-compressed, at this factory's
+     *                   compression level; an MD5 file, if requested, is then of the compressed bytes.
      */
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final Path outputPath) {
         /**
@@ -379,14 +384,17 @@ public class SAMFileWriterFactory implements Cloneable {
             samFlagFieldOutput = Defaults.SAM_FLAG_FIELD_FORMAT;
         }
         try {
-            final SAMTextWriter ret = this.createMd5File
-                    ? new SAMTextWriter(
-                            new Md5CalculatingOutputStream(
-                                    Files.newOutputStream(outputPath), IOUtil.addExtension(outputPath, ".md5")),
-                            samFlagFieldOutput)
-                    : new SAMTextWriter(
-                            null == outputPath ? null : Files.newOutputStream(outputPath), samFlagFieldOutput);
-            return initWriter(header, presorted, ret);
+            OutputStream os = null == outputPath ? null : Files.newOutputStream(outputPath);
+            if (this.createMd5File) {
+                os = new Md5CalculatingOutputStream(os, IOUtil.addExtension(outputPath, ".md5"));
+            }
+            if (outputPath != null && IOUtil.hasBlockCompressedExtension(outputPath)) {
+                // A BGZF stream makes several small writes per block, which uncompressed SAM's AsciiWriter does not.
+                // Closing the stream, as SAMTextWriter does when it finishes, writes the BGZF end-of-file block.
+                os = new BlockCompressedOutputStream(
+                        IOUtil.maybeBufferOutputStream(os, bufferSize), outputPath, compressionLevel, deflaterFactory);
+            }
+            return initWriter(header, presorted, new SAMTextWriter(os, samFlagFieldOutput));
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputPath.toUri(), ioe);
         }
@@ -470,13 +478,15 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted  presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
-     * @param outputPath where to write the output.  Must end with .sam or .bam.
+     * @param outputPath where to write the output.  Must end with .sam or .bam, or with .sam followed by one of
+     *                   {@link FileExtensions#BLOCK_COMPRESSED} (for example {@code x.sam.gz}) for BGZF-compressed SAM.
+     *                   SAM names are recognised in any case.
      * @return SAM or BAM writer based on file extension of outputPath.
      */
     public SAMFileWriter makeSAMOrBAMWriter(
             final SAMFileHeader header, final boolean presorted, final Path outputPath) {
         final String filename = outputPath.getFileName().toString();
-        if (SAM_TYPE.hasValidFileExtension(filename)) {
+        if (isSamName(filename)) {
             return makeSAMWriter(header, presorted, outputPath);
         } else {
             if (!BAM_TYPE.hasValidFileExtension(filename)) {
@@ -485,6 +495,20 @@ public class SAMFileWriterFactory implements Cloneable {
             }
             return makeBAMWriter(header, presorted, outputPath);
         }
+    }
+
+    /** True for a SAM file name in any case, with or without a block-compression extension: {@code x.sam}, {@code x.SAM.gz}. */
+    private static boolean isSamName(final String filename) {
+        if (SAM_TYPE.hasValidFileExtension(filename)) {
+            return true;
+        }
+        final String name = filename.toLowerCase(Locale.ROOT);
+        for (final String extension : FileExtensions.BLOCK_COMPRESSED) {
+            if (name.endsWith(FileExtensions.SAM + extension)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -512,7 +536,8 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      * @param header header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
-     * @param outputPath where to write the output.  Must end with .sam, .bam or .cram.
+     * @param outputPath where to write the output.  Must end with .sam, .bam or .cram, or name BGZF-compressed SAM as
+     *                   {@link #makeSAMOrBAMWriter(SAMFileHeader, boolean, Path)} describes.
      * @param referenceFasta reference sequence file
      * @return SAMFileWriter appropriate for the file type specified in outputPath
      *

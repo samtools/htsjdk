@@ -114,8 +114,9 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     private BAMIndexer createBamIndex(final String pathURI) {
         try {
-            final String indexFileBase =
-                    pathURI.endsWith(FileExtensions.BAM) ? pathURI.substring(0, pathURI.lastIndexOf('.')) : pathURI;
+            final String indexFileBase = SamReader.Type.BAM_TYPE.hasValidFileExtension(pathURI)
+                    ? pathURI.substring(0, pathURI.lastIndexOf('.'))
+                    : pathURI;
             final Path indexPath = IOUtil.getPath(indexFileBase + FileExtensions.BAI_INDEX);
             if (Files.exists(indexPath)) {
                 if (!Files.isWritable(indexPath)) {

@@ -1,6 +1,7 @@
 package htsjdk.samtools.util.htsget;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.*;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -172,7 +173,8 @@ public class HtsgetRequest {
 
         if (this.format != null) {
             final String path = this.endpoint.getPath();
-            if ((path.endsWith(FileExtensions.BAM) || path.endsWith(FileExtensions.CRAM))
+            if ((SamReader.Type.BAM_TYPE.hasValidFileExtension(path)
+                            || SamReader.Type.CRAM_TYPE.hasValidFileExtension(path))
                     && (this.format != HtsgetFormat.BAM && this.format != HtsgetFormat.CRAM)) {
                 throw new IllegalArgumentException(
                         "Specified reads format: " + this.format + " is incompatible with id's file extension " + path);

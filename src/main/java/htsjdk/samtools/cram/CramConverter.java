@@ -104,8 +104,8 @@ public class CramConverter {
         }
 
         // Check reference requirement
-        final boolean inputIsCram = inputPath.endsWith(".cram");
-        final boolean outputIsCram = outputPath != null && outputPath.endsWith(".cram");
+        final boolean inputIsCram = SamReader.Type.CRAM_TYPE.hasValidFileExtension(inputPath);
+        final boolean outputIsCram = SamReader.Type.CRAM_TYPE.hasValidFileExtension(outputPath);
         if ((inputIsCram || outputIsCram) && referencePath == null) {
             die("--reference is required when reading or writing CRAM files");
         }
