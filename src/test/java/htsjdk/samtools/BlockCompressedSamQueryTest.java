@@ -309,6 +309,35 @@ public class BlockCompressedSamQueryTest extends HtsjdkTest {
     }
 
     @Test
+    public void testIndexStreamThatIsRefusedIsClosedOnce() throws IOException {
+        final int[] closes = {0};
+        final SeekablePathStream baiOfAnotherFile = new SeekablePathStream(bam.resolveSibling("records.bai")) {
+            @Override
+            public void close() throws IOException {
+                closes[0]++;
+                super.close();
+            }
+        };
+        // The oracle BAM's index fits the file, so cut the reader's header down to make it not fit
+        final Path oneSequence = Files.createTempFile("oneSequence.", ".sam.gz");
+        IOUtil.deleteOnExit(oneSequence);
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        records.getHeader()
+                .setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("only", 1_000_000))));
+        records.addFrag("read", 0, 100, false);
+        try (SAMFileWriter writer =
+                new SAMFileWriterFactory().makeWriter(records.getHeader(), true, oneSequence, null)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+
+        try (SamReader sam = SamReaderFactory.makeDefault()
+                .open(SamInputResource.of(oneSequence).index(baiOfAnotherFile))) {
+            Assert.assertThrows(SAMFormatException.class, () -> sam.queryOverlapping("only", 1, 1_000));
+        }
+        Assert.assertEquals(closes[0], 1);
+    }
+
+    @Test
     public void testIndexesBuiltBySamtools() throws IOException {
         if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
             throw new SkipException("samtools is not available");

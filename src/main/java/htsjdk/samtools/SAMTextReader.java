@@ -70,6 +70,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     // At most one of these is set, and only for text that can be seeked in.
     private Path mIndexPath;
     private SeekableStream mIndexStream;
+    // An index owns the stream it is opened from, and closes it even if it then turns out not to fit the file.
+    private boolean mIndexStreamHandedOver;
     private BinningBAMIndex mIndex;
     private IndexLoading mIndexLoading = IndexLoading.AUTO;
 
@@ -223,6 +225,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         final BinningBAMIndex index = mIndexPath != null
                 ? BinningBAMIndex.open(mIndexPath, mIndexLoading)
                 : BinningBAMIndex.open(mIndexStream, mIndexLoading);
+        mIndexStreamHandedOver = mIndexStream != null;
         try {
             final ReferenceBinsSource source = index.getSource();
             if (source instanceof FileBackedBinningIndex file && file.getAux().length > 0) {
@@ -292,8 +295,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         if (mIndex != null) {
             mIndex.close();
             mIndex = null;
-        } else if (mIndexStream != null) {
-            // Never opened as an index, which would have closed it
+        } else if (mIndexStream != null && !mIndexStreamHandedOver) {
             try {
                 mIndexStream.close();
             } catch (final IOException e) {
