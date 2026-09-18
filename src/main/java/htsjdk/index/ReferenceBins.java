@@ -109,6 +109,8 @@ public final class ReferenceBins {
         return Optional.ofNullable(metadata);
     }
 
+    // The raw arrays, for the index's query and serialisation code; callers must not modify them.
+
     int[] binNumbers() {
         return binNumbers;
     }

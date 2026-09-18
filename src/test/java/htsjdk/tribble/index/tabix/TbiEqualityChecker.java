@@ -77,6 +77,7 @@ public class TbiEqualityChecker {
         }
     }
 
+    /** Asserts bin-by-bin and chunk-by-chunk equality, then exact equality of the linear indexes. */
     private void assertEquals(ReferenceBins reference1, ReferenceBins reference2, boolean identical) {
         Assert.assertEquals(reference1.getBinCount(), reference2.getBinCount(), "Number of bins");
         for (int i = 0; i < reference1.getBinCount(); i++) {

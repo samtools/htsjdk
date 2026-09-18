@@ -17,6 +17,7 @@ final class IndexedRecords {
     private static final int COMPRESSED_BLOCK_BYTES = 200;
 
     record Rec(int referenceIndex, int start, int end, long chunkStart, long chunkEnd) {
+        /** Whether the record overlaps a 1-based inclusive query interval. */
         boolean overlaps(final int queryReference, final int queryStart, final int queryEnd) {
             return referenceIndex == queryReference && start <= queryEnd && Math.max(end, start) >= queryStart;
         }
@@ -43,6 +44,7 @@ final class IndexedRecords {
         return this;
     }
 
+    /** The virtual offset at which the record with this ordinal starts; the ordinal one past the last record gives the end. */
     private long offsetOf(final int ordinal) {
         return BlockCompressedFilePointerUtil.makeFilePointer(
                 firstBlockAddress + (long) (ordinal / RECORDS_PER_BLOCK) * COMPRESSED_BLOCK_BYTES,
@@ -58,6 +60,7 @@ final class IndexedRecords {
         return records;
     }
 
+    /** Indexes the records under the given binning scheme. */
     BinningIndex index(final int minShift, final int depth, final int referenceCount) {
         final BinningIndex.Builder builder = new BinningIndex.Builder(minShift, depth);
         for (final Rec rec : records) {

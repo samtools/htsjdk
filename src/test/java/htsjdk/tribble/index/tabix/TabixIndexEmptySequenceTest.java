@@ -61,6 +61,7 @@ public class TabixIndexEmptySequenceTest extends HtsjdkTest {
         return vcf;
     }
 
+    /** Start positions of the records an indexed query returns, in file order. */
     private static List<Integer> queryStarts(final Path vcf, final String contig, final int start, final int end) {
         final List<Integer> starts = new ArrayList<>();
         try (final VCFFileReader reader = new VCFFileReader(vcf, true);

@@ -15,6 +15,7 @@ public class BinningIndexBaiLayoutTest extends HtsjdkTest {
     private static final int DEPTH = BinningIndex.BAI_DEPTH;
     private static final int METADATA_BIN = 37450;
 
+    /** The BAI-layout body of an index, as bytes. */
     private static byte[] write(final BinningIndex index) {
         final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         final BinaryCodec codec = new BinaryCodec(bytes);
@@ -23,6 +24,7 @@ public class BinningIndexBaiLayoutTest extends HtsjdkTest {
         return bytes.toByteArray();
     }
 
+    /** Reads a BAI-layout body under the BAI/TBI binning scheme. */
     private static BinningIndex read(final byte[] bytes, final int referenceCount) {
         return BinningIndex.readBaiLayout(
                 new BinaryCodec(new ByteArrayInputStream(bytes)), referenceCount, MIN_SHIFT, DEPTH);
@@ -33,22 +35,26 @@ public class BinningIndexBaiLayoutTest extends HtsjdkTest {
         private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         private final BinaryCodec codec = new BinaryCodec(bytes);
 
+        /** Appends 32-bit values. */
         Body ints(final int... values) {
             for (final int value : values) codec.writeInt(value);
             return this;
         }
 
+        /** Appends 64-bit values. */
         Body longs(final long... values) {
             for (final long value : values) codec.writeLong(value);
             return this;
         }
 
+        /** Finishes the body; nothing may be appended afterwards. */
         byte[] toBytes() {
             codec.close();
             return bytes.toByteArray();
         }
     }
 
+    /** An index over three references, the middle one empty, with bins at more than one level. */
     private static BinningIndex threeReferenceIndex() {
         final IndexedRecords records = new IndexedRecords();
         for (int start = 1; start < 5_000_000; start += 2_500)

@@ -99,6 +99,12 @@ public class TabixIndex implements Index {
         this(new BlockCompressedInputStream(tabixPath), true);
     }
 
+    /**
+     * Reads the tabix header, then hands the stream to {@link BinningIndex#readBaiLayout} for the body.
+     *
+     * @param inputStream positioned at the magic number, already decompressing
+     * @param closeInputStream whether to close the stream once the index is read, even on failure
+     */
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {
         final BinaryCodec codec = new BinaryCodec(inputStream);
         try {

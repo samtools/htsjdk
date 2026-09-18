@@ -111,6 +111,7 @@ public class TabixHtslibInteropTest extends HtsjdkTest {
         return vcf;
     }
 
+    /** Start positions of the records htsjdk returns for a 1-based inclusive region, in file order. */
     private static List<Integer> startsFromHtsjdk(final Path vcf, final String contig, final int[] region) {
         final List<Integer> starts = new ArrayList<>();
         try (final VCFFileReader reader = new VCFFileReader(vcf, true);
@@ -120,6 +121,7 @@ public class TabixHtslibInteropTest extends HtsjdkTest {
         return starts;
     }
 
+    /** Start positions of the records tabix returns for the same region. */
     private static List<Integer> startsFromTabix(final Path vcf, final String contig, final int[] region) {
         return TabixTestUtils.executeTabix(vcf.toString(), contig + ":" + region[0] + "-" + region[1]).stream()
                 .map(line -> Integer.parseInt(line.split("\t")[1]))

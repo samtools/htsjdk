@@ -35,6 +35,12 @@ final class PendingFeature {
     private final int end;
     private final long startFilePosition;
 
+    /**
+     * @param referenceIndex ordinal of the feature's sequence in the index
+     * @param start 1-based inclusive start
+     * @param end 1-based inclusive end
+     * @param startFilePosition virtual offset at which the feature begins in the file
+     */
     PendingFeature(final int referenceIndex, final int start, final int end, final long startFilePosition) {
         this.referenceIndex = referenceIndex;
         this.start = start;

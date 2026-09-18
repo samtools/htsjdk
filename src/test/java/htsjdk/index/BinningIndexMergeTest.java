@@ -89,6 +89,7 @@ public class BinningIndexMergeTest extends HtsjdkTest {
                 new ReferenceBins.Metadata(10 << 16, (1_000L + 30) << 16, 12, 3));
     }
 
+    /** A one-reference, one-bin index carrying the given metadata pseudo-bin. */
     private static BinningIndex withMetadata(final ReferenceBins.Metadata metadata) {
         final ReferenceBins reference =
                 new ReferenceBins(new int[] {4681}, new long[][] {{0, 1 << 16}}, new long[] {0}, metadata);

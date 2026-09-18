@@ -11,10 +11,12 @@ import org.testng.annotations.Test;
 public class BinningIndexBuilderTest extends HtsjdkTest {
     private static final int SMALLEST_BIN_0 = 4681; // first smallest bin of the BAI scheme
 
+    /** A BGZF virtual offset. */
     private static long offset(final long blockAddress, final int withinBlock) {
         return BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, withinBlock);
     }
 
+    /** A builder for the BAI/TBI binning scheme. */
     private static BinningIndex.Builder baiBuilder() {
         return new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
     }

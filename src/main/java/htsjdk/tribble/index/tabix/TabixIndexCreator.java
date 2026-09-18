@@ -88,6 +88,7 @@ public class TabixIndexCreator implements IndexCreator {
         }
     }
 
+    /** Starts a new sequence, which becomes the next reference ordinal in the index. */
     private void advanceToReference(final String sequenceName) {
         if (sequenceDictionary != null && sequenceDictionary.getSequence(sequenceName) == null) {
             throw new IllegalArgumentException(

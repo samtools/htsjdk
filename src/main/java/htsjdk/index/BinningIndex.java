@@ -50,6 +50,7 @@ public final class BinningIndex implements HtsQueryIndex {
         this.references = references.toArray(new ReferenceBins[0]);
     }
 
+    /** Rejects a binning scheme whose bin numbers or positions would overflow, or that has no levels at all. */
     private static void validateGeometry(final int minShift, final int depth) {
         if (minShift < 1 || depth < 1 || depth > MAX_DEPTH || minShift + 3 * depth > 62) {
             throw new IllegalArgumentException(
@@ -85,6 +86,7 @@ public final class BinningIndex implements HtsQueryIndex {
         return maxPosition(minShift, depth);
     }
 
+    /** The span of bin 0, i.e. one past the largest 0-based position the scheme can address. */
     private static long maxPosition(final int minShift, final int depth) {
         return 1L << (minShift + 3 * depth);
     }
@@ -451,6 +453,10 @@ public final class BinningIndex implements HtsQueryIndex {
             windowCount = Math.max(windowCount, lastWindow + 1);
         }
 
+        /**
+         * Finishes the reference being built, records empty references for any skipped ordinals, and starts
+         * accumulating for {@code referenceIndex}.
+         */
         private void advanceTo(final int referenceIndex) {
             if (referenceIndex < currentReference) {
                 throw new IllegalArgumentException(String.format(
@@ -468,6 +474,7 @@ public final class BinningIndex implements HtsQueryIndex {
             windowCount = 0;
         }
 
+        /** Freezes the reference being built, if any, into its {@link ReferenceBins}; a no-op otherwise. */
         private void finishCurrentReference() {
             if (accumulator == null) return;
             // Windows that no record overlaps take the offset of the nearest preceding window that one does,
@@ -508,6 +515,7 @@ public final class BinningIndex implements HtsQueryIndex {
             private int lastBinNumber = -1;
             private ChunkList lastBin;
 
+            /** Appends a chunk to a bin, creating the bin on first sight. */
             void addChunk(final int binNumber, final long chunkStart, final long chunkEnd) {
                 if (binNumber != lastBinNumber) {
                     lastBin = bins.computeIfAbsent(binNumber, unused -> new ChunkList());
@@ -516,6 +524,7 @@ public final class BinningIndex implements HtsQueryIndex {
                 lastBin.add(chunkStart, chunkEnd);
             }
 
+            /** Freezes the accumulated bins, in bin-number order, together with the given linear index and metadata. */
             ReferenceBins toReferenceBins(final long[] linearIndex, final ReferenceBins.Metadata metadata) {
                 final int[] binNumbers = bins.keySet().stream()
                         .mapToInt(Integer::intValue)
@@ -534,6 +543,7 @@ public final class BinningIndex implements HtsQueryIndex {
             private long[] offsets = new long[4];
             private int size;
 
+            /** Appends a chunk, or extends the last one when the two would be read together anyway. */
             void add(final long chunkStart, final long chunkEnd) {
                 // A chunk starting in or next to the BGZF block the previous one ends in costs no extra seek
                 // to read as one, so they are stored as one.
@@ -549,6 +559,7 @@ public final class BinningIndex implements HtsQueryIndex {
                 offsets[size++] = chunkEnd;
             }
 
+            /** The chunks as a right-sized array. */
             long[] toArray() {
                 return Arrays.copyOf(offsets, size);
             }
