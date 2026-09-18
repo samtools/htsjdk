@@ -146,16 +146,11 @@ public class ProcessExecutor {
 
     /**
      * Execute the command and capture stdout and stderr.
+     * @param command the command line, split into arguments on whitespace
      * @return Exit status of command, and both stderr and stdout interleaved into stdout attribute.
      */
     public static ExitStatusAndOutput executeAndReturnInterleavedOutput(final String command) {
-        try {
-            final Process process = Runtime.getRuntime().exec(command);
-            return interleaveProcessOutput(process);
-
-        } catch (Throwable t) {
-            throw new SAMException("Unexpected exception executing [" + command + "]", t);
-        }
+        return executeAndReturnInterleavedOutput(command.trim().split("\\s+"));
     }
 
     /**
@@ -164,29 +159,18 @@ public class ProcessExecutor {
      */
     public static ExitStatusAndOutput executeAndReturnInterleavedOutput(final String[] commandArray) {
         try {
-            final Process process = Runtime.getRuntime().exec(commandArray);
-            return interleaveProcessOutput(process);
-
+            // Merging the streams in the child lets one read drain both, so neither can fill its pipe and block
+            // the child while the other is being waited on.
+            final Process process =
+                    new ProcessBuilder(commandArray).redirectErrorStream(true).start();
+            final String output;
+            try (final InputStream stream = process.getInputStream()) {
+                output = new String(stream.readAllBytes());
+            }
+            return new ExitStatusAndOutput(process.waitFor(), output, null);
         } catch (Throwable t) {
             throw new SAMException("Unexpected exception executing [" + StringUtil.join(" ", commandArray) + "]", t);
         }
-    }
-
-    private static ExitStatusAndOutput interleaveProcessOutput(final Process process)
-            throws InterruptedException, IOException {
-        final BufferedReader stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        final BufferedReader stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-        final StringBuilder sb = new StringBuilder();
-
-        String stdoutLine = null;
-        String stderrLine = null;
-        while ((stderrLine = stderrReader.readLine()) != null || (stdoutLine = stdoutReader.readLine()) != null) {
-            if (stderrLine != null) sb.append(stderrLine).append('\n');
-            if (stdoutLine != null) sb.append(stdoutLine).append('\n');
-            stderrLine = null;
-            stdoutLine = null;
-        }
-        return new ExitStatusAndOutput(process.waitFor(), sb.toString(), null);
     }
 
     private static int readStreamsAndWaitFor(final Process process) throws InterruptedException, ExecutionException {
