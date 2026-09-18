@@ -17,6 +17,7 @@ Major release.
 ### Headlines
 
 - **An indexed CRAM is now written with a `.crai`, not a `.cram.bai`, and CRAM region queries are answered from the CRAI directly.**  Opening a CRAI-indexed CRAM is several times faster, queries read fewer containers, and a CRAM on a reference longer than 512 Mbp is finally queryable.  See below for the migration path.
+- **Tabix-indexed files (VCF, BED, GFF, ...) can be indexed with CSI as well as TBI**, so contigs longer than 512 Mbp are indexable and queryable.  TBI remains the default.
 - **htsjdk now uses `java.nio.file.Path` (not `java.io.File`) throughout its public API.**  This makes the whole library work with any NIO `FileSystemProvider` (SPI) — Amazon S3, Google Cloud Storage, HDFS, in-memory filesystems such as [jimfs](https://github.com/google/jimfs), and so on — through the same reader, writer, factory and index APIs you already use, with no File-specific code paths.
 - **String- and URI-based entry points are scheme-aware.**  Where an API takes a path as a `String`, it is resolved with `IOUtil.getPath`, which honours the URI scheme (e.g. `file:`, `gs:`, `s3:`, custom providers) and falls back to the local filesystem for plain paths (including paths containing spaces).  Existing HTTP/HTTPS and FTP behaviour is unchanged — those continue to flow through htsjdk's `SeekableStream` machinery rather than NIO.
 
@@ -57,6 +58,10 @@ Consumers should review these before upgrading.
 
 - **`Defaults.REFERENCE_FASTA` is now a `Path`** (previously a `File`).  It is resolved from the `samjdk.reference_fasta` system property; an unparseable value is logged and treated as unset rather than failing class initialisation.
 
+- **`TabixIndex` is built on the new `htsjdk.index.BinningIndex`.**  `TabixIndex(TabixFormat, List<String>, BinningIndex)` replaces the constructor taking `BinningIndexContent[]`, and `getBinningIndex()` replaces `getIndices()`.  `TabixReader`'s protected `TPair64`, `TIndex` and `mIndex`, and `TabixUtils.TPair64`, `TIndex`, `TIntv` and `less64`, are removed; `TabixReader` now loads a `TabixIndex`.  A truncated `.tbi` is reported as a `TribbleException` rather than an `EOFException`.
+
+- **A `.csi` beside a tabix-indexed file is preferred to a `.tbi`**, which is htslib's order.  This applies to `TabixReader`, `AbstractFeatureReader.isTabix` and `VariantsBundle`.
+
 ### CRAM indexing
 
 - **CRAM region queries are answered from the CRAI directly** by the new `CRAIQueryIndex`, instead of rebuilding the whole CRAI as an in-memory BAI on every reader open (issue #851).  The index is not read until a query needs it, so opening a reader for sequential reading no longer touches it.  Measured on a 102 MB GRCh38 CRAM (2,395 CRAI entries, 3,366 sequences):
@@ -81,6 +86,23 @@ Consumers should review these before upgrading.
 
 - **The index caching and memory-mapping flags are documented as BAI-only** (issue #535).  A CRAI is read fully into memory, so there is nothing to cache or memory-map.
 
+### Tabix and CSI indexing
+
+- **New: `htsjdk.index.BinningIndex`**, one sparse, format-neutral implementation of the binning index that TBI, BAI and CSI share, with a parameterised binning scheme (`min_shift`, depth), a `Builder`, `merge`, and readers and writers for the BAI/TBI layout and for CSI.  It implements `HtsQueryIndex`.  Tabix indexes moved onto it with their bytes unchanged; BAM indexes have not moved yet.  Against 5.x on a 2.4 M-record VCF: index-only queries 242 → 75 ms per 200,000, `VCFFileReader.query` −20%, index open −22%.  A loaded index over 50,000 one-record contigs takes 10 MB instead of 951 MB, because bins are no longer held in dense per-contig arrays.
+
+- **New: CSI indexes for tabix-indexed files** (`TabixIndexType.CSI`).  TBI's fixed scheme stops at 2<sup>29</sup> bases; CSI stores its scheme and reaches further.  `TabixIndex` reads either format by its magic number and writes the type it was built as.  `TabixIndexCreator`, `AllRefsTabixIndexCreator`, `StreamBasedTabixIndexCreator`, `TabixIndexMerger`, `IndexFactory` (`IndexType.CSI`, `createTabixIndex(..., TabixIndexType)`) and `VariantContextWriterBuilder` (`setTabixIndexType`, `setCsiMinShift`) all take the type.  The binning scheme is the one htslib's `tabix -C` chooses, and the index carries the per-contig record counts that `bcftools index -n` reads.  `Tribble.csiIndexPath` and `tabixIndexPath(path, type)` name the index; `TabixUtils.findIndex` finds it.
+
+  ```java
+  VariantContextWriter w = new VariantContextWriterBuilder()
+          .setOutputPath(Path.of("calls.vcf.gz"))
+          .setReferenceDictionary(dictionary)
+          .setOption(Options.INDEX_ON_THE_FLY)
+          .setTabixIndexType(TabixIndexType.CSI)
+          .build();
+  ```
+
+- The test suite cross-checks htsjdk against htslib's `tabix` in both directions, for TBI and CSI; CI installs `tabix` alongside samtools.
+
 ### Retained `File` APIs
 
 A small, deliberate set of `java.io.File` APIs remains because they are inherently tied to the local filesystem or ease migration; they do not affect NIO-SPI support:
@@ -99,6 +121,10 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 - **Gzipped and bgzipped input read from pipes, sockets and URLs is no longer silently truncated** (issue #1691).  htsjdk read such input with `java.util.zip.GZIPInputStream`, which on JDKs affected by [JDK-7036144](https://bugs.openjdk.org/browse/JDK-7036144) stops at a gzip member boundary and reports a clean end of stream whenever `InputStream.available()` returns 0.  Every BGZF file is multi-member, so a bgzipped VCF streamed over HTTP could yield a fraction of its records with no error.  All such reads now go through the new `IOUtil.openGzipOrBgzfStream`, which reads BGZF with `BlockCompressedInputStream` and any other gzip with a decoder that handles concatenated members.  This covers `VCFIteratorBuilder`, `VCFHeaderReader`, plain-gzipped SAM, unindexed `.vcf.gz`/`.bed.gz` via `TribbleIndexedFeatureReader`, gzipped Tribble indexes, CRAI, and everything opened with `IOUtil.openFileForReading` (FASTQ, interval lists, metrics, chain files, FASTA).
 - `IOUtil.isGZIPInputStream` now inspects only the gzip header rather than inflating the first byte.  A stream with a valid gzip header but corrupt compressed data is therefore reported as gzip and fails when read, instead of being treated as uncompressed.
+- **A tabix index with a sequence that has no records is now written correctly.**  Such a sequence was written without its linear-index count, so an index from `AllRefsTabixIndexCreator` or `TabixIndexMerger` that contained one was rejected by htslib and returned no records from `TabixReader`.  `AllRefsTabixIndexCreator` also accepts a sequence without records between two that have them.
+- `VariantContextWriterBuilder` no longer replaces an `IndexCreator` supplied by the caller when the output is block-compressed VCF.
+- `TabixReader` rejects a plain-gzip (non-BGZF) file when it is opened, with a message saying so, and names the index files it looked for when none exists.
+- `ProcessExecutor.executeAndReturnInterleavedOutput` no longer deadlocks when the child process writes more than a pipe buffer of output.
 
 ### Testing
 
