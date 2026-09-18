@@ -4,10 +4,10 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/** {@link ProcessExecutor#executeAndReturnInterleavedOutput}. */
+/** {@link ProcessExecutor#executeAndReturnInterleavedOutput}. The child commands need a POSIX shell and coreutils. */
 public class ProcessExecutorInterleavedOutputTest extends HtsjdkTest {
 
-    @Test(timeOut = 60_000)
+    @Test(groups = "unix", timeOut = 60_000)
     public void testOutputLargerThanAPipeBufferDoesNotHang() {
         // 100k lines of "y" is ~200 KB, well past the 64 KB a pipe holds before the writer blocks.
         final ProcessExecutor.ExitStatusAndOutput result =
@@ -16,7 +16,7 @@ public class ProcessExecutorInterleavedOutputTest extends HtsjdkTest {
         Assert.assertEquals(result.stdout.length(), 200_000);
     }
 
-    @Test
+    @Test(groups = "unix")
     public void testStderrIsCapturedAlongsideStdout() {
         final ProcessExecutor.ExitStatusAndOutput result = ProcessExecutor.executeAndReturnInterleavedOutput(
                 new String[] {"sh", "-c", "echo to-stdout; echo to-stderr 1>&2"});
@@ -26,14 +26,14 @@ public class ProcessExecutorInterleavedOutputTest extends HtsjdkTest {
         Assert.assertNull(result.stderr);
     }
 
-    @Test
+    @Test(groups = "unix")
     public void testExitStatusIsReported() {
         final ProcessExecutor.ExitStatusAndOutput result =
                 ProcessExecutor.executeAndReturnInterleavedOutput(new String[] {"sh", "-c", "exit 3"});
         Assert.assertEquals(result.exitStatus, 3);
     }
 
-    @Test
+    @Test(groups = "unix")
     public void testCommandStringIsSplitOnWhitespace() {
         final ProcessExecutor.ExitStatusAndOutput result =
                 ProcessExecutor.executeAndReturnInterleavedOutput("echo  one\ttwo three");
