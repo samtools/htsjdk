@@ -115,9 +115,52 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     /**
      * Are the alleles phased w.r.t. the global phasing system?
      *
+     * <p>For a genotype whose alleles do not all share one phase (see {@link #hasPerAllelePhasing()}) this is true if
+     * any allele is phased, which is what reading a GT containing a {@code |} has always given.
+     *
      * @return true if yes
      */
     public abstract boolean isPhased();
+
+    /**
+     * Is the allele at {@code alleleIndex} phased? VCF 4.4 gives every allele of a GT its own phase: the separator
+     * before it, or for the first allele an optional leading indicator ({@code |0/1}), which when absent is implied to
+     * be {@code /} if any other separator is {@code /} and {@code |} otherwise.
+     *
+     * <p>Unless {@link #hasPerAllelePhasing()}, every allele simply follows {@link #isPhased()}. That includes a
+     * haploid GT written without an indicator ({@code 1}): it reports unphased, as it always has, although VCF 4.4
+     * reads it as phased.
+     *
+     * @param alleleIndex from 0 to {@link #getPloidy()} - 1; the answer for any other index is undefined, and it is
+     * not checked unless the genotype {@link #hasPerAllelePhasing()}
+     */
+    public boolean isAllelePhased(final int alleleIndex) {
+        return isPhased();
+    }
+
+    /**
+     * @return true if this genotype records a phase for each allele because one flag cannot describe it: its
+     * separators are mixed ({@code 0/1|2}), or its first allele's phase was given and is not the one the other
+     * alleles imply ({@code |0/1}, {@code /0|1}, {@code /1})
+     */
+    public boolean hasPerAllelePhasing() {
+        return false;
+    }
+
+    /**
+     * @return true if this genotype's GT can only be written with a phase indicator before its first allele, which
+     * VCF allows from version 4.4: the first allele's phase is not the one the other alleles imply
+     */
+    public boolean needsLeadingPhaseIndicator() {
+        if (!hasPerAllelePhasing()) {
+            return false;
+        }
+        boolean impliedByTheOthers = true;
+        for (int i = 1; i < getPloidy(); i++) {
+            impliedByTheOthers &= isAllelePhased(i);
+        }
+        return isAllelePhased(0) != impliedByTheOthers;
+    }
 
     /**
      * What is the ploidy of this sample?
@@ -389,6 +432,21 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      */
     public String getGenotypeString(boolean ignoreRefState) {
         if (getPloidy() == 0) return "NA";
+
+        if (hasPerAllelePhasing()) {
+            // each allele after its own separator, in the order given: the order means something once any is phased
+            final StringBuilder gt = new StringBuilder();
+            for (int i = 0; i < getPloidy(); i++) {
+                if (i > 0 || needsLeadingPhaseIndicator()) {
+                    gt.append(isAllelePhased(i) ? PHASED_ALLELE_SEPARATOR : UNPHASED_ALLELE_SEPARATOR);
+                }
+                gt.append(
+                        ignoreRefState
+                                ? getAllele(i).getBaseString()
+                                : getAllele(i).toString());
+            }
+            return gt.toString();
+        }
 
         // Notes:
         // 1. Make sure to use the appropriate separator depending on whether the genotype is phased

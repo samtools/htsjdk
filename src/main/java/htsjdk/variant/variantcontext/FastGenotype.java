@@ -77,6 +77,8 @@ import java.util.Map;
 public final class FastGenotype extends Genotype {
     private final List<Allele> alleles;
     private final boolean isPhased;
+    // one phase per allele, or null when isPhased says it all, which is nearly always: see hasPerAllelePhasing()
+    private final boolean[] allelePhasing;
     private final int GQ;
     private final int DP;
     private final int[] AD;
@@ -84,16 +86,7 @@ public final class FastGenotype extends Genotype {
     private final Map<String, Object> extendedAttributes;
 
     /**
-     * The only way to make one of these, for use by GenotypeBuilder only
-     *
-     * @param sampleName
-     * @param alleles
-     * @param isPhased
-     * @param GQ
-     * @param DP
-     * @param AD
-     * @param PL
-     * @param extendedAttributes
+     * A genotype whose alleles all follow {@code isPhased}, for use by GenotypeBuilder only
      */
     protected FastGenotype(
             final String sampleName,
@@ -105,9 +98,37 @@ public final class FastGenotype extends Genotype {
             final int[] PL,
             final String filters,
             final Map<String, Object> extendedAttributes) {
+        this(sampleName, alleles, isPhased, null, GQ, DP, AD, PL, filters, extendedAttributes);
+    }
+
+    /**
+     * For use by GenotypeBuilder only
+     *
+     * @param sampleName
+     * @param alleles
+     * @param isPhased
+     * @param allelePhasing one phase per allele, or null if every allele follows isPhased
+     * @param GQ
+     * @param DP
+     * @param AD
+     * @param PL
+     * @param extendedAttributes
+     */
+    protected FastGenotype(
+            final String sampleName,
+            final List<Allele> alleles,
+            final boolean isPhased,
+            final boolean[] allelePhasing,
+            final int GQ,
+            final int DP,
+            final int[] AD,
+            final int[] PL,
+            final String filters,
+            final Map<String, Object> extendedAttributes) {
         super(sampleName, filters);
         this.alleles = alleles;
         this.isPhased = isPhased;
+        this.allelePhasing = allelePhasing;
         this.GQ = GQ;
         this.DP = DP;
         this.AD = AD;
@@ -134,6 +155,16 @@ public final class FastGenotype extends Genotype {
     @Override
     public boolean isPhased() {
         return isPhased;
+    }
+
+    @Override
+    public boolean isAllelePhased(final int alleleIndex) {
+        return allelePhasing == null ? isPhased : allelePhasing[alleleIndex];
+    }
+
+    @Override
+    public boolean hasPerAllelePhasing() {
+        return allelePhasing != null;
     }
 
     @Override

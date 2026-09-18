@@ -377,4 +377,129 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertEquals(vc.getGenotype("NA1").getDP(), 12);
         Assert.assertEquals(vc.getGenotype("NA1").getGQ(), 99);
     }
+
+    // GT phasing: one flag for nearly every GT, a phase per allele for mixed separators or a telling leading indicator
+
+    private static Genotype genotypeOf(final String gt) {
+        return decodeUnderOneSampleHeader("chr1\t100\t.\tA\tC,G\t50\tPASS\t.\tGT\t" + gt)
+                .getGenotype("NA1");
+    }
+
+    @Test
+    public void unphasedGtTakesTheSingleFlag() {
+        final Genotype g = genotypeOf("0/1");
+        Assert.assertFalse(g.isPhased());
+        Assert.assertFalse(g.hasPerAllelePhasing());
+    }
+
+    @Test
+    public void phasedGtTakesTheSingleFlag() {
+        final Genotype g = genotypeOf("0|1");
+        Assert.assertTrue(g.isPhased());
+        Assert.assertFalse(g.hasPerAllelePhasing());
+    }
+
+    @Test
+    public void aLeadingIndicatorThatTheSeparatorsImplyChangesNothing() {
+        Assert.assertFalse(genotypeOf("/0/1").hasPerAllelePhasing());
+        Assert.assertFalse(genotypeOf("/0/1").isPhased());
+        Assert.assertFalse(genotypeOf("|0|1").hasPerAllelePhasing());
+        Assert.assertTrue(genotypeOf("|0|1").isPhased());
+        Assert.assertEquals(genotypeOf("|0|1").getPloidy(), 2);
+    }
+
+    @Test
+    public void aPhasedLeadingIndicatorBeforeAnUnphasedSeparatorIsKept() {
+        final Genotype g = genotypeOf("|0/1");
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.isAllelePhased(0));
+        Assert.assertFalse(g.isAllelePhased(1));
+        Assert.assertTrue(g.needsLeadingPhaseIndicator());
+        Assert.assertTrue(g.isPhased());
+        Assert.assertEquals(g.getAlleles().size(), 2);
+    }
+
+    @Test
+    public void anUnphasedLeadingIndicatorBeforeAPhasedSeparatorIsKept() {
+        final Genotype g = genotypeOf("/0|1");
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.isAllelePhased(0));
+        Assert.assertTrue(g.isAllelePhased(1));
+        Assert.assertTrue(g.needsLeadingPhaseIndicator());
+    }
+
+    @Test
+    public void mixedSeparatorsAreKeptPerAllele() {
+        final Genotype g = genotypeOf("0/1|2");
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.isAllelePhased(0), "no leading indicator, and a / elsewhere, so unphased");
+        Assert.assertFalse(g.isAllelePhased(1));
+        Assert.assertTrue(g.isAllelePhased(2));
+        Assert.assertFalse(g.needsLeadingPhaseIndicator());
+        Assert.assertTrue(g.isPhased());
+    }
+
+    @Test
+    public void aTetraploidGtKeepsEachSeparator() {
+        Assert.assertEquals(genotypeOf("0/1|2/1").getGenotypeString(), "A/C|G/C");
+        Assert.assertEquals(genotypeOf("0|1|2/1").getGenotypeString(), "A|C|G/C");
+    }
+
+    @Test
+    public void aTellingLeadingIndicatorIsKeptBeforeMixedSeparators() {
+        final Genotype g = genotypeOf("|0/1|2");
+        Assert.assertTrue(g.needsLeadingPhaseIndicator());
+        Assert.assertEquals(g.getGenotypeString(), "|A/C|G");
+    }
+
+    @Test
+    public void aLeadingIndicatorThatMixedSeparatorsImplyIsDropped() {
+        final Genotype g = genotypeOf("/0/1|2");
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.needsLeadingPhaseIndicator());
+        Assert.assertEquals(g.getGenotypeString(), "A/C|G");
+    }
+
+    @Test
+    public void aGtWithMoreSeparatorsThanAllelesNeedTakesTheSingleFlag() {
+        for (final String malformed : new String[] {"0|/1", "0|1/", "0/|1"}) {
+            final Genotype g = genotypeOf(malformed);
+            Assert.assertTrue(g.isPhased(), malformed);
+            Assert.assertFalse(g.hasPerAllelePhasing(), malformed);
+            Assert.assertEquals(g.getGenotypeString(), "A|C", malformed);
+        }
+    }
+
+    @Test
+    public void aHaploidGtWithoutAnIndicatorStaysUnphased() {
+        final Genotype g = genotypeOf("1");
+        Assert.assertFalse(g.isPhased());
+        Assert.assertFalse(g.hasPerAllelePhasing());
+    }
+
+    @Test
+    public void anExplicitlyUnphasedHaploidGtIsKept() {
+        final Genotype g = genotypeOf("/1");
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.isAllelePhased(0));
+        Assert.assertTrue(g.needsLeadingPhaseIndicator());
+        Assert.assertEquals(g.getPloidy(), 1);
+    }
+
+    @Test
+    public void anExplicitlyPhasedHaploidGtTakesTheSingleFlag() {
+        final Genotype g = genotypeOf("|1");
+        Assert.assertTrue(g.isPhased());
+        Assert.assertFalse(g.hasPerAllelePhasing());
+        Assert.assertEquals(g.getPloidy(), 1);
+    }
+
+    @Test
+    public void noCallsCarryPhasingLikeAnyOtherAllele() {
+        Assert.assertFalse(genotypeOf(".").isPhased());
+        Assert.assertFalse(genotypeOf("./.").isPhased());
+        Assert.assertTrue(genotypeOf(".|.").isPhased());
+        Assert.assertTrue(genotypeOf("|.").isPhased());
+        Assert.assertFalse(genotypeOf("|.").hasPerAllelePhasing());
+    }
 }

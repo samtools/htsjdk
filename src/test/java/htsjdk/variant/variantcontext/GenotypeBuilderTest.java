@@ -69,4 +69,146 @@ public class GenotypeBuilderTest extends VariantBaseTest {
         Assert.assertNotEquals(ad, secondG.getAD());
         Assert.assertNotEquals(pl, secondG.getPL());
     }
+
+    // per-allele phasing
+
+    private static final Allele REF = Allele.create("A", true);
+    private static final Allele ALT1 = Allele.create("C");
+    private static final Allele ALT2 = Allele.create("G");
+
+    private static Genotype withAllelePhasing(final List<Allele> alleles, final boolean... allelePhasing) {
+        return new GenotypeBuilder("s", alleles).allelePhasing(allelePhasing).make();
+    }
+
+    @Test
+    public void mixedSeparatorsAreKeptPerAllele() {
+        final Genotype g = withAllelePhasing(Arrays.asList(REF, ALT1, ALT2), false, false, true);
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.isAllelePhased(0));
+        Assert.assertFalse(g.isAllelePhased(1));
+        Assert.assertTrue(g.isAllelePhased(2));
+        Assert.assertTrue(g.isPhased(), "phased if any allele is");
+        Assert.assertFalse(g.needsLeadingPhaseIndicator(), "an unphased first allele is what a / elsewhere implies");
+    }
+
+    @Test
+    public void allPhasedIsStoredAsTheSingleFlag() {
+        final Genotype g = withAllelePhasing(Arrays.asList(REF, ALT1), true, true);
+        Assert.assertFalse(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.isPhased());
+        Assert.assertTrue(g.isAllelePhased(0));
+        Assert.assertTrue(g.isAllelePhased(1));
+    }
+
+    @Test
+    public void allUnphasedIsStoredAsTheSingleFlag() {
+        final Genotype g = withAllelePhasing(Arrays.asList(REF, ALT1), false, false);
+        Assert.assertFalse(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.isPhased());
+        Assert.assertFalse(g.isAllelePhased(0));
+    }
+
+    @Test
+    public void aPhasedFirstAlleleBeforeAnUnphasedOneIsKept() {
+        final Genotype g = withAllelePhasing(Arrays.asList(REF, ALT1), true, false);
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.needsLeadingPhaseIndicator());
+        Assert.assertTrue(g.isAllelePhased(0));
+        Assert.assertFalse(g.isAllelePhased(1));
+        Assert.assertTrue(g.isPhased());
+    }
+
+    @Test
+    public void anUnphasedFirstAlleleBeforeAPhasedOneIsKept() {
+        final Genotype g = withAllelePhasing(Arrays.asList(REF, ALT1), false, true);
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.needsLeadingPhaseIndicator());
+        Assert.assertFalse(g.isAllelePhased(0));
+        Assert.assertTrue(g.isAllelePhased(1));
+    }
+
+    @Test
+    public void anExplicitlyUnphasedHaploidAlleleIsKept() {
+        final Genotype g = withAllelePhasing(Arrays.asList(ALT1), false);
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.needsLeadingPhaseIndicator(), "a haploid GT without an indicator reads as phased in 4.4");
+        Assert.assertFalse(g.isPhased());
+    }
+
+    @Test
+    public void aPhasedHaploidAlleleIsStoredAsTheSingleFlag() {
+        final Genotype g = withAllelePhasing(Arrays.asList(ALT1), true);
+        Assert.assertFalse(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.isPhased());
+    }
+
+    @Test
+    public void phasedReplacesAllelePhasing() {
+        final Genotype g = new GenotypeBuilder("s", Arrays.asList(REF, ALT1))
+                .allelePhasing(new boolean[] {true, false})
+                .phased(false)
+                .make();
+        Assert.assertFalse(g.hasPerAllelePhasing());
+        Assert.assertFalse(g.isPhased());
+    }
+
+    @Test
+    public void copyingAGenotypeKeepsItsAllelePhasing() {
+        final Genotype original = withAllelePhasing(Arrays.asList(REF, ALT1, ALT2), false, false, true);
+        final Genotype copy = new GenotypeBuilder(original).make();
+        Assert.assertTrue(copy.hasPerAllelePhasing());
+        Assert.assertFalse(copy.isAllelePhased(1));
+        Assert.assertTrue(copy.isAllelePhased(2));
+    }
+
+    @Test
+    public void aCopyGivenAnotherPloidyKeepsOnlyWhetherItWasPhased() {
+        final Genotype original = withAllelePhasing(Arrays.asList(REF, ALT1, ALT2), false, false, true);
+        final Genotype diploid =
+                new GenotypeBuilder(original).alleles(Arrays.asList(REF, ALT1)).make();
+        Assert.assertTrue(diploid.isPhased());
+        Assert.assertFalse(diploid.hasPerAllelePhasing());
+        Assert.assertEquals(diploid.getGenotypeString(), "A|C");
+    }
+
+    @Test
+    public void aCopyGivenOtherAllelesOfTheSamePloidyKeepsItsAllelePhasing() {
+        final Genotype original = withAllelePhasing(Arrays.asList(REF, ALT1, ALT2), false, false, true);
+        final Genotype copy = new GenotypeBuilder(original)
+                .alleles(Arrays.asList(REF, ALT2, ALT1))
+                .make();
+        Assert.assertEquals(copy.getGenotypeString(), "A/G|C");
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void allelePhasingOfTheWrongLengthIsRejectedOnACopyToo() {
+        final Genotype original = withAllelePhasing(Arrays.asList(REF, ALT1, ALT2), false, false, true);
+        new GenotypeBuilder(original)
+                .alleles(Arrays.asList(REF, ALT1))
+                .allelePhasing(new boolean[] {false, false, true})
+                .make();
+    }
+
+    @Test
+    public void makeWithShallowCopyCopiesTheAllelePhasing() {
+        final boolean[] allelePhasing = {false, false, true};
+        final Genotype genotype = new GenotypeBuilder("s", Arrays.asList(REF, ALT1, ALT2))
+                .allelePhasing(allelePhasing)
+                .makeWithShallowCopy();
+        allelePhasing[2] = false;
+        Assert.assertTrue(genotype.isAllelePhased(2));
+    }
+
+    @Test
+    public void resetClearsAllelePhasing() {
+        final GenotypeBuilder gb =
+                new GenotypeBuilder("s", Arrays.asList(REF, ALT1)).allelePhasing(new boolean[] {true, false});
+        gb.reset(true);
+        Assert.assertFalse(gb.alleles(Arrays.asList(REF, ALT1)).make().hasPerAllelePhasing());
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void allelePhasingOfTheWrongLengthIsRejected() {
+        withAllelePhasing(Arrays.asList(REF, ALT1), true, false, true);
+    }
 }

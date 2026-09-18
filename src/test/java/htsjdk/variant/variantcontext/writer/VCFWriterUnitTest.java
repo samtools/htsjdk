@@ -63,6 +63,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -479,5 +480,84 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             Assert.assertEquals(vcRead.getGenotype("s1").getExtendedAttribute("LAD"), List.of(10, 5));
             Assert.assertEquals(vcRead.getGenotype("s2").getExtendedAttribute("LAD"), List.of(0, 7, 3));
         }
+    }
+
+    // GT phasing
+
+    private static VCFHeader oneSampleGtHeader() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        return header;
+    }
+
+    private static VariantContext triploidWithAllelePhasing(final boolean... allelePhasing) {
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"), Allele.create("G"));
+        return new VariantContextBuilder("test", "1", 100, 100, alleles)
+                .genotypes(new GenotypeBuilder("s1", alleles)
+                        .allelePhasing(allelePhasing)
+                        .make())
+                .make();
+    }
+
+    @Test
+    public void mixedPhasingSurvivesARoundTrip() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "mixedPhasing.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(triploidWithAllelePhasing(false, false, true));
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final Genotype g = reader.iterator().next().getGenotype("s1");
+            Assert.assertTrue(g.hasPerAllelePhasing());
+            Assert.assertFalse(g.isAllelePhased(0));
+            Assert.assertFalse(g.isAllelePhased(1));
+            Assert.assertTrue(g.isAllelePhased(2));
+        }
+    }
+
+    @Test
+    public void aFirstAllelePhaseTheFormatCannotExpressIsRefused() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "leadingPhase.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            final IllegalStateException refusal = Assert.expectThrows(
+                    IllegalStateException.class, () -> writer.add(triploidWithAllelePhasing(true, false, false)));
+            Assert.assertTrue(refusal.getMessage().contains("first allele"), refusal.getMessage());
+        }
+    }
+
+    @Test
+    public void aRefusedRecordLeavesNothingInTheOutput() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "refusedThenWritten.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            Assert.expectThrows(
+                    IllegalStateException.class, () -> writer.add(triploidWithAllelePhasing(true, false, false)));
+            writer.add(triploidWithAllelePhasing(false, false, true));
+        }
+        final List<String> records = Files.readAllLines(output).stream()
+                .filter(line -> !line.startsWith("#"))
+                .collect(Collectors.toList());
+        Assert.assertEquals(records, List.of("1\t100\t.\tA\tC,G\t.\t.\t.\tGT\t0/1|2"));
     }
 }

@@ -154,4 +154,39 @@ public class GenotypeUnitTest extends VariantBaseTest {
     //    public int getAttributeAsInt(String key, int defaultValue)
     //    public double getAttributeAsDouble(String key, double  defaultValue)
     //    public boolean getAttributeAsBoolean(String key, boolean  defaultValue)
+
+    // per-allele phasing
+
+    @Test
+    public void withoutPerAllelePhasingEveryAlleleFollowsIsPhased() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        final Genotype phased =
+                new GenotypeBuilder("s", Arrays.asList(ref, alt)).phased(true).make();
+        final Genotype unphased = new GenotypeBuilder("s", Arrays.asList(ref, alt)).make();
+        Assert.assertTrue(phased.isAllelePhased(0));
+        Assert.assertTrue(phased.isAllelePhased(1));
+        Assert.assertFalse(unphased.isAllelePhased(0));
+        Assert.assertFalse(unphased.isAllelePhased(1));
+        Assert.assertFalse(phased.needsLeadingPhaseIndicator());
+        Assert.assertFalse(unphased.needsLeadingPhaseIndicator());
+    }
+
+    @Test
+    public void genotypeStringShowsEachAllelesOwnSeparator() {
+        final Genotype g = new GenotypeBuilder(
+                        "s", Arrays.asList(Allele.create("A", true), Allele.create("C"), Allele.create("G")))
+                .allelePhasing(new boolean[] {false, false, true})
+                .make();
+        Assert.assertEquals(g.getGenotypeString(), "A/C|G");
+        Assert.assertEquals(g.getGenotypeString(false), "A*/C|G");
+    }
+
+    @Test
+    public void genotypeStringShowsALeadingIndicatorOnlyWhenItSaysSomething() {
+        final Genotype g = new GenotypeBuilder("s", Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .allelePhasing(new boolean[] {true, false})
+                .make();
+        Assert.assertEquals(g.getGenotypeString(), "|A/C");
+    }
 }

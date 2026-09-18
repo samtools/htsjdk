@@ -877,8 +877,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     ? new ArrayList<Allele>(0)
                     : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, alleleMap));
             gb.alleles(GTalleles);
-            gb.phased(genotypeAlleleLocation != -1
-                    && genotypeValues.get(genotypeAlleleLocation).indexOf(VCFConstants.PHASED) != -1);
+            if (genotypeAlleleLocation != -1) {
+                setPhasing(gb, genotypeValues.get(genotypeAlleleLocation), GTalleles.size());
+            }
 
             // add it to the list
             try {
@@ -890,6 +891,56 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         return new LazyGenotypesContext.LazyData(
                 genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
+    }
+
+    private static final char PHASED = '|';
+    private static final char UNPHASED = '/';
+
+    /**
+     * Sets a genotype's phasing from its GT string. Nearly every GT has one kind of separator and no leading
+     * indicator, and takes a single flag; only mixed separators ({@code 0/1|2}) or a leading indicator ({@code |0/1},
+     * VCF 4.4) need a phase per allele. Accepted for every version: nothing else those strings could mean.
+     */
+    private static void setPhasing(final GenotypeBuilder gb, final String gt, final int ploidy) {
+        final int length = gt.length();
+        boolean sawPhased = false;
+        boolean sawUnphased = false;
+        // from 1: a separator at 0 is a leading indicator, not a separator between alleles
+        for (int i = 1; i < length; i++) {
+            final char c = gt.charAt(i);
+            if (c == PHASED) {
+                sawPhased = true;
+            } else if (c == UNPHASED) {
+                sawUnphased = true;
+            }
+        }
+        final char first = length == 0 ? 0 : gt.charAt(0);
+        final boolean hasLeadingIndicator = first == PHASED || first == UNPHASED;
+        if (ploidy == 0 || (!hasLeadingIndicator && !(sawPhased && sawUnphased))) {
+            gb.phased(sawPhased);
+            return;
+        }
+
+        final boolean[] allelePhasing = new boolean[ploidy];
+        // without a leading indicator the first allele is unphased if any separator is, and phased otherwise
+        allelePhasing[0] = hasLeadingIndicator ? first == PHASED : !sawUnphased;
+        int separators = 0;
+        for (int i = 1; i < length; i++) {
+            final char c = gt.charAt(i);
+            if (c == PHASED || c == UNPHASED) {
+                separators++;
+                if (separators < ploidy) {
+                    allelePhasing[separators] = c == PHASED;
+                }
+            }
+        }
+        if (separators != ploidy - 1) {
+            // Not a GT the specification allows (0|/1, 0|1/): which separator goes with which allele is anyone's
+            // guess, so it gets what such strings have always got, phased if it holds a | anywhere.
+            gb.phased(sawPhased || first == PHASED);
+            return;
+        }
+        gb.allelePhasing(allelePhasing);
     }
 
     private static final int[] decodeInts(final String string) {

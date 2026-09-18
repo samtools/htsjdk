@@ -211,10 +211,38 @@ public class BCF2GenotypeFieldDecoders {
                     for (final int encode : encoded) gt.add(getAlleleFromEncoded(siteAlleles, encode));
 
                     gb.alleles(gt);
-                    final boolean phased = ((encoded.length > 1 ? encoded[1] : encoded[0]) & 0x01) == 1;
-                    gb.phased(phased);
+                    setPhasing(gb, encoded);
                 }
             }
+        }
+
+        /**
+         * Sets a genotype's phasing from its encoded alleles, each of which carries the phase of the separator
+         * before it in its low bit. One flag serves unless the separators are mixed ({@code 0/1|2}).
+         */
+        private static void setPhasing(final GenotypeBuilder gb, final int[] encoded) {
+            if (encoded.length == 1) {
+                gb.phased((encoded[0] & 0x01) == 1);
+                return;
+            }
+            final boolean firstSeparatorPhased = (encoded[1] & 0x01) == 1;
+            boolean mixed = false;
+            for (int i = 2; i < encoded.length; i++) {
+                mixed |= ((encoded[i] & 0x01) == 1) != firstSeparatorPhased;
+            }
+            if (!mixed) {
+                gb.phased(firstSeparatorPhased);
+                return;
+            }
+            final boolean[] allelePhasing = new boolean[encoded.length];
+            boolean allSeparatorsPhased = true;
+            for (int i = 1; i < encoded.length; i++) {
+                allelePhasing[i] = (encoded[i] & 0x01) == 1;
+                allSeparatorsPhased &= allelePhasing[i];
+            }
+            // the first allele has no separator before it: unphased if any separator is, and phased otherwise
+            allelePhasing[0] = allSeparatorsPhased;
+            gb.allelePhasing(allelePhasing);
         }
 
         private final Allele getAlleleFromEncoded(final List<Allele> siteAlleles, final int encode) {

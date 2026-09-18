@@ -925,6 +925,11 @@ public class VariantContextTestProvider extends HtsjdkTest {
         Assert.assertEquals(actual.getGQ(), expected.getGQ(), "Genotype phredScaledQual");
         assertAttributesEquals(actual.getExtendedAttributes(), expected.getExtendedAttributes());
         Assert.assertEquals(actual.isPhased(), expected.isPhased(), "Genotype isPhased");
+        Assert.assertEquals(
+                actual.hasPerAllelePhasing(), expected.hasPerAllelePhasing(), "Genotype hasPerAllelePhasing");
+        for (int i = 0; i < Math.min(actual.getPloidy(), expected.getPloidy()); i++) {
+            Assert.assertEquals(actual.isAllelePhased(i), expected.isAllelePhased(i), "Genotype isAllelePhased " + i);
+        }
         Assert.assertEquals(actual.getPloidy(), expected.getPloidy(), "Genotype getPloidy");
     }
 

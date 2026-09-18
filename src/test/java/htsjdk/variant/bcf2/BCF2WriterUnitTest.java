@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -424,6 +425,110 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             final VariantContext vcRead = reader.iterator().next().fullyDecode(headerRead, false);
             Assert.assertEquals(vcRead.getGenotype("s1").getExtendedAttribute("LAD"), List.of(10, 5));
             Assert.assertEquals(vcRead.getGenotype("s2").getExtendedAttribute("LAD"), List.of(0, 7, 3));
+        }
+    }
+
+    // GT phasing
+
+    private static VCFHeader oneSampleGtHeader() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        return header;
+    }
+
+    private static VariantContext triploidWithAllelePhasing(final boolean... allelePhasing) {
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"), Allele.create("G"));
+        return new VariantContextBuilder("test", "1", 100, 100, alleles)
+                .genotypes(new GenotypeBuilder("s1", alleles)
+                        .allelePhasing(allelePhasing)
+                        .make())
+                .make();
+    }
+
+    @Test
+    public void mixedPhasingSurvivesARoundTrip() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "mixedPhasing.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(triploidWithAllelePhasing(false, false, true));
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final Genotype g = reader.iterator().next().getGenotype("s1");
+            Assert.assertTrue(g.hasPerAllelePhasing());
+            Assert.assertFalse(g.isAllelePhased(0));
+            Assert.assertFalse(g.isAllelePhased(1));
+            Assert.assertTrue(g.isAllelePhased(2));
+        }
+    }
+
+    @Test
+    public void mixedPhasingIsWrittenAsTheSpecificationEncodesIt() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "mixedPhasingBytes.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(triploidWithAllelePhasing(false, false, true));
+        }
+        // 0/1|2 is a vector of three int8 (type byte 0x31), each (allele + 1) << 1 with the low bit set when phased;
+        // the round trip alone would not notice the reader and writer agreeing on something else
+        final byte[] written = Files.readAllBytes(output);
+        final byte[] expectedGt = {0x31, 0x02, 0x04, 0x07};
+        boolean found = false;
+        for (int i = 0; i + expectedGt.length <= written.length && !found; i++) {
+            found = Arrays.equals(written, i, i + expectedGt.length, expectedGt, 0, expectedGt.length);
+        }
+        Assert.assertTrue(found, "GT bytes 31 02 04 07 not found in the BCF output");
+    }
+
+    @Test
+    public void aFirstAllelePhaseTheFormatCannotExpressIsRefused() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "leadingPhase.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            final IllegalStateException refusal = Assert.expectThrows(
+                    IllegalStateException.class, () -> writer.add(triploidWithAllelePhasing(true, false, false)));
+            Assert.assertTrue(refusal.getMessage().contains("first allele"), refusal.getMessage());
+        }
+    }
+
+    @Test
+    public void aRefusedRecordLeavesNothingInTheOutput() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "refusedThenWritten.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            Assert.expectThrows(
+                    IllegalStateException.class, () -> writer.add(triploidWithAllelePhasing(true, false, false)));
+            writer.add(triploidWithAllelePhasing(false, false, true));
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final List<VariantContext> records = reader.iterator().toList();
+            Assert.assertEquals(records.size(), 1);
+            Assert.assertEquals(records.get(0).getGenotype("s1").getGenotypeString(), "A/C|G");
         }
     }
 }
