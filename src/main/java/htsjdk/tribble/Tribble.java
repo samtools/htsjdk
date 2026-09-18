@@ -24,6 +24,7 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.tribble.index.tabix.TabixIndexType;
 import htsjdk.tribble.util.ParsingUtils;
 import java.nio.file.Path;
 
@@ -77,6 +78,37 @@ public class Tribble {
      */
     public static Path tabixIndexPath(final Path path) {
         return path.getFileSystem().getPath(tabixIndexFile(path.toAbsolutePath().toString()));
+    }
+
+    /**
+     * Return the name of the CSI index file for the provided {@code filename}
+     * Does not actually create an index
+     * @param filename  name of the file
+     * @return non-null String representing the index filename
+     */
+    public static String csiIndexFile(final String filename) {
+        return indexFile(filename, FileExtensions.CSI);
+    }
+
+    /**
+     * Return the name of the CSI index file for the provided {@code path}
+     * Does not actually create an index
+     * @param path  path of the file
+     * @return non-null Path representing the index filename
+     */
+    public static Path csiIndexPath(final Path path) {
+        return path.getFileSystem().getPath(csiIndexFile(path.toAbsolutePath().toString()));
+    }
+
+    /**
+     * Return the name of the tabix index file of the given type for the provided {@code path}
+     * Does not actually create an index
+     * @param path  path of the file
+     * @param indexType the tabix index format
+     * @return non-null Path representing the index filename
+     */
+    public static Path tabixIndexPath(final Path path, final TabixIndexType indexType) {
+        return indexType == TabixIndexType.CSI ? csiIndexPath(path) : tabixIndexPath(path);
     }
 
     /**

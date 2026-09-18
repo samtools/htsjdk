@@ -43,18 +43,32 @@ import java.util.stream.Collectors;
  */
 public class AllRefsTabixIndexCreator implements IndexCreator {
     private final TabixFormat formatSpec;
-    private final BinningIndex.Builder indexBuilder =
-            new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+    private final TabixIndexType indexType;
+    private final BinningIndex.Builder indexBuilder;
     private final SAMSequenceDictionary sequenceDictionary;
 
     // A feature can't be added to the index until the next feature is added because the next feature
     // defines the location of the end of the previous feature in the output file.
     private PendingFeature previousFeature = null;
 
+    /** Creates a TBI index. */
     public AllRefsTabixIndexCreator(final SAMSequenceDictionary sequenceDictionary, final TabixFormat formatSpec) {
+        this(sequenceDictionary, formatSpec, TabixIndexType.TBI);
+    }
+
+    /**
+     * @param indexType the format to produce; for CSI the dictionary's longest sequence decides the binning scheme
+     */
+    public AllRefsTabixIndexCreator(
+            final SAMSequenceDictionary sequenceDictionary,
+            final TabixFormat formatSpec,
+            final TabixIndexType indexType) {
         ValidationUtils.nonNull(sequenceDictionary);
         this.sequenceDictionary = sequenceDictionary;
         this.formatSpec = formatSpec.clone();
+        this.indexType = indexType;
+        this.indexBuilder =
+                TabixIndexCreator.newBuilder(sequenceDictionary, indexType, TabixIndexCreator.DEFAULT_CSI_MIN_SHIFT);
     }
 
     @Override
@@ -80,6 +94,6 @@ public class AllRefsTabixIndexCreator implements IndexCreator {
         final List<String> sequenceNames = sequenceDictionary.getSequences().stream()
                 .map(SAMSequenceRecord::getSequenceName)
                 .collect(Collectors.toList());
-        return new TabixIndex(formatSpec, sequenceNames, indexBuilder.build(sequenceNames.size()));
+        return new TabixIndex(formatSpec, sequenceNames, indexBuilder.build(sequenceNames.size()), indexType);
     }
 }

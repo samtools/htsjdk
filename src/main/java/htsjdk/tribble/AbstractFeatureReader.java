@@ -22,6 +22,7 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
@@ -257,11 +258,15 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
         public void close() {}
     }
 
+    /**
+     * @return true if the resource is block-compressed and has a tabix index: the one named, or if none is named a
+     *     CSI or TBI index beside it
+     */
     public static boolean isTabix(String resourcePath, String indexPath) throws IOException {
-        if (indexPath == null) {
-            indexPath = ParsingUtils.appendToPath(resourcePath, FileExtensions.TABIX_INDEX);
+        if (!IOUtil.hasBlockCompressedExtension(resourcePath)) {
+            return false;
         }
-        return IOUtil.hasBlockCompressedExtension(resourcePath) && ParsingUtils.resourceExists(indexPath);
+        return indexPath == null ? TabixUtils.findIndex(resourcePath) != null : ParsingUtils.resourceExists(indexPath);
     }
 
     public static class ComponentMethods {

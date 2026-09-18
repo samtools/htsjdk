@@ -103,7 +103,8 @@ public class TabixIndexMerger extends IndexMerger<TabixIndex> {
 
         final BinningIndex merged = BinningIndex.merge(
                 indexes.stream().map(TabixIndex::getBinningIndex).collect(Collectors.toList()), partOffsets);
-        final TabixIndex tabixIndex = new TabixIndex(formatSpec, sequenceNames, merged);
+        final TabixIndex tabixIndex =
+                new TabixIndex(formatSpec, sequenceNames, merged, indexes.get(0).getIndexType());
         try (LittleEndianOutputStream los =
                 new LittleEndianOutputStream(new BlockCompressedOutputStream(out, (Path) null))) {
             tabixIndex.write(los);

@@ -165,6 +165,71 @@ public class TabixHtslibInteropTest extends HtsjdkTest {
         Assert.assertEquals(startsFromTabix(vcf, "c1", new int[] {1, 60_000_000}), List.of());
     }
 
+    private static final List<int[]> LARGE_REGIONS = List.of(
+            new int[] {536_870_000, 536_872_000}, // straddles 2^29, TBI's limit
+            new int[] {600_000_000, 600_100_000},
+            new int[] {100_000_000, 700_000_000},
+            new int[] {829_000_000, 830_000_000});
+
+    private static Path writeLargeContigVcf(final TabixIndexType indexType, final int csiMinShift) throws IOException {
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
+        if (indexType == null) {
+            builder.unsetOption(Options.INDEX_ON_THE_FLY);
+        } else {
+            builder.setOption(Options.INDEX_ON_THE_FLY)
+                    .setTabixIndexType(indexType)
+                    .setCsiMinShift(csiMinShift);
+        }
+        return TestVcfs.write(
+                TestVcfs.tempDir("TabixHtslibInteropTest"),
+                TestVcfs.LARGE_CONTIG_DICTIONARY,
+                builder,
+                "small",
+                "large");
+    }
+
+    @Test
+    public void testHtsjdkQueriesThroughACsiIndexWrittenByTabix() throws IOException {
+        final Path vcf = writeLargeContigVcf(null, 14);
+        TabixTestUtils.executeTabix("-f", "-C", "-p", "vcf", vcf.toString());
+        for (final int[] region : LARGE_REGIONS) {
+            Assert.assertEquals(
+                    TestVcfs.queryStarts(vcf, "large", region[0], region[1]),
+                    TestVcfs.LARGE_CONTIG.startsOverlapping(region[0], region[1]));
+        }
+    }
+
+    @Test
+    public void testTabixQueriesThroughACsiIndexWrittenByHtsjdk() throws IOException {
+        final Path vcf = writeLargeContigVcf(TabixIndexType.CSI, 14);
+        Assert.assertEquals(TabixTestUtils.executeTabix("-l", vcf.toString()), List.of("small", "large"));
+        for (final int[] region : LARGE_REGIONS) {
+            Assert.assertEquals(
+                    startsFromTabix(vcf, "large", region),
+                    TestVcfs.LARGE_CONTIG.startsOverlapping(region[0], region[1]));
+        }
+    }
+
+    @Test
+    public void testTabixQueriesThroughACsiIndexWithSmallerBins() throws IOException {
+        final Path vcf = writeLargeContigVcf(TabixIndexType.CSI, 12);
+        for (final int[] region : LARGE_REGIONS) {
+            Assert.assertEquals(
+                    startsFromTabix(vcf, "large", region),
+                    TestVcfs.LARGE_CONTIG.startsOverlapping(region[0], region[1]));
+        }
+    }
+
+    @Test
+    public void testHtsjdkAndTabixAgreeOnACsiIndexWrittenByTabix() throws IOException {
+        final Path vcf = writeLargeContigVcf(null, 14);
+        TabixTestUtils.executeTabix("-f", "-C", "-p", "vcf", vcf.toString());
+        for (final int[] region : LARGE_REGIONS) {
+            Assert.assertEquals(
+                    TestVcfs.queryStarts(vcf, "large", region[0], region[1]), startsFromTabix(vcf, "large", region));
+        }
+    }
+
     @Test
     public void testHtsjdkAndTabixAgreeOnAnIndexWrittenByTabix() throws IOException {
         final Path vcf = writeVcf(Indexing.NONE, "c1", "c3");

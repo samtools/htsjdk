@@ -29,10 +29,14 @@ import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -151,14 +155,36 @@ public class TabixReader implements AutoCloseable {
             Function<SeekableByteChannel, SeekableByteChannel> indexWrapper)
             throws IOException {
         mFilePath = filePath;
+        requireBlockCompressed(filePath, stream);
         mFp = new BlockCompressedInputStream(stream);
         mIndexWrapper = indexWrapper;
         if (indexPath == null) {
-            mIndexPath = ParsingUtils.appendToPath(filePath, FileExtensions.TABIX_INDEX);
+            mIndexPath = TabixUtils.findIndex(filePath);
+            if (mIndexPath == null) {
+                throw new TribbleException(String.format(
+                        "No tabix index found for %s: neither %s nor %s exists",
+                        filePath,
+                        ParsingUtils.appendToPath(filePath, FileExtensions.CSI),
+                        ParsingUtils.appendToPath(filePath, FileExtensions.TABIX_INDEX)));
+            }
         } else {
             mIndexPath = indexPath;
         }
         readIndex();
+    }
+
+    /**
+     * A tabix index only makes sense over BGZF, and a file that is merely gzipped would otherwise fail obscurely
+     * on the first seek. Reads the first block header and rewinds.
+     */
+    private static void requireBlockCompressed(final String filePath, final SeekableStream stream) throws IOException {
+        final boolean valid = BlockCompressedInputStream.isValidFile(
+                new BufferedInputStream(stream, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH));
+        stream.seek(0);
+        if (!valid) {
+            throw new TribbleException(filePath + " is not BGZF (block-compressed) and so cannot be tabix-indexed;"
+                    + " it may be plain gzip, in which case recompress it with bgzip");
+        }
     }
 
     /** return the source (filename/URL) of that reader */

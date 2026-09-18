@@ -36,6 +36,8 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.LittleEndianOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -43,6 +45,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,35 +56,71 @@ import java.util.Map;
  *
  * <p>A tabix index is a {@link BinningIndex} plus what is needed to interpret the tab-delimited file it indexes:
  * the {@link TabixFormat} and the sequence names, which give the binning index's reference ordinals their meaning.
+ * It can be stored as either {@link TabixIndexType}; a file of either type is read by the same constructors.
  */
 public class TabixIndex implements Index {
     private static final byte[] MAGIC = {'T', 'B', 'I', 1};
     public static final int MAGIC_NUMBER;
+    /** The CSI magic number as tabix files store it, for telling the two formats apart. */
+    public static final int CSI_MAGIC_NUMBER;
 
     static {
-        final ByteBuffer bb = ByteBuffer.allocate(MAGIC.length);
-        bb.put(MAGIC);
-        bb.flip();
-        MAGIC_NUMBER = bb.order(ByteOrder.LITTLE_ENDIAN).getInt();
+        MAGIC_NUMBER = ByteBuffer.wrap(MAGIC).order(ByteOrder.LITTLE_ENDIAN).getInt();
+        CSI_MAGIC_NUMBER = ByteBuffer.wrap(BinningIndex.CSI_MAGIC)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .getInt();
     }
+
+    // Within a CSI file the tabix header lives in the aux block: the six format fields, then the names' length.
+    private static final int CSI_AUX_HEADER_BYTES = 7 * 4;
 
     private final TabixFormat formatSpec;
     private final List<String> sequenceNames;
     private final BinningIndex binningIndex;
+    private final TabixIndexType indexType;
+
+    /**
+     * A TBI index.
+     *
+     * @param formatSpec    Information about how to interpret the file being indexed.  Unused by this class other than
+     *                      written to an output file.
+     * @param sequenceNames Sequences in the file being indexed, in the order they appear in the file.
+     * @param binningIndex  The index proper, with one reference for each element of sequenceNames; must use the
+     *                      TBI binning scheme
+     */
+    public TabixIndex(final TabixFormat formatSpec, final List<String> sequenceNames, final BinningIndex binningIndex) {
+        this(formatSpec, sequenceNames, binningIndex, TabixIndexType.TBI);
+    }
 
     /**
      * @param formatSpec    Information about how to interpret the file being indexed.  Unused by this class other than
      *                      written to an output file.
      * @param sequenceNames Sequences in the file being indexed, in the order they appear in the file.
      * @param binningIndex  The index proper, with one reference for each element of sequenceNames
+     * @param indexType     The format the index is written in; TBI requires the TBI binning scheme
      */
-    public TabixIndex(final TabixFormat formatSpec, final List<String> sequenceNames, final BinningIndex binningIndex) {
+    public TabixIndex(
+            final TabixFormat formatSpec,
+            final List<String> sequenceNames,
+            final BinningIndex binningIndex,
+            final TabixIndexType indexType) {
         if (sequenceNames.size() != binningIndex.getReferenceCount()) {
             throw new IllegalArgumentException("sequenceNames.size() != binningIndex.getReferenceCount()");
+        }
+        if (indexType == TabixIndexType.TBI
+                && (binningIndex.getMinShift() != BinningIndex.BAI_MIN_SHIFT
+                        || binningIndex.getDepth() != BinningIndex.BAI_DEPTH)) {
+            throw new IllegalArgumentException(String.format(
+                    "A TBI index must use the fixed binning scheme minShift=%d, depth=%d, not minShift=%d, depth=%d",
+                    BinningIndex.BAI_MIN_SHIFT,
+                    BinningIndex.BAI_DEPTH,
+                    binningIndex.getMinShift(),
+                    binningIndex.getDepth()));
         }
         this.formatSpec = formatSpec.clone();
         this.sequenceNames = Collections.unmodifiableList(new ArrayList<String>(sequenceNames));
         this.binningIndex = binningIndex;
+        this.indexType = indexType;
     }
 
     /**
@@ -100,7 +139,7 @@ public class TabixIndex implements Index {
     }
 
     /**
-     * Reads the tabix header, then hands the stream to {@link BinningIndex#readBaiLayout} for the body.
+     * Reads a TBI or CSI file, telling them apart by the magic number.
      *
      * @param inputStream positioned at the magic number, already decompressing
      * @param closeInputStream whether to close the stream once the index is read, even on failure
@@ -108,43 +147,92 @@ public class TabixIndex implements Index {
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {
         final BinaryCodec codec = new BinaryCodec(inputStream);
         try {
-            if (codec.readInt() != MAGIC_NUMBER) {
-                throw new TribbleException(String.format("Unexpected magic number 0x%x", MAGIC_NUMBER));
-            }
-            final int numSequences = codec.readInt();
-            formatSpec = new TabixFormat();
-            formatSpec.flags = codec.readInt();
-            formatSpec.sequenceColumn = codec.readInt();
-            formatSpec.startPositionColumn = codec.readInt();
-            formatSpec.endPositionColumn = codec.readInt();
-            formatSpec.metaCharacter = (char) codec.readInt();
-            formatSpec.numHeaderLinesToSkip = codec.readInt();
-            final byte[] nameBlock = new byte[codec.readInt()];
-            codec.readBytes(nameBlock);
-            final List<String> sequenceNames = new ArrayList<String>(numSequences);
-            int startPos = 0;
-            for (int i = 0; i < numSequences; ++i) {
-                int endPos = startPos;
-                while (endPos < nameBlock.length && nameBlock[endPos] != '\0') ++endPos;
-                if (endPos == nameBlock.length) {
-                    throw new TribbleException(
-                            "Tabix header format exception.  Sequence name block is shorter than expected");
+            final int magic = codec.readInt();
+            final TabixFormat formatSpec = new TabixFormat();
+            final List<String> sequenceNames;
+            if (magic == MAGIC_NUMBER) {
+                indexType = TabixIndexType.TBI;
+                final int numSequences = codec.readInt();
+                readFormat(codec, formatSpec);
+                final byte[] nameBlock = new byte[codec.readInt()];
+                codec.readBytes(nameBlock);
+                sequenceNames = parseNames(nameBlock);
+                if (sequenceNames.size() != numSequences) {
+                    throw new TribbleException(String.format(
+                            "Tabix header lists %d sequences but names %d", numSequences, sequenceNames.size()));
                 }
-                sequenceNames.add(StringUtil.bytesToString(nameBlock, startPos, endPos - startPos));
-                startPos = endPos + 1;
-            }
-            if (startPos != nameBlock.length) {
+                binningIndex = BinningIndex.readBaiLayout(
+                        codec, numSequences, BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+            } else if (magic == CSI_MAGIC_NUMBER) {
+                indexType = TabixIndexType.CSI;
+                final BinningIndex.CsiContents contents = BinningIndex.readCsiAfterMagic(codec);
+                binningIndex = contents.index();
+                sequenceNames = parseAux(contents.aux(), formatSpec);
+                if (sequenceNames.size() != binningIndex.getReferenceCount()) {
+                    throw new TribbleException(String.format(
+                            "CSI index covers %d sequences but its tabix header names %d",
+                            binningIndex.getReferenceCount(), sequenceNames.size()));
+                }
+            } else {
                 throw new TribbleException(
-                        "Tabix header format exception.  Sequence name block is longer than expected");
+                        String.format("Unexpected magic number 0x%x; not a TBI or CSI index", magic));
             }
-            binningIndex =
-                    BinningIndex.readBaiLayout(codec, numSequences, BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+            this.formatSpec = formatSpec;
             this.sequenceNames = Collections.unmodifiableList(sequenceNames);
         } catch (final RuntimeEOFException e) {
             throw new TribbleException("Premature end of file reading Tabix index", e);
+        } catch (final IllegalArgumentException e) {
+            throw new TribbleException("Malformed Tabix index: " + e.getMessage(), e);
         } finally {
             if (closeInputStream) CloserUtil.close(inputStream);
         }
+    }
+
+    /** The six format fields that follow the sequence count in a TBI header, and open a CSI aux block. */
+    private static void readFormat(final BinaryCodec codec, final TabixFormat formatSpec) {
+        formatSpec.flags = codec.readInt();
+        formatSpec.sequenceColumn = codec.readInt();
+        formatSpec.startPositionColumn = codec.readInt();
+        formatSpec.endPositionColumn = codec.readInt();
+        formatSpec.metaCharacter = (char) codec.readInt();
+        formatSpec.numHeaderLinesToSkip = codec.readInt();
+    }
+
+    /**
+     * The tabix header a CSI file carries in its aux block: the format fields, the names' length, then the names.
+     * A CSI whose aux block lacks this (as those samtools writes for BAM do) is not a tabix index.
+     */
+    private static List<String> parseAux(final byte[] aux, final TabixFormat formatSpec) {
+        if (aux.length < CSI_AUX_HEADER_BYTES) {
+            throw new TribbleException(String.format(
+                    "CSI index has a %d-byte aux block, too short for a tabix header; it is not a tabix index",
+                    aux.length));
+        }
+        final BinaryCodec codec = new BinaryCodec(new ByteArrayInputStream(aux));
+        readFormat(codec, formatSpec);
+        final int nameBlockLength = codec.readInt();
+        if (nameBlockLength != aux.length - CSI_AUX_HEADER_BYTES) {
+            throw new TribbleException(String.format(
+                    "CSI tabix header claims %d bytes of sequence names but the aux block has room for %d",
+                    nameBlockLength, aux.length - CSI_AUX_HEADER_BYTES));
+        }
+        return parseNames(Arrays.copyOfRange(aux, CSI_AUX_HEADER_BYTES, aux.length));
+    }
+
+    /** Splits the NUL-terminated names block. */
+    private static List<String> parseNames(final byte[] nameBlock) {
+        final List<String> sequenceNames = new ArrayList<>();
+        int startPos = 0;
+        for (int endPos = 0; endPos < nameBlock.length; endPos++) {
+            if (nameBlock[endPos] == '\0') {
+                sequenceNames.add(StringUtil.bytesToString(nameBlock, startPos, endPos - startPos));
+                startPos = endPos + 1;
+            }
+        }
+        if (startPos != nameBlock.length) {
+            throw new TribbleException("Tabix header format exception.  Sequence name block is not NUL-terminated");
+        }
+        return sequenceNames;
     }
 
     /**
@@ -208,6 +296,13 @@ public class TabixIndex implements Index {
     }
 
     /**
+     * @return the format this index is, or is to be, stored in
+     */
+    public TabixIndexType getIndexType() {
+        return indexType;
+    }
+
+    /**
      * Writes the index with BGZF.
      *
      * @param tabixPath Where to write the index.
@@ -231,7 +326,7 @@ public class TabixIndex implements Index {
         if (!Files.isRegularFile(featurePath)) {
             throw new IOException("Cannot write based on a non-regular file: " + featurePath.toUri());
         }
-        write(Tribble.tabixIndexPath(featurePath));
+        write(Tribble.tabixIndexPath(featurePath, indexType));
     }
 
     /**
@@ -243,8 +338,22 @@ public class TabixIndex implements Index {
     public void write(final LittleEndianOutputStream los) throws IOException {
         // The codec is not closed, since that would close the caller's stream; it holds nothing to flush.
         final BinaryCodec codec = new BinaryCodec(los);
-        codec.writeInt(MAGIC_NUMBER);
-        codec.writeInt(sequenceNames.size());
+        if (indexType == TabixIndexType.TBI) {
+            codec.writeInt(MAGIC_NUMBER);
+            codec.writeInt(sequenceNames.size());
+            writeFormatAndNames(codec);
+            binningIndex.writeBaiLayout(codec);
+        } else {
+            final ByteArrayOutputStream aux = new ByteArrayOutputStream();
+            final BinaryCodec auxCodec = new BinaryCodec(aux);
+            writeFormatAndNames(auxCodec);
+            auxCodec.close();
+            binningIndex.writeCsi(codec, aux.toByteArray());
+        }
+    }
+
+    /** The tabix header proper: the six format fields, the names' length, then the NUL-terminated names. */
+    private void writeFormatAndNames(final BinaryCodec codec) {
         codec.writeInt(formatSpec.flags);
         codec.writeInt(formatSpec.sequenceColumn);
         codec.writeInt(formatSpec.startPositionColumn);
@@ -258,7 +367,6 @@ public class TabixIndex implements Index {
             codec.writeBytes(StringUtil.stringToBytes(sequenceName));
             codec.writeByte(0);
         }
-        binningIndex.writeBaiLayout(codec);
     }
 
     @Override
@@ -268,6 +376,7 @@ public class TabixIndex implements Index {
 
         final TabixIndex index = (TabixIndex) o;
 
+        if (indexType != index.indexType) return false;
         if (!formatSpec.equals(index.formatSpec)) return false;
         if (!binningIndex.equals(index.binningIndex)) return false;
         if (!sequenceNames.equals(index.sequenceNames)) return false;
@@ -277,7 +386,7 @@ public class TabixIndex implements Index {
 
     @Override
     public int hashCode() {
-        int result = formatSpec.hashCode();
+        int result = 31 * indexType.hashCode() + formatSpec.hashCode();
         result = 31 * result + sequenceNames.hashCode();
         result = 31 * result + binningIndex.hashCode();
         return result;

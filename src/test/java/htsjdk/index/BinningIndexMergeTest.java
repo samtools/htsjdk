@@ -91,9 +91,9 @@ public class BinningIndexMergeTest extends HtsjdkTest {
 
     /** A one-reference, one-bin index carrying the given metadata pseudo-bin. */
     private static BinningIndex withMetadata(final ReferenceBins.Metadata metadata) {
-        final ReferenceBins reference =
-                new ReferenceBins(new int[] {4681}, new long[][] {{0, 1 << 16}}, new long[] {0}, metadata);
-        return new BinningIndex(MIN_SHIFT, DEPTH, List.of(reference));
+        final ReferenceBins reference = new ReferenceBins(
+                new int[] {4681}, new long[][] {{0, 1 << 16}}, new long[] {0}, new long[] {0}, metadata, DEPTH);
+        return new BinningIndex(MIN_SHIFT, DEPTH, List.of(reference), -1);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)

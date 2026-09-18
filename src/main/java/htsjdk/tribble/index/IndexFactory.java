@@ -43,6 +43,7 @@ import htsjdk.tribble.index.linear.LinearIndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
+import htsjdk.tribble.index.tabix.TabixIndexType;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
@@ -90,7 +91,9 @@ public class IndexFactory {
                 IntervalIndexCreator.DEFAULT_FEATURE_COUNT),
         // Tabix index initialization requires additional information, so generic construction won't work, thus
         // indexCreatorClass is null.
-        TABIX(TabixIndex.MAGIC_NUMBER, null, false, TabixIndex::new, -1);
+        TABIX(TabixIndex.MAGIC_NUMBER, null, false, TabixIndex::new, -1),
+        // A tabix CSI index: same class, told apart from TBI by its magic number
+        CSI(TabixIndex.CSI_MAGIC_NUMBER, null, false, TabixIndex::new, -1);
 
         private final int magicNumber;
         private final Integer tribbleIndexType;
@@ -229,7 +232,7 @@ public class IndexFactory {
         final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile, indexWrapper);
         if (indexFile.endsWith(".gz")) {
             return IOUtil.openGzipOrBgzfStream(inputStreamInitial);
-        } else if (indexFile.endsWith(FileExtensions.TABIX_INDEX)) {
+        } else if (indexFile.endsWith(FileExtensions.TABIX_INDEX) || indexFile.endsWith(FileExtensions.CSI)) {
             return new BlockCompressedInputStream(inputStreamInitial);
         } else {
             return inputStreamInitial;
@@ -361,8 +364,26 @@ public class IndexFactory {
             final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
             final TabixFormat tabixFormat,
             final SAMSequenceDictionary sequenceDictionary) {
+        return createTabixIndex(inputPath, codec, tabixFormat, sequenceDictionary, TabixIndexType.TBI);
+    }
+
+    /**
+     * @param inputPath The path to be indexed.
+     * @param codec Mechanism for reading inputFile.
+     * @param tabixFormat Header fields for TabixIndex to be produced.
+     * @param sequenceDictionary May be null, but if present may reduce memory footprint for index creation, and for
+     *                           a CSI index decides the binning scheme.  Features in inputFile must be in the order
+     *                           defined by sequenceDictionary, if it is present.
+     * @param indexType The tabix index format to produce.
+     */
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(
+            final Path inputPath,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final TabixFormat tabixFormat,
+            final SAMSequenceDictionary sequenceDictionary,
+            final TabixIndexType indexType) {
         ValidationUtils.nonNull(inputPath, "input path must be non-null");
-        final TabixIndexCreator indexCreator = new TabixIndexCreator(sequenceDictionary, tabixFormat);
+        final TabixIndexCreator indexCreator = new TabixIndexCreator(sequenceDictionary, tabixFormat, indexType);
         return (TabixIndex) createIndex(inputPath, new FeatureIterator<>(inputPath, codec), indexCreator);
     }
 
