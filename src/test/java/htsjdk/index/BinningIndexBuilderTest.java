@@ -121,4 +121,94 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
         builder.add(2, 100, 100, offset(0, 0), offset(0, 10));
         builder.build(2);
     }
+
+    @Test
+    public void testReportedCountsBecomeTheReferenceMetadata() {
+        final BinningIndex.Builder builder = baiBuilder().reportingRecordCounts();
+        builder.add(0, 100, 150, offset(10, 0), offset(10, 50));
+        builder.addRecordCounts(1, 0);
+        builder.add(0, 200, 200, offset(10, 50), offset(10, 90));
+        builder.addRecordCounts(0, 1);
+        builder.add(0, 40_000, 40_100, offset(900, 0), offset(900, 70));
+        builder.addRecordCounts(5, 2); // one entry may stand for many records, as a CRAM slice does
+
+        final ReferenceBins.Metadata metadata =
+                builder.build(1).getReference(0).getMetadata().orElseThrow();
+        Assert.assertEquals(metadata, new ReferenceBins.Metadata(offset(10, 0), offset(900, 70), 6, 3));
+    }
+
+    @Test
+    public void testReportedCountsStartAfreshForEachReference() {
+        final BinningIndex.Builder builder = baiBuilder().reportingRecordCounts();
+        builder.add(0, 100, 150, offset(10, 0), offset(10, 50));
+        builder.addRecordCounts(3, 1);
+        builder.add(2, 100, 150, offset(20, 0), offset(20, 50));
+        builder.addRecordCounts(1, 0);
+        final BinningIndex index = builder.build(3);
+
+        Assert.assertEquals(index.getReference(0).getMetadata().orElseThrow().mappedCount(), 3);
+        Assert.assertFalse(index.getReference(1).getMetadata().isPresent());
+        final ReferenceBins.Metadata last = index.getReference(2).getMetadata().orElseThrow();
+        Assert.assertEquals(last.mappedCount(), 1);
+        Assert.assertEquals(last.unmappedCount(), 0);
+    }
+
+    @Test
+    public void testReportingCountsRecordsANoCoordinateCountEvenOfZero() {
+        Assert.assertEquals(
+                baiBuilder()
+                        .reportingRecordCounts()
+                        .build(1)
+                        .getNoCoordinateCount()
+                        .orElseThrow(),
+                0);
+    }
+
+    @Test
+    public void testNoCoordinateRecordsAreSummed() {
+        final BinningIndex.Builder builder = baiBuilder().reportingRecordCounts();
+        builder.addNoCoordinateRecords(2);
+        builder.addNoCoordinateRecords(5);
+        Assert.assertEquals(builder.build(1).getNoCoordinateCount().orElseThrow(), 7);
+    }
+
+    @Test
+    public void testWithoutReportedCountsThereIsNoMetadataOrNoCoordinateCount() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 100, 150, offset(10, 0), offset(10, 50));
+        final BinningIndex index = builder.build(1);
+        Assert.assertFalse(index.getReference(0).getMetadata().isPresent());
+        Assert.assertFalse(index.getNoCoordinateCount().isPresent());
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testRecordCountsAreRejectedUnlessReportingWasAskedFor() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 100, 150, offset(10, 0), offset(10, 50));
+        builder.addRecordCounts(1, 0);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testRecordCountsBeforeAnyRecordAreRejected() {
+        baiBuilder().reportingRecordCounts().addRecordCounts(1, 0);
+    }
+
+    @Test
+    public void testEmptyWindowsCanBeLeftUnset() {
+        final BinningIndex.Builder builder = baiBuilder().leavingEmptyWindowsUnset();
+        builder.add(0, 40_000, 40_100, offset(10, 0), offset(10, 50)); // third 16 kb window only
+        Assert.assertEquals(builder.build(1).getReference(0).getLinearIndex(), new long[] {-1, -1, offset(10, 0)});
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNegativeRecordCountsAreRejected() {
+        final BinningIndex.Builder builder = baiBuilder().reportingRecordCounts();
+        builder.add(0, 100, 150, offset(10, 0), offset(10, 50));
+        builder.addRecordCounts(1, -1);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNegativeNoCoordinateCountIsRejected() {
+        baiBuilder().reportingRecordCounts().addNoCoordinateRecords(-1);
+    }
 }

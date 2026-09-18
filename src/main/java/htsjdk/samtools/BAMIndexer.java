@@ -23,33 +23,41 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.index.BinningIndex;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
- * Class for both constructing BAM index content and writing it out.
+ * Class for both constructing BAM index content and writing it out, as a BAI or a CSI.
  * There are two usage patterns:
  * 1) Building a bam index from an existing bam file
  * 2) Building a bam index while building the bam file
  * In both cases, processAlignment is called for each alignment record and
- * finish() is called at the end.
+ * finish() is called at the end, which is when the index is written.
  */
 public class BAMIndexer {
+
+    /** The {@code min_shift} samtools gives a CSI index unless told otherwise. */
+    public static final int DEFAULT_CSI_MIN_SHIFT = BinningIndex.BAI_MIN_SHIFT;
+
+    private static final Log log = Log.getInstance(BAMIndexer.class);
 
     // The number of references (chromosomes) in the BAM file
     private final int numReferences;
 
-    // output written as binary, or (for debugging) as text
-    private final BAMIndexWriter outputWriter;
+    // BAI or CSI; never AUTO
+    private final BamIndexType indexType;
 
-    private int currentReference = 0;
+    private final BinningIndex.Builder indexBuilder;
 
-    // content is built up from the input bam file using this
-    private final BAMIndexBuilder indexBuilder;
-
-    private static final Log log = Log.getInstance(BAMIndexer.class);
+    private final OutputStream output;
 
     /**
      * Prepare to index a BAM.
@@ -58,7 +66,32 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file
      */
     public BAMIndexer(final Path output, final SAMFileHeader fileHeader) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
+        this(output, fileHeader, BamIndexType.BAI);
+    }
+
+    /**
+     * Prepare to index a BAM.
+     *
+     * @param output     index file path; this class does not choose its name, so a caller passing
+     *                   {@link BamIndexType#AUTO} should {@link BamIndexType#resolve resolve} it first
+     * @param fileHeader header for the corresponding bam file
+     * @param indexType  the kind of index to write
+     */
+    public BAMIndexer(final Path output, final SAMFileHeader fileHeader, final BamIndexType indexType) {
+        this(output, fileHeader, indexType, DEFAULT_CSI_MIN_SHIFT);
+    }
+
+    /**
+     * Prepare to index a BAM.
+     *
+     * @param output      index file path, as for {@link #BAMIndexer(Path, SAMFileHeader, BamIndexType)}
+     * @param fileHeader  header for the corresponding bam file
+     * @param indexType   the kind of index to write
+     * @param csiMinShift for a CSI, log2 of the span of its smallest bins; ignored for a BAI
+     */
+    public BAMIndexer(
+            final Path output, final SAMFileHeader fileHeader, final BamIndexType indexType, final int csiMinShift) {
+        this(() -> openForWriting(output), fileHeader, indexType, csiMinShift, true);
     }
 
     /**
@@ -68,7 +101,7 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file.
      */
     public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
+        this(output, fileHeader, true);
     }
 
     /**
@@ -82,19 +115,38 @@ public class BAMIndexer {
      */
     public BAMIndexer(
             final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), fillInUninitializedValues);
+        this(output, fileHeader, BamIndexType.BAI, DEFAULT_CSI_MIN_SHIFT, fillInUninitializedValues);
     }
 
-    /*
+    /**
      * Prepare to index a BAM.
      *
-     * @param fileHeader header for the corresponding bam file.
-     * @param  createWrite a lambda that, given an Integer numReferences value, will create a BinaryBAMIndexWriter
-     *                     with that value and an appropriate output.
+     * @param output      Index will be written here.  output will be closed when finish() method is called.
+     * @param fileHeader  header for the corresponding bam file.
+     * @param indexType   the kind of index to write
+     * @param csiMinShift for a CSI, log2 of the span of its smallest bins; the rest of its binning scheme is
+     *                    chosen to reach the header's longest sequence, as samtools chooses it. Ignored for a BAI.
+     * @param fillInUninitializedValues as for {@link #BAMIndexer(OutputStream, SAMFileHeader, boolean)}; a CSI
+     *                    stores no linear index, so it makes no difference to one
+     */
+    public BAMIndexer(
+            final OutputStream output,
+            final SAMFileHeader fileHeader,
+            final BamIndexType indexType,
+            final int csiMinShift,
+            final boolean fillInUninitializedValues) {
+        this(() -> output, fileHeader, indexType, csiMinShift, fillInUninitializedValues);
+    }
+
+    /**
+     * @param outputOpener called once everything else has been checked, so that a path is not created or
+     *     truncated for an index that is not going to be written
      */
     private BAMIndexer(
+            final Supplier<OutputStream> outputOpener,
             final SAMFileHeader fileHeader,
-            Function<Integer, BinaryBAMIndexWriter> createWriter,
+            final BamIndexType indexType,
+            final int csiMinShift,
             final boolean fillInUninitializedValues) {
         if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             if (fileHeader.getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
@@ -104,26 +156,60 @@ public class BAMIndexer {
                 throw new SAMException("Indexing requires a coordinate-sorted input BAM.");
             }
         }
-        numReferences = fileHeader.getSequenceDictionary().size();
-        indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary(), fillInUninitializedValues);
-        outputWriter = createWriter.apply(numReferences);
+        final SAMSequenceDictionary dictionary = fileHeader.getSequenceDictionary();
+        this.numReferences = dictionary.size();
+        this.indexType = indexType.resolve(dictionary);
+        final boolean csi = this.indexType == BamIndexType.CSI;
+        final BinningIndex.Geometry geometry = csi
+                ? BinningIndex.shallowestCsiGeometry(csiMinShift, BamIndexType.longestSequence(dictionary))
+                : new BinningIndex.Geometry(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+        this.indexBuilder =
+                new BinningIndex.Builder(geometry.minShift(), geometry.depth(), csi).reportingRecordCounts();
+        if (!fillInUninitializedValues) {
+            indexBuilder.leavingEmptyWindowsUnset();
+        }
+        this.output = outputOpener.get();
+    }
+
+    private static OutputStream openForWriting(final Path output) {
+        try {
+            return IOUtil.maybeBufferOutputStream(Files.newOutputStream(output));
+        } catch (final IOException e) {
+            throw new SAMException("Exception opening output file " + output, e);
+        }
     }
 
     /**
      * Record any index information for a given BAM record.
      * If this alignment starts a new reference, write out the old reference.
-     * Requires a non-null value for rec.getFileSource().
+     * Requires a non-null value for rec.getFileSource()
      *
      * @param rec The BAM record
      */
     public void processAlignment(final SAMRecord rec) {
         try {
-            final int reference = rec.getReferenceIndex();
-            if (reference != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && reference != currentReference) {
-                // process any completed references
-                advanceToReference(reference);
+            final int alignmentStart = rec.getAlignmentStart();
+            if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+                indexBuilder.addNoCoordinateRecords(1);
+                return;
             }
-            indexBuilder.processAlignment(rec);
+            final SAMFileSource source = rec.getFileSource();
+            if (source == null) {
+                throw new SAMException("No source (virtual file offsets); needed for indexing on BAM Record " + rec);
+            }
+            final Chunk chunk = ((BAMFileSpan) source.getFilePointer()).getSingleChunk();
+            // An unmapped read has no alignment end, which the builder takes as the single base at its start.
+            indexBuilder.add(
+                    rec.getReferenceIndex(),
+                    alignmentStart,
+                    rec.getAlignmentEnd(),
+                    chunk.getChunkStart(),
+                    chunk.getChunkEnd());
+            if (rec.getReadUnmappedFlag()) {
+                indexBuilder.addRecordCounts(0, 1);
+            } else {
+                indexBuilder.addRecordCounts(1, 0);
+            }
         } catch (final Exception e) {
             throw new SAMException("Exception creating BAM index for record " + rec, e);
         }
@@ -131,23 +217,22 @@ public class BAMIndexer {
 
     /**
      * After all the alignment records have been processed, finish is called.
-     * Writes any final information and closes the output file.
+     * Writes the index and closes the output.
      */
     public void finish() {
-        // process any remaining references
-        advanceToReference(numReferences);
-        outputWriter.writeNoCoordinateRecordCount(indexBuilder.getNoCoordinateRecordCount());
-        outputWriter.close();
-    }
-
-    /** write out any references between the currentReference and the nextReference */
-    private void advanceToReference(final int nextReference) {
-        while (currentReference < nextReference) {
-            final BAMIndexContent content = indexBuilder.processReference(currentReference);
-            outputWriter.writeReference(content);
-            currentReference++;
-            if (currentReference < numReferences) {
-                indexBuilder.startNewReference();
+        // samtools writes a CSI BGZF-compressed
+        final OutputStream stream =
+                indexType == BamIndexType.CSI ? new BlockCompressedOutputStream(output, (Path) null) : output;
+        // The codec owns the output, so that it is closed even when the index cannot be built or written.
+        try (BinaryCodec codec = new BinaryCodec(stream)) {
+            final BinningIndex index = indexBuilder.build(numReferences);
+            if (indexType == BamIndexType.CSI) {
+                // samtools puts nothing in the format-specific block for a BAM
+                index.writeCsi(codec, new byte[0]);
+            } else {
+                codec.writeBytes(BAMFileConstants.BAM_INDEX_MAGIC);
+                codec.writeInt(numReferences);
+                index.writeBaiLayout(codec);
             }
         }
     }
@@ -187,124 +272,6 @@ public class BAMIndexer {
     }
 
     /**
-     * Class for constructing BAM index files.
-     * One instance is used to construct an entire index.
-     * processAlignment is called for each alignment until a new reference is encountered, then
-     * processReference is called when all records for the reference have been processed.
-     */
-    private class BAMIndexBuilder {
-
-        private final SAMSequenceDictionary sequenceDictionary;
-
-        private final boolean fillInUninitializedValues;
-
-        private BinningIndexBuilder binningIndexBuilder;
-
-        private int currentReference = -1;
-
-        // information in meta data
-        private final BAMIndexMetaData indexStats = new BAMIndexMetaData();
-
-        BAMIndexBuilder(final SAMSequenceDictionary sequenceDictionary, final boolean fillInUninitializedValues) {
-            this.sequenceDictionary = sequenceDictionary;
-            this.fillInUninitializedValues = fillInUninitializedValues;
-            if (!sequenceDictionary.isEmpty()) startNewReference();
-        }
-
-        /**
-         * Record any index information for a given BAM record
-         *
-         * @param rec The BAM record. Requires rec.getFileSource() is non-null.
-         */
-        public void processAlignment(final SAMRecord rec) {
-
-            // metadata
-            indexStats.recordMetaData(rec);
-
-            if (rec.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
-                return; // do nothing for records without coordinates, but count them
-            }
-
-            // various checks
-            final int reference = rec.getReferenceIndex();
-            if (reference != currentReference) {
-                throw new SAMException("Unexpected reference " + reference + " when constructing index for "
-                        + currentReference + " for record " + rec);
-            }
-
-            binningIndexBuilder.processFeature(new BinningIndexBuilder.FeatureToBeIndexed() {
-                @Override
-                public int getStart() {
-                    return rec.getAlignmentStart();
-                }
-
-                @Override
-                public int getEnd() {
-                    return rec.getAlignmentEnd();
-                }
-
-                @Override
-                public Integer getIndexingBin() {
-                    return rec.computeIndexingBin();
-                }
-
-                @Override
-                public Chunk getChunk() {
-                    final SAMFileSource source = rec.getFileSource();
-                    if (source == null) {
-                        throw new SAMException(
-                                "No source (virtual file offsets); needed for indexing on BAM Record " + rec);
-                    }
-                    return ((BAMFileSpan) source.getFilePointer()).getSingleChunk();
-                }
-            });
-        }
-
-        /**
-         * Creates the BAMIndexContent for this reference.
-         * Requires all alignments of the reference have already been processed.
-         *
-         * @return Null if there are no features for this reference.
-         */
-        public BAMIndexContent processReference(final int reference) {
-
-            if (reference != currentReference) {
-                throw new SAMException(
-                        "Unexpected reference " + reference + " when constructing index for " + currentReference);
-            }
-
-            final BinningIndexContent indexContent = binningIndexBuilder.generateIndexContent();
-            if (indexContent == null) return null;
-            return new BAMIndexContent(
-                    indexContent.getReferenceSequence(),
-                    indexContent.getBins(),
-                    indexStats,
-                    indexContent.getLinearIndex());
-        }
-
-        /**
-         * @return the count of records with no coordinate positions
-         */
-        public long getNoCoordinateRecordCount() {
-            return indexStats.getNoCoordinateRecordCount();
-        }
-
-        /**
-         * reinitialize all data structures when the reference changes
-         */
-        void startNewReference() {
-            ++currentReference;
-            // I'm not crazy about recycling this object, but that is the way it was originally written and
-            // it helps keep track of no-coordinate read count (which shouldn't be stored in this class anyway).
-            indexStats.newReference();
-            binningIndexBuilder = new BinningIndexBuilder(
-                    currentReference,
-                    sequenceDictionary.getSequence(currentReference).getSequenceLength(),
-                    fillInUninitializedValues);
-        }
-    }
-
-    /**
      * Generates a BAM index file from an input BAM file
      *
      * @param reader SamReader for input BAM file
@@ -322,8 +289,20 @@ public class BAMIndexer {
      * @param log    Optional logger for progress messages
      */
     public static void createIndex(SamReader reader, Path output, Log log) {
+        createIndex(reader, output, log, BamIndexType.BAI);
+    }
 
-        BAMIndexer indexer = new BAMIndexer(output, reader.getFileHeader());
+    /**
+     * Generates a BAM index file from an input BAM file
+     *
+     * @param reader    SamReader for input BAM file
+     * @param output    Path for output index file; see {@link #BAMIndexer(Path, SAMFileHeader, BamIndexType)}
+     * @param log       Optional logger for progress messages
+     * @param indexType the kind of index to write
+     */
+    public static void createIndex(SamReader reader, Path output, Log log, BamIndexType indexType) {
+
+        BAMIndexer indexer = new BAMIndexer(output, reader.getFileHeader(), indexType);
 
         long totalRecords = 0;
 

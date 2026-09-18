@@ -64,6 +64,8 @@ public class SAMFileWriterFactory implements Cloneable {
     private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
     private CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
     private boolean createBaiIndexForCram = false;
+    private BamIndexType bamIndexType = BamIndexType.BAI;
+    private int csiMinShift = BAMIndexer.DEFAULT_CSI_MIN_SHIFT;
 
     /** simple constructor */
     public SAMFileWriterFactory() {}
@@ -83,6 +85,8 @@ public class SAMFileWriterFactory implements Cloneable {
         this.createBaiIndexForCram = other.createBaiIndexForCram;
         this.deflaterFactory = other.deflaterFactory;
         this.samFlagFieldOutput = other.samFlagFieldOutput;
+        this.bamIndexType = other.bamIndexType;
+        this.csiMinShift = other.csiMinShift;
     }
 
     @Override
@@ -181,6 +185,36 @@ public class SAMFileWriterFactory implements Cloneable {
     @Deprecated
     public SAMFileWriterFactory setCreateBaiIndexForCram(final boolean setting) {
         this.createBaiIndexForCram = setting;
+        return this;
+    }
+
+    /**
+     * Sets the kind of index written beside a BAM when {@link #setCreateIndex index creation} is on. The default
+     * is {@link BamIndexType#BAI}, written as {@code x.bai}; a CSI is written as {@code x.bam.csi}, as samtools
+     * names it. A BAI cannot address positions beyond 2^29, so a BAM with a longer sequence needs
+     * {@link BamIndexType#CSI}, or {@link BamIndexType#AUTO} to get a CSI only then. Ignored for SAM and CRAM.
+     *
+     * @return this factory object
+     */
+    public SAMFileWriterFactory setBamIndexType(final BamIndexType bamIndexType) {
+        if (bamIndexType == null) {
+            throw new IllegalArgumentException("null BAM index type");
+        }
+        this.bamIndexType = bamIndexType;
+        return this;
+    }
+
+    /**
+     * Sets log2 of the span of the smallest bins of a CSI index written beside a BAM; the default is 14, as for
+     * samtools. The rest of the binning scheme is chosen to reach the header's longest sequence.
+     *
+     * @return this factory object
+     */
+    public SAMFileWriterFactory setCsiMinShift(final int csiMinShift) {
+        if (csiMinShift < 1) {
+            throw new IllegalArgumentException("CSI min shift must be at least 1, but was " + csiMinShift);
+        }
+        this.csiMinShift = csiMinShift;
         return this;
     }
 
@@ -362,7 +396,7 @@ public class SAMFileWriterFactory implements Cloneable {
         if (this.tmpDir != null) writer.setTempDirectory(this.tmpDir);
         writer.setHeader(header);
         if (createIndex && writer.getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)) {
-            writer.enableBamIndexConstruction();
+            writer.enableBamIndexConstruction(bamIndexType, csiMinShift);
         }
     }
 
@@ -717,6 +751,7 @@ public class SAMFileWriterFactory implements Cloneable {
         return "SAMFileWriterFactory [createIndex=" + createIndex + ", createMd5File=" + createMd5File + ", useAsyncIo="
                 + useAsyncIo + ", asyncOutputBufferSize=" + asyncOutputBufferSize + ", bufferSize=" + bufferSize
                 + ", tmpDir=" + tmpDir + ", compressionLevel=" + compressionLevel + ", maxRecordsInRam="
-                + maxRecordsInRam + ", createBaiIndexForCram=" + createBaiIndexForCram + "]";
+                + maxRecordsInRam + ", createBaiIndexForCram=" + createBaiIndexForCram + ", bamIndexType="
+                + bamIndexType + ", csiMinShift=" + csiMinShift + "]";
     }
 }
