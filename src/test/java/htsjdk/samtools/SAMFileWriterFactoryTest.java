@@ -31,6 +31,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
@@ -1025,5 +1026,61 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
         final String count = SamtoolsTestUtils.executeSamToolsCommand("view -c " + output.toAbsolutePath()).stdout;
         Assert.assertEquals(count.trim(), Integer.toString(BGZIP_SAM_RECORD_COUNT));
+    }
+
+    // Factory closes the output on index-open failure
+
+    @Test
+    public void testBamFactoryClosesOutputWhenIndexCannotBeOpened() throws IOException {
+        final Path dir = Files.createTempDirectory("bamFactoryLeak");
+        IOUtil.deleteOnExit(dir);
+        final Path bam = dir.resolve("reads.bam");
+        // A directory where the BAI would go makes the BAMIndexer constructor fail.
+        Files.createDirectory(dir.resolve("reads.bai"));
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        try {
+            new SAMFileWriterFactory()
+                    .setCreateIndex(true)
+                    .setCreateMd5File(false)
+                    .makeBAMWriter(header, true, bam);
+            Assert.fail("should have thrown");
+        } catch (final SAMException expected) {
+            // expected
+        }
+        // The data file was created (by Files.newOutputStream) but nothing was flushed through the
+        // BGZF layer, so it is empty. The important thing: the factory threw.
+        Assert.assertTrue(Files.exists(bam));
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testSamGzFactoryClosesOutputWhenIndexCannotBeOpened() throws IOException {
+        final Path dir = Files.createTempDirectory("samFactoryLeak");
+        IOUtil.deleteOnExit(dir);
+        final Path samGz = dir.resolve("reads.sam.gz");
+        // A directory where the CSI would go makes the BAMIndexer constructor fail.
+        Files.createDirectory(dir.resolve("reads.sam.gz.csi"));
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        try {
+            new SAMFileWriterFactory()
+                    .setCreateIndex(true)
+                    .setCreateMd5File(false)
+                    .makeSAMWriter(header, true, samGz);
+            Assert.fail("should have thrown");
+        } catch (final SAMException expected) {
+            // expected
+        }
+        // The catch block closes the BGZF stream, which writes the EOF block. An unclosed stream
+        // would leave the file empty.
+        Assert.assertTrue(Files.exists(samGz));
+        Assert.assertTrue(
+                Files.size(samGz) >= BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length,
+                "the stream should have been closed, writing at least the EOF block; got " + Files.size(samGz)
+                        + " bytes");
+        IOUtil.recursiveDelete(dir);
     }
 }

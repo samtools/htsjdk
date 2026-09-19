@@ -54,6 +54,8 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     // A record's chunk starts where the one before ended (htslib's convention, which is how
     // bgzipped SAM is read back). This tracks that boundary.
     private long nextRecordStart;
+    private Path indexPath;
+    private SAMException indexingFailure;
 
     /**
      * Constructs a SAMTextWriter that outputs to a Writer.
@@ -99,6 +101,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
         }
         this.bgzfStream = stream;
         this.asciiWriter = ascii;
+        this.indexPath = indexPath;
         this.bamIndexer = new BAMIndexer(indexPath, header, resolvedType, csiMinShift).namingSequencesInCsi();
     }
 
@@ -165,6 +168,10 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     @Override
     public void writeAlignment(final SAMRecord alignment) {
+        if (indexingFailure != null) {
+            throw new SAMException(
+                    "Cannot write further alignments after a SAM indexing failure on " + indexPath, indexingFailure);
+        }
         writeAlignmentNoNewline(alignment);
         try {
             out.write("\n");
@@ -191,8 +198,10 @@ public class SAMTextWriter extends SAMFileWriterImpl {
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         } catch (final Exception e) {
-            bamIndexer = null;
-            throw new SAMException("Exception when processing alignment for SAM index " + alignment, e);
+            bamIndexer.abandon();
+            deleteIndexQuietly(indexPath);
+            indexingFailure = new SAMException("Exception when processing alignment for SAM index " + alignment, e);
+            throw indexingFailure;
         }
     }
 
@@ -284,18 +293,34 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     @Override
     public void finish() {
-        final long endOfRecords = bamIndexer != null ? endOfRecordsPointer() : 0;
+        final long endOfRecords = bamIndexer != null && indexingFailure == null ? endOfRecordsPointer() : 0;
         try {
             out.close();
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
+        }
+        if (indexingFailure != null) {
+            // A distinct exception so that try-with-resources can add it as suppressed to the original
+            // without triggering IllegalArgumentException from self-suppression.
+            throw new SAMException("SAM indexing failed on " + indexPath, indexingFailure);
         }
         try {
             if (bamIndexer != null) {
                 bamIndexer.finish(endOfRecords);
             }
         } catch (final Exception e) {
+            deleteIndexQuietly(indexPath);
             throw new SAMException("Exception writing SAM index file", e);
+        }
+    }
+
+    private static void deleteIndexQuietly(final Path indexPath) {
+        if (indexPath != null) {
+            try {
+                Files.deleteIfExists(indexPath);
+            } catch (final IOException ignored) {
+                // The original exception is more important.
+            }
         }
     }
 

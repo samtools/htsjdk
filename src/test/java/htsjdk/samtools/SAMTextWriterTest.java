@@ -28,6 +28,7 @@ import htsjdk.index.BinningIndex;
 import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -39,10 +40,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -414,5 +417,136 @@ public class SAMTextWriterTest extends HtsjdkTest {
                 header,
                 BamIndexType.CSI,
                 14);
+    }
+
+    // Indexing failure behaviour
+
+    private static final int LONG_SEQ = 600_000_000;
+    private static final int BEYOND_BAI = (1 << 29) + 1_000;
+
+    private static SAMFileWriter failingSamGzWriter(final Path samGz) {
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, LONG_SEQ);
+        return new SAMFileWriterFactory()
+                .setCreateIndex(true)
+                .setCreateMd5File(false)
+                .setSamIndexType(BamIndexType.BAI)
+                .makeSAMWriter(records.getHeader(), true, samGz);
+    }
+
+    private static SAMRecord normalSamRead(final SAMFileHeader header) {
+        final SAMRecordSetBuilder b = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        b.setHeader(header);
+        b.addFrag("normal", 0, 100, false);
+        return b.getRecords().iterator().next();
+    }
+
+    private static SAMRecord beyondBaiSamRead(final SAMFileHeader header) {
+        final SAMRecordSetBuilder b = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        b.setHeader(header);
+        b.addFrag("beyond", 0, BEYOND_BAI, false);
+        return b.getRecords().iterator().next();
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testSamGzIndexingFailureThrowsSamException() throws IOException {
+        final Path dir = Files.createTempDirectory("samIdxFail");
+        IOUtil.deleteOnExit(dir);
+        final Path samGz = dir.resolve("reads.sam.gz");
+        try (SAMFileWriter writer = failingSamGzWriter(samGz)) {
+            writer.addAlignment(normalSamRead(writer.getFileHeader()));
+            writer.addAlignment(beyondBaiSamRead(writer.getFileHeader()));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void testSamGzIndexingFailureRemovesTheIndexFile() throws IOException {
+        final Path dir = Files.createTempDirectory("samIdxRemove");
+        IOUtil.deleteOnExit(dir);
+        final Path samGz = dir.resolve("reads.sam.gz");
+        try (SAMFileWriter writer = failingSamGzWriter(samGz)) {
+            writer.addAlignment(normalSamRead(writer.getFileHeader()));
+            writer.addAlignment(beyondBaiSamRead(writer.getFileHeader()));
+        } catch (final SAMException expected) {
+            // expected
+        }
+        try (Stream<Path> files = Files.list(dir)) {
+            final List<String> names =
+                    files.map(p -> p.getFileName().toString()).sorted().toList();
+            Assert.assertFalse(names.stream().anyMatch(n -> n.endsWith(".bai")), "index file should be gone: " + names);
+        }
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testSamGzFurtherWriteAfterIndexingFailureThrows() throws IOException {
+        final Path dir = Files.createTempDirectory("samIdxFurther");
+        IOUtil.deleteOnExit(dir);
+        final Path samGz = dir.resolve("reads.sam.gz");
+        final SAMFileWriter writer = failingSamGzWriter(samGz);
+        writer.addAlignment(normalSamRead(writer.getFileHeader()));
+        try {
+            writer.addAlignment(beyondBaiSamRead(writer.getFileHeader()));
+            Assert.fail("should have thrown");
+        } catch (final SAMException expected) {
+            // expected
+        }
+        final long sizeAfterFailure = Files.size(samGz);
+        try {
+            writer.addAlignment(beyondBaiSamRead(writer.getFileHeader()));
+            Assert.fail("should have thrown on subsequent write");
+        } catch (final SAMException expected) {
+            Assert.assertTrue(expected.getMessage().contains("indexing failure"), expected.getMessage());
+        }
+        Assert.assertEquals(Files.size(samGz), sizeAfterFailure, "nothing should have been written");
+        try {
+            writer.close();
+        } catch (final SAMException ignored) {
+        }
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testSamGzCloseAfterIndexingFailureThrows() throws IOException {
+        final Path dir = Files.createTempDirectory("samIdxClose");
+        IOUtil.deleteOnExit(dir);
+        final Path samGz = dir.resolve("reads.sam.gz");
+        final SAMFileWriter writer = failingSamGzWriter(samGz);
+        writer.addAlignment(normalSamRead(writer.getFileHeader()));
+        try {
+            writer.addAlignment(beyondBaiSamRead(writer.getFileHeader()));
+        } catch (final SAMException ignored) {
+        }
+        try {
+            writer.close();
+            Assert.fail("close should throw after an indexing failure");
+        } catch (final SAMException expected) {
+            // expected
+        }
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testSamGzCloseAfterIndexingFailureClosesTheDataStream() throws IOException {
+        final Path dir = Files.createTempDirectory("samIdxStream");
+        IOUtil.deleteOnExit(dir);
+        final Path samGz = dir.resolve("reads.sam.gz");
+        final SAMFileWriter writer = failingSamGzWriter(samGz);
+        writer.addAlignment(normalSamRead(writer.getFileHeader()));
+        try {
+            writer.addAlignment(beyondBaiSamRead(writer.getFileHeader()));
+        } catch (final SAMException ignored) {
+        }
+        try {
+            writer.close();
+        } catch (final SAMException ignored) {
+        }
+        final byte[] tail = Files.readAllBytes(samGz);
+        final byte[] eofBlock = BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK;
+        final byte[] fileTail = Arrays.copyOfRange(tail, tail.length - eofBlock.length, tail.length);
+        Assert.assertEquals(fileTail, eofBlock, "data stream should be properly closed with EOF block");
+        IOUtil.recursiveDelete(dir);
     }
 }

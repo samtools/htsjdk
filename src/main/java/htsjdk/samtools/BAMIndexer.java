@@ -245,6 +245,15 @@ public class BAMIndexer {
         return this;
     }
 
+    /** Closes the output without writing an index. Safe to call more than once. */
+    void abandon() {
+        try {
+            output.close();
+        } catch (final IOException e) {
+            log.warn("Failed to close index output", e);
+        }
+    }
+
     /**
      * After all the alignment records have been processed, adjusts the end of the last record's
      * chunk to {@code endOfRecords} (which should be taken from the BGZF stream after flushing it,

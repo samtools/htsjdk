@@ -45,6 +45,8 @@ public class BAMFileWriter extends SAMFileWriterImpl {
     private BAMRecordCodec bamRecordCodec = null;
     private final BlockCompressedOutputStream blockCompressedOutputStream;
     private BAMIndexer bamIndexer = null;
+    private Path bamIndexPath;
+    private SAMException indexingFailure;
 
     protected BAMFileWriter(final Path path) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(path);
@@ -139,6 +141,7 @@ public class BAMFileWriter extends SAMFileWriterImpl {
                             "Not creating BAM index since unable to write index file " + indexPath.toUri());
                 }
             }
+            this.bamIndexPath = indexPath;
             return new BAMIndexer(indexPath, getFileHeader(), indexType, csiMinShift);
         } catch (Exception e) {
             throw new SAMException("Not creating BAM index", e);
@@ -147,6 +150,10 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeAlignment(final SAMRecord alignment) {
+        if (indexingFailure != null) {
+            throw new SAMException(
+                    "Cannot write further alignments after a BAM indexing failure on " + bamIndexPath, indexingFailure);
+        }
         prepareToWriteAlignments();
 
         if (bamIndexer != null) {
@@ -158,8 +165,10 @@ public class BAMFileWriter extends SAMFileWriterImpl {
                 alignment.setFileSource(new SAMFileSource(null, new BAMFileSpan(new Chunk(startOffset, stopOffset))));
                 bamIndexer.processAlignment(alignment);
             } catch (Exception e) {
-                bamIndexer = null;
-                throw new SAMException("Exception when processing alignment for BAM index " + alignment, e);
+                bamIndexer.abandon();
+                deleteIndexQuietly(bamIndexPath);
+                indexingFailure = new SAMException("Exception when processing alignment for BAM index " + alignment, e);
+                throw indexingFailure;
             }
         } else {
             bamRecordCodec.encode(alignment);
@@ -173,14 +182,30 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void finish() {
-        final long endOfRecords = bamIndexer != null ? endOfRecordsPointer() : 0;
+        final long endOfRecords = bamIndexer != null && indexingFailure == null ? endOfRecordsPointer() : 0;
         outputBinaryCodec.close();
+        if (indexingFailure != null) {
+            // A distinct exception so that try-with-resources can add it as suppressed to the original
+            // without triggering IllegalArgumentException from self-suppression.
+            throw new SAMException("BAM indexing failed on " + bamIndexPath, indexingFailure);
+        }
         try {
             if (bamIndexer != null) {
                 bamIndexer.finish(endOfRecords);
             }
         } catch (Exception e) {
+            deleteIndexQuietly(bamIndexPath);
             throw new SAMException("Exception writing BAM index file", e);
+        }
+    }
+
+    private static void deleteIndexQuietly(final Path indexPath) {
+        if (indexPath != null) {
+            try {
+                Files.deleteIfExists(indexPath);
+            } catch (final IOException ignored) {
+                // The original exception is more important.
+            }
         }
     }
 

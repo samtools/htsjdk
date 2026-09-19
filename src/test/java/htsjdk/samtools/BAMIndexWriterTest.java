@@ -37,6 +37,7 @@ import htsjdk.utils.SamtoolsTestUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -391,5 +392,35 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         } catch (final SAMException expected) {
             assertEquals(Files.readString(existing), "an index somebody still wants");
         }
+    }
+
+    @Test
+    public void testAbandonClosesTheOutputStream() {
+        final int[] closes = {0};
+        final OutputStream recording = new ByteArrayOutputStream() {
+            @Override
+            public void close() throws IOException {
+                closes[0]++;
+                super.close();
+            }
+        };
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        final BAMIndexer indexer = new BAMIndexer(recording, header);
+        indexer.abandon();
+        assertEquals(closes[0], 1, "abandon should close the output");
+        assertEquals(
+                ((ByteArrayOutputStream) recording).toByteArray().length, 0, "abandon should not write index bytes");
+    }
+
+    @Test
+    public void testAbandonCalledTwiceDoesNotThrow() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        final BAMIndexer indexer = new BAMIndexer(new ByteArrayOutputStream(), header);
+        indexer.abandon();
+        indexer.abandon();
     }
 }

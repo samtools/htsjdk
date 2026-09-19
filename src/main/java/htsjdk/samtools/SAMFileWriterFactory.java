@@ -142,12 +142,11 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
-     * Sets the default for subsequent SAMFileWriterFactories
-     * that do not specify whether to create an index.
-     * If a BAM (not SAM) file is created, the setting is true, and the file header specifies coordinate order,
-     * then a BAM index file will be written along with the BAM file.
+     * Sets the default for subsequent SAMFileWriterFactories that do not specify whether to create an index.
+     * If a BAM, bgzipped SAM or CRAM file is created, the setting is true, and the file header specifies
+     * coordinate order, then an index will be written along with the file.
      *
-     * @param setting whether to attempt to create a BAM index while creating the BAM file
+     * @param setting whether to attempt to create an index while creating the alignment file
      */
     public static void setDefaultCreateIndexWhileWriting(final boolean setting) {
         defaultCreateIndexWhileWriting = setting;
@@ -392,17 +391,26 @@ public class SAMFileWriterFactory implements Cloneable {
             }
             OutputStream os = IOUtil.maybeBufferOutputStream(Files.newOutputStream(outputPath), bufferSize);
             if (createMd5File) os = new Md5CalculatingOutputStream(os, IOUtil.addExtension(outputPath, ".md5"));
-            final BAMFileWriter ret =
-                    new BAMFileWriter(os, outputPath.toUri().toString(), compressionLevel, deflaterFactory);
-            final boolean createIndex = this.createIndex && IOUtil.isRegularPath(outputPath);
-            if (this.createIndex && !createIndex) {
-                log.warn(
-                        "Cannot create index for BAM because output file is not a regular file: " + outputPath.toUri());
-            }
-            initializeBAMWriter(ret, header, presorted, createIndex);
+            try {
+                final BAMFileWriter ret =
+                        new BAMFileWriter(os, outputPath.toUri().toString(), compressionLevel, deflaterFactory);
+                final boolean createIndex = this.createIndex && IOUtil.isRegularPath(outputPath);
+                if (this.createIndex && !createIndex) {
+                    log.warn("Cannot create index for BAM because output file is not a regular file: "
+                            + outputPath.toUri());
+                }
+                initializeBAMWriter(ret, header, presorted, createIndex);
 
-            if (this.useAsyncIo) return new AsyncSAMFileWriter(ret, this.asyncOutputBufferSize);
-            else return ret;
+                if (this.useAsyncIo) return new AsyncSAMFileWriter(ret, this.asyncOutputBufferSize);
+                else return ret;
+            } catch (final RuntimeException | Error e) {
+                try {
+                    os.close();
+                } catch (final Exception suppressed) {
+                    e.addSuppressed(suppressed);
+                }
+                throw e;
+            }
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputPath.toUri(), ioe);
         }
@@ -449,35 +457,49 @@ public class SAMFileWriterFactory implements Cloneable {
             if (this.createMd5File) {
                 os = new Md5CalculatingOutputStream(os, IOUtil.addExtension(outputPath, ".md5"));
             }
-            BlockCompressedOutputStream bgzfStream = null;
-            if (outputPath != null && IOUtil.hasBlockCompressedExtension(outputPath)) {
-                // A BGZF stream makes several small writes per block, which uncompressed SAM's AsciiWriter does not.
-                // Closing the stream, as SAMTextWriter does when it finishes, writes the BGZF end-of-file block.
-                bgzfStream = new BlockCompressedOutputStream(
-                        IOUtil.maybeBufferOutputStream(os, bufferSize), outputPath, compressionLevel, deflaterFactory);
-                os = bgzfStream;
-            }
-
-            final SAMTextWriter writer = new SAMTextWriter(os, samFlagFieldOutput);
-            if (bgzfStream != null && this.createIndex) {
-                final boolean canIndex = IOUtil.isRegularPath(outputPath);
-                if (!canIndex) {
-                    log.warn("Cannot create index for SAM because output file is not a regular file: "
-                            + outputPath.toUri());
+            try {
+                BlockCompressedOutputStream bgzfStream = null;
+                if (outputPath != null && IOUtil.hasBlockCompressedExtension(outputPath)) {
+                    // A BGZF stream makes several small writes per block, which uncompressed SAM's AsciiWriter does
+                    // not. Closing the stream, as SAMTextWriter does when it finishes, writes the BGZF EOF block.
+                    bgzfStream = new BlockCompressedOutputStream(
+                            IOUtil.maybeBufferOutputStream(os, bufferSize),
+                            outputPath,
+                            compressionLevel,
+                            deflaterFactory);
+                    os = bgzfStream;
                 }
-                if (canIndex && header.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
-                    final BamIndexType resolved = samIndexType.resolve(header.getSequenceDictionary());
-                    final Path indexPath;
-                    if (resolved == BamIndexType.CSI) {
-                        indexPath = IOUtil.addExtension(outputPath, FileExtensions.CSI);
-                    } else {
-                        indexPath = IOUtil.addExtension(outputPath, FileExtensions.BAI_INDEX);
+
+                final SAMTextWriter writer = new SAMTextWriter(os, samFlagFieldOutput);
+                if (bgzfStream != null && this.createIndex) {
+                    final boolean canIndex = IOUtil.isRegularPath(outputPath);
+                    if (!canIndex) {
+                        log.warn("Cannot create index for SAM because output file is not a regular file: "
+                                + outputPath.toUri());
                     }
-                    writer.enableIndexConstruction(bgzfStream, indexPath, header, resolved, csiMinShift);
+                    if (canIndex && header.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+                        final BamIndexType resolved = samIndexType.resolve(header.getSequenceDictionary());
+                        final Path indexPath;
+                        if (resolved == BamIndexType.CSI) {
+                            indexPath = IOUtil.addExtension(outputPath, FileExtensions.CSI);
+                        } else {
+                            indexPath = IOUtil.addExtension(outputPath, FileExtensions.BAI_INDEX);
+                        }
+                        writer.enableIndexConstruction(bgzfStream, indexPath, header, resolved, csiMinShift);
+                    }
                 }
-            }
 
-            return initWriter(header, presorted, writer);
+                return initWriter(header, presorted, writer);
+            } catch (final RuntimeException | Error e) {
+                if (os != null) {
+                    try {
+                        os.close();
+                    } catch (final Exception suppressed) {
+                        e.addSuppressed(suppressed);
+                    }
+                }
+                throw e;
+            }
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputPath.toUri(), ioe);
         }

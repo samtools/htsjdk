@@ -193,6 +193,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **A CRAM 3.1 writer no longer holds about 6 MB of rANS tables for every distinct tag in its records.**  `CompressionHeaderFactory` built a separate rANS encoder and decoder for each tag it met and kept them for the life of the writer, so a file with 20 distinct tags cost over 100 MB of heap, and one with a thousand several gigabytes.  The tags now share one.
 - **A rANS encoder or decoder builds its order-1 tables the first time it codes an order-1 stream**, not when it is constructed.  The tables are about 2.6 MB in an encoder and 2.9 MB in a decoder, and were paid for by every codec, including the decoders of a CRAM writer and the encoders of a CRAM reader, which are never used.  A codec that only ever sees order-0 data now holds about 12 KB.
 
+- **A BAM or bgzipped SAM writer that cannot build or write its index fails the whole write.**  An indexing failure while writing a record is remembered, further writes are refused, and `close()` throws the original failure after closing the data stream and removing the partial index.  The factory no longer leaves the data output stream open when the index cannot be opened.
+
 ### Testing
 
 - The test suite was migrated to `Path`, and a focused `NioSpiCompatibilityTest` exercises the major read/write/index APIs (BAM/CRAM/VCF/FASTQ, reference access and index discovery/creation) against an in-memory jimfs filesystem to validate NIO-SPI compatibility end to end.
