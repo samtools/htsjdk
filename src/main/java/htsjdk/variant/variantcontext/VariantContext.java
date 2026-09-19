@@ -1523,16 +1523,24 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     /**
-     * Check that getEnd() == END from the info field, if it's present
+     * Check that an INFO END, if present, does not reach past getEnd(): the end is the furthest of END and what the
+     * alleles say (see {@link #getEnd()}), so a smaller END is merely stale, as sloppy files have them.
      */
     private void validateStop() {
         if (hasAttribute(VCFConstants.END_KEY)) {
-            final int end = getAttributeAsInt(VCFConstants.END_KEY, -1);
-            assert end != -1;
-            if (end != getEnd()) {
+            final Object endValue = getAttribute(VCFConstants.END_KEY);
+            final long end;
+            if (endValue instanceof Number) {
+                end = ((Number) endValue).longValue();
+            } else if (VCFConstants.MISSING_VALUE_v4.equals(endValue.toString())) {
+                return; // nothing to compare with
+            } else {
+                end = Integer.parseInt(endValue.toString());
+            }
+            if (end > getEnd()) {
                 final String message = "Badly formed variant context at location " + getContig() + ":"
                         + getStart() + "; getEnd() was " + getEnd()
-                        + " but this VariantContext contains an END key with value " + end;
+                        + " but this VariantContext contains an END key with the larger value " + end;
                 if (GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END) {
                     System.err.println(message);
                 } else {
@@ -1890,8 +1898,10 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     /**
-     * @return 1-based closed end position of the Variant
-     * If the END info field is specified that value is returned, otherwise the end is the start + reference allele length - 1.
+     * @return 1-based closed end position of the Variant: the last reference position it covers. For a record read
+     * from VCF that is the furthest of the last base of the REF allele, INFO END, the end that SVLEN gives a
+     * {@code <DEL>}, {@code <DUP>}, {@code <CNV>} or {@code <INV>} allele and, for a reference block without END, the
+     * end that the samples' FORMAT LEN gives, as htslib computes it; from BCF it is what the record's rlen says.
      * For VariantContexts with a single alternate allele, if that allele is an insertion, the end position will be on the reference base
      * before the insertion event.  If the single alt allele is a deletion, the end will be on the final deleted reference base.
      */
@@ -1908,7 +1918,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     public boolean isReferenceBlock() {
         return getAlternateAlleles().size() == 1
                 && getAlternateAllele(0).isNonRefAllele()
-                && getAttribute(VCFConstants.END_KEY) != null;
+                // the block's span, from END or, since VCF 4.5, from the samples' LEN
+                && (getAttribute(VCFConstants.END_KEY) != null || getEnd() > getStart());
     }
 
     public boolean hasSymbolicAlleles() {
