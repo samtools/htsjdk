@@ -49,7 +49,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     // Indexing state, null when indexing is not enabled.
     private BAMIndexer bamIndexer;
     private BlockCompressedOutputStream bgzfStream;
-    // Typed reference to out, set when indexing is enabled; avoids casting on every record.
+    // The same object as out: what is buffered there must reach the BGZF stream before a file pointer means anything.
     private AsciiWriter asciiWriter;
     // A record's chunk starts where the one before ended (htslib's convention, which is how
     // bgzipped SAM is read back). This tracks that boundary.
@@ -90,7 +90,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             final SAMFileHeader header,
             final BamIndexType resolvedType,
             final int csiMinShift) {
-        if (!(out instanceof AsciiWriter)) {
+        if (!(out instanceof AsciiWriter ascii)) {
             throw new IllegalStateException("On-the-fly indexing requires the output to be an AsciiWriter, not "
                     + out.getClass().getName());
         }
@@ -98,7 +98,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             throw new SAMException("Not creating SAM index since not sorted by coordinates: " + header.getSortOrder());
         }
         this.bgzfStream = stream;
-        this.asciiWriter = (AsciiWriter) out;
+        this.asciiWriter = ascii;
         this.bamIndexer = new BAMIndexer(indexPath, header, resolvedType, csiMinShift).namingSequencesInCsi();
     }
 
