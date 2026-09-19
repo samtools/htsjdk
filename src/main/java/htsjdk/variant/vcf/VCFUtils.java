@@ -35,6 +35,7 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -119,6 +120,20 @@ public class VCFUtils {
                                         "Incompatible header types, collision between these two types: " + line + " "
                                                 + other);
                             }
+                        } else if (isLaterVersionOfTheSameSource(compLine, compOther)) {
+                            // the two agree on what the field is; the one annotated from the later release of the
+                            // same source replaces the other whole, in the other's place
+                            conflictWarner.warn(
+                                    line,
+                                    "Keeping the header line with the later Version: " + compLine + " replaces "
+                                            + compOther);
+                            map.put(key, compLine);
+                            continue;
+                        } else if (compLine.getDescription().equals(compOther.getDescription())) {
+                            conflictWarner.warn(
+                                    line,
+                                    "Header lines differ in Source, Version or another attribute: keeping " + compOther
+                                            + " excluding " + compLine);
                         }
                         if (!compLine.getDescription().equals(compOther.getDescription()))
                             conflictWarner.warn(
@@ -314,6 +329,55 @@ public class VCFUtils {
     /**
      * Only displays a warning if warnings are enabled and an identical warning hasn't been already issued
      */
+    /**
+     * Whether {@code line} says it was annotated from a later release of the same source as {@code other}: both name
+     * the same Source (which the specification makes case-insensitive, and which both may omit) and both give a
+     * Version, {@code line}'s being the later by {@link #compareVersions}.
+     */
+    private static boolean isLaterVersionOfTheSameSource(
+            final VCFCompoundHeaderLine line, final VCFCompoundHeaderLine other) {
+        final boolean sameSource = line.getSource() == null
+                ? other.getSource() == null
+                : line.getSource().equalsIgnoreCase(other.getSource());
+        return sameSource
+                && line.getVersion() != null
+                && other.getVersion() != null
+                && compareVersions(line.getVersion(), other.getVersion()) > 0;
+    }
+
+    /**
+     * Compares version strings the way a person reads them: a run of digits counts as a number, so that 1.10 follows
+     * 1.9 and 151 follows 99, and everything else is compared as text. A Version is free text and nothing orders it
+     * officially; this gets release numbers, dotted versions and dates right.
+     */
+    private static int compareVersions(final String a, final String b) {
+        int i = 0;
+        int j = 0;
+        while (i < a.length() && j < b.length()) {
+            if (Character.isDigit(a.charAt(i)) && Character.isDigit(b.charAt(j))) {
+                final int startA = i;
+                final int startB = j;
+                while (i < a.length() && Character.isDigit(a.charAt(i))) {
+                    i++;
+                }
+                while (j < b.length() && Character.isDigit(b.charAt(j))) {
+                    j++;
+                }
+                final int byValue =
+                        new BigInteger(a.substring(startA, i)).compareTo(new BigInteger(b.substring(startB, j)));
+                if (byValue != 0) {
+                    return byValue;
+                }
+            } else if (a.charAt(i) != b.charAt(j)) {
+                return Character.compare(a.charAt(i), b.charAt(j));
+            } else {
+                i++;
+                j++;
+            }
+        }
+        return Integer.compare(a.length() - i, b.length() - j);
+    }
+
     private static final class HeaderConflictWarner {
         boolean emitWarnings;
         Set<String> alreadyIssued = new HashSet<>();
