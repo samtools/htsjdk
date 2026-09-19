@@ -1944,4 +1944,68 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .make();
         Assert.assertEquals(vc.fullyDecode(header, false).getAttribute("XX"), Arrays.asList(1, 2, 3));
     }
+
+    // INFO END against getEnd(): only an END past the end is malformed
+
+    @Test
+    public void anEndEqualToTheEndIsAccepted() {
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 20)
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+    }
+
+    @Test
+    public void anEndShortOfTheEndIsAccepted() {
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 15)
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+    }
+
+    @Test
+    public void aMissingEndIsNotCompared() {
+        // a fresh String, not the interned constant, as a file gives it
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, new String(new char[] {'.'}))
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+    }
+
+    @Test
+    public void anEndGivenAsAnyNumberIsCompared() {
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 20L)
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+        Assert.assertThrows(
+                TribbleException.class, () -> new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                        .attribute(VCFConstants.END_KEY, 21L)
+                        .make());
+    }
+
+    @Test(expectedExceptions = NumberFormatException.class)
+    public void anEndThatIsNotANumberIsRejected() {
+        new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, "soon")
+                .make();
+    }
+
+    @Test
+    public void aReferenceBlockMayTakeItsSpanFromItsEndRatherThanAnEndAttribute() {
+        final List<Allele> alleles = Arrays.asList(Aref, Allele.NON_REF_ALLELE);
+        Assert.assertTrue(new VariantContextBuilder("test", snpLoc, 10, 20, alleles)
+                .make()
+                .isReferenceBlock());
+        Assert.assertFalse(new VariantContextBuilder("test", snpLoc, 10, 10, alleles)
+                .make()
+                .isReferenceBlock());
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void anEndPastTheEndIsRejected() {
+        new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 21)
+                .make();
+    }
 }

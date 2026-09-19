@@ -61,6 +61,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     // Set once, when the header is read or set, and only read while decoding.
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
+    // Whether the header declares FORMAT LEN, so that a reference block without END may get its end from it.
+    private boolean headerDeclaresLen = false;
 
     private static final VCFTextTransformer percentEncodingTextTransformer = new VCFPercentEncodedTextTransformer();
     private static final VCFTextTransformer passThruTextTransformer = new VCFPassThruTextTransformer();
@@ -290,6 +292,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         this.version = newVersion;
         this.vcfTextTransformer = getTextTransformerForVCFVersion(newVersion);
+        this.headerDeclaresLen = this.header.getFormatHeaderLine(VCFConstants.LEN_KEY) != null;
 
         return this.header;
     }
@@ -343,7 +346,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     /**
      * the fast decode function
      * @param line the line of text for the record
-     * @return a feature, (not guaranteed complete) that has the correct start and stop
+     * @return a feature that has the correct start and stop; its genotypes are left to be decoded on demand
      */
     public Feature decodeLoc(String line) {
         return decodeLine(line, false);
@@ -434,32 +437,25 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         final Map<String, Object> attrs = parseInfo(parts[7], lineNo);
         builder.attributes(attrs);
 
-        if (attrs.containsKey(VCFConstants.END_KEY)) {
-            // update stop with the end key if provided
-            try {
-                builder.stop(Integer.parseInt(attrs.get(VCFConstants.END_KEY).toString()));
-            } catch (Exception e) {
-                generateException("the END value in the INFO field is not valid", lineNo);
-            }
-        } else {
-            builder.stop(pos + ref.length() - 1);
-        }
-
         // get our alleles, filters, and setup an attribute map
         final List<Allele> alleles = parseAlleles(ref, alts, lineNo);
         builder.alleles(alleles);
 
-        // do we have genotyping data
-        if (parts.length > NUM_STANDARD_FIELDS && includeGenotypes) {
+        // do we have genotyping data? It is decoded only on demand, so every record gets it, a record decoded for
+        // its location alone included: its end may have to be read from the samples' LEN.
+        LazyGenotypesContext lazy = null;
+        if (parts.length > NUM_STANDARD_FIELDS) {
             final LazyGenotypesContext.LazyParser lazyParser = new LazyVCFGenotypesParser(alleles, chr, pos, lineNo);
             final int nGenotypes = header.getNGenotypeSamples();
-            LazyGenotypesContext lazy = new LazyGenotypesContext(lazyParser, parts[8], nGenotypes);
+            lazy = new LazyGenotypesContext(lazyParser, parts[8], nGenotypes);
 
             // did we resort the sample names?  If so, we need to load the genotype data
-            if (!header.samplesWereAlreadySorted()) lazy.decode();
+            if (includeGenotypes && !header.samplesWereAlreadySorted()) lazy.decode();
 
             builder.genotypesNoValidation(lazy);
         }
+
+        builder.stop(computeEnd(pos, ref.length(), alleles, attrs, lazy, lineNo));
 
         VariantContext vc = null;
         try {
@@ -502,6 +498,120 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
         final String raced = stringCache.putIfAbsent(str, str);
         return raced == null ? str : raced;
+    }
+
+    /**
+     * The last reference position a record covers, as htslib works it out: the furthest of the REF allele's last base,
+     * INFO {@code END}, {@code POS + SVLEN} for a {@code <DEL>}, {@code <DUP>}, {@code <CNV>} or {@code <INV>}
+     * allele (subtypes such as {@code <DEL:ME>} included) and, for a reference block ({@code <*>} or
+     * {@code <NON_REF>}) that gives no {@code END} in a file whose header declares FORMAT {@code LEN},
+     * {@code POS + LEN - 1} over the samples. An {@code END} of {@code .} or before {@code POS} is ignored, as htslib
+     * ignores it, and so is an unreadable {@code SVLEN} or {@code LEN}. Consulting {@code LEN} decodes the genotypes,
+     * which is why {@code END}, which a valid reference block with {@code LEN} must carry with the same value, is
+     * taken instead when present, and why the header must declare {@code LEN}: the variant records of a gVCF carry
+     * {@code <NON_REF>} without {@code END}, and decoding every one of them costs a quarter of the read time. Where
+     * {@code LEN} is consulted, a malformed sample value in the record is reported by {@code decode} itself rather
+     * than by the first call for a genotype. A length too long for an int is clamped.
+     */
+    private int computeEnd(
+            final int pos,
+            final int refLength,
+            final List<Allele> alleles,
+            final Map<String, Object> attrs,
+            final LazyGenotypesContext genotypes,
+            final int lineNo) {
+        int end = pos + refLength - 1;
+        final Object endValue = attrs.get(VCFConstants.END_KEY);
+        final boolean hasEnd = endValue != null && !VCFConstants.MISSING_VALUE_v4.equals(endValue.toString());
+        if (hasEnd) {
+            int declaredEnd = -1;
+            try {
+                declaredEnd = Integer.parseInt(endValue.toString());
+            } catch (final NumberFormatException e) {
+                generateException("the END value in the INFO field is not valid", lineNo);
+            }
+            if (declaredEnd >= pos) {
+                end = Math.max(end, declaredEnd);
+            }
+        }
+        boolean spansReferenceBySvlen = false;
+        boolean referenceBlock = false;
+        for (int i = 1; i < alleles.size(); i++) {
+            final Allele allele = alleles.get(i);
+            if (allele.isSymbolic()) {
+                if (allele.isNonRefAllele()) {
+                    referenceBlock = true;
+                } else if (spansReferenceBySvlen(allele.getDisplayBases())) {
+                    spansReferenceBySvlen = true;
+                }
+            }
+        }
+        if (spansReferenceBySvlen) {
+            end = furthest(end, pos + longestSvlen(alleles, attrs.get(VCFConstants.SVLEN_KEY)));
+        }
+        if (referenceBlock && !hasEnd && headerDeclaresLen && genotypes != null) {
+            end = furthest(end, pos + longestLen(genotypes) - 1);
+        }
+        return end;
+    }
+
+    private static int furthest(final int end, final long candidate) {
+        return (int) Math.max(end, Math.min(candidate, Integer.MAX_VALUE));
+    }
+
+    /**
+     * Whether a symbolic allele's SVLEN is a length on the reference, so that the allele spans that much of it: a
+     * deletion, duplication, copy-number variant or inversion, with any subtype ({@code <DEL>}, {@code <DEL:ME>}). An
+     * insertion's SVLEN is not. Works on the bytes so as not to make a String of every symbolic allele read.
+     */
+    private static boolean spansReferenceBySvlen(final byte[] alt) {
+        final int length = alt.length;
+        if (length < 5 || alt[0] != '<' || alt[length - 1] != '>' || (alt[4] != '>' && alt[4] != ':')) {
+            return false;
+        }
+        final byte a = alt[1];
+        final byte b = alt[2];
+        final byte c = alt[3];
+        return (a == 'D' && b == 'E' && c == 'L')
+                || (a == 'D' && b == 'U' && c == 'P')
+                || (a == 'C' && b == 'N' && c == 'V')
+                || (a == 'I' && b == 'N' && c == 'V');
+    }
+
+    /** The longest SVLEN of the alleles that span the reference, by absolute value; 0 without a usable one. */
+    private static long longestSvlen(final List<Allele> alleles, final Object svlen) {
+        if (svlen == null) {
+            return 0;
+        }
+        final List<?> values = svlen instanceof List ? (List<?>) svlen : Collections.singletonList(svlen);
+        long longest = 0;
+        for (int i = 0; i < values.size() && i + 1 < alleles.size(); i++) {
+            if (spansReferenceBySvlen(alleles.get(i + 1).getDisplayBases())) {
+                try {
+                    longest = Math.max(
+                            longest, Math.abs(Long.parseLong(values.get(i).toString())));
+                } catch (final NumberFormatException e) {
+                    // "." or not a number: no length to take from it
+                }
+            }
+        }
+        return longest;
+    }
+
+    /** The longest FORMAT LEN over the samples; 0 without a usable one. */
+    private static long longestLen(final LazyGenotypesContext genotypes) {
+        long longest = 0;
+        for (final Genotype genotype : genotypes) {
+            final Object len = genotype.getExtendedAttribute(VCFConstants.LEN_KEY);
+            if (len != null) {
+                try {
+                    longest = Math.max(longest, Long.parseLong(len.toString()));
+                } catch (final NumberFormatException e) {
+                    // "." or not a number
+                }
+            }
+        }
+        return longest;
     }
 
     /**

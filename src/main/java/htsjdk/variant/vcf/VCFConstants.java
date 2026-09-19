@@ -70,6 +70,11 @@ public final class VCFConstants {
     // reserved INFO for structural variants
     /** INFO Type of structural variant */
     public static final String SVTYPE = "SVTYPE";
+    /** INFO Length of a structural variant, one per alternate allele */
+    public static final String SVLEN_KEY = "SVLEN";
+
+    /** FORMAT Length of a sample's {@code <*>} reference block (VCF 4.5) */
+    public static final String LEN_KEY = "LEN";
 
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";
