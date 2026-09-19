@@ -313,6 +313,16 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
     }
 
     @Test
+    public void testFoldedChunkStartingInTheBlockAfterOneOfItsParentsEndsInStaysApartAsInHtslib() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 16_384, 16_385, offset(5, 0), offset(5, 50)); // bin 585
+        builder.add(0, 16_390, 16_390, offset(6, 0), offset(6, 50)); // bin 4682, folded into 585
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)).get(585),
+                List.of(new Chunk(offset(5, 0), offset(5, 50)), new Chunk(offset(6, 0), offset(6, 50))));
+    }
+
+    @Test
     public void testBinsAreNotFoldedWhenBuildingForMerging() {
         final BinningIndex.Builder builder = baiBuilder().forMerging();
         builder.add(0, 10, 10, offset(0, 0), offset(0, 50));

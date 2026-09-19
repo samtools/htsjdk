@@ -253,20 +253,51 @@ public class BAMCsiIndexWritingTest extends HtsjdkTest {
                 query(bam, 2, BAI_LIMIT + 1, LONG_SEQUENCE).size());
     }
 
-    /** samtools writes a reference's bins in no particular order, so the indexes are compared as read, not as bytes. */
+    /**
+     * Reads every 50 bases, so that many small bins hold little of the file, with one in fifty long enough to put
+     * chunks in the bins above them: what it takes for small bins to be folded into their parents.
+     */
+    private static SAMRecordSetBuilder recordsDenseEnoughForBinsToBeFolded() {
+        final SAMRecordSetBuilder builder =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, LONG_SEQUENCE);
+        for (int contig = 0; contig < 2; contig++) {
+            for (int i = 0; i < 4_000; i++) {
+                final int start = 1 + 50 * i;
+                if (i % 50 == 0) {
+                    builder.addFrag("long" + contig + "_" + i, contig, start, false, false, "20000M", null, 30);
+                } else {
+                    builder.addFrag("read" + contig + "_" + i, contig, start, false);
+                }
+            }
+        }
+        return builder;
+    }
+
+    /**
+     * samtools writes a reference's bins in no particular order, so the indexes are compared as read, not as bytes.
+     * Both index the finished file: an index written along with a BAM names the end of the file's last record as
+     * the end of its block, where one made by reading names the start of the block after.
+     */
     @Test
-    public void testCsiHasTheContentOfTheOneSamtoolsBuilds() throws IOException {
+    public void testCsiOfAnExistingBamHasTheContentOfTheOneSamtoolsBuilds() throws IOException {
         if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
             throw new SkipException("samtools not available on local device");
         }
-        final Path bam = writeBam(factory(BamIndexType.CSI), records(LONG_SEQUENCE, LONG_SEQUENCE));
+        final Path bam = writeBam(factory(BamIndexType.BAI), recordsDenseEnoughForBinsToBeFolded());
         final Path ours = bam.resolveSibling("reads.bam.csi");
         final Path theirs = bam.resolveSibling("samtools.csi");
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            BAMIndexer.createIndex(reader, ours, null, BamIndexType.CSI);
+        }
         final BinningIndex.CsiContents oursRead = readCsi(ours);
         SamtoolsTestUtils.executeSamToolsCommand(
                 "index -c -m " + oursRead.index().getMinShift() + " -o " + theirs + " " + bam.toAbsolutePath());
 
         final BinningIndex.CsiContents theirsRead = readCsi(theirs);
+        final int bins = oursRead.index().getReference(0).getBinCount();
+        Assert.assertTrue(bins < 4_000 * 50 / (1 << 14), "bins should have been folded: " + bins);
         Assert.assertEquals(oursRead.index(), theirsRead.index());
         Assert.assertEquals(oursRead.aux(), theirsRead.aux());
     }

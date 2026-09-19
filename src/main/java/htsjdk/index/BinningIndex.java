@@ -589,12 +589,16 @@ public final class BinningIndex implements ReferenceBinsSource {
     }
 
     /**
-     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation. The
-     * parts' linear indexes may be filled or built with {@link Builder#forMerging()}; the merged one is
-     * filled either way, but only unset parts let a window a part holds no record of take a later part's offset
-     * rather than the fill. Parts read from CSI files have no linear index, only a {@code loffset} for each bin;
-     * the merged index then has the same, each a lower bound, if not always the one that indexing the whole file
-     * would have found.
+     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation.
+     *
+     * <p>Parts built with {@link Builder#forMerging()}, as the parts of a BAM are, merge to exactly the index that
+     * indexing the whole file gives: their linear indexes are unfilled and their bins unfolded, and both are done
+     * here, once, for the whole file. Parts that are whole indexes in their own right, as the tabix indexes of the
+     * parts of a VCF are, merge to an index that finds the same records but may differ from it: a small bin was
+     * folded into its parent where a part alone made it look small, and a window was filled from within its part.
+     *
+     * <p>Parts read from CSI files have no linear index, only an {@code loffset} for each bin; the merged index
+     * then has the same, each a lower bound, if not always the one that indexing the whole file would have found.
      *
      * @param parts the part indexes, in file order; all must share a binning scheme and reference count
      * @param partOffsets for each part, the byte offset in the concatenated file at which the part starts
@@ -704,6 +708,8 @@ public final class BinningIndex implements ReferenceBinsSource {
             final int[] lastWindowReached,
             final int binNumber) {
         final int depth = parts.get(0).depth;
+        // A bin number that the scheme has no level for, which only a damaged file holds, is never asked for.
+        if (levelOf(binNumber) > depth) return 0;
         final int firstWindow = firstWindowOf(binNumber, depth);
         for (int p = 0; p < lastWindowReached.length; p++) {
             if (lastWindowReached[p] >= firstWindow) {
@@ -955,8 +961,9 @@ public final class BinningIndex implements ReferenceBinsSource {
         /** Freezes the reference being built, if any, into its {@link ReferenceBins}; a no-op otherwise. */
         private void finishCurrentReference() {
             if (accumulator == null) return;
-            // A bin's loffset comes from its first window in the filled linear index, whether or not that is the
-            // one stored.
+            // A bin's loffset comes from its first window in the filled linear index. A part's index stores the
+            // unfilled one, from which an loffset could not be told later, so it is given its loffsets now, as an
+            // index bound for CSI is.
             final long[] filled = Arrays.copyOf(linearIndex, windowCount);
             fillUnsetWindows(filled);
             final long[] stored = forMerging ? Arrays.copyOf(linearIndex, windowCount) : filled;
@@ -968,7 +975,10 @@ public final class BinningIndex implements ReferenceBinsSource {
             }
             if (!forMerging) accumulator.foldSmallBinsIntoParents(depth);
             finished.add(accumulator.toReferenceBins(
-                    forCsi ? bin -> loffsetFromLinearIndex(bin, filled, depth) : null, stored, metadata, depth));
+                    forCsi || forMerging ? bin -> loffsetFromLinearIndex(bin, filled, depth) : null,
+                    stored,
+                    metadata,
+                    depth));
             accumulator = null;
         }
 
@@ -1126,9 +1136,10 @@ public final class BinningIndex implements ReferenceBinsSource {
             }
 
             /**
-             * Restores file order after chunks were taken in, and joins chunks as {@link #add} does. A chunk taken
-             * in may lie within one of this list's own: chunks joined by {@link #add} cover whatever lay between
-             * them, which is another bin's. So the later end is kept, not the last one seen.
+             * Restores file order after chunks were taken in, and joins each chunk to the one before if it starts
+             * in or before the block that one ends in, as htslib does. A chunk taken in may lie within one of this
+             * list's own: chunks joined by {@link #add} cover whatever lay between them, which is another bin's.
+             * So the later end is kept, not the last one seen.
              */
             void sortAndCoalesce() {
                 if (inFileOrder) return;
@@ -1138,9 +1149,8 @@ public final class BinningIndex implements ReferenceBinsSource {
                 size = 0;
                 for (final long[] chunk : chunks) {
                     final boolean joinsTheLast = size > 0
-                            && (Long.compareUnsigned(offsets[size - 1], chunk[0]) >= 0
-                                    || BlockCompressedFilePointerUtil.areInSameOrAdjacentBlocks(
-                                            offsets[size - 1], chunk[0]));
+                            && BlockCompressedFilePointerUtil.getBlockAddress(offsets[size - 1])
+                                    >= BlockCompressedFilePointerUtil.getBlockAddress(chunk[0]);
                     if (!joinsTheLast) {
                         offsets[size++] = chunk[0];
                         offsets[size++] = chunk[1];

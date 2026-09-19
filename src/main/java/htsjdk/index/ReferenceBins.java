@@ -32,9 +32,9 @@ public final class ReferenceBins {
     private final int[] binNumbers;
     // binChunks[i] holds the chunks of binNumbers[i] as {start0, end0, start1, end1, ...} virtual offsets.
     private final long[][] binChunks;
-    // loffsets[i] is the smallest virtual offset of any record overlapping the first window of binNumbers[i]: the
-    // linear-index entry for that window, which is what the "l" in the CSI specification's name stands for. CSI
-    // stores one per bin in place of the linear index itself.
+    // loffsets[i] is a lower bound on the virtual offset of any record that overlaps the first window of
+    // binNumbers[i] or lies beyond it: the linear-index entry for that window, which is what the "l" in the CSI
+    // specification's name stands for. CSI stores one per bin in place of the linear index itself.
     // Derived from the linear index on first use when the file did not store them, since a TBI never needs them.
     private volatile long[] loffsets;
     private final long[] linearIndex;
@@ -44,8 +44,9 @@ public final class ReferenceBins {
     /**
      * @param binNumbers bin numbers, strictly ascending
      * @param binChunks for each bin, its chunks flattened to {start0, end0, start1, end1, ...} virtual offsets
-     * @param loffsets for each bin, the smallest virtual offset of any record overlapping the bin's first
-     *     window of the smallest bin size, i.e. a lower bound for every record in the bin; or null to derive
+     * @param loffsets for each bin, a lower bound on the virtual offset of any record that overlaps the bin's
+     *     first window of the smallest bin size or lies beyond it, and so of every record in the bin: the
+     *     smallest such offset when the index was built from the records of a whole file; or null to derive
      *     them from the linear index when first needed (all zero, the trivial bound, if that is empty too)
      * @param linearIndex for each window of the smallest bin size, the smallest virtual offset of any record
      *     overlapping the window; empty if the index has no linear index
@@ -115,8 +116,8 @@ public final class ReferenceBins {
 
     /**
      * @param ordinal position of the bin among this reference's bins, which are ordered by bin number
-     * @return the smallest virtual offset of any record overlapping the bin's first window; every record in the
-     *     bin lies at or after it
+     * @return a lower bound on the virtual offset of any record that overlaps the bin's first window or lies
+     *     beyond it; every record in the bin lies at or after it
      */
     public long getLoffset(final int ordinal) {
         return loffsets()[ordinal];
