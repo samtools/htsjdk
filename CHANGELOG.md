@@ -196,6 +196,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 - **A BAM or bgzipped SAM writer that cannot build or write its index fails the whole write.**  An indexing failure while writing a record is remembered, further writes are refused, and `close()` throws the original failure after closing the data stream and removing the partial index.  The factory no longer leaves the data output stream open when the index cannot be opened.
 
+- **Reading a BAI or TBI whose metadata pseudo-bin has the wrong number of chunks now says the reference is probably longer than 2^29 and suggests a CSI index** (issues #823, #643).
+
 ### Testing
 
 - The test suite was migrated to `Path`, and a focused `NioSpiCompatibilityTest` exercises the major read/write/index APIs (BAM/CRAM/VCF/FASTQ, reference access and index discovery/creation) against an in-memory jimfs filesystem to validate NIO-SPI compatibility end to end.
