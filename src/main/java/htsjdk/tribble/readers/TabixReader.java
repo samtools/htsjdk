@@ -42,6 +42,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -209,19 +211,26 @@ public class TabixReader implements AutoCloseable {
     }
 
     /**
-     * reads a line with a defined buffer-size
+     * Reads a line of UTF-8 encoded text terminated by {@code '\n'}. A final line that ends at the end of the
+     * stream without a terminator is returned like any other.
      *
      * @param is the input stream
-     * @param bufferCapacity the buffer size, must be greater than 0
-     * @return the line or null if there is no more input
-     * @throws IOException
+     * @param bufferCapacity the initial buffer size, must be greater than 0
+     * @return the line (without terminator) or null if there is no more input
+     * @throws IOException if an I/O error occurs
      */
     private static String readLine(final InputStream is, final int bufferCapacity) throws IOException {
-        final StringBuffer buf = new StringBuffer(bufferCapacity);
+        byte[] buf = new byte[bufferCapacity];
+        int len = 0;
         int c;
-        while ((c = is.read()) >= 0 && c != '\n') buf.append((char) c);
-        if (c < 0) return null;
-        return buf.toString();
+        while ((c = is.read()) >= 0 && c != '\n') {
+            if (len == buf.length) {
+                buf = Arrays.copyOf(buf, buf.length * 2);
+            }
+            buf[len++] = (byte) c;
+        }
+        if (c < 0 && len == 0) return null;
+        return new String(buf, 0, len, StandardCharsets.UTF_8);
     }
 
     /**

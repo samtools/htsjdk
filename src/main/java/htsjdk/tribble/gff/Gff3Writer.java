@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -57,13 +58,13 @@ public class Gff3Writer implements Closeable {
     }
 
     private void writeWithNewLine(final String txt) throws IOException {
-        out.write(txt.getBytes());
+        out.write(txt.getBytes(StandardCharsets.UTF_8));
         out.write(Gff3Constants.END_OF_LINE_CHARACTER);
     }
 
     private void tryToWrite(final String string) {
         try {
-            out.write(string.getBytes());
+            out.write(string.getBytes(StandardCharsets.UTF_8));
         } catch (final IOException ex) {
             throw new TribbleException("Error writing out string " + string, ex);
         }
@@ -90,7 +91,7 @@ public class Gff3Writer implements Closeable {
 
     void writeAttributes(final Map<String, List<String>> attributes) throws IOException {
         if (attributes.isEmpty()) {
-            out.write(Gff3Constants.UNDEFINED_FIELD_VALUE.getBytes());
+            out.write(Gff3Constants.UNDEFINED_FIELD_VALUE.getBytes(StandardCharsets.UTF_8));
         }
 
         writeJoinedByDelimiter(
@@ -187,7 +188,7 @@ public class Gff3Writer implements Closeable {
      * @throws IOException
      */
     public void addComment(final String comment) throws IOException {
-        out.write(Gff3Constants.COMMENT_START.getBytes());
+        out.write(Gff3Constants.COMMENT_START.getBytes(StandardCharsets.UTF_8));
         writeWithNewLine(comment);
     }
 

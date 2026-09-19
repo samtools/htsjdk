@@ -24,12 +24,18 @@ import htsjdk.tribble.TribbleException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
- * A simple class that provides {@link #readLine()} functionality around a PositionalBufferedStream
+ * A line reader that decodes bytes from a {@link PositionalBufferedStream} as UTF-8.
  *
- * {@link BufferedReader} and its {@link java.io.BufferedReader#readLine()} method should be used in preference to this class (when the
- * {@link htsjdk.samtools.util.LocationAware} functionality is not required) because it offers greater performance.
+ * <p>Bytes are buffered per line and decoded with {@link StandardCharsets#UTF_8}. Invalid UTF-8 sequences (e.g.
+ * bare Latin-1 bytes in an older file) decode to the Unicode replacement character U+FFFD, so they are lost on
+ * rewrite.</p>
+ *
+ * <p>{@link BufferedReader} and its {@link java.io.BufferedReader#readLine()} method should be used
+ * in preference to this class (when the {@link htsjdk.samtools.util.LocationAware} functionality is
+ * not required) because it offers greater performance.</p>
  *
  * @author jrobinso
  */
@@ -41,7 +47,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
     private static final byte CARRIAGE_RETURN = (byte) ('\r' & 0xff);
 
     private PositionalBufferedStream is;
-    private char[] lineBuffer;
+    private byte[] lineBuffer;
     private int lineTerminatorLength = -1;
 
     protected AsciiLineReader() {}
@@ -70,7 +76,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
         this.is = is;
         // Allocate this only once, even though it is essentially a local variable of
         // readLine.  This makes a huge difference in performance
-        lineBuffer = new char[10000];
+        lineBuffer = new byte[10000];
     }
 
     /**
@@ -132,6 +138,10 @@ public class AsciiLineReader implements LineReader, LocationAware {
     @Deprecated
     public String readLine(final PositionalBufferedStream stream) throws IOException {
         int linePosition = 0;
+        // A local, not the field: the JIT cannot hoist a field load over the stream's out-of-line refill call, so
+        // with the field the loop reloads the buffer and its length for every byte, a measurable share of a long
+        // line's read
+        byte[] buf = lineBuffer;
 
         while (true) {
             final int b = stream.read();
@@ -140,33 +150,33 @@ public class AsciiLineReader implements LineReader, LocationAware {
                 // eof reached.  Return the last line, or null if this is a new line
                 if (linePosition > 0) {
                     this.lineTerminatorLength = 0;
-                    return new String(lineBuffer, 0, linePosition);
+                    return new String(buf, 0, linePosition, StandardCharsets.UTF_8);
                 } else {
                     return null;
                 }
             }
 
-            final char c = (char) (b & 0xFF);
-            if (c == LINEFEED || c == CARRIAGE_RETURN) {
-                if (c == CARRIAGE_RETURN && stream.peek() == LINEFEED) {
+            if (b == LINEFEED || b == CARRIAGE_RETURN) {
+                if (b == CARRIAGE_RETURN && stream.peek() == LINEFEED) {
                     stream.read(); // <= skip the trailing \n in case of \r\n termination
                     this.lineTerminatorLength = 2;
                 } else {
                     this.lineTerminatorLength = 1;
                 }
 
-                return new String(lineBuffer, 0, linePosition);
+                return new String(buf, 0, linePosition, StandardCharsets.UTF_8);
             } else {
-                // Expand line buffer size if necessary.  Reserve at least 2 characters
+                // Expand line buffer size if necessary.  Reserve at least 2 bytes
                 // for potential line-terminators in return string
 
-                if (linePosition > (lineBuffer.length - 3)) {
-                    final char[] temp = new char[BUFFER_OVERFLOW_INCREASE_FACTOR * lineBuffer.length];
-                    System.arraycopy(lineBuffer, 0, temp, 0, lineBuffer.length);
+                if (linePosition > (buf.length - 3)) {
+                    final byte[] temp = new byte[BUFFER_OVERFLOW_INCREASE_FACTOR * buf.length];
+                    System.arraycopy(buf, 0, temp, 0, buf.length);
+                    buf = temp;
                     lineBuffer = temp;
                 }
 
-                lineBuffer[linePosition++] = c;
+                buf[linePosition++] = (byte) b;
             }
         }
     }

@@ -10,6 +10,7 @@ import htsjdk.tribble.readers.LineIterator;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -194,6 +195,21 @@ public class Gff3WriterTest extends HtsjdkTest {
 
         final byte[] expectedBytes = (version3Directive + expectedOutput).getBytes();
 
+        Assert.assertEquals(outputStream.toByteArray(), expectedBytes);
+    }
+
+    /** GFF3 is UTF-8 by specification, whatever the platform's default charset. */
+    @Test
+    public void commentsAreWrittenAsUtf8() {
+        final String comment = "café → λ 日本 " + new String(Character.toChars(0x1F600));
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try (final Gff3Writer writer = new Gff3Writer(outputStream)) {
+            writer.addComment(comment);
+        } catch (final IOException ex) {
+            throw new TestException("Error writing comment", ex);
+        }
+
+        final byte[] expectedBytes = (version3Directive + "#" + comment + "\n").getBytes(StandardCharsets.UTF_8);
         Assert.assertEquals(outputStream.toByteArray(), expectedBytes);
     }
 

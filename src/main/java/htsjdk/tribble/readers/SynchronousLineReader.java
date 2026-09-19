@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Implementation of {@link LineReader} that reads lines directly from the underlying stream or reader.
@@ -37,7 +38,7 @@ public final class SynchronousLineReader implements LineReader {
     private final LongLineBufferedReader longLineBufferedReader;
 
     public SynchronousLineReader(final InputStream stream) {
-        this(new InputStreamReader(stream));
+        this(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 
     public SynchronousLineReader(final Reader reader) {

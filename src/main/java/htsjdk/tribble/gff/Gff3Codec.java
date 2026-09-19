@@ -15,6 +15,7 @@ import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.ParsingUtils;
 import java.io.*;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -314,7 +315,8 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
                         ? IOUtil.openGzipOrBgzfStream(Files.newInputStream(p))
                         : Files.newInputStream(p);
 
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                try (BufferedReader br =
+                        new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
                     String line = br.readLine();
 

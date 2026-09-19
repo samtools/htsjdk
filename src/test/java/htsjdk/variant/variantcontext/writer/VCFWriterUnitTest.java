@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
@@ -42,6 +43,7 @@ import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
@@ -49,9 +51,12 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import htsjdk.variant.vcf.VCFStandardHeaderLines;
 import htsjdk.variant.vcf.VCFUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -559,5 +564,146 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .filter(line -> !line.startsWith("#"))
                 .collect(Collectors.toList());
         Assert.assertEquals(records, List.of("1\t100\t.\tA\tC,G\t.\t.\t.\tGT\t0/1|2"));
+    }
+
+    // UTF-8 round-trip tests
+
+    /** Builds a minimal VCF header with one sample, a String INFO field, and a String FORMAT field. */
+    private static VCFHeader utf8TestHeader(final String sampleName) {
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("NOTE", 1, VCFHeaderLineType.String, "A note"));
+        lines.add(new VCFFormatHeaderLine("CMT", 1, VCFHeaderLineType.String, "Comment"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        final VCFHeader header = new VCFHeader(lines, List.of(sampleName));
+        header.setSequenceDictionary(dict);
+        return header;
+    }
+
+    /** Builds a VariantContext with a String INFO value and a String FORMAT value. */
+    private static VariantContext utf8Variant(final String sampleName, final String infoValue, final String fmtValue) {
+        return new VariantContextBuilder()
+                .chr("chr1")
+                .start(100)
+                .stop(100)
+                .alleles(List.of(Allele.REF_A, Allele.ALT_C))
+                .attribute("NOTE", infoValue)
+                .genotypes(new GenotypeBuilder(sampleName, List.of(Allele.REF_A, Allele.ALT_C))
+                        .attribute("CMT", fmtValue)
+                        .make())
+                .make();
+    }
+
+    @Test
+    public void utf8InInfoAndFormatRoundTripsViaPlainVcf() throws IOException {
+        // Two- and three-byte sequences; the arrow, lambda and kanji lie outside Latin-1
+        final String sample = "Sébastien→λ";
+        final String infoVal = "café→日本";
+        final String fmtVal = "résumé_λ";
+
+        final VCFHeader header = utf8TestHeader(sample);
+        final Path output = Files.createTempFile(tempDir, "utf8.", ".vcf");
+        output.toFile().deleteOnExit();
+
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(utf8Variant(sample, infoVal, fmtVal));
+        }
+
+        // Verify the on-disk bytes are UTF-8
+        final byte[] fileBytes = Files.readAllBytes(output);
+        final String text = new String(fileBytes, StandardCharsets.UTF_8);
+        Assert.assertTrue(text.contains(sample), "Sample name not found in file");
+        Assert.assertTrue(text.contains(infoVal), "INFO value not found in file");
+
+        // Read back via VCFFileReader, which decodes through SynchronousLineReader
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            Assert.assertTrue(reader.getFileHeader().getSampleNamesInOrder().contains(sample));
+            final VariantContext vc = reader.iterator().next();
+            Assert.assertEquals(vc.getAttribute("NOTE"), infoVal);
+            Assert.assertEquals(vc.getGenotype(sample).getExtendedAttribute("CMT"), fmtVal);
+        }
+    }
+
+    @Test
+    public void utf8FourByteCharacterSurvivesRoundTrip() throws IOException {
+        // U+1F600 (grinning face) - a character outside the BMP
+        final String smiley = new String(Character.toChars(0x1F600));
+        final String sample = "sample1";
+        final VCFHeader header = utf8TestHeader(sample);
+        final Path output = Files.createTempFile(tempDir, "utf8-4byte.", ".vcf");
+        output.toFile().deleteOnExit();
+
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(utf8Variant(sample, "face" + smiley, smiley + "ok"));
+        }
+
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final VariantContext vc = reader.iterator().next();
+            Assert.assertEquals(vc.getAttribute("NOTE"), "face" + smiley);
+            Assert.assertEquals(vc.getGenotype(sample).getExtendedAttribute("CMT"), smiley + "ok");
+        }
+    }
+
+    @Test
+    public void utf8InHeaderDescriptionSurvivesRoundTrip() throws IOException {
+        final String sample = "sample1";
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        final String description = "Fréquence d'échantillonnage → λ 日本"; // accented Latin-1 and characters outside it
+        lines.add(new VCFInfoHeaderLine("FREQ", 1, VCFHeaderLineType.Float, description));
+        final VCFHeader header = new VCFHeader(lines, List.of(sample));
+        header.setSequenceDictionary(dict);
+
+        final Path output = Files.createTempFile(tempDir, "utf8-desc.", ".vcf");
+        output.toFile().deleteOnExit();
+
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final VCFInfoHeaderLine freq = reader.getFileHeader().getInfoHeaderLine("FREQ");
+            Assert.assertEquals(freq.getDescription(), description);
+        }
+    }
+
+    @Test
+    public void utf8RoundTripsViaBgzippedVcf() throws IOException {
+        final String sample = "Schön_日本";
+        final String infoVal = "üäö→λ";
+
+        final VCFHeader header = utf8TestHeader(sample);
+        final Path output = Files.createTempFile(tempDir, "utf8.", ".vcf.gz");
+        output.toFile().deleteOnExit();
+
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(utf8Variant(sample, infoVal, "test"));
+        }
+
+        // Read back via VCFFileReader, which decodes the decompressed stream through SynchronousLineReader
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            Assert.assertTrue(reader.getFileHeader().getSampleNamesInOrder().contains(sample));
+            final VariantContext vc = reader.iterator().next();
+            Assert.assertEquals(vc.getAttribute("NOTE"), infoVal);
+        }
     }
 }
