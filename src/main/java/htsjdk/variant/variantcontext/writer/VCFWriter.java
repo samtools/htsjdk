@@ -48,6 +48,8 @@ import java.nio.file.Path;
  */
 class VCFWriter extends IndexingVariantContextWriter {
 
+    // Every header is written as 4.2 whatever version it declares, including 4.3 and later: headers keep their
+    // version through copies and merges, so refusing those would refuse nearly everything derived from a 4.3 input.
     private static final String VERSION_LINE = VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString()
             + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
 
@@ -161,8 +163,6 @@ class VCFWriter extends IndexingVariantContextWriter {
             VCFHeader header, final Writer writer, final String versionLine, final String streamNameForError) {
 
         try {
-            rejectVCFV43Headers(header);
-
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
 
@@ -246,22 +246,11 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setHeader(final VCFHeader header) {
-        rejectVCFV43Headers(header);
-
         if (outputHasBeenWritten) {
             throw new IllegalStateException(
                     "The header cannot be modified after the header or variants have been written to the output stream.");
         }
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
-    }
-
-    // writing vcf v4.3 is not implemented
-    private static void rejectVCFV43Headers(final VCFHeader targetHeader) {
-        if (targetHeader.getVCFHeaderVersion() != null
-                && targetHeader.getVCFHeaderVersion().isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            throw new IllegalArgumentException(
-                    String.format("Writing VCF version %s is not implemented", targetHeader.getVCFHeaderVersion()));
-        }
     }
 }

@@ -93,6 +93,11 @@ interface VCFLineParser {
  * exactly, whitespace included, with {@code \"} and {@code \\} as escapes. Outside quotes only the first
  * {@code =} of an attribute separates key from value, so IDs and values may themselves contain {@code =} and
  * {@code "}, and surrounding whitespace is dropped.
+ *
+ * <p>Lines in the wild are not always well formed, and what can be read without guessing is: a double quote
+ * inside a quoted value that the writer forgot to escape is taken as part of the value (see
+ * {@link #closesValue}), angle brackets outside quotes are never content, whitespace around the line is ignored,
+ * and a line that lacks its closing bracket still yields its last attribute.
  */
 class VCF4Parser implements VCFLineParser {
 
@@ -106,9 +111,10 @@ class VCF4Parser implements VCFLineParser {
         boolean escape = false;
         int quotedLength = -1; // how much of the value was inside quotes, or -1 for a value without quotes
 
-        final int last = valueLine.length() - 1;
+        final String line = valueLine.trim();
+        final int last = line.length() - 1;
         for (int index = 0; index <= last; index++) {
-            final char c = valueLine.charAt(index);
+            final char c = line.charAt(index);
             if (inQuote) {
                 if (escape) {
                     // only a double quote and a backslash can be escaped; any other backslash is copied through
@@ -119,7 +125,7 @@ class VCF4Parser implements VCFLineParser {
                     escape = false;
                 } else if (c == '\\') {
                     escape = true;
-                } else if (c == '"') {
+                } else if (c == '"' && closesValue(line, index)) {
                     inQuote = false;
                     quotedLength = builder.length();
                 } else {
@@ -128,10 +134,11 @@ class VCF4Parser implements VCFLineParser {
             } else if (c == '"' && key != null && quotedLength < 0 && isBlank(builder)) {
                 inQuote = true;
                 builder.setLength(0);
-            } else if (c == '<' && index == 0) {
-                // the opening bracket
-            } else if (c == '>' && index == last) {
-                putAttribute(ret, key, builder, quotedLength);
+            } else if (c == '<' || c == '>') {
+                // the pair around the line, or a stray one: never part of a key or of an unquoted value
+                if (c == '>' && index == last) {
+                    putAttribute(ret, key, builder, quotedLength);
+                }
             } else if (c == '=' && key == null) {
                 key = builder.toString().trim();
                 builder = new StringBuilder();
@@ -148,7 +155,44 @@ class VCF4Parser implements VCFLineParser {
         if (inQuote) {
             throw new TribbleException.InvalidHeader("Unclosed quote in header line value " + valueLine);
         }
+        if (last < 0 || line.charAt(last) != '>') {
+            // no closing bracket to have ended the last attribute
+            putAttribute(ret, key, builder, quotedLength);
+        }
         return ret;
+    }
+
+    /**
+     * Whether the double quote at {@code quoteIndex}, met inside a quoted value, ends that value: it does if the
+     * line ends there, or if another attribute follows, that is, a comma and then a key up to its {@code =} (or up
+     * to the end of the line, for a key without a value). Followed by anything else it is a quote the writer
+     * did not escape, as in {@code Description="the "best", really"}, and belongs to the value.
+     */
+    private static boolean closesValue(final String line, final int quoteIndex) {
+        final int last = line.length() - 1;
+        int index = quoteIndex + 1;
+        while (index <= last && Character.isWhitespace(line.charAt(index))) {
+            index++;
+        }
+        if (index > last) {
+            return true;
+        }
+        if (line.charAt(index) != ',') {
+            return line.charAt(index) == '>' && index == last;
+        }
+        for (index++; index <= last; index++) {
+            final char c = line.charAt(index);
+            if (c == '=') {
+                return true;
+            }
+            if (c == '>') {
+                return index == last;
+            }
+            if (c == ',' || c == '"' || c == '<') {
+                return false;
+            }
+        }
+        return false;
     }
 
     private static boolean isBlank(final StringBuilder text) {

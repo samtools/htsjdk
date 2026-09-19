@@ -345,4 +345,42 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .attributes(attributes)
                 .make();
     }
+
+    /**
+     * Headers keep the version they declare through copies, rebuilds and merges, so one derived from a 4.3 input
+     * declares 4.3; it is written all the same.
+     */
+    @Test
+    public void headersDerivedFromA43InputAreWritten() throws IOException {
+        final VCFHeader in;
+        try (final VCFFileReader reader =
+                new VCFFileReader(Path.of("src/test/resources/htsjdk/variant/vcf43/all43Features.vcf"), false)) {
+            in = reader.getFileHeader();
+        }
+        Assert.assertEquals(in.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        final List<VCFHeader> derived = List.of(
+                in,
+                new VCFHeader(in),
+                new VCFHeader(in.getMetaDataInInputOrder(), in.getGenotypeSamples()),
+                new VCFHeader(
+                        VCFUtils.smartMergeHeaders(List.of(in, new VCFHeader(in)), false), in.getGenotypeSamples()));
+        for (final VCFHeader header : derived) {
+            Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+            final Path output = Files.createTempFile(tempDir, "from43.", ".bcf");
+            output.toFile().deleteOnExit();
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .setOutputPath(output)
+                    .setReferenceDictionary(createArtificialSequenceDictionary())
+                    .unsetOption(Options.INDEX_ON_THE_FLY)
+                    .setOption(Options.ALLOW_MISSING_FIELDS_IN_HEADER)
+                    .build()) {
+                writer.writeHeader(header);
+            }
+            try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+                Assert.assertEquals(
+                        reader.getFileHeader().getInfoHeaderLines().size(),
+                        in.getInfoHeaderLines().size());
+            }
+        }
+    }
 }

@@ -79,4 +79,17 @@ public class VCFUtilsTest extends HtsjdkTest {
             }
         });
     }
+
+    @Test
+    public void rebuildingAVersionlessHeaderDoesNotChangeWhatAMergeDeclares() {
+        final VCFHeader versionless = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
+        final VCFHeader rebuilt = new VCFHeader(versionless.getMetaDataInInputOrder());
+        final VCFHeader v40 = new VCFHeader(VCFHeaderVersion.VCF4_0, Collections.emptySet(), Collections.emptySet());
+        Assert.assertEquals(
+                new VCFHeader(VCFUtils.smartMergeHeaders(List.of(versionless, v40), false)).getVCFHeaderVersion(),
+                VCFHeaderVersion.VCF4_0);
+        Assert.assertEquals(
+                new VCFHeader(VCFUtils.smartMergeHeaders(List.of(rebuilt, v40), false)).getVCFHeaderVersion(),
+                VCFHeaderVersion.VCF4_0);
+    }
 }

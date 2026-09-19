@@ -126,10 +126,10 @@ public class HtsVCFCodecTest extends HtsjdkTest {
         }
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testRejectWritingV43HeaderAsV42() {
-        // read vcf v4.3 and try to write it to a vcf v4.2 (header is rejected)
-        final IOPath outputPath = IOUtils.createTempPath("rejectWrite43HeaderVCF", ".vcf");
+    @Test
+    public void testWritingV43HeaderAsV42() {
+        // read vcf v4.3 and write it to a vcf v4.2: the writer writes every header as v4.2
+        final IOPath outputPath = IOUtils.createTempPath("write43HeaderVCF", ".vcf");
         readWriteVCFToPath(
                 new HtsPath(VARIANTS_TEST_DIR + "variant/vcf43/all43Features.vcf"),
                 outputPath,

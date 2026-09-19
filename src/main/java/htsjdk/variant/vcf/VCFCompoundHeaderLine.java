@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * a base class for compound header lines, which include info lines and format lines (so far)
@@ -332,7 +333,11 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             }
         }
 
-        validate();
+        try {
+            validate();
+        } catch (final IllegalArgumentException e) {
+            throw new TribbleException.InvalidHeader(e.getMessage() + ": " + line);
+        }
     }
 
     private static final List<String> STANDARD_TAGS =
@@ -421,6 +426,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         final VCFCompoundHeaderLine that = (VCFCompoundHeaderLine) o;
         return equalsExcludingDescription(that)
                 && description.equals(that.description)
+                && Objects.equals(source, that.source)
+                && Objects.equals(version, that.version)
                 && otherAttributes.equals(that.otherAttributes);
     }
 

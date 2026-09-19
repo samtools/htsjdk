@@ -70,9 +70,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * The VCF version this header declares, or null when it declares none, in which case it is written as
-     * {@link VCFHeaderVersion#DEFAULT_VERSION}. It comes from the fileformat line among the metadata lines, from
-     * {@link #setVCFHeaderVersion}, or from the header this one was copied from.
+     * The VCF version this header declares, or null when it declares none. It comes from the fileformat line among
+     * the metadata lines, from {@link #setVCFHeaderVersion}, or from the header this one was copied from.
      */
     private VCFHeaderVersion vcfHeaderVersion;
 
@@ -179,8 +178,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Sets the version this header declares. Any version may follow any other: the version only says what the header
-     * is written as, and the writer checks that the header's contents can be expressed in it.
+     * Sets the version this header declares. Any version may follow any other: it is a label, and nothing about the
+     * header's lines is checked against it.
      *
      * @param vcfHeaderVersion the new version, or null for none
      */
@@ -189,8 +188,7 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * @return the version this header declares, or null if it declares none (it is then written as
-     *     {@link VCFHeaderVersion#DEFAULT_VERSION})
+     * @return the version this header declares, or null if it declares none
      */
     public VCFHeaderVersion getVCFHeaderVersion() {
         return vcfHeaderVersion;
@@ -225,8 +223,9 @@ public class VCFHeader implements HtsHeader, Serializable {
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
         // a fileformat line sets the version rather than being kept as a line
-        if (VCFHeaderVersion.isFormatString(headerLine.getKey())) {
-            setVCFHeaderVersion(versionOf(headerLine));
+        final VCFHeaderVersion declared = declaredVersion(headerLine);
+        if (declared != null) {
+            setVCFHeaderVersion(declared);
             return;
         }
         // Try to create a lookup entry for the new line. If this succeeds (because there was
@@ -315,30 +314,36 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Takes this header's version from the fileformat line among the given lines, if there is one, and removes any
-     * such lines from the set: the version is held as a field and the line is regenerated when the header is written.
+     * Takes this header's version from the fileformat lines among the given lines and removes them from the set: the
+     * version is held as a field. Lines gathered from several headers may carry several; the highest wins, as it does
+     * when headers are merged, so the order the lines were gathered in does not matter.
      */
     private void takeVersionFromVersionLines(final Set<VCFHeaderLine> headerLines) {
         final List<VCFHeaderLine> versionLines = new ArrayList<VCFHeaderLine>();
         for (final VCFHeaderLine line : headerLines) {
-            if (VCFHeaderVersion.isFormatString(line.getKey())) {
+            final VCFHeaderVersion declared = declaredVersion(line);
+            if (declared != null) {
                 versionLines.add(line);
+                if (vcfHeaderVersion == null || declared.isAtLeastAsRecentAs(vcfHeaderVersion)) {
+                    vcfHeaderVersion = declared;
+                }
             }
         }
-        if (!versionLines.isEmpty()) {
-            vcfHeaderVersion = versionOf(versionLines.get(versionLines.size() - 1));
-            headerLines.removeAll(versionLines);
-        }
+        headerLines.removeAll(versionLines);
     }
 
     /**
-     * @return the version a fileformat line declares
-     * @throws TribbleException.InvalidHeader if the line names a version htsjdk does not know
+     * @return the version a line declares, or null if it is not a fileformat line. VCF 3.2 called its version line
+     *     {@code format}; a line with that key whose value is not a version is an ordinary line.
+     * @throws TribbleException.InvalidHeader if a {@code fileformat} line names a version htsjdk does not know
      */
-    private static VCFHeaderVersion versionOf(final VCFHeaderLine versionLine) {
-        final VCFHeaderVersion version = VCFHeaderVersion.toHeaderVersion(versionLine.getValue());
-        if (version == null) {
-            throw new TribbleException.InvalidHeader(versionLine.getValue() + " is not a supported VCF version");
+    private static VCFHeaderVersion declaredVersion(final VCFHeaderLine line) {
+        if (!VCFHeaderVersion.isFormatString(line.getKey())) {
+            return null;
+        }
+        final VCFHeaderVersion version = VCFHeaderVersion.toHeaderVersion(line.getValue());
+        if (version == null && line.getKey().equals(VCFHeaderVersion.DEFAULT_VERSION.getFormatString())) {
+            throw new TribbleException.InvalidHeader(line.getValue() + " is not a supported VCF version");
         }
         return version;
     }
@@ -476,17 +481,14 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * The fileformat line this header is written with: its declared version, or the default when it declares none.
-     * Leading the metadata with it means {@code new VCFHeader(header.getMetaDataInInputOrder(), ...)} keeps the version.
+     * The lines lead with a fileformat line for the version this header declares, so that a header built from them
+     * declares it too; a header that declares none gets no such line, and one built from its lines declares none.
      */
-    public VCFHeaderLine getVersionLine() {
-        final VCFHeaderVersion version = vcfHeaderVersion == null ? VCFHeaderVersion.DEFAULT_VERSION : vcfHeaderVersion;
-        return new VCFHeaderLine(version.getFormatString(), version.getVersionString());
-    }
-
     private Set<VCFHeaderLine> makeGetMetaDataSet(final Set<VCFHeaderLine> headerLinesInSomeOrder) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>();
-        lines.add(getVersionLine());
+        if (vcfHeaderVersion != null) {
+            lines.add(new VCFHeaderLine(vcfHeaderVersion.getFormatString(), vcfHeaderVersion.getVersionString()));
+        }
         lines.addAll(headerLinesInSomeOrder);
         return Collections.unmodifiableSet(lines);
     }

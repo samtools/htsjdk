@@ -84,4 +84,13 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         assertEquals(reread.getDescription(), description);
         assertEquals(reread, line);
     }
+
+    @Test
+    public void anIdIsNeverQuoted() {
+        // other tools take quotes around an ID to be part of it, and then nothing in the records matches it
+        final Map<String, String> attributes = new LinkedHashMap<>();
+        attributes.put("ID", "q=10");
+        attributes.put("URL", "http://x?y=z");
+        assertEquals(VCFHeaderLine.toStringEncoding(attributes), "<ID=q=10,URL=\"http://x?y=z\">");
+    }
 }

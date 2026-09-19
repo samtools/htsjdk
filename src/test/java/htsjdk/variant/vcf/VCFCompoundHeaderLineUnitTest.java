@@ -120,4 +120,26 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         Assert.assertEquals(line.getID(), "FOO");
         Assert.assertNotNull(line.getDescription());
     }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void anEqualsSignInAnIdReadFromAFileIsAnInvalidHeader() {
+        new VCFInfoHeaderLine("<ID=a=b,Number=1,Type=String,Description=\"x\">", VCFHeaderVersion.VCF4_2);
+    }
+
+    // F10
+    @Test
+    public void linesDifferingOnlyInSourceOrVersionAreNotEqual() {
+        final String line = "<ID=FOO,Number=1,Type=Float,Description=\"foo\"";
+        final VCFInfoHeaderLine plain = new VCFInfoHeaderLine(line + ">", VCFHeaderVersion.VCF4_2);
+        final VCFInfoHeaderLine dbsnp138 =
+                new VCFInfoHeaderLine(line + ",Source=\"dbsnp\",Version=\"138\">", VCFHeaderVersion.VCF4_2);
+        final VCFInfoHeaderLine dbsnp151 =
+                new VCFInfoHeaderLine(line + ",Source=\"dbsnp\",Version=\"151\">", VCFHeaderVersion.VCF4_2);
+        final VCFInfoHeaderLine dbsnp151Again =
+                new VCFInfoHeaderLine(line + ",Source=\"dbsnp\",Version=\"151\">", VCFHeaderVersion.VCF4_2);
+        Assert.assertNotEquals(plain, dbsnp138);
+        Assert.assertNotEquals(dbsnp138, dbsnp151);
+        Assert.assertEquals(dbsnp151, dbsnp151Again);
+        Assert.assertEquals(dbsnp151.hashCode(), dbsnp151Again.hashCode());
+    }
 }

@@ -470,11 +470,57 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void headerWithoutAFileformatLineDeclaresNoVersionAndIsWrittenAsTheDefault() {
+    public void aHeaderWithoutAFileformatLineDeclaresNoVersion() {
         final VCFHeader header = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
         Assert.assertNull(header.getVCFHeaderVersion());
-        Assert.assertEquals(header.getVersionLine().getValue(), VCFHeaderVersion.DEFAULT_VERSION.getVersionString());
-        Assert.assertEquals(header.getMetaDataInInputOrder().iterator().next(), header.getVersionLine());
+        Assert.assertEquals(header.getMetaDataInInputOrder(), Set.of(new VCFHeaderLine("source", "test")));
+    }
+
+    @Test
+    public void aHeaderThatDeclaresNoVersionStillDeclaresNoneWhenRebuiltFromItsLines() {
+        final VCFHeader header = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
+        Assert.assertNull(new VCFHeader(header.getMetaDataInInputOrder()).getVCFHeaderVersion());
+        Assert.assertNull(new VCFHeader(header.getMetaDataInSortedOrder(), List.of("NA1")).getVCFHeaderVersion());
+    }
+
+    @Test
+    public void theHighestOfSeveralFileformatLinesWinsWhateverTheirOrder() {
+        final VCFHeaderLine v41 = new VCFHeaderLine("fileformat", "VCFv4.1");
+        final VCFHeaderLine v43 = new VCFHeaderLine("fileformat", "VCFv4.3");
+        Assert.assertEquals(
+                new VCFHeader(new LinkedHashSet<>(List.of(v41, v43))).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        Assert.assertEquals(
+                new VCFHeader(new LinkedHashSet<>(List.of(v43, v41))).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
+
+    @Test
+    public void linesGatheredFromAVersionedAndAVersionlessHeaderKeepTheVersion() {
+        final VCFHeader versioned =
+                new VCFHeader(VCFHeaderVersion.VCF4_3, Collections.emptySet(), Collections.emptySet());
+        final VCFHeader versionless = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
+        final Set<VCFHeaderLine> versionedFirst = new LinkedHashSet<>(versioned.getMetaDataInInputOrder());
+        versionedFirst.addAll(versionless.getMetaDataInInputOrder());
+        final Set<VCFHeaderLine> versionlessFirst = new LinkedHashSet<>(versionless.getMetaDataInInputOrder());
+        versionlessFirst.addAll(versioned.getMetaDataInInputOrder());
+        Assert.assertEquals(new VCFHeader(versionedFirst).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        Assert.assertEquals(new VCFHeader(versionlessFirst).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
+
+    @Test
+    public void theVcf32FormatLineSetsTheVersion() {
+        // VCF 3.2 spelled its version line "##format=VCRv3.2"
+        final VCFHeader header = new VCFHeader(Collections.singleton(new VCFHeaderLine(
+                VCFHeaderVersion.VCF3_2.getFormatString(), VCFHeaderVersion.VCF3_2.getVersionString())));
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF3_2);
+        Assert.assertNull(header.getOtherHeaderLine("format"));
+    }
+
+    @Test
+    public void aFormatLineThatNamesNoVersionIsAnOrdinaryLine() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFHeaderLine("format", "some text"));
+        Assert.assertNull(header.getVCFHeaderVersion());
+        Assert.assertEquals(header.getOtherHeaderLine("format").getValue(), "some text");
     }
 
     @Test

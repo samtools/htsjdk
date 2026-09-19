@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.tribble.TribbleException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -90,7 +91,23 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
             final String key,
             final List<String> expectedTagOrdering,
             final List<String> recommendedTags) {
-        this(key, VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering, recommendedTags));
+        this(
+                key,
+                parsedWithId(
+                        key,
+                        line,
+                        VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrdering, recommendedTags)));
+    }
+
+    /**
+     * @return the attributes parsed from a line of a file, which must include an ID
+     * @throws TribbleException.InvalidHeader if they do not
+     */
+    static Map<String, String> parsedWithId(final String key, final String line, final Map<String, String> parsed) {
+        if (parsed.get(ID_ATTRIBUTE) == null) {
+            throw new TribbleException.InvalidHeader(key + " header line is missing its ID attribute: " + line);
+        }
+        return parsed;
     }
 
     public VCFSimpleHeaderLine(final String key, final Map<String, String> mapping) {

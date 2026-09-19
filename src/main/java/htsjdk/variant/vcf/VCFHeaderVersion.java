@@ -43,7 +43,7 @@ public enum VCFHeaderVersion {
     VCF4_4("VCFv4.4", "fileformat"),
     VCF4_5("VCFv4.5", "fileformat");
 
-    /** The version written for a header that does not declare one. */
+    /** The version a header is taken to be when it does not declare one. */
     public static final VCFHeaderVersion DEFAULT_VERSION = VCF4_2;
 
     private final String versionString;

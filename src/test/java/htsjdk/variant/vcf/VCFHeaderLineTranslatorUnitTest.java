@@ -240,4 +240,49 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
                 VCFHeaderVersion.VCF4_2, "< ID = X , Description = \" padded \" , Number = 1 >", null);
         Assert.assertEquals(parsed, Map.of("ID", "X", "Description", " padded ", "Number", "1"));
     }
+
+    @Test
+    public void aQuoteTheWriterForgotToEscapeIsPartOfTheValue() {
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"The \"best\", really\",Source=\"s\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", "The \"best\", really", "Source", "s"));
+    }
+
+    @Test
+    public void anUnescapedQuoteBeforeMoreTextIsPartOfTheValue() {
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"The \"best\" value\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", "The \"best\" value"));
+    }
+
+    @Test
+    public void aQuotedValueMayBeFollowedByAKeyWithoutAValue() {
+        final Map<String, String> parsed =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"Y\",Flag>", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", "Y", "Flag", ""));
+    }
+
+    @Test
+    public void strayBracketsOutsideQuotesAreNotContent() {
+        final Map<String, String> parsed =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=<DEL>,Description=\"a <b> c\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "DEL", "Description", "a <b> c"));
+    }
+
+    @Test
+    public void whitespaceAroundTheLineIsIgnored() {
+        final Map<String, String> parsed =
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, " <ID=X,Description=\"Y\"> ", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", "Y"));
+    }
+
+    @Test
+    public void aLineWithoutItsClosingBracketStillYieldsItsLastAttribute() {
+        Assert.assertEquals(
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"Y\"", null),
+                Map.of("ID", "X", "Description", "Y"));
+        Assert.assertEquals(
+                VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=X,length=10", null),
+                Map.of("ID", "X", "length", "10"));
+    }
 }
