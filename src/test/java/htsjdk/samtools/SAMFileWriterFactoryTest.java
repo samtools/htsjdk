@@ -52,6 +52,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import java.util.zip.Deflater;
 import org.testng.Assert;
 import org.testng.SkipException;
@@ -823,6 +824,195 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         Assert.assertTrue(
                 Files.size(compressed) < Files.size(stored),
                 Files.size(compressed) + " is not below " + Files.size(stored));
+    }
+
+    // On-the-fly indexing of bgzipped SAM
+
+    private static List<String> fileNames(final Path directory) throws IOException {
+        try (Stream<Path> files = Files.list(directory)) {
+            return files.map(file -> file.getFileName().toString()).sorted().toList();
+        }
+    }
+
+    @Test
+    public void testSamGzWithCreateIndexWritesCsiByDefault() throws IOException {
+        final Path directory = Files.createTempDirectory("samGzDefaultCsi");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(
+                new SAMFileWriterFactory().setCreateIndex(true).setCreateMd5File(false),
+                coordinateSortedRecords(),
+                output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz", "reads.sam.gz.csi"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testSamGzWithBaiIndexTypeWritesBai() throws IOException {
+        final Path directory = Files.createTempDirectory("samGzBai");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(
+                new SAMFileWriterFactory()
+                        .setCreateIndex(true)
+                        .setCreateMd5File(false)
+                        .setSamIndexType(BamIndexType.BAI),
+                coordinateSortedRecords(),
+                output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz", "reads.sam.gz.bai"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testSamGzAutoGivesBaiForShortSequences() throws IOException {
+        final Path directory = Files.createTempDirectory("samGzAuto");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(
+                new SAMFileWriterFactory()
+                        .setCreateIndex(true)
+                        .setCreateMd5File(false)
+                        .setSamIndexType(BamIndexType.AUTO),
+                coordinateSortedRecords(),
+                output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz", "reads.sam.gz.bai"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testSamGzAutoGivesCsiForLongSequences() throws IOException {
+        final int longSequence = 600_000_000;
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, longSequence);
+        records.addFrag("read0", 0, 100, false);
+        final Path directory = Files.createTempDirectory("samGzAutoLong");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(
+                new SAMFileWriterFactory()
+                        .setCreateIndex(true)
+                        .setCreateMd5File(false)
+                        .setSamIndexType(BamIndexType.AUTO),
+                records,
+                output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz", "reads.sam.gz.csi"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testNoIndexForUnsortedSamGz() throws IOException {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.unsorted);
+        records.addFrag("read", 0, 100, false);
+        final Path directory = Files.createTempDirectory("samGzUnsorted");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(new SAMFileWriterFactory().setCreateIndex(true).setCreateMd5File(false), records, output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testNoIndexForQuerynameSortedSamGz() throws IOException {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
+        records.addFrag("read", 0, 100, false);
+        final Path directory = Files.createTempDirectory("samGzQueryname");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(new SAMFileWriterFactory().setCreateIndex(true).setCreateMd5File(false), records, output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testNoIndexForPlainSam() throws IOException {
+        final Path directory = Files.createTempDirectory("plainSam");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam");
+        writeRecords(
+                new SAMFileWriterFactory().setCreateIndex(true).setCreateMd5File(false),
+                coordinateSortedRecords(),
+                output);
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testNoIndexForOutputStream() throws IOException {
+        // Writing to an OutputStream should not produce an index
+        final SAMRecordSetBuilder records = coordinateSortedRecords();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (SAMFileWriter writer = new SAMFileWriterFactory()
+                .setCreateIndex(true)
+                .setCreateMd5File(false)
+                .makeSAMWriter(records.getHeader(), true, baos)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+        // No exception thrown, data is written, no index file
+        Assert.assertTrue(baos.size() > 0);
+    }
+
+    @Test
+    public void testSetBamIndexTypeDoesNotAffectSam() throws IOException {
+        final Path directory = Files.createTempDirectory("bamTypeOnSam");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(
+                new SAMFileWriterFactory()
+                        .setCreateIndex(true)
+                        .setCreateMd5File(false)
+                        .setBamIndexType(BamIndexType.BAI), // should be ignored for SAM
+                coordinateSortedRecords(),
+                output);
+        // Default SAM index type is CSI, not affected by setBamIndexType
+        Assert.assertEquals(fileNames(directory), List.of("reads.sam.gz", "reads.sam.gz.csi"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testSetSamIndexTypeDoesNotAffectBam() throws IOException {
+        final Path directory = Files.createTempDirectory("samTypeOnBam");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.bam");
+        writeRecords(
+                new SAMFileWriterFactory()
+                        .setCreateIndex(true)
+                        .setCreateMd5File(false)
+                        .setSamIndexType(BamIndexType.CSI), // should be ignored for BAM
+                coordinateSortedRecords(),
+                output);
+        // Default BAM index type is BAI, not affected by setSamIndexType
+        Assert.assertEquals(fileNames(directory), List.of("reads.bai", "reads.bam"));
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testCopyConstructorCarriesSamIndexType() {
+        final SAMFileWriterFactory original = new SAMFileWriterFactory().setSamIndexType(BamIndexType.BAI);
+        final SAMFileWriterFactory copy = new SAMFileWriterFactory(original);
+        Assert.assertTrue(copy.toString().contains("samIndexType=BAI"));
+    }
+
+    @Test
+    public void testCloneCarriesSamIndexType() {
+        final SAMFileWriterFactory original = new SAMFileWriterFactory().setSamIndexType(BamIndexType.BAI);
+        final SAMFileWriterFactory clone = original.clone();
+        Assert.assertTrue(clone.toString().contains("samIndexType=BAI"));
+    }
+
+    @Test
+    public void testMd5StillWrittenWhenIndexingIsOn() throws IOException {
+        final Path directory = Files.createTempDirectory("samGzMd5AndIndex");
+        IOUtil.deleteOnExit(directory);
+        final Path output = directory.resolve("reads.sam.gz");
+        writeRecords(
+                new SAMFileWriterFactory().setCreateIndex(true).setCreateMd5File(true),
+                coordinateSortedRecords(),
+                output);
+        final List<String> names = fileNames(directory);
+        Assert.assertTrue(names.contains("reads.sam.gz"), names.toString());
+        Assert.assertTrue(names.contains("reads.sam.gz.csi"), names.toString());
+        Assert.assertTrue(names.contains("reads.sam.gz.md5"), names.toString());
+        IOUtil.recursiveDelete(directory);
     }
 
     @Test

@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.AsciiWriter;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,6 +46,14 @@ public class SAMTextWriter extends SAMFileWriterImpl {
 
     private final SamFlagField samFlagFieldOutput;
 
+    // Indexing state: bgzfStream is set before the header is written and the indexer is created after.
+    private BAMIndexer bamIndexer;
+    private BlockCompressedOutputStream bgzfStream;
+    private Path indexPath;
+    private BamIndexType indexType;
+    private int indexCsiMinShift;
+    private long nextRecordStart;
+
     /**
      * Constructs a SAMTextWriter that outputs to a Writer.
      * @param out Writer.
@@ -59,6 +68,27 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     public SAMTextWriter(final Path path) {
         this(path, SamFlagField.DECIMAL);
+    }
+
+    /**
+     * Enables on-the-fly index construction for block-compressed SAM output. Must be called before
+     * the header is written (i.e. before {@code setHeader}), so that writing the header can capture
+     * the BGZF file pointer marking the start of the first record.
+     *
+     * @param stream the BGZF stream the AsciiWriter writes to
+     * @param indexPath where to write the index
+     * @param resolvedType BAI or CSI (never AUTO)
+     * @param csiMinShift for a CSI, log2 of the span of its smallest bins
+     */
+    void enableIndexConstruction(
+            final BlockCompressedOutputStream stream,
+            final Path indexPath,
+            final BamIndexType resolvedType,
+            final int csiMinShift) {
+        this.bgzfStream = stream;
+        this.indexPath = indexPath;
+        this.indexType = resolvedType;
+        this.indexCsiMinShift = csiMinShift;
     }
 
     /**
@@ -122,11 +152,29 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     @Override
     public void writeAlignment(final SAMRecord alignment) {
-        writeAlignmentNoNewline(alignment);
-        try {
-            out.write("\n");
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+        if (bamIndexer != null) {
+            try {
+                final long startOffset = nextRecordStart;
+                writeAlignmentNoNewline(alignment);
+                out.write("\n");
+                ((AsciiWriter) out).writeBufferedBytes();
+                final long stopOffset = bgzfStream.getFilePointer();
+                nextRecordStart = stopOffset;
+                alignment.setFileSource(new SAMFileSource(null, new BAMFileSpan(new Chunk(startOffset, stopOffset))));
+                bamIndexer.processAlignment(alignment);
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            } catch (final Exception e) {
+                bamIndexer = null;
+                throw new SAMException("Exception when processing alignment for SAM index " + alignment, e);
+            }
+        } else {
+            writeAlignmentNoNewline(alignment);
+            try {
+                out.write("\n");
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
         }
     }
 
@@ -203,6 +251,19 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     @Override
     protected void writeHeader(final SAMFileHeader header) {
         new SAMTextHeaderCodec().encode(out, header);
+        if (bgzfStream != null && indexPath != null) {
+            try {
+                ((AsciiWriter) out).writeBufferedBytes();
+                nextRecordStart = bgzfStream.getFilePointer();
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+            if (!header.getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)) {
+                throw new SAMException(
+                        "Not creating SAM index since not sorted by coordinates: " + header.getSortOrder());
+            }
+            bamIndexer = new BAMIndexer(indexPath, header, indexType, indexCsiMinShift).namingSequencesInCsi();
+        }
     }
 
     /**
@@ -210,10 +271,29 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      */
     @Override
     public void finish() {
+        final long endOfRecords;
+        if (bamIndexer != null) {
+            try {
+                ((AsciiWriter) out).writeBufferedBytes();
+                bgzfStream.flush();
+                endOfRecords = bgzfStream.getFilePointer();
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        } else {
+            endOfRecords = 0;
+        }
         try {
             out.close();
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
+        }
+        try {
+            if (bamIndexer != null) {
+                bamIndexer.finish(endOfRecords);
+            }
+        } catch (final Exception e) {
+            throw new SAMException("Exception writing SAM index file", e);
         }
     }
 

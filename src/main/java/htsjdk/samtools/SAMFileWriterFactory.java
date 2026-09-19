@@ -65,6 +65,7 @@ public class SAMFileWriterFactory implements Cloneable {
     private CRAMEncodingStrategy cramEncodingStrategy = new CRAMEncodingStrategy();
     private boolean createBaiIndexForCram = false;
     private BamIndexType bamIndexType = BamIndexType.BAI;
+    private BamIndexType samIndexType = BamIndexType.CSI;
     private int csiMinShift = BAMIndexer.DEFAULT_CSI_MIN_SHIFT;
 
     /** simple constructor */
@@ -86,6 +87,7 @@ public class SAMFileWriterFactory implements Cloneable {
         this.deflaterFactory = other.deflaterFactory;
         this.samFlagFieldOutput = other.samFlagFieldOutput;
         this.bamIndexType = other.bamIndexType;
+        this.samIndexType = other.samIndexType;
         this.csiMinShift = other.csiMinShift;
     }
 
@@ -162,8 +164,10 @@ public class SAMFileWriterFactory implements Cloneable {
     /**
      * Convenience method allowing newSAMFileWriterFactory().setCreateIndex(true);
      * Equivalent to SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true); newSAMFileWriterFactory();
-     * If a BAM or CRAM (not SAM) file is created, the setting is true, and the file header specifies coordinate order,
-     * then an index (.bai for BAM, .crai for CRAM) will be written along with the file.
+     * If a BAM, bgzipped SAM or CRAM file is created, the setting is true, and the file header specifies
+     * coordinate order, then an index will be written along with the file. The index kind is chosen by
+     * {@link #setBamIndexType} for BAM, {@link #setSamIndexType} for bgzipped SAM, and is always a CRAI for
+     * CRAM. Ignored for plain (uncompressed) SAM.
      *
      * @param setting whether to attempt to create an index while creating the alignment file.
      * @return this factory object
@@ -192,7 +196,8 @@ public class SAMFileWriterFactory implements Cloneable {
      * Sets the kind of index written beside a BAM when {@link #setCreateIndex index creation} is on. The default
      * is {@link BamIndexType#BAI}, written as {@code x.bai}; a CSI is written as {@code x.bam.csi}, as samtools
      * names it. A BAI cannot address positions beyond 2^29, so a BAM with a longer sequence needs
-     * {@link BamIndexType#CSI}, or {@link BamIndexType#AUTO} to get a CSI only then. Ignored for SAM and CRAM.
+     * {@link BamIndexType#CSI}, or {@link BamIndexType#AUTO} to get a CSI only then. Ignored for bgzipped SAM
+     * (which has {@link #setSamIndexType}) and CRAM.
      *
      * @return this factory object
      */
@@ -205,8 +210,27 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
-     * Sets log2 of the span of the smallest bins of a CSI index written beside a BAM; the default is 14, as for
-     * samtools. The rest of the binning scheme is chosen to reach the header's longest sequence.
+     * Sets the kind of index written beside a bgzipped SAM ({@code .sam.gz}) when {@link #setCreateIndex index
+     * creation} is on. The default is {@link BamIndexType#CSI}, written as {@code x.sam.gz.csi}, as samtools
+     * writes on the fly; {@link BamIndexType#BAI} is written as {@code x.sam.gz.bai}. {@link BamIndexType#AUTO}
+     * resolves as for BAM: CSI only if a sequence is too long for a BAI. The CSI always carries a tabix header
+     * naming every sequence of the header, so samtools and tabix both read it. Ignored for BAM, plain SAM and
+     * CRAM.
+     *
+     * @return this factory object
+     */
+    public SAMFileWriterFactory setSamIndexType(final BamIndexType samIndexType) {
+        if (samIndexType == null) {
+            throw new IllegalArgumentException("null SAM index type");
+        }
+        this.samIndexType = samIndexType;
+        return this;
+    }
+
+    /**
+     * Sets log2 of the span of the smallest bins of a CSI index written beside a BAM or bgzipped SAM; the
+     * default is 14, as for samtools. The rest of the binning scheme is chosen to reach the header's longest
+     * sequence.
      *
      * @return this factory object
      */
@@ -407,7 +431,10 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param presorted  if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
      * @param outputPath where to write the output. If it ends with one of {@link FileExtensions#BLOCK_COMPRESSED}
      *                   (for example {@code x.sam.gz}) the SAM text is BGZF-compressed, at this factory's
-     *                   compression level; an MD5 file, if requested, is then of the compressed bytes.
+     *                   compression level; an MD5 file, if requested, is then of the compressed bytes. When
+     *                   {@link #setCreateIndex index creation} is on and the output is block-compressed,
+     *                   coordinate-sorted and a regular file, an index is written beside it; its kind is
+     *                   chosen by {@link #setSamIndexType} (default CSI).
      */
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final Path outputPath) {
         /**
@@ -422,13 +449,35 @@ public class SAMFileWriterFactory implements Cloneable {
             if (this.createMd5File) {
                 os = new Md5CalculatingOutputStream(os, IOUtil.addExtension(outputPath, ".md5"));
             }
+            BlockCompressedOutputStream bgzfStream = null;
             if (outputPath != null && IOUtil.hasBlockCompressedExtension(outputPath)) {
                 // A BGZF stream makes several small writes per block, which uncompressed SAM's AsciiWriter does not.
                 // Closing the stream, as SAMTextWriter does when it finishes, writes the BGZF end-of-file block.
-                os = new BlockCompressedOutputStream(
+                bgzfStream = new BlockCompressedOutputStream(
                         IOUtil.maybeBufferOutputStream(os, bufferSize), outputPath, compressionLevel, deflaterFactory);
+                os = bgzfStream;
             }
-            return initWriter(header, presorted, new SAMTextWriter(os, samFlagFieldOutput));
+
+            final SAMTextWriter writer = new SAMTextWriter(os, samFlagFieldOutput);
+            if (bgzfStream != null && this.createIndex) {
+                final boolean canIndex = IOUtil.isRegularPath(outputPath);
+                if (!canIndex) {
+                    log.warn("Cannot create index for SAM because output file is not a regular file: "
+                            + outputPath.toUri());
+                }
+                if (canIndex && header.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+                    final BamIndexType resolved = samIndexType.resolve(header.getSequenceDictionary());
+                    final Path indexPath;
+                    if (resolved == BamIndexType.CSI) {
+                        indexPath = IOUtil.addExtension(outputPath, FileExtensions.CSI);
+                    } else {
+                        indexPath = IOUtil.addExtension(outputPath, FileExtensions.BAI_INDEX);
+                    }
+                    writer.enableIndexConstruction(bgzfStream, indexPath, resolved, csiMinShift);
+                }
+            }
+
+            return initWriter(header, presorted, writer);
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputPath.toUri(), ioe);
         }
@@ -752,6 +801,6 @@ public class SAMFileWriterFactory implements Cloneable {
                 + useAsyncIo + ", asyncOutputBufferSize=" + asyncOutputBufferSize + ", bufferSize=" + bufferSize
                 + ", tmpDir=" + tmpDir + ", compressionLevel=" + compressionLevel + ", maxRecordsInRam="
                 + maxRecordsInRam + ", createBaiIndexForCram=" + createBaiIndexForCram + ", bamIndexType="
-                + bamIndexType + ", csiMinShift=" + csiMinShift + "]";
+                + bamIndexType + ", samIndexType=" + samIndexType + ", csiMinShift=" + csiMinShift + "]";
     }
 }
