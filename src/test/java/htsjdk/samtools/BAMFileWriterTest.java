@@ -24,24 +24,34 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.index.BinningIndex;
+import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.utils.SamtoolsTestUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -627,6 +637,151 @@ public class BAMFileWriterTest extends HtsjdkTest {
         }
     }
 
+    // On-the-fly BAM index matches createIndex of the finished file
+
+    /**
+     * Reads on references 0 and 2, reference 1 left empty, one in fifty long enough to occupy
+     * higher bins and cause small-bin folding. Produces many BGZF blocks.
+     */
+    private static SAMRecordSetBuilder recordsEndingWithPlacedRead() {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        for (int i = 0; i < 8_000; i++) {
+            final int ref = i < 4_000 ? 0 : 2;
+            final int start = 1 + 50 * (i % 4_000);
+            if (i % 50 == 0) {
+                builder.addFrag("long" + i, ref, start, false, false, "20000M", null, 30);
+            } else {
+                builder.addFrag("read" + i, ref, start, i % 2 == 0);
+            }
+        }
+        return builder;
+    }
+
+    private static SAMRecordSetBuilder recordsEndingWithUnplacedReads() {
+        final SAMRecordSetBuilder builder = recordsEndingWithPlacedRead();
+        for (int i = 0; i < 20; i++) {
+            builder.addUnmappedFragment("unplaced" + i);
+        }
+        return builder;
+    }
+
+    private BinningIndex onTheFlyIndex(final SAMRecordSetBuilder records, final BamIndexType type, final Path directory)
+            throws IOException {
+        final Path bam = directory.resolve("reads.bam");
+        try (SAMFileWriter writer = new SAMFileWriterFactory()
+                .setCreateIndex(true)
+                .setCreateMd5File(false)
+                .setBamIndexType(type)
+                .makeBAMWriter(records.getHeader(), true, bam)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+        final Path indexPath = type.resolve(records.getHeader().getSequenceDictionary()) == BamIndexType.CSI
+                ? bam.resolveSibling("reads.bam.csi")
+                : bam.resolveSibling("reads.bai");
+        return loadIndex(indexPath, type.resolve(records.getHeader().getSequenceDictionary()) == BamIndexType.CSI);
+    }
+
+    private BinningIndex createIndexOfFinishedFile(final Path directory, final BamIndexType type) throws IOException {
+        final Path bam = directory.resolve("reads.bam");
+        final Path indexPath = Files.createTempFile("createIndex.", type == BamIndexType.CSI ? ".csi" : ".bai");
+        indexPath.toFile().deleteOnExit();
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            BAMIndexer.createIndex(reader, indexPath, null, type);
+        }
+        return loadIndex(indexPath, type == BamIndexType.CSI);
+    }
+
+    private static BinningIndex loadIndex(final Path path, final boolean csi) {
+        if (csi) {
+            try (InputStream in = new BlockCompressedInputStream(Files.newInputStream(path))) {
+                return BinningIndex.readCsi(new BinaryCodec(in)).index();
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        } else {
+            try (FileBackedBinningIndex idx = FileBackedBinningIndex.open(path, true)) {
+                return idx.loadAll();
+            }
+        }
+    }
+
+    @Test
+    public void testOnTheFlyBaiEqualsCreateIndexEndingWithPlacedRead() throws IOException {
+        final SAMRecordSetBuilder records = recordsEndingWithPlacedRead();
+        final Path directory = Files.createTempDirectory("bamBaiPlaced");
+        directory.toFile().deleteOnExit();
+        final BinningIndex onTheFly = onTheFlyIndex(records, BamIndexType.BAI, directory);
+        final BinningIndex afterTheFact = createIndexOfFinishedFile(directory, BamIndexType.BAI);
+        Assert.assertEquals(onTheFly, afterTheFact);
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testOnTheFlyCsiEqualsCreateIndexEndingWithPlacedRead() throws IOException {
+        final SAMRecordSetBuilder records = recordsEndingWithPlacedRead();
+        final Path directory = Files.createTempDirectory("bamCsiPlaced");
+        directory.toFile().deleteOnExit();
+        final BinningIndex onTheFly = onTheFlyIndex(records, BamIndexType.CSI, directory);
+        final BinningIndex afterTheFact = createIndexOfFinishedFile(directory, BamIndexType.CSI);
+        Assert.assertEquals(onTheFly, afterTheFact);
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testOnTheFlyBaiEqualsCreateIndexEndingWithUnplacedReads() throws IOException {
+        final SAMRecordSetBuilder records = recordsEndingWithUnplacedReads();
+        final Path directory = Files.createTempDirectory("bamBaiUnplaced");
+        directory.toFile().deleteOnExit();
+        final BinningIndex onTheFly = onTheFlyIndex(records, BamIndexType.BAI, directory);
+        final BinningIndex afterTheFact = createIndexOfFinishedFile(directory, BamIndexType.BAI);
+        Assert.assertEquals(onTheFly, afterTheFact);
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testOnTheFlyBaiEqualsSamtoolsIndex() throws IOException {
+        if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
+            throw new SkipException("samtools not available");
+        }
+        final SAMRecordSetBuilder records = recordsEndingWithPlacedRead();
+        final Path directory = Files.createTempDirectory("bamBaiSamtools");
+        directory.toFile().deleteOnExit();
+        final BinningIndex onTheFly = onTheFlyIndex(records, BamIndexType.BAI, directory);
+        final Path samBai = Files.createTempFile("samtools.", ".bai");
+        samBai.toFile().deleteOnExit();
+        SamtoolsTestUtils.executeSamToolsCommand("index -b -o " + samBai + " " + directory.resolve("reads.bam"));
+        final BinningIndex samtoolsIndex = loadIndex(samBai, false);
+        Assert.assertEquals(onTheFly, samtoolsIndex);
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testOnTheFlyIndexSpansMultipleBgzfBlocks() throws IOException {
+        final SAMRecordSetBuilder records = recordsEndingWithPlacedRead();
+        final Path directory = Files.createTempDirectory("bamMultiBlock");
+        directory.toFile().deleteOnExit();
+        final BinningIndex index = onTheFlyIndex(records, BamIndexType.BAI, directory);
+
+        long largestBlockAddress = 0;
+        for (int ref = 0; ref < index.getReferenceCount(); ref++) {
+            final htsjdk.index.ReferenceBins bins = index.getReference(ref);
+            for (int i = 0; i < bins.getBinCount(); i++) {
+                for (final Chunk chunk : bins.getChunks(i)) {
+                    largestBlockAddress = Math.max(
+                            largestBlockAddress,
+                            htsjdk.samtools.util.BlockCompressedFilePointerUtil.getBlockAddress(chunk.getChunkEnd()));
+                }
+            }
+        }
+        Assert.assertTrue(
+                largestBlockAddress > 200_000,
+                "the index should span many BGZF blocks, but the largest block address was only "
+                        + largestBlockAddress);
+        IOUtil.recursiveDelete(directory);
+    }
+
     @Test
     public void testWriteHeader() throws IOException {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
@@ -640,5 +795,138 @@ public class BAMFileWriterTest extends HtsjdkTest {
             SAMFileHeader samFileHeader = BAMFileReader.readHeader(binaryCodec, ValidationStringency.STRICT, null);
             Assert.assertEquals(samFileHeader, builder.getHeader());
         }
+    }
+
+    // Indexing failure behaviour
+
+    private static final int LONG_SEQ = 600_000_000;
+    private static final int BEYOND_BAI = (1 << 29) + 1_000;
+
+    /** A header with a sequence too long for BAI, and one normal read plus one beyond 2^29. */
+    private static SAMFileWriter failingBamWriter(final Path bam) {
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, LONG_SEQ);
+        return new SAMFileWriterFactory()
+                .setCreateIndex(true)
+                .setCreateMd5File(false)
+                .setBamIndexType(BamIndexType.BAI)
+                .makeBAMWriter(records.getHeader(), true, bam);
+    }
+
+    private static SAMRecord normalRead(final SAMFileHeader header) {
+        final SAMRecordSetBuilder b = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        b.setHeader(header);
+        b.addFrag("normal", 0, 100, false);
+        return b.getRecords().iterator().next();
+    }
+
+    private static SAMRecord beyondBaiRead(final SAMFileHeader header) {
+        final SAMRecordSetBuilder b = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        b.setHeader(header);
+        b.addFrag("beyond", 0, BEYOND_BAI, false);
+        return b.getRecords().iterator().next();
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testBamIndexingFailureThrowsSamException() throws IOException {
+        final Path dir = Files.createTempDirectory("bamIdxFail");
+        IOUtil.deleteOnExit(dir);
+        final Path bam = dir.resolve("reads.bam");
+        try (SAMFileWriter writer = failingBamWriter(bam)) {
+            writer.addAlignment(normalRead(writer.getFileHeader()));
+            writer.addAlignment(beyondBaiRead(writer.getFileHeader()));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void testBamIndexingFailureRemovesTheIndexFile() throws IOException {
+        final Path dir = Files.createTempDirectory("bamIdxRemove");
+        IOUtil.deleteOnExit(dir);
+        final Path bam = dir.resolve("reads.bam");
+        try (SAMFileWriter writer = failingBamWriter(bam)) {
+            writer.addAlignment(normalRead(writer.getFileHeader()));
+            writer.addAlignment(beyondBaiRead(writer.getFileHeader()));
+        } catch (final SAMException expected) {
+            // expected
+        }
+        try (Stream<Path> files = Files.list(dir)) {
+            final List<String> names =
+                    files.map(p -> p.getFileName().toString()).sorted().toList();
+            Assert.assertFalse(names.stream().anyMatch(n -> n.endsWith(".bai")), "index file should be gone: " + names);
+        }
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testBamFurtherWriteAfterIndexingFailureThrows() throws IOException {
+        final Path dir = Files.createTempDirectory("bamIdxFurther");
+        IOUtil.deleteOnExit(dir);
+        final Path bam = dir.resolve("reads.bam");
+        final SAMFileWriter writer = failingBamWriter(bam);
+        writer.addAlignment(normalRead(writer.getFileHeader()));
+        try {
+            writer.addAlignment(beyondBaiRead(writer.getFileHeader()));
+            Assert.fail("should have thrown");
+        } catch (final SAMException expected) {
+            // expected
+        }
+        final long sizeAfterFailure = Files.size(bam);
+        try {
+            writer.addAlignment(beyondBaiRead(writer.getFileHeader()));
+            Assert.fail("should have thrown on subsequent write");
+        } catch (final SAMException expected) {
+            Assert.assertTrue(expected.getMessage().contains("indexing failure"), expected.getMessage());
+        }
+        Assert.assertEquals(Files.size(bam), sizeAfterFailure, "nothing should have been written");
+        try {
+            writer.close();
+        } catch (final SAMException ignored) {
+            // close throws too
+        }
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testBamCloseAfterIndexingFailureThrows() throws IOException {
+        final Path dir = Files.createTempDirectory("bamIdxClose");
+        IOUtil.deleteOnExit(dir);
+        final Path bam = dir.resolve("reads.bam");
+        final SAMFileWriter writer = failingBamWriter(bam);
+        writer.addAlignment(normalRead(writer.getFileHeader()));
+        try {
+            writer.addAlignment(beyondBaiRead(writer.getFileHeader()));
+        } catch (final SAMException ignored) {
+        }
+        try {
+            writer.close();
+            Assert.fail("close should throw after an indexing failure");
+        } catch (final SAMException expected) {
+            // expected
+        }
+        IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testBamCloseAfterIndexingFailureClosesTheDataStream() throws IOException {
+        final Path dir = Files.createTempDirectory("bamIdxStream");
+        IOUtil.deleteOnExit(dir);
+        final Path bam = dir.resolve("reads.bam");
+        final SAMFileWriter writer = failingBamWriter(bam);
+        writer.addAlignment(normalRead(writer.getFileHeader()));
+        try {
+            writer.addAlignment(beyondBaiRead(writer.getFileHeader()));
+        } catch (final SAMException ignored) {
+        }
+        try {
+            writer.close();
+        } catch (final SAMException ignored) {
+        }
+        final byte[] tail = Files.readAllBytes(bam);
+        final byte[] eofBlock = BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK;
+        final byte[] fileTail = Arrays.copyOfRange(tail, tail.length - eofBlock.length, tail.length);
+        Assert.assertEquals(fileTail, eofBlock, "data stream should be properly closed with EOF block");
+        IOUtil.recursiveDelete(dir);
     }
 }

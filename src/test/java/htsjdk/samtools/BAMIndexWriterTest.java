@@ -37,9 +37,11 @@ import htsjdk.utils.SamtoolsTestUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -298,6 +300,86 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     }
 
     @Test
+    public void testFinishWithEndMovesTheLastChunksEndWhenLastRecordIsPlaced() throws IOException {
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, 1_000_000);
+        records.addFrag("placed", 0, 100, false);
+        final Path bam = Files.createTempFile("finishEnd.", ".bam");
+        bam.toFile().deleteOnExit();
+        try (SAMFileWriter writer =
+                new SAMFileWriterFactory().setCreateIndex(false).makeBAMWriter(records.getHeader(), true, bam)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+        final Path bai = Files.createTempFile("finishEnd.", ".bai");
+        bai.toFile().deleteOnExit();
+        final long movedEnd;
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            final BAMIndexer indexer = new BAMIndexer(bai, reader.getFileHeader());
+            for (final SAMRecord record : reader) {
+                indexer.processAlignment(record);
+            }
+            movedEnd = 0xDEAD_0000_0000L; // an arbitrary later pointer
+            indexer.finish(movedEnd);
+        }
+
+        try (FileBackedBinningIndex idx = FileBackedBinningIndex.open(bai, true)) {
+            final BinningIndex index = idx.loadAll();
+            final List<Chunk> chunks = index.getReference(0).getChunks(0);
+            assertEquals(chunks.get(chunks.size() - 1).getChunkEnd(), movedEnd);
+        }
+    }
+
+    @Test
+    public void testFinishWithEndLeavesChunkEndWhenLastRecordIsUnplaced() throws IOException {
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, 1_000_000);
+        records.addFrag("placed", 0, 100, false);
+        records.addUnmappedFragment("unplaced");
+        final Path bam = Files.createTempFile("finishEnd.", ".bam");
+        bam.toFile().deleteOnExit();
+        try (SAMFileWriter writer =
+                new SAMFileWriterFactory().setCreateIndex(false).makeBAMWriter(records.getHeader(), true, bam)) {
+            records.getRecords().forEach(writer::addAlignment);
+        }
+        final Path bai = Files.createTempFile("finishEnd.", ".bai");
+        bai.toFile().deleteOnExit();
+        // Capture the chunk end before calling finish(end)
+        long originalEnd;
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
+                .open(bam)) {
+            final BAMIndexer indexer = new BAMIndexer(bai, reader.getFileHeader());
+            originalEnd = 0;
+            for (final SAMRecord record : reader) {
+                if (!record.getReadUnmappedFlag() || record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
+                    final Chunk chunk = ((BAMFileSpan) record.getFileSource().getFilePointer()).getSingleChunk();
+                    originalEnd = chunk.getChunkEnd();
+                }
+                indexer.processAlignment(record);
+            }
+            indexer.finish(0xDEAD_0000_0000L);
+        }
+
+        try (FileBackedBinningIndex idx = FileBackedBinningIndex.open(bai, true)) {
+            final BinningIndex index = idx.loadAll();
+            final List<Chunk> chunks = index.getReference(0).getChunks(0);
+            // The end should NOT have been moved, because the last record was unplaced
+            assertEquals(chunks.get(chunks.size() - 1).getChunkEnd(), originalEnd);
+        }
+    }
+
+    @Test
+    public void testFinishWithEndOnNoRecordsDoesNotThrow() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        final BAMIndexer indexer = new BAMIndexer(new ByteArrayOutputStream(), header);
+        indexer.finish(0xDEAD_0000_0000L); // should not throw
+    }
+
+    @Test
     public void testArgumentsAreCheckedBeforeTheIndexPathIsOpened() throws IOException {
         final Path existing = Files.createTempFile("keepMe.", ".bai");
         existing.toFile().deleteOnExit();
@@ -310,5 +392,35 @@ public class BAMIndexWriterTest extends HtsjdkTest {
         } catch (final SAMException expected) {
             assertEquals(Files.readString(existing), "an index somebody still wants");
         }
+    }
+
+    @Test
+    public void testAbandonClosesTheOutputStream() {
+        final int[] closes = {0};
+        final OutputStream recording = new ByteArrayOutputStream() {
+            @Override
+            public void close() throws IOException {
+                closes[0]++;
+                super.close();
+            }
+        };
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        final BAMIndexer indexer = new BAMIndexer(recording, header);
+        indexer.abandon();
+        assertEquals(closes[0], 1, "abandon should close the output");
+        assertEquals(
+                ((ByteArrayOutputStream) recording).toByteArray().length, 0, "abandon should not write index bytes");
+    }
+
+    @Test
+    public void testAbandonCalledTwiceDoesNotThrow() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        final BAMIndexer indexer = new BAMIndexer(new ByteArrayOutputStream(), header);
+        indexer.abandon();
+        indexer.abandon();
     }
 }

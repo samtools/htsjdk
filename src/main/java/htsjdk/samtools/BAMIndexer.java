@@ -62,6 +62,8 @@ public class BAMIndexer {
     private final List<String> sequenceNames;
     // Set when what is being indexed is SAM text, which tabix may be asked to read as well as samtools.
     private boolean namesSequencesInCsi;
+    // Tracks whether the last record given to processAlignment was placed (has a reference and start).
+    private boolean lastWasPlaced;
 
     // BAI or CSI; never AUTO
     private final BamIndexType indexType;
@@ -206,6 +208,7 @@ public class BAMIndexer {
             final int alignmentStart = rec.getAlignmentStart();
             if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
                 indexBuilder.addNoCoordinateRecords(1);
+                lastWasPlaced = false;
                 return;
             }
             final SAMFileSource source = rec.getFileSource();
@@ -225,9 +228,44 @@ public class BAMIndexer {
             } else {
                 indexBuilder.addRecordCounts(1, 0);
             }
+            lastWasPlaced = true;
         } catch (final Exception e) {
             throw new SAMException("Exception creating BAM index for record " + rec, e);
         }
+    }
+
+    /**
+     * Marks this indexer as indexing SAM text, so that a CSI carries a tabix header naming every
+     * sequence of the header.
+     *
+     * @return this indexer, for chaining
+     */
+    BAMIndexer namingSequencesInCsi() {
+        this.namesSequencesInCsi = true;
+        return this;
+    }
+
+    /** Closes the output without writing an index. Safe to call more than once. */
+    void abandon() {
+        try {
+            output.close();
+        } catch (final IOException e) {
+            log.warn("Failed to close index output", e);
+        }
+    }
+
+    /**
+     * After all the alignment records have been processed, adjusts the end of the last record's
+     * chunk to {@code endOfRecords} (which should be taken from the BGZF stream after flushing it,
+     * so that the index ends where samtools ends it), then writes the index and closes the output.
+     *
+     * @param endOfRecords the file pointer taken after flushing but before closing the BGZF stream
+     */
+    public void finish(final long endOfRecords) {
+        if (lastWasPlaced) {
+            indexBuilder.moveEndOfLastRecord(endOfRecords);
+        }
+        finish();
     }
 
     /**

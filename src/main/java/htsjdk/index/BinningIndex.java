@@ -919,6 +919,22 @@ public final class BinningIndex implements ReferenceBinsSource {
             if (forCsi) recordCount++;
         }
 
+        /**
+         * Replaces the end of the chunk of the record most recently given to {@link #add}, so that a
+         * writer can set it to the BGZF file pointer taken after flushing the stream. Legal only after
+         * at least one {@link #add} and before {@link #build}.
+         *
+         * @param chunkEnd the new end; must not be before (unsigned) the current end
+         * @throws IllegalStateException if no record has been added
+         * @throws IllegalArgumentException if {@code chunkEnd} is before the current end
+         */
+        public void moveEndOfLastRecord(final long chunkEnd) {
+            if (accumulator == null || accumulator.lastBin == null) {
+                throw new IllegalStateException("No record has been added");
+            }
+            accumulator.lastBin.moveEnd(chunkEnd);
+        }
+
         // Kept out of add() so that it stays under the JIT's size limit for inlining hot methods.
         private IllegalArgumentException beyondReach(final int referenceIndex, final int start, final int end) {
             final boolean baiScheme = minShift == BAI_MIN_SHIFT && depth == BAI_DEPTH;
@@ -1165,6 +1181,15 @@ public final class BinningIndex implements ReferenceBinsSource {
             long compressedSpan() {
                 return BlockCompressedFilePointerUtil.getBlockAddress(offsets[size - 1])
                         - BlockCompressedFilePointerUtil.getBlockAddress(offsets[0]);
+            }
+
+            /** Replaces the end of the last chunk; the new end must not be before (unsigned) the current one. */
+            void moveEnd(final long chunkEnd) {
+                if (Long.compareUnsigned(chunkEnd, offsets[size - 1]) < 0) {
+                    throw new IllegalArgumentException(String.format(
+                            "New chunk end 0x%x is before the current end 0x%x", chunkEnd, offsets[size - 1]));
+                }
+                offsets[size - 1] = chunkEnd;
             }
 
             /** The chunks as a right-sized array. */

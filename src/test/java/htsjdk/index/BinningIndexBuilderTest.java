@@ -329,4 +329,50 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
         builder.add(0, 16_384, 16_385, offset(1_000, 0), offset(1_000, 50));
         Assert.assertEquals(binsOf(builder.build(1).getReference(0)).keySet(), Set.of(585, 4681));
     }
+
+    // moveEndOfLastRecord
+
+    @Test
+    public void testMoveEndOfLastRecordMovesALoneChunksEnd() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.moveEndOfLastRecord(offset(0, 100));
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)).get(SMALLEST_BIN_0),
+                List.of(new Chunk(offset(0, 0), offset(0, 100))));
+    }
+
+    @Test
+    public void testMoveEndOfLastRecordMovesAJoinedChunksEnd() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.add(0, 20, 20, offset(0, 50), offset(0, 100));
+        builder.moveEndOfLastRecord(offset(1, 0));
+        Assert.assertEquals(
+                binsOf(builder.build(1).getReference(0)).get(SMALLEST_BIN_0),
+                List.of(new Chunk(offset(0, 0), offset(1, 0))));
+    }
+
+    @Test
+    public void testMoveEndOfLastRecordUpdatesMetadataLastOffset() {
+        final BinningIndex.Builder builder = baiBuilder().reportingRecordCounts();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.addRecordCounts(1, 0);
+        builder.moveEndOfLastRecord(offset(5, 0));
+        final ReferenceBins.Metadata metadata =
+                builder.build(1).getReference(0).getMetadata().orElseThrow();
+        Assert.assertEquals(metadata.lastOffset(), offset(5, 0));
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testMoveEndOfLastRecordBeforeAnyAddIsRejected() {
+        baiBuilder().moveEndOfLastRecord(offset(0, 100));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testMoveEndOfLastRecordToAnEarlierOffsetIsRejected() {
+        final BinningIndex.Builder builder = baiBuilder();
+        builder.add(0, 10, 10, offset(0, 0), offset(0, 50));
+        builder.moveEndOfLastRecord(offset(0, 40));
+    }
 }

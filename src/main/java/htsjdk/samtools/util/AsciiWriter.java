@@ -56,12 +56,22 @@ public class AsciiWriter extends Writer {
     }
 
     /**
+     * Writes buffered bytes to the stream beneath and empties the buffer, without flushing that stream.
+     * Unlike {@link #flush()}, this does not call {@code flush()} on the underlying stream.
+     */
+    public void writeBufferedBytes() throws IOException {
+        if (numBytes > 0) {
+            os.write(buffer, 0, numBytes);
+            numBytes = 0;
+        }
+    }
+
+    /**
      * flushes underlying OutputStream
      */
     @Override
     public void flush() throws IOException {
-        os.write(buffer, 0, numBytes);
-        numBytes = 0;
+        writeBufferedBytes();
         os.flush();
     }
 
