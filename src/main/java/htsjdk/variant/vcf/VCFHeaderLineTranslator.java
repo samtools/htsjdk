@@ -165,8 +165,9 @@ class VCF4Parser implements VCFLineParser {
     /**
      * Whether the double quote at {@code quoteIndex}, met inside a quoted value, ends that value: it does if the
      * line ends there, or if another attribute follows, that is, a comma and then a key up to its {@code =} (or up
-     * to the end of the line, for a key without a value). Followed by anything else it is a quote the writer
-     * did not escape, as in {@code Description="the "best", really"}, and belongs to the value.
+     * to the end of the line, for a key without a value), with any number of keys without a value before it.
+     * Followed by anything else it is a quote the writer did not escape, as in
+     * {@code Description="the "best", really"}, and belongs to the value.
      */
     private static boolean closesValue(final String line, final int quoteIndex) {
         final int last = line.length() - 1;
@@ -188,7 +189,8 @@ class VCF4Parser implements VCFLineParser {
             if (c == '>') {
                 return index == last;
             }
-            if (c == ',' || c == '"' || c == '<') {
+            // a comma only ends a key without a value, so what follows it decides
+            if (c == '"' || c == '<') {
                 return false;
             }
         }

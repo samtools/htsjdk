@@ -263,6 +263,20 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void aQuotedValueMayBeFollowedByAKeyWithoutAValueAndThenAnotherAttribute() {
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"Y\",Flag,Source=\"s\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", "Y", "Flag", "", "Source", "s"));
+    }
+
+    @Test
+    public void anUnescapedQuoteBeforeSeveralCommasOfTextIsPartOfTheValue() {
+        final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(
+                VCFHeaderVersion.VCF4_2, "<ID=X,Description=\"The \"best\", really, truly\">", null);
+        Assert.assertEquals(parsed, Map.of("ID", "X", "Description", "The \"best\", really, truly"));
+    }
+
+    @Test
     public void strayBracketsOutsideQuotesAreNotContent() {
         final Map<String, String> parsed =
                 VCFHeaderLineTranslator.parseLine(VCFHeaderVersion.VCF4_2, "<ID=<DEL>,Description=\"a <b> c\">", null);
