@@ -156,25 +156,33 @@ public class VCFHeaderLine implements Comparable, Serializable {
 
             builder.append(entry.getKey());
             builder.append('=');
-            builder.append(
-                    entry.getValue().toString().contains(",")
-                                    || entry.getValue().toString().contains(" ")
-                                    || entry.getKey().equals("Description")
-                                    || entry.getKey().equals("Source")
-                                    || // As per VCFv4.2, Source and Version should be surrounded by double quotes
-                                    entry.getKey().equals("Version")
-                            ? "\"" + escapeQuotes(entry.getValue().toString()) + "\""
-                            : entry.getValue());
+            final String key = entry.getKey();
+            final String value = entry.getValue().toString();
+            // Description, Source and Version are always quoted, as the specification has it. An ID never is: other
+            // tools take the quotes to be part of it, and then no record's FILTER, INFO key or contig matches.
+            final boolean quoted = key.equals("Description")
+                    || key.equals("Source")
+                    || key.equals("Version")
+                    || (!key.equals("ID") && needsQuoting(value));
+            builder.append(quoted ? "\"" + escapeQuotes(value) + "\"" : value);
         }
         builder.append('>');
         return builder.toString();
     }
 
+    /** A value is quoted when it holds a character that would otherwise be read as structure. */
+    private static boolean needsQuoting(final String value) {
+        for (int i = 0; i < value.length(); i++) {
+            final char c = value.charAt(i);
+            if (c == ',' || c == ' ' || c == '=' || c == '"' || c == '>' || c == '<') {
+                return true;
+            }
+        }
+        return value.isEmpty();
+    }
+
+    /** Backslashes first, or the ones this adds in front of the quotes would be escaped in their turn. */
     private static String escapeQuotes(final String value) {
-        // java escaping in a string literal makes this harder to read than it should be
-        // without string literal escaping and quoting the regex would be: replaceAll( ([^\])" , $1\" )
-        // ie replace: something that's not a backslash ([^\]) followed by a double quote
-        // with: the thing that wasn't a backslash ($1), followed by a backslash, followed by a double quote
-        return value.replaceAll("([^\\\\])\"", "$1\\\\\"");
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

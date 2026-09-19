@@ -35,4 +35,24 @@ public class VCFHeaderVersionTest extends VariantBaseTest {
         Assert.assertEquals(sourceVersion.isAtLeastAsRecentAs(targetVersion), expectedIsAtLeastAsRecentAs);
         Assert.assertNotEquals(targetVersion.isAtLeastAsRecentAs(sourceVersion), expectedIsAtLeastAsRecentAs);
     }
+
+    @Test
+    public void versions4_4And4_5AreKnownAndOrdered() {
+        Assert.assertEquals(VCFHeaderVersion.toHeaderVersion("VCFv4.4"), VCFHeaderVersion.VCF4_4);
+        Assert.assertEquals(VCFHeaderVersion.toHeaderVersion("VCFv4.5"), VCFHeaderVersion.VCF4_5);
+        Assert.assertTrue(VCFHeaderVersion.VCF4_5.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4));
+        Assert.assertTrue(VCFHeaderVersion.VCF4_4.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3));
+        Assert.assertFalse(VCFHeaderVersion.VCF4_3.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4));
+    }
+
+    @Test
+    public void unknownVersionStringsAreNotVersions() {
+        Assert.assertNull(VCFHeaderVersion.toHeaderVersion("VCFv4.6"));
+        Assert.assertFalse(VCFHeaderVersion.isVersionString("VCFv5.0"));
+    }
+
+    @Test
+    public void theDefaultVersionIs4_2() {
+        Assert.assertEquals(VCFHeaderVersion.DEFAULT_VERSION, VCFHeaderVersion.VCF4_2);
+    }
 }

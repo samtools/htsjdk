@@ -29,12 +29,11 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 import htsjdk.variant.variantcontext.VariantContext;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * a base class for compound header lines, which include info lines and format lines (so far)
@@ -52,6 +51,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         }
     }
 
+    private static final List<String> EXPECTED_TAGS = List.of("ID", "Number", "Type", "Description");
+
     // the field types
     private String name;
     private int count = -1;
@@ -60,6 +61,9 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     private VCFHeaderLineType type;
     private String source;
     private String version;
+
+    // every attribute other than the six above, in the order they appeared, so that a line round-trips intact
+    private final Map<String, String> otherAttributes = new LinkedHashMap<>();
 
     // access methods
     @Override
@@ -94,6 +98,26 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
 
     public String getVersion() {
         return version;
+    }
+
+    /**
+     * Returns the value of any attribute of this line by its tag, including the standard ones ({@code ID},
+     * {@code Number}, {@code Type}, {@code Description}, {@code Source}, {@code Version}) and any others the line
+     * carries. Returns null if the line has no such attribute.
+     */
+    public String getGenericFieldValue(final String tag) {
+        return getGenericFields().get(tag);
+    }
+
+    /**
+     * @return every attribute of this line, standard ones first, in the order they are written
+     */
+    public Map<String, String> getGenericFields() {
+        final Map<String, String> attributes = new LinkedHashMap<>();
+        for (final Map.Entry<String, Object> attribute : encodedAttributes().entrySet()) {
+            attributes.put(attribute.getKey(), attribute.getValue().toString());
+        }
+        return Collections.unmodifiableMap(attributes);
     }
 
     /**
@@ -230,6 +254,24 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     }
 
     /**
+     * The definition of one line (ID, Number, Type, Description) with the attributes of another that a definition
+     * does not cover: Source, Version and any non-standard ones.
+     */
+    protected VCFCompoundHeaderLine(final VCFCompoundHeaderLine definition, final VCFCompoundHeaderLine attributes) {
+        super(definition.lineType.toString(), "");
+        this.name = definition.name;
+        this.count = definition.count;
+        this.countType = definition.countType;
+        this.type = definition.type;
+        this.description = definition.description;
+        this.lineType = definition.lineType;
+        this.source = attributes.source;
+        this.version = attributes.version;
+        this.otherAttributes.putAll(attributes.otherAttributes);
+        validate();
+    }
+
+    /**
      * create a VCF format header line
      *
      * @param line   the header line
@@ -240,15 +282,13 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     protected VCFCompoundHeaderLine(String line, VCFHeaderVersion version, SupportedHeaderLineType lineType) {
         super(lineType.toString(), "");
 
-        final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
-        final List<String> recommendedTags;
-        if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
-            recommendedTags = Arrays.asList("Source", "Version");
-        } else {
-            recommendedTags = Collections.emptyList();
+        final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, EXPECTED_TAGS);
+        for (final String tag : List.of("ID", "Number", "Type")) {
+            if (mapping.get(tag) == null) {
+                throw new TribbleException.InvalidHeader(
+                        lineType + " header line is missing its " + tag + " attribute: " + line);
+            }
         }
-        final Map<String, String> mapping =
-                VCFHeaderLineTranslator.parseLine(version, line, expectedTags, recommendedTags);
         name = mapping.get("ID");
         count = -1;
         final String numberStr = mapping.get("Number");
@@ -285,14 +325,23 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         description = UNBOUND_DESCRIPTION;
 
         this.lineType = lineType;
-
-        if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
-            this.source = mapping.get("Source");
-            this.version = mapping.get("Version");
+        this.source = mapping.get("Source");
+        this.version = mapping.get("Version");
+        for (final Map.Entry<String, String> attribute : mapping.entrySet()) {
+            if (!STANDARD_TAGS.contains(attribute.getKey())) {
+                otherAttributes.put(attribute.getKey(), attribute.getValue());
+            }
         }
 
-        validate();
+        try {
+            validate();
+        } catch (final IllegalArgumentException e) {
+            throw new TribbleException.InvalidHeader(e.getMessage() + ": " + line);
+        }
     }
+
+    private static final List<String> STANDARD_TAGS =
+            List.of("ID", "Number", "Type", "Description", "Source", "Version");
 
     private void validate() {
         if (type != VCFHeaderLineType.Flag && countType == VCFHeaderLineCount.INTEGER && count <= 0)
@@ -322,6 +371,11 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      */
     @Override
     protected String toStringEncoding() {
+        return lineType.toString() + "=" + VCFHeaderLine.toStringEncoding(encodedAttributes());
+    }
+
+    /** The attributes as written: the standard ones in their conventional order, then any others in theirs. */
+    private Map<String, Object> encodedAttributes() {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
         map.put("ID", name);
         Object number;
@@ -351,7 +405,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         if (version != null) {
             map.put("Version", version);
         }
-        return lineType.toString() + "=" + VCFHeaderLine.toStringEncoding(map);
+        map.putAll(otherAttributes);
+        return map;
     }
 
     /**
@@ -369,7 +424,11 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         }
 
         final VCFCompoundHeaderLine that = (VCFCompoundHeaderLine) o;
-        return equalsExcludingDescription(that) && description.equals(that.description);
+        return equalsExcludingDescription(that)
+                && description.equals(that.description)
+                && Objects.equals(source, that.source)
+                && Objects.equals(version, that.version)
+                && otherAttributes.equals(that.otherAttributes);
     }
 
     @Override
@@ -384,6 +443,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         result = 31 * result + lineType.hashCode();
         result = 31 * result + (source != null ? source.hashCode() : 0);
         result = 31 * result + (version != null ? version.hashCode() : 0);
+        result = 31 * result + otherAttributes.hashCode();
         return result;
     }
 

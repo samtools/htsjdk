@@ -445,49 +445,120 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
     }
 
-    @DataProvider(name = "validHeaderVersionTransitions")
-    public Object[][] validHeaderVersionTransitions() {
-        // v4.3 can never transition, all other version transitions are allowed
-        return new Object[][] {
-            {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_0},
-            {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_1},
-            {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_2},
-            {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_1},
-            {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_2},
-            {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_2},
-            {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_3}
-        };
+    @Test
+    public void anyVersionMayFollowAnyOther() {
+        // the version only says what the header is written as, so nothing stops a change in either direction
+        final VCFHeader header = new VCFHeader(VCFHeaderVersion.VCF4_3, Collections.emptySet(), Collections.emptySet());
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_0);
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_0);
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_5);
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_5);
+        header.setVCFHeaderVersion(null);
+        Assert.assertNull(header.getVCFHeaderVersion());
     }
 
-    @DataProvider(name = "invalidHeaderVersionTransitions")
-    public Object[][] invalidHeaderVersionTransitions() {
-        // v4.3 can never transition with, all other version transitions are allowed
-        return new Object[][] {
-            {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_0},
-            {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_1},
-            {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
-            {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_3},
-            {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3},
-            {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_3},
-        };
+    @Test
+    public void versionComesFromTheFileformatLineAmongTheMetaData() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFHeaderLine("fileformat", "VCFv4.1"));
+        lines.add(new VCFHeaderLine("source", "test"));
+        final VCFHeader header = new VCFHeader(lines);
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_1);
+        // the line itself is not kept as metadata; it is regenerated from the version
+        Assert.assertNull(header.getOtherHeaderLine("fileformat"));
+        Assert.assertEquals(header.getMetaDataInInputOrder().iterator().next().getValue(), "VCFv4.1");
     }
 
-    @Test(dataProvider = "validHeaderVersionTransitions")
-    public void testValidHeaderVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        doHeaderTransition(fromVersion, toVersion);
+    @Test
+    public void aHeaderWithoutAFileformatLineDeclaresNoVersion() {
+        final VCFHeader header = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
+        Assert.assertNull(header.getVCFHeaderVersion());
+        Assert.assertEquals(header.getMetaDataInInputOrder(), Set.of(new VCFHeaderLine("source", "test")));
     }
 
-    @Test(dataProvider = "invalidHeaderVersionTransitions", expectedExceptions = TribbleException.class)
-    public void testInvalidHeaderVersionTransition(
-            final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        doHeaderTransition(fromVersion, toVersion);
+    @Test
+    public void aHeaderThatDeclaresNoVersionStillDeclaresNoneWhenRebuiltFromItsLines() {
+        final VCFHeader header = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
+        Assert.assertNull(new VCFHeader(header.getMetaDataInInputOrder()).getVCFHeaderVersion());
+        Assert.assertNull(new VCFHeader(header.getMetaDataInSortedOrder(), List.of("NA1")).getVCFHeaderVersion());
     }
 
-    private void doHeaderTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        final VCFHeader vcfHeader = fromVersion == null
-                ? new VCFHeader()
-                : new VCFHeader(fromVersion, Collections.EMPTY_SET, Collections.EMPTY_SET);
-        vcfHeader.setVCFHeaderVersion(toVersion);
+    @Test
+    public void theHighestOfSeveralFileformatLinesWinsWhateverTheirOrder() {
+        final VCFHeaderLine v41 = new VCFHeaderLine("fileformat", "VCFv4.1");
+        final VCFHeaderLine v43 = new VCFHeaderLine("fileformat", "VCFv4.3");
+        Assert.assertEquals(
+                new VCFHeader(new LinkedHashSet<>(List.of(v41, v43))).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        Assert.assertEquals(
+                new VCFHeader(new LinkedHashSet<>(List.of(v43, v41))).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
+
+    @Test
+    public void linesGatheredFromAVersionedAndAVersionlessHeaderKeepTheVersion() {
+        final VCFHeader versioned =
+                new VCFHeader(VCFHeaderVersion.VCF4_3, Collections.emptySet(), Collections.emptySet());
+        final VCFHeader versionless = new VCFHeader(Collections.singleton(new VCFHeaderLine("source", "test")));
+        final Set<VCFHeaderLine> versionedFirst = new LinkedHashSet<>(versioned.getMetaDataInInputOrder());
+        versionedFirst.addAll(versionless.getMetaDataInInputOrder());
+        final Set<VCFHeaderLine> versionlessFirst = new LinkedHashSet<>(versionless.getMetaDataInInputOrder());
+        versionlessFirst.addAll(versioned.getMetaDataInInputOrder());
+        Assert.assertEquals(new VCFHeader(versionedFirst).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        Assert.assertEquals(new VCFHeader(versionlessFirst).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
+
+    @Test
+    public void theVcf32FormatLineSetsTheVersion() {
+        // VCF 3.2 spelled its version line "##format=VCRv3.2"
+        final VCFHeader header = new VCFHeader(Collections.singleton(new VCFHeaderLine(
+                VCFHeaderVersion.VCF3_2.getFormatString(), VCFHeaderVersion.VCF3_2.getVersionString())));
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF3_2);
+        Assert.assertNull(header.getOtherHeaderLine("format"));
+    }
+
+    @Test
+    public void aFormatLineThatNamesNoVersionIsAnOrdinaryLine() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFHeaderLine("format", "some text"));
+        Assert.assertNull(header.getVCFHeaderVersion());
+        Assert.assertEquals(header.getOtherHeaderLine("format").getValue(), "some text");
+    }
+
+    @Test
+    public void explicitVersionWinsOverTheFileformatLine() {
+        final VCFHeader header = new VCFHeader(
+                VCFHeaderVersion.VCF4_3,
+                Collections.singleton(new VCFHeaderLine("fileformat", "VCFv4.1")),
+                Collections.emptySet());
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void unknownVersionInAFileformatLineIsRejected() {
+        new VCFHeader(Collections.singleton(new VCFHeaderLine("fileformat", "VCFv4.9")));
+    }
+
+    @Test
+    public void addingAFileformatLineSetsTheVersion() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFHeaderLine("fileformat", "VCFv4.5"));
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_5);
+        Assert.assertNull(header.getOtherHeaderLine("fileformat"));
+    }
+
+    @Test
+    public void versionSurvivesTheCopyConstructor() {
+        final VCFHeader header = new VCFHeader(VCFHeaderVersion.VCF4_5, Collections.emptySet(), Collections.emptySet());
+        Assert.assertEquals(new VCFHeader(header).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_5);
+    }
+
+    @Test
+    public void versionSurvivesRebuildingFromTheMetaData() {
+        // the idiom downstream code uses to copy a header with different samples
+        final VCFHeader header = new VCFHeader(VCFHeaderVersion.VCF4_0, Collections.emptySet(), Collections.emptySet());
+        final VCFHeader rebuilt = new VCFHeader(header.getMetaDataInInputOrder(), List.of("NA1"));
+        Assert.assertEquals(rebuilt.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_0);
+        Assert.assertEquals(
+                new VCFHeader(header.getMetaDataInSortedOrder()).getVCFHeaderVersion(), VCFHeaderVersion.VCF4_0);
     }
 
     @Test

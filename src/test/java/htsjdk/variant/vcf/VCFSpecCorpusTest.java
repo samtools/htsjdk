@@ -38,11 +38,8 @@ public class VCFSpecCorpusTest extends HtsjdkTest {
     private static final String END_MINUS_ONE = "END=-1 trips the assert in VariantContext.validateStop";
 
     /** {@code passed/} files the reader cannot fully decode today, keyed by path relative to the corpus root. */
-    private static final Map<String, String> PASSED_NOT_YET_DECODABLE = Map.ofEntries(
-            Map.entry("4.5/passed/zero_length_LAA.vcf", "VCF 4.5 is rejected outright"),
-            Map.entry(
-                    "4.3/passed/passed_meta_alt.vcf",
-                    "an ALT ID containing a double quote is reported as an unclosed quote"));
+    private static final Map<String, String> PASSED_NOT_YET_DECODABLE =
+            Map.ofEntries(Map.entry("4.5/passed/zero_length_LAA.vcf", "VCF 4.5 is rejected outright"));
 
     /**
      * {@code passed/} files that are in fact invalid and that the reader is right to reject. Unlike the list above,

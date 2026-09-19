@@ -70,9 +70,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * The VCF version for this header; once a header version is established, it can only be
-     * changed subject to version transition rules defined by
-     * {@link #validateVersionTransition(VCFHeaderVersion, VCFHeaderVersion)}
+     * The VCF version this header declares, or null when it declares none. It comes from the fileformat line among
+     * the metadata lines, from {@link #setVCFHeaderVersion}, or from the header this one was copied from.
      */
     private VCFHeaderVersion vcfHeaderVersion;
 
@@ -126,17 +125,18 @@ public class VCFHeader implements HtsHeader, Serializable {
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData) {
         mMetaData.addAll(metaData);
-        removeVCFVersionLines(mMetaData);
+        takeVersionFromVersionLines(mMetaData);
         createLookupEntriesForAllHeaderLines();
         checkForDeprecatedGenotypeLikelihoodsKey();
     }
 
     /**
      * Creates a deep copy of the given VCFHeader, duplicating all its metadata and
-     * sample names.
+     * sample names, and keeping its version.
      */
     public VCFHeader(final VCFHeader toCopy) {
         this(toCopy.mMetaData, toCopy.mGenotypeSampleNames);
+        this.vcfHeaderVersion = toCopy.vcfHeaderVersion;
     }
 
     /**
@@ -150,7 +150,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * create a VCF header, given a target version, a list of meta data and auxiliary tags
+     * create a VCF header, given a target version, a list of meta data and auxiliary tags. The version given wins over
+     * any fileformat line among the meta data.
      *
      * @param vcfHeaderVersion    the vcf header version for this header, can not be null
      * @param metaData            the meta data associated with this header
@@ -177,46 +178,17 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Establish the header version for this header. If the header version has already been established
-     * for this header, the new version will be subject to version transition validation.
-     * @param vcfHeaderVersion
-     * @throws TribbleException if the requested header version is not compatible with the existing version
+     * Sets the version this header declares. Any version may follow any other: it is a label, and nothing about the
+     * header's lines is checked against it.
+     *
+     * @param vcfHeaderVersion the new version, or null for none
      */
     public void setVCFHeaderVersion(final VCFHeaderVersion vcfHeaderVersion) {
-        validateVersionTransition(this.vcfHeaderVersion, vcfHeaderVersion);
         this.vcfHeaderVersion = vcfHeaderVersion;
     }
 
     /**
-     * Throw if {@code fromVersion} is not compatible with a {@code toVersion}. Generally, any version before
-     * version 4.2 can be up-converted to version 4.2, but not to version 4.3. Once a header is established as
-     * version 4.3, it cannot be up or down converted, and it must remain at version 4.3.
-     * @param fromVersion current version. May be null, in which case {@code toVersion} can be any version
-     * @param toVersion new version. Cannot be null.
-     * @throws TribbleException if {@code fromVersion} is not compatible with {@code toVersion}
-     */
-    public static void validateVersionTransition(final VCFHeaderVersion fromVersion, final VCFHeaderVersion toVersion) {
-        ValidationUtils.nonNull(toVersion);
-
-        final String errorMessageFormatString = "VCF cannot be automatically promoted from %s to %s";
-
-        // fromVersion can be null, in which case anything goes (any transition from null is legal)
-        if (fromVersion != null) {
-            if (toVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-                if (!fromVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-                    // we're trying to go from pre-v4.3 to v4.3+
-                    throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
-                }
-
-            } else if (fromVersion.equals(VCFHeaderVersion.VCF4_3)) {
-                // we're trying to go from v4.3 to pre-v4.3
-                throw new TribbleException(String.format(errorMessageFormatString, fromVersion, toVersion));
-            }
-        }
-    }
-
-    /**
-     * @return the VCFHeaderVersion for this header. Can be null.
+     * @return the version this header declares, or null if it declares none
      */
     public VCFHeaderVersion getVCFHeaderVersion() {
         return vcfHeaderVersion;
@@ -250,6 +222,12 @@ public class VCFHeader implements HtsHeader, Serializable {
      * @param headerLine header line to attempt to add
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
+        // a fileformat line sets the version rather than being kept as a line
+        final VCFHeaderVersion declared = declaredVersion(headerLine);
+        if (declared != null) {
+            setVCFHeaderVersion(declared);
+            return;
+        }
         // Try to create a lookup entry for the new line. If this succeeds (because there was
         // no line of this type with the same key), add the line to our master list of header
         // lines in mMetaData.
@@ -336,16 +314,38 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Remove all lines with a VCF version tag from the provided set of header lines
+     * Takes this header's version from the fileformat lines among the given lines and removes them from the set: the
+     * version is held as a field. Lines gathered from several headers may carry several; the highest wins, as it does
+     * when headers are merged, so the order the lines were gathered in does not matter.
      */
-    private void removeVCFVersionLines(final Set<VCFHeaderLine> headerLines) {
-        final List<VCFHeaderLine> toRemove = new ArrayList<VCFHeaderLine>();
+    private void takeVersionFromVersionLines(final Set<VCFHeaderLine> headerLines) {
+        final List<VCFHeaderLine> versionLines = new ArrayList<VCFHeaderLine>();
         for (final VCFHeaderLine line : headerLines) {
-            if (VCFHeaderVersion.isFormatString(line.getKey())) {
-                toRemove.add(line);
+            final VCFHeaderVersion declared = declaredVersion(line);
+            if (declared != null) {
+                versionLines.add(line);
+                if (vcfHeaderVersion == null || declared.isAtLeastAsRecentAs(vcfHeaderVersion)) {
+                    vcfHeaderVersion = declared;
+                }
             }
         }
-        headerLines.removeAll(toRemove);
+        headerLines.removeAll(versionLines);
+    }
+
+    /**
+     * @return the version a line declares, or null if it is not a fileformat line. VCF 3.2 called its version line
+     *     {@code format}; a line with that key whose value is not a version is an ordinary line.
+     * @throws TribbleException.InvalidHeader if a {@code fileformat} line names a version htsjdk does not know
+     */
+    private static VCFHeaderVersion declaredVersion(final VCFHeaderLine line) {
+        if (!VCFHeaderVersion.isFormatString(line.getKey())) {
+            return null;
+        }
+        final VCFHeaderVersion version = VCFHeaderVersion.toHeaderVersion(line.getValue());
+        if (version == null && line.getKey().equals(VCFHeaderVersion.DEFAULT_VERSION.getFormatString())) {
+            throw new TribbleException.InvalidHeader(line.getValue() + " is not a supported VCF version");
+        }
+        return version;
     }
 
     /**
@@ -480,15 +480,14 @@ public class VCFHeader implements HtsHeader, Serializable {
         return makeGetMetaDataSet(new TreeSet<VCFHeaderLine>(mMetaData));
     }
 
+    /**
+     * The lines lead with a fileformat line for the version this header declares, so that a header built from them
+     * declares it too; a header that declares none gets no such line, and one built from its lines declares none.
+     */
     private Set<VCFHeaderLine> makeGetMetaDataSet(final Set<VCFHeaderLine> headerLinesInSomeOrder) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>();
-        if (vcfHeaderVersion != null && vcfHeaderVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
-            // always propagate version 4.3+ to prevent these header lines from magically being back-versioned to < 4.3
-            lines.add(new VCFHeaderLine(
-                    VCFHeaderVersion.VCF4_3.getFormatString(), VCFHeaderVersion.VCF4_3.getVersionString()));
-        } else {
-            lines.add(new VCFHeaderLine(
-                    VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        if (vcfHeaderVersion != null) {
+            lines.add(new VCFHeaderLine(vcfHeaderVersion.getFormatString(), vcfHeaderVersion.getVersionString()));
         }
         lines.addAll(headerLinesInSomeOrder);
         return Collections.unmodifiableSet(lines);

@@ -98,18 +98,19 @@ public class VCFCodec extends AbstractVCFCodec {
                         throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
                     foundHeaderVersion = true;
                     version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if (Defaults.OPTIMISTIC_VCF_4_4 == true && version == VCFHeaderVersion.VCF4_4) {
-                        // if optimistic VCFv4.4 is enabled, accept VCFv4.4 as input, but treat it as VCFv4.3, and hope
-                        // for the best
-                        log.warn(
-                                "********** VCFv4.4 is not yet fully supported - processing VCFv4.4 input as VCFv4.3!  **********");
-                        version = VCFHeaderVersion.VCF4_3;
-                    } else if (version != VCFHeaderVersion.VCF4_0
-                            && version != VCFHeaderVersion.VCF4_1
-                            && version != VCFHeaderVersion.VCF4_2
-                            && version != VCFHeaderVersion.VCF4_3)
+                    if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4)) {
+                        // 4.4 and 4.5 are read as themselves, best effort, until their features are fully supported
+                        if (!Defaults.OPTIMISTIC_VCF_4_4) {
+                            throw new TribbleException.InvalidHeader("This codec does not yet support "
+                                    + lineFields[1] + "; set the samjdk." + Defaults.OPTIMISTIC_VCF_4_4_PROPERTY
+                                    + " property to true to read it anyway");
+                        }
+                        log.warn("********** " + lineFields[1]
+                                + " is not yet fully supported - reading it on a best-effort basis  **********");
+                    } else if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
                         throw new TribbleException.InvalidHeader(
                                 "This codec is strictly for VCFv4 and does not support " + lineFields[1]);
+                    }
                 }
                 headerStrings.add(lineIterator.next());
             } else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {

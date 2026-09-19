@@ -107,7 +107,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
                 new VCFCodec(),
                 false);
         final VCFHeader vcfHeader = (VCFHeader) fr.getHeader();
-        Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        Assert.assertEquals(vcfHeader.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_4);
     }
 
     @DataProvider(name = "vcfFileAndWrapperCombinations")

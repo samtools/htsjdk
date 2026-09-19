@@ -35,12 +35,12 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class VCFUtils {
 
@@ -54,13 +54,27 @@ public class VCFUtils {
         // line ordering.
         final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
-        final Set<VCFHeaderVersion> headerVersions = new HashSet<>(2);
 
-        // todo -- needs to remove all version headers from sources and add its own VCF version line
+        // the merged header declares the highest version any input declares, since each version's additions are a
+        // superset of the last; that line leads the result so that a header built from these lines keeps it
+        VCFHeaderVersion highestVersion = null;
+        for (final VCFHeader source : headers) {
+            final VCFHeaderVersion version = source.getVCFHeaderVersion();
+            if (version != null && (highestVersion == null || version.isAtLeastAsRecentAs(highestVersion))) {
+                highestVersion = version;
+            }
+        }
+        if (highestVersion != null) {
+            final VCFHeaderLine versionLine =
+                    new VCFHeaderLine(highestVersion.getFormatString(), highestVersion.getVersionString());
+            map.put(versionLine.getKey(), versionLine);
+        }
+
         for (final VCFHeader source : headers) {
             for (final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
-
-                enforceHeaderVersionMergePolicy(headerVersions, source.getVCFHeaderVersion());
+                if (VCFHeaderVersion.isFormatString(line.getKey())) {
+                    continue;
+                }
                 String key = line.getKey();
                 if (line instanceof VCFIDHeaderLine) key = key + "-" + ((VCFIDHeaderLine) line).getID();
 
@@ -99,13 +113,28 @@ public class VCFUtils {
                                 map.put(key, compOther);
                             } else if (compLine.getType() == VCFHeaderLineType.Float
                                     && compOther.getType() == VCFHeaderLineType.Integer) {
-                                // promote key to Float
+                                // promote key to Float: the Float line takes the Integer line's place
                                 conflictWarner.warn(line, "Promoting Integer to Float in header: " + compOther);
+                                map.put(key, compLine);
                             } else {
                                 throw new IllegalStateException(
                                         "Incompatible header types, collision between these two types: " + line + " "
                                                 + other);
                             }
+                        } else if (isLaterVersionOfTheSameSource(compLine, compOther)) {
+                            // the two agree on what the field is; the one annotated from the later release of the
+                            // same source replaces the other whole, in the other's place
+                            conflictWarner.warn(
+                                    line,
+                                    "Keeping the header line with the later Version: " + compLine + " replaces "
+                                            + compOther);
+                            map.put(key, compLine);
+                            continue;
+                        } else if (compLine.getDescription().equals(compOther.getDescription())) {
+                            conflictWarner.warn(
+                                    line,
+                                    "Header lines differ in Source, Version or another attribute: keeping " + compOther
+                                            + " excluding " + compLine);
                         }
                         if (!compLine.getDescription().equals(compOther.getDescription()))
                             conflictWarner.warn(
@@ -127,23 +156,6 @@ public class VCFUtils {
 
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
         return new LinkedHashSet<>(map.values());
-    }
-
-    // Reject attempts to merge a VCFv4.3 header with any other version
-    private static void enforceHeaderVersionMergePolicy(
-            final Set<VCFHeaderVersion> headerVersions, final VCFHeaderVersion candidateVersion) {
-        if (candidateVersion != null) {
-            headerVersions.add(candidateVersion);
-            if (headerVersions.size() > 1 && headerVersions.contains(VCFHeaderVersion.VCF4_3)) {
-                throw new IllegalArgumentException(String.format(
-                        "Attempt to merge version %s header with incompatible header version %s",
-                        VCFHeaderVersion.VCF4_3.getVersionString(),
-                        headerVersions.stream()
-                                .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
-                                .map(VCFHeaderVersion::getVersionString)
-                                .collect(Collectors.joining(" "))));
-            }
-        }
     }
 
     /**
@@ -318,6 +330,55 @@ public class VCFUtils {
     /**
      * Only displays a warning if warnings are enabled and an identical warning hasn't been already issued
      */
+    /**
+     * Whether {@code line} says it was annotated from a later release of the same source as {@code other}: both name
+     * the same Source (which the specification makes case-insensitive, and which both may omit) and both give a
+     * Version, {@code line}'s being the later by {@link #compareVersions}.
+     */
+    private static boolean isLaterVersionOfTheSameSource(
+            final VCFCompoundHeaderLine line, final VCFCompoundHeaderLine other) {
+        final boolean sameSource = line.getSource() == null
+                ? other.getSource() == null
+                : line.getSource().equalsIgnoreCase(other.getSource());
+        return sameSource
+                && line.getVersion() != null
+                && other.getVersion() != null
+                && compareVersions(line.getVersion(), other.getVersion()) > 0;
+    }
+
+    /**
+     * Compares version strings the way a person reads them: a run of digits counts as a number, so that 1.10 follows
+     * 1.9 and 151 follows 99, and everything else is compared as text. A Version is free text and nothing orders it
+     * officially; this gets release numbers, dotted versions and dates right.
+     */
+    private static int compareVersions(final String a, final String b) {
+        int i = 0;
+        int j = 0;
+        while (i < a.length() && j < b.length()) {
+            if (Character.isDigit(a.charAt(i)) && Character.isDigit(b.charAt(j))) {
+                final int startA = i;
+                final int startB = j;
+                while (i < a.length() && Character.isDigit(a.charAt(i))) {
+                    i++;
+                }
+                while (j < b.length() && Character.isDigit(b.charAt(j))) {
+                    j++;
+                }
+                final int byValue =
+                        new BigInteger(a.substring(startA, i)).compareTo(new BigInteger(b.substring(startB, j)));
+                if (byValue != 0) {
+                    return byValue;
+                }
+            } else if (a.charAt(i) != b.charAt(j)) {
+                return Character.compare(a.charAt(i), b.charAt(j));
+            } else {
+                i++;
+                j++;
+            }
+        }
+        return Integer.compare(a.length() - i, b.length() - j);
+    }
+
     private static final class HeaderConflictWarner {
         boolean emitWarnings;
         Set<String> alreadyIssued = new HashSet<>();

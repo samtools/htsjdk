@@ -16,8 +16,8 @@
 ##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP Membership",Source="unknown",Version="1.2.3">
 ##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth",Source="unknown",Version="1.2.3">
 ##INFO=<ID=Dels,Number=1,Type=Float,Description="Fraction of Reads Containing Spanning Deletions",Source="unknown",Version="1.2.3">
-##INFO=<ID=EscapingBackslash,Number=1,Type=Float,Description="This description has an escaped \ backslash in it",Source="unknown",Version="1.2.3">
-##INFO=<ID=EscapingNonQuoteOrBackslash,Number=1,Type=Float,Description="This other value has a \n newline in it",Source="unknown",Version="1.2.3">
+##INFO=<ID=EscapingBackslash,Number=1,Type=Float,Description="This description has an escaped \\ backslash in it",Source="unknown",Version="1.2.3">
+##INFO=<ID=EscapingNonQuoteOrBackslash,Number=1,Type=Float,Description="This other value has a \\n newline in it",Source="unknown",Version="1.2.3">
 ##INFO=<ID=EscapingQuote,Number=1,Type=Float,Description="This description has an escaped \" quote in it",Source="unknown",Version="1.2.3">
 ##INFO=<ID=HRun,Number=1,Type=Integer,Description="Largest Contiguous Homopolymer Run of Variant Allele In Either Direction",Source="unknown",Version="1.2.3">
 ##INFO=<ID=HaplotypeScore,Number=1,Type=Float,Description="Consistency of the site with two (and only two) segregating haplotypes",Source="unknown",Version="1.2.3">

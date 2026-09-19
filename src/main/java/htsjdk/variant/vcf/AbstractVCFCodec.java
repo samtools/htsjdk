@@ -278,16 +278,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param newVersion
      * @return the actual header for this codec. The returned header may not be identical to the header
      * argument since the header lines may be "repaired" (i.e., rewritten) if doOnTheFlyModifications is set.
-     * @throws TribbleException if the requested header version is not compatible with the existing version
      */
     public VCFHeader setVCFHeader(final VCFHeader newHeader, final VCFHeaderVersion newVersion) {
-        validateHeaderVersionTransition(newHeader, newVersion);
+        ValidationUtils.nonNull(newHeader);
+        ValidationUtils.nonNull(newVersion);
         if (this.doOnTheFlyModifications) {
-            final VCFHeader repairedHeader = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
-            // validate the new header after repair to ensure the resulting header version is
-            // still compatible with the current version
-            validateHeaderVersionTransition(repairedHeader, newVersion);
-            this.header = repairedHeader;
+            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
         } else {
             this.header = newHeader;
         }
@@ -361,28 +357,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     @Override
     public VariantContext decode(String line) {
         return decodeLine(line, true);
-    }
-
-    /**
-     * Throw if new a version/header are not compatible with the existing version/header. Generally, any version
-     * before v4.2 can be up-converted to v4.2, but not to v4.3. Once a header is established as v4.3, it cannot
-     * can not be up or down converted, and it must remain at v4.3.
-     * @param newHeader
-     * @param newVersion
-     * @throws TribbleException if the header conversion is not valid
-     */
-    private void validateHeaderVersionTransition(final VCFHeader newHeader, final VCFHeaderVersion newVersion) {
-        ValidationUtils.nonNull(newHeader);
-        ValidationUtils.nonNull(newVersion);
-
-        VCFHeader.validateVersionTransition(version, newVersion);
-
-        // If this codec currently has no header (this happens when the header is being established for
-        // the first time during file parsing), establish an initial header and version, and bypass
-        // validation.
-        if (header != null && newHeader.getVCFHeaderVersion() != null) {
-            VCFHeader.validateVersionTransition(header.getVCFHeaderVersion(), newHeader.getVCFHeaderVersion());
-        }
     }
 
     /**

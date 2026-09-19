@@ -242,4 +242,46 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
             Assert.assertEquals(repairedLine.getCount(), cfg.expectedResult.getCount());
         }
     }
+
+    @Test
+    public void repairKeepsTheHeadersVersion() {
+        for (final VCFHeaderVersion version : List.of(VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3)) {
+            final VCFHeader header = new VCFHeader(version, Collections.emptySet(), Collections.emptySet());
+            Assert.assertEquals(
+                    VCFStandardHeaderLines.repairStandardHeaderLines(header).getVCFHeaderVersion(), version);
+        }
+    }
+
+    @Test
+    public void repairKeepsAVersionlessHeaderVersionless() {
+        Assert.assertNull(VCFStandardHeaderLines.repairStandardHeaderLines(new VCFHeader())
+                .getVCFHeaderVersion());
+    }
+
+    @Test
+    public void aRepairedLineKeepsTheAttributesTheStandardDoesNotDefine() {
+        final VCFHeader toRepair = new VCFHeader();
+        // AD is Number=R, Type=Integer; a wrong Number makes the line need repair
+        toRepair.addMetaDataLine(new VCFFormatHeaderLine(
+                "<ID=AD,Number=.,Type=Integer,Description=\"depths\",Source=\"tool\",Version=\"3\",IDX=7>",
+                VCFHeaderVersion.VCF4_3));
+        final VCFFormatHeaderLine repaired =
+                VCFStandardHeaderLines.repairStandardHeaderLines(toRepair).getFormatHeaderLine("AD");
+        Assert.assertEquals(repaired.getCountType(), VCFHeaderLineCount.R);
+        Assert.assertEquals(
+                repaired.getDescription(),
+                VCFStandardHeaderLines.getFormatLine("AD").getDescription());
+        Assert.assertEquals(repaired.getSource(), "tool");
+        Assert.assertEquals(repaired.getVersion(), "3");
+        Assert.assertEquals(repaired.getGenericFieldValue("IDX"), "7");
+    }
+
+    @Test
+    public void repairingALineLeavesTheStandardDefinitionAlone() {
+        final VCFHeader toRepair = new VCFHeader();
+        toRepair.addMetaDataLine(new VCFFormatHeaderLine(
+                "<ID=AD,Number=.,Type=Integer,Description=\"depths\",IDX=7>", VCFHeaderVersion.VCF4_3));
+        VCFStandardHeaderLines.repairStandardHeaderLines(toRepair);
+        Assert.assertNull(VCFStandardHeaderLines.getFormatLine("AD").getGenericFieldValue("IDX"));
+    }
 }

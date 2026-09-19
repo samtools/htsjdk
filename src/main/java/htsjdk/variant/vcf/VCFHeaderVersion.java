@@ -38,9 +38,13 @@ public enum VCFHeaderVersion {
     VCF4_1("VCFv4.1", "fileformat"),
     VCF4_2("VCFv4.2", "fileformat"),
     VCF4_3("VCFv4.3", "fileformat"),
-    // VCFv4.4 is not fully supported yet, but we need this to support optimistic reading when
-    // the "optimistic_vcf_4_4" property is set
-    VCF4_4("VCFv4.4", "fileformat");
+    // VCFv4.4 and VCFv4.5 are read only when the "optimistic_vcf_4_4" property is set, until their features are
+    // fully supported
+    VCF4_4("VCFv4.4", "fileformat"),
+    VCF4_5("VCFv4.5", "fileformat");
+
+    /** The version a header is taken to be when it does not declare one. */
+    public static final VCFHeaderVersion DEFAULT_VERSION = VCF4_2;
 
     private final String versionString;
     private final String formatString;

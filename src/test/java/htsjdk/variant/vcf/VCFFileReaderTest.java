@@ -118,7 +118,21 @@ public class VCFFileReaderTest extends HtsjdkTest {
         // This will fail unless the optimistic_vcf_4_4" property isn't set
         try (final VCFFileReader reader = new VCFFileReader(TEST_DATA_DIR.resolve("VCF4_4HeaderTest.vcf"), false)) {
             final VCFHeader header = reader.getFileHeader();
-            Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+            Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_4);
+        }
+    }
+
+    @Test(groups = "optimistic_vcf_4_4")
+    public void testAcceptOptimisticVCF4_5() throws IOException {
+        final Path vcf = Files.createTempFile("VCFFileReaderTest", ".vcf");
+        vcf.toFile().deleteOnExit();
+        Files.writeString(
+                vcf,
+                "##fileformat=VCFv4.5\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                        + "chr1\t100\t.\tA\tC\t50\tPASS\t.\n");
+        try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
+            Assert.assertEquals(reader.getFileHeader().getVCFHeaderVersion(), VCFHeaderVersion.VCF4_5);
+            Assert.assertEquals(reader.iterator().toList().size(), 1);
         }
     }
 

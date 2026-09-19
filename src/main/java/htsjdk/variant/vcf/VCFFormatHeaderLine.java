@@ -45,6 +45,11 @@ public class VCFFormatHeaderLine extends VCFCompoundHeaderLine {
         super(name, count, type, description, SupportedHeaderLineType.FORMAT);
     }
 
+    /** {@code definition}'s ID, Number, Type and Description with every other attribute of {@code attributes}. */
+    VCFFormatHeaderLine(final VCFFormatHeaderLine definition, final VCFFormatHeaderLine attributes) {
+        super(definition, attributes);
+    }
+
     public VCFFormatHeaderLine(String line, VCFHeaderVersion version) {
         super(line, version, SupportedHeaderLineType.FORMAT);
     }
