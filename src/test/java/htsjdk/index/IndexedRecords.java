@@ -2,7 +2,10 @@ package htsjdk.index;
 
 import htsjdk.samtools.BAMFileSpan;
 import htsjdk.samtools.Chunk;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.testng.Assert;
@@ -67,7 +70,19 @@ final class IndexedRecords {
 
     /** Indexes the records as one part of a file to be merged, leaving windows without records unset. */
     BinningIndex partIndex(final int minShift, final int depth, final int referenceCount) {
-        return index(new BinningIndex.Builder(minShift, depth).leavingEmptyWindowsUnset(), referenceCount);
+        return index(new BinningIndex.Builder(minShift, depth).forMerging(), referenceCount);
+    }
+
+    /**
+     * Indexes the records for CSI and takes the index through a CSI file, which leaves each bin an {@code loffset}
+     * and the index no linear index, as a part's index read from a {@code .csi} is.
+     */
+    BinningIndex csiIndexReadFromAFile(final int minShift, final int depth, final int referenceCount) {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        index(new BinningIndex.Builder(minShift, depth, true), referenceCount)
+                .writeCsi(new BinaryCodec(bytes), new byte[0]);
+        return BinningIndex.readCsi(new BinaryCodec(new ByteArrayInputStream(bytes.toByteArray())))
+                .index();
     }
 
     private BinningIndex index(final BinningIndex.Builder builder, final int referenceCount) {

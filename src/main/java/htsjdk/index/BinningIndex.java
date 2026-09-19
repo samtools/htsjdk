@@ -589,13 +589,21 @@ public final class BinningIndex implements ReferenceBinsSource {
     }
 
     /**
-     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation. The
-     * parts' linear indexes may be filled or built with {@link Builder#leavingEmptyWindowsUnset()}; the merged one is
-     * filled either way, but only unset parts let a window a part holds no record of take a later part's offset
-     * rather than the fill.
+     * Merges the indexes of consecutive, headerless parts of one file into the index of their concatenation.
+     *
+     * <p>Parts built with {@link Builder#forMerging()}, as the parts of a BAM are, merge to exactly the index that
+     * indexing the whole file gives: their linear indexes are unfilled and their bins unfolded, and both are done
+     * here, once, for the whole file. Parts that are whole indexes in their own right, as the tabix indexes of the
+     * parts of a VCF are, merge to an index that finds the same records but may differ from it: a small bin was
+     * folded into its parent where a part alone made it look small, and a window was filled from within its part.
+     *
+     * <p>Parts read from CSI files have no linear index, only an {@code loffset} for each bin; the merged index
+     * then has the same, each a lower bound, if not always the one that indexing the whole file would have found.
      *
      * @param parts the part indexes, in file order; all must share a binning scheme and reference count
      * @param partOffsets for each part, the byte offset in the concatenated file at which the part starts
+     * @throws IllegalArgumentException if some parts have a linear index for a reference and others, with records
+     *     for it, have none
      */
     public static BinningIndex merge(final List<BinningIndex> parts, final long[] partOffsets) {
         if (parts.isEmpty() || parts.size() != partOffsets.length) {
@@ -614,7 +622,8 @@ public final class BinningIndex implements ReferenceBinsSource {
         final List<ReferenceBins> merged = new ArrayList<>(first.references.length);
         for (int referenceIndex = 0; referenceIndex < first.references.length; referenceIndex++) {
             final Builder.ReferenceAccumulator accumulator = new Builder.ReferenceAccumulator();
-            final Map<Integer, Long> loffsets = new HashMap<>();
+            final int[] lastWindowReached = new int[parts.size()];
+            boolean someWithoutLinearIndex = false;
             long[] linearIndex = new long[0];
             ReferenceBins.Metadata metadata = null;
             for (int p = 0; p < parts.size(); p++) {
@@ -630,16 +639,11 @@ public final class BinningIndex implements ReferenceBinsSource {
                                 BlockCompressedFilePointerUtil.shift(offsets[j], partOffset),
                                 BlockCompressedFilePointerUtil.shift(offsets[j + 1], partOffset));
                     }
-                    // The earliest part to hold a bin has the smallest offset for it. Only needed when the parts
-                    // have no linear index to derive loffsets from.
-                    if (reference.linearIndex().length == 0) {
-                        loffsets.putIfAbsent(
-                                binNumbers[i],
-                                BlockCompressedFilePointerUtil.shift(reference.loffsets()[i], partOffset));
-                    }
                 }
+                lastWindowReached[p] = lastWindowReached(reference, first.depth);
+                someWithoutLinearIndex |= binNumbers.length > 0 && reference.linearIndex().length == 0;
                 // The earliest part with an offset for a window has the smallest. A part built with
-                // Builder.leavingEmptyWindowsUnset() has none for a window it holds no record of, so a later part
+                // Builder.forMerging() has none for a window it holds no record of, so a later part
                 // that does can supply it.
                 final long[] partLinearIndex = reference.linearIndex();
                 if (partLinearIndex.length > linearIndex.length) {
@@ -654,9 +658,20 @@ public final class BinningIndex implements ReferenceBinsSource {
                 }
                 metadata = mergeMetadata(metadata, reference.getMetadata().orElse(null), partOffset);
             }
-            Builder.fillUnsetWindows(linearIndex, linearIndex.length);
+            if (someWithoutLinearIndex && linearIndex.length > 0) {
+                throw new IllegalArgumentException(
+                        "Cannot merge indexes that have a linear index with indexes that have none");
+            }
+            Builder.fillUnsetWindows(linearIndex);
+            accumulator.foldSmallBinsIntoParents(first.depth);
+            final int reference = referenceIndex;
             merged.add(accumulator.toReferenceBins(
-                    linearIndex.length > 0 ? null : loffsets::get, linearIndex, metadata, first.depth));
+                    someWithoutLinearIndex
+                            ? bin -> loffsetAcrossParts(parts, partOffsets, reference, lastWindowReached, bin)
+                            : null,
+                    linearIndex,
+                    metadata,
+                    first.depth));
         }
         // Absent unless some part has it; then the sum over the parts that do.
         for (final BinningIndex part : parts) {
@@ -665,6 +680,44 @@ public final class BinningIndex implements ReferenceBinsSource {
             }
         }
         return new BinningIndex(first.minShift, first.depth, merged, noCoordinateCount);
+    }
+
+    /** The last window that any bin of a reference covers, whether or not a record lies there; -1 without bins. */
+    private static int lastWindowReached(final ReferenceBins reference, final int depth) {
+        int last = -1;
+        for (final int binNumber : reference.binNumbers()) {
+            final int level = levelOf(binNumber);
+            if (level <= depth) {
+                last = Math.max(last, firstWindowOf(binNumber, depth) + (1 << 3 * (depth - level)) - 1);
+            }
+        }
+        return last;
+    }
+
+    /**
+     * The {@code loffset} of a bin of the merged index, when the parts have no linear index to work it out from. It
+     * must not exceed the offset of any record that overlaps the bin's first window or lies beyond it, whichever bin
+     * and part that record is in; a part that holds the bin says nothing of the parts before it. So it is asked of
+     * the earliest part with a bin that reaches that window, as a query of that part alone would ask. That is a
+     * lower bound for whatever was folded into the bin too, since a bin's first window is not after its children's.
+     */
+    private static long loffsetAcrossParts(
+            final List<BinningIndex> parts,
+            final long[] partOffsets,
+            final int referenceIndex,
+            final int[] lastWindowReached,
+            final int binNumber) {
+        final int depth = parts.get(0).depth;
+        // A bin number that the scheme has no level for, which only a damaged file holds, is never asked for.
+        if (levelOf(binNumber) > depth) return 0;
+        final int firstWindow = firstWindowOf(binNumber, depth);
+        for (int p = 0; p < lastWindowReached.length; p++) {
+            if (lastWindowReached[p] >= firstWindow) {
+                return BlockCompressedFilePointerUtil.shift(
+                        minimumOffset(parts.get(p).references[referenceIndex], depth, firstWindow), partOffsets[p]);
+            }
+        }
+        return 0;
     }
 
     /** Combines two parts' metadata: the earliest start, the latest end, and the counts summed. */
@@ -722,7 +775,7 @@ public final class BinningIndex implements ReferenceBinsSource {
         private long mappedCount;
         private long unmappedCount;
         private long noCoordinateCount = -1;
-        private boolean fillEmptyWindows = true;
+        private boolean forMerging;
 
         /**
          * @param minShift log2 of the span of the smallest bins
@@ -764,14 +817,15 @@ public final class BinningIndex implements ReferenceBinsSource {
         }
 
         /**
-         * Leaves a linear-index window that no record overlaps unset (-1) rather than giving it the offset of the
-         * window before. Such an index is not fit to query; it is for the index of a part of a file, whose merger
-         * needs to tell a window the part has no records for from one it has.
+         * Builds the index of a part of a file, for {@link BinningIndex#merge}, which needs it as the records left
+         * it: a linear-index window that no record overlaps is unset (-1), so that the merger can tell it from one
+         * the part has records for, and small bins are not folded into their parents, since whether a bin is small
+         * is a matter of all its chunks in the whole file. Such an index is not fit to query.
          *
          * @return this builder
          */
-        public Builder leavingEmptyWindowsUnset() {
-            fillEmptyWindows = false;
+        public Builder forMerging() {
+            forMerging = true;
             return this;
         }
 
@@ -907,38 +961,40 @@ public final class BinningIndex implements ReferenceBinsSource {
         /** Freezes the reference being built, if any, into its {@link ReferenceBins}; a no-op otherwise. */
         private void finishCurrentReference() {
             if (accumulator == null) return;
-            // A bin's loffset comes from its first window; a window no record overlaps takes the next window's
-            // offset, as htslib does, since records in later windows are what a lookup there goes on to read.
-            final long[] loffsetSource = forCsi ? Arrays.copyOf(linearIndex, windowCount) : null;
-            for (int window = windowCount - 2; forCsi && window >= 0; window--) {
-                if (loffsetSource[window] == UNSET) loffsetSource[window] = loffsetSource[window + 1];
-            }
-            if (fillEmptyWindows) fillUnsetWindows(linearIndex, windowCount);
+            // A bin's loffset comes from its first window in the filled linear index. A part's index stores the
+            // unfilled one, from which an loffset could not be told later, so it is given its loffsets now, as an
+            // index bound for CSI is.
+            final long[] filled = Arrays.copyOf(linearIndex, windowCount);
+            fillUnsetWindows(filled);
+            final long[] stored = forMerging ? Arrays.copyOf(linearIndex, windowCount) : filled;
             final ReferenceBins.Metadata metadata;
             if (countsAreReported) {
                 metadata = accumulator.metadata(mappedCount, unmappedCount);
             } else {
                 metadata = forCsi ? accumulator.metadata(recordCount, 0) : null;
             }
+            if (!forMerging) accumulator.foldSmallBinsIntoParents(depth);
             finished.add(accumulator.toReferenceBins(
-                    forCsi ? bin -> loffsetFromLinearIndex(bin, loffsetSource, depth) : null,
-                    Arrays.copyOf(linearIndex, windowCount),
+                    forCsi || forMerging ? bin -> loffsetFromLinearIndex(bin, filled, depth) : null,
+                    stored,
                     metadata,
                     depth));
             accumulator = null;
         }
 
         /**
-         * Gives each of the first {@code windowCount} windows that no record overlaps the nearest preceding offset,
-         * or 0 if there is none, as samtools does in the linear index it stores.
+         * Gives each window that no record overlaps the offset of the next window that one does, as htslib does:
+         * a record that overlaps a query starting in an empty window lies no earlier in the file than that. A
+         * linear index ends at the last window with a record, so only a window after that, which none should be,
+         * would have no next; it gets 0.
          */
-        private static void fillUnsetWindows(final long[] linearIndex, final int windowCount) {
-            long previous = 0;
-            for (int window = 0; window < windowCount; window++) {
+        private static void fillUnsetWindows(final long[] linearIndex) {
+            long next = 0;
+            for (int window = linearIndex.length - 1; window >= 0; window--) {
                 if (linearIndex[window] == UNSET) {
-                    linearIndex[window] = previous;
+                    linearIndex[window] = next;
                 } else {
-                    previous = linearIndex[window];
+                    next = linearIndex[window];
                 }
             }
         }
@@ -962,6 +1018,9 @@ public final class BinningIndex implements ReferenceBinsSource {
 
         /** Collects the chunks of one reference's bins. Within a bin, chunks must be added in file order. */
         private static final class ReferenceAccumulator {
+            /** htslib's {@code HTS_MIN_MARKER_DIST}: a bin spanning fewer bytes of the compressed file is folded. */
+            private static final long SMALLEST_BIN_KEPT = 0x10000;
+
             private final Map<Integer, ChunkList> bins = new HashMap<>();
             // Consecutive records nearly always share a bin, so remembering the last one skips most lookups.
             private int lastBinNumber = -1;
@@ -974,6 +1033,36 @@ public final class BinningIndex implements ReferenceBinsSource {
                     lastBinNumber = binNumber;
                 }
                 lastBin.add(chunkStart, chunkEnd);
+            }
+
+            /**
+             * Folds each bin whose chunks span less than {@link #SMALLEST_BIN_KEPT} of the compressed file into its
+             * parent, if the parent has chunks of its own, as htslib does ({@code compress_binning}): so small a
+             * bin saves a query next to nothing, and costs an entry in the index. Levels are taken from the
+             * smallest bins up, so a bin is judged with what its children gave it, and may be folded in its turn.
+             */
+            void foldSmallBinsIntoParents(final int depth) {
+                final List<List<Integer>> binNumbersByLevel = new ArrayList<>();
+                for (int level = 0; level <= depth; level++) binNumbersByLevel.add(new ArrayList<>());
+                for (final int binNumber : bins.keySet()) {
+                    // A part's index read from a file may hold a bin number that the scheme has no level for.
+                    if (levelOf(binNumber) <= depth)
+                        binNumbersByLevel.get(levelOf(binNumber)).add(binNumber);
+                }
+
+                for (int level = depth; level > 0; level--) {
+                    for (final int binNumber : binNumbersByLevel.get(level)) {
+                        final ChunkList chunks = bins.get(binNumber);
+                        chunks.sortAndCoalesce();
+                        final ChunkList parent = bins.get(parentOf(binNumber));
+                        if (parent != null && chunks.compressedSpan() < SMALLEST_BIN_KEPT) {
+                            parent.addAllOutOfOrder(chunks);
+                            bins.remove(binNumber);
+                        }
+                    }
+                }
+                final ChunkList wholeReference = bins.get(0);
+                if (wholeReference != null) wholeReference.sortAndCoalesce();
             }
 
             /** The metadata pseudo-bin's view of the reference: the span of the file its records occupy. */
@@ -1018,6 +1107,7 @@ public final class BinningIndex implements ReferenceBinsSource {
         private static final class ChunkList {
             private long[] offsets = new long[4];
             private int size;
+            private boolean inFileOrder = true;
 
             /** Appends a chunk, or extends the last one when the two would be read together anyway. */
             void add(final long chunkStart, final long chunkEnd) {
@@ -1033,6 +1123,48 @@ public final class BinningIndex implements ReferenceBinsSource {
                 }
                 offsets[size++] = chunkStart;
                 offsets[size++] = chunkEnd;
+            }
+
+            /** Takes another list's chunks, which may lie anywhere in the file relative to this one's. */
+            void addAllOutOfOrder(final ChunkList other) {
+                if (size + other.size > offsets.length) {
+                    offsets = Arrays.copyOf(offsets, Math.max(size + other.size, 2 * offsets.length));
+                }
+                System.arraycopy(other.offsets, 0, offsets, size, other.size);
+                size += other.size;
+                inFileOrder = false;
+            }
+
+            /**
+             * Restores file order after chunks were taken in, and joins each chunk to the one before if it starts
+             * in or before the block that one ends in, as htslib does. A chunk taken in may lie within one of this
+             * list's own: chunks joined by {@link #add} cover whatever lay between them, which is another bin's.
+             * So the later end is kept, not the last one seen.
+             */
+            void sortAndCoalesce() {
+                if (inFileOrder) return;
+                final long[][] chunks = new long[size / 2][];
+                for (int i = 0; i < chunks.length; i++) chunks[i] = new long[] {offsets[2 * i], offsets[2 * i + 1]};
+                Arrays.sort(chunks, BY_UNSIGNED_START);
+                size = 0;
+                for (final long[] chunk : chunks) {
+                    final boolean joinsTheLast = size > 0
+                            && BlockCompressedFilePointerUtil.getBlockAddress(offsets[size - 1])
+                                    >= BlockCompressedFilePointerUtil.getBlockAddress(chunk[0]);
+                    if (!joinsTheLast) {
+                        offsets[size++] = chunk[0];
+                        offsets[size++] = chunk[1];
+                    } else if (Long.compareUnsigned(chunk[1], offsets[size - 1]) > 0) {
+                        offsets[size - 1] = chunk[1];
+                    }
+                }
+                inFileOrder = true;
+            }
+
+            /** Bytes of the compressed file from the block the first chunk starts in to the one the last ends in. */
+            long compressedSpan() {
+                return BlockCompressedFilePointerUtil.getBlockAddress(offsets[size - 1])
+                        - BlockCompressedFilePointerUtil.getBlockAddress(offsets[0]);
             }
 
             /** The chunks as a right-sized array. */

@@ -56,12 +56,33 @@ public class BinningIndexLoffsetTest extends HtsjdkTest {
     }
 
     @Test
-    public void testBinWhoseFirstWindowIsEmptyTakesThePrecedingWindowsOffsetWhenDerivedFromALinearIndex() {
-        // Not built for CSI, so the loffset comes from the stored linear index, whose empty leading windows hold 0.
+    public void testBinWhoseFirstWindowIsEmptyTakesTheNextOccupiedWindowsOffsetWhenDerivedFromALinearIndex() {
+        // Not built for CSI, so the loffset comes from the stored linear index, which is filled the same way.
         final BinningIndex.Builder builder = new BinningIndex.Builder(14, 5);
         builder.add(0, 2 * WINDOW + 10, 2 * WINDOW + 10, offset(300), offset(301));
         builder.add(0, 3 * WINDOW, 5 * WINDOW, offset(400), offset(401));
-        Assert.assertEquals(loffsetOfBin(builder.build(1).getReference(0), 585), 0);
+        Assert.assertEquals(loffsetOfBin(builder.build(1).getReference(0), 585), offset(300));
+    }
+
+    @Test
+    public void testBinThatSmallBinsWereFoldedIntoKeepsTheOffsetOfItsFirstWindow() {
+        final BinningIndex.Builder builder = new BinningIndex.Builder(14, 5, true);
+        builder.add(0, WINDOW, WINDOW + 1, offset(100), offset(101)); // windows 0-1: 128 kb bin 585
+        builder.add(0, WINDOW + 10, WINDOW + 10, offset(101), offset(102)); // 16 kb bin 4682, folded into 585
+        final ReferenceBins reference = builder.build(1).getReference(0);
+        Assert.assertEquals(reference.getBinCount(), 1);
+        Assert.assertEquals(loffsetOfBin(reference, 585), offset(100));
+    }
+
+    @Test
+    public void testIndexBuiltForMergingTakesItsLoffsetsFromTheFilledLinearIndexThoughItStoresTheUnfilledOne() {
+        final BinningIndex.Builder builder = new BinningIndex.Builder(14, 5).forMerging();
+        // Window 0 holds nothing, so the stored linear index is unset there; bin 585 starts at it all the same.
+        builder.add(0, WINDOW + 10, WINDOW + 10, offset(300), offset(301));
+        builder.add(0, 2 * WINDOW, 2 * WINDOW + 1, offset(400), offset(401)); // windows 1-2: bin 585
+        final ReferenceBins reference = builder.build(1).getReference(0);
+        Assert.assertEquals(reference.getLinearIndex()[0], -1);
+        Assert.assertEquals(loffsetOfBin(reference, 585), offset(300));
     }
 
     /** One record per 16 kb window across 4 Mb, so every window's linear-index entry is distinct. */

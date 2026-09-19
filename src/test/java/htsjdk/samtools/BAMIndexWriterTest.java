@@ -33,12 +33,14 @@ import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.utils.SamtoolsTestUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -50,56 +52,56 @@ public class BAMIndexWriterTest extends HtsjdkTest {
     private final String BAM_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
     private final String BAI_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai";
     private final Path BAM_FILE = Paths.get(BAM_FILE_LOCATION);
-    private final Path BAI_FILE = Paths.get(BAI_FILE_LOCATION);
 
     private final boolean mVerbose = true;
 
-    @Test(enabled = true)
-    public void testWriteText() throws Exception {
-        // Compare the text form of the c-generated bai file and a java-generated one
-        final Path cBaiTxtFile = Files.createTempFile("cBai.", ".bai.txt");
-        BAMIndexer.createAndWriteIndex(BAI_FILE, cBaiTxtFile, true);
-        verbose("Wrote textual C BAM Index file " + cBaiTxtFile);
-
-        final Path javaBaiFile = Files.createTempFile("javaBai.", "java.bai");
-        final Path javaBaiTxtFile = javaBaiFile.resolveSibling(javaBaiFile.getFileName() + ".txt");
-        final SamReader bam = SamReaderFactory.makeDefault()
+    /** A BAI of {@link #BAM_FILE} built by htsjdk, and one built by samtools; skips the test without samtools. */
+    private Path[] baiFromHtsjdkAndFromSamtools() throws IOException {
+        if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
+            throw new SkipException("samtools is not available");
+        }
+        final Path ours = Files.createTempFile("htsjdk.", ".bai");
+        final Path theirs = Files.createTempFile("samtools.", ".bai");
+        IOUtil.deleteOnExit(ours);
+        IOUtil.deleteOnExit(theirs);
+        try (SamReader bam = SamReaderFactory.makeDefault()
                 .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
-                .open(BAM_FILE);
-        BAMIndexer.createIndex(bam, javaBaiFile);
-        verbose("Wrote binary Java BAM Index file " + javaBaiFile);
-
-        // now, turn the bai file into text
-        BAMIndexer.createAndWriteIndex(javaBaiFile, javaBaiTxtFile, true);
-        // and compare them
-        verbose("diff " + javaBaiTxtFile + " " + cBaiTxtFile);
-        IOUtil.assertFilesEqual(javaBaiTxtFile, cBaiTxtFile);
-        cBaiTxtFile.toFile().deleteOnExit();
-        javaBaiFile.toFile().deleteOnExit();
-        javaBaiTxtFile.toFile().deleteOnExit();
-        CloserUtil.close(bam);
+                .open(BAM_FILE)) {
+            BAMIndexer.createIndex(bam, ours);
+        }
+        SamtoolsTestUtils.executeSamToolsCommand("index -b -o " + theirs + " " + BAM_FILE);
+        return new Path[] {ours, theirs};
     }
 
-    @Test(enabled = true)
-    public void testWriteBinary() throws Exception {
-        // Compare java-generated bai file with c-generated and sorted bai file
-        final Path javaBaiFile = Files.createTempFile("javaBai.", ".bai");
-        final SamReader bam = SamReaderFactory.makeDefault()
-                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS)
-                .open(BAM_FILE);
-        BAMIndexer.createIndex(bam, javaBaiFile);
-        verbose("Wrote binary java BAM Index file " + javaBaiFile);
+    /** samtools writes a reference's bins in no particular order, so the indexes are compared as read, not as bytes. */
+    @Test
+    public void testBaiHasTheContentOfTheOneSamtoolsBuilds() throws IOException {
+        final Path[] bais = baiFromHtsjdkAndFromSamtools();
+        try (FileBackedBinningIndex ours = FileBackedBinningIndex.open(bais[0], true);
+                FileBackedBinningIndex theirs = FileBackedBinningIndex.open(bais[1], true)) {
+            assertEquals(ours.loadAll(), theirs.loadAll());
+        }
+    }
 
-        final Path cRegeneratedBaiFile = Files.createTempFile("cBai.", ".bai");
-        BAMIndexer.createAndWriteIndex(BAI_FILE, cRegeneratedBaiFile, false);
-        verbose("Wrote sorted C binary BAM Index file " + cRegeneratedBaiFile);
+    @Test
+    public void testBaiAndTheOneSamtoolsBuildsAreTheSameWrittenAsText() throws IOException {
+        final Path[] bais = baiFromHtsjdkAndFromSamtools();
+        final Path ourText = Files.createTempFile("htsjdk.", ".bai.txt");
+        final Path theirText = Files.createTempFile("samtools.", ".bai.txt");
+        IOUtil.deleteOnExit(ourText);
+        IOUtil.deleteOnExit(theirText);
+        BAMIndexer.createAndWriteIndex(bais[0], ourText, true);
+        BAMIndexer.createAndWriteIndex(bais[1], theirText, true);
+        IOUtil.assertFilesEqual(ourText, theirText);
+    }
 
-        // Binary compare of javaBaiFile and cRegeneratedBaiFile should be the same
-        verbose("diff " + javaBaiFile + " " + cRegeneratedBaiFile);
-        IOUtil.assertFilesEqual(javaBaiFile, cRegeneratedBaiFile);
-        javaBaiFile.toFile().deleteOnExit();
-        cRegeneratedBaiFile.toFile().deleteOnExit();
-        CloserUtil.close(bam);
+    @Test
+    public void testBaiAndTheOneSamtoolsBuildsAreTheSameBytesOnceRewritten() throws IOException {
+        final Path[] bais = baiFromHtsjdkAndFromSamtools();
+        final Path theirsRewritten = Files.createTempFile("samtools.rewritten.", ".bai");
+        IOUtil.deleteOnExit(theirsRewritten);
+        BAMIndexer.createAndWriteIndex(bais[1], theirsRewritten, false);
+        IOUtil.assertFilesEqual(bais[0], theirsRewritten);
     }
 
     @Test(enabled = false, dataProvider = "linearIndexTestData")

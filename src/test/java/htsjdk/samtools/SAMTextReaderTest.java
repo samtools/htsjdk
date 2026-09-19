@@ -26,7 +26,6 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
 import htsjdk.index.FileBackedBinningIndex;
-import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
@@ -474,12 +473,9 @@ public class SAMTextReaderTest extends HtsjdkTest {
         }
     }
 
-    /**
-     * samtools folds sparsely used bins into the bins above them, which htsjdk does not do, so the two indexes are
-     * compared in everything but how their chunks are binned: the file offsets are what reading gets right or wrong.
-     */
+    /** samtools writes a reference's bins in no particular order, so the indexes are compared as read, not as bytes. */
     @Test
-    public void testIndexOfAnExistingFileHasTheOffsetsOfTheOneSamtoolsBuilds() throws IOException {
+    public void testIndexOfAnExistingFileHasTheContentOfTheOneSamtoolsBuilds() throws IOException {
         if (!SamtoolsTestUtils.isSamtoolsAvailable()) {
             throw new SkipException("samtools is not available");
         }
@@ -496,36 +492,8 @@ public class SAMTextReaderTest extends HtsjdkTest {
 
         try (FileBackedBinningIndex ourIndex = FileBackedBinningIndex.open(ours, true);
                 FileBackedBinningIndex theirIndex = FileBackedBinningIndex.open(theirs, true)) {
-            Assert.assertEquals(ourIndex.getReferenceCount(), theirIndex.getReferenceCount());
-            Assert.assertEquals(ourIndex.getNoCoordinateCount(), theirIndex.getNoCoordinateCount());
-            for (int i = 0; i < ourIndex.getReferenceCount(); i++) {
-                final ReferenceBins ourBins = ourIndex.getReference(i);
-                final ReferenceBins theirBins = theirIndex.getReference(i);
-                Assert.assertEquals(ourBins.getLinearIndex(), theirBins.getLinearIndex(), "linear index of " + i);
-                Assert.assertEquals(ourBins.getMetadata(), theirBins.getMetadata(), "metadata of " + i);
-                Assert.assertEquals(allChunksCoalesced(ourBins), allChunksCoalesced(theirBins), "chunks of " + i);
-            }
+            Assert.assertEquals(ourIndex.loadAll(), theirIndex.loadAll());
         }
-    }
-
-    /** What is left of a reference's chunks once the bins they are filed under are forgotten. */
-    private static List<Chunk> allChunksCoalesced(final ReferenceBins bins) {
-        final List<Chunk> chunks = new ArrayList<>();
-        for (int bin = 0; bin < bins.getBinCount(); bin++) {
-            chunks.addAll(bins.getChunks(bin));
-        }
-        // Chunks that touch are one stretch of the file, however many bins it was split among.
-        chunks.sort(null);
-        final List<Chunk> coalesced = new ArrayList<>();
-        for (final Chunk chunk : chunks) {
-            final Chunk last = coalesced.isEmpty() ? null : coalesced.get(coalesced.size() - 1);
-            if (last != null && last.getChunkEnd() >= chunk.getChunkStart()) {
-                last.setChunkEnd(Math.max(last.getChunkEnd(), chunk.getChunkEnd()));
-            } else {
-                coalesced.add(chunk.clone());
-            }
-        }
-        return coalesced;
     }
 
     // Queries of block-compressed SAM through a BAI or CSI index. What a query should return is settled by asking
