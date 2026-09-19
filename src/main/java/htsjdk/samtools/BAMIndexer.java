@@ -206,6 +206,7 @@ public class BAMIndexer {
             final int alignmentStart = rec.getAlignmentStart();
             if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
                 indexBuilder.addNoCoordinateRecords(1);
+                lastWasPlaced = false;
                 return;
             }
             final SAMFileSource source = rec.getFileSource();
@@ -225,9 +226,38 @@ public class BAMIndexer {
             } else {
                 indexBuilder.addRecordCounts(1, 0);
             }
+            lastWasPlaced = true;
         } catch (final Exception e) {
             throw new SAMException("Exception creating BAM index for record " + rec, e);
         }
+    }
+
+    /**
+     * Marks this indexer as indexing SAM text, so that a CSI carries a tabix header naming every
+     * sequence of the header.
+     *
+     * @return this indexer, for chaining
+     */
+    BAMIndexer namingSequencesInCsi() {
+        this.namesSequencesInCsi = true;
+        return this;
+    }
+
+    /** Whether the last alignment processed was a placed one (has a reference index and start). */
+    private boolean lastWasPlaced;
+
+    /**
+     * After all the alignment records have been processed, adjusts the end of the last record's
+     * chunk to {@code endOfRecords} (which should be taken from the BGZF stream after flushing it,
+     * so that the index ends where samtools ends it), then writes the index and closes the output.
+     *
+     * @param endOfRecords the file pointer taken after flushing but before closing the BGZF stream
+     */
+    public void finish(final long endOfRecords) {
+        if (lastWasPlaced) {
+            indexBuilder.moveEndOfLastRecord(endOfRecords);
+        }
+        finish();
     }
 
     /**

@@ -56,12 +56,23 @@ public class AsciiWriter extends Writer {
     }
 
     /**
+     * Writes buffered bytes to the stream beneath and empties the buffer, without flushing that stream.
+     * Where the stream beneath is a {@link BlockCompressedOutputStream}, this lets the caller take a
+     * file pointer that reflects the bytes written so far without forcing a BGZF block boundary.
+     */
+    public void writeBufferedBytes() throws IOException {
+        if (numBytes > 0) {
+            os.write(buffer, 0, numBytes);
+            numBytes = 0;
+        }
+    }
+
+    /**
      * flushes underlying OutputStream
      */
     @Override
     public void flush() throws IOException {
-        os.write(buffer, 0, numBytes);
-        numBytes = 0;
+        writeBufferedBytes();
         os.flush();
     }
 

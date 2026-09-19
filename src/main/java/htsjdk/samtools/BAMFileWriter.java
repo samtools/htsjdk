@@ -173,10 +173,21 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void finish() {
+        final long endOfRecords;
+        if (bamIndexer != null) {
+            try {
+                blockCompressedOutputStream.flush();
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+            endOfRecords = blockCompressedOutputStream.getFilePointer();
+        } else {
+            endOfRecords = 0;
+        }
         outputBinaryCodec.close();
         try {
             if (bamIndexer != null) {
-                bamIndexer.finish();
+                bamIndexer.finish(endOfRecords);
             }
         } catch (Exception e) {
             throw new SAMException("Exception writing BAM index file", e);
