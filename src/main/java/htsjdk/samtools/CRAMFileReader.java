@@ -632,8 +632,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (cramPath != null) {
             try {
                 // If this reader was provided with a Path, create a SeekableStream directly and
-                // let it be closed by CloseableIterators, and then recreated on demand.
-                seekableStream = new SeekablePathStream(cramPath);
+                // let it be closed by CloseableIterators, and then recreated on demand. Buffered,
+                // because container and slice headers are parsed a few bytes at a time and each
+                // unbuffered read is a round trip on a network filesystem.
+                seekableStream = IOUtil.maybeBufferedSeekableStream(new SeekablePathStream(cramPath));
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

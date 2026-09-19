@@ -199,6 +199,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 - **Reading a BAI or TBI whose metadata pseudo-bin has the wrong number of chunks now says the reference is probably longer than 2^29 and suggests a CSI index** (issues #823, #643).
 
+- **A CRAM opened by `Path` now reads through a buffered stream**, like one opened from a `SeekableStream`; container and slice headers are parsed a few bytes at a time, so an unbuffered read made a syscall per field (322 per small query, now 3), which was very slow on network filesystems such as GPFS or NFS (issue #1756).
+
 ### Testing
 
 - The test suite was migrated to `Path`, and a focused `NioSpiCompatibilityTest` exercises the major read/write/index APIs (BAM/CRAM/VCF/FASTQ, reference access and index discovery/creation) against an in-memory jimfs filesystem to validate NIO-SPI compatibility end to end.
