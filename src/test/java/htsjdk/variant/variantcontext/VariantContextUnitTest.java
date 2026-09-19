@@ -1984,6 +1984,14 @@ public class VariantContextUnitTest extends VariantBaseTest {
                         .make());
     }
 
+    @Test(expectedExceptions = TribbleException.class)
+    public void anEndPastAnIntIsRejectedRatherThanWrapped() {
+        // 4294967316L == 2^32 + 20; intValue() wraps this to 20, which would pass the old check
+        new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 4294967316L)
+                .make();
+    }
+
     @Test(expectedExceptions = NumberFormatException.class)
     public void anEndThatIsNotANumberIsRejected() {
         new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))

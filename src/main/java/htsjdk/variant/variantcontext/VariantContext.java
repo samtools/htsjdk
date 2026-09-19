@@ -1529,9 +1529,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     private void validateStop() {
         if (hasAttribute(VCFConstants.END_KEY)) {
             final Object endValue = getAttribute(VCFConstants.END_KEY);
-            final int end;
+            final long end;
             if (endValue instanceof Number) {
-                end = ((Number) endValue).intValue();
+                end = ((Number) endValue).longValue();
             } else if (VCFConstants.MISSING_VALUE_v4.equals(endValue.toString())) {
                 return; // nothing to compare with
             } else {

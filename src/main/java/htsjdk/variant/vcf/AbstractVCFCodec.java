@@ -588,8 +588,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         for (int i = 0; i < values.size() && i + 1 < alleles.size(); i++) {
             if (spansReferenceBySvlen(alleles.get(i + 1).getDisplayBases())) {
                 try {
-                    longest = Math.max(
-                            longest, Math.abs(Long.parseLong(values.get(i).toString())));
+                    final long value = Long.parseLong(values.get(i).toString());
+                    // |Long.MIN_VALUE| is not a long; a magnitude past an int is clamped to one anyway
+                    final long magnitude = value <= -Integer.MAX_VALUE || value >= Integer.MAX_VALUE
+                            ? Integer.MAX_VALUE
+                            : Math.abs(value);
+                    longest = Math.max(longest, magnitude);
                 } catch (final NumberFormatException e) {
                     // "." or not a number: no length to take from it
                 }
@@ -605,7 +609,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             final Object len = genotype.getExtendedAttribute(VCFConstants.LEN_KEY);
             if (len != null) {
                 try {
-                    longest = Math.max(longest, Long.parseLong(len.toString()));
+                    longest = Math.max(longest, Math.min(Long.parseLong(len.toString()), Integer.MAX_VALUE));
                 } catch (final NumberFormatException e) {
                     // "." or not a number
                 }

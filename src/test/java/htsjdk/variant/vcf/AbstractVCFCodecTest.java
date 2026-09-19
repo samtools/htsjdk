@@ -549,8 +549,10 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     @Test
     public void aLengthTooLongForAnIntIsClamped() {
         Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=2147483647", "0/1:."), Integer.MAX_VALUE);
-        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=-9223372036854775808", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=-9223372036854775808", "0/1:."), Integer.MAX_VALUE);
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=9223372036854775807", "0/1:."), Integer.MAX_VALUE);
         Assert.assertEquals(endOf("A", "<*>", ".", "0/0:2147483647"), Integer.MAX_VALUE);
+        Assert.assertEquals(endOf("A", "<*>", ".", "0/0:9223372036854775807"), Integer.MAX_VALUE);
     }
 
     @Test(expectedExceptions = TribbleException.class)
