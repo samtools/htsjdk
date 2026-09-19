@@ -448,9 +448,17 @@ public final class BinningIndex implements ReferenceBinsSource {
             }
             if (binNumber == metadataBin) {
                 if (offsets.length != 4) {
+                    // In a BAI/TBI the metadata pseudo-bin number (37450) lies just past the real
+                    // bins (0-37448), so records on a reference longer than 2^29 get filed under it
+                    // as extra chunks, making the count wrong.
+                    final String hint = csiLayout
+                            ? ""
+                            : " A BAI or TBI index can only address positions below 2^29"
+                                    + " (536,870,912); this reference is probably longer than"
+                                    + " that, so use a CSI index instead.";
                     throw new IllegalArgumentException(String.format(
-                            "Metadata bin of reference %d has %d chunks; expected 2",
-                            referenceIndex, offsets.length / 2));
+                            "Metadata bin of reference %d has %d chunks; expected 2.%s",
+                            referenceIndex, offsets.length / 2, hint));
                 }
                 metadata = new ReferenceBins.Metadata(offsets[0], offsets[1], offsets[2], offsets[3]);
             } else if (offsets.length > 0) {

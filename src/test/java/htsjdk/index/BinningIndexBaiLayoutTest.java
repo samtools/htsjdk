@@ -131,6 +131,25 @@ public class BinningIndexBaiLayoutTest extends HtsjdkTest {
         read(new Body().ints(1, METADATA_BIN, 1).longs(100, 200).ints(0).toBytes(), 1);
     }
 
+    @Test
+    public void testMetadataPseudoBinWithTheWrongChunkCountBlamesAReferenceLongerThanABaiCanAddress() {
+        // A reference longer than 2^29 puts records into bin numbers past the BAI scheme's real
+        // bins (0-37448); 37450 is one of them and is also the metadata pseudo-bin, so the reader
+        // sees a metadata bin with extra chunks.  The message should say so.
+        final byte[] body = new Body()
+                .ints(1, METADATA_BIN, 4)
+                .longs(10, 20, 30, 40, 50, 60, 70, 80)
+                .ints(0)
+                .toBytes();
+        try {
+            read(body, 1);
+            Assert.fail("Expected IllegalArgumentException");
+        } catch (final IllegalArgumentException e) {
+            Assert.assertTrue(e.getMessage().contains("2^29"), "message should mention 2^29: " + e.getMessage());
+            Assert.assertTrue(e.getMessage().contains("CSI"), "message should mention CSI: " + e.getMessage());
+        }
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testDuplicatedBinIsRejected() {
         read(
