@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -66,6 +67,12 @@ public class LazyGenotypesContext extends GenotypesContext {
      * True if we've already decoded the values in unparsedGenotypeData
      */
     private boolean loaded = false;
+
+    /**
+     * The VCF version of the file the unparsed data was read from, or null when it is not known. Transient like the
+     * unparsed data it describes.
+     */
+    private transient VCFHeaderVersion headerVersion;
 
     /**
      * Custom de-serialization routine to ensure that all LazyGenotypesContexts we de-serialize
@@ -131,10 +138,36 @@ public class LazyGenotypesContext extends GenotypesContext {
      */
     public LazyGenotypesContext(
             final LazyParser parser, final Object unparsedGenotypeData, final int nUnparsedGenotypes) {
+        this(parser, unparsedGenotypeData, nUnparsedGenotypes, null);
+    }
+
+    /**
+     * Creates a new lazy loading genotypes context using the LazyParser to create
+     * genotypes data on demand.
+     *
+     * @param parser the parser to be used to load on-demand genotypes data
+     * @param unparsedGenotypeData the encoded genotypes data that we will decode if necessary
+     * @param nUnparsedGenotypes the number of genotypes that will be produced if / when we actually decode the genotypes data
+     * @param headerVersion the VCF version of the file the data was read from, so that a writer can tell whether the
+     *     text can be written as it is; null when it is not known
+     */
+    public LazyGenotypesContext(
+            final LazyParser parser,
+            final Object unparsedGenotypeData,
+            final int nUnparsedGenotypes,
+            final VCFHeaderVersion headerVersion) {
         super(EMPTY);
         this.parser = parser;
         this.unparsedGenotypeData = unparsedGenotypeData;
         this.nUnparsedGenotypes = nUnparsedGenotypes;
+        this.headerVersion = headerVersion;
+    }
+
+    /**
+     * @return the VCF version of the file the unparsed data was read from, or null if it is not known
+     */
+    public VCFHeaderVersion getHeaderVersion() {
+        return headerVersion;
     }
 
     /**

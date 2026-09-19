@@ -43,6 +43,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -128,15 +129,21 @@ class BCF2Writer extends IndexingVariantContextWriter {
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
 
+    // The VCF version the caller asked for, or null to take the header's; resolved when the header is set
+    private final VCFHeaderVersion explicitVersion;
+    private VCFHeaderVersion outputVersion;
+
     public BCF2Writer(
             final Path location,
             final OutputStream output,
             final SAMSequenceDictionary refDict,
             final boolean enableOnTheFlyIndexing,
-            final boolean doNotWriteGenotypes) {
+            final boolean doNotWriteGenotypes,
+            final VCFHeaderVersion explicitVersion) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
+        this.explicitVersion = explicitVersion;
     }
 
     public BCF2Writer(
@@ -145,10 +152,12 @@ class BCF2Writer extends IndexingVariantContextWriter {
             final SAMSequenceDictionary refDict,
             final IndexCreator indexCreator,
             final boolean enableOnTheFlyIndexing,
-            final boolean doNotWriteGenotypes) {
+            final boolean doNotWriteGenotypes,
+            final VCFHeaderVersion explicitVersion) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing, indexCreator);
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
+        this.explicitVersion = explicitVersion;
     }
 
     // --------------------------------------------------------------------------------
@@ -165,7 +174,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
             final OutputStreamWriter writer = new OutputStreamWriter(capture, VCFEncoder.VCF_CHARSET);
-            this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
+            // the embedded header text carries the VCF version, not the BCF one
+            this.header =
+                    VCFWriter.writeHeader(this.header, writer, VCFWriter.makeVersionLine(outputVersion), "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();
 
@@ -229,6 +240,8 @@ class BCF2Writer extends IndexingVariantContextWriter {
         this.header = doNotWriteGenotypes
                 ? new VCFHeader(header.getMetaDataInSortedOrder())
                 : new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
+        this.outputVersion = VCFWriter.resolveOutputVersion(this.header, explicitVersion);
+        VCFWriter.checkHeaderCompatibility(this.header, this.outputVersion);
         // create the config offsets map
         if (this.header.getContigLines().isEmpty()) {
             if (ALLOW_MISSING_CONTIG_LINES) {

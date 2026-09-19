@@ -37,6 +37,7 @@ import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.tribble.index.tabix.TabixIndexType;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -130,6 +131,7 @@ public class VariantContextWriterBuilder {
     private IndexCreator idxCreator = null;
     private TabixIndexType tabixIndexType = TabixIndexType.TBI;
     private int csiMinShift = TabixIndexCreator.DEFAULT_CSI_MIN_SHIFT;
+    private VCFHeaderVersion vcfVersion = null;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private boolean createMD5 = Defaults.CREATE_MD5;
     protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
@@ -141,6 +143,25 @@ public class VariantContextWriterBuilder {
         if (Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE) {
             options.add(Options.USE_ASYNC_IO);
         }
+    }
+
+    /**
+     * Set the VCF version the writer labels its output with: the <code>##fileformat</code> line of a VCF, or of the
+     * header text embedded in a BCF. It overrides the version the header declares; the header itself is not changed.
+     * The writer fails at <code>writeHeader</code> if the header's lines need a newer version than this one.
+     *
+     * @param vcfVersion the output version, or null to take the header's version, with a floor of 4.2 (the default)
+     * @return this <code>VariantContextWriterBuilder</code>
+     * @throws IllegalArgumentException for a version before 4.0, which the writer cannot produce
+     */
+    public VariantContextWriterBuilder setVCFVersion(final VCFHeaderVersion vcfVersion) {
+        if (vcfVersion != null && !vcfVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
+            throw new IllegalArgumentException(
+                    "VCF " + vcfVersion.getVersionString() + " cannot be written: the oldest version the writer"
+                            + " produces is " + VCFHeaderVersion.VCF4_0.getVersionString());
+        }
+        this.vcfVersion = vcfVersion;
+        return this;
     }
 
     /**
@@ -606,7 +627,8 @@ public class VariantContextWriterBuilder {
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
-                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
+                    options.contains(Options.WRITE_FULL_FORMAT_FIELD),
+                    vcfVersion);
         } else {
             return new VCFWriter(
                     writerPath,
@@ -616,7 +638,8 @@ public class VariantContextWriterBuilder {
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
-                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
+                    options.contains(Options.WRITE_FULL_FORMAT_FIELD),
+                    vcfVersion);
         }
     }
 
@@ -627,7 +650,8 @@ public class VariantContextWriterBuilder {
                     writerStream,
                     refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
-                    options.contains(Options.DO_NOT_WRITE_GENOTYPES));
+                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                    vcfVersion);
         } else {
             return new BCF2Writer(
                     writerPath,
@@ -635,7 +659,8 @@ public class VariantContextWriterBuilder {
                     refDict,
                     idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
-                    options.contains(Options.DO_NOT_WRITE_GENOTYPES));
+                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                    vcfVersion);
         }
     }
 }

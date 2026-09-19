@@ -22,6 +22,13 @@ import java.util.TreeMap;
 
 /**
  * Functions specific to encoding VCF records.
+ *
+ * <p>When the output version is 4.3 or later, INFO and FORMAT {@code String} and {@code Character} values in record
+ * bodies are percent-encoded, each element of a list on its own. Genotypes still held as the text they were read
+ * from are written as that text only when nothing about it would have to change: the source and the output are
+ * both before 4.3 or both 4.3 or later, so the text needs neither encoding nor decoding, and a source of 4.4 or
+ * later, whose genotypes may start with a phase indicator, goes to an output of 4.4 or later. Otherwise the
+ * genotypes are decoded and encoded like any other.
  */
 public class VCFEncoder {
 
@@ -33,7 +40,24 @@ public class VCFEncoder {
 
     private final IntGenotypeFieldAccessors GENOTYPE_FIELD_ACCESSORS = new IntGenotypeFieldAccessors();
 
+    /** How the values of one INFO or FORMAT key are percent-encoded, decided from its header line. */
+    enum ValueEncoding {
+        /** Nothing: the output is before 4.3, or the values are {@code Integer}, {@code Float} or {@code Flag}. */
+        NONE,
+        /** One value: every special character in it is encoded, a comma included. */
+        SCALAR,
+        /**
+         * A list of values: each element is encoded on its own and the commas between them are kept. A
+         * {@code String} value of such a key is taken to be a list already joined with commas, as the reader
+         * leaves a FORMAT value, so its commas are kept too.
+         */
+        LIST
+    }
+
     private VCFHeader header;
+    private final VCFHeaderVersion version;
+    private final boolean percentEncode;
+    private final boolean leadingPhaseAllowed;
 
     private boolean allowMissingFieldsInHeader = false;
 
@@ -41,18 +65,52 @@ public class VCFEncoder {
 
     /**
      * Prepare a VCFEncoder that will encode records appropriate to the given VCF header, optionally
-     * allowing missing fields in the header.
+     * allowing missing fields in the header. Uses the header's version with a floor of 4.2.
      */
     public VCFEncoder(
             final VCFHeader header,
             final boolean allowMissingFieldsInHeader,
             final boolean outputTrailingFormatFields) {
+        this(header, allowMissingFieldsInHeader, outputTrailingFormatFields, resolveVersion(header));
+    }
+
+    /**
+     * Prepare a VCFEncoder that will encode records using the given VCF version.
+     *
+     * @param header the VCF header
+     * @param allowMissingFieldsInHeader if true, missing header lines are not an error
+     * @param outputTrailingFormatFields if true, trailing missing FORMAT fields are kept
+     * @param version the VCF version to encode for
+     */
+    public VCFEncoder(
+            final VCFHeader header,
+            final boolean allowMissingFieldsInHeader,
+            final boolean outputTrailingFormatFields,
+            final VCFHeaderVersion version) {
         if (header == null) {
             throw new NullPointerException("The VCF header must not be null.");
         }
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
+        this.version = version;
+        this.percentEncode = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
+        this.leadingPhaseAllowed = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+    }
+
+    /**
+     * Resolves the output version for a header: returns the header's version when it is 4.2 or later,
+     * or 4.2 when the header declares none or an older version.
+     */
+    public static VCFHeaderVersion resolveVersion(final VCFHeader header) {
+        if (header == null) {
+            throw new NullPointerException("The VCF header must not be null.");
+        }
+        final VCFHeaderVersion v = header.getVCFHeaderVersion();
+        if (v == null || !v.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
+            return VCFHeaderVersion.VCF4_2;
+        }
+        return v;
     }
 
     /**
@@ -150,11 +208,12 @@ public class VCFEncoder {
         // INFO
         final Map<String, String> infoFields = new TreeMap<>();
         for (final Map.Entry<String, Object> field : context.getAttributes().entrySet()) {
-            if (!this.header.hasInfoLine(field.getKey())) {
+            final VCFInfoHeaderLine infoLine = this.header.getInfoHeaderLine(field.getKey());
+            if (infoLine == null) {
                 fieldIsMissingFromHeaderError(context, field.getKey(), "INFO");
             }
 
-            final String outputValue = formatVCFField(field.getValue());
+            final String outputValue = formatVCFField(field.getValue(), valueEncoding(infoLine));
             if (outputValue != null) {
                 infoFields.put(field.getKey(), outputValue);
             }
@@ -163,13 +222,16 @@ public class VCFEncoder {
 
         // FORMAT
         final GenotypesContext gc = context.getGenotypes();
-        if (gc.isLazyWithData() && ((LazyGenotypesContext) gc).getUnparsedGenotypeData() instanceof String) {
+        if (gc.isLazyWithData()
+                && ((LazyGenotypesContext) gc).getUnparsedGenotypeData() instanceof String
+                && canPassThroughLazyGenotypes((LazyGenotypesContext) gc)) {
             vcfOutput.append(VCFConstants.FIELD_SEPARATOR);
             vcfOutput.append(
                     ((LazyGenotypesContext) gc).getUnparsedGenotypeData().toString());
         } else {
-            final List<String> genotypeAttributeKeys = context.calcVCFGenotypeKeys(this.header);
+            List<String> genotypeAttributeKeys = context.calcVCFGenotypeKeys(this.header);
             if (!genotypeAttributeKeys.isEmpty()) {
+                genotypeAttributeKeys = reorderFormatKeys(genotypeAttributeKeys);
                 for (final String format : genotypeAttributeKeys) {
                     if (!this.header.hasFormatLine(format)) {
                         fieldIsMissingFromHeaderError(context, format, "FORMAT");
@@ -193,6 +255,64 @@ public class VCFEncoder {
 
     boolean getAllowMissingFieldsInHeader() {
         return this.allowMissingFieldsInHeader;
+    }
+
+    /**
+     * Whether genotype text can be written as it was read, without decoding it: when the source and the output are
+     * on the same side of 4.3, where percent-encoding begins, and when the output can express a leading phase
+     * indicator if the source (4.4 or later) could carry one. Text whose source version is not known is written as
+     * it is.
+     */
+    private boolean canPassThroughLazyGenotypes(final LazyGenotypesContext gc) {
+        final VCFHeaderVersion source = gc.getHeaderVersion();
+        if (source == null) {
+            return true;
+        }
+        if (source.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) != percentEncode) {
+            return false;
+        }
+        return leadingPhaseAllowed || !source.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+    }
+
+    /** For &ge;4.5, moves LAA to position 1 (after GT) when present. */
+    private List<String> reorderFormatKeys(final List<String> keys) {
+        if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5)) {
+            return keys;
+        }
+        final int laaIndex = keys.indexOf(VCFConstants.LAA_KEY);
+        if (laaIndex < 0) {
+            return keys;
+        }
+        final int target = keys.get(0).equals(VCFConstants.GENOTYPE_KEY) ? 1 : 0;
+        if (laaIndex == target) {
+            return keys;
+        }
+        final List<String> reordered = new ArrayList<>(keys);
+        reordered.remove(laaIndex);
+        reordered.add(target, VCFConstants.LAA_KEY);
+        return reordered;
+    }
+
+    /**
+     * How the values of a key are percent-encoded, from its header line. A key the header does not declare (allowed
+     * with allowMissingFieldsInHeader) is treated as a list, so that its commas stay the delimiters the reader will
+     * take them for.
+     */
+    private ValueEncoding valueEncoding(final VCFCompoundHeaderLine line) {
+        if (!percentEncode) {
+            return ValueEncoding.NONE;
+        }
+        if (line == null) {
+            return ValueEncoding.LIST;
+        }
+        switch (line.getType()) {
+            case Integer:
+            case Float:
+            case Flag:
+                return ValueEncoding.NONE;
+            default:
+                return line.isFixedCount() && line.getCount() == 1 ? ValueEncoding.SCALAR : ValueEncoding.LIST;
+        }
     }
 
     private String getFilterString(final VariantContext vc) {
@@ -226,8 +346,18 @@ public class VCFEncoder {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     static String formatVCFField(final Object val) {
+        return formatVCFField(val, ValueEncoding.NONE);
+    }
+
+    /**
+     * Formats an INFO or FORMAT value as VCF text: a list or array as its elements joined with commas, a Double
+     * as {@link #formatVCFDouble}, a Boolean as an empty string (true) or null (false), null as the missing value,
+     * and anything else as its toString, percent-encoded as the key's {@link ValueEncoding} says. When nothing
+     * needs encoding a String value is returned as it is.
+     */
+    @SuppressWarnings("rawtypes")
+    static String formatVCFField(final Object val, final ValueEncoding encoding) {
         final String result;
         if (val == null) {
             result = VCFConstants.MISSING_VALUE_v4;
@@ -236,20 +366,33 @@ public class VCFEncoder {
         } else if (val instanceof Boolean) {
             result = (Boolean) val ? "" : null; // empty string for true, null for false
         } else if (val instanceof List) {
-            result = formatVCFField(((List) val).toArray());
+            result = formatVCFField(((List) val).toArray(), encoding);
         } else if (val.getClass().isArray()) {
             final int length = Array.getLength(val);
             if (length == 0) {
-                return formatVCFField(null);
+                return formatVCFField(null, encoding);
             }
-            final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
+            // each element is one value: a comma inside it is literal, the commas between elements are delimiters
+            final ValueEncoding elementEncoding =
+                    encoding == ValueEncoding.NONE ? ValueEncoding.NONE : ValueEncoding.SCALAR;
+            final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0), elementEncoding));
             for (int i = 1; i < length; i++) {
                 sb.append(',');
-                sb.append(formatVCFField(Array.get(val, i)));
+                sb.append(formatVCFField(Array.get(val, i), elementEncoding));
             }
             result = sb.toString();
         } else {
-            result = val.toString();
+            final String text = val.toString();
+            switch (encoding) {
+                case SCALAR:
+                    result = VCFPercentEncodedTextTransformer.percentEncode(text);
+                    break;
+                case LIST:
+                    result = VCFPercentEncodedTextTransformer.percentEncodeJoinedList(text);
+                    break;
+                default:
+                    result = text;
+            }
         }
 
         return result;
@@ -328,6 +471,15 @@ public class VCFEncoder {
             final Appendable vcfoutput)
             throws IOException {
         final int ploidy = vc.getMaxPloidy(2);
+        final int nKeys = genotypeFormatKeys.size();
+
+        // how each key's values are percent-encoded, decided once per record rather than once per sample
+        final ValueEncoding[] encodings = percentEncode ? new ValueEncoding[nKeys] : null;
+        if (encodings != null) {
+            for (int k = 0; k < nKeys; k++) {
+                encodings[k] = valueEncoding(this.header.getFormatHeaderLine(genotypeFormatKeys.get(k)));
+            }
+        }
 
         for (final String sample : this.header.getGenotypeSamples()) {
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
@@ -337,15 +489,16 @@ public class VCFEncoder {
                 g = GenotypeBuilder.createMissing(sample, ploidy);
             }
 
-            final List<String> attrs = new ArrayList<>(genotypeFormatKeys.size());
-            for (final String field : genotypeFormatKeys) {
+            final List<String> attrs = new ArrayList<>(nKeys);
+            for (int k = 0; k < nKeys; k++) {
+                final String field = genotypeFormatKeys.get(k);
                 if (field.equals(VCFConstants.GENOTYPE_KEY)) {
                     if (!g.isAvailable()) {
                         throw new IllegalStateException(
                                 "GTs cannot be missing for some samples if they are available for others in the record");
                     }
 
-                    writeGtField(alleleMap, vcfoutput, g);
+                    writeGtField(alleleMap, vcfoutput, g, leadingPhaseAllowed);
                     continue;
 
                 } else {
@@ -370,10 +523,10 @@ public class VCFEncoder {
                                 outputValue = sb.toString();
                             }
                         } else {
-                            Object val = g.hasExtendedAttribute(field)
+                            final Object val = g.hasExtendedAttribute(field)
                                     ? g.getExtendedAttribute(field)
                                     : VCFConstants.MISSING_VALUE_v4;
-                            outputValue = formatVCFField(val);
+                            outputValue = formatVCFField(val, encodings == null ? ValueEncoding.NONE : encodings[k]);
                         }
                     }
 

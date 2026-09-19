@@ -35,11 +35,16 @@ import htsjdk.tribble.Tribble;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +52,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -613,5 +620,39 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         exec.waitFor(1, TimeUnit.MINUTES);
         Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
         return fifo;
+    }
+
+    // setVCFVersion
+
+    @Test
+    public void setVCFVersionReturnsBuilder() {
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
+        Assert.assertSame(builder.setVCFVersion(VCFHeaderVersion.VCF4_4), builder);
+    }
+
+    @Test
+    public void setVCFVersionOverridesHeader() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFHeaderLine("fileformat", "VCFv4.2"));
+        lines.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"));
+        final VCFHeader header = new VCFHeader(lines, List.of());
+        final Path output = Files.createTempFile(TEST_BASENAME + ".setVCFVersionOverrides", FileExtensions.VCF);
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(Files.readAllLines(output, StandardCharsets.UTF_8).get(0), "##fileformat=VCFv4.5");
+    }
+
+    @Test
+    public void setVCFVersionRejectsAVersionBefore40() {
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
+        Assert.expectThrows(IllegalArgumentException.class, () -> builder.setVCFVersion(VCFHeaderVersion.VCF3_3));
+        Assert.expectThrows(IllegalArgumentException.class, () -> builder.setVCFVersion(VCFHeaderVersion.VCF3_2));
+        Assert.assertSame(builder.setVCFVersion(VCFHeaderVersion.VCF4_0), builder);
     }
 }

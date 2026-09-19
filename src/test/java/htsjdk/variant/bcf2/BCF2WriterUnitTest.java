@@ -91,7 +91,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         return header;
     }
 
-    @BeforeClass
+    // alwaysRun: the class has a test in the optimistic_vcf_4_4 group, which runs on its own in a task of its own
+    @BeforeClass(alwaysRun = true)
     private void createTemporaryDirectory() {
         tempDir = TestUtil.getTempDirectoryAsPath("BCFWriter", "StaleIndex");
         tempDir.toFile().deleteOnExit();
@@ -390,7 +391,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     /** A {@code Number=LR} FORMAT field, whose length differs between the samples, is written and read back. */
-    @Test
+    @Test(groups = "optimistic_vcf_4_4")
     public void aFormatFieldDeclaredNumberLRSurvivesARoundTrip() throws IOException {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
@@ -411,12 +412,14 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                                 .make())
                 .make();
 
+        // Number=LR needs a 4.5 header, and the reader accepts a 4.5 header only with the optimistic flag
         final Path output = Files.createTempFile(tempDir, "numberLR.", ".bcf");
         output.toFile().deleteOnExit();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_5)
                 .build()) {
             writer.writeHeader(header);
             writer.add(vc);
@@ -424,6 +427,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
 
         try (final VCFFileReader reader = new VCFFileReader(output, false)) {
             final VCFHeader headerRead = reader.getFileHeader();
+            Assert.assertEquals(headerRead.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_5);
             Assert.assertEquals(headerRead.getFormatHeaderLine("LAD").getCountType(), VCFHeaderLineCount.LR);
             final VariantContext vcRead = reader.iterator().next().fullyDecode(headerRead, false);
             Assert.assertEquals(vcRead.getGenotype("s1").getExtendedAttribute("LAD"), List.of(10, 5));
@@ -569,5 +573,63 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             Assert.assertEquals(records.size(), 1);
             Assert.assertEquals(records.get(0).getGenotype("s1").getGenotypeString(), "A/C|G");
         }
+    }
+
+    // The VCF version of the embedded header text
+
+    private static VCFHeader oneSampleGtHeader(final VCFHeaderVersion version) {
+        final VCFHeader header = oneSampleGtHeader();
+        header.setVCFHeaderVersion(version);
+        return header;
+    }
+
+    /** Writes only the header to a BCF and returns the file's bytes as text; the embedded header text is in there. */
+    private String writeBcfHeader(final VCFHeader header, final VCFHeaderVersion explicitVersion) throws IOException {
+        final Path output = Files.createTempFile(tempDir, "headerVersion.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(explicitVersion)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        return new String(Files.readAllBytes(output), StandardCharsets.UTF_8);
+    }
+
+    @Test
+    public void theEmbeddedHeaderTextCarriesTheBuilderVersion() throws IOException {
+        final VCFHeader header = oneSampleGtHeader(VCFHeaderVersion.VCF4_2);
+        final String file = writeBcfHeader(header, VCFHeaderVersion.VCF4_4);
+        Assert.assertTrue(file.contains("##fileformat=VCFv4.4\n"), file);
+        Assert.assertFalse(file.contains("VCFv4.2"), file);
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_2, "the caller's header changed");
+    }
+
+    @Test
+    public void theEmbeddedHeaderTextCarriesTheHeadersVersion() throws IOException {
+        Assert.assertTrue(
+                writeBcfHeader(oneSampleGtHeader(VCFHeaderVersion.VCF4_3), null).contains("##fileformat=VCFv4.3\n"));
+    }
+
+    @Test
+    public void theEmbeddedHeaderTextVersionIsFlooredAt42() throws IOException {
+        Assert.assertTrue(
+                writeBcfHeader(oneSampleGtHeader(VCFHeaderVersion.VCF4_0), null).contains("##fileformat=VCFv4.2\n"));
+        Assert.assertTrue(writeBcfHeader(oneSampleGtHeader(), null).contains("##fileformat=VCFv4.2\n"));
+    }
+
+    @Test
+    public void aHeaderWithNumberLAIsRefusedAt42() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
+        lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final IllegalStateException refusal =
+                Assert.expectThrows(IllegalStateException.class, () -> writeBcfHeader(header, null));
+        Assert.assertTrue(refusal.getMessage().contains("FORMAT/LAD (Number=LA)"), refusal.getMessage());
+        Assert.assertTrue(writeBcfHeader(header, VCFHeaderVersion.VCF4_5).contains("##fileformat=VCFv4.5\n"));
     }
 }

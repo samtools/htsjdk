@@ -645,4 +645,41 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertEquals(vc.getEnd(), 100);
         Assert.assertTrue(((LazyGenotypesContext) vc.getGenotypes()).isLazyWithData(), "not decoded");
     }
+
+    // Whitespace in INFO (#1667)
+
+    /** Decodes one sites-only record under a header of the given version declaring the String INFO key DESC. */
+    private static VariantContext decodeSitesOnlyRecord(final VCFHeaderVersion version, final String record) {
+        final String header = "##fileformat=" + version.getVersionString() + "\n"
+                + "##INFO=<ID=DESC,Number=1,Type=String,Description=\"desc\">\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(header.getBytes(StandardCharsets.UTF_8)))));
+        return codec.decode(record);
+    }
+
+    @Test
+    public void aSpaceInAnInfoValueIsAcceptedAt43() {
+        final VariantContext vc =
+                decodeSitesOnlyRecord(VCFHeaderVersion.VCF4_3, "chr1\t100\t.\tA\tC\t.\t.\tDESC=hello world");
+        Assert.assertEquals(vc.getAttribute("DESC"), "hello world");
+    }
+
+    @Test
+    public void aSpaceInAnInfoValueIsAcceptedAt42() {
+        // 4.2 says "no whitespace", but htslib has never enforced it and files carry spaces
+        final VariantContext vc =
+                decodeSitesOnlyRecord(VCFHeaderVersion.VCF4_2, "chr1\t100\t.\tA\tC\t.\t.\tDESC=hello world");
+        Assert.assertEquals(vc.getAttribute("DESC"), "hello world");
+    }
+
+    @Test
+    public void aNinthColumnUnderASitesOnlyHeaderIsReportedAsAnExtraColumn() {
+        // a tab can only reach the INFO column as an extra column, which is a column-count error, not a value
+        final TribbleException refusal = Assert.expectThrows(
+                TribbleException.class,
+                () -> decodeSitesOnlyRecord(VCFHeaderVersion.VCF4_3, "chr1\t100\t.\tA\tC\t.\t.\tDESC=x\tGT"));
+        Assert.assertTrue(refusal.getMessage().contains("columns"), refusal.getMessage());
+    }
 }
