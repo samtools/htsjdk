@@ -62,6 +62,8 @@ public class BAMIndexer {
     private final List<String> sequenceNames;
     // Set when what is being indexed is SAM text, which tabix may be asked to read as well as samtools.
     private boolean namesSequencesInCsi;
+    // Tracks whether the last record given to processAlignment was placed (has a reference and start).
+    private boolean lastWasPlaced;
 
     // BAI or CSI; never AUTO
     private final BamIndexType indexType;
@@ -242,9 +244,6 @@ public class BAMIndexer {
         this.namesSequencesInCsi = true;
         return this;
     }
-
-    /** Whether the last alignment processed was a placed one (has a reference index and start). */
-    private boolean lastWasPlaced;
 
     /**
      * After all the alignment records have been processed, adjusts the end of the last record's

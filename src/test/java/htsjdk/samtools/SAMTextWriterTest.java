@@ -155,19 +155,27 @@ public class SAMTextWriterTest extends HtsjdkTest {
 
     // On-the-fly indexing of bgzipped SAM
 
-    /** Records on three references, ending with placed reads. */
+    /**
+     * Reads on references 0 and 2, reference 1 left empty, one in fifty long enough to occupy
+     * higher bins and cause small-bin folding. Produces many BGZF blocks.
+     */
     private static SAMRecordSetBuilder indexTestRecords() {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
-        for (int i = 0; i < 300; i++) {
-            builder.addFrag("read" + i, i % 3, 1 + 50 * (i / 3), i % 2 == 0);
+        for (int i = 0; i < 8_000; i++) {
+            final int ref = i < 4_000 ? 0 : 2;
+            final int start = 1 + 50 * (i % 4_000);
+            if (i % 50 == 0) {
+                builder.addFrag("long" + i, ref, start, false, false, "20000M", null, 30);
+            } else {
+                builder.addFrag("read" + i, ref, start, i % 2 == 0);
+            }
         }
         return builder;
     }
 
-    /** Records ending with unplaced reads. */
     private static SAMRecordSetBuilder indexTestRecordsWithUnplaced() {
         final SAMRecordSetBuilder builder = indexTestRecords();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             builder.addUnmappedFragment("unplaced" + i);
         }
         return builder;
@@ -187,21 +195,18 @@ public class SAMTextWriterTest extends HtsjdkTest {
         return samGz;
     }
 
-    /** Reads a BAI from a path. */
     private static BinningIndex readBai(final Path path) {
         try (FileBackedBinningIndex idx = FileBackedBinningIndex.open(path, true)) {
             return idx.loadAll();
         }
     }
 
-    /** Reads a CSI from a path, returning its index. */
     private static BinningIndex.CsiContents readCsi(final Path csi) throws IOException {
         try (InputStream in = new BlockCompressedInputStream(Files.newInputStream(csi))) {
             return BinningIndex.readCsi(new BinaryCodec(in));
         }
     }
 
-    /** Builds an index of a finished file using BAMIndexer.createIndex. */
     private static BinningIndex createIndexOfFile(final Path samGz, final BamIndexType type) throws IOException {
         final Path indexPath = Files.createTempFile("createIndex.", type == BamIndexType.CSI ? ".csi" : ".bai");
         IOUtil.deleteOnExit(indexPath);
@@ -215,6 +220,18 @@ public class SAMTextWriterTest extends HtsjdkTest {
         } else {
             return readBai(indexPath);
         }
+    }
+
+    /** The largest BGZF block address among a reference's chunks. */
+    private static long maxBlockAddress(final htsjdk.index.ReferenceBins ref) {
+        long max = 0;
+        for (int i = 0; i < ref.getBinCount(); i++) {
+            for (final Chunk chunk : ref.getChunks(i)) {
+                max = Math.max(
+                        max, htsjdk.samtools.util.BlockCompressedFilePointerUtil.getBlockAddress(chunk.getChunkEnd()));
+            }
+        }
+        return max;
     }
 
     @Test
@@ -275,7 +292,6 @@ public class SAMTextWriterTest extends HtsjdkTest {
         writeSamGz(records, directory, true, BamIndexType.CSI);
         final Path samGz = directory.resolve("reads.sam.gz");
 
-        // Write a BAM with a BAI for comparison
         final Path bam = directory.resolve("reads.bam");
         try (SAMFileWriter writer =
                 new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(records.getHeader(), true, bam)) {
@@ -284,15 +300,15 @@ public class SAMTextWriterTest extends HtsjdkTest {
 
         try (SamReader samReader = SamReaderFactory.makeDefault().open(samGz);
                 SamReader bamReader = SamReaderFactory.makeDefault().open(bam)) {
-            for (int contig = 0; contig < 3; contig++) {
+            for (final int contig : new int[] {0, 2}) {
                 final String name = records.getHeader().getSequence(contig).getSequenceName();
-                for (int start = 1; start < 5_000; start += 1_000) {
+                for (int start = 1; start < 200_000; start += 61_803) {
                     final List<String> samResult = new ArrayList<>();
-                    try (CloseableIterator<SAMRecord> it = samReader.queryOverlapping(name, start, start + 500)) {
+                    try (CloseableIterator<SAMRecord> it = samReader.queryOverlapping(name, start, start + 20_000)) {
                         it.forEachRemaining(r -> samResult.add(r.getReadName()));
                     }
                     final List<String> bamResult = new ArrayList<>();
-                    try (CloseableIterator<SAMRecord> it = bamReader.queryOverlapping(name, start, start + 500)) {
+                    try (CloseableIterator<SAMRecord> it = bamReader.queryOverlapping(name, start, start + 20_000)) {
                         it.forEachRemaining(r -> bamResult.add(r.getReadName()));
                     }
                     Assert.assertEquals(samResult, bamResult, name + ":" + start);
@@ -304,11 +320,7 @@ public class SAMTextWriterTest extends HtsjdkTest {
 
     @Test
     public void testCsiCarriesTabixHeaderNamingEverySequenceInOrder() throws IOException {
-        // Use records that skip a reference (0 has reads, 1 does not, 2 has reads) to verify all are listed
-        final SAMRecordSetBuilder records = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
-        for (int i = 0; i < 100; i++) {
-            records.addFrag("read" + i, i < 50 ? 0 : 2, 1 + 100 * (i % 50), false);
-        }
+        final SAMRecordSetBuilder records = indexTestRecords();
         final Path directory = Files.createTempDirectory("samGzTabixHeader");
         IOUtil.deleteOnExit(directory);
         writeSamGz(records, directory, true, BamIndexType.CSI);
@@ -335,15 +347,16 @@ public class SAMTextWriterTest extends HtsjdkTest {
         IOUtil.deleteOnExit(directory);
         final Path samGz = writeSamGz(records, directory, true, BamIndexType.CSI);
 
-        for (int contig = 0; contig < 3; contig++) {
+        for (final int contig : new int[] {0, 2}) {
             final int c = contig;
             final String name = records.getHeader().getSequence(contig).getSequenceName();
-            final String region = name + ":1000-3000";
+            final String region = name + ":20000-40000";
             final long expected = records.getRecords().stream()
                     .filter(r -> r.getReferenceIndex() == c
-                            && r.getAlignmentStart() <= 3_000
-                            && r.getAlignmentEnd() >= 1_000)
+                            && r.getAlignmentStart() <= 40_000
+                            && r.getAlignmentEnd() >= 20_000)
                     .count();
+            Assert.assertTrue(expected > 0, "fixture should have reads on contig " + contig);
             final String samtoolsCount = SamtoolsTestUtils.executeSamToolsCommand("view -c " + samGz + " " + region)
                     .stdout
                     .trim();
@@ -355,18 +368,51 @@ public class SAMTextWriterTest extends HtsjdkTest {
     }
 
     @Test
-    public void testBgzfBlocksAreNotOnePerRecord() throws IOException {
+    public void testSamGzIsTheSameBytesWithAndWithoutIndex() throws IOException {
         final SAMRecordSetBuilder records = indexTestRecords();
-        final Path directory = Files.createTempDirectory("samGzBlocks");
+        final Path directory = Files.createTempDirectory("samGzBytes");
         IOUtil.deleteOnExit(directory);
         final Path withIndex = writeSamGz(records, directory, true, BamIndexType.CSI);
-        final Path directoryNoIndex = Files.createTempDirectory("samGzBlocksNoIndex");
+        final Path directoryNoIndex = Files.createTempDirectory("samGzBytesNoIndex");
         IOUtil.deleteOnExit(directoryNoIndex);
         final Path withoutIndex = writeSamGz(records, directoryNoIndex, false, null);
 
-        // The files should have the same content: the stronger statement is byte-identical files
         Assert.assertEquals(Files.readAllBytes(withIndex), Files.readAllBytes(withoutIndex));
         IOUtil.recursiveDelete(directory);
         IOUtil.recursiveDelete(directoryNoIndex);
+    }
+
+    @Test
+    public void testOnTheFlyIndexSpansMultipleBgzfBlocks() throws IOException {
+        final SAMRecordSetBuilder records = indexTestRecords();
+        final Path directory = Files.createTempDirectory("samGzMultiBlock");
+        IOUtil.deleteOnExit(directory);
+        final Path samGz = writeSamGz(records, directory, true, BamIndexType.CSI);
+        final BinningIndex index =
+                readCsi(samGz.resolveSibling("reads.sam.gz.csi")).index();
+
+        long largestBlockAddress = 0;
+        for (int ref = 0; ref < index.getReferenceCount(); ref++) {
+            largestBlockAddress = Math.max(largestBlockAddress, maxBlockAddress(index.getReference(ref)));
+        }
+        Assert.assertTrue(
+                largestBlockAddress > 200_000,
+                "the index should span many BGZF blocks, but the largest block address was only "
+                        + largestBlockAddress);
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testEnableIndexOnPlainWriterIsRefused() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 1_000_000));
+        final SAMTextWriter writer = new SAMTextWriter(new java.io.StringWriter());
+        writer.enableIndexConstruction(
+                new htsjdk.samtools.util.BlockCompressedOutputStream((java.io.OutputStream) null, (Path) null),
+                Path.of("dummy.csi"),
+                header,
+                BamIndexType.CSI,
+                14);
     }
 }

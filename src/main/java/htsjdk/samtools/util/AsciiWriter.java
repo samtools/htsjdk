@@ -57,8 +57,7 @@ public class AsciiWriter extends Writer {
 
     /**
      * Writes buffered bytes to the stream beneath and empties the buffer, without flushing that stream.
-     * Where the stream beneath is a {@link BlockCompressedOutputStream}, this lets the caller take a
-     * file pointer that reflects the bytes written so far without forcing a BGZF block boundary.
+     * Unlike {@link #flush()}, this does not call {@code flush()} on the underlying stream.
      */
     public void writeBufferedBytes() throws IOException {
         if (numBytes > 0) {

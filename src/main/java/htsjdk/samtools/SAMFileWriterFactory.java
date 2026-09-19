@@ -473,7 +473,7 @@ public class SAMFileWriterFactory implements Cloneable {
                     } else {
                         indexPath = IOUtil.addExtension(outputPath, FileExtensions.BAI_INDEX);
                     }
-                    writer.enableIndexConstruction(bgzfStream, indexPath, resolved, csiMinShift);
+                    writer.enableIndexConstruction(bgzfStream, indexPath, header, resolved, csiMinShift);
                 }
             }
 

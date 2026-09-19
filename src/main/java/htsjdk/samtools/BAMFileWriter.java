@@ -173,17 +173,7 @@ public class BAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void finish() {
-        final long endOfRecords;
-        if (bamIndexer != null) {
-            try {
-                blockCompressedOutputStream.flush();
-            } catch (final IOException e) {
-                throw new RuntimeIOException(e);
-            }
-            endOfRecords = blockCompressedOutputStream.getFilePointer();
-        } else {
-            endOfRecords = 0;
-        }
+        final long endOfRecords = bamIndexer != null ? endOfRecordsPointer() : 0;
         outputBinaryCodec.close();
         try {
             if (bamIndexer != null) {
@@ -192,6 +182,21 @@ public class BAMFileWriter extends SAMFileWriterImpl {
         } catch (Exception e) {
             throw new SAMException("Exception writing BAM index file", e);
         }
+    }
+
+    /**
+     * Flushes the BGZF stream and returns the file pointer. samtools ends the file's last chunk at
+     * the pointer taken after the final flush, which names the start of the next block; taken before
+     * it, the same place is named as the end of this one, and the index would differ from one made
+     * by reading the file.
+     */
+    private long endOfRecordsPointer() {
+        try {
+            blockCompressedOutputStream.flush();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+        return blockCompressedOutputStream.getFilePointer();
     }
 
     /** @return absolute path in URI format, or null if this writer does not correspond to a file.

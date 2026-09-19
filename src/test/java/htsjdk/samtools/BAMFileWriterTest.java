@@ -636,17 +636,27 @@ public class BAMFileWriterTest extends HtsjdkTest {
 
     // On-the-fly BAM index matches createIndex of the finished file
 
+    /**
+     * Reads on references 0 and 2, reference 1 left empty, one in fifty long enough to occupy
+     * higher bins and cause small-bin folding. Produces many BGZF blocks.
+     */
     private static SAMRecordSetBuilder recordsEndingWithPlacedRead() {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
-        for (int i = 0; i < 200; i++) {
-            builder.addFrag("read" + i, i % 3, 1 + 50 * (i / 3), i % 2 == 0);
+        for (int i = 0; i < 8_000; i++) {
+            final int ref = i < 4_000 ? 0 : 2;
+            final int start = 1 + 50 * (i % 4_000);
+            if (i % 50 == 0) {
+                builder.addFrag("long" + i, ref, start, false, false, "20000M", null, 30);
+            } else {
+                builder.addFrag("read" + i, ref, start, i % 2 == 0);
+            }
         }
         return builder;
     }
 
     private static SAMRecordSetBuilder recordsEndingWithUnplacedReads() {
         final SAMRecordSetBuilder builder = recordsEndingWithPlacedRead();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             builder.addUnmappedFragment("unplaced" + i);
         }
         return builder;
@@ -741,6 +751,31 @@ public class BAMFileWriterTest extends HtsjdkTest {
         SamtoolsTestUtils.executeSamToolsCommand("index -b -o " + samBai + " " + directory.resolve("reads.bam"));
         final BinningIndex samtoolsIndex = loadIndex(samBai, false);
         Assert.assertEquals(onTheFly, samtoolsIndex);
+        IOUtil.recursiveDelete(directory);
+    }
+
+    @Test
+    public void testOnTheFlyIndexSpansMultipleBgzfBlocks() throws IOException {
+        final SAMRecordSetBuilder records = recordsEndingWithPlacedRead();
+        final Path directory = Files.createTempDirectory("bamMultiBlock");
+        directory.toFile().deleteOnExit();
+        final BinningIndex index = onTheFlyIndex(records, BamIndexType.BAI, directory);
+
+        long largestBlockAddress = 0;
+        for (int ref = 0; ref < index.getReferenceCount(); ref++) {
+            final htsjdk.index.ReferenceBins bins = index.getReference(ref);
+            for (int i = 0; i < bins.getBinCount(); i++) {
+                for (final Chunk chunk : bins.getChunks(i)) {
+                    largestBlockAddress = Math.max(
+                            largestBlockAddress,
+                            htsjdk.samtools.util.BlockCompressedFilePointerUtil.getBlockAddress(chunk.getChunkEnd()));
+                }
+            }
+        }
+        Assert.assertTrue(
+                largestBlockAddress > 200_000,
+                "the index should span many BGZF blocks, but the largest block address was only "
+                        + largestBlockAddress);
         IOUtil.recursiveDelete(directory);
     }
 
