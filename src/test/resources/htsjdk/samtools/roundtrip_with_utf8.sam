@@ -1,11 +1,11 @@
 @HD	VN:1.6	SO:unsorted
 @SQ	SN:chr1	LN:101
 @SQ	SN:chr2	LN:101
-@SQ	SN:chr3	LN:101	DS:descriptionhere
-@RG	ID:0	SM:Hi,Mom!
+@SQ	SN:chr3	LN:101	DS:Emoji😊
+@RG	ID:0	SM:Hi,Mom!	DS:Kanjiアメリカ
 @RG	ID:rg1	PL:ILLUMINA	SM:sm1
-@PG	ID:33	CL:xy	DS:description
-@CO	comment here
+@PG	ID:33	CL:äカ	DS:😀リ
+@CO	Kanjiアメリカ😀リä
 A	73	chr2	1	255	10M	*	0	0	CAACAGAAGC	)'.*.+2,))	RG:Z:rg1
 A	133	*	0	0	*	chr2	1	0	CAACAGAAGC	)'.*.+2,))	RG:Z:rg1
 B	99	chr1	1	255	10M	=	26	35	CAACAGAAGC	)'.*.+2,))	RG:Z:rg1
