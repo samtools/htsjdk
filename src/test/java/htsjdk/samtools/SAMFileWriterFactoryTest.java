@@ -1043,15 +1043,15 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         try {
             new SAMFileWriterFactory()
                     .setCreateIndex(true)
-                    .setCreateMd5File(false)
+                    .setCreateMd5File(true)
                     .makeBAMWriter(header, true, bam);
             Assert.fail("should have thrown");
         } catch (final SAMException expected) {
             // expected
         }
-        // The data file was created (by Files.newOutputStream) but nothing was flushed through the
-        // BGZF layer, so it is empty. The important thing: the factory threw.
-        Assert.assertTrue(Files.exists(bam));
+        // Nothing has reached the BAM, so its size says nothing; but the stream that computes the MD5 writes its
+        // file when it is closed, and only then.
+        Assert.assertTrue(Files.exists(dir.resolve("reads.bam.md5")), "the output should have been closed");
         IOUtil.recursiveDelete(dir);
     }
 
