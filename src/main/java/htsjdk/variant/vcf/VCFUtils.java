@@ -113,8 +113,9 @@ public class VCFUtils {
                                 map.put(key, compOther);
                             } else if (compLine.getType() == VCFHeaderLineType.Float
                                     && compOther.getType() == VCFHeaderLineType.Integer) {
-                                // promote key to Float
+                                // promote key to Float: the Float line takes the Integer line's place
                                 conflictWarner.warn(line, "Promoting Integer to Float in header: " + compOther);
+                                map.put(key, compLine);
                             } else {
                                 throw new IllegalStateException(
                                         "Incompatible header types, collision between these two types: " + line + " "

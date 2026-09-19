@@ -199,4 +199,32 @@ public class VCFUtilsTest extends HtsjdkTest {
         }
         Assert.assertEquals(ids, List.of("X", "Y"));
     }
+
+    // merging an Integer and a Float definition of the same field
+
+    private static VCFHeader headerWithInfoLineOfType(final VCFHeaderLineType type) {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFInfoHeaderLine("X", 1, type, "x"));
+        return header;
+    }
+
+    @Test
+    public void aFloatDefinitionMetFirstSurvivesAnIntegerOne() {
+        final VCFHeader merged = new VCFHeader(VCFUtils.smartMergeHeaders(
+                List.of(
+                        headerWithInfoLineOfType(VCFHeaderLineType.Float),
+                        headerWithInfoLineOfType(VCFHeaderLineType.Integer)),
+                false));
+        Assert.assertEquals(merged.getInfoHeaderLine("X").getType(), VCFHeaderLineType.Float);
+    }
+
+    @Test
+    public void anIntegerDefinitionMetFirstIsPromotedToFloat() {
+        final VCFHeader merged = new VCFHeader(VCFUtils.smartMergeHeaders(
+                List.of(
+                        headerWithInfoLineOfType(VCFHeaderLineType.Integer),
+                        headerWithInfoLineOfType(VCFHeaderLineType.Float)),
+                false));
+        Assert.assertEquals(merged.getInfoHeaderLine("X").getType(), VCFHeaderLineType.Float);
+    }
 }
