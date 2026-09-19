@@ -40,6 +40,8 @@ import htsjdk.variant.variantcontext.VariantContextTestProvider;
 import htsjdk.variant.variantcontext.writer.*;
 import htsjdk.variant.vcf.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -482,15 +484,20 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             writer.writeHeader(header);
             writer.add(triploidWithAllelePhasing(false, false, true));
         }
-        // 0/1|2 is a vector of three int8 (type byte 0x31), each (allele + 1) << 1 with the low bit set when phased;
-        // the round trip alone would not notice the reader and writer agreeing on something else
-        final byte[] written = Files.readAllBytes(output);
-        final byte[] expectedGt = {0x31, 0x02, 0x04, 0x07};
-        boolean found = false;
-        for (int i = 0; i + expectedGt.length <= written.length && !found; i++) {
-            found = Arrays.equals(written, i, i + expectedGt.length, expectedGt, 0, expectedGt.length);
-        }
-        Assert.assertTrue(found, "GT bytes 31 02 04 07 not found in the BCF output");
+        // The record's genotype block is the GT key as a typed int8 (0x11, key) and then 0/1|2 as a vector of three
+        // int8 (type byte 0x31), each (allele + 1) << 1 with the low bit set when phased. The round trip alone would
+        // not notice the reader and writer agreeing on something else.
+        final ByteBuffer written = ByteBuffer.wrap(Files.readAllBytes(output)).order(ByteOrder.LITTLE_ENDIAN);
+        written.position(BCF2Codec.SIZEOF_BCF_HEADER);
+        written.position(written.position() + Integer.BYTES + written.getInt()); // header length, then the header
+        final int sharedLength = written.getInt();
+        final int genotypesLength = written.getInt();
+        final byte[] genotypes = new byte[genotypesLength];
+        written.position(written.position() + sharedLength);
+        written.get(genotypes);
+        Assert.assertEquals(genotypes.length, 6, "one typed key and a vector of three int8");
+        Assert.assertEquals(genotypes[0], (byte) 0x11);
+        Assert.assertEquals(Arrays.copyOfRange(genotypes, 2, 6), new byte[] {0x31, 0x02, 0x04, 0x07});
     }
 
     @Test
