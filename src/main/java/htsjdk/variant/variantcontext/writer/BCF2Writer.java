@@ -184,11 +184,21 @@ class BCF2Writer extends IndexingVariantContextWriter {
             vc = new VariantContextBuilder(vc).noGenotypes().make();
         vc = vc.fullyDecode(header, false);
 
-        super.add(vc); // allow on the fly indexing
-
         try {
-            final byte[] infoBlock = buildSitesData(vc);
-            final byte[] genotypesBlock = buildSamplesData(vc);
+            final byte[] infoBlock;
+            final byte[] genotypesBlock;
+            try {
+                infoBlock = buildSitesData(vc);
+                genotypesBlock = buildSamplesData(vc);
+            } catch (final RuntimeException e) {
+                // A record can be refused part way through, and a caller may carry on with the next one: fetching
+                // the encoder's bytes empties it, so that what was encoded of this one does not lead the next.
+                encoder.getRecordBytes();
+                throw e;
+            }
+
+            // only now, so that a refused record is not indexed; still before any of its bytes reach the output
+            super.add(vc);
 
             // write the two blocks to disk
             writeBlock(infoBlock, genotypesBlock);

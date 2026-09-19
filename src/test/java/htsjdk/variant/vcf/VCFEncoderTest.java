@@ -211,4 +211,70 @@ public class VCFEncoderTest extends HtsjdkTest {
     private static VCFHeader createSyntheticHeader(final List<String> samples) {
         return new VCFHeader(createSyntheticMetadata(), samples);
     }
+
+    // GT phasing
+
+    private static final Allele GT_REF = Allele.create("A", true);
+    private static final Allele GT_ALT1 = Allele.create("C");
+    private static final Allele GT_ALT2 = Allele.create("G");
+
+    private static String writtenGt(final Genotype g, final boolean leadingPhaseIndicatorAllowed) throws IOException {
+        final VariantContext vc =
+                new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(GT_REF, GT_ALT1, GT_ALT2)).make();
+        final StringBuilder gt = new StringBuilder();
+        VCFEncoder.writeGtField(VCFEncoder.buildAlleleStrings(vc), gt, g, leadingPhaseIndicatorAllowed);
+        return gt.toString();
+    }
+
+    @Test
+    public void aGenotypeWithOnePhaseIsWrittenWithOneSeparator() throws IOException {
+        final Genotype phased = new GenotypeBuilder("s", Arrays.asList(GT_REF, GT_ALT1))
+                .phased(true)
+                .make();
+        final Genotype unphased = new GenotypeBuilder("s", Arrays.asList(GT_REF, GT_ALT1)).make();
+        Assert.assertEquals(writtenGt(phased, false), "0|1");
+        Assert.assertEquals(writtenGt(phased, true), "0|1");
+        Assert.assertEquals(writtenGt(unphased, false), "0/1");
+    }
+
+    @Test
+    public void aPhasedHaploidGenotypeIsWrittenWithoutAnIndicator() throws IOException {
+        final Genotype g =
+                new GenotypeBuilder("s", Arrays.asList(GT_ALT1)).phased(true).make();
+        Assert.assertEquals(writtenGt(g, false), "1");
+        Assert.assertEquals(writtenGt(g, true), "1");
+    }
+
+    @Test
+    public void mixedSeparatorsAreWrittenForEveryVersion() throws IOException {
+        final Genotype g = new GenotypeBuilder("s", Arrays.asList(GT_REF, GT_ALT1, GT_ALT2))
+                .allelePhasing(new boolean[] {false, false, true})
+                .make();
+        Assert.assertEquals(writtenGt(g, false), "0/1|2");
+        Assert.assertEquals(writtenGt(g, true), "0/1|2");
+    }
+
+    @Test
+    public void aLeadingIndicatorIsWrittenWhereItIsAllowed() throws IOException {
+        final Genotype phasedFirst = new GenotypeBuilder("s", Arrays.asList(GT_REF, GT_ALT1))
+                .allelePhasing(new boolean[] {true, false})
+                .make();
+        final Genotype unphasedFirst = new GenotypeBuilder("s", Arrays.asList(GT_REF, GT_ALT1))
+                .allelePhasing(new boolean[] {false, true})
+                .make();
+        final Genotype unphasedHaploid = new GenotypeBuilder("s", Arrays.asList(GT_ALT1))
+                .allelePhasing(new boolean[] {false})
+                .make();
+        Assert.assertEquals(writtenGt(phasedFirst, true), "|0/1");
+        Assert.assertEquals(writtenGt(unphasedFirst, true), "/0|1");
+        Assert.assertEquals(writtenGt(unphasedHaploid, true), "/1");
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void aLeadingIndicatorIsRefusedWhereItIsNotAllowed() throws IOException {
+        final Genotype g = new GenotypeBuilder("s", Arrays.asList(GT_REF, GT_ALT1))
+                .allelePhasing(new boolean[] {true, false})
+                .make();
+        writtenGt(g, false);
+    }
 }

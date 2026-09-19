@@ -406,17 +406,47 @@ public class VCFEncoder {
     }
 
     /**
-     * write the encoded GT field for a Genotype
+     * write the encoded GT field for a Genotype, for a version of VCF before 4.4
      * @param alleleMap a mapping of Allele to GT allele value (from {@link #buildAlleleStrings(VariantContext)})
      * @param vcfoutput the appendable to write to, to avoid inefficiency due to string copying
      * @param g the genotoype to encode
      * @throws IOException if appending fails with an IOException
+     * @throws IllegalStateException if the genotype {@link Genotype#needsLeadingPhaseIndicator() needs a leading
+     *     phase indicator}, which those versions do not have
      */
     public static void writeGtField(final Map<Allele, String> alleleMap, final Appendable vcfoutput, final Genotype g)
             throws IOException {
+        writeGtField(alleleMap, vcfoutput, g, false);
+    }
+
+    /**
+     * write the encoded GT field for a Genotype
+     * @param alleleMap a mapping of Allele to GT allele value (from {@link #buildAlleleStrings(VariantContext)})
+     * @param vcfoutput the appendable to write to, to avoid inefficiency due to string copying
+     * @param g the genotoype to encode
+     * @param leadingPhaseIndicatorAllowed whether the VCF being written is 4.4 or later, where a GT may start with a
+     *     phase indicator ({@code |0/1})
+     * @throws IOException if appending fails with an IOException
+     * @throws IllegalStateException if the genotype needs a leading phase indicator and it is not allowed: dropping
+     *     it would silently change the first allele's phase
+     */
+    public static void writeGtField(
+            final Map<Allele, String> alleleMap,
+            final Appendable vcfoutput,
+            final Genotype g,
+            final boolean leadingPhaseIndicatorAllowed)
+            throws IOException {
+        if (g.needsLeadingPhaseIndicator()) {
+            if (!leadingPhaseIndicatorAllowed) {
+                throw new IllegalStateException("The genotype of sample " + g.getSampleName() + " ("
+                        + g.getGenotypeString()
+                        + ") gives its first allele a phase that only VCF 4.4 and later can express");
+            }
+            vcfoutput.append(g.isAllelePhased(0) ? VCFConstants.PHASED : VCFConstants.UNPHASED);
+        }
         writeAllele(g.getAllele(0), alleleMap, vcfoutput);
         for (int i = 1; i < g.getPloidy(); i++) {
-            vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
+            vcfoutput.append(g.isAllelePhased(i) ? VCFConstants.PHASED : VCFConstants.UNPHASED);
             writeAllele(g.getAllele(i), alleleMap, vcfoutput);
         }
     }

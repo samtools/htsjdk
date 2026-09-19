@@ -223,20 +223,28 @@ class VCFWriter extends IndexingVariantContextWriter {
     @Override
     public void add(final VariantContext context) {
         try {
-            super.add(context);
             if (this.mHeader == null) {
                 throw new IllegalStateException(
                         "Unable to write the VCF: header is missing, " + "try to call writeHeader or setHeader first.");
             }
-            if (this.doNotWriteGenotypes) {
-                this.vcfEncoder.write(
-                        this.writer,
-                        new VariantContextBuilder(context).noGenotypes().make());
-            } else {
-                this.vcfEncoder.write(this.writer, context);
+            try {
+                if (this.doNotWriteGenotypes) {
+                    this.vcfEncoder.write(
+                            this.writer,
+                            new VariantContextBuilder(context).noGenotypes().make());
+                } else {
+                    this.vcfEncoder.write(this.writer, context);
+                }
+                write("\n");
+                // only now, so that a refused record is not indexed; still before any of its bytes reach the output
+                super.add(context);
+            } catch (final RuntimeException e) {
+                // A record can be refused part way through, by the encoder or by the indexer, and a caller may carry
+                // on with the next one: what was encoded of this one must not be left in the buffer to lead it.
+                writer.flush();
+                lineBuffer.reset();
+                throw e;
             }
-            write("\n");
-
             writeAndResetBuffer();
             outputHasBeenWritten = true;
         } catch (IOException e) {

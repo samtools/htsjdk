@@ -65,6 +65,10 @@ public final class GenotypeBuilder {
     private List<Allele> alleles = Collections.emptyList();
 
     private boolean isPhased = false;
+    private boolean[] allelePhasing;
+    // Whether allelePhasing came with a copied genotype rather than from the caller. Set wherever allelePhasing is
+    // set to an array and read only while it is one, so reset() and phased() need not touch it.
+    private boolean allelePhasingIsInherited;
     private int GQ = -1;
     private int DP = -1;
     private int[] AD = null;
@@ -160,6 +164,14 @@ public final class GenotypeBuilder {
         name(g.getSampleName());
         alleles(g.getAlleles());
         phased(g.isPhased());
+        if (g.hasPerAllelePhasing()) {
+            final boolean[] phasing = new boolean[g.getPloidy()];
+            for (int i = 0; i < phasing.length; i++) {
+                phasing[i] = g.isAllelePhased(i);
+            }
+            allelePhasing(phasing);
+            allelePhasingIsInherited = true;
+        }
         GQ(g.getGQ());
         DP(g.getDP());
         AD(g.getAD());
@@ -178,6 +190,7 @@ public final class GenotypeBuilder {
         if (!keepSampleName) sampleName = null;
         alleles = Collections.emptyList();
         isPhased = false;
+        allelePhasing = null;
         GQ = -1;
         DP = -1;
         AD = null;
@@ -201,7 +214,11 @@ public final class GenotypeBuilder {
      */
     public Genotype make() {
         final Map<String, Object> ea = (extendedAttributes == null) ? NO_ATTRIBUTES : extendedAttributes;
-        return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, filters, ea);
+        if (allelePhasing == null) {
+            // nearly every genotype, and made by the million: nothing here but the constructor call
+            return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, filters, ea);
+        }
+        return makeWithAllelePhasing(alleles, AD, PL, ea, false);
     }
 
     /**
@@ -218,7 +235,31 @@ public final class GenotypeBuilder {
         final List<Allele> al = new ArrayList<>(alleles);
         final int[] copyAD = (AD == null) ? null : Arrays.copyOf(AD, AD.length);
         final int[] copyPL = (PL == null) ? null : Arrays.copyOf(PL, PL.length);
-        return new FastGenotype(sampleName, al, isPhased, GQ, DP, copyAD, copyPL, filters, ea);
+        if (allelePhasing == null) {
+            return new FastGenotype(sampleName, al, isPhased, GQ, DP, copyAD, copyPL, filters, ea);
+        }
+        return makeWithAllelePhasing(al, copyAD, copyPL, ea, true);
+    }
+
+    /**
+     * Makes the genotype of a builder that holds per-allele phases, which few do.
+     *
+     * @param copyPhases whether the genotype gets its own copy of the phases, as {@link #makeWithShallowCopy()} promises
+     */
+    private Genotype makeWithAllelePhasing(
+            final List<Allele> alleles,
+            final int[] AD,
+            final int[] PL,
+            final Map<String, Object> ea,
+            final boolean copyPhases) {
+        if (allelePhasingIsInherited && allelePhasing.length != alleles.size()) {
+            // The phases came with a copied genotype and the caller then gave it another ploidy, so they no longer
+            // say anything about these alleles; what copy() took from isPhased() still does.
+            return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, filters, ea);
+        }
+        final boolean[] needed = perAllelePhasingIfNeeded();
+        final boolean[] phases = copyPhases && needed != null ? needed.clone() : needed;
+        return new FastGenotype(sampleName, alleles, isAnyAllelePhased(), phases, GQ, DP, AD, PL, filters, ea);
     }
 
     /**
@@ -249,7 +290,65 @@ public final class GenotypeBuilder {
      */
     public GenotypeBuilder phased(final boolean phased) {
         isPhased = phased;
+        // Tested rather than just cleared: this runs once per genotype, and the unconditional reference store showed
+        // up in BCF decoding, where a genotype costs only some 45 ns. make() keeps its common path bare for the same
+        // reason.
+        if (allelePhasing != null) {
+            allelePhasing = null;
+        }
         return this;
+    }
+
+    /**
+     * Gives each allele its own phase, as VCF 4.4 does: element {@code i} says whether allele {@code i} is phased,
+     * that is, whether the separator before it is {@code |}, the first element standing for a leading indicator.
+     * Needed only for what {@link #phased(boolean)} cannot say: mixed separators ({@code 0/1|2}) or a first allele
+     * whose phase is not the one the others imply ({@code |0/1}). Replaces any earlier call to either method; the
+     * genotype then reports {@link Genotype#isPhased()} if any allele is phased.
+     *
+     * <p>A lone {@code false} for a haploid genotype is an explicitly unphased allele ({@code /1}), which only VCF 4.4
+     * and later can write; a haploid genotype left to {@link #phased(boolean)} can always be written.
+     *
+     * @param allelePhasing one element per allele; not copied by {@link #make()}, like the other arrays
+     * @throws IllegalStateException from {@link #make()} if its length is not the number of alleles
+     */
+    public GenotypeBuilder allelePhasing(final boolean[] allelePhasing) {
+        this.allelePhasing = allelePhasing;
+        this.allelePhasingIsInherited = false;
+        return this;
+    }
+
+    /**
+     * The phases to store in the genotype being made, or null when one flag says as much: every separator is the
+     * same and the first allele's phase is the one they imply, which is {@code |} unless one of them is {@code /}.
+     */
+    private boolean[] perAllelePhasingIfNeeded() {
+        if (allelePhasing.length != alleles.size()) {
+            throw new IllegalStateException("Sample " + sampleName + " was given " + allelePhasing.length
+                    + " allele phases for " + alleles.size() + " alleles");
+        }
+        if (allelePhasing.length == 0) {
+            return null;
+        }
+        boolean allTheOthersPhased = true;
+        boolean anyOtherPhased = false;
+        for (int i = 1; i < allelePhasing.length; i++) {
+            allTheOthersPhased &= allelePhasing[i];
+            anyOtherPhased |= allelePhasing[i];
+        }
+        final boolean mixed = anyOtherPhased && !allTheOthersPhased;
+        final boolean firstIsImplied = allelePhasing[0] == allTheOthersPhased;
+        return mixed || !firstIsImplied ? allelePhasing : null;
+    }
+
+    /** What {@link Genotype#isPhased()} reports for a genotype given per-allele phases: whether any is set. */
+    private boolean isAnyAllelePhased() {
+        for (final boolean phased : allelePhasing) {
+            if (phased) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public GenotypeBuilder GQ(final int GQ) {

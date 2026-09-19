@@ -280,13 +280,19 @@ public abstract class BCF2FieldWriter {
         @Override
         public void addGenotype(final BCF2Encoder encoder, final VariantContext vc, final Genotype g)
                 throws IOException {
+            if (g.needsLeadingPhaseIndicator()) {
+                // BCF 2.1 keeps no phase for the first allele, and dropping it would silently change the genotype
+                throw new IllegalStateException("The genotype of sample " + g.getSampleName() + " ("
+                        + g.getGenotypeString() + ") at " + vc.getContig() + ":" + vc.getStart()
+                        + " gives its first allele a phase that BCF 2.1 cannot express");
+            }
             final int samplePloidy = g.getPloidy();
             for (int i = 0; i < nValuesPerGenotype; i++) {
                 if (i < samplePloidy) {
                     // we encode the actual allele
                     final Allele a = g.getAllele(i);
                     final int offset = getAlleleOffset(a);
-                    final int encoded = ((offset + 1) << 1) | ((g.isPhased() && i != 0) ? 0x01 : 0x00);
+                    final int encoded = ((offset + 1) << 1) | ((i != 0 && g.isAllelePhased(i)) ? 0x01 : 0x00);
                     encoder.encodeRawBytes(encoded, encodingType);
                 } else {
                     // we need to pad with missing as we have ploidy < max for this sample
