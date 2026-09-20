@@ -161,7 +161,7 @@ public class VCFCodec extends AbstractVCFCodec {
                 final InputStream in = IOUtil.isGZIPInputStream(rawIn) ? IOUtil.openGzipOrBgzfStream(rawIn) : rawIn;
                 try {
                     final byte[] buff = new byte[VCF4_MAGIC_HEADER.length()];
-                    final int nread = in.read(buff, 0, buff.length);
+                    final int nread = in.readNBytes(buff, 0, buff.length);
                     if (nread <= 0) return false;
                     final String head = new String(buff, 0, nread);
                     return head.startsWith(VCF4_MAGIC_HEADER)
