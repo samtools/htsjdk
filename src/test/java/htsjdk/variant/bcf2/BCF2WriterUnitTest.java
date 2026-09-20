@@ -26,14 +26,18 @@
 package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.utils.BcftoolsTestUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.GenotypesContext;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
@@ -56,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -629,5 +634,183 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 Assert.expectThrows(IllegalStateException.class, () -> writeBcfHeader(header, null));
         Assert.assertTrue(refusal.getMessage().contains("FORMAT=<ID=LAD,Number=LA,"), refusal.getMessage());
         Assert.assertTrue(writeBcfHeader(header, VCFHeaderVersion.VCF4_5).contains("##fileformat=VCFv4.5\n"));
+    }
+
+    // The first allele's phase bit
+
+    private static final Allele REF_A = Allele.create("A", true);
+    private static final Allele ALT_C = Allele.create("C");
+
+    /** GT-only header over chr1 for samples s1..sN, declaring the given version. */
+    private static VCFHeader gtHeader(final VCFHeaderVersion version, final int nSamples) {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final List<String> samples = new ArrayList<>();
+        for (int i = 1; i <= nSamples; i++) samples.add("s" + i);
+        final VCFHeader header = new VCFHeader(lines, samples);
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(version);
+        return header;
+    }
+
+    /** {@code 0|1}, {@code 0/1}, haploid {@code 1}, haploid {@code |1}, {@code ./.} and haploid {@code .}. */
+    private static VariantContext phasingSampler() {
+        return new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C)).make(),
+                        new GenotypeBuilder("s3", List.of(ALT_C)).make(),
+                        new GenotypeBuilder("s4", List.of(ALT_C)).phased(true).make(),
+                        new GenotypeBuilder("s5", List.of(Allele.NO_CALL, Allele.NO_CALL)).make(),
+                        new GenotypeBuilder("s6", List.of(Allele.NO_CALL)).make())
+                .make();
+    }
+
+    private Path writeBcf(final VCFHeader header, final VariantContext vc) throws IOException {
+        final Path output = Files.createTempFile(tempDir, "phase.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(output)
+                .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(vc);
+        }
+        return output;
+    }
+
+    private static VariantContext readOne(final Path bcf) {
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false);
+                final CloseableIterator<VariantContext> records = reader.iterator()) {
+            final VariantContext vc = records.next();
+            for (final Genotype g : vc.getGenotypes()) g.getAlleles();
+            return vc;
+        }
+    }
+
+    /** The undecoded genotype block of a file's first record. */
+    private static byte[] genotypeBlockOf(final Path bcf) {
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false);
+                final CloseableIterator<VariantContext> records = reader.iterator()) {
+            final LazyGenotypesContext genotypes =
+                    (LazyGenotypesContext) records.next().getGenotypes();
+            return ((BCF2Codec.LazyData) genotypes.getUnparsedGenotypeData()).bytes;
+        }
+    }
+
+    /**
+     * The GT columns of a file's last record as bcftools prints them. bcftools 1.24 refuses the BCF 2.1 magic htsjdk
+     * writes, so it is shown a copy labelled 2.2: the two versions differ only in the header's IDX attributes, which
+     * bcftools assigns in line order when they are absent, as htsjdk numbered them.
+     */
+    private String gtColumnsByBcftools(final Path bcf) throws IOException {
+        final byte[] bytes = Files.readAllBytes(bcf);
+        bytes[4] = 2;
+        final Path asBcf22 = Files.createTempFile(tempDir, "phase.as22.", ".bcf");
+        asBcf22.toFile().deleteOnExit();
+        Files.write(asBcf22, bytes);
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(asBcf22);
+        final String record = lines.get(lines.size() - 1);
+        return record.substring(record.indexOf("\tGT\t") + 4);
+    }
+
+    @Test
+    public void theFirstAllelesPhaseBitIsWrittenAsBcftoolsWritesIt() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Path vcf = Files.createTempFile(tempDir, "phase.", ".vcf");
+        vcf.toFile().deleteOnExit();
+        Files.write(
+                vcf,
+                List.of(
+                        "##fileformat=VCFv4.4",
+                        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"gt\">",
+                        "##contig=<ID=chr1,length=1000>",
+                        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1\ts2\ts3",
+                        "chr1\t100\t.\tA\tC\t.\t.\t.\tGT\t0|1\t0/1\t./."),
+                StandardCharsets.UTF_8);
+        final Path byBcftools = Files.createTempFile(tempDir, "phase.bcftools.", ".bcf");
+        byBcftools.toFile().deleteOnExit();
+        BcftoolsTestUtils.executeBcftoolsForStdout(
+                "view", "--no-version", "-Ou", "-o", byBcftools.toString(), vcf.toString());
+
+        // the same three diploid genotypes written by htsjdk: GT is index 1 in both dictionaries
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C)).make(),
+                        new GenotypeBuilder("s3", List.of(Allele.NO_CALL, Allele.NO_CALL)).make())
+                .make();
+        final Path byHtsjdk = writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 3), vc);
+        Assert.assertEquals(genotypeBlockOf(byHtsjdk), genotypeBlockOf(byBcftools));
+        Assert.assertEquals(genotypeBlockOf(byHtsjdk), new byte[] {0x11, 0x01, 0x21, 3, 5, 2, 4, 0, 0});
+    }
+
+    @Test
+    public void bcftoolsReadsBackTheGenotypesHtsjdkWrote() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        // Diploid genotypes only: htsjdk pads a shorter genotype with MISSING where htslib expects END_OF_VECTOR,
+        // and bcftools prints that padding as an allele. At 4.4 bcftools writes a leading indicator wherever the
+        // first allele's bit disagrees with the others, so the bit must agree.
+        final VariantContext diploids = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C)).make(),
+                        new GenotypeBuilder("s3", List.of(ALT_C, ALT_C))
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("s4", List.of(Allele.NO_CALL, Allele.NO_CALL)).make())
+                .make();
+        Assert.assertEquals(
+                gtColumnsByBcftools(writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 4), diploids)), "0|1\t0/1\t1|1\t./.");
+        Assert.assertEquals(
+                gtColumnsByBcftools(writeBcf(gtHeader(VCFHeaderVersion.VCF4_2, 4), diploids)), "0|1\t0/1\t1|1\t./.");
+    }
+
+    @Test
+    public void genotypesReadBackAsWrittenAt42() throws IOException {
+        final VariantContext vc = readOne(writeBcf(gtHeader(VCFHeaderVersion.VCF4_2, 6), phasingSampler()));
+        assertPhasing(vc.getGenotype("s1"), "A|C", true, false);
+        assertPhasing(vc.getGenotype("s2"), "A/C", false, false);
+        assertPhasing(vc.getGenotype("s3"), "C", false, false);
+        // below 4.4 a haploid call has no phase to keep
+        assertPhasing(vc.getGenotype("s4"), "C", false, false);
+        assertPhasing(vc.getGenotype("s5"), "./.", false, false);
+        assertPhasing(vc.getGenotype("s6"), ".", false, false);
+    }
+
+    @Test
+    public void genotypesReadBackAsWrittenAt44() throws IOException {
+        final VariantContext vc = readOne(writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 6), phasingSampler()));
+        assertPhasing(vc.getGenotype("s1"), "A|C", true, false);
+        assertPhasing(vc.getGenotype("s2"), "A/C", false, false);
+        // a haploid call is unphased at every version, as the text reader reads a bare "1"
+        assertPhasing(vc.getGenotype("s3"), "C", false, false);
+        assertPhasing(vc.getGenotype("s4"), "C", false, false);
+        assertPhasing(vc.getGenotype("s5"), "./.", false, false);
+        assertPhasing(vc.getGenotype("s6"), ".", false, false);
+    }
+
+    @Test
+    public void aGenotypeWithALeadingIndicatorIsStillRefused() {
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .allelePhasing(new boolean[] {true, false})
+                        .make())
+                .make();
+        Assert.expectThrows(IllegalStateException.class, () -> writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 1), vc));
+    }
+
+    private static void assertPhasing(
+            final Genotype g, final String gtString, final boolean phased, final boolean perAllele) {
+        Assert.assertEquals(g.getGenotypeString(), gtString, g.getSampleName());
+        Assert.assertEquals(g.isPhased(), phased, g.getSampleName() + " isPhased");
+        Assert.assertEquals(g.hasPerAllelePhasing(), perAllele, g.getSampleName() + " hasPerAllelePhasing");
     }
 }

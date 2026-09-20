@@ -61,23 +61,23 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
         primitives.add(new BCF2TypedValue(-1, BCF2Type.INT8));
         primitives.add(new BCF2TypedValue(100, BCF2Type.INT8));
         primitives.add(new BCF2TypedValue(-100, BCF2Type.INT8));
-        primitives.add(new BCF2TypedValue(-127, BCF2Type.INT8)); // last value in range
+        primitives.add(new BCF2TypedValue(-120, BCF2Type.INT8)); // last value in range (sentinel-safe)
         primitives.add(new BCF2TypedValue(127, BCF2Type.INT8)); // last value in range
 
         // medium ints
         primitives.add(new BCF2TypedValue(-1000, BCF2Type.INT16));
         primitives.add(new BCF2TypedValue(1000, BCF2Type.INT16));
-        primitives.add(new BCF2TypedValue(-128, BCF2Type.INT16)); // first value in range
+        primitives.add(new BCF2TypedValue(-121, BCF2Type.INT16)); // first value in INT16 range
         primitives.add(new BCF2TypedValue(128, BCF2Type.INT16)); // first value in range
-        primitives.add(new BCF2TypedValue(-32767, BCF2Type.INT16)); // last value in range
+        primitives.add(new BCF2TypedValue(-32760, BCF2Type.INT16)); // last value in range (sentinel-safe)
         primitives.add(new BCF2TypedValue(32767, BCF2Type.INT16)); // last value in range
 
         // larger ints
-        primitives.add(new BCF2TypedValue(-32768, BCF2Type.INT32)); // first value in range
+        primitives.add(new BCF2TypedValue(-32761, BCF2Type.INT32)); // first value in INT32 range
         primitives.add(new BCF2TypedValue(32768, BCF2Type.INT32)); // first value in range
         primitives.add(new BCF2TypedValue(-100000, BCF2Type.INT32));
         primitives.add(new BCF2TypedValue(100000, BCF2Type.INT32));
-        primitives.add(new BCF2TypedValue(-2147483647, BCF2Type.INT32));
+        primitives.add(new BCF2TypedValue(-2147483640, BCF2Type.INT32)); // last value in range (sentinel-safe)
         primitives.add(new BCF2TypedValue(2147483647, BCF2Type.INT32));
 
         // floats
@@ -565,5 +565,196 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     private final boolean isMissing(final List<Integer> values) {
         if (values != null) for (Integer value : values) if (value != null) return false;
         return true;
+    }
+
+    // -- Decoding MISSING and END_OF_VECTOR --
+
+    private static final int MISSING8 = 0x80;
+    private static final int EOV8 = 0x81;
+
+    /** A decoder over a typed INT8 vector of the given values followed by a typed INT8 scalar of 42. */
+    private static BCF2Decoder int8VectorThen42(final int... values) {
+        final byte[] bytes = new byte[values.length + 3];
+        bytes[0] = BCF2Utils.encodeTypeDescriptor(values.length, BCF2Type.INT8);
+        for (int i = 0; i < values.length; i++) bytes[i + 1] = (byte) values[i];
+        bytes[values.length + 1] = BCF2Utils.encodeTypeDescriptor(1, BCF2Type.INT8);
+        bytes[values.length + 2] = 42;
+        return new BCF2Decoder(bytes);
+    }
+
+    /** The whole vector must be consumed whatever it holds: what follows it must still decode. */
+    private static void assertNextIs42(final BCF2Decoder decoder) throws IOException {
+        Assert.assertEquals(decoder.decodeTypedValue(), 42);
+        Assert.assertTrue(decoder.blockIsFullyDecoded());
+    }
+
+    @Test
+    public void endOfVectorEndsAnIntVector() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(10, 5, EOV8, EOV8);
+        Assert.assertEquals(decoder.decodeTypedValue(), Arrays.asList(10, 5));
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void anInteriorMissingValueIsKeptInAnIntVector() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(10, MISSING8, 5);
+        Assert.assertEquals(decoder.decodeTypedValue(), Arrays.asList(10, null, 5));
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void trailingMissingValuesAreDroppedFromAnIntVector() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(10, MISSING8, EOV8);
+        Assert.assertEquals(decoder.decodeTypedValue(), Arrays.asList(10));
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void anAllMissingIntVectorIsNull() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(MISSING8, MISSING8);
+        Assert.assertNull(decoder.decodeTypedValue());
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void aSingleEndOfVectorValueDecodesAsNull() throws IOException {
+        Assert.assertNull(new BCF2Decoder(new byte[] {BCF2Utils.encodeTypeDescriptor(1, BCF2Type.INT8), (byte) EOV8})
+                .decodeTypedValue());
+    }
+
+    @Test
+    public void decodeIntReturnsTheMissingValueForEitherSentinel() throws IOException {
+        final byte typeDescriptor = BCF2Utils.encodeTypeDescriptor(1, BCF2Type.INT8);
+        Assert.assertEquals(new BCF2Decoder(new byte[] {(byte) MISSING8}).decodeInt(typeDescriptor, -1), -1);
+        Assert.assertEquals(new BCF2Decoder(new byte[] {(byte) EOV8}).decodeInt(typeDescriptor, -1), -1);
+        Assert.assertEquals(new BCF2Decoder(new byte[] {(byte) 0x82}).decodeInt(typeDescriptor, -1), -126);
+    }
+
+    @Test
+    public void int16AndInt32SentinelsAreRecognised() throws IOException {
+        // little-endian: MISSING is the type's most negative value, END_OF_VECTOR one above it
+        final byte[] int16 = {BCF2Utils.encodeTypeDescriptor(3, BCF2Type.INT16), 5, 0, 0, (byte) 0x80, 1, (byte) 0x80};
+        Assert.assertEquals(new BCF2Decoder(int16).decodeTypedValue(), Arrays.asList(5));
+        final byte[] int32 = {
+            BCF2Utils.encodeTypeDescriptor(3, BCF2Type.INT32), 5, 0, 0, 0, 0, 0, 0, (byte) 0x80, 1, 0, 0, (byte) 0x80
+        };
+        Assert.assertEquals(new BCF2Decoder(int32).decodeTypedValue(), Arrays.asList(5));
+        final byte[] int32Interior = {
+            BCF2Utils.encodeTypeDescriptor(3, BCF2Type.INT32), 5, 0, 0, 0, 0, 0, 0, (byte) 0x80, 7, 0, 0, 0
+        };
+        Assert.assertEquals(new BCF2Decoder(int32Interior).decodeTypedValue(), Arrays.asList(5, null, 7));
+    }
+
+    @Test
+    public void endOfVectorEndsAFloatVector() throws IOException {
+        final BCF2Encoder encoder = new BCF2Encoder();
+        encoder.encodeType(3, BCF2Type.FLOAT);
+        encoder.encodeRawFloat(1.5);
+        encoder.encodeRawBytes(BCF2Type.FLOAT.getVectorEndBytes(), BCF2Type.FLOAT);
+        encoder.encodeRawFloat(9.5);
+        Assert.assertEquals(new BCF2Decoder(encoder.getRecordBytes()).decodeTypedValue(), Arrays.asList(1.5));
+    }
+
+    @Test
+    public void anInteriorMissingValueIsKeptInAFloatVector() throws IOException {
+        final BCF2Encoder encoder = new BCF2Encoder();
+        encoder.encodeType(3, BCF2Type.FLOAT);
+        encoder.encodeRawFloat(1.5);
+        encoder.encodeRawMissingValue(BCF2Type.FLOAT);
+        encoder.encodeRawFloat(2.5);
+        Assert.assertEquals(
+                new BCF2Decoder(encoder.getRecordBytes()).decodeTypedValue(), Arrays.asList(1.5, null, 2.5));
+    }
+
+    @Test
+    public void infinityAndNaNAreValuesNotSentinels() throws IOException {
+        final BCF2Encoder encoder = new BCF2Encoder();
+        encoder.encodeType(2, BCF2Type.FLOAT);
+        encoder.encodeRawFloat(Double.POSITIVE_INFINITY);
+        encoder.encodeRawFloat(Double.NaN);
+        final List<?> decoded = (List<?>) new BCF2Decoder(encoder.getRecordBytes()).decodeTypedValue();
+        Assert.assertEquals(decoded.get(0), Double.POSITIVE_INFINITY);
+        Assert.assertTrue(Double.isNaN((Double) decoded.get(1)));
+    }
+
+    // -- decodeIntArray --
+
+    private static int[] intArray(final int... values) throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(values);
+        final byte typeDescriptor = decoder.readTypeDescriptor();
+        final int[] decoded = decoder.decodeIntArray(typeDescriptor, values.length);
+        assertNextIs42(decoder);
+        return decoded;
+    }
+
+    @Test
+    public void anIntArrayEndsAtEndOfVector() throws IOException {
+        Assert.assertEquals(intArray(3, 4, EOV8), new int[] {3, 4});
+        Assert.assertEquals(intArray(3, 4, EOV8, EOV8), new int[] {3, 4});
+    }
+
+    @Test
+    public void anIntArrayPaddedWithMissingIsTruncated() throws IOException {
+        Assert.assertEquals(intArray(10, MISSING8), new int[] {10});
+        Assert.assertEquals(intArray(10, MISSING8, MISSING8), new int[] {10});
+    }
+
+    @Test
+    public void anIntArrayWithAnInteriorMissingValueIsNull() throws IOException {
+        Assert.assertNull(intArray(10, MISSING8, 5));
+        Assert.assertNull(intArray(10, MISSING8, MISSING8, 5));
+        Assert.assertNull(intArray(10, MISSING8, EOV8));
+    }
+
+    @Test
+    public void anIntArrayStartingWithASentinelIsNull() throws IOException {
+        Assert.assertNull(intArray(MISSING8, 5));
+        Assert.assertNull(intArray(EOV8, 5));
+        Assert.assertNull(intArray(MISSING8, MISSING8));
+    }
+
+    @Test
+    public void anIntArrayWithoutSentinelsIsReturnedWhole() throws IOException {
+        Assert.assertEquals(intArray(10, 5, -120), new int[] {10, 5, -120});
+    }
+
+    // -- Strings --
+
+    private static Object decodeString(final String s) throws IOException {
+        final byte[] chars = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final byte[] bytes = new byte[chars.length + 1];
+        bytes[0] = BCF2Utils.encodeTypeDescriptor(chars.length, BCF2Type.CHAR);
+        System.arraycopy(chars, 0, bytes, 1, chars.length);
+        return new BCF2Decoder(bytes).decodeTypedValue();
+    }
+
+    @Test
+    public void aCollapsedStringListIsExploded() throws IOException {
+        Assert.assertEquals(decodeString(",a,b"), List.of("a", "b"));
+    }
+
+    @Test
+    public void aStringWithCommasIsReturnedWhole() throws IOException {
+        Assert.assertEquals(decodeString("a,b"), "a,b");
+    }
+
+    @Test
+    public void aStringIsDecodedAsUtf8() throws IOException {
+        Assert.assertEquals(decodeString("λ→日本"), "λ→日本");
+    }
+
+    @Test
+    public void aStringIsReadUpToItsFirstNul() throws IOException {
+        Assert.assertEquals(decodeString("ab\0\0"), "ab");
+        Assert.assertNull(decodeString("\0\0"));
+    }
+
+    // -- Flags --
+
+    @Test
+    public void aValueOfSizeZeroDecodesAsNullWhateverItsType() throws IOException {
+        Assert.assertNull(new BCF2Decoder(new byte[] {0x00}).decodeTypedValue());
+        Assert.assertNull(
+                new BCF2Decoder(new byte[] {BCF2Utils.encodeTypeDescriptor(0, BCF2Type.INT8)}).decodeTypedValue());
     }
 }

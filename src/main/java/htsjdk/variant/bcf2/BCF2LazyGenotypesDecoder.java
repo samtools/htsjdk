@@ -26,63 +26,63 @@
 package htsjdk.variant.bcf2;
 
 import htsjdk.tribble.TribbleException;
-import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Lazy version of genotypes decoder for BCF2 genotypes
+ * Decodes the genotype block of a BCF record on demand. One instance serves every record of a file: everything a
+ * record needs is in its {@link BCF2Codec.LazyData}, and what the decoder holds itself (the dictionary and the field
+ * decoders) never changes after the header is read, so records may be decoded on any thread, several at once.
  *
  * @author Mark DePristo
  * @since 5/12
  */
 public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser {
-    // the essential information for us to use to decode the genotypes data
-    // initialized when this lazy decoder is created, as we know all of this from the BCF2Codec
-    // and its stored here again for code cleanliness
-    private final BCF2Codec codec;
-    private final List<Allele> siteAlleles;
-    private final int nSamples;
-    private final int nFields;
-    private final GenotypeBuilder[] builders;
+    private final BCFDictionary dictionary;
+    private final BCF2GenotypeFieldDecoders gtFieldDecoders;
 
-    BCF2LazyGenotypesDecoder(
-            final BCF2Codec codec,
-            final List<Allele> alleles,
-            final int nSamples,
-            final int nFields,
-            final GenotypeBuilder[] builders) {
-        this.codec = codec;
-        this.siteAlleles = alleles;
-        this.nSamples = nSamples;
-        this.nFields = nFields;
-        this.builders = builders;
+    /**
+     * One array of builders, one per sample, lent to whichever decode asks first and handed back when it is done.
+     * A decode that finds it lent out makes its own. Reusing them matters: a genotype decodes in a few tens of
+     * nanoseconds, and a fresh builder per sample per record costs a measurable share of that on wide files.
+     */
+    private final AtomicReference<GenotypeBuilder[]> spareBuilders = new AtomicReference<>();
+
+    BCF2LazyGenotypesDecoder(final BCFDictionary dictionary, final BCF2GenotypeFieldDecoders gtFieldDecoders) {
+        this.dictionary = dictionary;
+        this.gtFieldDecoders = gtFieldDecoders;
     }
 
     @Override
     public LazyGenotypesContext.LazyData parse(final Object data) {
+        final BCF2Codec.LazyData lazyData = (BCF2Codec.LazyData) data;
+        final List<String> samples = lazyData.header.getGenotypeSamples();
+        final int nSamples = samples.size();
+
+        GenotypeBuilder[] builders = spareBuilders.getAndSet(null);
+        if (builders == null || builders.length != nSamples) {
+            builders = new GenotypeBuilder[nSamples];
+            for (int i = 0; i < nSamples; i++) builders[i] = new GenotypeBuilder(samples.get(i));
+        } else {
+            for (final GenotypeBuilder builder : builders) builder.reset(true);
+        }
+
         try {
-
-            // load our byte[] data into the decoder
-            final BCF2Decoder decoder = new BCF2Decoder(((BCF2Codec.LazyData) data).bytes);
-
-            for (int i = 0; i < nSamples; i++) builders[i].reset(true);
-
-            for (int i = 0; i < nFields; i++) {
-                // get the field name
+            final BCF2Decoder decoder = new BCF2Decoder(lazyData.bytes);
+            for (int i = 0; i < lazyData.nGenotypeFields; i++) {
                 final int offset = (Integer) decoder.decodeTypedValue();
-                final String field = codec.getDictionaryString(offset);
+                final String field = dictionary.getString(offset);
 
-                // the type of each element
                 final byte typeDescriptor = decoder.readTypeDescriptor();
                 final int numElements = decoder.decodeNumberOfElements(typeDescriptor);
-                final BCF2GenotypeFieldDecoders.Decoder fieldDecoder = codec.getGenotypeFieldDecoder(field);
+                final BCF2GenotypeFieldDecoders.Decoder fieldDecoder = gtFieldDecoders.getDecoder(field);
                 try {
-                    fieldDecoder.decode(siteAlleles, field, decoder, typeDescriptor, numElements, builders);
+                    fieldDecoder.decode(lazyData.alleles, field, decoder, typeDescriptor, numElements, builders);
                 } catch (ClassCastException e) {
                     throw new TribbleException("BUG: expected encoding of field " + field
                             + " inconsistent with the value observed in the decoded value");
@@ -91,13 +91,14 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
 
             final ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nSamples);
             for (final GenotypeBuilder gb : builders) genotypes.add(gb.make());
+            spareBuilders.set(builders);
 
             return new LazyGenotypesContext.LazyData(
-                    genotypes,
-                    codec.getHeader().getSampleNamesInOrder(),
-                    codec.getHeader().getSampleNameToOffset());
+                    genotypes, lazyData.header.getSampleNamesInOrder(), lazyData.header.getSampleNameToOffset());
         } catch (IOException e) {
             throw new TribbleException("Unexpected IOException parsing already read genotypes data block", e);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new TribbleException("BCF genotype block is truncated: " + e.getMessage(), e);
         }
     }
 }

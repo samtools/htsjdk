@@ -38,7 +38,7 @@ import java.util.EnumSet;
  */
 public enum BCF2Type {
     // the actual values themselves
-    MISSING(0, 0, 0x00) {
+    MISSING(0, 0, 0x00, 0x00) {
         @Override
         public int read(final InputStream in) throws IOException {
             throw new IllegalArgumentException("Cannot read MISSING type");
@@ -50,7 +50,7 @@ public enum BCF2Type {
         }
     },
 
-    INT8(1, 1, 0xFFFFFF80, -127, 127) {
+    INT8(1, 1, 0xFFFFFF80, 0xFFFFFF81, -120, 127) {
         @Override
         public int read(final InputStream in) throws IOException {
             return BCF2Utils.readByte(in);
@@ -62,7 +62,7 @@ public enum BCF2Type {
         }
     },
 
-    INT16(2, 2, 0xFFFF8000, -32767, 32767) {
+    INT16(2, 2, 0xFFFF8000, 0xFFFF8001, -32760, 32767) {
         @Override
         public int read(final InputStream in) throws IOException {
             final int b2 = BCF2Utils.readByte(in) & 0xFF;
@@ -78,7 +78,7 @@ public enum BCF2Type {
         }
     },
 
-    INT32(3, 4, 0x80000000, -2147483647, 2147483647) {
+    INT32(3, 4, 0x80000000, 0x80000001, -2147483640, 2147483647) {
         @Override
         public int read(final InputStream in) throws IOException {
             final int b4 = BCF2Utils.readByte(in) & 0xFF;
@@ -97,7 +97,7 @@ public enum BCF2Type {
         }
     },
 
-    FLOAT(5, 4, 0x7F800001) {
+    FLOAT(5, 4, 0x7F800001, 0x7F800002) {
         @Override
         public int read(final InputStream in) throws IOException {
             return INT32.read(in);
@@ -109,7 +109,7 @@ public enum BCF2Type {
         }
     },
 
-    CHAR(7, 1, 0x00000000) {
+    CHAR(7, 1, 0x00000000, 0x00000000) {
         @Override
         public int read(final InputStream in) throws IOException {
             return INT8.read(in);
@@ -124,18 +124,26 @@ public enum BCF2Type {
     private final int id;
     private final Object missingJavaValue;
     private final int missingBytes;
+    private final int vectorEndBytes;
     private final int sizeInBytes;
     private final long minValue, maxValue;
 
-    BCF2Type(final int id, final int sizeInBytes, final int missingBytes) {
-        this(id, sizeInBytes, missingBytes, 0, 0);
+    BCF2Type(final int id, final int sizeInBytes, final int missingBytes, final int vectorEndBytes) {
+        this(id, sizeInBytes, missingBytes, vectorEndBytes, 0, 0);
     }
 
-    BCF2Type(final int id, final int sizeInBytes, final int missingBytes, final long minValue, final long maxValue) {
+    BCF2Type(
+            final int id,
+            final int sizeInBytes,
+            final int missingBytes,
+            final int vectorEndBytes,
+            final long minValue,
+            final long maxValue) {
         this.id = id;
         this.sizeInBytes = sizeInBytes;
         this.missingJavaValue = null;
         this.missingBytes = missingBytes;
+        this.vectorEndBytes = vectorEndBytes;
         this.minValue = minValue;
         this.maxValue = maxValue;
     }
@@ -186,6 +194,14 @@ public enum BCF2Type {
      */
     public int getMissingBytes() {
         return missingBytes;
+    }
+
+    /**
+     * The bytes (encoded as an int) that represent an END_OF_VECTOR sentinel for this type in BCF2. A value matching
+     * this sentinel terminates a vector early; elements beyond it are padding.
+     */
+    public int getVectorEndBytes() {
+        return vectorEndBytes;
     }
 
     /**

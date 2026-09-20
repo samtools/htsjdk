@@ -10,15 +10,11 @@ public class BCF2VersionTest extends VariantBaseTest {
     @DataProvider(name = "bcfVersionEqualsHashData")
     public Object[][] bcfVersionEqualsHashData() {
         return new Object[][] {
-            {
-                BCF2Codec.ALLOWED_BCF_VERSION,
-                new BCFVersion(BCF2Codec.ALLOWED_MAJOR_VERSION, BCF2Codec.ALLOWED_MINOR_VERSION),
-                true
-            },
+            {new BCFVersion(2, 1), new BCFVersion(2, 1), true},
             {new BCFVersion(0, 0), new BCFVersion(0, 0), true},
-            {BCF2Codec.ALLOWED_BCF_VERSION, new BCFVersion(0, 0), false},
-            {BCF2Codec.ALLOWED_BCF_VERSION, new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION), false},
-            {BCF2Codec.ALLOWED_BCF_VERSION, new BCFVersion(0, BCF2Codec.ALLOWED_MAJOR_VERSION), false},
+            {new BCFVersion(2, 1), new BCFVersion(0, 0), false},
+            {new BCFVersion(2, 1), new BCFVersion(0, 2), false},
+            {new BCFVersion(2, 2), new BCFVersion(2, 1), false},
         };
     }
 

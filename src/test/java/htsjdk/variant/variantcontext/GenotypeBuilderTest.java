@@ -131,7 +131,7 @@ public class GenotypeBuilderTest extends VariantBaseTest {
     public void anExplicitlyUnphasedHaploidAlleleIsKept() {
         final Genotype g = withAllelePhasing(Arrays.asList(ALT1), false);
         Assert.assertTrue(g.hasPerAllelePhasing());
-        Assert.assertTrue(g.needsLeadingPhaseIndicator(), "a haploid GT without an indicator reads as phased in 4.4");
+        Assert.assertTrue(g.needsLeadingPhaseIndicator(), "without a leading / this haploid would print as 1");
         Assert.assertFalse(g.isPhased());
     }
 
