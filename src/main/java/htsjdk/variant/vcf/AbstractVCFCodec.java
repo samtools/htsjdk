@@ -968,7 +968,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             }
 
             // check to make sure we found a genotype field if our version is less than 4.1 file
-            if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_1) && genotypeAlleleLocation == -1)
+            if (version.isOlderThan(VCFHeaderVersion.VCF4_1) && genotypeAlleleLocation == -1)
                 generateException(
                         "Unable to find the GT field for the record; the GT field is required before VCF4.1", lineNo);
             if (genotypeAlleleLocation > 0)

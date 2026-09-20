@@ -91,7 +91,6 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         return header;
     }
 
-    // alwaysRun: the class has a test in the optimistic_vcf_4_4 group, which runs on its own in a task of its own
     @BeforeClass(alwaysRun = true)
     private void createTemporaryDirectory() {
         tempDir = TestUtil.getTempDirectoryAsPath("BCFWriter", "StaleIndex");
@@ -391,7 +390,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     /** A {@code Number=LR} FORMAT field, whose length differs between the samples, is written and read back. */
-    @Test(groups = "optimistic_vcf_4_4")
+    @Test
     public void aFormatFieldDeclaredNumberLRSurvivesARoundTrip() throws IOException {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
@@ -412,7 +411,6 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                                 .make())
                 .make();
 
-        // Number=LR needs a 4.5 header, and the reader accepts a 4.5 header only with the optimistic flag
         final Path output = Files.createTempFile(tempDir, "numberLR.", ".bcf");
         output.toFile().deleteOnExit();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()

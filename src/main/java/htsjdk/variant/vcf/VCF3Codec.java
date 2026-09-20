@@ -25,90 +25,23 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.LineIterator;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * A feature codec for the VCF3 specification, to read older VCF files.  VCF3 has been
- * depreciated in favor of VCF4 (See VCF codec for the latest information)
+ * Reads every VCF version {@link VCFCodec} reads; kept for source compatibility.
  *
- * <p>
- * Reads historical VCF3 encoded files (1000 Genomes Pilot results, for example)
- * </p>
+ * <p>This class is a trivial subclass of {@code VCFCodec} with no method overrides except
+ * {@link #canDecode}, which returns {@code false} so that codec discovery finds only
+ * {@code VCFCodec}. A {@code VCF3Codec} instance accepts 4.x input as well as 3.x, and
+ * treats {@code FILTER=PASS} in 3.x files as passing (the base class always did; the old
+ * {@code VCF3Codec} fell through to a named filter).
  *
- * <p>
- * See also: @see <a href="http://vcftools.sourceforge.net/specs.html">VCF specification</a><br>
- * See also: @see <a href="http://www.ncbi.nlm.nih.gov/pubmed/21653522">VCF spec. publication</a>
- * </p>
- *
- * @author Mark DePristo
- * @since 2010
+ * @deprecated since 6.0.0; use {@link VCFCodec} instead.
  */
-public class VCF3Codec extends AbstractVCFCodec {
-    public static final String VCF3_MAGIC_HEADER = "##fileformat=VCFv3";
+@Deprecated
+public class VCF3Codec extends VCFCodec {
 
-    /**
-     * @param reader the line reader to take header lines from
-     * @return the number of header lines
-     */
-    @Override
-    public Object readActualHeader(final LineIterator reader) {
-        final List<String> headerStrings = new ArrayList<String>();
-
-        VCFHeaderVersion version = null;
-        boolean foundHeaderVersion = false;
-        while (reader.hasNext()) {
-            lineCounter.incrementAndGet();
-            final String line = reader.peek();
-            if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
-                final String[] lineFields = line.substring(2).split("=");
-                if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0])) {
-                    if (!VCFHeaderVersion.isVersionString(lineFields[1]))
-                        throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
-                    foundHeaderVersion = true;
-                    version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if (version != VCFHeaderVersion.VCF3_3 && version != VCFHeaderVersion.VCF3_2)
-                        throw new TribbleException.InvalidHeader(
-                                "This codec is strictly for VCFv3 and does not support " + lineFields[1]);
-                }
-                headerStrings.add(reader.next());
-            } else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
-                if (!foundHeaderVersion) {
-                    throw new TribbleException.InvalidHeader("We never saw a header line specifying VCF version");
-                }
-                headerStrings.add(reader.next());
-                return super.parseHeaderFromLines(headerStrings, version);
-            } else {
-                throw new TribbleException.InvalidHeader(
-                        "We never saw the required CHROM header line (starting with one #) for the input VCF file");
-            }
-        }
-        throw new TribbleException.InvalidHeader(
-                "We never saw the required CHROM header line (starting with one #) for the input VCF file");
-    }
-
-    /**
-     * parse the filter string, first checking to see if we already have parsed it in a previous attempt
-     * @param filterString the string to parse
-     * @return a set of the filters applied
-     */
-    @Override
-    protected List<String> parseFilters(final String filterString, final int lineNo) {
-        // null for unfiltered
-        if (filterString.equals(VCFConstants.UNFILTERED)) return null;
-
-        // empty set for passes filters
-        if (filterString.equals(VCFConstants.PASSES_FILTERS_v3)) return new ArrayList<String>();
-
-        if (filterString.isEmpty()) generateException("The VCF specification requires a valid filter status", lineNo);
-
-        return new ArrayList<String>(cachedFilters(filterString));
-    }
-
+    /** Returns {@code false}; discovery should find only {@link VCFCodec}. */
     @Override
     public boolean canDecode(final String potentialInput) {
-        return canDecodeFile(potentialInput, VCF3_MAGIC_HEADER);
+        return false;
     }
 }

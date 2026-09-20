@@ -481,8 +481,6 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             writer.add(vc);
         }
 
-        // Read back: parse header + data through a codec with the version pre-set, since the default codec
-        // rejects >= 4.4 without the optimistic flag (that gate opens in PR 7)
         final List<String> fileLines = Files.readAllLines(output);
         Assert.assertTrue(
                 fileLines.stream().anyMatch(l -> l.contains("Number=LR")), "LR header line should be present");

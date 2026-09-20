@@ -42,11 +42,13 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertTrue(variant.getAlternateAllele(0).getDisplayString().contains("chr12"));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void TestSpanDelParseAlleles() {
         final List<Allele> list = VCF3Codec.parseAlleles("A", Allele.SPAN_DEL_STRING, 0);
     }
 
+    @SuppressWarnings("deprecation")
     @Test(expectedExceptions = TribbleException.class)
     public void TestSpanDelParseAllelesException() {
         final List<Allele> list1 = VCF3Codec.parseAlleles(Allele.SPAN_DEL_STRING, "A", 0);
@@ -83,6 +85,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertFalse(AbstractVCFCodec.canDecodeFile(notVcf.toString(), VCFCodec.VCF4_MAGIC_HEADER));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testGetTabixFormat() {
         Assert.assertEquals(new VCFCodec().getTabixFormat(), TabixFormat.VCF);
@@ -681,5 +684,194 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
                 TribbleException.class,
                 () -> decodeSitesOnlyRecord(VCFHeaderVersion.VCF4_3, "chr1\t100\t.\tA\tC\t.\t.\tDESC=x\tGT"));
         Assert.assertTrue(refusal.getMessage().contains("columns"), refusal.getMessage());
+    }
+
+    // VCF version acceptance: every known version decodes, unknown versions are rejected, 3.x through VCFCodec
+
+    private static VariantContext decodeMinimalFile(final String versionLine) {
+        final String vcf = versionLine + "\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t100\t.\tA\tC\t50\tPASS\t.\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        return codec.decode("chr1\t100\t.\tA\tC\t50\tPASS\t.");
+    }
+
+    @DataProvider(name = "allVersions")
+    public Object[][] allVersions() {
+        final VCFHeaderVersion[] versions = VCFHeaderVersion.values();
+        final Object[][] data = new Object[versions.length][1];
+        for (int i = 0; i < versions.length; i++) {
+            data[i][0] = versions[i];
+        }
+        return data;
+    }
+
+    @Test(dataProvider = "allVersions")
+    public void everyKnownVersionIsAccepted(final VCFHeaderVersion v) {
+        final String versionLine = "##" + v.getFormatString() + "=" + v.getVersionString();
+        final VariantContext vc = decodeMinimalFile(versionLine);
+        Assert.assertNotNull(vc);
+        Assert.assertEquals(vc.getContig(), "chr1");
+    }
+
+    @Test
+    public void vcf32FileIsReadByVCFCodec() {
+        final String vcf = "##format=VCRv3.2\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t100\t.\tA\tC\t50\t0\t.\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        Assert.assertEquals(codec.getVersion(), VCFHeaderVersion.VCF3_2);
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t50\t0\t.");
+        Assert.assertEquals(vc.getContig(), "chr1");
+        Assert.assertEquals(vc.getStart(), 100);
+    }
+
+    @Test
+    public void vcf33FileIsReadByVCFCodec() {
+        final String vcf = "##fileformat=VCFv3.3\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t200\t.\tG\tT\t30\tPASS\t.\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        Assert.assertEquals(codec.getVersion(), VCFHeaderVersion.VCF3_3);
+        final VariantContext vc = codec.decode("chr1\t200\t.\tG\tT\t30\tPASS\t.");
+        Assert.assertEquals(vc.getContig(), "chr1");
+        Assert.assertEquals(vc.getStart(), 200);
+    }
+
+    @Test
+    public void filterZeroIsTreatedAsPassForVcf3() {
+        final String vcf = "##fileformat=VCFv3.3\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t100\t.\tA\tC\t50\t0\t.\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t50\t0\t.");
+        Assert.assertTrue(vc.getFilters().isEmpty());
+        Assert.assertFalse(vc.isFiltered());
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void filterZeroIsRejectedForVcf4() {
+        final String vcf = "##fileformat=VCFv4.0\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t100\t.\tA\tC\t50\t0\t.\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        codec.decode("chr1\t100\t.\tA\tC\t50\t0\t.");
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void unknownVersionIsRejected() {
+        final String vcf = "##fileformat=VCFv4.6\n" + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void unknownMajorVersionIsRejected() {
+        final String vcf = "##fileformat=VCFv5.0\n" + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+    }
+
+    @Test
+    public void aVcf44LeadingPhaseGtDecodesWithoutAnyFlag() {
+        final String vcf = "##fileformat=VCFv4.4\n"
+                + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNA1\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t50\tPASS\t.\tGT\t|0/1");
+        final Genotype g = vc.getGenotype("NA1");
+        Assert.assertTrue(g.hasPerAllelePhasing());
+        Assert.assertTrue(g.isAllelePhased(0));
+        Assert.assertFalse(g.isAllelePhased(1));
+    }
+
+    @Test
+    public void aVcf45NumberLAHeaderDecodesWithoutAnyFlag() {
+        final String vcf = "##fileformat=VCFv4.5\n"
+                + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+                + "##FORMAT=<ID=LAA,Number=.,Type=Integer,Description=\"Local alternate alleles\">\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNA1\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        Assert.assertEquals(codec.getVersion(), VCFHeaderVersion.VCF4_5);
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC,G\t50\tPASS\t.\tGT:LAA\t0/1:1");
+        Assert.assertEquals(vc.getGenotype("NA1").getExtendedAttribute("LAA"), "1");
+    }
+
+    // canDecode: recognises 3.2, 3.3 and 4.x; VCF3Codec claims nothing
+
+    @Test
+    public void canDecodeRecognisesAVcf32Header() throws IOException {
+        final Path vcf = writeTempVcf("##format=VCRv3.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+        Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+    }
+
+    @Test
+    public void canDecodeRecognisesAVcf33Header() throws IOException {
+        final Path vcf = writeTempVcf("##fileformat=VCFv3.3\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+        Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void exactlyOneCodecClaimsAVcf33File() throws IOException {
+        final Path vcf = writeTempVcf("##fileformat=VCFv3.3\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+        Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+        Assert.assertFalse(new VCF3Codec().canDecode(vcf.toString()));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void exactlyOneCodecClaimsAVcf43File() throws IOException {
+        final Path vcf = writeTempVcf("##fileformat=VCFv4.3\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+        Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+        Assert.assertFalse(new VCF3Codec().canDecode(vcf.toString()));
+    }
+
+    // the deprecated VCF3Codec still works as a codec
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void deprecatedVcf3CodecStillReadsVcf33() {
+        final String vcf = "##fileformat=VCFv3.3\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t200\t.\tG\tT\t30\tPASS\t.\n";
+        final VCF3Codec codec = new VCF3Codec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        Assert.assertEquals(codec.getVersion(), VCFHeaderVersion.VCF3_3);
+        final VariantContext vc = codec.decode("chr1\t200\t.\tG\tT\t30\tPASS\t.");
+        Assert.assertEquals(vc.getContig(), "chr1");
+        Assert.assertFalse(vc.isFiltered());
+    }
+
+    // FILTER=PASS in VCF 3.x now decodes as passing
+
+    @Test
+    public void filterPassIsTreatedAsPassForVcf3() {
+        final String vcf = "##fileformat=VCFv3.3\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                + "chr1\t100\t.\tA\tC\t50\tPASS\t.\n";
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8)))));
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t50\tPASS\t.");
+        Assert.assertTrue(vc.getFilters().isEmpty());
+        Assert.assertFalse(vc.isFiltered());
     }
 }

@@ -99,8 +99,8 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURIString), expected);
     }
 
-    @Test(groups = "optimistic_vcf_4_4")
-    public void testVCF4_4Optimistic() {
+    @Test
+    public void testVCF4_4() {
         final AbstractFeatureReader<VariantContext, ?> fr = AbstractFeatureReader.getFeatureReader(
                 Paths.get("src/test/resources/htsjdk/variant/", "VCF4_4HeaderTest.vcf")
                         .toString(),

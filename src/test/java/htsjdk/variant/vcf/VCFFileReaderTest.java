@@ -55,8 +55,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
             {TEST_DATA_DIR + "VCF4HeaderTest.vcf", null, false, true},
 
             // this file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
-            // this fails unless the "optimistic_vcf_4_4" property is set, so it's expected to fail here
-            {TEST_DATA_DIR + "VCF4_4HeaderTest.vcf", null, false, false},
+            {TEST_DATA_DIR + "VCF4_4HeaderTest.vcf", null, false, true},
 
             //                // this is almost a vcf, but not quite it's missing the #CHROM line and it has no
             // content...
@@ -112,18 +111,16 @@ public class VCFFileReaderTest extends HtsjdkTest {
         Assert.assertTrue(shouldSucceed, "Test should have failed but succeeded");
     }
 
-    @Test(groups = "optimistic_vcf_4_4")
-    public void testAcceptOptimisticVCF4_4() {
-        // This file is the same as VCF4HeaderTest.vcf, except the header is marked as VCF 4.4
-        // This will fail unless the optimistic_vcf_4_4" property isn't set
+    @Test
+    public void testAcceptVCF4_4() {
         try (final VCFFileReader reader = new VCFFileReader(TEST_DATA_DIR.resolve("VCF4_4HeaderTest.vcf"), false)) {
             final VCFHeader header = reader.getFileHeader();
             Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_4);
         }
     }
 
-    @Test(groups = "optimistic_vcf_4_4")
-    public void testAcceptOptimisticVCF4_5() throws IOException {
+    @Test
+    public void testAcceptVCF4_5() throws IOException {
         final Path vcf = Files.createTempFile("VCFFileReaderTest", ".vcf");
         vcf.toFile().deleteOnExit();
         Files.writeString(
@@ -132,6 +129,33 @@ public class VCFFileReaderTest extends HtsjdkTest {
                         + "chr1\t100\t.\tA\tC\t50\tPASS\t.\n");
         try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
             Assert.assertEquals(reader.getFileHeader().getVCFHeaderVersion(), VCFHeaderVersion.VCF4_5);
+            Assert.assertEquals(reader.iterator().toList().size(), 1);
+        }
+    }
+
+    @Test
+    public void vcf3FileIsReadByVCFFileReader() throws IOException {
+        final Path vcf = Files.createTempFile("VCFFileReaderTest", ".vcf");
+        vcf.toFile().deleteOnExit();
+        Files.writeString(
+                vcf,
+                "##fileformat=VCFv3.3\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                        + "chr1\t100\t.\tA\tC\t50\tPASS\t.\n");
+        try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
+            Assert.assertEquals(reader.getFileHeader().getVCFHeaderVersion(), VCFHeaderVersion.VCF3_3);
+            Assert.assertEquals(reader.iterator().toList().size(), 1);
+        }
+    }
+
+    @Test
+    public void vcf32FileIsReadByVCFFileReader() throws IOException {
+        final Path vcf = Files.createTempFile("VCFFileReaderTest", ".vcf");
+        vcf.toFile().deleteOnExit();
+        Files.writeString(
+                vcf,
+                "##format=VCRv3.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n" + "chr1\t100\t.\tA\tC\t50\t0\t.\n");
+        try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
+            Assert.assertEquals(reader.getFileHeader().getVCFHeaderVersion(), VCFHeaderVersion.VCF3_2);
             Assert.assertEquals(reader.iterator().toList().size(), 1);
         }
     }

@@ -25,16 +25,20 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.samtools.Defaults;
-import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * A feature codec for the VCF 4 specification
+ * A feature codec for the VCF specification, handling versions 3.2 through 4.5.
  *
  * <p>
  * VCF is a text file format (most likely stored in a compressed manner). It contains meta-information lines, a
@@ -71,11 +75,16 @@ import java.util.List;
  * @since 2010
  */
 public class VCFCodec extends AbstractVCFCodec {
-    private static final Log log = Log.getInstance(VCFCodec.class);
 
     // Our aim is to read in the records and convert to VariantContext as quickly as possible, relying on VariantContext
     // to do the validation of any contradictory (or malformed) record parameters.
     public static final String VCF4_MAGIC_HEADER = "##fileformat=VCFv4";
+
+    /** Prefix of a VCF 3.3 {@code ##fileformat} line. */
+    public static final String VCF3_MAGIC_HEADER = "##fileformat=VCFv3";
+
+    /** Prefix for VCF 3.2 headers ({@code ##format=VCR}). */
+    public static final String VCF3_2_MAGIC_HEADER = "##format=VCR";
 
     /**
      * Reads all of the header from the provided iterator, but no reads no further.
@@ -98,19 +107,6 @@ public class VCFCodec extends AbstractVCFCodec {
                         throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
                     foundHeaderVersion = true;
                     version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4)) {
-                        // 4.4 and 4.5 are read as themselves, best effort, until their features are fully supported
-                        if (!Defaults.OPTIMISTIC_VCF_4_4) {
-                            throw new TribbleException.InvalidHeader("This codec does not yet support "
-                                    + lineFields[1] + "; set the samjdk." + Defaults.OPTIMISTIC_VCF_4_4_PROPERTY
-                                    + " property to true to read it anyway");
-                        }
-                        log.warn("********** " + lineFields[1]
-                                + " is not yet fully supported - reading it on a best-effort basis  **********");
-                    } else if (version.isOlderThan(VCFHeaderVersion.VCF4_0)) {
-                        throw new TribbleException.InvalidHeader(
-                                "This codec is strictly for VCFv4 and does not support " + lineFields[1]);
-                    }
                 }
                 headerStrings.add(lineIterator.next());
             } else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
@@ -141,8 +137,15 @@ public class VCFCodec extends AbstractVCFCodec {
         if (filterString.equals(VCFConstants.UNFILTERED)) return null;
 
         if (filterString.equals(VCFConstants.PASSES_FILTERS_v4)) return Collections.emptyList();
-        if (filterString.equals(VCFConstants.PASSES_FILTERS_v3))
+
+        // FILTER "0" means PASS in VCF 3.x only
+        if (filterString.equals(VCFConstants.PASSES_FILTERS_v3)) {
+            if (version != null && version.isOlderThan(VCFHeaderVersion.VCF4_0)) {
+                return Collections.emptyList();
+            }
             generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
+        }
+
         if (filterString.isEmpty())
             generateException(
                     "The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
@@ -152,6 +155,24 @@ public class VCFCodec extends AbstractVCFCodec {
 
     @Override
     public boolean canDecode(final String potentialInput) {
-        return canDecodeFile(potentialInput, VCF4_MAGIC_HEADER);
+        try {
+            final Path path = IOUtil.getPath(potentialInput);
+            try (final InputStream rawIn = new BufferedInputStream(Files.newInputStream(path))) {
+                final InputStream in = IOUtil.isGZIPInputStream(rawIn) ? IOUtil.openGzipOrBgzfStream(rawIn) : rawIn;
+                try {
+                    final byte[] buff = new byte[VCF4_MAGIC_HEADER.length()];
+                    final int nread = in.read(buff, 0, buff.length);
+                    if (nread <= 0) return false;
+                    final String head = new String(buff, 0, nread);
+                    return head.startsWith(VCF4_MAGIC_HEADER)
+                            || head.startsWith(VCF3_MAGIC_HEADER)
+                            || head.startsWith(VCF3_2_MAGIC_HEADER);
+                } finally {
+                    in.close();
+                }
+            }
+        } catch (final IOException | RuntimeException e) {
+            return false;
+        }
     }
 }
