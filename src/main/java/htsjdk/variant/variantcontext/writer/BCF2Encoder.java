@@ -257,7 +257,7 @@ public final class BCF2Encoder {
         if (v == null || v.equals("")) return Collections.emptyList();
         else {
             // TODO -- this needs to be optimized away for efficiency
-            final byte[] bytes = v.getBytes();
+            final byte[] bytes = v.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             final List<Byte> l = new ArrayList<Byte>(bytes.length);
             for (int i = 0; i < bytes.length; i++) l.add(bytes[i]);
             return l;

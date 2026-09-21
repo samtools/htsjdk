@@ -744,6 +744,17 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void aStringListIsEncodedAsUtf8() throws IOException {
+        final BCF2Encoder encoder = new BCF2Encoder();
+        encoder.encodeTyped(List.of("λ", "日本"), BCF2Type.CHAR);
+        final byte[] expectedChars = ",λ,日本".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final byte[] record = encoder.getRecordBytes();
+        Assert.assertEquals(record[0], BCF2Utils.encodeTypeDescriptor(expectedChars.length, BCF2Type.CHAR));
+        Assert.assertEquals(Arrays.copyOfRange(record, 1, record.length), expectedChars);
+        Assert.assertEquals(new BCF2Decoder(record).decodeTypedValue(), List.of("λ", "日本"));
+    }
+
+    @Test
     public void aStringIsReadUpToItsFirstNul() throws IOException {
         Assert.assertEquals(decodeString("ab\0\0"), "ab");
         Assert.assertNull(decodeString("\0\0"));
