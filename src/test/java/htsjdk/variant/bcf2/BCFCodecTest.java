@@ -169,6 +169,37 @@ public class BCFCodecTest extends VariantBaseTest {
         assertSameRecords(records, readAll(raw));
     }
 
+    // -- Multiple BGZF streams through one codec --
+
+    @Test
+    public void twoBgzfStreamsDecodedAlternatelyThroughOneCodecBothDecodeCorrectly() throws IOException {
+        final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        final Path bgzf = bgzfCopyOf(raw);
+        final BCF2Codec codec = new BCF2Codec();
+        final List<VariantContext> expected = readAll(raw);
+
+        try (final PositionalBufferedStream headerStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
+            codec.readHeader(headerStream);
+        }
+
+        try (final PositionalBufferedStream streamA = new PositionalBufferedStream(Files.newInputStream(bgzf));
+                final PositionalBufferedStream streamB = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
+
+            final VariantContext a1 = decodeGenotypes(codec.decode(streamA));
+            final VariantContext b1 = decodeGenotypes(codec.decode(streamB));
+
+            // close A; B's decompressor is independent and must still work
+            codec.close(streamA);
+
+            final VariantContext b2 = decodeGenotypes(codec.decode(streamB));
+            Assert.assertTrue(codec.isDone(streamB));
+
+            assertSameRecords(List.of(a1), List.of(expected.get(0)));
+            assertSameRecords(List.of(b1, b2), expected);
+            codec.close(streamB);
+        }
+    }
+
     @Test
     public void aBgzfBcfCannotBeIndexedWithATribbleIndex() throws IOException {
         final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));

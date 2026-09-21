@@ -52,6 +52,13 @@ import java.util.Map;
 final class BCFDictionary {
     static final String IDX_ATTRIBUTE = "IDX";
 
+    /**
+     * The maximum accepted value for an IDX attribute. A dictionary index above sixteen million cannot come from
+     * any real header (even a header naming every scaffold of a highly fragmented assembly has far fewer lines),
+     * so the bound only limits what a malformed IDX can make the reader allocate; htslib has no bound at all.
+     */
+    static final int MAX_IDX = 1 << 24;
+
     private final String[] indexToString;
 
     private BCFDictionary(final String[] indexToString) {
@@ -143,6 +150,10 @@ final class BCFDictionary {
             }
             if (idx < 0) {
                 throw new TribbleException("The IDX attribute of header line " + id + " is negative: " + idx);
+            }
+            if (idx >= MAX_IDX) {
+                throw new TribbleException("The IDX attribute of header line " + id + " is " + idx
+                        + ", which is at or above the maximum of " + MAX_IDX);
             }
             return idx;
         }

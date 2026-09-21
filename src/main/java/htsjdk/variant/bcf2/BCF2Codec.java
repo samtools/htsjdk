@@ -64,7 +64,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -129,13 +131,12 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     private boolean bgzf = false;
 
     /**
-     * The compressed stream most recently handed to this codec and the decompressed view of it that it reads from,
-     * so that a caller who keeps passing the compressed stream (to readHeader, then to decode) is served from the
-     * one decompressor. Null for an uncompressed file.
+     * Maps each compressed stream this codec has been handed to the decompressed view it reads from, so that a
+     * caller who passes the same compressed stream again is served from the same decompressor. Each stream gets
+     * its own entry, so interleaved access to multiple compressed streams is safe. The map is thread-safe.
      */
-    private PositionalBufferedStream bgzfRawSource = null;
-
-    private PositionalBufferedStream bgzfSource = null;
+    private final Map<PositionalBufferedStream, PositionalBufferedStream> bgzfDecompressors =
+            Collections.synchronizedMap(new IdentityHashMap<>());
 
     private final AtomicInteger recordNo = new AtomicInteger(0);
 
@@ -209,7 +210,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
     @Override
     public void close(final PositionalBufferedStream source) {
-        CloserUtil.close(source == bgzfRawSource ? bgzfSource : source);
+        final PositionalBufferedStream decompressed = bgzfDecompressors.remove(source);
+        CloserUtil.close(decompressed != null ? decompressed : source);
     }
 
     @Override
@@ -250,8 +252,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             if (atGzipStart(inputStream)) {
                 bgzf = true;
                 source = decompress(inputStream);
-                bgzfRawSource = inputStream;
-                bgzfSource = source;
+                bgzfDecompressors.put(inputStream, source);
             } else {
                 source = inputStream;
             }
@@ -342,13 +343,14 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     // --------------------------------------------------------------------------------
 
     /**
-     * The stream to decode records from given the one a caller handed in: the caller's own unless it is the
-     * compressed stream the header was read from, or a compressed stream at the start of the file, which is
+     * The stream to decode records from given the one a caller handed in: the caller's own unless it is a
+     * compressed stream already known to this codec, or a compressed stream at the start of the file, which is
      * decompressed and read past the header.
      */
     private PositionalBufferedStream source(final PositionalBufferedStream in) {
-        if (in == bgzfRawSource) {
-            return bgzfSource;
+        final PositionalBufferedStream cached = bgzfDecompressors.get(in);
+        if (cached != null) {
+            return cached;
         }
         if (!bgzf) {
             return in;
@@ -359,8 +361,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             }
             final PositionalBufferedStream decompressed = decompress(in);
             skipEmbeddedHeader(decompressed);
-            bgzfRawSource = in;
-            bgzfSource = decompressed;
+            bgzfDecompressors.put(in, decompressed);
             return decompressed;
         } catch (final IOException e) {
             throw new TribbleException("I/O error while reading BCF2 file", e);

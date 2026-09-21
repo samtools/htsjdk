@@ -107,6 +107,24 @@ public class BCFDictionaryTest extends VariantBaseTest {
         Assert.expectThrows(TribbleException.class, () -> BCFDictionary.forIDs(header(info("DP", -1))));
     }
 
+    @Test
+    public void anIdxAtOrAboveTheMaximumIsRejected() {
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class, () -> BCFDictionary.forIDs(header(info("DP", 2_000_000_000))));
+        Assert.assertTrue(e.getMessage().contains("2000000000"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("DP"), e.getMessage());
+
+        Assert.expectThrows(
+                TribbleException.class, () -> BCFDictionary.forIDs(header(info("AF", BCFDictionary.MAX_IDX))));
+    }
+
+    // IDX=100000 is well below the maximum and verifiable without allocating 16M entries
+    @Test
+    public void aModeratelyLargeSparseIdxIsAccepted() {
+        final BCFDictionary dictionary = BCFDictionary.forIDs(header(info("DP", 100_000)));
+        Assert.assertEquals(dictionary.getString(100_000), "DP");
+    }
+
     // -- Contigs --
 
     @Test
