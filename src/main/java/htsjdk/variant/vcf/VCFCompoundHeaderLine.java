@@ -369,10 +369,11 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain angle brackets");
         if (name.contains("=")) throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain an equals sign");
 
-        if (type == VCFHeaderLineType.Flag && count != 0) {
+        if (type == VCFHeaderLineType.Flag && (count != 0 || countType != VCFHeaderLineCount.INTEGER)) {
             count = 0;
+            countType = VCFHeaderLineCount.INTEGER;
             if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                System.err.println("FLAG fields must have a count value of 0, but saw " + count + " for header line "
+                System.err.println("FLAG fields must have a count value of 0, but saw a non-zero count for header line "
                         + getID() + ". Changing it to 0 inside the code");
             }
         }
@@ -452,6 +453,30 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
 
     public boolean sameLineTypeAndName(VCFCompoundHeaderLine other) {
         return lineType == other.lineType && name.equals(other.name);
+    }
+
+    /**
+     * Returns a new line of the same concrete type with the given attribute set or replaced. The caller's line is
+     * not changed. This is the safe way to inject an IDX attribute into a header line that is already inside a
+     * VCFHeader, since mutating a line in a header corrupts the header's sets.
+     */
+    public VCFCompoundHeaderLine withGenericFieldValue(final String tag, final String value) {
+        // Rebuild through the string representation: modify otherAttributes in the serialized form
+        final Map<String, String> attrs = new LinkedHashMap<>();
+        for (final Map.Entry<String, Object> e : encodedAttributes().entrySet()) {
+            attrs.put(e.getKey(), e.getValue().toString());
+        }
+        attrs.put(tag, value);
+        // The line constructors expect just the <key=value,...> part, without the ##INFO= or ##FORMAT= prefix
+        final String line = VCFHeaderLine.toStringEncoding(attrs);
+        if (this instanceof VCFInfoHeaderLine) {
+            return new VCFInfoHeaderLine(line, VCFHeaderVersion.VCF4_3);
+        } else if (this instanceof VCFFormatHeaderLine) {
+            return new VCFFormatHeaderLine(line, VCFHeaderVersion.VCF4_3);
+        } else {
+            throw new IllegalStateException(
+                    "Cannot copy header line of type " + getClass().getSimpleName());
+        }
     }
 
     /**

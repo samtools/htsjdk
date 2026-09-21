@@ -768,4 +768,21 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
         Assert.assertNull(
                 new BCF2Decoder(new byte[] {BCF2Utils.encodeTypeDescriptor(0, BCF2Type.INT8)}).decodeTypedValue());
     }
+
+    // -- encodeRawEndOfVector --
+
+    @Test
+    public void encodeRawEndOfVectorWritesTheCorrectBytesForEachIntType() throws IOException {
+        for (final BCF2Type type : List.of(BCF2Type.INT8, BCF2Type.INT16, BCF2Type.INT32)) {
+            final BCF2Encoder encoder = new BCF2Encoder();
+            encoder.encodeRawEndOfVector(type);
+            final byte[] bytes = encoder.getRecordBytes();
+            Assert.assertEquals(bytes.length, type.getSizeInBytes(), type.toString());
+            // END_OF_VECTOR is the type's MISSING value + 1 (second most negative)
+            final BCF2Decoder decoder = new BCF2Decoder(bytes);
+            final byte typeDescriptor = BCF2Utils.encodeTypeDescriptor(1, type);
+            final int raw = decoder.decodeInt(typeDescriptor, Integer.MIN_VALUE);
+            Assert.assertEquals(raw, Integer.MIN_VALUE, type + " should decode as the missing-value sentinel");
+        }
+    }
 }

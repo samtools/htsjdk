@@ -44,6 +44,12 @@ public final class BCFVersion {
      */
     public static final byte[] MAGIC_HEADER_START = "BCF".getBytes();
 
+    /** BCF 2.1: raw (uncompressed) container, as htsjdk has always written. */
+    public static final BCFVersion BCF_2_1 = new BCFVersion(2, 1);
+
+    /** BCF 2.2: BGZF-compressed container, the default for new files and what bcftools reads. */
+    public static final BCFVersion BCF_2_2 = new BCFVersion(2, 2);
+
     final int majorVersion;
     final int minorVersion;
 

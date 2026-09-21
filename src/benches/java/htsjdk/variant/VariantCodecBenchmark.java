@@ -3,6 +3,7 @@ package htsjdk.variant;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.BCF2Writer;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -140,7 +141,10 @@ public class VariantCodecBenchmark {
         }
     }
 
-    /** The same records as BCF, as the build under test writes them. */
+    /**
+     * The same records as BCF, written raw (no BGZF) through {@link BCF2Writer} directly so that read benchmarks
+     * measure codec CPU, not decompression. The default BCF version is 2.2 on the PR 9 branch and 2.1 on the base.
+     */
     @State(Scope.Benchmark)
     public static class BcfInput {
         Path bcf;
@@ -150,11 +154,8 @@ public class VariantCodecBenchmark {
             bcf = Files.createTempFile("VariantCodecBenchmark", ".bcf");
             try (final VCFFileReader reader = new VCFFileReader(input.vcf, false);
                     final CloseableIterator<VariantContext> records = reader.iterator();
-                    final VariantContextWriter writer = new VariantContextWriterBuilder()
-                            .clearOptions()
-                            .setOutputPath(bcf)
-                            .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
-                            .build()) {
+                    final OutputStream out = Files.newOutputStream(bcf);
+                    final VariantContextWriter writer = new BCF2Writer(bcf, out, null, false, false, null)) {
                 writer.writeHeader(reader.getFileHeader());
                 while (records.hasNext()) {
                     writer.add(decodeGenotypes(records.next()));
@@ -197,7 +198,11 @@ public class VariantCodecBenchmark {
 
     @Benchmark
     public long bcfWrite(final DecodedBcfRecords decoded) {
-        return write(new VariantContextWriterBuilder().clearOptions().setOutputBCFStream(nowhere()), decoded);
+        try (final VariantContextWriter writer = new BCF2Writer(null, nowhere(), null, false, false, null)) {
+            writer.writeHeader(decoded.header);
+            decoded.records.forEach(writer::add);
+        }
+        return decoded.records.size();
     }
 
     private static long read(final Path input, final boolean decodeGenotypes) {

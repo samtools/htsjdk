@@ -31,6 +31,7 @@ import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -110,6 +111,19 @@ public abstract class BCF2FieldWriter {
         }
     }
 
+    /** Site writer for Flag fields: writes the type descriptor 0x00 (BCF_BT_NULL, size 0). */
+    public static class FlagSiteWriter extends SiteWriter {
+        public FlagSiteWriter(final VCFHeader header, final BCF2FieldEncoder fieldEncoder) {
+            super(header, fieldEncoder);
+        }
+
+        @Override
+        public void site(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
+            // BCF_BT_NULL size 0 = byte 0x00, matching htslib and the spec
+            encoder.encodeType(0, BCF2Type.MISSING);
+        }
+    }
+
     // --------------------------------------------------------------------------------
     //
     // Genotypes writers
@@ -135,12 +149,9 @@ public abstract class BCF2FieldWriter {
 
             // only update if we need to
             if (!getFieldEncoder().hasConstantNumElements()) {
-                if (getFieldEncoder().hasContextDeterminedNumElements())
-                    // we are cheap -- just depends on genotype of allele counts
-                    nValuesPerGenotype = getFieldEncoder().numElements(vc);
-                else
-                    // we have to go fishing through the values themselves (expensive)
-                    nValuesPerGenotype = computeMaxSizeOfGenotypeFieldFromValues(vc);
+                // Size vectors from the actual values, not the header Number, matching htslib.
+                // Constant-count fields keep their fast path above.
+                nValuesPerGenotype = computeMaxSizeOfGenotypeFieldFromValues(vc);
             }
 
             encoder.encodeType(nValuesPerGenotype, encodingType);
@@ -258,21 +269,28 @@ public abstract class BCF2FieldWriter {
     public static class GTWriter extends GenotypesWriter {
         final Map<Allele, Integer> alleleMapForTriPlus = new HashMap<Allele, Integer>(5);
         Allele ref, alt1;
+        private final boolean useEndOfVector;
+        private final VCFHeaderVersion outputVersion;
 
-        public GTWriter(final VCFHeader header, final BCF2FieldEncoder fieldEncoder) {
+        public GTWriter(
+                final VCFHeader header,
+                final BCF2FieldEncoder fieldEncoder,
+                final boolean useEndOfVector,
+                final VCFHeaderVersion outputVersion) {
             super(header, fieldEncoder);
+            this.useEndOfVector = useEndOfVector;
+            this.outputVersion = outputVersion;
         }
 
         @Override
         public void start(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
-            if (vc.getNAlleles() > BCF2Utils.MAX_ALLELES_IN_GENOTYPES)
-                throw new IllegalStateException("Current BCF2 encoder cannot handle sites " + "with > "
-                        + BCF2Utils.MAX_ALLELES_IN_GENOTYPES + " alleles, but you have "
-                        + vc.getNAlleles() + " at " + vc.getContig() + ":" + vc.getStart());
-
-            encodingType = BCF2Type.INT8;
             buildAlleleMap(vc);
             nValuesPerGenotype = vc.getMaxPloidy(2);
+
+            // Choose GT width from the max encoded value across all genotypes at this site
+            final int maxAlleleIndex = vc.getNAlleles() - 1; // 0-based maximum allele index
+            final int maxEncoded = ((maxAlleleIndex + 1) << 1) | 1;
+            encodingType = BCF2Utils.determineIntegerType(maxEncoded);
 
             super.start(encoder, vc);
         }
@@ -280,11 +298,12 @@ public abstract class BCF2FieldWriter {
         @Override
         public void addGenotype(final BCF2Encoder encoder, final VariantContext vc, final Genotype g)
                 throws IOException {
-            if (g.needsLeadingPhaseIndicator()) {
-                // BCF 2.1 keeps no phase for the first allele, and dropping it would silently change the genotype
+            final boolean allowLeadingIndicator =
+                    outputVersion != null && outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+            if (g.needsLeadingPhaseIndicator() && !allowLeadingIndicator) {
                 throw new IllegalStateException("The genotype of sample " + g.getSampleName() + " ("
                         + g.getGenotypeString() + ") at " + vc.getContig() + ":" + vc.getStart()
-                        + " gives its first allele a phase that BCF 2.1 cannot express");
+                        + " gives its first allele a phase that VCF " + outputVersion + " cannot express");
             }
             final int samplePloidy = g.getPloidy();
             for (int i = 0; i < nValuesPerGenotype; i++) {
@@ -300,8 +319,12 @@ public abstract class BCF2FieldWriter {
                     final int encoded = ((offset + 1) << 1) | (phased ? 0x01 : 0x00);
                     encoder.encodeRawBytes(encoded, encodingType);
                 } else {
-                    // we need to pad with missing as we have ploidy < max for this sample
-                    encoder.encodeRawBytes(encodingType.getMissingBytes(), encodingType);
+                    // GT padding: END_OF_VECTOR in 2.2 (htslib), MISSING in 2.1
+                    if (useEndOfVector) {
+                        encoder.encodeRawEndOfVector(encodingType);
+                    } else {
+                        encoder.encodeRawBytes(encodingType.getMissingBytes(), encodingType);
+                    }
                 }
             }
         }

@@ -175,4 +175,22 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     public Map<String, String> getGenericFields() {
         return Collections.unmodifiableMap(genericFields);
     }
+
+    /**
+     * Returns a new line of the same type with the given attribute set or replaced, without modifying this line.
+     * For a FILTER line the result is a VCFSimpleHeaderLine with key "FILTER" carrying all attributes including
+     * the new one, since VCFFilterHeaderLine's constructors do not accept arbitrary attributes.
+     */
+    public VCFSimpleHeaderLine withGenericFieldValue(final String tag, final String value) {
+        final Map<String, String> mapping = new LinkedHashMap<>();
+        mapping.put(ID_ATTRIBUTE, name);
+        mapping.putAll(genericFields);
+        mapping.put(tag, value);
+        return new VCFSimpleHeaderLine(getKey(), mapping) {
+            @Override
+            public boolean shouldBeAddedToDictionary() {
+                return VCFSimpleHeaderLine.this.shouldBeAddedToDictionary();
+            }
+        };
+    }
 }

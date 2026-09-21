@@ -30,6 +30,7 @@ import htsjdk.variant.bcf2.BCF2Utils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFPercentEncodedTextTransformer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,6 +66,15 @@ public abstract class BCF2FieldEncoder {
      */
     final BCF2Type dictionaryOffsetType;
 
+    /** Whether shorter vectors are padded with one MISSING then END_OF_VECTOR (2.2) or all MISSING (2.1). */
+    final boolean useEndOfVector;
+
+    /** Whether string values are percent-encoded (VCF >= 4.3). */
+    final boolean percentEncode;
+
+    /** Whether string lists are written without a leading comma (BCF 2.2 / htslib form). */
+    final boolean htslibStringLists;
+
     // ----------------------------------------------------------------------
     //
     // Constructor
@@ -72,9 +82,17 @@ public abstract class BCF2FieldEncoder {
     // ----------------------------------------------------------------------
 
     private BCF2FieldEncoder(
-            final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict, final BCF2Type staticType) {
+            final VCFCompoundHeaderLine headerLine,
+            final Map<String, Integer> dict,
+            final BCF2Type staticType,
+            final boolean useEndOfVector,
+            final boolean percentEncode,
+            final boolean htslibStringLists) {
         this.headerLine = headerLine;
         this.staticType = staticType;
+        this.useEndOfVector = useEndOfVector;
+        this.percentEncode = percentEncode;
+        this.htslibStringLists = htslibStringLists;
 
         final Integer offset = dict.get(getField());
         if (offset == null)
@@ -263,6 +281,26 @@ public abstract class BCF2FieldEncoder {
     public abstract void encodeValue(
             final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues) throws IOException;
 
+    /**
+     * Pad from {@code count} to {@code minValues} with either all MISSING (2.1) or one MISSING then
+     * END_OF_VECTOR (2.2), matching htslib's padding rule.
+     */
+    final void pad(final BCF2Encoder encoder, int count, final int minValues, final BCF2Type type) throws IOException {
+        if (useEndOfVector) {
+            if (count < minValues) {
+                encoder.encodeRawMissingValue(type);
+                count++;
+            }
+            for (; count < minValues; count++) {
+                encoder.encodeRawEndOfVector(type);
+            }
+        } else {
+            for (; count < minValues; count++) {
+                encoder.encodeRawMissingValue(type);
+            }
+        }
+    }
+
     // ----------------------------------------------------------------------
     //
     // Subclass to encode Strings
@@ -270,15 +308,25 @@ public abstract class BCF2FieldEncoder {
     // ----------------------------------------------------------------------
 
     public static class StringOrCharacter extends BCF2FieldEncoder {
-        public StringOrCharacter(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict) {
-            super(headerLine, dict, BCF2Type.CHAR);
+        public StringOrCharacter(
+                final VCFCompoundHeaderLine headerLine,
+                final Map<String, Integer> dict,
+                final boolean useEndOfVector,
+                final boolean percentEncode,
+                final boolean htslibStringLists) {
+            super(headerLine, dict, BCF2Type.CHAR, useEndOfVector, percentEncode, htslibStringLists);
         }
 
         @Override
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues)
                 throws IOException {
             final String s = javaStringToBCF2String(value);
-            encoder.encodeRawString(s, Math.max(s.length(), minValues));
+            // a missing FORMAT string is "." + NUL padding in 2.2, all NUL in 2.1
+            if (s.isEmpty() && useEndOfVector) {
+                encoder.encodeRawString(".", Math.max(1, minValues));
+            } else {
+                encoder.encodeRawString(s, Math.max(s.length(), minValues));
+            }
         }
 
         //
@@ -303,7 +351,10 @@ public abstract class BCF2FieldEncoder {
 
         @Override
         protected int numElementsFromValue(final Object value) {
-            return value == null ? 0 : javaStringToBCF2String(value).length();
+            if (value == null) {
+                return useEndOfVector ? 1 : 0; // "." for 2.2, empty for 2.1
+            }
+            return javaStringToBCF2String(value).length();
         }
 
         /**
@@ -315,14 +366,37 @@ public abstract class BCF2FieldEncoder {
          */
         private String javaStringToBCF2String(final Object value) {
             if (value == null) return "";
-            else if (value instanceof List) {
-                final List<String> l = (List<String>) value;
-                return BCF2Utils.collapseStringList(l);
+            if (value instanceof List) {
+                final List<String> l =
+                        percentEncode ? percentEncodeElements((List<String>) value) : (List<String>) value;
+                return BCF2Utils.collapseStringList(l, !htslibStringLists);
             } else if (value.getClass().isArray()) {
                 final List<String> l = new ArrayList<String>();
                 Collections.addAll(l, (String[]) value);
-                return BCF2Utils.collapseStringList(l);
-            } else return (String) value;
+                final List<String> encoded = percentEncode ? percentEncodeElements(l) : l;
+                return BCF2Utils.collapseStringList(encoded, !htslibStringLists);
+            } else {
+                final String s = (String) value;
+                return percentEncode ? VCFPercentEncodedTextTransformer.percentEncode(s) : s;
+            }
+        }
+
+        /** Percent-encode each element individually so that list-delimiter commas are not escaped. */
+        private static List<String> percentEncodeElements(final List<String> elements) {
+            List<String> result = elements;
+            for (int i = 0; i < elements.size(); i++) {
+                final String s = elements.get(i);
+                if (s != null) {
+                    final String encoded = VCFPercentEncodedTextTransformer.percentEncode(s);
+                    if (encoded != s && result == elements) {
+                        result = new ArrayList<>(elements);
+                    }
+                    if (result != elements) {
+                        result.set(i, encoded);
+                    }
+                }
+            }
+            return result;
         }
     }
 
@@ -333,21 +407,27 @@ public abstract class BCF2FieldEncoder {
     // ----------------------------------------------------------------------
 
     public static class Flag extends BCF2FieldEncoder {
-        public Flag(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict) {
-            super(headerLine, dict, BCF2Type.INT8);
+        public Flag(
+                final VCFCompoundHeaderLine headerLine,
+                final Map<String, Integer> dict,
+                final boolean useEndOfVector,
+                final boolean percentEncode,
+                final boolean htslibStringLists) {
+            super(headerLine, dict, BCF2Type.INT8, useEndOfVector, percentEncode, htslibStringLists);
             if (!headerLine.isFixedCount() || headerLine.getCount() != 0)
-                throw new IllegalStateException("Flag encoder only supports atomic flags for field " + getField());
+                throw new IllegalStateException("Flag encoder requires a fixed count of 0 for field " + getField());
         }
 
         @Override
         public int numElements() {
-            return 1; // the header says 0 but we will write 1 value
+            return 0;
         }
 
+        /** Flags are encoded as BCF_BT_NULL size 0 (byte 0x00), matching htslib and the spec. */
         @Override
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues)
                 throws IOException {
-            encoder.encodeRawBytes(1, getStaticType());
+            // nothing to write: the type descriptor 0x00 (NULL, size 0) was already written by the caller
         }
     }
 
@@ -360,8 +440,13 @@ public abstract class BCF2FieldEncoder {
     public static class Float extends BCF2FieldEncoder {
         final boolean isAtomic;
 
-        public Float(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict) {
-            super(headerLine, dict, BCF2Type.FLOAT);
+        public Float(
+                final VCFCompoundHeaderLine headerLine,
+                final Map<String, Integer> dict,
+                final boolean useEndOfVector,
+                final boolean percentEncode,
+                final boolean htslibStringLists) {
+            super(headerLine, dict, BCF2Type.FLOAT, useEndOfVector, percentEncode, htslibStringLists);
             isAtomic = hasConstantNumElements() && numElements() == 1;
         }
 
@@ -380,13 +465,15 @@ public abstract class BCF2FieldEncoder {
                 // handle generic case
                 final List<Double> doubles = BCF2Utils.toList(Double.class, value);
                 for (final Double d : doubles) {
-                    if (d != null) { // necessary because .,. => [null, null] in VC
+                    if (d != null) {
                         encoder.encodeRawFloat(d);
-                        count++;
+                    } else {
+                        encoder.encodeRawMissingValue(type);
                     }
+                    count++;
                 }
             }
-            for (; count < minValues; count++) encoder.encodeRawMissingValue(type);
+            pad(encoder, count, minValues, type);
         }
     }
 
@@ -397,8 +484,13 @@ public abstract class BCF2FieldEncoder {
     // ----------------------------------------------------------------------
 
     public static class IntArray extends BCF2FieldEncoder {
-        public IntArray(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict) {
-            super(headerLine, dict, null);
+        public IntArray(
+                final VCFCompoundHeaderLine headerLine,
+                final Map<String, Integer> dict,
+                final boolean useEndOfVector,
+                final boolean percentEncode,
+                final boolean htslibStringLists) {
+            super(headerLine, dict, null, useEndOfVector, percentEncode, htslibStringLists);
         }
 
         @Override
@@ -421,7 +513,7 @@ public abstract class BCF2FieldEncoder {
                     count++;
                 }
             }
-            for (; count < minValues; count++) encoder.encodeRawMissingValue(type);
+            pad(encoder, count, minValues, type);
         }
     }
 
@@ -435,8 +527,13 @@ public abstract class BCF2FieldEncoder {
      * Specialized int encoder for atomic (non-list) integers
      */
     public static class AtomicInt extends BCF2FieldEncoder {
-        public AtomicInt(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict) {
-            super(headerLine, dict, null);
+        public AtomicInt(
+                final VCFCompoundHeaderLine headerLine,
+                final Map<String, Integer> dict,
+                final boolean useEndOfVector,
+                final boolean percentEncode,
+                final boolean htslibStringLists) {
+            super(headerLine, dict, null, useEndOfVector, percentEncode, htslibStringLists);
         }
 
         @Override
@@ -452,13 +549,18 @@ public abstract class BCF2FieldEncoder {
                 encoder.encodeRawInt((Integer) value, type);
                 count++;
             }
-            for (; count < minValues; count++) encoder.encodeRawMissingValue(type);
+            pad(encoder, count, minValues, type);
         }
     }
 
     public static class GenericInts extends BCF2FieldEncoder {
-        public GenericInts(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict) {
-            super(headerLine, dict, null);
+        public GenericInts(
+                final VCFCompoundHeaderLine headerLine,
+                final Map<String, Integer> dict,
+                final boolean useEndOfVector,
+                final boolean percentEncode,
+                final boolean htslibStringLists) {
+            super(headerLine, dict, null, useEndOfVector, percentEncode, htslibStringLists);
         }
 
         @Override
@@ -473,12 +575,14 @@ public abstract class BCF2FieldEncoder {
                 throws IOException {
             int count = 0;
             for (final Integer i : BCF2Utils.toList(Integer.class, value)) {
-                if (i != null) { // necessary because .,. => [null, null] in VC
+                if (i != null) {
                     encoder.encodeRawInt(i, type);
-                    count++;
+                } else {
+                    encoder.encodeRawMissingValue(type);
                 }
+                count++;
             }
-            for (; count < minValues; count++) encoder.encodeRawMissingValue(type);
+            pad(encoder, count, minValues, type);
         }
     }
 }

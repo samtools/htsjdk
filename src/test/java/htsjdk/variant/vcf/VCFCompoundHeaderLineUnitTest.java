@@ -269,4 +269,30 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
         final VCFInfoHeaderLine info = new VCFInfoHeaderLine("XX", 1, VCFHeaderLineType.Integer, "x");
         Assert.assertEquals(info.getLineType(), VCFCompoundHeaderLine.SupportedHeaderLineType.INFO);
     }
+
+    // A Flag's Number
+
+    @Test
+    public void aFlagWithNonZeroCountIsNormalizedToZero() {
+        final VCFInfoHeaderLine line =
+                new VCFInfoHeaderLine("<ID=DB,Number=1,Type=Flag,Description=\"flag\">", VCFHeaderVersion.VCF4_2);
+        Assert.assertEquals(line.getCount(), 0);
+        Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.INTEGER);
+        Assert.assertTrue(line.isFixedCount());
+    }
+
+    @Test
+    public void aFlagWithNonFixedCountIsNormalizedToFixedZero() {
+        final VCFInfoHeaderLine lineA =
+                new VCFInfoHeaderLine("<ID=DB,Number=A,Type=Flag,Description=\"flag\">", VCFHeaderVersion.VCF4_2);
+        Assert.assertEquals(lineA.getCount(), 0);
+        Assert.assertEquals(lineA.getCountType(), VCFHeaderLineCount.INTEGER);
+        Assert.assertTrue(lineA.isFixedCount());
+
+        final VCFInfoHeaderLine lineDot =
+                new VCFInfoHeaderLine("<ID=DB,Number=.,Type=Flag,Description=\"flag\">", VCFHeaderVersion.VCF4_2);
+        Assert.assertEquals(lineDot.getCount(), 0);
+        Assert.assertEquals(lineDot.getCountType(), VCFHeaderLineCount.INTEGER);
+        Assert.assertTrue(lineDot.isFixedCount());
+    }
 }

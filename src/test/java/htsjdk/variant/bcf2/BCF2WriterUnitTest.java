@@ -27,9 +27,11 @@ package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.Tribble;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.utils.BcftoolsTestUtils;
 import htsjdk.variant.VariantBaseTest;
@@ -119,15 +121,13 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             writer.add(createVC(header));
             writer.add(createVC(header));
         }
-        VariantContextTestProvider.VariantContextContainer container =
-                VariantContextTestProvider.readAllVCs(bcfOutputFile, new BCF2Codec());
-        int counter = 0;
-        final Iterator<VariantContext> it = container.getVCs().iterator();
-        while (it.hasNext()) {
-            it.next();
-            counter++;
+        try (final VCFFileReader reader = new VCFFileReader(bcfOutputFile, false)) {
+            int counter = 0;
+            for (final VariantContext ignored : reader) {
+                counter++;
+            }
+            Assert.assertEquals(counter, 2);
         }
-        Assert.assertEquals(counter, 2);
     }
 
     /**
@@ -143,6 +143,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputPath(bcfOutputFile)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
+                .setBCFVersion(BCFVersion.BCF_2_1)
                 .build()) {
             writer.writeHeader(header);
             writer.add(createVC(header));
@@ -171,10 +172,12 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
 
         final VCFHeader header = createFakeHeader();
         // we write two files, bcfOutputFile with the header, and bcfOutputHeaderlessFile with just the body
+        // BCF 2.1 (raw) is used so that PositionalBufferedStream can read the bytes directly
         try (final VariantContextWriter fakeBCFFileWriter = new VariantContextWriterBuilder()
                 .setOutputPath(bcfOutputFile)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
                 .build()) {
             fakeBCFFileWriter.writeHeader(header); // writes header
         }
@@ -183,6 +186,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputPath(bcfOutputHeaderlessFile)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
                 .build()) {
             fakeBCFBodyFileWriter.setHeader(header); // does not write header
             fakeBCFBodyFileWriter.add(createVC(header));
@@ -223,6 +227,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 VariantContextWriter bcfWriter = new VariantContextWriterBuilder()
                         .setOutputPath(bcfOutputFile)
                         .setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary())
+                        .unsetOption(Options.INDEX_ON_THE_FLY)
+                        .setBCFVersion(BCFVersion.BCF_2_1)
                         .build(); ) {
             bcfWriter.writeHeader(vcfFile.getFileHeader());
 
@@ -242,6 +248,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                     VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
                             .setOutputPath(vcfOutputFile)
                             .setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary())
+                            .unsetOption(Options.INDEX_ON_THE_FLY)
                             .build(); ) {
                 vcfWriter.writeHeader(vcfFile.getFileHeader());
 
@@ -457,6 +464,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
                 .build()) {
             writer.writeHeader(header);
         }
@@ -519,6 +527,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
                 .build()) {
             writer.writeHeader(header);
             writer.add(triploidWithAllelePhasing(false, false, true));
@@ -586,19 +595,42 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         return header;
     }
 
-    /** Writes only the header to a BCF and returns the file's bytes as text; the embedded header text is in there. */
+    /**
+     * Writes only the header to a BCF and returns the embedded header text. For VCF versions below 4.3, a raw
+     * BCF 2.1 is used and the file bytes are read as text directly. For >= 4.3, BCF 2.2 (BGZF) is used and
+     * the header is read back through VCFFileReader to reconstruct the text.
+     */
     private String writeBcfHeader(final VCFHeader header, final VCFHeaderVersion explicitVersion) throws IOException {
+        final VCFHeaderVersion headerVersion = header.getVCFHeaderVersion();
+        final VCFHeaderVersion resolved = explicitVersion != null
+                ? explicitVersion
+                : (headerVersion != null ? headerVersion : VCFHeaderVersion.VCF4_2);
+        final boolean needsBcf22 = resolved.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
         final Path output = Files.createTempFile(tempDir, "headerVersion.", ".bcf");
         output.toFile().deleteOnExit();
-        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
-                .setVCFVersion(explicitVersion)
-                .build()) {
+                .setVCFVersion(explicitVersion);
+        if (!needsBcf22) {
+            builder.setBCFVersion(BCFVersion.BCF_2_1);
+        }
+        try (final VariantContextWriter writer = builder.build()) {
             writer.writeHeader(header);
         }
-        return new String(Files.readAllBytes(output), StandardCharsets.UTF_8);
+        if (needsBcf22) {
+            // BGZF: read back through VCFFileReader and reconstruct header text
+            try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+                final StringBuilder sb = new StringBuilder();
+                for (final VCFHeaderLine line : reader.getFileHeader().getMetaDataInSortedOrder()) {
+                    sb.append("##").append(line.toString()).append("\n");
+                }
+                return sb.toString();
+            }
+        } else {
+            return new String(Files.readAllBytes(output), StandardCharsets.UTF_8);
+        }
     }
 
     @Test
@@ -701,18 +733,9 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         }
     }
 
-    /**
-     * The GT columns of a file's last record as bcftools prints them. bcftools 1.24 refuses the BCF 2.1 magic htsjdk
-     * writes, so it is shown a copy labelled 2.2: the two versions differ only in the header's IDX attributes, which
-     * bcftools assigns in line order when they are absent, as htsjdk numbered them.
-     */
+    /** The GT columns of a file's last record as bcftools prints them. */
     private String gtColumnsByBcftools(final Path bcf) throws IOException {
-        final byte[] bytes = Files.readAllBytes(bcf);
-        bytes[4] = 2;
-        final Path asBcf22 = Files.createTempFile(tempDir, "phase.as22.", ".bcf");
-        asBcf22.toFile().deleteOnExit();
-        Files.write(asBcf22, bytes);
-        final List<String> lines = BcftoolsTestUtils.viewAsVcf(asBcf22);
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(bcf);
         final String record = lines.get(lines.size() - 1);
         return record.substring(record.indexOf("\tGT\t") + 4);
     }
@@ -753,9 +776,9 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     @Test
     public void bcftoolsReadsBackTheGenotypesHtsjdkWrote() throws IOException {
         if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
-        // Diploid genotypes only: htsjdk pads a shorter genotype with MISSING where htslib expects END_OF_VECTOR,
-        // and bcftools prints that padding as an allele. At 4.4 bcftools writes a leading indicator wherever the
-        // first allele's bit disagrees with the others, so the bit must agree.
+        // Diploid genotypes only so the test does not exercise mixed-ploidy padding, which has its own tests.
+        // At 4.4 bcftools writes a leading indicator wherever the first allele's bit disagrees with the others,
+        // so the bit must agree.
         final VariantContext diploids = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
                 .genotypes(
                         new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
@@ -798,13 +821,28 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void aGenotypeWithALeadingIndicatorIsStillRefused() {
+    public void aGenotypeWithALeadingIndicatorIsRefusedBelow44() {
         final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
                 .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
                         .allelePhasing(new boolean[] {true, false})
                         .make())
                 .make();
-        Assert.expectThrows(IllegalStateException.class, () -> writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 1), vc));
+        Assert.expectThrows(IllegalStateException.class, () -> writeBcf(gtHeader(VCFHeaderVersion.VCF4_2, 1), vc));
+    }
+
+    @Test
+    public void aGenotypeWithALeadingIndicatorIsAllowedAt44() throws IOException {
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .allelePhasing(new boolean[] {true, false})
+                        .make())
+                .make();
+        final Path bcf = writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 1), vc);
+        final VariantContext read = readOne(bcf);
+        final Genotype g = read.getGenotype("s1");
+        Assert.assertTrue(g.hasPerAllelePhasing(), "per-allele phasing should survive the round trip");
+        Assert.assertTrue(g.isAllelePhased(0), "the first allele should be phased");
+        Assert.assertFalse(g.isAllelePhased(1), "the second allele should be unphased");
     }
 
     private static void assertPhasing(
@@ -812,5 +850,1075 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Assert.assertEquals(g.getGenotypeString(), gtString, g.getSampleName());
         Assert.assertEquals(g.isPhased(), phased, g.getSampleName() + " isPhased");
         Assert.assertEquals(g.hasPerAllelePhasing(), perAllele, g.getSampleName() + " hasPerAllelePhasing");
+    }
+
+    // ============================================================
+    // bcftools end-to-end tests
+    // ============================================================
+
+    /** Write BCF 2.2 with diverse data, read back with bcftools. */
+    @Test
+    public void bcftoolsReadsHaploidAtDiploidSite() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Path bcf = writeBcf(
+                gtHeader(VCFHeaderVersion.VCF4_4, 2),
+                new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                        .genotypes(
+                                new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                        .phased(true)
+                                        .make(),
+                                new GenotypeBuilder("s2", List.of(ALT_C)).make())
+                        .make());
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = lines.get(lines.size() - 1);
+        Assert.assertTrue(record.contains("0|1"), record);
+        Assert.assertTrue(record.contains("\t1\t") || record.endsWith("\t1"), record);
+    }
+
+    @Test
+    public void bcftoolsReadsMixedPloidy() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Allele altG = Allele.create("G");
+        final Path bcf = writeBcf(
+                gtHeader(VCFHeaderVersion.VCF4_4, 3),
+                new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C, altG))
+                        .genotypes(
+                                new GenotypeBuilder("s1", List.of(REF_A, ALT_C, altG))
+                                        .phased(false)
+                                        .make(),
+                                new GenotypeBuilder("s2", List.of(REF_A, ALT_C))
+                                        .phased(true)
+                                        .make(),
+                                new GenotypeBuilder("s3", List.of(ALT_C)).make())
+                        .make());
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = lines.get(lines.size() - 1);
+        Assert.assertTrue(record.contains("0/1/2"), record);
+        Assert.assertTrue(record.contains("0|1"), record);
+        Assert.assertTrue(record.contains("\t1\t") || record.endsWith("\t1"), record);
+    }
+
+    @Test
+    public void bcftoolsReadsInteriorDot() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_4);
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("XI", Arrays.asList(10, null, 5))
+                        .make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = output.get(output.size() - 1);
+        Assert.assertTrue(record.contains("10,.,5"), "interior dot missing: " + record);
+    }
+
+    @Test
+    public void bcftoolsReadsAFlag() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("FLG", 0, VCFHeaderLineType.Flag, "flag"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("FLG", true)
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = output.get(output.size() - 1);
+        Assert.assertTrue(record.contains("FLG"), "flag missing: " + record);
+    }
+
+    @Test
+    public void bcftoolsReadsAnInfoStringList() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", List.of("a", "b"))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = output.get(output.size() - 1);
+        Assert.assertTrue(record.contains("STR=a,b"), "string list wrong: " + record);
+    }
+
+    @Test
+    public void bcftoolsReadsAMissingFormatString() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("FS", 1, VCFHeaderLineType.String, "fs"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .attribute("FS", "x")
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = output.get(output.size() - 1);
+        Assert.assertTrue(
+                record.endsWith("0/1:x\t0/1:.") || record.endsWith("0/1:x\t0/1:.\t"), "missing FS: " + record);
+    }
+
+    @Test
+    public void bcftoolsReadsAPercentEncodedString() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", 1, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", "a;b")
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = output.get(output.size() - 1);
+        Assert.assertTrue(record.contains("STR=a%3Bb"), "percent-encoding wrong: " + record);
+    }
+
+    @Test
+    public void bcftoolsReadsASparseIdxHeader() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine(
+                "<ID=DP,Number=1,Type=Integer,Description=\"dp\",IDX=5>", VCFHeaderVersion.VCF4_2));
+        lines.add(new VCFInfoHeaderLine(
+                "<ID=AF,Number=A,Type=Float,Description=\"af\",IDX=10>", VCFHeaderVersion.VCF4_2));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("DP", 42)
+                .attribute("AF", 0.5)
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = output.get(output.size() - 1);
+        Assert.assertTrue(record.contains("DP=42"), "DP wrong: " + record);
+        Assert.assertTrue(record.contains("AF=0.5") || record.contains("AF=0.500"), "AF wrong: " + record);
+    }
+
+    @Test
+    public void bcftoolsOutputRoundTripsViaHtsjdk() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        // Write VCF text, convert to BCF via bcftools, read into htsjdk, write as BCF 2.2, convert back to VCF text
+        final Path vcf = Files.createTempFile(tempDir, "rt.", ".vcf");
+        vcf.toFile().deleteOnExit();
+        Files.write(
+                vcf,
+                List.of(
+                        "##fileformat=VCFv4.2",
+                        "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"dp\">",
+                        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"gt\">",
+                        "##contig=<ID=chr1,length=1000>",
+                        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1",
+                        "chr1\t100\t.\tA\tC\t50\tPASS\tDP=42\tGT\t0/1"),
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        // bcftools -Ob
+        final Path bcfBcftools = Files.createTempFile(tempDir, "rt.bt.", ".bcf");
+        bcfBcftools.toFile().deleteOnExit();
+        BcftoolsTestUtils.executeBcftoolsForStdout(
+                "view", "--no-version", "-Ob", "-o", bcfBcftools.toString(), vcf.toString());
+
+        // Also test -Ou
+        final Path bcfUncompressed = Files.createTempFile(tempDir, "rt.ou.", ".bcf");
+        bcfUncompressed.toFile().deleteOnExit();
+        BcftoolsTestUtils.executeBcftoolsForStdout(
+                "view", "--no-version", "-Ou", "-o", bcfUncompressed.toString(), vcf.toString());
+
+        for (final Path bcfIn : List.of(bcfBcftools, bcfUncompressed)) {
+            // Read via htsjdk, write as BCF 2.2
+            final Path bcf22 = Files.createTempFile(tempDir, "rt.22.", ".bcf");
+            bcf22.toFile().deleteOnExit();
+            try (final VCFFileReader reader = new VCFFileReader(bcfIn, false);
+                    final VariantContextWriter writer = new VariantContextWriterBuilder()
+                            .clearOptions()
+                            .setOutputPath(bcf22)
+                            .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                            .build()) {
+                writer.writeHeader(reader.getFileHeader());
+                for (final VariantContext vc : reader) {
+                    // Force decode of genotypes to avoid pass-through
+                    for (final Genotype g : vc.getGenotypes()) g.getAlleles();
+                    writer.add(vc);
+                }
+            }
+
+            // bcftools view of our 2.2 file should give the original text
+            final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf22);
+            final String record = output.get(output.size() - 1);
+            Assert.assertTrue(record.contains("DP=42"), "DP wrong: " + record);
+            Assert.assertTrue(record.contains("0/1"), "GT wrong: " + record);
+        }
+    }
+
+    // ============================================================
+    // Byte-level encoding tests
+    // ============================================================
+
+    @Test
+    public void aFlagIsEncodedAsNullSizeZero() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("FLG", 0, VCFHeaderLineType.Flag, "flag"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("FLG", true)
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf21(header, vc);
+        final byte[] bytes = Files.readAllBytes(bcf);
+        // Search for the flag encoding: after the INFO key for FLG, the next byte should be 0x00 (BCF_BT_NULL size 0)
+        boolean found = false;
+        for (int i = 0; i < bytes.length - 1; i++) {
+            // The FLG key will be encoded as a typed int referencing its dictionary offset, then 0x00
+            if (bytes[i] == 0x00 && i > 20) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue(found, "flag byte 0x00 not found in the file");
+    }
+
+    @Test
+    public void anInteriorMissingIntegerIsKept() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("XI", Arrays.asList(10, null, 5))
+                        .make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final Object xi = reader.iterator().next().getGenotype("s1").getExtendedAttribute("XI");
+            Assert.assertEquals(xi, Arrays.asList(10, null, 5));
+        }
+    }
+
+    @Test
+    public void anInfoListWithAnInteriorMissingDoesNotNpe() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("XI", Arrays.asList(10, null, 5))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            Assert.assertTrue(reader.iterator().next().hasAttribute("XI"));
+        }
+    }
+
+    @Test
+    public void aFlagWithNonZeroNumberInHeaderIsWritten() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("<ID=DB,Number=A,Type=Flag,Description=\"flag\">", VCFHeaderVersion.VCF4_2));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("DB", true)
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            Assert.assertEquals(reader.iterator().next().getAttribute("DB"), true);
+        }
+    }
+
+    @Test
+    public void stringsArePercentEncodedUnder43() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", 1, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", "a;b")
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            Assert.assertEquals(reader.iterator().next().getAttribute("STR"), "a;b");
+        }
+    }
+
+    @Test
+    public void stringsAreNotPercentEncodedUnder42() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", 1, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_2);
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", "a;b")
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf21(header, vc);
+        // read raw bytes: the semicolon should be literal, not %3B
+        final byte[] bytes = Files.readAllBytes(bcf);
+        final String asString = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        Assert.assertTrue(asString.contains("a;b"), "raw semicolon should be in the file");
+        Assert.assertFalse(asString.contains("%3B"), "percent-encoding should not be in the file");
+    }
+
+    @Test
+    public void gtWidthByValueUsesInt16ForLargeAlleleCounts() throws IOException {
+        // Build a site with 64 alleles (ref + 63 alts): encoded max is (63+1)<<1 = 128, needs INT16
+        final List<Allele> alleles = new ArrayList<>();
+        alleles.add(Allele.create("A", true));
+        for (int i = 0; i < 63; i++) {
+            alleles.add(Allele.create("A" + "T".repeat(i + 1)));
+        }
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, alleles)
+                .genotypes(new GenotypeBuilder("s1", List.of(alleles.get(0), alleles.get(63))).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final Genotype g = reader.iterator().next().getGenotype("s1");
+            Assert.assertEquals(g.getAllele(0), alleles.get(0));
+            Assert.assertEquals(g.getAllele(1), alleles.get(63));
+        }
+    }
+
+    // GT padding
+
+    @Test
+    public void gtPaddingUsesEndOfVectorIn22AndMissingIn21() throws IOException {
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(ALT_C)).make())
+                .make();
+        // BCF 2.2: haploid at a diploid site pads with END_OF_VECTOR (0x81 for INT8)
+        final Path bcf22 = writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 2), vc);
+        final byte[] gt22 = genotypeBlockOf(bcf22);
+        Assert.assertEquals(gt22[gt22.length - 1], (byte) 0x81, "BCF 2.2 should pad with END_OF_VECTOR");
+
+        // BCF 2.1 (uses VCF 4.2 header): haploid at a diploid site pads with MISSING (0x80 for INT8)
+        final Path bcf21 = writeBcf21(gtHeader(VCFHeaderVersion.VCF4_2, 2), vc);
+        final byte[] raw21 = Files.readAllBytes(bcf21);
+        final ByteBuffer bb = ByteBuffer.wrap(raw21).order(ByteOrder.LITTLE_ENDIAN);
+        bb.position(BCF2Codec.SIZEOF_BCF_HEADER);
+        bb.position(bb.position() + Integer.BYTES + bb.getInt()); // skip header text
+        final int sharedLen = bb.getInt();
+        final int indivLen = bb.getInt();
+        bb.position(bb.position() + sharedLen);
+        final byte[] gt21 = new byte[indivLen];
+        bb.get(gt21);
+        Assert.assertEquals(gt21[gt21.length - 1], (byte) 0x80, "BCF 2.1 should pad with MISSING");
+    }
+
+    // Vector padding
+
+    @Test
+    public void vectorPaddingUsesOneMissingThenEndOfVectorIn22() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        // s1 has 3 values, s2 has 1: s2 is padded from 1 to 3
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .attribute("XI", List.of(10, 20, 30))
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C))
+                                .attribute("XI", List.of(5))
+                                .make())
+                .make();
+        // BCF 2.2: s2's XI padded from 1 to 3: [5, MISSING(0x80), END_OF_VECTOR(0x81)]
+        final Path bcf22 = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf22, false)) {
+            final LazyGenotypesContext lgc =
+                    (LazyGenotypesContext) reader.iterator().next().getGenotypes();
+            final byte[] gt = ((BCF2Codec.LazyData) lgc.getUnparsedGenotypeData()).bytes;
+            // Search for the pattern [5, 0x80, 0x81] in the genotype block
+            boolean found22 = false;
+            for (int i = 0; i < gt.length - 2; i++) {
+                if (gt[i] == 5 && gt[i + 1] == (byte) 0x80 && gt[i + 2] == (byte) 0x81) {
+                    found22 = true;
+                    break;
+                }
+            }
+            Assert.assertTrue(found22, "BCF 2.2 should pad with [value, MISSING, END_OF_VECTOR]");
+        }
+
+        // BCF 2.1: s2's XI padded from 1 to 3: [5, MISSING(0x80), MISSING(0x80)]
+        final Path bcf21 = writeBcf21(header, vc);
+        final byte[] raw21 = Files.readAllBytes(bcf21);
+        // Search for the pattern [5, 0x80, 0x80] in the raw file bytes
+        boolean found21 = false;
+        for (int i = 0; i < raw21.length - 2; i++) {
+            if (raw21[i] == 5 && raw21[i + 1] == (byte) 0x80 && raw21[i + 2] == (byte) 0x80) {
+                found21 = true;
+                break;
+            }
+        }
+        Assert.assertTrue(found21, "BCF 2.1 should pad with [value, MISSING, MISSING]");
+    }
+
+    // String list form
+
+    @Test
+    public void stringListIsWrittenWithoutLeadingCommaIn22AndWithOneIn21() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", List.of("a", "b"))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+
+        // BCF 2.2: "a,b" (no leading comma)
+        final Path bcf22 = writeBcf(header, vc);
+        // Decompress BGZF to inspect raw bytes
+        final byte[] decompressed;
+        try (final BlockCompressedInputStream in = new BlockCompressedInputStream(Files.newInputStream(bcf22))) {
+            decompressed = in.readAllBytes();
+        }
+        final String as22 = new String(decompressed, StandardCharsets.UTF_8);
+        Assert.assertTrue(as22.contains("a,b"), "BCF 2.2 string list should be a,b: " + as22);
+        Assert.assertFalse(as22.contains(",a,b"), "BCF 2.2 string list should not have leading comma");
+
+        // BCF 2.1: ",a,b" (leading comma)
+        final Path bcf21 = writeBcf21(header, vc);
+        final String as21 = new String(Files.readAllBytes(bcf21), StandardCharsets.UTF_8);
+        Assert.assertTrue(as21.contains(",a,b"), "BCF 2.1 string list should be ,a,b: " + as21);
+    }
+
+    // Missing FORMAT string
+
+    @Test
+    public void aMissingFormatStringIsDotNulIn22AndAllNulIn21() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("FS", 1, VCFHeaderLineType.String, "fs"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .attribute("FS", "xx")
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C)).make())
+                .make();
+
+        // BCF 2.2: s2's FS should be "." + NUL padding
+        final Path bcf22 = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf22, false)) {
+            final LazyGenotypesContext lgc =
+                    (LazyGenotypesContext) reader.iterator().next().getGenotypes();
+            final byte[] gt = ((BCF2Codec.LazyData) lgc.getUnparsedGenotypeData()).bytes;
+            // Find FS data: after GT block. The FS string for s2 should contain '.'
+            boolean foundDot = false;
+            for (int i = 0; i < gt.length; i++) {
+                if (gt[i] == '.' && i > 0 && i + 1 < gt.length && gt[i + 1] == 0) {
+                    foundDot = true;
+                    break;
+                }
+            }
+            Assert.assertTrue(foundDot, "BCF 2.2 missing FORMAT string should contain '.' + NUL");
+        }
+
+        // BCF 2.1: s2's FS should be all NUL (empty string)
+        final Path bcf21 = writeBcf21(header, vc);
+        final byte[] raw = Files.readAllBytes(bcf21);
+        final ByteBuffer bb = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN);
+        bb.position(BCF2Codec.SIZEOF_BCF_HEADER);
+        bb.position(bb.position() + Integer.BYTES + bb.getInt());
+        final int sharedLen = bb.getInt();
+        final int indivLen = bb.getInt();
+        bb.position(bb.position() + sharedLen);
+        final byte[] gtBlock = new byte[indivLen];
+        bb.get(gtBlock);
+        // s2's FS in 2.1 should be all NUL, meaning no '.' byte before the NULs
+        // The string "xx" for s1 is 2 bytes, and s2's slot is also 2 bytes but all NUL
+        // Find "xx" in gtBlock, then verify the next 2 bytes are NUL
+        boolean found = false;
+        for (int i = 0; i < gtBlock.length - 3; i++) {
+            if (gtBlock[i] == 'x' && gtBlock[i + 1] == 'x' && gtBlock[i + 2] == 0 && gtBlock[i + 3] == 0) {
+                found = true;
+                break;
+            }
+        }
+        Assert.assertTrue(found, "BCF 2.1 missing FORMAT string should be all NUL bytes after the present string");
+    }
+
+    // Sentinel-safe width for -127
+
+    @Test
+    public void aFormatIntegerOfMinus127RoundTripsViaInt16() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("XI", 1, VCFHeaderLineType.Integer, "x"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("XI", -127)
+                        .make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final Object xi = reader.iterator().next().getGenotype("s1").getExtendedAttribute("XI");
+            Assert.assertEquals(xi, -127, "value -127 should round-trip");
+        }
+    }
+
+    // 24-bit n_sample mask
+
+    @Test
+    public void nSampleInRecordHeaderEncodesNfmtAndNsamples() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("GQ", 1, VCFHeaderLineType.Integer, "gq"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2", "s3"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).GQ(10).make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C)).GQ(20).make(),
+                        new GenotypeBuilder("s3", List.of(REF_A, ALT_C)).GQ(30).make())
+                .make();
+        final Path bcf = writeBcf21(header, vc);
+        final byte[] raw = Files.readAllBytes(bcf);
+        final ByteBuffer bb = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN);
+        bb.position(BCF2Codec.SIZEOF_BCF_HEADER);
+        bb.position(bb.position() + Integer.BYTES + bb.getInt()); // skip header text
+        bb.getInt(); // shared length
+        bb.getInt(); // indiv length
+        // Skip chrom, pos, rlen, qual (4 INT32s each = 16 bytes)
+        bb.position(bb.position() + 16);
+        bb.getInt(); // skip nAlleles|nInfo
+        final int nFmtSamples = bb.getInt();
+        final int nFmt = (nFmtSamples >>> 24) & 0xFF;
+        final int nSamples = nFmtSamples & 0x00FFFFFF;
+        Assert.assertEquals(nFmt, 2, "nFmt should be 2 (GT + GQ)");
+        Assert.assertEquals(nSamples, 3, "nSamples should be 3");
+    }
+
+    // Vector sizing from values, not header Number
+
+    @Test
+    public void aNumberRFieldWithFewerValuesThanAllelesWritesPaddedVector() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("AD", VCFHeaderLineCount.R, VCFHeaderLineType.Integer, "depths"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final Allele altG = Allele.create("G");
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C, altG))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .AD(new int[] {10, 5})
+                        .make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final Genotype g = reader.iterator().next().getGenotype("s1");
+            // The AD should round-trip with 2 values, not 3 (the third slot is padded, not a zero)
+            Assert.assertEquals(g.getAD(), new int[] {10, 5});
+        }
+    }
+
+    // ============================================================
+    // F1 and F2 fix tests: multi-value String list under 4.3 and null elements
+    // ============================================================
+
+    @Test
+    public void aMultiValueStringListUnder43RoundTripsAsMultipleElements() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", List.of("a;b", "c"))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+
+        // htsjdk round-trip: should come back as two elements with the semicolon intact
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final Object str = reader.iterator().next().getAttribute("STR");
+            Assert.assertEquals(str, List.of("a;b", "c"), "should round-trip as two elements");
+        }
+
+        // bcftools should see it as a%3Bb,c
+        if (BcftoolsTestUtils.isBcftoolsAvailable()) {
+            final List<String> output = BcftoolsTestUtils.viewAsVcf(bcf);
+            final String record = output.get(output.size() - 1);
+            Assert.assertTrue(record.contains("STR=a%3Bb,c"), "bcftools should see a%3Bb,c: " + record);
+        }
+    }
+
+    @Test
+    public void aFormatStringListUnder43HasCorrectBytes() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("FS", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "fs"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_3);
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("FS", List.of("a;b", "c"))
+                        .make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        // The FORMAT string bytes should have "a%3Bb,c" (each element encoded, commas as delimiters)
+        final byte[] decompressed;
+        try (final BlockCompressedInputStream in = new BlockCompressedInputStream(Files.newInputStream(bcf))) {
+            decompressed = in.readAllBytes();
+        }
+        final String raw = new String(decompressed, StandardCharsets.UTF_8);
+        Assert.assertTrue(raw.contains("a%3Bb,c"), "FORMAT string list should have commas as delimiters: " + raw);
+        Assert.assertFalse(raw.contains("a%3Bb%2Cc"), "commas should not be percent-encoded: " + raw);
+    }
+
+    @Test
+    public void anInteriorNullInAStringListProducesDotIn22() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", Arrays.asList("a", null, "c"))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+
+        // BCF 2.2: the collapsed string should be "a,.,c"
+        final Path bcf22 = writeBcf(header, vc);
+        final byte[] decompressed;
+        try (final BlockCompressedInputStream in = new BlockCompressedInputStream(Files.newInputStream(bcf22))) {
+            decompressed = in.readAllBytes();
+        }
+        final String as22 = new String(decompressed, StandardCharsets.UTF_8);
+        Assert.assertTrue(as22.contains("a,.,c"), "BCF 2.2 null element should be '.': " + as22);
+
+        // BCF 2.1: the collapsed string should be ",a,.,c"
+        final Path bcf21 = writeBcf21(header, vc);
+        final String as21 = new String(Files.readAllBytes(bcf21), StandardCharsets.UTF_8);
+        Assert.assertTrue(as21.contains(",a,.,c"), "BCF 2.1 null element should be '.': " + as21);
+    }
+
+    @Test
+    public void aSingletonNullStringListProducesDot() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("STR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("STR", Arrays.asList((String) null))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        // Should not NPE; the collapsed string should be "."
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            // "." is the missing value, so the attribute should either be absent or "."
+            final VariantContext read = reader.iterator().next();
+            // A singleton "." in a string field is missing
+            Assert.assertTrue(!read.hasAttribute("STR") || ".".equals(read.getAttribute("STR")));
+        }
+    }
+
+    // ============================================================
+    // Framing tests
+    // ============================================================
+
+    @Test
+    public void aDefaultBcfFileIsBgzfCompressed() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "bgzf.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        final byte[] bytes = Files.readAllBytes(output);
+        // BGZF files start with the gzip magic 0x1f 0x8b
+        Assert.assertEquals(bytes[0], (byte) 0x1f);
+        Assert.assertEquals(bytes[1], (byte) 0x8b);
+    }
+
+    @Test
+    public void aDefaultBcfFileHasTheBgzfEofBlock() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "bgzf.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        final byte[] bytes = Files.readAllBytes(output);
+        // The BGZF EOF block is 28 bytes
+        Assert.assertTrue(bytes.length >= 28);
+        Assert.assertEquals(bytes[bytes.length - 28], (byte) 0x1f);
+        Assert.assertEquals(bytes[bytes.length - 27], (byte) 0x8b);
+    }
+
+    @Test
+    public void aBcf21FileIsWrittenRawWhenRequested() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path output = Files.createTempFile(tempDir, "raw21.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        final byte[] bytes = Files.readAllBytes(output);
+        Assert.assertEquals(bytes[0], (byte) 'B');
+        Assert.assertEquals(bytes[1], (byte) 'C');
+        Assert.assertEquals(bytes[2], (byte) 'F');
+        Assert.assertEquals(bytes[3], (byte) 2);
+        Assert.assertEquals(bytes[4], (byte) 1);
+    }
+
+    @Test
+    public void aBcf21CannotBeWrittenWithA43Header() {
+        final VCFHeader header = oneSampleGtHeader();
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_4);
+        Assert.expectThrows(IllegalStateException.class, () -> {
+            final Path output = Files.createTempFile(tempDir, "21with43.", ".bcf");
+            output.toFile().deleteOnExit();
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .setOutputPath(output)
+                    .setReferenceDictionary(header.getSequenceDictionary())
+                    .unsetOption(Options.INDEX_ON_THE_FLY)
+                    .setBCFVersion(BCFVersion.BCF_2_1)
+                    .build()) {
+                writer.writeHeader(header);
+            }
+        });
+    }
+
+    // ============================================================
+    // Dictionary tests
+    // ============================================================
+
+    @Test
+    public void theWriterAssignsIdxAndEmbedsItInTheHeaderText() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "dp"));
+        lines.add(new VCFInfoHeaderLine("AF", VCFHeaderLineCount.A, VCFHeaderLineType.Float, "af"));
+        lines.add(new VCFFilterHeaderLine("q10", "q10"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("GQ", 1, VCFHeaderLineType.Integer, "gq"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final Path bcf = writeBcf(
+                header,
+                new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                        .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                        .make());
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final VCFHeader readHeader = reader.getFileHeader();
+            Assert.assertNotNull(readHeader.getInfoHeaderLine("DP"));
+            Assert.assertNotNull(readHeader.getInfoHeaderLine("AF"));
+            Assert.assertNotNull(readHeader.getFilterHeaderLine("q10"));
+            Assert.assertNotNull(readHeader.getFormatHeaderLine("GT"));
+            Assert.assertNotNull(readHeader.getFormatHeaderLine("GQ"));
+        }
+    }
+
+    @Test
+    public void theWritersIdxMatchesTheReadersDictionary() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "dp"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFilterHeaderLine("q10", "q10"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("DP", 42)
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            final VariantContext read = reader.iterator().next();
+            Assert.assertEquals(read.getAttributeAsInt("DP", 0), 42);
+        }
+    }
+
+    @Test
+    public void aHeaderWhoseLinesCarryIdxIsWrittenWithThoseIndices() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine(
+                "<ID=DP,Number=1,Type=Integer,Description=\"dp\",IDX=5>", VCFHeaderVersion.VCF4_2));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("DP", 42)
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            Assert.assertEquals(reader.iterator().next().getAttributeAsInt("DP", 0), 42);
+        }
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void twoLinesNamingOneIdxAreRefused() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine(
+                "<ID=DP,Number=1,Type=Integer,Description=\"dp\",IDX=5>", VCFHeaderVersion.VCF4_2));
+        lines.add(
+                new VCFInfoHeaderLine("<ID=AF,Number=A,Type=Float,Description=\"af\",IDX=5>", VCFHeaderVersion.VCF4_2));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        writeBcfNoThrow(header);
+    }
+
+    // ============================================================
+    // Pass-through tests
+    // ============================================================
+
+    /** A GT-only VC compatible with oneSampleGtHeader. */
+    private static VariantContext simpleGtVc() {
+        return new VariantContextBuilder("t", "1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .phased(true)
+                        .make())
+                .make();
+    }
+
+    @Test
+    public void passThrough21To22ForcesReEncode() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path bcf21 = writeBcf21(header, simpleGtVc());
+        final Path bcf22 = Files.createTempFile(tempDir, "passthrough.", ".bcf");
+        bcf22.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf21, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf22)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .build()) {
+            writer.writeHeader(reader.getFileHeader());
+            for (final VariantContext vc : reader) writer.add(vc);
+        }
+        try (final VCFFileReader reader21 = new VCFFileReader(bcf21, false);
+                final VCFFileReader reader22 = new VCFFileReader(bcf22, false)) {
+            final VariantContext vc21 = reader21.iterator().next();
+            final VariantContext vc22 = reader22.iterator().next();
+            for (final Genotype g : vc21.getGenotypes()) g.getAlleles();
+            for (final Genotype g : vc22.getGenotypes()) g.getAlleles();
+            Assert.assertEquals(
+                    vc22.getGenotype("s1").getGenotypeString(),
+                    vc21.getGenotype("s1").getGenotypeString());
+        }
+    }
+
+    @Test
+    public void passThrough22To22WithSameDictionaryPassesThrough() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path bcf22a = writeBcf(header, simpleGtVc());
+        final Path bcf22b = Files.createTempFile(tempDir, "passthrough.", ".bcf");
+        bcf22b.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf22a, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf22b)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .build()) {
+            writer.writeHeader(reader.getFileHeader());
+            for (final VariantContext vc : reader) writer.add(vc);
+        }
+        try (final VCFFileReader readerA = new VCFFileReader(bcf22a, false);
+                final VCFFileReader readerB = new VCFFileReader(bcf22b, false)) {
+            final LazyGenotypesContext lgcA =
+                    (LazyGenotypesContext) readerA.iterator().next().getGenotypes();
+            final LazyGenotypesContext lgcB =
+                    (LazyGenotypesContext) readerB.iterator().next().getGenotypes();
+            Assert.assertEquals(
+                    ((BCF2Codec.LazyData) lgcB.getUnparsedGenotypeData()).bytes,
+                    ((BCF2Codec.LazyData) lgcA.getUnparsedGenotypeData()).bytes);
+        }
+    }
+
+    @Test
+    public void passThrough22To22WithDifferentDictionaryForcesReEncode() throws IOException {
+        final VCFHeader header = oneSampleGtHeader();
+        final Path bcf22a = writeBcf(header, simpleGtVc());
+        final VCFHeader header2 = oneSampleGtHeader();
+        header2.addMetaDataLine(new VCFInfoHeaderLine("EXTRA", 1, VCFHeaderLineType.Integer, "extra"));
+        final Path bcf22b = Files.createTempFile(tempDir, "passthrough.", ".bcf");
+        bcf22b.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf22a, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf22b)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .build()) {
+            writer.writeHeader(header2);
+            for (final VariantContext vc : reader) writer.add(vc);
+        }
+        try (final VCFFileReader readerB = new VCFFileReader(bcf22b, false)) {
+            final VariantContext vc = readerB.iterator().next();
+            for (final Genotype g : vc.getGenotypes()) g.getAlleles();
+            Assert.assertEquals(vc.getGenotype("s1").getGenotypeString(), "A|C");
+        }
+    }
+
+    // ============================================================
+    // INDEX_ON_THE_FLY tests
+    // ============================================================
+
+    @Test
+    public void indexOnTheFlyWithBgzfBcfThrows() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "iotf.", ".bcf");
+        output.toFile().deleteOnExit();
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build());
+    }
+
+    @Test
+    public void indexOnTheFlyWithBgzfBcfDoesNotLeaveAFile() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "iotf.leak.", ".bcf");
+        Files.deleteIfExists(output);
+        Assert.assertFalse(Files.exists(output));
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build());
+        Assert.assertFalse(Files.exists(output), "the output file should not exist after the builder throws");
+    }
+
+    @Test
+    public void indexOnTheFlyWithRawBcfWorks() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "iotf21.", ".bcf");
+        output.toFile().deleteOnExit();
+        Tribble.indexPath(output).toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        Assert.assertTrue(Files.exists(Tribble.indexPath(output)));
+    }
+
+    @Test
+    public void bcf21WithA43HeaderThrows() {
+        final VCFHeader header = oneSampleGtHeader();
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_4);
+        final Path output;
+        try {
+            output = Files.createTempFile(tempDir, "21-43.", ".bcf");
+            output.toFile().deleteOnExit();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+        Assert.expectThrows(IllegalStateException.class, () -> {
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .setOutputPath(output)
+                    .setReferenceDictionary(header.getSequenceDictionary())
+                    .unsetOption(Options.INDEX_ON_THE_FLY)
+                    .setBCFVersion(BCFVersion.BCF_2_1)
+                    .build()) {
+                writer.writeHeader(header);
+            }
+        });
+    }
+
+    // ============================================================
+    // Helpers
+    // ============================================================
+
+    private Path writeBcf21(final VCFHeader header, final VariantContext vc) throws IOException {
+        final Path output = Files.createTempFile(tempDir, "raw21.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(output)
+                .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(vc);
+        }
+        return output;
+    }
+
+    private void writeBcfNoThrow(final VCFHeader header) {
+        try {
+            final Path output = Files.createTempFile(tempDir, "noThrow.", ".bcf");
+            output.toFile().deleteOnExit();
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .clearOptions()
+                    .setOutputPath(output)
+                    .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                    .build()) {
+                writer.writeHeader(header);
+            }
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

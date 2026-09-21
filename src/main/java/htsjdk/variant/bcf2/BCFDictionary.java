@@ -34,6 +34,7 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFIDHeaderLine;
 import htsjdk.variant.vcf.VCFSimpleHeaderLine;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +50,8 @@ import java.util.Map;
  * keeps its first index, which is how {@code INFO/DP} and {@code FORMAT/DP} share one. Two IDs naming the same index
  * are an error.
  */
-final class BCFDictionary {
-    static final String IDX_ATTRIBUTE = "IDX";
+public final class BCFDictionary {
+    public static final String IDX_ATTRIBUTE = "IDX";
 
     /**
      * The maximum accepted value for an IDX attribute. A dictionary index above sixteen million cannot come from
@@ -60,9 +61,11 @@ final class BCFDictionary {
     static final int MAX_IDX = 1 << 24;
 
     private final String[] indexToString;
+    private final Map<String, Integer> stringToIndex;
 
-    private BCFDictionary(final String[] indexToString) {
+    private BCFDictionary(final String[] indexToString, final Map<String, Integer> stringToIndex) {
         this.indexToString = indexToString;
+        this.stringToIndex = stringToIndex;
     }
 
     /**
@@ -77,13 +80,30 @@ final class BCFDictionary {
         return indexToString[index];
     }
 
+    /**
+     * @return the integer index for a given ID string
+     * @throws TribbleException if {@code id} is not in the dictionary
+     */
+    public int getIndex(final String id) {
+        final Integer index = stringToIndex.get(id);
+        if (index == null) {
+            throw new TribbleException("BCF dictionary does not contain an entry for " + id);
+        }
+        return index;
+    }
+
+    /** @return an unmodifiable view of the ID-to-index mapping */
+    public Map<String, Integer> asMap() {
+        return Map.copyOf(stringToIndex);
+    }
+
     /** @return one more than the highest index */
     int size() {
         return indexToString.length;
     }
 
     /** The dictionary of the header's FILTER, INFO and FORMAT IDs, with {@code PASS} at 0. */
-    static BCFDictionary forIDs(final VCFHeader header) {
+    public static BCFDictionary forIDs(final VCFHeader header) {
         final Builder builder = new Builder();
         builder.add(VCFConstants.PASSES_FILTERS_v4, null);
         for (final VCFHeaderLine line : header.getMetaDataInInputOrder()) {
@@ -95,7 +115,7 @@ final class BCFDictionary {
     }
 
     /** The dictionary of the header's contigs. */
-    static BCFDictionary forContigs(final VCFHeader header) {
+    public static BCFDictionary forContigs(final VCFHeader header) {
         final Builder builder = new Builder();
         for (final VCFContigHeaderLine contig : header.getContigLines()) {
             builder.add(contig.getID(), idxAttribute(contig));
@@ -112,6 +132,19 @@ final class BCFDictionary {
             return ((VCFSimpleHeaderLine) line).getGenericFieldValue(IDX_ATTRIBUTE);
         }
         return null;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final BCFDictionary that = (BCFDictionary) o;
+        return Arrays.equals(indexToString, that.indexToString);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(indexToString);
     }
 
     /** Assigns indices to IDs in the order they are added. */
@@ -137,7 +170,7 @@ final class BCFDictionary {
         }
 
         BCFDictionary build() {
-            return new BCFDictionary(indexToString.toArray(new String[0]));
+            return new BCFDictionary(indexToString.toArray(new String[0]), Map.copyOf(stringToIndex));
         }
 
         private static int parseIdx(final String id, final String idxAttribute) {
