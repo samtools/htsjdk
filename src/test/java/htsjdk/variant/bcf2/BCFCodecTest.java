@@ -172,6 +172,28 @@ public class BCFCodecTest extends VariantBaseTest {
     // -- Multiple BGZF streams through one codec --
 
     @Test
+    public void makeSourceFromStreamDoesNotLeakADecompressor() throws IOException {
+        final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        final Path bgzf = bgzfCopyOf(raw);
+        final BCF2Codec codec = new BCF2Codec();
+
+        try (final PositionalBufferedStream headerStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
+            codec.readHeader(headerStream);
+            codec.close(headerStream);
+        }
+        Assert.assertEquals(codec.decompressorCount(), 0, "header stream was cleaned up");
+
+        try (final PositionalBufferedStream recordStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
+            final PositionalBufferedStream source = codec.makeSourceFromStream(recordStream);
+            while (!codec.isDone(source)) {
+                codec.decode(source);
+            }
+            codec.close(source);
+        }
+        Assert.assertEquals(codec.decompressorCount(), 0, "makeSourceFromStream did not leak a decompressor");
+    }
+
+    @Test
     public void twoBgzfStreamsDecodedAlternatelyThroughOneCodecBothDecodeCorrectly() throws IOException {
         final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
         final Path bgzf = bgzfCopyOf(raw);
