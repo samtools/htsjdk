@@ -325,7 +325,7 @@ public abstract class BCF2FieldEncoder {
             if (s.isEmpty() && useEndOfVector) {
                 encoder.encodeRawString(".", Math.max(1, minValues));
             } else {
-                encoder.encodeRawString(s, Math.max(s.length(), minValues));
+                encoder.encodeRawString(s, Math.max(utf8ByteLength(s), minValues));
             }
         }
 
@@ -354,7 +354,7 @@ public abstract class BCF2FieldEncoder {
             if (value == null) {
                 return useEndOfVector ? 1 : 0; // "." for 2.2, empty for 2.1
             }
-            return javaStringToBCF2String(value).length();
+            return utf8ByteLength(javaStringToBCF2String(value));
         }
 
         /**
@@ -397,6 +397,27 @@ public abstract class BCF2FieldEncoder {
                 }
             }
             return result;
+        }
+
+        /** The number of bytes the string occupies when encoded as UTF-8, without allocating a byte array. */
+        static int utf8ByteLength(final String s) {
+            int bytes = 0;
+            for (int i = 0; i < s.length(); i++) {
+                final char c = s.charAt(i);
+                if (c < 0x80) {
+                    bytes++;
+                } else if (c < 0x800) {
+                    bytes += 2;
+                } else if (Character.isHighSurrogate(c)
+                        && i + 1 < s.length()
+                        && Character.isLowSurrogate(s.charAt(i + 1))) {
+                    bytes += 4;
+                    i++; // skip the low surrogate
+                } else {
+                    bytes += 3;
+                }
+            }
+            return bytes;
         }
     }
 

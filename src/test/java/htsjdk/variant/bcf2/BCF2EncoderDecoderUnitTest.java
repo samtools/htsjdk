@@ -778,11 +778,27 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
             encoder.encodeRawEndOfVector(type);
             final byte[] bytes = encoder.getRecordBytes();
             Assert.assertEquals(bytes.length, type.getSizeInBytes(), type.toString());
-            // END_OF_VECTOR is the type's MISSING value + 1 (second most negative)
-            final BCF2Decoder decoder = new BCF2Decoder(bytes);
-            final byte typeDescriptor = BCF2Utils.encodeTypeDescriptor(1, type);
-            final int raw = decoder.decodeInt(typeDescriptor, Integer.MIN_VALUE);
-            Assert.assertEquals(raw, Integer.MIN_VALUE, type + " should decode as the missing-value sentinel");
+
+            // Assert the raw bytes are the END_OF_VECTOR sentinel (little-endian), not the MISSING sentinel
+            final java.nio.ByteBuffer bb = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+            final int rawEndOfVector;
+            final int rawMissing;
+            if (type == BCF2Type.INT8) {
+                rawEndOfVector = bb.get() & 0xFF;
+                rawMissing = type.getMissingBytes() & 0xFF;
+            } else if (type == BCF2Type.INT16) {
+                rawEndOfVector = bb.getShort() & 0xFFFF;
+                rawMissing = type.getMissingBytes() & 0xFFFF;
+            } else {
+                rawEndOfVector = bb.getInt();
+                rawMissing = type.getMissingBytes();
+            }
+            Assert.assertEquals(
+                    rawEndOfVector,
+                    type.getVectorEndBytes()
+                            & (type == BCF2Type.INT8 ? 0xFF : type == BCF2Type.INT16 ? 0xFFFF : 0xFFFFFFFF),
+                    type + " END_OF_VECTOR raw bytes");
+            Assert.assertNotEquals(rawEndOfVector, rawMissing, type + " END_OF_VECTOR must differ from MISSING");
         }
     }
 }

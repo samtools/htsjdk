@@ -107,6 +107,29 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     // The BCF container version (2.1 or 2.2); resolved at construction time
     private final BCFVersion bcfVersion;
 
+    /** The maximum number of samples that fit in the 24-bit n_sample field of a BCF record header. */
+    public static final int MAX_SAMPLES = 0x00FFFFFF;
+
+    private static BCFVersion requireSupportedVersion(final BCFVersion version) {
+        if (version.getMajorVersion() != 2 || version.getMinorVersion() < 1 || version.getMinorVersion() > 2) {
+            throw new IllegalArgumentException("Only BCF 2.1 and BCF 2.2 are supported, not " + version);
+        }
+        return version;
+    }
+
+    /**
+     * Throws if the sample count exceeds the 24-bit BCF record header limit.
+     *
+     * @param nSamples the number of samples in the header
+     * @throws IllegalArgumentException if nSamples exceeds {@link #MAX_SAMPLES}
+     */
+    public static void requireSampleCountInRange(final int nSamples) {
+        if (nSamples > MAX_SAMPLES) {
+            throw new IllegalArgumentException(
+                    "The header declares " + nSamples + " samples, which exceeds the BCF limit of " + MAX_SAMPLES);
+        }
+    }
+
     public BCF2Writer(
             final Path location,
             final OutputStream output,
@@ -129,7 +152,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.explicitVersion = explicitVersion;
-        this.bcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
+        this.bcfVersion = requireSupportedVersion(bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2);
         if (enableOnTheFlyIndexing && this.bcfVersion.getMinorVersion() >= 2) {
             throw new IllegalArgumentException(
                     "INDEX_ON_THE_FLY is not yet supported for BCF 2.2: BGZF BCF requires a CSI index, which is"
@@ -171,7 +194,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.explicitVersion = explicitVersion;
-        this.bcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
+        this.bcfVersion = requireSupportedVersion(bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2);
         if (enableOnTheFlyIndexing && this.bcfVersion.getMinorVersion() >= 2) {
             throw new IllegalArgumentException(
                     "INDEX_ON_THE_FLY is not yet supported for BCF 2.2: BGZF BCF requires a CSI index, which is"
@@ -301,6 +324,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         this.outputVersion = VCFWriter.resolveOutputVersion(header, explicitVersion);
         this.header.setVCFHeaderVersion(this.outputVersion);
         VCFWriter.checkHeaderCompatibility(this.header, this.outputVersion);
+        requireSampleCountInRange(this.header.getNGenotypeSamples());
 
         // BCF 2.1 with >= 4.3 header is an error: percent-encoding differs and old readers cannot handle it
         if (bcfVersion.getMinorVersion() <= 1 && outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
@@ -387,7 +411,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
      * Can we safely write on the raw (undecoded) genotypes of an input VC?
      *
      * Pass through only when the source BCF version equals this writer's, the VCF header versions are on the same
-     * side of the 4.3 percent-encoding boundary, and the source's ID dictionary equals this writer's.
+     * side of the 4.3 percent-encoding boundary and on the same side of the 4.4 leading-phase-indicator boundary,
+     * and the source's ID dictionary equals this writer's.
      */
     private boolean canSafelyWriteRawGenotypesBytes(final BCF2Codec.LazyData lazyData) {
         // A LazyData without version or dictionary (from old constructors) must be decoded
@@ -406,6 +431,15 @@ public class BCF2Writer extends IndexingVariantContextWriter {
                 sourceVersion != null && sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
         final boolean outputIs43Plus = outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
         if (sourceIs43Plus != outputIs43Plus) {
+            return false;
+        }
+
+        // The source and output must be on the same side of the 4.4 leading-phase-indicator boundary:
+        // a 4.4 GT's first allele phase bit is a leading indicator; before 4.4 it is implied by the others.
+        final boolean sourceIs44Plus =
+                sourceVersion != null && sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+        final boolean outputIs44Plus = outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+        if (sourceIs44Plus != outputIs44Plus) {
             return false;
         }
 

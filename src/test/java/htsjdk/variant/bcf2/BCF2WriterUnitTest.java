@@ -1089,17 +1089,76 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
                 .make();
         final Path bcf = writeBcf21(header, vc);
-        final byte[] bytes = Files.readAllBytes(bcf);
-        // Search for the flag encoding: after the INFO key for FLG, the next byte should be 0x00 (BCF_BT_NULL size 0)
-        boolean found = false;
-        for (int i = 0; i < bytes.length - 1; i++) {
-            // The FLG key will be encoded as a typed int referencing its dictionary offset, then 0x00
-            if (bytes[i] == 0x00 && i > 20) {
-                found = true;
-                break;
-            }
+        final byte[] raw = Files.readAllBytes(bcf);
+        final ByteBuffer bb = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN);
+        bb.position(BCF2Codec.SIZEOF_BCF_HEADER);
+        bb.position(bb.position() + Integer.BYTES + bb.getInt()); // skip header text
+        final int sharedLen = bb.getInt();
+        bb.getInt(); // indiv length
+        final int sharedStart = bb.position();
+        // Skip chrom, pos, rlen, qual (16 bytes), nAlleles|nInfo, nFmt|nSamples (8 bytes)
+        bb.position(sharedStart + 24);
+        // Skip ID (typed string): read the type descriptor and skip the string + padding
+        skipTypedField(bb);
+        // Skip alleles (REF + ALT): nAlleles = 2
+        skipTypedField(bb);
+        skipTypedField(bb);
+        // Skip FILTER (typed vector)
+        skipTypedField(bb);
+        // Now at INFO: the first field is FLG. Its key is a typed int, followed by the flag value 0x00.
+        skipTypedField(bb); // skip the FLG key (typed int with the dictionary offset)
+        // The flag value: BCF_BT_NULL size 0 = 0x00
+        Assert.assertEquals(bb.get(), (byte) 0x00, "flag should be encoded as 0x00 (BCF_BT_NULL size 0)");
+        // Verify we consumed exactly the shared block
+        Assert.assertEquals(bb.position(), sharedStart + sharedLen, "should be at end of shared block");
+    }
+
+    /** Skip one BCF typed field (type descriptor + data) in a ByteBuffer positioned at the type byte. */
+    private static void skipTypedField(final ByteBuffer bb) {
+        final int typeByte = bb.get() & 0xFF;
+        int count = (typeByte >> 4) & 0x0F;
+        final int typeId = typeByte & 0x0F;
+        if (count == 15) {
+            // Overflow: next typed int gives the real count
+            final int countTypeByte = bb.get() & 0xFF;
+            final int countTypeId = countTypeByte & 0x0F;
+            count = readRawInt(bb, countTypeId);
         }
-        Assert.assertTrue(found, "flag byte 0x00 not found in the file");
+        if (typeId == 0) return; // MISSING: size 0
+        final int sizePerElement;
+        switch (typeId) {
+            case 1:
+                sizePerElement = 1;
+                break; // INT8
+            case 2:
+                sizePerElement = 2;
+                break; // INT16
+            case 3:
+                sizePerElement = 4;
+                break; // INT32
+            case 5:
+                sizePerElement = 4;
+                break; // FLOAT
+            case 7:
+                sizePerElement = 1;
+                break; // CHAR
+            default:
+                throw new IllegalStateException("Unknown BCF type id: " + typeId);
+        }
+        bb.position(bb.position() + count * sizePerElement);
+    }
+
+    private static int readRawInt(final ByteBuffer bb, final int typeId) {
+        switch (typeId) {
+            case 1:
+                return bb.get() & 0xFF;
+            case 2:
+                return bb.getShort() & 0xFFFF;
+            case 3:
+                return bb.getInt();
+            default:
+                throw new IllegalStateException("Unexpected count type: " + typeId);
+        }
     }
 
     @Test
@@ -1883,6 +1942,205 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                     .setBCFVersion(BCFVersion.BCF_2_1)
                     .build()) {
                 writer.writeHeader(header);
+            }
+        });
+    }
+
+    // ============================================================
+    // Unsupported BCF version
+    // ============================================================
+
+    @Test
+    public void unsupportedBcfVersionIsRejectedByTheBuilder() {
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setBCFVersion(new BCFVersion(2, 3)));
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setBCFVersion(new BCFVersion(3, 0)));
+        // accepted
+        new VariantContextWriterBuilder().setBCFVersion(BCFVersion.BCF_2_1);
+        new VariantContextWriterBuilder().setBCFVersion(BCFVersion.BCF_2_2);
+    }
+
+    @Test
+    public void unsupportedBcfVersionIsRejectedByTheConstructor() throws IOException {
+        final Path output = Files.createTempFile(tempDir, "unsup.", ".bcf");
+        output.toFile().deleteOnExit();
+        Assert.expectThrows(
+                IllegalArgumentException.class,
+                () -> new BCF2Writer(
+                        output, Files.newOutputStream(output), null, false, false, null, new BCFVersion(2, 3)));
+        Assert.expectThrows(
+                IllegalArgumentException.class,
+                () -> new BCF2Writer(
+                        output, Files.newOutputStream(output), null, false, false, null, new BCFVersion(3, 0)));
+    }
+
+    // ============================================================
+    // Sample count limit
+    // ============================================================
+
+    @Test
+    public void sampleCountAtTheBoundaryIsAccepted() {
+        // 0x00FFFFFF = 16777215 -- the largest count that fits the 24-bit field
+        BCF2Writer.requireSampleCountInRange(0x00FFFFFF);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void sampleCountAboveTheLimitIsRejected() {
+        BCF2Writer.requireSampleCountInRange(0x01000000);
+    }
+
+    // ============================================================
+    // UTF-8 string sizing
+    // ============================================================
+
+    @Test
+    public void aFormatStringWithNonAsciiRoundTrips() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("STR", 1, VCFHeaderLineType.String, "str"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        // "é" is 2 UTF-8 bytes, "λ→日本" is 2+3+3+3 = 11 UTF-8 bytes
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .attribute("STR", "é")
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C))
+                                .attribute("STR", "λ→日本")
+                                .make())
+                .make();
+        // Round-trip through BCF 2.2
+        final Path bcf22 = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf22, false)) {
+            final VariantContext read = reader.iterator().next();
+            Assert.assertEquals(read.getGenotype("s1").getExtendedAttribute("STR"), "é");
+            Assert.assertEquals(read.getGenotype("s2").getExtendedAttribute("STR"), "λ→日本");
+        }
+        // Round-trip through BCF 2.1
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_2);
+        final Path bcf21 = writeBcf21(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf21, false)) {
+            final VariantContext read = reader.iterator().next();
+            Assert.assertEquals(read.getGenotype("s1").getExtendedAttribute("STR"), "é");
+            Assert.assertEquals(read.getGenotype("s2").getExtendedAttribute("STR"), "λ→日本");
+        }
+    }
+
+    @Test
+    public void anInfoStringWithNonAsciiRoundTrips() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("DESC", 1, VCFHeaderLineType.String, "desc"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("DESC", "café")
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        // BCF 2.2
+        final Path bcf22 = writeBcf(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf22, false)) {
+            Assert.assertEquals(reader.iterator().next().getAttribute("DESC"), "café");
+        }
+        // BCF 2.1
+        header.setVCFHeaderVersion(VCFHeaderVersion.VCF4_2);
+        final Path bcf21 = writeBcf21(header, vc);
+        try (final VCFFileReader reader = new VCFFileReader(bcf21, false)) {
+            Assert.assertEquals(reader.iterator().next().getAttribute("DESC"), "café");
+        }
+    }
+
+    @Test
+    public void bcftoolsReadsNonAsciiStringsWrittenByHtsjdk() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("DESC", 1, VCFHeaderLineType.String, "desc"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("STR", 1, VCFHeaderLineType.String, "str"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("DESC", "café")
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("STR", "λ→日本")
+                        .make())
+                .make();
+        final Path bcf = writeBcf(header, vc);
+        final List<String> vcfLines = BcftoolsTestUtils.viewAsVcf(bcf);
+        final String record = vcfLines.get(vcfLines.size() - 1);
+        Assert.assertTrue(record.contains("café"), "bcftools should print the non-ASCII INFO value");
+        Assert.assertTrue(record.contains("λ→日本"), "bcftools should print the non-ASCII FORMAT value");
+    }
+
+    // ============================================================
+    // Pass-through across VCF 4.4 boundary
+    // ============================================================
+
+    @Test
+    public void passThrough42To44ReEncodesSoPhaseIsCorrect() throws IOException {
+        // Write a BCF 2.2 under VCF 4.2 with a phased genotype 0|1
+        final VCFHeader header42 = oneSampleGtHeader(VCFHeaderVersion.VCF4_2);
+        final VariantContext vc = new VariantContextBuilder("t", "1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .phased(true)
+                        .make())
+                .make();
+        final Path bcf42 = writeBcf(header42, vc);
+
+        // Re-write under a 4.4 header
+        final VCFHeader header44 = oneSampleGtHeader(VCFHeaderVersion.VCF4_4);
+        final Path bcf44 = Files.createTempFile(tempDir, "42to44.", ".bcf");
+        bcf44.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf42, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf44)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_4)
+                        .build()) {
+            writer.writeHeader(header44);
+            for (final VariantContext v : reader) writer.add(v);
+        }
+        // htsjdk read-back: should still be 0|1
+        try (final VCFFileReader reader = new VCFFileReader(bcf44, false)) {
+            final Genotype g = reader.iterator().next().getGenotype("s1");
+            Assert.assertEquals(g.getGenotypeString(), "A|C");
+        }
+        // bcftools read-back if available
+        if (BcftoolsTestUtils.isBcftoolsAvailable()) {
+            final List<String> lines = BcftoolsTestUtils.viewAsVcf(bcf44);
+            final String record = lines.get(lines.size() - 1);
+            Assert.assertTrue(record.endsWith("0|1"), "bcftools should read the GT as 0|1, got: " + record);
+        }
+    }
+
+    @Test
+    public void passThrough44To43ThrowsForLeadingPhaseIndicator() throws IOException {
+        // Write a BCF 2.2 under VCF 4.4 with a leading indicator genotype |0/1
+        final VCFHeader header44 = oneSampleGtHeader(VCFHeaderVersion.VCF4_4);
+        final VariantContext vc = new VariantContextBuilder("t", "1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .allelePhasing(new boolean[] {true, false})
+                        .make())
+                .make();
+        final Path bcf44 = writeBcf(header44, vc);
+
+        // Attempt to re-write under a 4.3 header: should throw because 4.3 cannot express the leading indicator
+        final VCFHeader header43 = oneSampleGtHeader(VCFHeaderVersion.VCF4_3);
+        final Path bcf43 = Files.createTempFile(tempDir, "44to43.", ".bcf");
+        bcf43.toFile().deleteOnExit();
+        Assert.expectThrows(IllegalStateException.class, () -> {
+            try (final VCFFileReader reader = new VCFFileReader(bcf44, false);
+                    final VariantContextWriter writer = new VariantContextWriterBuilder()
+                            .clearOptions()
+                            .setOutputPath(bcf43)
+                            .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                            .setVCFVersion(VCFHeaderVersion.VCF4_3)
+                            .build()) {
+                writer.writeHeader(header43);
+                for (final VariantContext v : reader) writer.add(v);
             }
         });
     }

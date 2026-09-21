@@ -190,6 +190,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 ### Bug fixes
 
+- The BCF writer sizes string vectors by their UTF-8 byte length rather than Java's char count, so a non-ASCII string (such as a description containing accented or CJK characters) is no longer silently truncated when written to BCF.
 - **The BCF writer keeps an interior missing value in an INFO or FORMAT vector of integers, floats or strings.**  `X=10,.,5` was written as `X=10,5`, `S=a,.,c` as `S=a,c`, and an INFO integer list with a missing value threw a `NullPointerException`; fully decoding a `VariantContext` whose String list holds a missing element threw too.
 - A `Type=Flag` header line with a `Number` other than 0 (`Number=A`, for example) no longer makes the BCF writer throw: the line's count is normalised to a fixed zero, as the VCF specification requires.
 - The BCF writer masks n_sample to 24 bits, as the specification and the reader do; it used 20.
@@ -197,7 +198,6 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **A missing value inside a BCF vector no longer shifts the values after it.**  A generic INFO or FORMAT vector such as `X=10,.,5` came back from BCF as `[10, 5]`; it now comes back as `[10, null, 5]`.  `AD` and `PL` are held as `int[]`, which cannot hold a missing value, so `AD=10,.,5` is absent, as it is when read from VCF, where it used to come back as `[10]`.
 - **The BCF writer sets the first allele's phase bit as htslib does**: the phase the other alleles imply, and set for every haploid call.  It always cleared the bit, so a reader that honours it, as bcftools does and as htsjdk now does under a VCF 4.4 or later header, read a `0|1` written under a 4.4 header as `/0|1`.
 - **Mixed-ploidy BCF genotypes from htslib no longer throw.**  htslib pads shorter genotypes with END_OF_VECTOR, which htsjdk decoded as data values, producing an `ArrayIndexOutOfBoundsException` or garbled alleles.
-- The BCF n_sample mask is corrected from 20 bits to 24 bits, matching the BCF specification and htslib.
 - `BCF2Encoder` encodes strings as explicit UTF-8 rather than using the platform default charset.
 - `VCFFileReader` can now open VCF 3.2 and 3.3 files, which previously required constructing a `VCF3Codec` by hand and using `AbstractFeatureReader` directly.  A 3.x record with `FILTER=PASS` now decodes as passing, where the old `VCF3Codec` treated it as a named filter.
 - **Spaces in INFO values are no longer rejected** (issue #1667).  The VCF reader used to throw on any whitespace in the INFO column for every version, but VCF 4.3+ explicitly allows spaces in values, and htslib has never enforced the restriction.  Tabs still delimit VCF columns as before: a record with more columns than its header declares is reported as such, where the extra column used to be reported as whitespace in INFO.
