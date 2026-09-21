@@ -29,11 +29,21 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.tribble.Tribble;
+import htsjdk.tribble.index.DynamicIndexCreator;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.tribble.index.IndexFactory;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.bcf2.BCFVersion;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
+import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineType;
@@ -145,8 +155,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                     "testSetOutputFile " + extension + " Path was not compressed");
         }
 
-        writer =
-                builder.setOutputPath(bcf).unsetOption(Options.INDEX_ON_THE_FLY).build();
+        writer = builder.setOutputPath(bcf).build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFile BCF String");
 
         writer = builder.setOutputFile(bcf.toAbsolutePath().toString()).build();
@@ -208,9 +217,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 ((VCFWriter) writer).getOutputStream() instanceof BlockCompressedOutputStream,
                 "testSetOutputFileType VCF was compressed");
 
-        writer = builder.setOption(Options.FORCE_BCF)
-                .unsetOption(Options.INDEX_ON_THE_FLY)
-                .build();
+        writer = builder.setOption(Options.FORCE_BCF).build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFileType FORCE_BCF set -> expected BCF, was VCF");
 
         // test that FORCE_BCF remains in effect, overriding the explicit setting of VCF
@@ -236,7 +243,6 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 "testSetOutputFileType BLOCK_COMPRESSED_VCF was not compressed");
 
         writer = builder.setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
-                .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFileType BCF");
     }
@@ -663,5 +669,74 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.expectThrows(IllegalArgumentException.class, () -> builder.setVCFVersion(VCFHeaderVersion.VCF3_3));
         Assert.expectThrows(IllegalArgumentException.class, () -> builder.setVCFVersion(VCFHeaderVersion.VCF3_2));
         Assert.assertSame(builder.setVCFVersion(VCFHeaderVersion.VCF4_0), builder);
+    }
+
+    // ============================================================
+    // CSI index tests for BCF
+    // ============================================================
+
+    @Test
+    public void indexOnTheFlyWithBgzfBcfProducesACsi() throws IOException {
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary();
+        dict.addSequence(new SAMSequenceRecord("chr1", 100000));
+        final Set<VCFHeaderLine> meta = new LinkedHashSet<>();
+        meta.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "Depth"));
+        meta.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
+        final VCFHeader header = new VCFHeader(meta, List.of("sample1"));
+        header.setSequenceDictionary(dict);
+
+        final Path output = Files.createTempFile(TEST_BASENAME + ".csibcf", FileExtensions.BCF);
+        output.toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + FileExtensions.CSI);
+        csiPath.toFile().deleteOnExit();
+
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(dict)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header);
+            w.add(new VariantContextBuilder(
+                            "test", "chr1", 100, 100, java.util.Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(
+                            new GenotypeBuilder("sample1", java.util.Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+        }
+        Assert.assertTrue(Files.exists(csiPath), "CSI index should be produced");
+        // The CSI should be usable for queries
+        try (VCFFileReader reader = new VCFFileReader(output, true)) {
+            Assert.assertTrue(reader.isQueryable());
+            Assert.assertEquals(reader.query("chr1", 50, 150).toList().size(), 1);
+        }
+    }
+
+    @Test
+    public void aCustomIndexCreatorWithBgzfBcfThrows() throws IOException {
+        final IndexCreator idxCreator = new DynamicIndexCreator(bcf, IndexFactory.IndexBalanceApproach.FOR_SEEK_TIME);
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(dictionary)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setIndexCreator(idxCreator)
+                .build());
+    }
+
+    @Test
+    public void aCustomIndexCreatorWithBcf21IsUsable() throws IOException {
+        final Path output = Files.createTempFile(TEST_BASENAME + ".custidx21", FileExtensions.BCF);
+        output.toFile().deleteOnExit();
+        Tribble.indexPath(output).toFile().deleteOnExit();
+        final IndexCreator idxCreator =
+                new DynamicIndexCreator(output, IndexFactory.IndexBalanceApproach.FOR_SEEK_TIME);
+        // BCF 2.1 with a custom Tribble index creator should work
+        final VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(dictionary)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setIndexCreator(idxCreator)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build();
+        Assert.assertNotNull(w);
     }
 }

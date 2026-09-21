@@ -79,9 +79,12 @@ public final class BinningIndex implements ReferenceBinsSource {
         this.noCoordinateCount = noCoordinateCount;
     }
 
-    /** Rejects a binning scheme whose bin numbers or positions would overflow, or that has no levels at all. */
+    /**
+     * Rejects a binning scheme whose bin numbers or positions would overflow. A depth of 0 (one level, bin 0 only)
+     * is accepted because bcftools writes it for contigs shorter than {@code 2^minShift} bases.
+     */
     static void validateGeometry(final int minShift, final int depth) {
-        if (minShift < 1 || depth < 1 || depth > MAX_DEPTH || minShift + 3 * depth > MAX_POSITION_BITS) {
+        if (minShift < 1 || depth < 0 || depth > MAX_DEPTH || minShift + 3 * depth > MAX_POSITION_BITS) {
             throw new IllegalArgumentException(
                     String.format("Unsupported binning scheme: minShift=%d, depth=%d", minShift, depth));
         }
@@ -803,6 +806,10 @@ public final class BinningIndex implements ReferenceBinsSource {
          */
         public Builder(final int minShift, final int depth, final boolean forCsi) {
             validateGeometry(minShift, depth);
+            if (depth < 1) {
+                throw new IllegalArgumentException(
+                        String.format("A BinningIndex.Builder requires depth >= 1, got %d", depth));
+            }
             this.minShift = minShift;
             this.depth = depth;
             this.maxPosition = maxPosition(minShift, depth);

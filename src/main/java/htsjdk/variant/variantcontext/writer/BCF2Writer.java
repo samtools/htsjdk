@@ -25,7 +25,11 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.index.BinningIndex;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -53,6 +57,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -107,6 +112,12 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     // The BCF container version (2.1 or 2.2); resolved at construction time
     private final BCFVersion bcfVersion;
 
+    // CSI index on the fly: set by the builder for BCF 2.2; null for raw BCF, streams, or no indexing
+    private final BlockCompressedOutputStream bgzfStream;
+    private final Path csiIndexPath;
+    private BinningIndex.Builder csiIndexBuilder;
+    private boolean anyRecordAdded;
+
     /** The maximum number of samples that fit in the 24-bit n_sample field of a BCF record header. */
     public static final int MAX_SAMPLES = 0x00FFFFFF;
 
@@ -148,17 +159,40 @@ public class BCF2Writer extends IndexingVariantContextWriter {
             final boolean doNotWriteGenotypes,
             final VCFHeaderVersion explicitVersion,
             final BCFVersion bcfVersion) {
+        this(location, output, refDict, enableOnTheFlyIndexing, doNotWriteGenotypes, explicitVersion, bcfVersion, null);
+    }
+
+    /**
+     * Package-private constructor used by the builder to enable CSI indexing on BGZF BCF. When {@code csiIndexPath}
+     * is non-null, the writer produces a bare CSI index alongside the BGZF BCF file; the Tribble indexer is not used.
+     */
+    BCF2Writer(
+            final Path location,
+            final OutputStream output,
+            final SAMSequenceDictionary refDict,
+            final boolean enableOnTheFlyIndexing,
+            final boolean doNotWriteGenotypes,
+            final VCFHeaderVersion explicitVersion,
+            final BCFVersion bcfVersion,
+            final Path csiIndexPath) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
+        if (enableOnTheFlyIndexing && csiIndexPath == null && output instanceof BlockCompressedOutputStream) {
+            throw new IllegalArgumentException("On-the-fly Tribble indexing cannot address a BGZF-compressed stream."
+                    + " Use the VariantContextWriterBuilder, which produces a CSI index for BGZF BCF.");
+        }
         this.outputStream = getOutputStream();
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.explicitVersion = explicitVersion;
         this.bcfVersion = requireSupportedVersion(bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2);
-        if (enableOnTheFlyIndexing && this.bcfVersion.getMinorVersion() >= 2) {
-            throw new IllegalArgumentException(
-                    "INDEX_ON_THE_FLY is not yet supported for BCF 2.2: BGZF BCF requires a CSI index, which is"
-                            + " not available in this version of htsjdk. Call"
-                            + " unsetOption(Options.INDEX_ON_THE_FLY) or clearOptions(), or use"
-                            + " setBCFVersion(BCFVersion.BCF_2_1) for a raw BCF with a Tribble index.");
+        this.csiIndexPath = csiIndexPath;
+        if (csiIndexPath != null) {
+            if (!(output instanceof BlockCompressedOutputStream)) {
+                throw new IllegalArgumentException("CSI indexing requires a BlockCompressedOutputStream, but got "
+                        + output.getClass().getName());
+            }
+            this.bgzfStream = (BlockCompressedOutputStream) output;
+        } else {
+            this.bgzfStream = null;
         }
     }
 
@@ -195,13 +229,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.explicitVersion = explicitVersion;
         this.bcfVersion = requireSupportedVersion(bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2);
-        if (enableOnTheFlyIndexing && this.bcfVersion.getMinorVersion() >= 2) {
-            throw new IllegalArgumentException(
-                    "INDEX_ON_THE_FLY is not yet supported for BCF 2.2: BGZF BCF requires a CSI index, which is"
-                            + " not available in this version of htsjdk. Call"
-                            + " unsetOption(Options.INDEX_ON_THE_FLY) or clearOptions(), or use"
-                            + " setBCFVersion(BCFVersion.BCF_2_1) for a raw BCF with a Tribble index.");
-        }
+        this.csiIndexPath = null;
+        this.bgzfStream = null;
     }
 
     // --------------------------------------------------------------------------------
@@ -292,8 +321,16 @@ public class BCF2Writer extends IndexingVariantContextWriter {
             // only now, so that a refused record is not indexed; still before any of its bytes reach the output
             super.add(vc);
 
-            // write the two blocks to disk
-            writeBlock(infoBlock, genotypesBlock);
+            if (csiIndexBuilder != null) {
+                final long chunkStart = bgzfStream.getFilePointer();
+                writeBlock(infoBlock, genotypesBlock);
+                final long chunkEnd = bgzfStream.getFilePointer();
+                final int refIdx = contigDictionary.getIndex(vc.getContig());
+                csiIndexBuilder.add(refIdx, vc.getStart(), vc.getEnd(), chunkStart, chunkEnd);
+                anyRecordAdded = true;
+            } else {
+                writeBlock(infoBlock, genotypesBlock);
+            }
             outputHasBeenWritten = true;
         } catch (IOException e) {
             throw new RuntimeIOException("Error writing record to BCF2 file: " + vc.toString(), e);
@@ -302,12 +339,35 @@ public class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void close() {
-        try {
-            outputStream.flush();
-        } catch (IOException e) {
-            throw new RuntimeIOException("Failed to flush BCF2 file");
+        long endOfRecords = 0;
+        if (bgzfStream != null && csiIndexBuilder != null) {
+            try {
+                bgzfStream.flush();
+                endOfRecords = bgzfStream.getFilePointer();
+                if (anyRecordAdded) {
+                    csiIndexBuilder.moveEndOfLastRecord(endOfRecords);
+                }
+            } catch (IOException e) {
+                throw new RuntimeIOException("Failed to flush BCF2 file before writing CSI index", e);
+            }
+        } else {
+            try {
+                outputStream.flush();
+            } catch (IOException e) {
+                throw new RuntimeIOException("Failed to flush BCF2 file");
+            }
         }
-        super.close();
+        super.close(); // closes the output stream (writes BGZF EOF block)
+        if (csiIndexBuilder != null) {
+            final int nRefs = header.getSequenceDictionary().size();
+            final BinningIndex index = csiIndexBuilder.build(nRefs);
+            try (BinaryCodec codec = new BinaryCodec(
+                    new BlockCompressedOutputStream(Files.newOutputStream(csiIndexPath), (Path) null))) {
+                index.writeCsi(codec, new byte[0]);
+            } catch (IOException e) {
+                throw new RuntimeIOException("Error writing CSI index to " + csiIndexPath, e);
+            }
+        }
     }
 
     @Override
@@ -359,6 +419,16 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         sampleNames = this.header.getGenotypeSamples().toArray(new String[this.header.getNGenotypeSamples()]);
         // setup the field encodings with version awareness
         fieldManager.setup(this.header, encoder, stringDictionaryMap, bcfVersion, outputVersion);
+
+        if (csiIndexPath != null) {
+            long longestContig = 0;
+            for (final SAMSequenceRecord seq :
+                    this.header.getSequenceDictionary().getSequences()) {
+                longestContig = Math.max(longestContig, seq.getSequenceLength());
+            }
+            final BinningIndex.Geometry geo = BinningIndex.shallowestCsiGeometry(14, longestContig);
+            csiIndexBuilder = new BinningIndex.Builder(geo.minShift(), geo.depth(), true);
+        }
     }
 
     // --------------------------------------------------------------------------------

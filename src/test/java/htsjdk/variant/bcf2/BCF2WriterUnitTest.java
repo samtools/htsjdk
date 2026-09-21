@@ -28,7 +28,9 @@ package htsjdk.variant.bcf2;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
@@ -1633,10 +1635,12 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = createFakeHeader();
         final Path output = Files.createTempFile(tempDir, "bgzf.", ".bcf");
         output.toFile().deleteOnExit();
+        output.resolveSibling(output.getFileName() + FileExtensions.CSI)
+                .toFile()
+                .deleteOnExit();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
-                .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.writeHeader(header);
             writer.add(createVC(header));
@@ -1652,10 +1656,12 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = oneSampleGtHeader();
         final Path output = Files.createTempFile(tempDir, "bgzf.", ".bcf");
         output.toFile().deleteOnExit();
+        output.resolveSibling(output.getFileName() + FileExtensions.CSI)
+                .toFile()
+                .deleteOnExit();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
-                .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.writeHeader(header);
         }
@@ -1880,29 +1886,136 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     // ============================================================
 
     @Test
-    public void indexOnTheFlyWithBgzfBcfThrows() throws IOException {
+    public void defaultBuilderWithDictionaryAndBcfNoLongerThrows() throws IOException {
         final VCFHeader header = createFakeHeader();
         final Path output = Files.createTempFile(tempDir, "iotf.", ".bcf");
         output.toFile().deleteOnExit();
-        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
-                .setOption(Options.INDEX_ON_THE_FLY)
-                .build());
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        Assert.assertTrue(Files.exists(output));
     }
 
     @Test
-    public void indexOnTheFlyWithBgzfBcfDoesNotLeaveAFile() throws IOException {
+    public void aCsiIndexIsWrittenBesideABgzfBcf() throws IOException {
         final VCFHeader header = createFakeHeader();
-        final Path output = Files.createTempFile(tempDir, "iotf.leak.", ".bcf");
-        Files.deleteIfExists(output);
-        Assert.assertFalse(Files.exists(output));
-        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+        final Path output = Files.createTempFile(tempDir, "csi.", ".bcf");
+        output.toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + ".csi");
+        csiPath.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .setOption(Options.INDEX_ON_THE_FLY)
-                .build());
-        Assert.assertFalse(Files.exists(output), "the output file should not exist after the builder throws");
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        Assert.assertTrue(Files.exists(csiPath), "CSI index should exist beside the BCF");
+        final htsjdk.index.FileBackedBinningIndex idx = htsjdk.index.FileBackedBinningIndex.open(csiPath, true);
+        Assert.assertTrue(idx.isCsi());
+        Assert.assertEquals(idx.getMinShift(), 14);
+        Assert.assertEquals(idx.getAux().length, 0);
+        idx.close();
+    }
+
+    @Test
+    public void aCsiIsNotWrittenForBcf21() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "csi21.", ".bcf");
+        output.toFile().deleteOnExit();
+        htsjdk.tribble.Tribble.indexPath(output).toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + ".csi");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        Assert.assertFalse(Files.exists(csiPath), "CSI should not exist for BCF 2.1");
+        Assert.assertTrue(
+                Files.exists(htsjdk.tribble.Tribble.indexPath(output)), "Tribble .idx should exist for BCF 2.1");
+    }
+
+    @Test
+    public void aCsiIsNotWrittenForAStream() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        try (final VariantContextWriter writer =
+                new VariantContextWriterBuilder().setOutputBCFStream(baos).build()) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        // No exception, no CSI path to check (stream output)
+        Assert.assertTrue(baos.size() > 0);
+    }
+
+    @Test
+    public void anEmptyBcfGetsACsi() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "empty-csi.", ".bcf");
+        output.toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + ".csi");
+        csiPath.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            // no records
+        }
+        Assert.assertTrue(Files.exists(csiPath), "CSI should exist even for an empty BCF");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void anUnsortedInputThrowsDuringCsiIndexing() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "unsorted-csi.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            // Write records on contig "2" then contig "1" (out of order)
+            writer.add(new VariantContextBuilder("test", "2", 10, 10, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(
+                            new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
+                                    .GQ(0)
+                                    .attribute("BB", "1")
+                                    .phased(true)
+                                    .make(),
+                            new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
+                                    .GQ(0)
+                                    .attribute("BB", "1")
+                                    .phased(true)
+                                    .make())
+                    .attribute("DP", "50")
+                    .make());
+            writer.add(new VariantContextBuilder("test", "1", 5, 5, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(
+                            new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
+                                    .GQ(0)
+                                    .attribute("BB", "1")
+                                    .phased(true)
+                                    .make(),
+                            new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
+                                    .GQ(0)
+                                    .attribute("BB", "1")
+                                    .phased(true)
+                                    .make())
+                    .attribute("DP", "50")
+                    .make());
+        }
     }
 
     @Test
@@ -1921,6 +2034,41 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             writer.add(createVC(header));
         }
         Assert.assertTrue(Files.exists(Tribble.indexPath(output)));
+    }
+
+    // ============================================================
+    // Constructor guard: Tribble indexing over a BGZF stream is refused
+    // ============================================================
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void tribbleIndexingOverBgzfStreamThrows() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "bgzfguard.", ".bcf");
+        output.toFile().deleteOnExit();
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(Files.newOutputStream(output), output);
+        // Constructing with enableOnTheFlyIndexing=true over a BGZF stream (no CSI path) must throw
+        new BCF2Writer(output, bcos, header.getSequenceDictionary(), true, false, null, BCFVersion.BCF_2_2);
+    }
+
+    @Test
+    public void rawStreamAt22WithIndexingProducesAnIdx() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "raw22idx.", ".bcf");
+        output.toFile().deleteOnExit();
+        Tribble.indexPath(output).toFile().deleteOnExit();
+        // A raw (non-BGZF) stream at 2.2 with Tribble indexing is allowed
+        try (final VariantContextWriter writer = new BCF2Writer(
+                output,
+                Files.newOutputStream(output),
+                header.getSequenceDictionary(),
+                true,
+                false,
+                null,
+                BCFVersion.BCF_2_2)) {
+            writer.writeHeader(header);
+            writer.add(createVC(header));
+        }
+        Assert.assertTrue(Files.exists(Tribble.indexPath(output)), "A Tribble .idx should be produced");
     }
 
     @Test

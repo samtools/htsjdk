@@ -92,8 +92,45 @@ public class BinningIndexGeometryTest extends HtsjdkTest {
         new BinningIndex.Builder(14, 10);
     }
 
+    // ============================================================
+    // Depth 0 (one level, bin 0 only; bcftools writes this for short contigs)
+    // ============================================================
+
+    @Test
+    public void aDepthOfZeroIsAcceptedForReading() {
+        BinningIndex.validateGeometry(14, 0);
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testZeroDepthIsRejected() {
+    public void aBuilderRefusesDepthZero() {
         new BinningIndex.Builder(14, 0);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void aBuilderRefusesDepthZeroForCsi() {
+        new BinningIndex.Builder(14, 0, true);
+    }
+
+    @Test
+    public void aReadIndexAtDepthZeroQueriesCorrectly() {
+        // Construct a depth-0 index through the read path (package-private constructor), since the Builder
+        // enforces depth >= 1 for writing.  At depth=0 with minShift=14 the scheme has only bin 0,
+        // spanning 2^14 = 16384 bases.
+        final ReferenceBins ref = new ReferenceBins(
+                new int[] {0}, new long[][] {{100, 200, 300, 400}}, new long[] {100}, new long[0], null, 0);
+        final BinningIndex index = new BinningIndex(14, 0, java.util.List.of(ref), -1);
+        Assert.assertEquals(index.getMaxPosition(), 1L << 14);
+
+        // A query within the bin's range returns a non-empty span
+        final BAMFileSpan span = index.getSpanOverlapping(0, 50, 600);
+        Assert.assertFalse(span.isEmpty());
+
+        // At depth=0 bin 0 covers the whole range, so any in-range query hits it
+        final BAMFileSpan outside = index.getSpanOverlapping(0, 10000, 15000);
+        Assert.assertFalse(outside.isEmpty(), "bin 0 covers the whole range at depth=0");
+
+        // A query past the addressable range returns empty
+        final BAMFileSpan beyond = index.getSpanOverlapping(0, 16385, 16400);
+        Assert.assertTrue(beyond.isEmpty());
     }
 }
