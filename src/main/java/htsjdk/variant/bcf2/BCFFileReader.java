@@ -68,6 +68,10 @@ public class BCFFileReader implements FeatureReader<VariantContext> {
                     | ((lenBytes[1] & 0xFF) << 8)
                     | ((lenBytes[2] & 0xFF) << 16)
                     | ((lenBytes[3] & 0xFF) << 24);
+            if (headerLen < 0) {
+                throw new TribbleException("Invalid BCF header length (l_text=" + Integer.toUnsignedString(headerLen)
+                        + "): exceeds maximum array size");
+            }
 
             // Read the header text
             final byte[] headerText = new byte[headerLen];
@@ -186,9 +190,22 @@ public class BCFFileReader implements FeatureReader<VariantContext> {
         readFully(bgzfStream, sizeBytes, 1, 7);
         final int sitesBlockSize = intLE(sizeBytes, 0);
         final int genotypeBlockSize = intLE(sizeBytes, 4);
+        if (sitesBlockSize < 0) {
+            throw new TribbleException("Invalid BCF record: l_shared=" + Integer.toUnsignedString(sitesBlockSize)
+                    + " exceeds maximum array size");
+        }
+        if (genotypeBlockSize < 0) {
+            throw new TribbleException("Invalid BCF record: l_indiv=" + Integer.toUnsignedString(genotypeBlockSize)
+                    + " exceeds maximum array size");
+        }
 
-        // Read the two blocks
-        final int recordLength = 8 + sitesBlockSize + genotypeBlockSize;
+        // Read the two blocks; compute the length as a long to detect overflow before casting
+        final long recordLengthLong = 8L + sitesBlockSize + genotypeBlockSize;
+        if (recordLengthLong > Integer.MAX_VALUE - 8) {
+            throw new TribbleException("Invalid BCF record: combined size l_shared=" + sitesBlockSize + " + l_indiv="
+                    + genotypeBlockSize + " exceeds maximum array size");
+        }
+        final int recordLength = (int) recordLengthLong;
         final byte[] recordBytes = new byte[recordLength];
         System.arraycopy(sizeBytes, 0, recordBytes, 0, 8);
         readFully(bgzfStream, recordBytes, 8, sitesBlockSize + genotypeBlockSize);

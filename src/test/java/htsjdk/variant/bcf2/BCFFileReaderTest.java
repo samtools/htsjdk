@@ -15,6 +15,7 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
@@ -28,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -248,31 +251,40 @@ public class BCFFileReaderTest extends VariantBaseTest {
 
     @Test
     public void aQueryUsesTheIdxBasedContigOrdinalNotDeclarationOrder() throws IOException {
-        // Build a header with swapped IDX values: contigA declared first has IDX=1, contigB second has IDX=0
-        final SAMSequenceDictionary dict = new SAMSequenceDictionary();
-        dict.addSequence(new SAMSequenceRecord("contigA", 100000));
-        dict.addSequence(new SAMSequenceRecord("contigB", 100000));
+        // Build a header with explicit IDX attributes: contigA declared first carries IDX=1, contigB carries IDX=0.
+        // The writer honours the supplied IDX, so contigA is stored at BCF dictionary index 1, not 0.
         final Set<VCFHeaderLine> meta = new HashSet<>();
         meta.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "Depth"));
         meta.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
+        final Map<String, String> contigAMap = new LinkedHashMap<>();
+        contigAMap.put("ID", "contigA");
+        contigAMap.put("length", "100000");
+        contigAMap.put("IDX", "1");
+        meta.add(new VCFContigHeaderLine(contigAMap, 0));
+        final Map<String, String> contigBMap = new LinkedHashMap<>();
+        contigBMap.put("ID", "contigB");
+        contigBMap.put("length", "100000");
+        contigBMap.put("IDX", "0");
+        meta.add(new VCFContigHeaderLine(contigBMap, 1));
         final VCFHeader header = new VCFHeader(meta, Collections.singletonList("sample1"));
-        header.setSequenceDictionary(dict);
+        final SAMSequenceDictionary dict = header.getSequenceDictionary();
 
         final Path bcf = Files.createTempFile(tempDir, "swapidx.", ".bcf");
         bcf.toFile().deleteOnExit();
         bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI).toFile().deleteOnExit();
 
+        // Records must be sorted by dictionary index: contigB (IDX=0) before contigA (IDX=1)
         try (VariantContextWriter w = new VariantContextWriterBuilder()
                 .setOutputPath(bcf)
                 .setReferenceDictionary(dict)
                 .setOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             w.writeHeader(header);
-            w.add(snp(header, "contigA", 100));
             w.add(snp(header, "contigB", 200));
+            w.add(snp(header, "contigA", 100));
         }
 
-        // Query each contig: the result must come from the queried contig
+        // Verify queries resolve each contig correctly despite the swapped IDX values
         try (BCFFileReader reader =
                 new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI))) {
             final List<VariantContext> aResults = toList(reader.query("contigA", 1, 1000));
@@ -333,15 +345,16 @@ public class BCFFileReaderTest extends VariantBaseTest {
 
     @Test
     public void aLargeRecordSpanningBgzfBlocksIsFoundByQuery() throws IOException {
-        // Create a record with enough genotypes to exceed a 64 KB BGZF block
+        // Create a record with a FORMAT string field large enough to push the encoded record past 64 KB
         final SAMSequenceDictionary dict = new SAMSequenceDictionary();
         dict.addSequence(new SAMSequenceRecord("chr1", 100000));
         final Set<VCFHeaderLine> meta = new HashSet<>();
         meta.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "Depth"));
         meta.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
-        // 1000 samples produce a large genotype block
+        meta.add(new VCFFormatHeaderLine("BIG", 1, VCFHeaderLineType.String, "Large payload"));
+        final int nSamples = 500;
         final List<String> samples =
-                IntStream.range(0, 1000).mapToObj(i -> "s" + i).collect(Collectors.toList());
+                IntStream.range(0, nSamples).mapToObj(i -> "s" + i).collect(Collectors.toList());
         final VCFHeader header = new VCFHeader(meta, samples);
         header.setSequenceDictionary(dict);
 
@@ -349,6 +362,8 @@ public class BCFFileReaderTest extends VariantBaseTest {
         bcf.toFile().deleteOnExit();
         bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI).toFile().deleteOnExit();
 
+        // Each sample gets a pseudo-random string that does not compress well, totalling well over 64 KB
+        final java.util.Random rng = new java.util.Random(42);
         try (VariantContextWriter w = new VariantContextWriterBuilder()
                 .setOutputPath(bcf)
                 .setReferenceDictionary(dict)
@@ -358,20 +373,28 @@ public class BCFFileReaderTest extends VariantBaseTest {
             final VariantContextBuilder vcb =
                     new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C));
             vcb.attribute("DP", 30);
-            for (final String s : samples) {
-                vcb.genotypes(samples.stream()
-                        .map(name -> new GenotypeBuilder(name, Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
-                        .collect(Collectors.toList()));
-            }
+            vcb.genotypes(samples.stream()
+                    .map(name -> {
+                        final StringBuilder sb = new StringBuilder(250);
+                        for (int i = 0; i < 250; i++) sb.append((char) ('A' + rng.nextInt(26)));
+                        return new GenotypeBuilder(name, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                                .attribute("BIG", sb.toString())
+                                .make();
+                    })
+                    .collect(Collectors.toList()));
             w.add(vcb.make());
         }
+
+        // Verify the file is large enough to span more than one BGZF block (each at most 65536 bytes)
+        Assert.assertTrue(
+                Files.size(bcf) > 65536, "BCF file should exceed one BGZF block, was " + Files.size(bcf) + " bytes");
 
         try (BCFFileReader reader =
                 new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI))) {
             final List<VariantContext> results = toList(reader.query("chr1", 50, 150));
             Assert.assertEquals(results.size(), 1);
             Assert.assertEquals(results.get(0).getStart(), 100);
-            Assert.assertEquals(results.get(0).getGenotypes().size(), 1000);
+            Assert.assertEquals(results.get(0).getGenotypes().size(), nSamples);
         }
     }
 
@@ -414,6 +437,77 @@ public class BCFFileReaderTest extends VariantBaseTest {
         try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
             Assert.assertFalse(reader.isQueryable());
             Assert.expectThrows(TribbleException.class, () -> reader.query("chr1", 1, 100));
+        }
+    }
+
+    // ============================================================
+    // Validation: corrupt record sizes
+    // ============================================================
+
+    @Test
+    public void aRecordWithAHugeLSharedIsRefusedWithTribbleException() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        // Patch the first record's l_shared (4 bytes at the first record offset) to a huge value.
+        // The BCF record layout is: 4 bytes l_shared, 4 bytes l_indiv, then the data.
+        // The BGZF blocks need to be decompressed and recompressed with the patch.
+        final Path patchedBcf = Files.createTempFile(tempDir, "patched.", ".bcf");
+        patchedBcf.toFile().deleteOnExit();
+        // Read the entire decompressed content, patch it, and rewrite as BGZF
+        final byte[] decompressed;
+        try (htsjdk.samtools.util.BlockCompressedInputStream in =
+                new htsjdk.samtools.util.BlockCompressedInputStream(bcf)) {
+            decompressed = in.readAllBytes();
+        }
+        // Find the first record: after the 5-byte magic, 4-byte l_text, and l_text bytes of header text
+        final int lText = (decompressed[5] & 0xFF)
+                | ((decompressed[6] & 0xFF) << 8)
+                | ((decompressed[7] & 0xFF) << 16)
+                | ((decompressed[8] & 0xFF) << 24);
+        final int firstRecordOffset = 5 + 4 + lText;
+        // Patch l_shared to 0x7FFFFFF0 (a huge but positive value)
+        decompressed[firstRecordOffset] = (byte) 0xF0;
+        decompressed[firstRecordOffset + 1] = (byte) 0xFF;
+        decompressed[firstRecordOffset + 2] = (byte) 0xFF;
+        decompressed[firstRecordOffset + 3] = (byte) 0x7F;
+        try (htsjdk.samtools.util.BlockCompressedOutputStream out =
+                new htsjdk.samtools.util.BlockCompressedOutputStream(patchedBcf)) {
+            out.write(decompressed);
+        }
+        // Reading should throw (not OOME or NegativeArraySizeException)
+        // because the reader will hit EOF before reading the declared bytes
+        try (BCFFileReader reader = new BCFFileReader(patchedBcf, null)) {
+            Assert.expectThrows(Exception.class, () -> toList(reader.iterator()));
+        }
+    }
+
+    @Test
+    public void aRecordWithANegativeLSharedIsRefusedWithTribbleException() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final Path patchedBcf = Files.createTempFile(tempDir, "negsize.", ".bcf");
+        patchedBcf.toFile().deleteOnExit();
+        final byte[] decompressed;
+        try (htsjdk.samtools.util.BlockCompressedInputStream in =
+                new htsjdk.samtools.util.BlockCompressedInputStream(bcf)) {
+            decompressed = in.readAllBytes();
+        }
+        final int lText = (decompressed[5] & 0xFF)
+                | ((decompressed[6] & 0xFF) << 8)
+                | ((decompressed[7] & 0xFF) << 16)
+                | ((decompressed[8] & 0xFF) << 24);
+        final int firstRecordOffset = 5 + 4 + lText;
+        // Patch l_shared to 0xFFFFFFFF (negative as signed int)
+        decompressed[firstRecordOffset] = (byte) 0xFF;
+        decompressed[firstRecordOffset + 1] = (byte) 0xFF;
+        decompressed[firstRecordOffset + 2] = (byte) 0xFF;
+        decompressed[firstRecordOffset + 3] = (byte) 0xFF;
+        try (htsjdk.samtools.util.BlockCompressedOutputStream out =
+                new htsjdk.samtools.util.BlockCompressedOutputStream(patchedBcf)) {
+            out.write(decompressed);
+        }
+        try (BCFFileReader reader = new BCFFileReader(patchedBcf, null)) {
+            final TribbleException ex = Assert.expectThrows(TribbleException.class, () -> toList(reader.iterator()));
+            Assert.assertTrue(
+                    ex.getMessage().contains("l_shared"), "Message should name the field: " + ex.getMessage());
         }
     }
 

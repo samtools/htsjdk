@@ -723,6 +723,27 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void aCustomIndexCreatorCheckDoesNotTruncateAnExistingFile() throws IOException {
+        // Write a small BCF first so the file exists
+        final Path existing = Files.createTempFile(TEST_BASENAME + ".checkbeforeopen", FileExtensions.BCF);
+        existing.toFile().deleteOnExit();
+        Files.write(existing, new byte[] {1, 2, 3, 4, 5});
+        final long sizeBefore = Files.size(existing);
+
+        final IndexCreator idxCreator =
+                new DynamicIndexCreator(existing, IndexFactory.IndexBalanceApproach.FOR_SEEK_TIME);
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setOutputPath(existing)
+                .setReferenceDictionary(dictionary)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setIndexCreator(idxCreator)
+                .build());
+        // The file must not have been truncated by the failed build
+        Assert.assertEquals(
+                Files.size(existing), sizeBefore, "File should not be truncated after a validation failure");
+    }
+
+    @Test
     public void aCustomIndexCreatorWithBcf21IsUsable() throws IOException {
         final Path output = Files.createTempFile(TEST_BASENAME + ".custidx21", FileExtensions.BCF);
         output.toFile().deleteOnExit();

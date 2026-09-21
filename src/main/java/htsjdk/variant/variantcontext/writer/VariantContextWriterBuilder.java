@@ -524,6 +524,20 @@ public class VariantContextWriterBuilder {
             else if (STREAM_TYPES.contains(this.outType)) typeToBuild = OutputType.BCF_STREAM;
         }
 
+        // BCF 2.2 uses a bare CSI index; a custom Tribble index creator is not compatible. Check before
+        // opening the output stream, so a validation failure does not truncate an existing file.
+        if (typeToBuild == OutputType.BCF
+                && options.contains(Options.INDEX_ON_THE_FLY)
+                && outPath != null
+                && idxCreator != null) {
+            final BCFVersion resolvedBcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
+            if (resolvedBcfVersion.getMinorVersion() >= 2) {
+                throw new IllegalArgumentException(
+                        "A BGZF BCF is indexed with a bare CSI and does not accept a custom IndexCreator."
+                                + " Remove the IndexCreator, or use setBCFVersion(BCFVersion.BCF_2_1) for a Tribble index.");
+            }
+        }
+
         // If we are writing to a file, or a special file type (ex. pipe) where the stream is not yet open.
         OutputStream outStreamFromFile = this.outStream;
         if (FILE_TYPES.contains(this.outType) || (STREAM_TYPES.contains(this.outType) && this.outStream == null)) {
@@ -674,12 +688,6 @@ public class VariantContextWriterBuilder {
             bcfStream = writerStream;
         }
         final boolean wantIndex = options.contains(Options.INDEX_ON_THE_FLY);
-        // BCF 2.2 uses a bare CSI index; a custom Tribble index creator is not compatible
-        if (wantIndex && resolvedBcfVersion.getMinorVersion() >= 2 && writerPath != null && idxCreator != null) {
-            throw new IllegalArgumentException(
-                    "A BGZF BCF is indexed with a bare CSI and does not accept a custom IndexCreator."
-                            + " Remove the IndexCreator, or use setBCFVersion(BCFVersion.BCF_2_1) for a Tribble index.");
-        }
         // BCF 2.2 uses a bare CSI index; BCF 2.1 uses the Tribble .idx path
         if (wantIndex && resolvedBcfVersion.getMinorVersion() >= 2 && writerPath != null) {
             // CSI path: <file>.csi (e.g. out.bcf.csi)

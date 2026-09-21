@@ -117,6 +117,9 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     private final Path csiIndexPath;
     private BinningIndex.Builder csiIndexBuilder;
     private boolean anyRecordAdded;
+    private boolean csiFailed;
+    private int prevRefIdx = -1;
+    private int prevStart = -1;
 
     /** The maximum number of samples that fit in the 24-bit n_sample field of a BCF record header. */
     public static final int MAX_SAMPLES = 0x00FFFFFF;
@@ -322,11 +325,25 @@ public class BCF2Writer extends IndexingVariantContextWriter {
             super.add(vc);
 
             if (csiIndexBuilder != null) {
+                final int refIdx = contigDictionary.getIndex(vc.getContig());
+                // Validate sort order before writing, so the BCF and CSI never disagree
+                if (refIdx < prevRefIdx || (refIdx == prevRefIdx && vc.getStart() < prevStart)) {
+                    csiFailed = true;
+                    throw new IllegalArgumentException(
+                            "Records are not coordinate-sorted: " + vc.getContig() + ":" + vc.getStart()
+                                    + " follows a record at reference index " + prevRefIdx + " position " + prevStart);
+                }
                 final long chunkStart = bgzfStream.getFilePointer();
                 writeBlock(infoBlock, genotypesBlock);
                 final long chunkEnd = bgzfStream.getFilePointer();
-                final int refIdx = contigDictionary.getIndex(vc.getContig());
-                csiIndexBuilder.add(refIdx, vc.getStart(), vc.getEnd(), chunkStart, chunkEnd);
+                try {
+                    csiIndexBuilder.add(refIdx, vc.getStart(), vc.getEnd(), chunkStart, chunkEnd);
+                } catch (final RuntimeException e) {
+                    csiFailed = true;
+                    throw e;
+                }
+                prevRefIdx = refIdx;
+                prevStart = vc.getStart();
                 anyRecordAdded = true;
             } else {
                 writeBlock(infoBlock, genotypesBlock);
@@ -347,7 +364,13 @@ public class BCF2Writer extends IndexingVariantContextWriter {
                 if (anyRecordAdded) {
                     csiIndexBuilder.moveEndOfLastRecord(endOfRecords);
                 }
-            } catch (IOException e) {
+            } catch (final IOException e) {
+                csiFailed = true;
+                try {
+                    super.close();
+                } catch (final RuntimeException suppressed) {
+                    e.addSuppressed(suppressed);
+                }
                 throw new RuntimeIOException("Failed to flush BCF2 file before writing CSI index", e);
             }
         } else {
@@ -358,8 +381,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
             }
         }
         super.close(); // closes the output stream (writes BGZF EOF block)
-        if (csiIndexBuilder != null) {
-            final int nRefs = header.getSequenceDictionary().size();
+        if (csiIndexBuilder != null && !csiFailed) {
+            final int nRefs = contigDictionary.size();
             final BinningIndex index = csiIndexBuilder.build(nRefs);
             try (BinaryCodec codec = new BinaryCodec(
                     new BlockCompressedOutputStream(Files.newOutputStream(csiIndexPath), (Path) null))) {

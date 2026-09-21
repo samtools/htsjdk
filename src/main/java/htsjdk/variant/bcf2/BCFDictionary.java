@@ -105,8 +105,8 @@ public final class BCFDictionary {
         return Map.copyOf(stringToIndex);
     }
 
-    /** @return one more than the highest index */
-    int size() {
+    /** @return one more than the highest index (the number of slots, including gaps for sparse IDX values) */
+    public int size() {
         return indexToString.length;
     }
 

@@ -59,6 +59,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1975,47 +1976,59 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Assert.assertTrue(Files.exists(csiPath), "CSI should exist even for an empty BCF");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void anUnsortedInputThrowsDuringCsiIndexing() throws IOException {
+    @Test
+    public void anUnsortedInputThrowsBeforeWritingTheRecord() throws IOException {
         final VCFHeader header = createFakeHeader();
         final Path output = Files.createTempFile(tempDir, "unsorted-csi.", ".bcf");
         output.toFile().deleteOnExit();
-        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+        final Path csiPath = output.resolveSibling(output.getFileName() + FileExtensions.CSI);
+        csiPath.toFile().deleteOnExit();
+        final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .setOption(Options.INDEX_ON_THE_FLY)
-                .build()) {
-            writer.writeHeader(header);
-            // Write records on contig "2" then contig "1" (out of order)
-            writer.add(new VariantContextBuilder("test", "2", 10, 10, Arrays.asList(Allele.REF_A, Allele.ALT_C))
-                    .genotypes(
-                            new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
-                                    .GQ(0)
-                                    .attribute("BB", "1")
-                                    .phased(true)
-                                    .make(),
-                            new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
-                                    .GQ(0)
-                                    .attribute("BB", "1")
-                                    .phased(true)
-                                    .make())
-                    .attribute("DP", "50")
-                    .make());
-            writer.add(new VariantContextBuilder("test", "1", 5, 5, Arrays.asList(Allele.REF_A, Allele.ALT_C))
-                    .genotypes(
-                            new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
-                                    .GQ(0)
-                                    .attribute("BB", "1")
-                                    .phased(true)
-                                    .make(),
-                            new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
-                                    .GQ(0)
-                                    .attribute("BB", "1")
-                                    .phased(true)
-                                    .make())
-                    .attribute("DP", "50")
-                    .make());
+                .build();
+        writer.writeHeader(header);
+        // Write a record on contig "2"
+        writer.add(new VariantContextBuilder("test", "2", 10, 10, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
+                                .GQ(0)
+                                .attribute("BB", "1")
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
+                                .GQ(0)
+                                .attribute("BB", "1")
+                                .phased(true)
+                                .make())
+                .attribute("DP", "50")
+                .make());
+        // An out-of-order record throws before it reaches the file
+        Assert.expectThrows(
+                IllegalArgumentException.class,
+                () -> writer.add(new VariantContextBuilder("test", "1", 5, 5, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                        .genotypes(
+                                new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
+                                        .GQ(0)
+                                        .attribute("BB", "1")
+                                        .phased(true)
+                                        .make(),
+                                new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
+                                        .GQ(0)
+                                        .attribute("BB", "1")
+                                        .phased(true)
+                                        .make())
+                        .attribute("DP", "50")
+                        .make()));
+        writer.close();
+        // The BCF has only the first record; the CSI is not written (the writer was marked failed)
+        try (VCFFileReader reader = new VCFFileReader(output, false)) {
+            int count = 0;
+            for (final VariantContext ignored : reader) count++;
+            Assert.assertEquals(count, 1, "Only the first (sorted) record should be in the file");
         }
+        Assert.assertFalse(Files.exists(csiPath), "No CSI should be written after a sort-order violation");
     }
 
     @Test
@@ -2045,9 +2058,11 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final VCFHeader header = createFakeHeader();
         final Path output = Files.createTempFile(tempDir, "bgzfguard.", ".bcf");
         output.toFile().deleteOnExit();
-        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(Files.newOutputStream(output), output);
         // Constructing with enableOnTheFlyIndexing=true over a BGZF stream (no CSI path) must throw
-        new BCF2Writer(output, bcos, header.getSequenceDictionary(), true, false, null, BCFVersion.BCF_2_2);
+        try (BlockCompressedOutputStream bcos =
+                new BlockCompressedOutputStream(Files.newOutputStream(output), output)) {
+            new BCF2Writer(output, bcos, header.getSequenceDictionary(), true, false, null, BCFVersion.BCF_2_2);
+        }
     }
 
     @Test
@@ -2069,6 +2084,51 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             writer.add(createVC(header));
         }
         Assert.assertTrue(Files.exists(Tribble.indexPath(output)), "A Tribble .idx should be produced");
+    }
+
+    // ============================================================
+    // Sparse contig IDX: nRefs must cover the highest index, not the count
+    // ============================================================
+
+    @Test
+    public void aSparseContigIdxBuildsCsiSuccessfully() throws IOException {
+        // A header whose only contig carries IDX=5: the CSI must have nRefs >= 6
+        final Set<VCFHeaderLine> meta = new LinkedHashSet<>();
+        meta.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "Depth"));
+        meta.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
+        final Map<String, String> contigMap = new LinkedHashMap<>();
+        contigMap.put("ID", "sparse");
+        contigMap.put("length", "100000");
+        contigMap.put("IDX", "5");
+        meta.add(new VCFContigHeaderLine(contigMap, 0));
+        final VCFHeader header = new VCFHeader(meta, List.of("sample1"));
+        final SAMSequenceDictionary dict = header.getSequenceDictionary();
+
+        final Path output = Files.createTempFile(tempDir, "sparse-idx.", ".bcf");
+        output.toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + FileExtensions.CSI);
+        csiPath.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(dict)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(new VariantContextBuilder("test", "sparse", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+        }
+        Assert.assertTrue(Files.exists(csiPath), "CSI should exist for a sparse-IDX header");
+        // The CSI should be readable and queryable by BCFFileReader
+        try (BCFFileReader reader = new BCFFileReader(output, csiPath)) {
+            final List<VariantContext> results = new ArrayList<>();
+            try (CloseableIterator<VariantContext> it = reader.query("sparse", 1, 1000)) {
+                while (it.hasNext()) results.add(it.next());
+            }
+            Assert.assertEquals(results.size(), 1);
+            Assert.assertEquals(results.get(0).getStart(), 100);
+        }
     }
 
     @Test
