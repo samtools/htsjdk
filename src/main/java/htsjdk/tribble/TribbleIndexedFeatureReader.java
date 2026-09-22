@@ -23,9 +23,9 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.io.HtsPath;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -47,7 +47,8 @@ import java.util.function.Function;
  * A reader for text feature files  (i.e. not tabix files).   This includes tribble-indexed and non-indexed files.  If
  * index both iterate() and query() methods are supported.
  * <p/>
- * Note: Non-indexed files can be gzipped or bgzipped.
+ * Note: Non-indexed files can be gzipped or bgzipped; compression is recognised from the file's bytes, not its name,
+ * and the codec is handed the decompressed bytes.
  *
  * @author Jim Robinson
  * @since 2/11/12
@@ -263,16 +264,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @throws IOException throws an IOException if we can't open the file
      */
     private void readHeader() throws IOException {
-        InputStream is = null;
         PositionalBufferedStream pbs = null;
         try {
-            is = ParsingUtils.openInputStream(path, wrapper);
-            if (IOUtil.hasBlockCompressedExtension(new HtsPath(path).getURI())) {
-                // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
-                // TODO -- warning I don't think this can work, the buffered input stream screws up position
-                is = IOUtil.openGzipOrBgzfStream(new BufferedInputStream(is));
-            }
-            pbs = new PositionalBufferedStream(is);
+            pbs = openDecompressedStream();
             final SOURCE source = codec.makeSourceFromStream(pbs);
             header = codec.readHeader(source);
         } catch (Exception e) {
@@ -280,7 +274,31 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                     "Unable to parse header with error: " + e.getMessage(), path, e);
         } finally {
             if (pbs != null) pbs.close();
-            else if (is != null) is.close();
+        }
+    }
+
+    /**
+     * Opens the feature file as a stream of its decompressed bytes. A gzip or BGZF file is recognised from its
+     * bytes, whatever its name. The header and the whole-file iterator both read through this, so the header end a
+     * codec reports is an offset into the same bytes the iterator skips.
+     *
+     * @return the file's bytes, decompressed if the file is gzip or BGZF
+     * @throws IOException if the file cannot be opened or its gzip header cannot be read
+     */
+    private PositionalBufferedStream openDecompressedStream() throws IOException {
+        // The decompressor makes small reads, and a SeekableStream does not support single-byte reads, so the
+        // compressed bytes are buffered; the buffer also lets the gzip magic be peeked at.
+        final BufferedInputStream buffered =
+                new BufferedInputStream(ParsingUtils.openInputStream(path, wrapper), 512000);
+        try {
+            if (IOUtil.isGZIPInputStream(buffered)) {
+                // a small buffer, as the decompressor buffers its output already
+                return new PositionalBufferedStream(IOUtil.openGzipOrBgzfStream(buffered), 1000);
+            }
+            return new PositionalBufferedStream(buffered, 512000);
+        } catch (final IOException | RuntimeException e) {
+            CloserUtil.close(buffered);
+            throw e;
         }
     }
 
@@ -339,17 +357,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
          * @throws IOException
          */
         public WFIterator() throws IOException {
-            final InputStream inputStream = ParsingUtils.openInputStream(path, wrapper);
-
-            final PositionalBufferedStream pbs;
-            if (IOUtil.hasBlockCompressedExtension(path)) {
-                // Gzipped -- we need to buffer the underlying stream as the decompressor makes read() calls,
-                // and seekableStream does not support single byte reads
-                final InputStream is = IOUtil.openGzipOrBgzfStream(new BufferedInputStream(inputStream, 512000));
-                pbs = new PositionalBufferedStream(is, 1000); // Small buffer as this is buffered already.
-            } else {
-                pbs = new PositionalBufferedStream(inputStream, 512000);
-            }
+            final PositionalBufferedStream pbs = openDecompressedStream();
             /*
              * The header was already read from the original source in the constructor; don't read it again, since some codecs keep state
              * about its initialization.  Instead, skip that part of the stream.

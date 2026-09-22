@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodecHeader;
@@ -32,6 +33,7 @@ import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -137,13 +139,13 @@ public class BCFCodecTest extends VariantBaseTest {
     }
 
     @Test
-    public void aBgzfBcfReadsThroughTheCodecGivenTheCompressedStream() throws IOException {
+    public void aBgzfBcfReadsThroughTheCodecGivenTheDecompressedStream() throws IOException {
         final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
         final BCF2Codec codec = new BCF2Codec();
         final List<VariantContext> records = new ArrayList<>();
-        try (final PositionalBufferedStream pbs = new PositionalBufferedStream(Files.newInputStream(bgzfCopyOf(raw)))) {
+        try (final PositionalBufferedStream pbs = decompressed(bgzfCopyOf(raw))) {
             final FeatureCodecHeader header = codec.readHeader(pbs);
-            Assert.assertEquals(header.getHeaderEnd(), 0, "a compressed file has no byte count to skip");
+            Assert.assertEquals(header.getHeaderEnd(), headerEndOf(raw), "an offset into the decompressed bytes");
             while (!codec.isDone(pbs)) {
                 records.add(decodeGenotypes(codec.decode(pbs)));
             }
@@ -152,65 +154,44 @@ public class BCFCodecTest extends VariantBaseTest {
     }
 
     @Test
-    public void aBgzfBcfReadsThroughTheCodecGivenSeparateStreams() throws IOException {
+    public void aBgzfBcfReadsThroughTheCodecGivenSeparateDecompressedStreams() throws IOException {
         final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
         final Path bgzf = bgzfCopyOf(raw);
         final BCF2Codec codec = new BCF2Codec();
         final List<VariantContext> records = new ArrayList<>();
-        try (final PositionalBufferedStream headerStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
-            codec.readHeader(codec.makeSourceFromStream(headerStream));
+        final FeatureCodecHeader header;
+        try (final PositionalBufferedStream headerStream = decompressed(bgzf)) {
+            header = codec.readHeader(headerStream);
         }
-        try (final PositionalBufferedStream recordStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
-            final PositionalBufferedStream source = codec.makeSourceFromStream(recordStream);
-            while (!codec.isDone(source)) {
-                records.add(decodeGenotypes(codec.decode(source)));
+        try (final PositionalBufferedStream recordStream = decompressed(bgzf)) {
+            recordStream.skip(header.getHeaderEnd());
+            while (!codec.isDone(recordStream)) {
+                records.add(decodeGenotypes(codec.decode(recordStream)));
             }
         }
         assertSameRecords(records, readAll(raw));
     }
 
-    // -- Multiple BGZF streams through one codec --
-
     @Test
-    public void makeSourceFromStreamDoesNotLeakADecompressor() throws IOException {
+    public void twoStreamsDecodedAlternatelyThroughOneCodecBothDecodeCorrectly() throws IOException {
         final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
-        final Path bgzf = bgzfCopyOf(raw);
-        final BCF2Codec codec = new BCF2Codec();
-
-        try (final PositionalBufferedStream headerStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
-            codec.readHeader(headerStream);
-            codec.close(headerStream);
-        }
-        Assert.assertEquals(codec.decompressorCount(), 0, "header stream was cleaned up");
-
-        try (final PositionalBufferedStream recordStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
-            final PositionalBufferedStream source = codec.makeSourceFromStream(recordStream);
-            while (!codec.isDone(source)) {
-                codec.decode(source);
-            }
-            codec.close(source);
-        }
-        Assert.assertEquals(codec.decompressorCount(), 0, "makeSourceFromStream did not leak a decompressor");
-    }
-
-    @Test
-    public void twoBgzfStreamsDecodedAlternatelyThroughOneCodecBothDecodeCorrectly() throws IOException {
-        final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
-        final Path bgzf = bgzfCopyOf(raw);
         final BCF2Codec codec = new BCF2Codec();
         final List<VariantContext> expected = readAll(raw);
 
-        try (final PositionalBufferedStream headerStream = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
-            codec.readHeader(headerStream);
+        final FeatureCodecHeader header;
+        try (final PositionalBufferedStream headerStream = new PositionalBufferedStream(Files.newInputStream(raw))) {
+            header = codec.readHeader(headerStream);
         }
 
-        try (final PositionalBufferedStream streamA = new PositionalBufferedStream(Files.newInputStream(bgzf));
-                final PositionalBufferedStream streamB = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
+        try (final PositionalBufferedStream streamA = new PositionalBufferedStream(Files.newInputStream(raw));
+                final PositionalBufferedStream streamB = new PositionalBufferedStream(Files.newInputStream(raw))) {
+            streamA.skip(header.getHeaderEnd());
+            streamB.skip(header.getHeaderEnd());
 
             final VariantContext a1 = decodeGenotypes(codec.decode(streamA));
             final VariantContext b1 = decodeGenotypes(codec.decode(streamB));
 
-            // close A; B's decompressor is independent and must still work
+            // close A; B is independent of it and must still decode
             codec.close(streamA);
 
             final VariantContext b2 = decodeGenotypes(codec.decode(streamB));
@@ -222,13 +203,35 @@ public class BCFCodecTest extends VariantBaseTest {
         }
     }
 
+    // -- A compressed stream handed to the codec --
+
+    @Test
+    public void aCompressedStreamIsRefusedWithAMessageSayingSo() throws IOException {
+        final Path bgzf = bgzfCopyOf(writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd())));
+        try (final PositionalBufferedStream pbs = new PositionalBufferedStream(Files.newInputStream(bgzf))) {
+            final TribbleException e =
+                    Assert.expectThrows(TribbleException.class, () -> new BCF2Codec().readHeader(pbs));
+            Assert.assertTrue(e.getMessage().contains("must be decompressed"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void aCompressedStreamIsRefusedForIndexingWithAMessageSayingSo() throws IOException {
+        final Path bgzf = bgzfCopyOf(writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd())));
+        try (final InputStream in = Files.newInputStream(bgzf)) {
+            final TribbleException e = Assert.expectThrows(
+                    TribbleException.class, () -> new BCF2Codec().makeIndexableSourceFromStream(in));
+            Assert.assertTrue(e.getMessage().contains("must be decompressed"), e.getMessage());
+        }
+    }
+
     @Test
     public void aBgzfBcfCannotBeIndexedWithATribbleIndex() throws IOException {
         final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
         final Path bgzf = bgzfCopyOf(raw);
         final TribbleException e = Assert.expectThrows(
                 TribbleException.class, () -> IndexFactory.createLinearIndex(bgzf, new BCF2Codec()));
-        Assert.assertTrue(e.getMessage().contains("BGZF"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("must be decompressed"), e.getMessage());
         Assert.assertNotNull(IndexFactory.createLinearIndex(raw, new BCF2Codec()));
     }
 
@@ -480,7 +483,6 @@ public class BCFCodecTest extends VariantBaseTest {
                 rawBcf(2, 2, ONE_SAMPLE_HEADER, record(sites(7, 99, 1, 0, 0, 1), bytes(0x11, 0x02, 0x21, 2, 4)));
         final TribbleException e = Assert.expectThrows(TribbleException.class, () -> readAll(bcf));
         Assert.assertTrue(e.getMessage().contains("contig index 7"), e.getMessage());
-        Assert.assertTrue(e.getMessage().contains("record 1"), e.getMessage());
     }
 
     @Test
@@ -491,6 +493,16 @@ public class BCFCodecTest extends VariantBaseTest {
                 rawBcf(2, 2, ONE_SAMPLE_HEADER, record(sites(0, 99, 1, info, 1, 1, 1), bytes(0x11, 0x02, 0x21, 2, 4)));
         final TribbleException e = Assert.expectThrows(TribbleException.class, () -> readAll(bcf));
         Assert.assertTrue(e.getMessage().contains("dictionary index 9"), e.getMessage());
+    }
+
+    @Test
+    public void anErrorAfterTheSiteIsDecodedCitesItsChromAndPos() {
+        // one INFO field whose key is 9; the header's dictionary is PASS, DP, GT
+        final byte[] info = bytes(0x11, 9, 0x11, 1);
+        final byte[] bcf =
+                rawBcf(2, 2, ONE_SAMPLE_HEADER, record(sites(0, 99, 1, info, 1, 1, 1), bytes(0x11, 0x02, 0x21, 2, 4)));
+        final TribbleException e = Assert.expectThrows(TribbleException.class, () -> readAll(bcf));
+        Assert.assertTrue(e.getMessage().contains("chr1:100"), e.getMessage());
     }
 
     // -- Truncated records --
@@ -633,6 +645,18 @@ public class BCFCodecTest extends VariantBaseTest {
             out.write(Files.readAllBytes(raw));
         }
         return bgzf;
+    }
+
+    /** The decompressed bytes of a BGZF file, as a reader hands them to the codec. */
+    private static PositionalBufferedStream decompressed(final Path bgzf) throws IOException {
+        return new PositionalBufferedStream(IOUtil.openGzipOrBgzfStream(Files.newInputStream(bgzf)));
+    }
+
+    /** The header end the codec reports for an uncompressed BCF. */
+    private static long headerEndOf(final Path rawBcf) throws IOException {
+        try (final PositionalBufferedStream pbs = new PositionalBufferedStream(Files.newInputStream(rawBcf))) {
+            return new BCF2Codec().readHeader(pbs).getHeaderEnd();
+        }
     }
 
     /** Runs a bcftools command on {@code input} that writes to a new file whose extension matches the output type. */

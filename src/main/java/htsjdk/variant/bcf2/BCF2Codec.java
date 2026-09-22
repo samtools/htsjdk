@@ -26,7 +26,6 @@
 package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.BinaryFeatureCodec;
@@ -64,20 +63,17 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Decodes BCF 2.1 and 2.2, whether the file is BGZF-compressed (as htslib and bcftools write it) or uncompressed (as
- * htsjdk writes it). Compression is recognised from the bytes, not the file name: {@link #readHeader} decompresses a
- * BGZF stream it is handed, and {@link #makeSourceFromStream} does the same for a stream of the file's records.
+ * Decodes BCF 2.1 and 2.2 from a stream of decompressed bytes. As for every Tribble codec, the reader that opens the
+ * file decompresses it, so a BGZF-compressed BCF (as htslib and bcftools write it) and an uncompressed one (as htsjdk
+ * writes it) look the same to the codec. A stream that is still compressed is refused.
  *
  * <p>The header is read once; after that the codec holds nothing that changes from record to record, so records may
  * be decoded by several threads at once, each from its own stream.
@@ -107,7 +103,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /** The first byte of a gzip member, so of a BGZF stream; a BCF stream starts with 'B'. */
     private static final int GZIP_ID1 = 0x1f;
 
-    private static final int MAX_HEADER_SIZE = 0x08000000;
+    private static final int MAX_HEADER_SIZE = 128 * 1024 * 1024; // 128 MiB
 
     private BCFVersion bcfVersion = null;
 
@@ -127,64 +123,18 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /** Percent-decodes INFO String values from VCF 4.3 on, as the VCF text reader does. */
     private VCFTextTransformer infoTextTransformer = null;
 
-    /** Whether the file is BGZF-compressed, known once the header has been read. */
-    private boolean bgzf = false;
-
-    /**
-     * Maps each compressed stream this codec has been handed to the decompressed view it reads from. Entries are
-     * added by {@link #readHeader} and by {@link #source} (for a direct caller who keeps passing the compressed
-     * stream to {@code decode}/{@code isDone}), and removed by {@link #close}. {@link #makeSourceFromStream} does
-     * not register: it returns the decompressed stream, which the caller passes directly from then on. The map is
-     * thread-safe.
-     */
-    private final Map<PositionalBufferedStream, PositionalBufferedStream> bgzfDecompressors =
-            Collections.synchronizedMap(new IdentityHashMap<>());
-
-    private final AtomicInteger recordNo = new AtomicInteger(0);
-
     // ----------------------------------------------------------------------
     //
     // Feature codec interface functions
     //
     // ----------------------------------------------------------------------
 
-    /**
-     * A stream of a file's records, decompressed if the file is BGZF: a compressed stream at the start of the file
-     * is decompressed and read past its header. Meaningful once {@link #readHeader} has been called.
-     *
-     * <p>The returned stream is what the caller will pass to {@code decode}, {@code isDone} and {@code close} from
-     * here on, so it is not registered in {@link #bgzfDecompressors}: the map exists only for a direct caller who
-     * keeps passing the compressed stream.
-     */
-    @Override
-    public PositionalBufferedStream makeSourceFromStream(final InputStream bufferedInputStream) {
-        final PositionalBufferedStream stream = super.makeSourceFromStream(bufferedInputStream);
-        if (header == null || !bgzf) {
-            return stream;
-        }
-        try {
-            if (!atGzipStart(stream)) {
-                return stream;
-            }
-            final PositionalBufferedStream decompressed = decompress(stream);
-            skipEmbeddedHeader(decompressed);
-            return decompressed;
-        } catch (final IOException e) {
-            throw new TribbleException("I/O error while reading BCF2 file", e);
-        }
-    }
-
-    /**
-     * @throws TribbleException if the stream is BGZF-compressed: the offsets of a Tribble index are into the file's
-     *     bytes, and a compressed BCF's records have none
-     */
+    /** @throws TribbleException if the stream is gzip/BGZF-compressed */
     @Override
     public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
-        final PositionalBufferedStream stream = super.makeSourceFromStream(bufferedInputStream);
+        final PositionalBufferedStream stream = makeSourceFromStream(bufferedInputStream);
         try {
-            if (atGzipStart(stream)) {
-                throw new TribbleException("A BGZF-compressed BCF cannot be indexed with a Tribble index");
-            }
+            refuseCompressedStream(stream);
         } catch (final IOException e) {
             throw new TribbleException("I/O error while reading BCF2 file", e);
         }
@@ -196,45 +146,38 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         return decode(inputStream);
     }
 
+    /** Decodes the record the stream is positioned at. An error in it cites its CHROM and POS once they are decoded. */
     @Override
     public VariantContext decode(final PositionalBufferedStream inputStream) {
-        final PositionalBufferedStream source = source(inputStream);
-        final int currentRecordNo = recordNo.incrementAndGet();
+        final VariantContextBuilder builder = new VariantContextBuilder();
         try {
-            final VariantContextBuilder builder = new VariantContextBuilder();
-
             final BCF2Decoder decoder = new BCF2Decoder();
-            final int sitesBlockSize = decoder.readBlockSize(source);
-            final int genotypeBlockSize = decoder.readBlockSize(source);
+            final int sitesBlockSize = decoder.readBlockSize(inputStream);
+            final int genotypeBlockSize = decoder.readBlockSize(inputStream);
 
-            decoder.readNextBlock(sitesBlockSize, source);
-            final int pos = decodeSiteLoc(decoder, builder, currentRecordNo);
-            final SitesInfoForDecoding info = decodeSitesExtendedInfo(decoder, builder, currentRecordNo, pos);
+            decoder.readNextBlock(sitesBlockSize, inputStream);
+            decodeSiteLoc(decoder, builder);
+            final SitesInfoForDecoding info = decodeSitesExtendedInfo(decoder, builder);
 
-            decoder.readNextBlock(genotypeBlockSize, source);
+            decoder.readNextBlock(genotypeBlockSize, inputStream);
             createLazyGenotypesDecoder(decoder.getRecordBytes(), info, builder);
             return builder.fullyDecoded(true).make();
-        } catch (IOException e) {
-            throw new TribbleException("Failed to read BCF file", e);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            throw new TribbleException("BCF record " + currentRecordNo + " is truncated: " + e.getMessage(), e);
+        } catch (final IOException e) {
+            throw recordError("Failed to read BCF file", builder, e);
+        } catch (final ArrayIndexOutOfBoundsException e) {
+            throw recordError("BCF record is truncated: " + e.getMessage(), builder, e);
+        } catch (final TribbleException e) {
+            throw recordError(e.getMessage(), builder, e);
         }
     }
 
-    @Override
-    public boolean isDone(final PositionalBufferedStream source) {
-        return super.isDone(source(source));
-    }
-
-    @Override
-    public void close(final PositionalBufferedStream source) {
-        final PositionalBufferedStream decompressed = bgzfDecompressors.remove(source);
-        CloserUtil.close(decompressed != null ? decompressed : source);
-    }
-
-    /** The number of decompressors currently tracked, for testing. */
-    int decompressorCount() {
-        return bgzfDecompressors.size();
+    /** An error in a record, citing its CHROM and POS if {@link #decodeSiteLoc} has set them in the builder. */
+    private static TribbleException recordError(
+            final String message, final VariantContextBuilder builder, final Exception cause) {
+        final String location = builder.getContig() == null
+                ? ""
+                : ", in the record at " + builder.getContig() + ":" + builder.getStart();
+        return new TribbleException(message + location, cause);
     }
 
     @Override
@@ -270,18 +213,11 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     @Override
     public FeatureCodecHeader readHeader(final PositionalBufferedStream inputStream) {
         final VCFHeader rawHeader;
-        final PositionalBufferedStream source;
         try {
-            if (atGzipStart(inputStream)) {
-                bgzf = true;
-                source = decompress(inputStream);
-                bgzfDecompressors.put(inputStream, source);
-            } else {
-                source = inputStream;
-            }
+            refuseCompressedStream(inputStream);
 
             // note that this reads the magic as well, and so does double duty
-            bcfVersion = BCFVersion.readBCFVersion(source);
+            bcfVersion = BCFVersion.readBCFVersion(inputStream);
             if (bcfVersion == null) {
                 throw new TribbleException(
                         "Input stream does not contain a BCF encoded file; BCF magic header info not found");
@@ -291,14 +227,14 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
                 System.err.println("Parsing data stream with BCF version " + bcfVersion);
             }
 
-            final int headerSizeInBytes = BCF2Type.INT32.read(source);
+            final int headerSizeInBytes = BCF2Type.INT32.read(inputStream);
             if (headerSizeInBytes <= 0 || headerSizeInBytes > MAX_HEADER_SIZE) {
                 throw new TribbleException("BCF2 header has invalid length: " + headerSizeInBytes
-                        + " must be >= 0 and < " + MAX_HEADER_SIZE);
+                        + " must be > 0 and <= " + MAX_HEADER_SIZE);
             }
 
             final byte[] headerBytes = new byte[headerSizeInBytes];
-            if (source.read(headerBytes) != headerSizeInBytes) {
+            if (inputStream.read(headerBytes) != headerSizeInBytes) {
                 throw new TribbleException(
                         "Couldn't read all of the bytes specified in the header length = " + headerSizeInBytes);
             }
@@ -331,9 +267,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         gtFieldDecoders = new BCF2GenotypeFieldDecoders(header);
         lazyGenotypesDecoder = new BCF2LazyGenotypesDecoder(dictionary, gtFieldDecoders);
 
-        // The records of a compressed file are reached by decompressing from its start again and reading past the
-        // header, which makeSourceFromStream does; there is no count of compressed bytes to skip.
-        return new FeatureCodecHeader(header, bgzf ? 0 : source.getPosition());
+        return new FeatureCodecHeader(header, inputStream.getPosition());
     }
 
     @Override
@@ -359,58 +293,15 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
                 && (version.getMinorVersion() == 1 || version.getMinorVersion() == 2);
     }
 
-    // --------------------------------------------------------------------------------
-    //
-    // BGZF
-    //
-    // --------------------------------------------------------------------------------
-
     /**
-     * The stream to decode records from given the one a caller handed in: the caller's own unless it is a
-     * compressed stream already known to this codec, or a compressed stream at the start of the file, which is
-     * decompressed and read past the header.
+     * Throws if the stream starts with the gzip magic, which a BCF stream cannot: otherwise a compressed stream would
+     * be reported as holding no BCF magic, which says nothing of the cause.
      */
-    private PositionalBufferedStream source(final PositionalBufferedStream in) {
-        final PositionalBufferedStream cached = bgzfDecompressors.get(in);
-        if (cached != null) {
-            return cached;
-        }
-        if (!bgzf) {
-            return in;
-        }
-        try {
-            if (!atGzipStart(in)) {
-                return in;
-            }
-            final PositionalBufferedStream decompressed = decompress(in);
-            skipEmbeddedHeader(decompressed);
-            bgzfDecompressors.put(in, decompressed);
-            return decompressed;
-        } catch (final IOException e) {
-            throw new TribbleException("I/O error while reading BCF2 file", e);
-        }
-    }
-
-    /** Whether a stream is at the start of a file that begins with the gzip magic, which a BCF file cannot. */
-    private static boolean atGzipStart(final PositionalBufferedStream in) throws IOException {
-        return in.getPosition() == 0 && in.peek() == GZIP_ID1;
-    }
-
-    /** The decompressed bytes of a BGZF stream; the stream is buffered already, so the decompressor reads it as is. */
-    private static PositionalBufferedStream decompress(final PositionalBufferedStream compressed) {
-        return new PositionalBufferedStream(new BlockCompressedInputStream(compressed, false));
-    }
-
-    /** Reads past the magic, version and header text of a BCF stream positioned at its start. */
-    private static void skipEmbeddedHeader(final PositionalBufferedStream in) throws IOException {
-        if (BCFVersion.readBCFVersion(in) == null) {
-            throw new TribbleException(
-                    "Input stream does not contain a BCF encoded file; BCF magic header info not found");
-        }
-        final int headerSizeInBytes = BCF2Type.INT32.read(in);
-        if (in.skip(headerSizeInBytes) != headerSizeInBytes) {
-            throw new TribbleException(
-                    "Couldn't skip all of the bytes specified in the header length = " + headerSizeInBytes);
+    private static void refuseCompressedStream(final PositionalBufferedStream stream) throws IOException {
+        if (stream.peek() == GZIP_ID1) {
+            throw new TribbleException("The stream is gzip/BGZF-compressed; BCF2Codec reads decompressed bytes, so the "
+                    + "stream must be decompressed (for example with IOUtil.openGzipOrBgzfStream) before it reaches "
+                    + "the codec");
         }
     }
 
@@ -485,28 +376,24 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     // --------------------------------------------------------------------------------
 
     /**
-     * Decode the sites level data from the record's decoder
-     *
-     * @return the 1-based position
+     * Decode the sites level data from the record's decoder. The contig is set in the builder together with the
+     * position, so that an error can cite both once the contig is there.
      */
-    private int decodeSiteLoc(final BCF2Decoder decoder, final VariantContextBuilder builder, final int currentRecordNo)
-            throws IOException {
+    private void decodeSiteLoc(final BCF2Decoder decoder, final VariantContextBuilder builder) throws IOException {
         final int contigOffset = decoder.decodeInt(BCF2Type.INT32);
-        final String contig = lookupContigName(contigOffset, currentRecordNo);
-        builder.chr(contig);
+        final String contig = lookupContigName(contigOffset);
 
         final int pos = decoder.decodeInt(BCF2Type.INT32) + 1; // GATK is one based, BCF2 is zero-based
         final int refLength = decoder.decodeInt(BCF2Type.INT32);
+        builder.chr(contig);
         builder.start((long) pos);
         builder.stop((long) (pos + refLength - 1)); // minus one because GATK has closed intervals but BCF2 is open
-        return pos;
     }
 
     /**
      * Decode the sites level data from the record's decoder
      */
-    private SitesInfoForDecoding decodeSitesExtendedInfo(
-            final BCF2Decoder decoder, final VariantContextBuilder builder, final int currentRecordNo, final int pos)
+    private SitesInfoForDecoding decodeSitesExtendedInfo(final BCF2Decoder decoder, final VariantContextBuilder builder)
             throws IOException {
         final Object qual = decoder.decodeSingleValue(BCF2Type.FLOAT);
         if (qual != null) {
@@ -521,26 +408,23 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         final int nSamples = nFormatSamples & 0x00FFFFFF;
 
         if (nAlleles < 1) {
-            throw error("Record has no alleles", currentRecordNo, pos);
+            throw new TribbleException("Record has no alleles");
         }
 
         if (header.getNGenotypeSamples() != nSamples) {
-            throw error(
-                    "Reading BCF2 files with different numbers of samples per record "
-                            + "is not currently supported.  Saw "
-                            + header.getNGenotypeSamples() + " samples in header but have a record with "
-                            + nSamples + " samples",
-                    currentRecordNo,
-                    pos);
+            throw new TribbleException("Reading BCF2 files with different numbers of samples per record "
+                    + "is not currently supported.  Saw "
+                    + header.getNGenotypeSamples() + " samples in header but have a record with "
+                    + nSamples + " samples");
         }
 
         decodeID(decoder, builder);
         final List<Allele> alleles = decodeAlleles(decoder, builder, nAlleles);
-        decodeFilter(decoder, builder, currentRecordNo, pos);
-        decodeInfo(decoder, builder, nInfo, currentRecordNo, pos);
+        decodeFilter(decoder, builder);
+        decodeInfo(decoder, builder, nInfo);
 
         final SitesInfoForDecoding info = new SitesInfoForDecoding(nFormatFields, nSamples, alleles);
-        if (!info.isValid()) throw error("Sites info is malformed: " + info, currentRecordNo, pos);
+        if (!info.isValid()) throw new TribbleException("Sites info is malformed: " + info);
         return info;
     }
 
@@ -608,20 +492,17 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /**
      * Decode the filter field of this BCF2 file and store the result in the builder
      */
-    private void decodeFilter(
-            final BCF2Decoder decoder, final VariantContextBuilder builder, final int currentRecordNo, final int pos)
-            throws IOException {
+    private void decodeFilter(final BCF2Decoder decoder, final VariantContextBuilder builder) throws IOException {
         final Object value = decoder.decodeTypedValue();
 
         if (value == null) builder.unfiltered();
         else {
             if (value instanceof Integer) {
-                final String filterString = getDictionaryString((Integer) value, currentRecordNo, pos);
+                final String filterString = getDictionaryString((Integer) value);
                 if (VCFConstants.PASSES_FILTERS_v4.equals(filterString)) builder.passFilters();
                 else builder.filter(filterString);
             } else {
-                for (final int offset : (List<Integer>) value)
-                    builder.filter(getDictionaryString(offset, currentRecordNo, pos));
+                for (final int offset : (List<Integer>) value) builder.filter(getDictionaryString(offset));
             }
         }
     }
@@ -629,18 +510,13 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /**
      * Loop over the info field key / value pairs in this BCF2 file and decode them into the builder
      */
-    private void decodeInfo(
-            final BCF2Decoder decoder,
-            final VariantContextBuilder builder,
-            final int numInfoFields,
-            final int currentRecordNo,
-            final int pos)
+    private void decodeInfo(final BCF2Decoder decoder, final VariantContextBuilder builder, final int numInfoFields)
             throws IOException {
         if (numInfoFields == 0) return;
 
         final Map<String, Object> infoFieldEntries = new HashMap<String, Object>(numInfoFields);
         for (int i = 0; i < numInfoFields; i++) {
-            final String key = getDictionaryString((Integer) decoder.decodeTypedValue(), currentRecordNo, pos);
+            final String key = getDictionaryString((Integer) decoder.decodeTypedValue());
             final byte typeDescriptor = decoder.readTypeDescriptor();
             Object value = decoder.decodeTypedValue(typeDescriptor);
             final VCFCompoundHeaderLine metaData = VariantContextUtils.getMetaDataForField(header, key);
@@ -716,15 +592,10 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         }
     }
 
-    private String getDictionaryString(final int offset, final int currentRecordNo, final int pos) {
-        try {
-            return dictionary.getString(offset);
-        } catch (final TribbleException e) {
-            throw error("Invalid dictionary index " + offset + ": " + e.getMessage(), currentRecordNo, pos);
-        }
-    }
-
-    /** @return the FILTER, INFO or FORMAT ID at a BCF dictionary index */
+    /**
+     * @return the FILTER, INFO or FORMAT ID at a BCF dictionary index
+     * @throws TribbleException if the dictionary has no ID at that index
+     */
     protected final String getDictionaryString(final int offset) {
         return dictionary.getString(offset);
     }
@@ -733,13 +604,11 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * Translate the config offset as encoded in the BCF file into the actual string
      * name of the contig from the dictionary
      */
-    private String lookupContigName(final int contigOffset, final int currentRecordNo) {
+    private String lookupContigName(final int contigOffset) {
         try {
             return contigDictionary.getString(contigOffset);
         } catch (final TribbleException e) {
-            throw new TribbleException(
-                    "Invalid contig index " + contigOffset + " at record " + currentRecordNo + ": " + e.getMessage(),
-                    e);
+            throw new TribbleException("Invalid contig index " + contigOffset + ": " + e.getMessage(), e);
         }
     }
 
@@ -759,11 +628,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      */
     @Deprecated
     protected void error(final String message) throws RuntimeException {
-        throw new TribbleException(message + ", at record " + recordNo.get());
-    }
-
-    private static TribbleException error(final String message, final int currentRecordNo, final int pos) {
-        return new TribbleException(String.format("%s, at record %d with position %d", message, currentRecordNo, pos));
+        throw new TribbleException(message);
     }
 
     /** try to read a BCFVersion from an uncompressed BufferedInputStream.
