@@ -244,9 +244,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(VCFHeader header) {
-        setHeader(header);
-
-        // Delete any stale CSI from a previous run, so a failed write never leaves an old index beside a new BCF
+        // Delete any stale CSI from a previous run before anything can fail, so a rejected header or a failed
+        // write never leaves an old index beside the new, already truncated BCF
         if (csiIndexPath != null) {
             try {
                 Files.deleteIfExists(csiIndexPath);
@@ -254,6 +253,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
                 throw new RuntimeIOException("Could not delete stale CSI index at " + csiIndexPath, e);
             }
         }
+
+        setHeader(header);
 
         try {
             // Build a local header copy with IDX attributes matching the dictionary
