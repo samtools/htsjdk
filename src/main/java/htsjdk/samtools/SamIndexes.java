@@ -14,9 +14,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * A helper class to read BAI and CRAI indexes. Main goal is to provide BAI stream as a sort of common API for all index types.
- * <p/>
- * Created by vadim on 14/08/2015.
+ * The index formats of BAM and CRAM files, with their file name extensions and magic numbers.
+ *
+ * <p>The methods that open an index as a stream of BAI bytes are deprecated: they convert a CRAI to a BAI but not a
+ * CSI, and each says exactly what it returns. {@link #getSAMIndexTypeFromStream} identifies all three formats.
  */
 public enum SamIndexes {
     BAI(FileExtensions.BAI_INDEX, "BAI\1".getBytes()),
@@ -24,7 +25,13 @@ public enum SamIndexes {
     CRAI(FileExtensions.CRAM_INDEX, new byte[] {(byte) 0x1f, (byte) 0x8b}),
     CSI(FileExtensions.CSI, "CSI\1".getBytes());
 
+    /** The extension of this format's index files, such as {@code .bai}. */
     public final String fileNameSuffix;
+
+    /**
+     * The bytes this format starts with: a BAI as stored, a CSI once BGZF-decompressed. A CRAI has no signature of its
+     * own, so this is the gzip magic number, which a stored CSI also starts with.
+     */
     public final byte[] magic;
 
     SamIndexes(final String fileNameSuffix, final byte[] magic) {
@@ -32,6 +39,17 @@ public enum SamIndexes {
         this.magic = magic;
     }
 
+    /**
+     * Opens an index chosen by the extension of its file name. A BAI is returned as it is and a CRAI is converted to a
+     * BAI; a CSI is returned as the file's bytes, BGZF-compressed and not converted.
+     *
+     * @param path file whose name ends {@code .bai}, {@code .crai} or {@code .csi}, in any case
+     * @param dictionary sequence dictionary of the indexed file, needed only to convert a CRAI
+     * @return the index's bytes, or null if the name has none of those extensions
+     * @deprecated ask a {@link SamReader} for its index ({@link SamReader.Indexing#getHtsIndex()}), or read one on its
+     *     own with {@link htsjdk.index.FileBackedBinningIndex} (BAI or CSI) or {@link CRAMCRAIIndexer#readIndex} (CRAI)
+     */
+    @Deprecated
     public static InputStream openIndexFileAsBaiOrNull(final Path path, final SAMSequenceDictionary dictionary)
             throws IOException {
         // Resolve via the path's own filesystem rather than java.net.URL.openStream(), which is not
@@ -49,6 +67,16 @@ public enum SamIndexes {
         return null;
     }
 
+    /**
+     * Opens an index chosen by the extension of its URL's path, as {@link #openIndexFileAsBaiOrNull} does for a file: a
+     * BAI as it is, a CRAI converted to a BAI, and a CSI as its bytes, BGZF-compressed and not converted.
+     *
+     * @param dictionary sequence dictionary of the indexed file, needed only to convert a CRAI
+     * @return the index's bytes, or null if the URL's path has none of those extensions
+     * @deprecated ask a {@link SamReader} for its index ({@link SamReader.Indexing#getHtsIndex()}), or read one on its
+     *     own with {@link htsjdk.index.FileBackedBinningIndex} (BAI or CSI) or {@link CRAMCRAIIndexer#readIndex} (CRAI)
+     */
+    @Deprecated
     public static InputStream openIndexUrlAsBaiOrNull(final URL url, final SAMSequenceDictionary dictionary)
             throws IOException {
         if (url.getFile().toLowerCase().endsWith(BAI.fileNameSuffix.toLowerCase())) {
@@ -64,6 +92,17 @@ public enum SamIndexes {
         return null;
     }
 
+    /**
+     * Identifies an index by its first bytes. A BAI is returned as it is. Anything that starts with the gzip magic
+     * number is taken for a CRAI and converted to a BAI, so a CSI as stored, which is BGZF-compressed, fails as a
+     * malformed CRAI; only a CSI whose bytes are already decompressed is recognised, and it is returned as it is.
+     *
+     * @param dictionary sequence dictionary of the indexed file, needed only to convert a CRAI
+     * @return the index's bytes, or null if they start with none of those magic numbers
+     * @deprecated ask a {@link SamReader} for its index ({@link SamReader.Indexing#getHtsIndex()}), or read one on its
+     *     own with {@link htsjdk.index.FileBackedBinningIndex} (BAI or CSI) or {@link CRAMCRAIIndexer#readIndex} (CRAI)
+     */
+    @Deprecated
     public static InputStream asBaiStreamOrNull(final InputStream inputStream, final SAMSequenceDictionary dictionary)
             throws IOException {
         final BufferedInputStream bis = new BufferedInputStream(inputStream);
@@ -94,6 +133,17 @@ public enum SamIndexes {
         return null;
     }
 
+    /**
+     * Identifies an index by its first bytes, as {@link #asBaiStreamOrNull} does: a BAI is returned as it is, anything
+     * that starts with the gzip magic number is taken for a CRAI and converted to a BAI (so a CSI as stored fails as a
+     * malformed CRAI), and a CSI whose bytes are already decompressed is returned as it is.
+     *
+     * @param dictionary sequence dictionary of the indexed file, needed only to convert a CRAI
+     * @return the index's bytes, or null if they start with none of those magic numbers
+     * @deprecated ask a {@link SamReader} for its index ({@link SamReader.Indexing#getHtsIndex()}), or read one on its
+     *     own with {@link htsjdk.index.FileBackedBinningIndex} (BAI or CSI) or {@link CRAMCRAIIndexer#readIndex} (CRAI)
+     */
+    @Deprecated
     public static SeekableStream asBaiSeekableStreamOrNull(
             final SeekableStream inputStream, final SAMSequenceDictionary dictionary) throws IOException {
         final SeekableBufferedStream bis = new SeekableBufferedStream(inputStream);
@@ -120,6 +170,16 @@ public enum SamIndexes {
         return null;
     }
 
+    /**
+     * Identifies the format of an index from its first bytes. A gzip-compressed stream whose decompressed bytes start
+     * with the CSI magic number is a CSI, and any other gzip-compressed stream is taken for a CRAI, which has no magic
+     * number of its own; an uncompressed stream that starts with the BAI magic number is a BAI. The stream is read
+     * from its start and left there.
+     *
+     * @param seekableStream the index; not closed
+     * @return the format, or null if the stream is none of these
+     * @throws RuntimeIOException if the stream cannot be read
+     */
     public static SamIndexes getSAMIndexTypeFromStream(final SeekableStream seekableStream) {
         SamIndexes indexType = null;
         try {

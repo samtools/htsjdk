@@ -140,6 +140,8 @@ Consumers should review these before upgrading.
 
 - An index written along with a BAM now ends the file's last chunk where `samtools index` ends it. The end of the last record was taken before the final BGZF flush, which names that place as the end of its block; samtools, and an index made by reading the finished file, name it as the start of the next. Only a file whose last record is a placed read was affected, and queries returned the same records either way.
 
+- **`SamIndexes`' methods that open an index as a stream of BAI bytes are deprecated**, for removal in 7.0.0 (issue #1425): `openIndexFileAsBaiOrNull`, `openIndexUrlAsBaiOrNull`, `asBaiStreamOrNull` and `asBaiSeekableStreamOrNull`.  They convert a CRAI to a BAI but not a CSI, which the two that go by file name return as stored, BGZF-compressed, and the two that go by the first bytes take for a CRAI.  Their behaviour is unchanged and now documented.  Ask a `SamReader` for its index, or read one with `FileBackedBinningIndex` (BAI or CSI) or `CRAMCRAIIndexer.readIndex` (CRAI).  The `SamIndexes` constants and `getSAMIndexTypeFromStream` are not deprecated.
+
 ### Bgzipped SAM
 
 - **New: `SAMFileWriterFactory` writes BGZF-compressed SAM** when the output name is `.sam` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case, through `makeWriter`, `makeSAMOrBAMWriter` or `makeSAMWriter`.  The factory's compression level and deflater factory apply, the file ends with the BGZF end-of-file block, and an MD5 file, if requested, is of the compressed bytes.  samtools and `SamReaderFactory` read the result.
