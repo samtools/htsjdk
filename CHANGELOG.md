@@ -209,6 +209,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 - **A CRAM opened by `Path` now reads through a buffered stream**, like one opened from a `SeekableStream`; container and slice headers are parsed a few bytes at a time, so an unbuffered read made a syscall per field (322 per small query, now 3), which was very slow on network filesystems such as GPFS or NFS (issue #1756).
 
+- **A Tribble index (`.idx`) with a byte of 0x80 or above in a sequence name, path or property is read instead of failing with `EOFException`** (issue #1614).  `LittleEndianInputStream.readString` cast each byte to a signed `byte` before testing for the end of the stream, so every such byte looked like it.  It now decodes the string as UTF-8, and `LittleEndianOutputStream.writeString` writes UTF-8 to match; it wrote the low byte of each character, which lost everything outside Latin-1.
+
 ### Testing
 
 - The test suite was migrated to `Path`, and a focused `NioSpiCompatibilityTest` exercises the major read/write/index APIs (BAM/CRAM/VCF/FASTQ, reference access and index discovery/creation) against an in-memory jimfs filesystem to validate NIO-SPI compatibility end to end.
