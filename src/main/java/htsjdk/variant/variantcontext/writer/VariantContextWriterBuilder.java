@@ -524,16 +524,27 @@ public class VariantContextWriterBuilder {
             else if (STREAM_TYPES.contains(this.outType)) typeToBuild = OutputType.BCF_STREAM;
         }
 
-        // Refuse INDEX_ON_THE_FLY + BGZF BCF before opening any stream or file
-        if ((typeToBuild == OutputType.BCF) && options.contains(Options.INDEX_ON_THE_FLY)) {
+        // Pre-open validation: catch configuration errors before opening (and potentially truncating) the output file
+
+        // BCF 2.2 uses a bare CSI index; a custom Tribble index creator is not compatible.
+        if (typeToBuild == OutputType.BCF
+                && options.contains(Options.INDEX_ON_THE_FLY)
+                && outPath != null
+                && idxCreator != null) {
             final BCFVersion resolvedBcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
             if (resolvedBcfVersion.getMinorVersion() >= 2) {
                 throw new IllegalArgumentException(
-                        "INDEX_ON_THE_FLY is not yet supported for BCF 2.2: BGZF BCF requires a CSI index, which is"
-                                + " not available in this version of htsjdk. Call"
-                                + " unsetOption(Options.INDEX_ON_THE_FLY) or clearOptions(), or use"
-                                + " setBCFVersion(BCFVersion.BCF_2_1) for a raw BCF with a Tribble index.");
+                        "A BGZF BCF is indexed with a bare CSI and does not accept a custom IndexCreator."
+                                + " Remove the IndexCreator, or use setBCFVersion(BCFVersion.BCF_2_1) for a Tribble index.");
             }
+        }
+
+        // On-the-fly indexing requires a reference dictionary for VCF and BCF output types.
+        if (refDict == null
+                && options.contains(Options.INDEX_ON_THE_FLY)
+                && (typeToBuild == OutputType.VCF || typeToBuild == OutputType.BCF)) {
+            throw new IllegalArgumentException(
+                    "A reference dictionary is required for creating Tribble indices on the fly");
         }
 
         // If we are writing to a file, or a special file type (ex. pipe) where the stream is not yet open.
@@ -560,10 +571,6 @@ public class VariantContextWriterBuilder {
                                 + String.join(", ", FileExtensions.VCF_LIST)
                                 + ")?");
             case VCF:
-                if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
-                    throw new IllegalArgumentException(
-                            "A reference dictionary is required for creating Tribble indices on the fly");
-
                 writer = createVCFWriter(outPath, outStreamFromFile, idxCreator);
                 break;
             case BLOCK_COMPRESSED_VCF:
@@ -575,10 +582,6 @@ public class VariantContextWriterBuilder {
                                 : new TabixIndexCreator(refDict, TabixFormat.VCF, tabixIndexType, csiMinShift));
                 break;
             case BCF:
-                if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
-                    throw new IllegalArgumentException(
-                            "A reference dictionary is required for creating Tribble indices on the fly");
-
                 writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
             case VCF_STREAM:
@@ -685,12 +688,27 @@ public class VariantContextWriterBuilder {
         } else {
             bcfStream = writerStream;
         }
+        final boolean wantIndex = options.contains(Options.INDEX_ON_THE_FLY);
+        // BCF 2.2 uses a bare CSI index; BCF 2.1 uses the Tribble .idx path
+        if (wantIndex && resolvedBcfVersion.getMinorVersion() >= 2 && writerPath != null) {
+            // CSI path: <file>.csi (e.g. out.bcf.csi)
+            final Path csiPath = writerPath.resolveSibling(writerPath.getFileName() + FileExtensions.CSI);
+            return new BCF2Writer(
+                    writerPath,
+                    bcfStream,
+                    refDict,
+                    false, // Tribble indexer stays off
+                    options.contains(Options.DO_NOT_WRITE_GENOTYPES),
+                    vcfVersion,
+                    resolvedBcfVersion,
+                    csiPath);
+        }
         if (idxCreator == null) {
             return new BCF2Writer(
                     writerPath,
                     bcfStream,
                     refDict,
-                    options.contains(Options.INDEX_ON_THE_FLY),
+                    wantIndex,
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     vcfVersion,
                     resolvedBcfVersion);
@@ -700,7 +718,7 @@ public class VariantContextWriterBuilder {
                     bcfStream,
                     refDict,
                     idxCreator,
-                    options.contains(Options.INDEX_ON_THE_FLY),
+                    wantIndex,
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     vcfVersion,
                     resolvedBcfVersion);

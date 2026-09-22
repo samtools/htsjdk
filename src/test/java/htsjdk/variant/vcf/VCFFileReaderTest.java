@@ -3,15 +3,30 @@ package htsjdk.variant.vcf;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
+import htsjdk.variant.bcf2.BCFVersion;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -179,6 +194,103 @@ public class VCFFileReaderTest extends HtsjdkTest {
 
         try (final VCFFileReader vcfFileReader = new VCFFileReader(inputVCF)) {
             Assert.assertNotNull(vcfFileReader.getFileHeader());
+        }
+    }
+
+    // ============================================================
+    // VCFFileReader routing tests for BCF
+    // ============================================================
+
+    private static VCFHeader bcfRoutingHeader() {
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary();
+        dict.addSequence(new SAMSequenceRecord("chr1", 100000));
+        dict.addSequence(new SAMSequenceRecord("chr2", 50000));
+        final Set<VCFHeaderLine> meta = new HashSet<>();
+        meta.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "Depth"));
+        meta.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
+        final VCFHeader header = new VCFHeader(meta, Collections.singletonList("sample1"));
+        header.setSequenceDictionary(dict);
+        return header;
+    }
+
+    @Test
+    public void aBgzfBcfWithACsiIsOpenedThroughVCFFileReader() throws IOException {
+        final VCFHeader header = bcfRoutingHeader();
+        final Path bcf = Files.createTempFile("routing.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI).toFile().deleteOnExit();
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header);
+            w.add(new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+            w.add(new VariantContextBuilder("test", "chr2", 200, 200, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+        }
+        try (VCFFileReader reader = new VCFFileReader(bcf, true)) {
+            Assert.assertTrue(reader.isQueryable());
+            final List<VariantContext> results = reader.query("chr2", 100, 300).toList();
+            Assert.assertEquals(results.size(), 1);
+        }
+    }
+
+    @Test
+    public void aRawBcfWithAnIdxIsStillQueryable() throws IOException {
+        final VCFHeader header = bcfRoutingHeader();
+        final Path bcf = Files.createTempFile("raw.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        htsjdk.tribble.Tribble.indexPath(bcf).toFile().deleteOnExit();
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build()) {
+            w.writeHeader(header);
+            w.add(new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+        }
+        try (VCFFileReader reader = new VCFFileReader(bcf, true)) {
+            Assert.assertTrue(reader.isQueryable());
+            Assert.assertEquals(reader.query("chr1", 50, 150).toList().size(), 1);
+        }
+    }
+
+    @Test
+    public void bgzfBcfWithoutIndexAndRequireIndexFalseIteratesAllRecords() throws IOException {
+        final VCFHeader header = bcfRoutingHeader();
+        final Path bcf = Files.createTempFile("noindex.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header);
+            w.add(new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+            w.add(new VariantContextBuilder("test", "chr2", 200, 200, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+        }
+        try (VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            int count = 0;
+            for (final VariantContext ignored : reader) {
+                count++;
+            }
+            Assert.assertEquals(count, 2);
         }
     }
 }

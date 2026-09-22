@@ -92,13 +92,21 @@ public final class BCFDictionary {
         return index;
     }
 
+    /**
+     * @return the integer index for a given ID string, or {@code defaultValue} if the ID is not in the dictionary
+     */
+    int getIndexOrDefault(final String id, final int defaultValue) {
+        final Integer index = stringToIndex.get(id);
+        return index != null ? index : defaultValue;
+    }
+
     /** @return an unmodifiable view of the ID-to-index mapping */
     public Map<String, Integer> asMap() {
         return Map.copyOf(stringToIndex);
     }
 
-    /** @return one more than the highest index */
-    int size() {
+    /** @return one more than the highest index (the number of slots, including gaps for sparse IDX values) */
+    public int size() {
         return indexToString.length;
     }
 

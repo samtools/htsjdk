@@ -113,6 +113,11 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /** Maps BCF contig indices to contig names from the header. */
     private BCFDictionary contigDictionary;
 
+    /** The contig dictionary built from the header's IDX attributes, for package-private use by BCFFileReader. */
+    BCFDictionary getContigDictionary() {
+        return contigDictionary;
+    }
+
     /** Maps BCF dictionary indices to FILTER/INFO/FORMAT field names. */
     private BCFDictionary dictionary;
 
