@@ -505,13 +505,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * INFO {@code END}, {@code POS + SVLEN} for a {@code <DEL>}, {@code <DUP>}, {@code <CNV>} or {@code <INV>}
      * allele (subtypes such as {@code <DEL:ME>} included) and, for a reference block ({@code <*>} or
      * {@code <NON_REF>}) that gives no {@code END} in a file whose header declares FORMAT {@code LEN},
-     * {@code POS + LEN - 1} over the samples. An {@code END} of {@code .} or before {@code POS} is ignored, as htslib
-     * ignores it, and so is an unreadable {@code SVLEN} or {@code LEN}. Consulting {@code LEN} decodes the genotypes,
-     * which is why {@code END}, which a valid reference block with {@code LEN} must carry with the same value, is
-     * taken instead when present, and why the header must declare {@code LEN}: the variant records of a gVCF carry
-     * {@code <NON_REF>} without {@code END}, and decoding every one of them costs a quarter of the read time. Where
-     * {@code LEN} is consulted, a malformed sample value in the record is reported by {@code decode} itself rather
-     * than by the first call for a genotype. A length too long for an int is clamped.
+     * {@code POS + LEN - 1} over the samples. An {@code END} of {@code .} or before {@code POS} is ignored, and so is
+     * an unreadable {@code SVLEN} or {@code LEN}. Consulting {@code LEN} decodes the genotypes, which is why
+     * {@code END}, which a valid reference block with {@code LEN} must carry with the same value, is taken instead
+     * when present, and why the header must declare {@code LEN}: the variant records of a gVCF carry
+     * {@code <NON_REF>} without {@code END}, and decoding them is expensive. Where {@code LEN} is consulted, a
+     * malformed sample value in the record is reported by {@code decode} itself rather than by the first call for a
+     * genotype. A length too long for an int is clamped.
      */
     private int computeEnd(
             final int pos,
@@ -524,35 +524,28 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         final Object endValue = attrs.get(VCFConstants.END_KEY);
         final boolean hasEnd = endValue != null && !VCFConstants.MISSING_VALUE_v4.equals(endValue.toString());
         if (hasEnd) {
-            int declaredEnd = -1;
             try {
-                declaredEnd = Integer.parseInt(endValue.toString());
+                end = Math.max(end, Integer.parseInt(endValue.toString()));
             } catch (final NumberFormatException e) {
-                generateException("the END value in the INFO field is not valid", lineNo);
-            }
-            if (declaredEnd >= pos) {
-                end = Math.max(end, declaredEnd);
+                generateException(
+                        "the END value in the INFO field, " + endValue + ", cannot be parsed as an integer", lineNo);
             }
         }
-        boolean spansReferenceBySvlen = false;
-        boolean referenceBlock = false;
-        for (int i = 1; i < alleles.size(); i++) {
-            final Allele allele = alleles.get(i);
-            if (allele.isSymbolic()) {
-                if (allele.isNonRefAllele()) {
-                    referenceBlock = true;
-                } else if (spansReferenceBySvlen(allele.getDisplayBases())) {
-                    spansReferenceBySvlen = true;
-                }
-            }
-        }
-        if (spansReferenceBySvlen) {
-            end = furthest(end, pos + longestSvlen(alleles, attrs.get(VCFConstants.SVLEN_KEY)));
-        }
-        if (referenceBlock && !hasEnd && headerDeclaresLen && genotypes != null) {
+        end = furthest(end, pos + longestSvlen(alleles, attrs.get(VCFConstants.SVLEN_KEY)));
+        if (!hasEnd && headerDeclaresLen && genotypes != null && hasReferenceBlockAllele(alleles)) {
             end = furthest(end, pos + longestLen(genotypes) - 1);
         }
         return end;
+    }
+
+    /** Whether any ALT allele is {@code <*>} or {@code <NON_REF>}, which is when htslib consults FORMAT LEN. */
+    private static boolean hasReferenceBlockAllele(final List<Allele> alleles) {
+        for (int i = 1; i < alleles.size(); i++) {
+            if (alleles.get(i).isNonRefAllele()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int furthest(final int end, final long candidate) {

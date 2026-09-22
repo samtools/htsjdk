@@ -1808,8 +1808,9 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @DataProvider(name = "referenceBlockData")
     public Object[][] referenceBlockData() {
         return new Object[][] {
-            {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false},
+            {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, true},
             {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true},
+            {Arrays.asList(Aref, Allele.NON_REF_ALLELE), false, true},
             {Arrays.asList(Aref, Allele.NON_REF_ALLELE), true, true},
             {Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, false},
             {Arrays.asList(Aref, C), false, false}
@@ -2000,14 +2001,16 @@ public class VariantContextUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void aReferenceBlockMayTakeItsSpanFromItsEndRatherThanAnEndAttribute() {
+    public void aReferenceBlockNeedsNeitherAnEndAttributeNorASpanBeyondItsStart() {
         final List<Allele> alleles = Arrays.asList(Aref, Allele.NON_REF_ALLELE);
         Assert.assertTrue(new VariantContextBuilder("test", snpLoc, 10, 20, alleles)
                 .make()
                 .isReferenceBlock());
-        Assert.assertFalse(new VariantContextBuilder("test", snpLoc, 10, 10, alleles)
-                .make()
-                .isReferenceBlock());
+        Assert.assertTrue(
+                new VariantContextBuilder("test", snpLoc, 10, 10, alleles)
+                        .make()
+                        .isReferenceBlock(),
+                "a one-base block");
     }
 
     @Test(expectedExceptions = TribbleException.class)

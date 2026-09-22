@@ -1916,10 +1916,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      *
      */
     public boolean isReferenceBlock() {
-        return getAlternateAlleles().size() == 1
-                && getAlternateAllele(0).isNonRefAllele()
-                // the block's span, from END or, since VCF 4.5, from the samples' LEN
-                && (getAttribute(VCFConstants.END_KEY) != null || getEnd() > getStart());
+        // The span may come from END, from the samples' LEN (VCF 4.5) or be the REF base alone, so it does not decide
+        return getAlternateAlleles().size() == 1 && getAlternateAllele(0).isNonRefAllele();
     }
 
     public boolean hasSymbolicAlleles() {

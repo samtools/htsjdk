@@ -639,8 +639,8 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 
     @Test
     public void formatLenIsNotLookedForUnlessTheHeaderDeclaresIt() {
-        // the variant records of a gVCF carry <NON_REF> without END: decoding each of them would cost a quarter of
-        // the read time, for a LEN that is not there
+        // the variant records of a gVCF carry <NON_REF> without END: decoding each of them is expensive, for a LEN
+        // that is not there
         final VariantContext vc = decodeUnderOneSampleHeader("chr1\t100\t.\tA\tC,<NON_REF>\t.\t.\t.\tGT:DP\t0/1:50");
         Assert.assertEquals(vc.getEnd(), 100);
         Assert.assertTrue(((LazyGenotypesContext) vc.getGenotypes()).isLazyWithData(), "not decoded");
