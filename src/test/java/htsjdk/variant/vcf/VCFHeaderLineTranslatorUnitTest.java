@@ -209,7 +209,7 @@ public class VCFHeaderLineTranslatorUnitTest extends VariantBaseTest {
     @Test
     public void everyVcf4VersionParsesStructuredLines() {
         for (final VCFHeaderVersion version : VCFHeaderVersion.values()) {
-            if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
+            if (version.isOlderThan(VCFHeaderVersion.VCF4_0)) {
                 continue;
             }
             final Map<String, String> parsed = VCFHeaderLineTranslator.parseLine(

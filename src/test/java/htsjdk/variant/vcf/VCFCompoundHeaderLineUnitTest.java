@@ -249,4 +249,24 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
     public void minusOneIsRejectedFromVcf4On() {
         new VCFFormatHeaderLine("<ID=XX,Number=-1,Type=Integer,Description=\"x\">", VCFHeaderVersion.VCF4_0);
     }
+
+    @Test
+    public void aLinesMinimumVersionIsItsCountsMinimumVersion() {
+        Assert.assertEquals(formatLineWithNumber("1").minimumVersion(), VCFHeaderVersion.VCF4_0);
+        Assert.assertEquals(formatLineWithNumber("A").minimumVersion(), VCFHeaderVersion.VCF4_0);
+        Assert.assertEquals(formatLineWithNumber("R").minimumVersion(), VCFHeaderVersion.VCF4_2);
+        Assert.assertEquals(formatLineWithNumber("P").minimumVersion(), VCFHeaderVersion.VCF4_4);
+        Assert.assertEquals(formatLineWithNumber("LA").minimumVersion(), VCFHeaderVersion.VCF4_5);
+        final VCFInfoHeaderLine info =
+                new VCFInfoHeaderLine("XX", VCFHeaderLineCount.R, VCFHeaderLineType.Integer, "x");
+        Assert.assertEquals(info.minimumVersion(), VCFHeaderVersion.VCF4_2);
+    }
+
+    @Test
+    public void aLineKnowsWhetherItIsInfoOrFormat() {
+        Assert.assertEquals(
+                formatLineWithNumber("1").getLineType(), VCFCompoundHeaderLine.SupportedHeaderLineType.FORMAT);
+        final VCFInfoHeaderLine info = new VCFInfoHeaderLine("XX", 1, VCFHeaderLineType.Integer, "x");
+        Assert.assertEquals(info.getLineType(), VCFCompoundHeaderLine.SupportedHeaderLineType.INFO);
+    }
 }

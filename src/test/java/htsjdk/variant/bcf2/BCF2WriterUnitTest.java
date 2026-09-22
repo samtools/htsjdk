@@ -629,7 +629,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         header.setSequenceDictionary(createArtificialSequenceDictionary());
         final IllegalStateException refusal =
                 Assert.expectThrows(IllegalStateException.class, () -> writeBcfHeader(header, null));
-        Assert.assertTrue(refusal.getMessage().contains("FORMAT/LAD (Number=LA)"), refusal.getMessage());
+        Assert.assertTrue(refusal.getMessage().contains("FORMAT=<ID=LAD,Number=LA,"), refusal.getMessage());
         Assert.assertTrue(writeBcfHeader(header, VCFHeaderVersion.VCF4_5).contains("##fileformat=VCFv4.5\n"));
     }
 }

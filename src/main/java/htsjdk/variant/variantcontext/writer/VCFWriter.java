@@ -30,14 +30,11 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
-import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -179,23 +176,18 @@ class VCFWriter extends IndexingVariantContextWriter {
     }
 
     /**
-     * Checks that the output version can express the header's INFO and FORMAT lines: {@code Number=R} needs 4.2,
-     * {@code Number=P} 4.4 and {@code Number=LA}, {@code LR}, {@code LG} and {@code M} 4.5.
+     * Checks that the output version can express every line of the header, by each line's
+     * {@link VCFHeaderLine#minimumVersion}.
      *
-     * @throws IllegalStateException naming each line the output version cannot express and the version that can
+     * @throws IllegalStateException quoting each line the output version cannot express and the version that can
      */
     static void checkHeaderCompatibility(final VCFHeader header, final VCFHeaderVersion outputVersion) {
         final List<String> violations = new ArrayList<>();
         VCFHeaderVersion needed = outputVersion;
-        final List<VCFCompoundHeaderLine> lines = new ArrayList<>(header.getInfoHeaderLines());
-        lines.addAll(header.getFormatHeaderLines());
-        for (final VCFCompoundHeaderLine line : lines) {
-            final VCFHeaderVersion required = versionRequiredBy(line.getCountType());
-            if (required != null && !outputVersion.isAtLeastAsRecentAs(required)) {
-                final String kind = line instanceof VCFInfoHeaderLine ? "INFO" : "FORMAT";
-                violations.add(kind + "/" + line.getID() + " (Number="
-                        + line.getCountType().getNumberText() + ") requires " + required.getVersionString()
-                        + " or later");
+        for (final VCFHeaderLine line : header.getMetaDataInInputOrder()) {
+            final VCFHeaderVersion required = line.minimumVersion();
+            if (outputVersion.isOlderThan(required)) {
+                violations.add(line + " requires " + required.getVersionString() + " or later");
                 if (required.isAtLeastAsRecentAs(needed)) needed = required;
             }
         }
@@ -203,23 +195,6 @@ class VCFWriter extends IndexingVariantContextWriter {
             throw new IllegalStateException("The header cannot be written as " + outputVersion.getVersionString()
                     + ": " + String.join("; ", violations) + "; call VariantContextWriterBuilder.setVCFVersion("
                     + needed.name() + ") or higher");
-        }
-    }
-
-    /** The version that introduced a Number code, or null for the codes every 4.x version has. */
-    private static VCFHeaderVersion versionRequiredBy(final VCFHeaderLineCount count) {
-        switch (count) {
-            case R:
-                return VCFHeaderVersion.VCF4_2;
-            case P:
-                return VCFHeaderVersion.VCF4_4;
-            case LA:
-            case LR:
-            case LG:
-            case M:
-                return VCFHeaderVersion.VCF4_5;
-            default:
-                return null;
         }
     }
 
@@ -322,10 +297,11 @@ class VCFWriter extends IndexingVariantContextWriter {
             throw new IllegalStateException(
                     "The header cannot be modified after the header or variants have been written to the output stream.");
         }
-        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
-        // The header keeps whatever version it declares: the written ##fileformat line is made from outputVersion
-        // and writeHeader skips the header's own, so the two cannot disagree without changing the caller's header.
-        this.outputVersion = resolveOutputVersion(this.mHeader, this.explicitVersion);
+        // The writer works on its own copy, labelled with the output version, so that the encoder's header and the
+        // written ##fileformat line agree while the caller's header keeps whatever version it declares.
+        this.outputVersion = resolveOutputVersion(header, this.explicitVersion);
+        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : new VCFHeader(header);
+        this.mHeader.setVCFHeaderVersion(this.outputVersion);
         checkHeaderCompatibility(this.mHeader, this.outputVersion);
         this.vcfEncoder = new VCFEncoder(
                 this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField, this.outputVersion);

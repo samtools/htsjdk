@@ -895,7 +895,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             final IllegalStateException refusal =
                     Assert.expectThrows(IllegalStateException.class, () -> writer.writeHeader(header));
             Assert.assertTrue(refusal.getMessage().contains("VCFv4.3"), refusal.getMessage());
-            Assert.assertTrue(refusal.getMessage().contains("FORMAT/LAD (Number=LA)"), refusal.getMessage());
+            Assert.assertTrue(refusal.getMessage().contains("FORMAT=<ID=LAD,Number=LA,"), refusal.getMessage());
             Assert.assertTrue(refusal.getMessage().contains("setVCFVersion(VCF4_5)"), refusal.getMessage());
         }
     }

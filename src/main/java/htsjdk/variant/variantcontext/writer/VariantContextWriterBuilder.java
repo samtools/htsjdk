@@ -147,15 +147,16 @@ public class VariantContextWriterBuilder {
 
     /**
      * Set the VCF version the writer labels its output with: the <code>##fileformat</code> line of a VCF, or of the
-     * header text embedded in a BCF. It overrides the version the header declares; the header itself is not changed.
-     * The writer fails at <code>writeHeader</code> if the header's lines need a newer version than this one.
+     * header text embedded in a BCF. It overrides the version the header declares. The writer works on a copy of the
+     * header it is given, labelled with this version; the caller's header is not changed. The writer fails at
+     * <code>writeHeader</code> if the header's lines need a newer version than this one.
      *
      * @param vcfVersion the output version, or null to take the header's version, with a floor of 4.2 (the default)
      * @return this <code>VariantContextWriterBuilder</code>
      * @throws IllegalArgumentException for a version before 4.0, which the writer cannot produce
      */
     public VariantContextWriterBuilder setVCFVersion(final VCFHeaderVersion vcfVersion) {
-        if (vcfVersion != null && !vcfVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
+        if (vcfVersion != null && vcfVersion.isOlderThan(VCFHeaderVersion.VCF4_0)) {
             throw new IllegalArgumentException(
                     "VCF " + vcfVersion.getVersionString() + " cannot be written: the oldest version the writer"
                             + " produces is " + VCFHeaderVersion.VCF4_0.getVersionString());

@@ -55,4 +55,34 @@ public class VCFHeaderVersionTest extends VariantBaseTest {
     public void theDefaultVersionIs4_2() {
         Assert.assertEquals(VCFHeaderVersion.DEFAULT_VERSION, VCFHeaderVersion.VCF4_2);
     }
+
+    @Test
+    public void isOlderThanIsTheNegationOfIsAtLeastAsRecentAs() {
+        for (final VCFHeaderVersion a : VCFHeaderVersion.values()) {
+            for (final VCFHeaderVersion b : VCFHeaderVersion.values()) {
+                Assert.assertEquals(a.isOlderThan(b), !a.isAtLeastAsRecentAs(b), a + " vs " + b);
+            }
+        }
+        Assert.assertTrue(VCFHeaderVersion.VCF4_2.isOlderThan(VCFHeaderVersion.VCF4_3));
+        Assert.assertFalse(VCFHeaderVersion.VCF4_3.isOlderThan(VCFHeaderVersion.VCF4_3));
+        Assert.assertFalse(VCFHeaderVersion.VCF4_4.isOlderThan(VCFHeaderVersion.VCF4_3));
+    }
+
+    @Test
+    public void textIsPercentEncodedFrom4_3On() {
+        Assert.assertFalse(VCFHeaderVersion.VCF3_3.percentEncodesText());
+        Assert.assertFalse(VCFHeaderVersion.VCF4_0.percentEncodesText());
+        Assert.assertFalse(VCFHeaderVersion.VCF4_2.percentEncodesText());
+        Assert.assertTrue(VCFHeaderVersion.VCF4_3.percentEncodesText());
+        Assert.assertTrue(VCFHeaderVersion.VCF4_4.percentEncodesText());
+        Assert.assertTrue(VCFHeaderVersion.VCF4_5.percentEncodesText());
+    }
+
+    @Test
+    public void aLeadingPhaseIndicatorIsAllowedFrom4_4On() {
+        Assert.assertFalse(VCFHeaderVersion.VCF4_2.leadingPhaseAllowed());
+        Assert.assertFalse(VCFHeaderVersion.VCF4_3.leadingPhaseAllowed());
+        Assert.assertTrue(VCFHeaderVersion.VCF4_4.leadingPhaseAllowed());
+        Assert.assertTrue(VCFHeaderVersion.VCF4_5.leadingPhaseAllowed());
+    }
 }

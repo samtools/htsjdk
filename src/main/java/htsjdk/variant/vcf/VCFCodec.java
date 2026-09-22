@@ -107,7 +107,7 @@ public class VCFCodec extends AbstractVCFCodec {
                         }
                         log.warn("********** " + lineFields[1]
                                 + " is not yet fully supported - reading it on a best-effort basis  **********");
-                    } else if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)) {
+                    } else if (version.isOlderThan(VCFHeaderVersion.VCF4_0)) {
                         throw new TribbleException.InvalidHeader(
                                 "This codec is strictly for VCFv4 and does not support " + lineFields[1]);
                     }

@@ -527,7 +527,7 @@ public class VCFEncoderTest extends HtsjdkTest {
     }
 
     @Test
-    public void laaSortingNotAppliedForVersion42() {
+    public void laaSortedAfterGtForVersion42Too() {
         final Set<VCFHeaderLine> lines = new TreeSet<>();
         lines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "1"), 0));
         lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
@@ -547,9 +547,8 @@ public class VCFEncoderTest extends HtsjdkTest {
                         .make())
                 .make();
         final String encoded = encoder.encode(vc);
-        // For 4.2, LAA should be alphabetically sorted: GT:AD:LAA
-        Assert.assertTrue(
-                encoded.contains("GT:AD:LAA"), "LAA should be alphabetically sorted for 4.2, got: " + encoded);
+        // the order does not depend on the output version: LAA is just another key before 4.5, and any order is valid
+        Assert.assertTrue(encoded.contains("GT:LAA:AD"), "LAA should be after GT for 4.2, got: " + encoded);
     }
 
     @Test

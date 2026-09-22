@@ -369,7 +369,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a {@link VCFTextTransformer} suitable for the targetVersion
      */
     private VCFTextTransformer getTextTransformerForVCFVersion(final VCFHeaderVersion targetVersion) {
-        return targetVersion != null && targetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+        return targetVersion != null && targetVersion.percentEncodesText()
                 ? percentEncodingTextTransformer
                 : passThruTextTransformer;
     }

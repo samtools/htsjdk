@@ -55,7 +55,6 @@ public class VCFEncoder {
     }
 
     private VCFHeader header;
-    private final VCFHeaderVersion version;
     private final boolean percentEncode;
     private final boolean leadingPhaseAllowed;
 
@@ -93,9 +92,8 @@ public class VCFEncoder {
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
-        this.version = version;
-        this.percentEncode = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
-        this.leadingPhaseAllowed = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+        this.percentEncode = version.percentEncodesText();
+        this.leadingPhaseAllowed = version.leadingPhaseAllowed();
     }
 
     /**
@@ -107,7 +105,7 @@ public class VCFEncoder {
             throw new NullPointerException("The VCF header must not be null.");
         }
         final VCFHeaderVersion v = header.getVCFHeaderVersion();
-        if (v == null || !v.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2)) {
+        if (v == null || v.isOlderThan(VCFHeaderVersion.VCF4_2)) {
             return VCFHeaderVersion.VCF4_2;
         }
         return v;
@@ -229,9 +227,8 @@ public class VCFEncoder {
             vcfOutput.append(
                     ((LazyGenotypesContext) gc).getUnparsedGenotypeData().toString());
         } else {
-            List<String> genotypeAttributeKeys = context.calcVCFGenotypeKeys(this.header);
+            final List<String> genotypeAttributeKeys = context.calcVCFGenotypeKeys(this.header);
             if (!genotypeAttributeKeys.isEmpty()) {
-                genotypeAttributeKeys = reorderFormatKeys(genotypeAttributeKeys);
                 for (final String format : genotypeAttributeKeys) {
                     if (!this.header.hasFormatLine(format)) {
                         fieldIsMissingFromHeaderError(context, format, "FORMAT");
@@ -268,29 +265,10 @@ public class VCFEncoder {
         if (source == null) {
             return true;
         }
-        if (source.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) != percentEncode) {
+        if (source.percentEncodesText() != percentEncode) {
             return false;
         }
-        return leadingPhaseAllowed || !source.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
-    }
-
-    /** For &ge;4.5, moves LAA to position 1 (after GT) when present. */
-    private List<String> reorderFormatKeys(final List<String> keys) {
-        if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5)) {
-            return keys;
-        }
-        final int laaIndex = keys.indexOf(VCFConstants.LAA_KEY);
-        if (laaIndex < 0) {
-            return keys;
-        }
-        final int target = keys.get(0).equals(VCFConstants.GENOTYPE_KEY) ? 1 : 0;
-        if (laaIndex == target) {
-            return keys;
-        }
-        final List<String> reordered = new ArrayList<>(keys);
-        reordered.remove(laaIndex);
-        reordered.add(target, VCFConstants.LAA_KEY);
-        return reordered;
+        return leadingPhaseAllowed || !source.leadingPhaseAllowed();
     }
 
     /**

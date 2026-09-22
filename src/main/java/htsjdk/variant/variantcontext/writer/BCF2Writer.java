@@ -240,7 +240,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
         this.header = doNotWriteGenotypes
                 ? new VCFHeader(header.getMetaDataInSortedOrder())
                 : new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
-        this.outputVersion = VCFWriter.resolveOutputVersion(this.header, explicitVersion);
+        // the writer's own copy carries the output version; the caller's header keeps whatever it declares
+        this.outputVersion = VCFWriter.resolveOutputVersion(header, explicitVersion);
+        this.header.setVCFHeaderVersion(this.outputVersion);
         VCFWriter.checkHeaderCompatibility(this.header, this.outputVersion);
         // create the config offsets map
         if (this.header.getContigLines().isEmpty()) {
