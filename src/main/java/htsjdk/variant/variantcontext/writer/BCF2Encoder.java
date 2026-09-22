@@ -173,6 +173,11 @@ public final class BCF2Encoder {
         for (int i = 0; i < size; i++) encodeRawMissingValue(type);
     }
 
+    /** Write one END_OF_VECTOR sentinel for the given type. */
+    public final void encodeRawEndOfVector(final BCF2Type type) throws IOException {
+        encodeRawBytes(type.getVectorEndBytes(), type);
+    }
+
     // --------------------------------------------------------------------------------
     //
     // low-level encoders

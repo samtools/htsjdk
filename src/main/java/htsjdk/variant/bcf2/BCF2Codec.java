@@ -559,7 +559,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     private void createLazyGenotypesDecoder(
             final byte[] genotypeBytes, final SitesInfoForDecoding siteInfo, final VariantContextBuilder builder) {
         if (siteInfo.nSamples > 0) {
-            final LazyData lazyData = new LazyData(header, siteInfo.nFormatFields, genotypeBytes, siteInfo.alleles);
+            final LazyData lazyData = new LazyData(
+                    header, siteInfo.nFormatFields, genotypeBytes, siteInfo.alleles, bcfVersion, dictionary);
             final LazyGenotypesContext lazy = new LazyGenotypesContext(
                     lazyGenotypesDecoder, lazyData, header.getNGenotypeSamples(), header.getVCFHeaderVersion());
 
@@ -579,16 +580,34 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         /** The record's alleles, which its GT values index into; null if not given to the constructor. */
         public final List<Allele> alleles;
 
+        /** The BCF version of the file this record came from; null for data from old constructors. */
+        public final BCFVersion bcfVersion;
+
+        /** The ID dictionary of the file this record came from; null for data from old constructors. */
+        public final BCFDictionary idDictionary;
+
         public LazyData(final VCFHeader header, final int nGenotypeFields, final byte[] bytes) {
-            this(header, nGenotypeFields, bytes, null);
+            this(header, nGenotypeFields, bytes, null, null, null);
         }
 
         public LazyData(
                 final VCFHeader header, final int nGenotypeFields, final byte[] bytes, final List<Allele> alleles) {
+            this(header, nGenotypeFields, bytes, alleles, null, null);
+        }
+
+        public LazyData(
+                final VCFHeader header,
+                final int nGenotypeFields,
+                final byte[] bytes,
+                final List<Allele> alleles,
+                final BCFVersion bcfVersion,
+                final BCFDictionary idDictionary) {
             this.header = header;
             this.nGenotypeFields = nGenotypeFields;
             this.bytes = bytes;
             this.alleles = alleles;
+            this.bcfVersion = bcfVersion;
+            this.idDictionary = idDictionary;
         }
     }
 

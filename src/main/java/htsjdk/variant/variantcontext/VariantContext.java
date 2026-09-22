@@ -1824,7 +1824,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     private final Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format) {
         try {
-            if (string.equals(VCFConstants.MISSING_VALUE_v4)) return null;
+            if (string == null || string.equals(VCFConstants.MISSING_VALUE_v4)) return null;
             else {
                 switch (format.getType()) {
                     case Character:

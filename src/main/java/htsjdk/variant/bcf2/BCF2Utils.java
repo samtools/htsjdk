@@ -51,6 +51,10 @@ import java.util.Set;
  * @since 5/12
  */
 public final class BCF2Utils {
+    /**
+     * @deprecated the GT writer now chooses its integer width from the values; this constant is no longer enforced
+     */
+    @Deprecated
     public static final int MAX_ALLELES_IN_GENOTYPES = 127;
 
     public static final int OVERFLOW_ELEMENT_MARKER = 15;
@@ -81,7 +85,9 @@ public final class BCF2Utils {
      *
      * @param header the VCFHeader from which to build the dictionary
      * @return a non-null dictionary of elements, may be empty
+     * @deprecated use {@link BCFDictionary#forIDs(VCFHeader)} instead
      */
+    @Deprecated
     public static ArrayList<String> makeDictionary(final VCFHeader header) {
         final Set<String> seen = new HashSet<String>();
         final ArrayList<String> dict = new ArrayList<String>();
@@ -129,23 +135,43 @@ public final class BCF2Utils {
     }
 
     /**
-     * Collapse multiple strings into a comma separated list
+     * Collapse multiple strings into a comma separated list with a leading comma (the htsjdk 2.1 form).
      *
      * ["s1", "s2", "s3"] =&gt; ",s1,s2,s3"
      *
      * @param strings size &gt; 1 list of strings
-     * @return
+     * @return the collapsed string
+     * @deprecated use {@link #collapseStringList(List, boolean)} instead
      */
+    @Deprecated
     public static String collapseStringList(final List<String> strings) {
+        return collapseStringList(strings, true);
+    }
+
+    /**
+     * Collapse multiple strings into a comma separated list.
+     *
+     * @param strings size &gt; 1 list of strings
+     * @param leadingComma when true produces {@code ,s1,s2} (htsjdk's old form); when false produces {@code s1,s2}
+     *                     (htslib's form, used in BCF 2.2)
+     * @return the collapsed string
+     */
+    public static String collapseStringList(final List<String> strings, final boolean leadingComma) {
         if (strings.isEmpty()) return "";
-        else if (strings.size() == 1) return strings.get(0);
-        else {
+        else if (strings.size() == 1) {
+            final String s = strings.get(0);
+            return s != null ? s : VCFConstants.MISSING_VALUE_v4;
+        } else {
             final StringBuilder b = new StringBuilder();
+            boolean first = true;
             for (final String s : strings) {
-                if (s != null) {
-                    assert s.indexOf(",") == -1; // no commas in individual strings
-                    b.append(',').append(s);
+                final String element = s != null ? s : VCFConstants.MISSING_VALUE_v4;
+                assert element.indexOf(",") == -1; // no commas in individual strings
+                if (!first || leadingComma) {
+                    b.append(',');
                 }
+                b.append(element);
+                first = false;
             }
             return b.toString();
         }
@@ -251,8 +277,9 @@ public final class BCF2Utils {
 
     public static BCF2Type determineIntegerType(final List<Integer> values) {
         BCF2Type maxType = BCF2Type.INT8;
-        for (final int value : values) {
-            final BCF2Type type1 = determineIntegerType(value);
+        for (final Integer boxed : values) {
+            if (boxed == null) continue;
+            final BCF2Type type1 = determineIntegerType(boxed.intValue());
             switch (type1) {
                 case INT8:
                     break;
@@ -295,18 +322,11 @@ public final class BCF2Utils {
      * Are the elements and their order in the output and input headers consistent so that
      * we can write out the raw genotypes block without decoding and recoding it?
      *
-     * If the order of INFO, FILTER, or contrig elements in the output header is different than
-     * in the input header we must decode the blocks using the input header and then recode them
-     * based on the new output order.
-     *
-     * If they are consistent, we can simply pass through the raw genotypes block bytes, which is
-     * a *huge* performance win for large blocks.
-     *
-     * Many common operations on BCF2 files (merging them for -nt, selecting a subset of records, etc)
-     * don't modify the ordering of the header fields and so can safely pass through the genotypes
-     * undecoded.  Some operations -- those at add filters or info fields -- can change the ordering
-     * of the header fields and so produce invalid BCF2 files if the genotypes aren't decoded
+     * @deprecated use {@link BCFDictionary#equals(Object)} to compare the dictionaries instead; the writer's
+     *     pass-through now checks dictionary equality, BCF version equality and the percent-encoding boundary
+     * @see BCFDictionary
      */
+    @Deprecated
     public static boolean headerLinesAreOrderedConsistently(
             final VCFHeader outputHeader, final VCFHeader genotypesBlockHeader) {
         // first, we have to have the same samples in the same order

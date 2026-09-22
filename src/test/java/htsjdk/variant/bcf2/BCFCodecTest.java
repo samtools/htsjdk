@@ -24,12 +24,14 @@ import htsjdk.variant.variantcontext.writer.BCF2Encoder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -632,6 +634,7 @@ public class BCFCodecTest extends VariantBaseTest {
                 .clearOptions()
                 .setOutputPath(bcf)
                 .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .setBCFVersion(BCFVersion.BCF_2_1)
                 .build()) {
             writer.writeHeader(header);
             records.forEach(writer::add);
@@ -752,6 +755,154 @@ public class BCFCodecTest extends VariantBaseTest {
         Assert.assertEquals(g.getGenotypeString(), gtString, g.getSampleName());
         Assert.assertEquals(g.isPhased(), phased, g.getSampleName() + " isPhased");
         Assert.assertEquals(g.hasPerAllelePhasing(), perAllele, g.getSampleName() + " hasPerAllelePhasing");
+    }
+
+    // ============================================================
+    // Codec round-trip tests
+    // ============================================================
+
+    @Test
+    public void aRecordWrittenAs22ReadsBackIdentically() throws IOException {
+        final VCFHeader header = multiFieldHeader();
+        final List<VariantContext> written = multiFieldRecords(header);
+        final Path bcf = writeBcf22(header, written);
+        assertMultiFieldRoundTrip(readAll(bcf), written);
+    }
+
+    @Test
+    public void aRecordWrittenAs21ReadsBackIdentically() throws IOException {
+        final VCFHeader header = multiFieldHeader();
+        final List<VariantContext> written = multiFieldRecords(header);
+        final Path bcf = writeBcf(header, written);
+        assertMultiFieldRoundTrip(readAll(bcf), written);
+    }
+
+    private static void assertMultiFieldRoundTrip(
+            final List<VariantContext> actual, final List<VariantContext> expected) {
+        Assert.assertEquals(actual.size(), expected.size());
+        for (int i = 0; i < expected.size(); i++) {
+            final VariantContext a = actual.get(i);
+            final VariantContext e = expected.get(i);
+            Assert.assertEquals(a.getContig(), e.getContig());
+            Assert.assertEquals(a.getStart(), e.getStart());
+            Assert.assertEquals(a.getAlleles(), e.getAlleles());
+            Assert.assertEquals(a.filtersWereApplied(), e.filtersWereApplied());
+            Assert.assertEquals(a.getFilters(), e.getFilters());
+            for (final String key : e.getAttributes().keySet()) {
+                Assert.assertEquals(asText(a.getAttribute(key)), asText(e.getAttribute(key)), "INFO " + key);
+            }
+            for (final String sample : e.getSampleNames()) {
+                final Genotype ga = a.getGenotype(sample);
+                final Genotype ge = e.getGenotype(sample);
+                Assert.assertEquals(ga.getGenotypeString(), ge.getGenotypeString(), sample + " GT");
+                Assert.assertEquals(ga.getGQ(), ge.getGQ(), sample + " GQ");
+                Assert.assertEquals(
+                        String.valueOf(ga.getExtendedAttribute("FS")),
+                        String.valueOf(ge.getExtendedAttribute("FS")),
+                        sample + " FS");
+                Assert.assertEquals(
+                        asText(ga.getExtendedAttribute("XI")), asText(ge.getExtendedAttribute("XI")), sample + " XI");
+            }
+        }
+    }
+
+    @Test
+    public void a22FileFromHtsjdkAndFromBcftoolsAreEquivalent() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        // A simple VCF without fields that cause fullyDecode issues (STR=a,b with Number=1)
+        final String[] simpleVcf = {
+            "##fileformat=VCFv4.2",
+            "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"dp\">",
+            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"gt\">",
+            "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"gq\">",
+            "##contig=<ID=chr1,length=1000>",
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1",
+            "chr1\t100\t.\tA\tC\t50\tPASS\tDP=42\tGT:GQ\t0/1:30"
+        };
+        final Path vcf = writeVcf(simpleVcf);
+        final List<VariantContext> fromVcf = readAll(vcf);
+        final Path bcf22 = writeBcf22(headerOf(vcf), fromVcf);
+        final Path bcfBcftools = bcftools(vcf, "view", "-Ob");
+        assertSameRecords(readAll(bcf22), readAll(bcfBcftools));
+    }
+
+    @Test
+    public void aSparseIdxHeaderRoundTrips() throws IOException {
+        // A header as bcftools annotate -x leaves it, with sparse IDX
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine(
+                "<ID=AF,Number=A,Type=Float,Description=\"af\",IDX=10>", VCFHeaderVersion.VCF4_2));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        final VariantContext vc = new VariantContextBuilder("t", "1", 100, 100, List.of(ref, alt))
+                .attribute("AF", 0.5)
+                .genotypes(new GenotypeBuilder("s1", List.of(ref, alt)).make())
+                .make();
+        final Path bcf = writeBcf22(header, List.of(vc));
+        final List<VariantContext> read = readAll(bcf);
+        Assert.assertEquals(read.size(), 1);
+        Assert.assertTrue(read.get(0).hasAttribute("AF"));
+    }
+
+    // -- Multi-field fixtures for round-trip tests --
+
+    private VCFHeader multiFieldHeader() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFilterHeaderLine("q10", "q10"));
+        lines.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "dp"));
+        lines.add(new VCFInfoHeaderLine("FLG", 0, VCFHeaderLineType.Flag, "flag"));
+        lines.add(new VCFInfoHeaderLine("STR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "str"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("GQ", 1, VCFHeaderLineType.Integer, "gq"));
+        lines.add(new VCFFormatHeaderLine("FS", 1, VCFHeaderLineType.String, "fs"));
+        lines.add(new VCFFormatHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "xi"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        return header;
+    }
+
+    private List<VariantContext> multiFieldRecords(final VCFHeader header) {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        final VariantContext vc1 = new VariantContextBuilder("t", "1", 100, 100, List.of(ref, alt))
+                .attribute("DP", 42)
+                .attribute("FLG", true)
+                .attribute("STR", List.of("a", "b"))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(ref, alt))
+                                .phased(true)
+                                .GQ(30)
+                                .attribute("FS", "x")
+                                .attribute("XI", List.of(10, 5))
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(alt, alt))
+                                .GQ(20)
+                                .attribute("XI", List.of(7, 3))
+                                .make())
+                .make();
+        final VariantContext vc2 = new VariantContextBuilder("t", "2", 200, 200, List.of(ref, alt))
+                .log10PError(-5.0)
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(ref)).make(),
+                        new GenotypeBuilder("s2", List.of(Allele.NO_CALL, Allele.NO_CALL)).make())
+                .make();
+        return List.of(vc1, vc2);
+    }
+
+    private Path writeBcf22(final VCFHeader header, final List<VariantContext> records) throws IOException {
+        final Path bcf = Files.createTempFile(tempDir, "out22", ".bcf");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(bcf)
+                .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .build()) {
+            writer.writeHeader(header);
+            records.forEach(writer::add);
+        }
+        return bcf;
     }
 
     // -- Raw BCF assembly, for records no writer produces --

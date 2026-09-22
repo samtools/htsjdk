@@ -145,7 +145,8 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                     "testSetOutputFile " + extension + " Path was not compressed");
         }
 
-        writer = builder.setOutputPath(bcf).build();
+        writer =
+                builder.setOutputPath(bcf).unsetOption(Options.INDEX_ON_THE_FLY).build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFile BCF String");
 
         writer = builder.setOutputFile(bcf.toAbsolutePath().toString()).build();
@@ -207,7 +208,9 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 ((VCFWriter) writer).getOutputStream() instanceof BlockCompressedOutputStream,
                 "testSetOutputFileType VCF was compressed");
 
-        writer = builder.setOption(Options.FORCE_BCF).build();
+        writer = builder.setOption(Options.FORCE_BCF)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFileType FORCE_BCF set -> expected BCF, was VCF");
 
         // test that FORCE_BCF remains in effect, overriding the explicit setting of VCF
@@ -216,7 +219,9 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.assertTrue(
                 writer instanceof BCF2Writer, "testSetOutputFileType FORCE_BCF set 2 -> expected BCF, was VCF");
 
-        writer = builder.unsetOption(Options.FORCE_BCF).build();
+        writer = builder.unsetOption(Options.FORCE_BCF)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build();
         Assert.assertTrue(
                 writer instanceof VCFWriter, "testSetOutputFileType FORCE_BCF unset -> expected VCF, was BCF");
         Assert.assertFalse(
@@ -231,6 +236,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 "testSetOutputFileType BLOCK_COMPRESSED_VCF was not compressed");
 
         writer = builder.setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFileType BCF");
     }
@@ -365,7 +371,9 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.assertTrue(Files.exists(vcfIdx), String.format("VCF index not created for %s / %s", vcf, vcfIdx));
 
         Files.deleteIfExists(bcfIdx);
-        writer = builder.setOutputPath(bcf).build();
+        writer = builder.setOutputPath(bcf)
+                .setBCFVersion(htsjdk.variant.bcf2.BCFVersion.BCF_2_1)
+                .build();
         writer.close();
         Assert.assertTrue(Files.exists(bcfIdx), String.format("BCF index not created for %s / %s", bcf, bcfIdx));
 
@@ -412,8 +420,9 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
 
             final Path bcfPath = fs.getPath(bcf.getFileName().toString());
             final Path bcfIdxPath = Tribble.indexPath(bcfPath);
-            try (final VariantContextWriter writer =
-                    builder.setOutputPath(bcfPath).build()) {
+            try (final VariantContextWriter writer = builder.setOutputPath(bcfPath)
+                    .setBCFVersion(htsjdk.variant.bcf2.BCFVersion.BCF_2_1)
+                    .build()) {
                 // deliberately empty
             }
             Assert.assertTrue(

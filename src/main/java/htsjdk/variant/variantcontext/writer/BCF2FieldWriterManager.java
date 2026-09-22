@@ -25,12 +25,14 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,16 +61,47 @@ public class BCF2FieldWriterManager {
      * @param stringDictionary a map from VCFHeader strings to their offsets for encoding
      */
     public void setup(final VCFHeader header, final BCF2Encoder encoder, final Map<String, Integer> stringDictionary) {
+        setup(header, encoder, stringDictionary, BCFVersion.BCF_2_2, null);
+    }
+
+    /**
+     * Setup the FieldWriters appropriate to each INFO and FORMAT in the VCF header, with BCF version awareness.
+     *
+     * @param header a VCFHeader containing description for every INFO and FORMAT field
+     * @param encoder the encoder for BCF2 data
+     * @param stringDictionary a map from VCFHeader strings to their offsets
+     * @param bcfVersion the BCF container version being written
+     * @param outputVersion the VCF header version (for percent-encoding and leading-phase rules)
+     */
+    public void setup(
+            final VCFHeader header,
+            final BCF2Encoder encoder,
+            final Map<String, Integer> stringDictionary,
+            final BCFVersion bcfVersion,
+            final VCFHeaderVersion outputVersion) {
+        final boolean useEndOfVector = bcfVersion.getMinorVersion() >= 2;
+        final boolean percentEncode =
+                outputVersion != null && outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
+        final boolean htslibStringLists = bcfVersion.getMinorVersion() >= 2;
+
         for (final VCFInfoHeaderLine line : header.getInfoHeaderLines()) {
             final String field = line.getID();
-            final BCF2FieldWriter.SiteWriter writer = createInfoWriter(header, line, encoder, stringDictionary);
+            final BCF2FieldWriter.SiteWriter writer = createInfoWriter(
+                    header, line, encoder, stringDictionary, useEndOfVector, percentEncode, htslibStringLists);
             add(siteWriters, field, writer);
         }
 
         for (final VCFFormatHeaderLine line : header.getFormatHeaderLines()) {
             final String field = line.getID();
-            final BCF2FieldWriter.GenotypesWriter writer =
-                    createGenotypesWriter(header, line, encoder, stringDictionary);
+            final BCF2FieldWriter.GenotypesWriter writer = createGenotypesWriter(
+                    header,
+                    line,
+                    encoder,
+                    stringDictionary,
+                    useEndOfVector,
+                    percentEncode,
+                    htslibStringLists,
+                    outputVersion);
             add(genotypesWriters, field, writer);
         }
     }
@@ -91,35 +124,53 @@ public class BCF2FieldWriterManager {
             final VCFHeader header,
             final VCFInfoHeaderLine line,
             final BCF2Encoder encoder,
-            final Map<String, Integer> dict) {
-        return new BCF2FieldWriter.GenericSiteWriter(header, createFieldEncoder(line, encoder, dict, false));
+            final Map<String, Integer> dict,
+            final boolean useEndOfVector,
+            final boolean percentEncode,
+            final boolean htslibStringLists) {
+        if (line.getType() == VCFHeaderLineType.Flag) {
+            return new BCF2FieldWriter.FlagSiteWriter(
+                    header,
+                    createFieldEncoder(line, encoder, dict, false, useEndOfVector, percentEncode, htslibStringLists));
+        }
+        return new BCF2FieldWriter.GenericSiteWriter(
+                header,
+                createFieldEncoder(line, encoder, dict, false, useEndOfVector, percentEncode, htslibStringLists));
     }
 
     private BCF2FieldEncoder createFieldEncoder(
             final VCFCompoundHeaderLine line,
             final BCF2Encoder encoder,
             final Map<String, Integer> dict,
-            final boolean createGenotypesEncoders) {
+            final boolean createGenotypesEncoders,
+            final boolean useEndOfVector,
+            final boolean percentEncode,
+            final boolean htslibStringLists) {
 
         if (createGenotypesEncoders && intGenotypeFieldAccessors.getAccessor(line.getID()) != null) {
             if (GeneralUtils.DEBUG_MODE_ENABLED && line.getType() != VCFHeaderLineType.Integer)
                 System.err.println("Warning: field " + line.getID() + " expected to encode an integer but saw "
                         + line.getType() + " for record " + line);
-            return new BCF2FieldEncoder.IntArray(line, dict);
+            return new BCF2FieldEncoder.IntArray(line, dict, useEndOfVector, percentEncode, htslibStringLists);
         } else if (createGenotypesEncoders && line.getID().equals(VCFConstants.GENOTYPE_KEY)) {
-            return new BCF2FieldEncoder.GenericInts(line, dict);
+            return new BCF2FieldEncoder.GenericInts(line, dict, useEndOfVector, percentEncode, htslibStringLists);
         } else {
             switch (line.getType()) {
                 case Character:
                 case String:
-                    return new BCF2FieldEncoder.StringOrCharacter(line, dict);
+                    return new BCF2FieldEncoder.StringOrCharacter(
+                            line, dict, useEndOfVector, percentEncode, htslibStringLists);
                 case Flag:
-                    return new BCF2FieldEncoder.Flag(line, dict);
+                    return new BCF2FieldEncoder.Flag(line, dict, useEndOfVector, percentEncode, htslibStringLists);
                 case Float:
-                    return new BCF2FieldEncoder.Float(line, dict);
+                    return new BCF2FieldEncoder.Float(line, dict, useEndOfVector, percentEncode, htslibStringLists);
                 case Integer:
-                    if (line.isFixedCount() && line.getCount() == 1) return new BCF2FieldEncoder.AtomicInt(line, dict);
-                    else return new BCF2FieldEncoder.GenericInts(line, dict);
+                    if (line.isFixedCount() && line.getCount() == 1)
+                        return new BCF2FieldEncoder.AtomicInt(
+                                line, dict, useEndOfVector, percentEncode, htslibStringLists);
+                    else
+                        return new BCF2FieldEncoder.GenericInts(
+                                line, dict, useEndOfVector, percentEncode, htslibStringLists);
                 default:
                     throw new IllegalArgumentException("Unexpected type for field " + line.getID());
             }
@@ -137,12 +188,17 @@ public class BCF2FieldWriterManager {
             final VCFHeader header,
             final VCFFormatHeaderLine line,
             final BCF2Encoder encoder,
-            final Map<String, Integer> dict) {
+            final Map<String, Integer> dict,
+            final boolean useEndOfVector,
+            final boolean percentEncode,
+            final boolean htslibStringLists,
+            final VCFHeaderVersion outputVersion) {
         final String field = line.getID();
-        final BCF2FieldEncoder fieldEncoder = createFieldEncoder(line, encoder, dict, true);
+        final BCF2FieldEncoder fieldEncoder =
+                createFieldEncoder(line, encoder, dict, true, useEndOfVector, percentEncode, htslibStringLists);
 
         if (field.equals(VCFConstants.GENOTYPE_KEY)) {
-            return new BCF2FieldWriter.GTWriter(header, fieldEncoder);
+            return new BCF2FieldWriter.GTWriter(header, fieldEncoder, useEndOfVector, outputVersion);
         } else if (line.getID().equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
             return new BCF2FieldWriter.FTGenotypesWriter(header, fieldEncoder);
         } else if (intGenotypeFieldAccessors.getAccessor(field) != null) {

@@ -96,6 +96,7 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
                     .setOutputPath(path)
                     .setReferenceDictionary(dictionary)
                     .setOptions(baseOptions)
+                    .setBCFVersion(htsjdk.variant.bcf2.BCFVersion.BCF_2_1)
                     .build();
         }
 

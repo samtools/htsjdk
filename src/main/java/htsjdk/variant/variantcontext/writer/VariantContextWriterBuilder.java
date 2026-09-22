@@ -37,6 +37,7 @@ import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.tribble.index.tabix.TabixIndexType;
+import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -132,6 +133,7 @@ public class VariantContextWriterBuilder {
     private TabixIndexType tabixIndexType = TabixIndexType.TBI;
     private int csiMinShift = TabixIndexCreator.DEFAULT_CSI_MIN_SHIFT;
     private VCFHeaderVersion vcfVersion = null;
+    private BCFVersion bcfVersion = null;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private boolean createMD5 = Defaults.CREATE_MD5;
     protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
@@ -162,6 +164,25 @@ public class VariantContextWriterBuilder {
                             + " produces is " + VCFHeaderVersion.VCF4_0.getVersionString());
         }
         this.vcfVersion = vcfVersion;
+        return this;
+    }
+
+    /**
+     * Set the BCF container version. The default is 2.2 (BGZF-compressed); 2.1 writes the old raw format.
+     *
+     * @param bcfVersion the BCF version, or null for the default (2.2)
+     * @return this <code>VariantContextWriterBuilder</code>
+     * @throws IllegalArgumentException for a major version other than 2 or a minor version outside 1-2
+     */
+    public VariantContextWriterBuilder setBCFVersion(final BCFVersion bcfVersion) {
+        if (bcfVersion != null) {
+            if (bcfVersion.getMajorVersion() != 2
+                    || bcfVersion.getMinorVersion() < 1
+                    || bcfVersion.getMinorVersion() > 2) {
+                throw new IllegalArgumentException("Only BCF 2.1 and BCF 2.2 are supported, not " + bcfVersion);
+            }
+        }
+        this.bcfVersion = bcfVersion;
         return this;
     }
 
@@ -503,6 +524,18 @@ public class VariantContextWriterBuilder {
             else if (STREAM_TYPES.contains(this.outType)) typeToBuild = OutputType.BCF_STREAM;
         }
 
+        // Refuse INDEX_ON_THE_FLY + BGZF BCF before opening any stream or file
+        if ((typeToBuild == OutputType.BCF) && options.contains(Options.INDEX_ON_THE_FLY)) {
+            final BCFVersion resolvedBcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
+            if (resolvedBcfVersion.getMinorVersion() >= 2) {
+                throw new IllegalArgumentException(
+                        "INDEX_ON_THE_FLY is not yet supported for BCF 2.2: BGZF BCF requires a CSI index, which is"
+                                + " not available in this version of htsjdk. Call"
+                                + " unsetOption(Options.INDEX_ON_THE_FLY) or clearOptions(), or use"
+                                + " setBCFVersion(BCFVersion.BCF_2_1) for a raw BCF with a Tribble index.");
+            }
+        }
+
         // If we are writing to a file, or a special file type (ex. pipe) where the stream is not yet open.
         OutputStream outStreamFromFile = this.outStream;
         if (FILE_TYPES.contains(this.outType) || (STREAM_TYPES.contains(this.outType) && this.outStream == null)) {
@@ -645,23 +678,32 @@ public class VariantContextWriterBuilder {
     }
 
     private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {
+        final BCFVersion resolvedBcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
+        final OutputStream bcfStream;
+        if (resolvedBcfVersion.getMinorVersion() >= 2) {
+            bcfStream = new BlockCompressedOutputStream(writerStream, writerPath);
+        } else {
+            bcfStream = writerStream;
+        }
         if (idxCreator == null) {
             return new BCF2Writer(
                     writerPath,
-                    writerStream,
+                    bcfStream,
                     refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    vcfVersion);
+                    vcfVersion,
+                    resolvedBcfVersion);
         } else {
             return new BCF2Writer(
                     writerPath,
-                    writerStream,
+                    bcfStream,
                     refDict,
                     idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    vcfVersion);
+                    vcfVersion,
+                    resolvedBcfVersion);
         }
     }
 }
