@@ -121,6 +121,32 @@ public enum VCFHeaderVersion {
         return this.ordinal() >= target.ordinal();
     }
 
+    /**
+     * Determines whether this version is older than a given version
+     *
+     * @param target   the target version to compare against
+     * @return true if this version is older than the target version, false otherwise
+     */
+    public boolean isOlderThan(final VCFHeaderVersion target) {
+        return this.ordinal() < target.ordinal();
+    }
+
+    /**
+     * @return true if INFO and FORMAT {@code String} and {@code Character} values are percent-encoded in this version
+     * (4.3 and later), so that a value read from a file has to be decoded and one written to it encoded
+     */
+    public boolean percentEncodesText() {
+        return isAtLeastAsRecentAs(VCF4_3);
+    }
+
+    /**
+     * @return true if a genotype may start with a phase indicator in this version (4.4 and later), which gives the
+     * first allele a phase of its own
+     */
+    public boolean leadingPhaseAllowed() {
+        return isAtLeastAsRecentAs(VCF4_4);
+    }
+
     public String getVersionString() {
         return versionString;
     }

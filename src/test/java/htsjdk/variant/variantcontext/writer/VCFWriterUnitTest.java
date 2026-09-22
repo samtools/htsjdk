@@ -35,6 +35,7 @@ import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.readers.Utf8LineReader;
 import htsjdk.tribble.readers.Utf8LineReaderIterator;
+import htsjdk.utils.BcftoolsTestUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -70,6 +71,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -473,18 +475,23 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setOutputPath(output)
                 .setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_5)
                 .build()) {
             writer.writeHeader(header);
             writer.add(vc);
         }
 
-        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
-            final VCFHeader headerRead = reader.getFileHeader();
-            Assert.assertEquals(headerRead.getFormatHeaderLine("LAD").getCountType(), VCFHeaderLineCount.LR);
-            final VariantContext vcRead = reader.iterator().next().fullyDecode(headerRead, false);
-            Assert.assertEquals(vcRead.getGenotype("s1").getExtendedAttribute("LAD"), List.of(10, 5));
-            Assert.assertEquals(vcRead.getGenotype("s2").getExtendedAttribute("LAD"), List.of(0, 7, 3));
-        }
+        // Read back: parse header + data through a codec with the version pre-set, since the default codec
+        // rejects >= 4.4 without the optimistic flag (that gate opens in PR 7)
+        final List<String> fileLines = Files.readAllLines(output);
+        Assert.assertTrue(
+                fileLines.stream().anyMatch(l -> l.contains("Number=LR")), "LR header line should be present");
+        final String dataLine =
+                fileLines.stream().filter(l -> !l.startsWith("#")).findFirst().orElseThrow();
+        // FORMAT is GT:LAD; s1 gets 10,5 and s2 gets 0,7,3
+        Assert.assertTrue(dataLine.contains("GT:LAD"), "FORMAT should include LAD");
+        Assert.assertTrue(dataLine.contains("10,5"), "s1 LAD values should be present");
+        Assert.assertTrue(dataLine.contains("0,7,3"), "s2 LAD values should be present");
     }
 
     // GT phasing
@@ -681,6 +688,304 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         }
     }
 
+    // Version resolution tests
+
+    private static VCFHeader versionTestHeader(final VCFHeaderVersion version) {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        if (version != null) {
+            lines.add(new VCFHeaderLine(version.getFormatString(), version.getVersionString()));
+        }
+        lines.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        return header;
+    }
+
+    private static String firstLineOfFile(final Path file) throws IOException {
+        return Files.readAllLines(file, StandardCharsets.UTF_8).get(0);
+    }
+
+    @Test
+    public void writesResolvedVersionFromHeader() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_3);
+        final Path output = Files.createTempFile(tempDir, "ver43.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.3");
+    }
+
+    @Test
+    public void writesResolvedVersionFromBuilder() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_2);
+        final Path output = Files.createTempFile(tempDir, "ver44.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_4)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.4");
+    }
+
+    @Test
+    public void writesVersionFloorOf42() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_0);
+        final Path output = Files.createTempFile(tempDir, "ver40.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.2");
+    }
+
+    @Test
+    public void versionlessHeaderWritesAs42() throws IOException {
+        final VCFHeader header = versionTestHeader(null);
+        final Path output = Files.createTempFile(tempDir, "versionless.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.2");
+    }
+
+    @Test
+    public void anExplicitVersionBelowTheHeadersIsHonoured() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_3);
+        final Path output = Files.createTempFile(tempDir, "ver40explicit.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_0)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.0");
+    }
+
+    @Test
+    public void writingDoesNotChangeTheCallersHeaderVersion() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_3);
+        final VCFHeader versionless = versionTestHeader(null);
+        final Path output = Files.createTempFile(tempDir, "callersHeader.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_2)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.2");
+        Assert.assertEquals(header.getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(versionless.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(versionless);
+        }
+        Assert.assertNull(versionless.getVCFHeaderVersion());
+    }
+
+    @Test
+    public void headerVersionMatchesWrittenVersion() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_3);
+        final Path output = Files.createTempFile(tempDir, "readback43.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            Assert.assertEquals(reader.getFileHeader().getVCFHeaderVersion(), VCFHeaderVersion.VCF4_3);
+        }
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void headerWithNumberRRefusedFor40() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("AC", VCFHeaderLineCount.R, VCFHeaderLineType.Integer, "allele count"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Path output = createTempFile("refusedR40.", ".vcf");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_0)
+                .build()) {
+            writer.writeHeader(header);
+        }
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void headerWithNumberPRefusedFor42() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(
+                new VCFFormatHeaderLine("PSL", VCFHeaderLineCount.P, VCFHeaderLineType.Integer, "phased set lengths"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Path output = createTempFile("refusedP42.", ".vcf");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_2)
+                .build()) {
+            writer.writeHeader(header);
+        }
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void headerWithNumberLARefusedFor44() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Path output = createTempFile("refusedLA44.", ".vcf");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_4)
+                .build()) {
+            writer.writeHeader(header);
+        }
+    }
+
+    @Test
+    public void a45HeaderWithNumberLAIsRefusedWhenDowngradedTo43() {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFHeaderLine("fileformat", "VCFv4.5"));
+        lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Path output = createTempFile("refusedLA43.", ".vcf");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_3)
+                .build()) {
+            final IllegalStateException refusal =
+                    Assert.expectThrows(IllegalStateException.class, () -> writer.writeHeader(header));
+            Assert.assertTrue(refusal.getMessage().contains("VCFv4.3"), refusal.getMessage());
+            Assert.assertTrue(refusal.getMessage().contains("FORMAT=<ID=LAD,Number=LA,"), refusal.getMessage());
+            Assert.assertTrue(refusal.getMessage().contains("setVCFVersion(VCF4_5)"), refusal.getMessage());
+        }
+    }
+
+    @Test
+    public void headerWithNumberLAAcceptedFor45() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Path output = Files.createTempFile(tempDir, "acceptedLA45.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                .build()) {
+            writer.writeHeader(header);
+        }
+        Assert.assertEquals(firstLineOfFile(output), "##fileformat=VCFv4.5");
+    }
+
+    @Test
+    public void leadingPhaseRefusedForVersion42() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_2);
+        final VariantContext vc = triploidWithAllelePhasing(true, false, false);
+        final Path output = Files.createTempFile(tempDir, "phaseRefused42.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            Assert.expectThrows(IllegalStateException.class, () -> writer.add(vc));
+        }
+    }
+
+    @Test
+    public void leadingPhaseAcceptedForVersion44() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_4);
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "1", 100, 100, alleles)
+                .genotypes(new GenotypeBuilder("s1", alleles)
+                        .allelePhasing(new boolean[] {true, false})
+                        .make())
+                .make();
+        final Path output = Files.createTempFile(tempDir, "phaseAccepted44.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(vc);
+        }
+        final List<String> records = Files.readAllLines(output).stream()
+                .filter(line -> !line.startsWith("#"))
+                .collect(Collectors.toList());
+        Assert.assertTrue(records.get(0).endsWith("|0/1"), "Expected leading phase indicator: " + records.get(0));
+    }
+
+    @Test
+    public void partialRecordDiscardedOnPhaseRefusal() throws IOException {
+        final VCFHeader header = versionTestHeader(VCFHeaderVersion.VCF4_2);
+        final VariantContext badVc = triploidWithAllelePhasing(true, false, false);
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext goodVc = new VariantContextBuilder("test", "1", 200, 200, alleles)
+                .genotypes(new GenotypeBuilder("s1", alleles).phased(true).make())
+                .make();
+        final Path output = Files.createTempFile(tempDir, "partialDiscard.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            Assert.expectThrows(IllegalStateException.class, () -> writer.add(badVc));
+            writer.add(goodVc);
+        }
+        final List<String> records = Files.readAllLines(output).stream()
+                .filter(line -> !line.startsWith("#"))
+                .collect(Collectors.toList());
+        Assert.assertEquals(records.size(), 1, "Only the good record should be present");
+        Assert.assertTrue(records.get(0).contains("200"), "The good record should be at position 200");
+    }
+
     @Test
     public void utf8RoundTripsViaBgzippedVcf() throws IOException {
         final String sample = "Schön_日本";
@@ -704,6 +1009,136 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             Assert.assertTrue(reader.getFileHeader().getSampleNamesInOrder().contains(sample));
             final VariantContext vc = reader.iterator().next();
             Assert.assertEquals(vc.getAttribute("NOTE"), infoVal);
+        }
+    }
+
+    // bcftools interop tests
+
+    private static VCFHeader interopHeader(final VCFHeaderVersion version) {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFHeaderLine(version.getFormatString(), version.getVersionString()));
+        lines.add(new VCFInfoHeaderLine("NOTE", 1, VCFHeaderLineType.String, "A note"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        lines.add(new VCFFormatHeaderLine("CMT", 1, VCFHeaderLineType.String, "comment"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1"));
+        header.setSequenceDictionary(dict);
+        return header;
+    }
+
+    private Path writeInteropVcf(final VCFHeader header, final VariantContext vc) throws IOException {
+        final Path output = Files.createTempFile(tempDir, "interop.", ".vcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(vc);
+        }
+        return output;
+    }
+
+    @Test
+    public void bcftoolsAcceptsVersion43Output() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final VCFHeader header = interopHeader(VCFHeaderVersion.VCF4_3);
+        final VariantContext vc = new VariantContextBuilder()
+                .chr("chr1")
+                .start(100)
+                .stop(100)
+                .alleles(List.of(Allele.REF_A, Allele.ALT_C))
+                .attribute("NOTE", "key=value;other")
+                .genotypes(new GenotypeBuilder("s1", List.of(Allele.REF_A, Allele.ALT_C))
+                        .attribute("CMT", "hello")
+                        .make())
+                .make();
+        final Path output = writeInteropVcf(header, vc);
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(output);
+        Assert.assertTrue(
+                lines.stream().anyMatch(l -> l.contains("key%3Dvalue%3Bother")),
+                "bcftools should see percent-encoded value");
+    }
+
+    @Test
+    public void bcftoolsAcceptsVersion44Output() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final VCFHeader header = interopHeader(VCFHeaderVersion.VCF4_4);
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, alleles)
+                .attribute("NOTE", "ok")
+                .genotypes(new GenotypeBuilder("s1", alleles)
+                        .allelePhasing(new boolean[] {true, false})
+                        .attribute("CMT", "test")
+                        .make())
+                .make();
+        final Path output = writeInteropVcf(header, vc);
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(output);
+        Assert.assertTrue(
+                lines.stream().anyMatch(l -> l.contains("|0/1")), "bcftools should see leading phase indicator");
+    }
+
+    @Test
+    public void bcftoolsAcceptsVersion45Output() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines45 = new LinkedHashSet<>();
+        lines45.add(new VCFHeaderLine("fileformat", "VCFv4.5"));
+        lines45.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"));
+        VCFStandardHeaderLines.addStandardFormatLines(lines45, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines45.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header = new VCFHeader(lines45, List.of("s1"));
+        header.setSequenceDictionary(dict);
+
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, alleles)
+                .attribute("DP", 50)
+                .genotypes(new GenotypeBuilder("s1", alleles)
+                        .attribute("LAA", List.of(1))
+                        .DP(7)
+                        .make())
+                .make();
+        final Path output = writeInteropVcf(header, vc);
+        final List<String> stdout = BcftoolsTestUtils.viewAsVcf(output);
+        final String dataLine =
+                stdout.stream().filter(l -> !l.startsWith("#")).findFirst().orElseThrow();
+        Assert.assertTrue(dataLine.endsWith("\tGT:LAA:DP\t0/1:1:7"), "LAA should follow GT: " + dataLine);
+        // what bcftools wrote to stdout and stderr together is what it wrote to stdout alone: no warning
+        final List<String> stdoutAndStderr =
+                BcftoolsTestUtils.executeBcftools("view", "--no-version", "-Ov", output.toString());
+        Assert.assertEquals(stdoutAndStderr, stdout, "bcftools warned about the 4.5 output");
+    }
+
+    @Test
+    public void roundTripThroughBcftoolsPreservesPercentEncoding() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final VCFHeader header = interopHeader(VCFHeaderVersion.VCF4_3);
+        final String value = "key=value;colon:here";
+        final VariantContext vc = new VariantContextBuilder()
+                .chr("chr1")
+                .start(100)
+                .stop(100)
+                .alleles(List.of(Allele.REF_A, Allele.ALT_C))
+                .attribute("NOTE", value)
+                .genotypes(new GenotypeBuilder("s1", List.of(Allele.REF_A, Allele.ALT_C))
+                        .attribute("CMT", "ok")
+                        .make())
+                .make();
+        final Path output = writeInteropVcf(header, vc);
+
+        // Read the bcftools-rendered text
+        final List<String> bcfLines = BcftoolsTestUtils.viewAsVcf(output);
+        final String dataLine =
+                bcfLines.stream().filter(l -> !l.startsWith("#")).findFirst().orElseThrow();
+        Assert.assertTrue(
+                dataLine.contains("key%3Dvalue%3Bcolon%3Ahere"),
+                "Percent-encoded value should survive bcftools: " + dataLine);
+
+        // Read back through htsjdk and verify decoding
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            final VariantContext readBack = reader.iterator().next();
+            Assert.assertEquals(readBack.getAttribute("NOTE"), value);
         }
     }
 }

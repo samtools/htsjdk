@@ -26,9 +26,9 @@ public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
     }
 
     public VCFRecordCodec(final VCFHeader header, final boolean allowMissingFieldsInHeader) {
-        this.vcfEncoder = new VCFEncoder(header, allowMissingFieldsInHeader, false);
-        // Explicitly set the version because it's not available in the header itself.
-        this.vcfDecoder.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
+        final VCFHeaderVersion version = VCFEncoder.resolveVersion(header);
+        this.vcfEncoder = new VCFEncoder(header, allowMissingFieldsInHeader, false, version);
+        this.vcfDecoder.setVCFHeader(header, version);
     }
 
     @Override

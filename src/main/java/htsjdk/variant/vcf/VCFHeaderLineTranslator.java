@@ -48,7 +48,7 @@ public class VCFHeaderLineTranslator {
         // the header-line syntax changed between VCF 3 and VCF 4 and has been stable since, so the parser is chosen
         // by major version rather than looked up per version
         final VCFLineParser parser =
-                version != null && !version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) ? VCF3_PARSER : VCF4_PARSER;
+                version != null && version.isOlderThan(VCFHeaderVersion.VCF4_0) ? VCF3_PARSER : VCF4_PARSER;
         return parser.parseLine(valueLine, expectedTagOrder, recommendedTags);
     }
 }

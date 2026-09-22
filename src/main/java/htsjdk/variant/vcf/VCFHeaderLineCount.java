@@ -34,32 +34,42 @@ package htsjdk.variant.vcf;
  */
 public enum VCFHeaderLineCount {
     /** A fixed number of values, which the header line gives as an integer. */
-    INTEGER(null, false),
+    INTEGER(null, false, VCFHeaderVersion.VCF4_0),
     /** One value per alternate allele. */
-    A(VCFConstants.PER_ALTERNATE_COUNT, false),
-    /** One value per allele, including the reference. */
-    R(VCFConstants.PER_ALLELE_COUNT, false),
+    A(VCFConstants.PER_ALTERNATE_COUNT, false, VCFHeaderVersion.VCF4_0),
+    /** One value per allele, including the reference (VCF 4.2). */
+    R(VCFConstants.PER_ALLELE_COUNT, false, VCFHeaderVersion.VCF4_2),
     /** One value per possible genotype. */
-    G(VCFConstants.PER_GENOTYPE_COUNT, false),
+    G(VCFConstants.PER_GENOTYPE_COUNT, false, VCFHeaderVersion.VCF4_0),
     /** The number of values varies, is unknown or is unbounded. */
-    UNBOUNDED(VCFConstants.UNBOUNDED_ENCODING_v4, false),
+    UNBOUNDED(VCFConstants.UNBOUNDED_ENCODING_v4, false, VCFHeaderVersion.VCF4_0),
     /** One value per allele in the sample's GT (VCF 4.4). */
-    P(VCFConstants.PER_GT_ALLELE_COUNT, true),
+    P(VCFConstants.PER_GT_ALLELE_COUNT, true, VCFHeaderVersion.VCF4_4),
     /** As {@link #A}, counting only the alternate alleles the sample's LAA names (VCF 4.5). */
-    LA(VCFConstants.PER_LOCAL_ALTERNATE_COUNT, true),
+    LA(VCFConstants.PER_LOCAL_ALTERNATE_COUNT, true, VCFHeaderVersion.VCF4_5),
     /** As {@link #R}, counting only the alternate alleles the sample's LAA names (VCF 4.5). */
-    LR(VCFConstants.PER_LOCAL_ALLELE_COUNT, true),
+    LR(VCFConstants.PER_LOCAL_ALLELE_COUNT, true, VCFHeaderVersion.VCF4_5),
     /** As {@link #G}, counting only the alternate alleles the sample's LAA names (VCF 4.5). */
-    LG(VCFConstants.PER_LOCAL_GENOTYPE_COUNT, true),
+    LG(VCFConstants.PER_LOCAL_GENOTYPE_COUNT, true, VCFHeaderVersion.VCF4_5),
     /** One value per possible base modification in the alleles of the sample's GT (VCF 4.5). */
-    M(VCFConstants.PER_BASE_MODIFICATION_COUNT, true);
+    M(VCFConstants.PER_BASE_MODIFICATION_COUNT, true, VCFHeaderVersion.VCF4_5);
 
     private final String numberText;
     private final boolean variesBySample;
+    private final VCFHeaderVersion minimumVersion;
 
-    VCFHeaderLineCount(final String numberText, final boolean variesBySample) {
+    VCFHeaderLineCount(final String numberText, final boolean variesBySample, final VCFHeaderVersion minimumVersion) {
         this.numberText = numberText;
         this.variesBySample = variesBySample;
+        this.minimumVersion = minimumVersion;
+    }
+
+    /**
+     * @return the oldest VCF version that defines this count, so the oldest a file whose header uses it can be
+     * written as; VCF 4.0 for the counts every 4.x version has
+     */
+    public VCFHeaderVersion minimumVersion() {
+        return minimumVersion;
     }
 
     /**

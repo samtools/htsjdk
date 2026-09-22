@@ -369,7 +369,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a {@link VCFTextTransformer} suitable for the targetVersion
      */
     private VCFTextTransformer getTextTransformerForVCFVersion(final VCFHeaderVersion targetVersion) {
-        return targetVersion != null && targetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+        return targetVersion != null && targetVersion.percentEncodesText()
                 ? percentEncodingTextTransformer
                 : passThruTextTransformer;
     }
@@ -386,8 +386,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         // once, e.g. while seeking to the first record of a query.
         final int lineNo = lineCounter.incrementAndGet();
 
-        // The parts array is per call, never shared: decode may run on several threads at once.
-        final String[] parts = new String[Math.min(header.getColumnCount(), NUM_STANDARD_FIELDS + 1)];
+        // The parts array is per call, never shared: decode may run on several threads at once. It has room for a
+        // ninth token whether or not the header has genotyping data, so that a ninth column under a header that
+        // declares eight is counted rather than folded into the INFO column.
+        final String[] parts = new String[NUM_STANDARD_FIELDS + 1];
         final int nParts = ParsingUtils.split(line, parts, VCFConstants.FIELD_SEPARATOR_CHAR, true);
 
         // a header with no genotyping data means eight columns; otherwise nine (the eight plus the FORMAT column,
@@ -441,13 +443,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         final List<Allele> alleles = parseAlleles(ref, alts, lineNo);
         builder.alleles(alleles);
 
-        // do we have genotyping data? It is decoded only on demand, so every record gets it, a record decoded for
-        // its location alone included: its end may have to be read from the samples' LEN.
+        // do we have genotyping data (a ninth token, which decodeLine has matched against the header)? It is decoded
+        // only on demand, so every record gets it, a record decoded for its location alone included: its end may
+        // have to be read from the samples' LEN.
         LazyGenotypesContext lazy = null;
-        if (parts.length > NUM_STANDARD_FIELDS) {
+        if (parts[NUM_STANDARD_FIELDS] != null) {
             final LazyGenotypesContext.LazyParser lazyParser = new LazyVCFGenotypesParser(alleles, chr, pos, lineNo);
             final int nGenotypes = header.getNGenotypeSamples();
-            lazy = new LazyGenotypesContext(lazyParser, parts[8], nGenotypes);
+            lazy = new LazyGenotypesContext(lazyParser, parts[8], nGenotypes, version);
 
             // did we resort the sample names?  If so, we need to load the genotype data
             if (includeGenotypes && !header.samplesWereAlreadySorted()) lazy.decode();
@@ -624,12 +627,6 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             generateException("The VCF specification requires a valid (non-zero length) info field", lineNo);
 
         if (!infoField.equals(VCFConstants.EMPTY_INFO_FIELD)) {
-            if (infoField.indexOf('\t') != -1 || infoField.indexOf(' ') != -1)
-                generateException(
-                        "The VCF specification does not allow for whitespace in the INFO field. Offending field value was \""
-                                + infoField + "\"",
-                        lineNo);
-
             List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
             for (int i = 0; i < infoFields.size(); i++) {
                 String key;

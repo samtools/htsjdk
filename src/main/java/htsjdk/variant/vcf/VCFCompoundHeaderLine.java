@@ -87,6 +87,17 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         return countType == VCFHeaderLineCount.INTEGER;
     }
 
+    /** @return the oldest version that defines this line's {@code Number} code, see {@link VCFHeaderLineCount#minimumVersion} */
+    @Override
+    public VCFHeaderVersion minimumVersion() {
+        return countType.minimumVersion();
+    }
+
+    /** @return whether this is an INFO or a FORMAT line */
+    public SupportedHeaderLineType getLineType() {
+        return lineType;
+    }
+
     public int getCount() {
         if (!isFixedCount()) throw new TribbleException("Asking for header line count when type is not an integer");
         return count;
@@ -298,7 +309,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         count = -1;
         final String numberStr = mapping.get("Number");
         final boolean isUnboundedBeforeV4 = version != null
-                && !version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0)
+                && version.isOlderThan(VCFHeaderVersion.VCF4_0)
                 && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v3);
         countType = isUnboundedBeforeV4 ? VCFHeaderLineCount.UNBOUNDED : VCFHeaderLineCount.fromNumberText(numberStr);
         if (countType == VCFHeaderLineCount.INTEGER) {

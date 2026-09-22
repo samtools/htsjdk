@@ -42,16 +42,13 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * this class writes VCF files
  */
 class VCFWriter extends IndexingVariantContextWriter {
-
-    // Every header is written as 4.2 whatever version it declares, including 4.3 and later: headers keep their
-    // version through copies and merges, so refusing those would refuse nearly everything derived from a 4.3 input.
-    private static final String VERSION_LINE = VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString()
-            + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
 
     // Initialized when the header is written to the output stream
     private VCFEncoder vcfEncoder = null;
@@ -66,6 +63,12 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     // should we always output a complete format record, even if we could drop trailing fields?
     private final boolean writeFullFormatField;
+
+    // Explicit output version set by the builder, or null for resolution from the header
+    private final VCFHeaderVersion explicitVersion;
+
+    // The resolved output version, set once the header is written
+    private VCFHeaderVersion outputVersion;
 
     // is the header or body written to the output stream?
     private boolean outputHasBeenWritten;
@@ -90,11 +93,13 @@ class VCFWriter extends IndexingVariantContextWriter {
             final boolean enableOnTheFlyIndexing,
             final boolean doNotWriteGenotypes,
             final boolean allowMissingFieldsInHeader,
-            final boolean writeFullFormatField) {
+            final boolean writeFullFormatField,
+            final VCFHeaderVersion explicitVersion) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
+        this.explicitVersion = explicitVersion;
     }
 
     public VCFWriter(
@@ -105,11 +110,13 @@ class VCFWriter extends IndexingVariantContextWriter {
             final boolean enableOnTheFlyIndexing,
             final boolean doNotWriteGenotypes,
             final boolean allowMissingFieldsInHeader,
-            final boolean writeFullFormatField) {
+            final boolean writeFullFormatField,
+            final VCFHeaderVersion explicitVersion) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing, indexCreator);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
+        this.explicitVersion = explicitVersion;
     }
 
     // --------------------------------------------------------------------------------
@@ -147,7 +154,7 @@ class VCFWriter extends IndexingVariantContextWriter {
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         setHeader(header);
         try {
-            writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
+            writeHeader(this.mHeader, writer, makeVersionLine(outputVersion), getStreamName());
             writeAndResetBuffer();
             outputHasBeenWritten = true;
         } catch (IOException e) {
@@ -155,8 +162,40 @@ class VCFWriter extends IndexingVariantContextWriter {
         }
     }
 
-    public static String getVersionLine() {
-        return VERSION_LINE;
+    /** The {@code ##fileformat} line that declares a version. */
+    static String makeVersionLine(final VCFHeaderVersion version) {
+        return VCFHeader.METADATA_INDICATOR + version.getFormatString() + "=" + version.getVersionString();
+    }
+
+    /**
+     * The version a writer labels its output with: the one the caller asked for if any, else the header's with a
+     * floor of 4.2, else 4.2.
+     */
+    static VCFHeaderVersion resolveOutputVersion(final VCFHeader header, final VCFHeaderVersion explicitVersion) {
+        return explicitVersion != null ? explicitVersion : VCFEncoder.resolveVersion(header);
+    }
+
+    /**
+     * Checks that the output version can express every line of the header, by each line's
+     * {@link VCFHeaderLine#minimumVersion}.
+     *
+     * @throws IllegalStateException quoting each line the output version cannot express and the version that can
+     */
+    static void checkHeaderCompatibility(final VCFHeader header, final VCFHeaderVersion outputVersion) {
+        final List<String> violations = new ArrayList<>();
+        VCFHeaderVersion needed = outputVersion;
+        for (final VCFHeaderLine line : header.getMetaDataInInputOrder()) {
+            final VCFHeaderVersion required = line.minimumVersion();
+            if (outputVersion.isOlderThan(required)) {
+                violations.add(line + " requires " + required.getVersionString() + " or later");
+                if (required.isAtLeastAsRecentAs(needed)) needed = required;
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new IllegalStateException("The header cannot be written as " + outputVersion.getVersionString()
+                    + ": " + String.join("; ", violations) + "; call VariantContextWriterBuilder.setVCFVersion("
+                    + needed.name() + ") or higher");
+        }
     }
 
     public static VCFHeader writeHeader(
@@ -258,7 +297,13 @@ class VCFWriter extends IndexingVariantContextWriter {
             throw new IllegalStateException(
                     "The header cannot be modified after the header or variants have been written to the output stream.");
         }
-        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
-        this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
+        // The writer works on its own copy, labelled with the output version, so that the encoder's header and the
+        // written ##fileformat line agree while the caller's header keeps whatever version it declares.
+        this.outputVersion = resolveOutputVersion(header, this.explicitVersion);
+        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : new VCFHeader(header);
+        this.mHeader.setVCFHeaderVersion(this.outputVersion);
+        checkHeaderCompatibility(this.mHeader, this.outputVersion);
+        this.vcfEncoder = new VCFEncoder(
+                this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField, this.outputVersion);
     }
 }

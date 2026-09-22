@@ -2019,4 +2019,55 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .attribute(VCFConstants.END_KEY, 21)
                 .make();
     }
+
+    @Test
+    public void laaComesRightAfterGtAmongTheGenotypeKeys() {
+        final Genotype g = new GenotypeBuilder("s1", Arrays.asList(Aref, T))
+                .AD(new int[] {3, 4})
+                .DP(7)
+                .attribute(VCFConstants.LAA_KEY, Arrays.asList(1))
+                .attribute("ZZ", 1)
+                .make();
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
+                .genotypes(g)
+                .make();
+        Assert.assertEquals(
+                vc.calcVCFGenotypeKeys(new VCFHeader()),
+                Arrays.asList(
+                        VCFConstants.GENOTYPE_KEY,
+                        VCFConstants.LAA_KEY,
+                        VCFConstants.GENOTYPE_ALLELE_DEPTHS,
+                        VCFConstants.DEPTH_KEY,
+                        "ZZ"));
+    }
+
+    @Test
+    public void laaComesFirstAmongTheGenotypeKeysWhenThereIsNoGt() {
+        final Genotype g = new GenotypeBuilder("s1")
+                .AD(new int[] {3, 4})
+                .attribute(VCFConstants.LAA_KEY, Arrays.asList(1))
+                .make();
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
+                .genotypes(g)
+                .make();
+        Assert.assertEquals(
+                vc.calcVCFGenotypeKeys(new VCFHeader()),
+                Arrays.asList(VCFConstants.LAA_KEY, VCFConstants.GENOTYPE_ALLELE_DEPTHS));
+    }
+
+    @Test
+    public void theGenotypeKeysStaySortedWithoutLaa() {
+        final Genotype g = new GenotypeBuilder("s1", Arrays.asList(Aref, T))
+                .AD(new int[] {3, 4})
+                .DP(7)
+                .attribute("ZZ", 1)
+                .make();
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
+                .genotypes(g)
+                .make();
+        Assert.assertEquals(
+                vc.calcVCFGenotypeKeys(new VCFHeader()),
+                Arrays.asList(
+                        VCFConstants.GENOTYPE_KEY, VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFConstants.DEPTH_KEY, "ZZ"));
+    }
 }

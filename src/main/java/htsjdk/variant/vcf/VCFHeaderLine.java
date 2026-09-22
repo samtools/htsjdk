@@ -89,6 +89,17 @@ public class VCFHeaderLine implements Comparable, Serializable {
         return false;
     }
 
+    /**
+     * The oldest VCF version this line can be written as: a writer refuses a header holding a line that needs a
+     * newer version than its output. A plain key=value line can be written as any version, so this is VCF 4.0, the
+     * oldest version the writers produce; a subclass whose lines can need a newer version overrides it.
+     *
+     * @return the oldest version that can express this line
+     */
+    public VCFHeaderVersion minimumVersion() {
+        return VCFHeaderVersion.VCF4_0;
+    }
+
     public String toString() {
         return toStringEncoding();
     }

@@ -75,6 +75,8 @@ public final class VCFConstants {
 
     /** FORMAT Length of a sample's {@code <*>} reference block (VCF 4.5) */
     public static final String LEN_KEY = "LEN";
+    /** FORMAT Local alternate alleles: the ALT indices a sample's local-allele fields refer to (VCF 4.5) */
+    public static final String LAA_KEY = "LAA";
 
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";

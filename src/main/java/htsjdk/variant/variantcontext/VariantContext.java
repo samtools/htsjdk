@@ -266,11 +266,11 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     /* cached monomorphic value: null -> not yet computed, False, True */
     private Boolean monomorphic = null;
 
-    /*
+    /**
      * Determine which genotype fields are in use in the genotypes in VC
-     * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
+     * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first,
+     * and LAA, when present, right after GT: the local-allele fields are read against it (VCF 4.5).
      */
-
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<>();
 
@@ -304,6 +304,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             newList.add(VCFConstants.GENOTYPE_KEY);
             newList.addAll(sortedList);
             sortedList = newList;
+        }
+
+        // LAA precedes every field other than GT; sorted alphabetically it would land after AD, DP and GQ
+        final int laaIndex = sortedList.indexOf(VCFConstants.LAA_KEY);
+        final int laaTarget = sawGoodGT ? 1 : 0;
+        if (laaIndex > laaTarget) {
+            sortedList.remove(laaIndex);
+            sortedList.add(laaTarget, VCFConstants.LAA_KEY);
         }
 
         if (sortedList.isEmpty() && header.hasGenotypingData()) {

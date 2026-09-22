@@ -93,4 +93,9 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         attributes.put("URL", "http://x?y=z");
         assertEquals(VCFHeaderLine.toStringEncoding(attributes), "<ID=q=10,URL=\"http://x?y=z\">");
     }
+
+    @Test
+    public void aPlainLineCanBeWrittenAsAnyVersionTheWritersProduce() {
+        assertEquals(new VCFHeaderLine("source", "x").minimumVersion(), VCFHeaderVersion.VCF4_0);
+    }
 }
