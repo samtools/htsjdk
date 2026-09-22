@@ -24,6 +24,7 @@
 package htsjdk.tribble.index.tabix;
 
 import htsjdk.index.BinningIndex;
+import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.Chunk;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
@@ -50,6 +51,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 
 /**
  * This class represent a Tabix index that has been built in memory or read from a file.  It can be queried or
@@ -309,6 +311,57 @@ public class TabixIndex implements Index {
 
     public TabixFormat getFormatSpec() {
         return formatSpec;
+    }
+
+    /**
+     * Returns the number of records on a sequence, from the counts the index keeps in each sequence's metadata
+     * pseudo-bin, as {@code bcftools index -s} reports it. tabix writes the counts; a TBI written by htsjdk 5.0.0 or
+     * earlier has none.
+     *
+     * @param sequenceName name of the sequence
+     * @return the count, which is 0 for a sequence the index has no records for, or empty if the index keeps no counts
+     */
+    public OptionalLong getRecordCount(final String sequenceName) {
+        if (!keepsRecordCounts()) {
+            return OptionalLong.empty();
+        }
+        final int sequenceIndex = sequenceNames.indexOf(sequenceName);
+        return OptionalLong.of(sequenceIndex < 0 ? 0 : recordCount(binningIndex.getReference(sequenceIndex)));
+    }
+
+    /**
+     * Returns the number of records in the file, from the counts the index keeps: those on every sequence and those
+     * without a position, as {@code bcftools index -n} reports it.
+     *
+     * @return the count, or empty if the index keeps no counts
+     */
+    public OptionalLong getRecordCount() {
+        if (!keepsRecordCounts()) {
+            return OptionalLong.empty();
+        }
+        long total = binningIndex.getNoCoordinateCount().orElse(0);
+        for (int i = 0; i < binningIndex.getReferenceCount(); i++) {
+            total += recordCount(binningIndex.getReference(i));
+        }
+        return OptionalLong.of(total);
+    }
+
+    /** An index keeps a count for every sequence that has records, or for none; a sequence with none has no bins. */
+    private boolean keepsRecordCounts() {
+        for (int i = 0; i < binningIndex.getReferenceCount(); i++) {
+            final ReferenceBins reference = binningIndex.getReference(i);
+            if (reference.getBinCount() > 0 && reference.getMetadata().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static long recordCount(final ReferenceBins reference) {
+        return reference
+                .getMetadata()
+                .map(metadata -> metadata.mappedCount() + metadata.unmappedCount())
+                .orElse(0L);
     }
 
     /**

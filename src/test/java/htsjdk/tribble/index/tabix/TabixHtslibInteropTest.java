@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.SkipException;
@@ -274,5 +275,16 @@ public class TabixHtslibInteropTest extends HtsjdkTest {
         final TabixIndex ours = new TabixIndex(csi);
         TabixTestUtils.executeTabix("-f", "-C", "-p", "vcf", vcf.toString());
         Assert.assertEquals(ours.getBinningIndex(), new TabixIndex(csi).getBinningIndex());
+    }
+
+    @Test
+    public void testHtsjdkReadsTheRecordCountsOfAnIndexWrittenByTabix() throws IOException {
+        final Path vcf = writeVcf(Indexing.NONE, "c1", "c2");
+        TabixTestUtils.indexVcf(vcf);
+        final TabixIndex index = new TabixIndex(vcf.resolveSibling(vcf.getFileName() + FileExtensions.TABIX_INDEX));
+        final long perContig = (50_000_000 - 500 - 1) / 7_000 + 1; // writeVcf's positions: 500, 7500, ... < 50 Mb
+        Assert.assertEquals(index.getRecordCount("c1"), OptionalLong.of(perContig));
+        Assert.assertEquals(index.getRecordCount("c2"), OptionalLong.of(perContig));
+        Assert.assertEquals(index.getRecordCount(), OptionalLong.of(2 * perContig));
     }
 }

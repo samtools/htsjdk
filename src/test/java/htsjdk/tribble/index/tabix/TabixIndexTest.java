@@ -52,6 +52,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.OptionalLong;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -251,5 +252,56 @@ public class TabixIndexTest extends HtsjdkTest {
             counter++;
         }
         return counter;
+    }
+
+    /**
+     * An index of c1 with three records and c2 with two, each record in its own BGZF block, and the given number of
+     * records without a position; with the counts tabix keeps if {@code keepCounts}.
+     */
+    private static TabixIndex indexWithRecords(final boolean keepCounts, final long recordsWithoutAPosition) {
+        final BinningIndex.Builder builder =
+                new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+        if (keepCounts) builder.reportingRecordCounts();
+        final int[] references = {0, 0, 0, 1, 1};
+        for (int i = 0; i < references.length; i++) {
+            builder.add(references[i], 1000 * (i + 1), 1000 * (i + 1), (long) i << 16, (long) (i + 1) << 16);
+            if (keepCounts) builder.addRecordCounts(1, 0);
+        }
+        if (keepCounts) builder.addNoCoordinateRecords(recordsWithoutAPosition);
+        return new TabixIndex(TabixFormat.VCF, List.of("c1", "c2"), builder.build(2));
+    }
+
+    @Test
+    public void testRecordCountOfASequenceIsTheCountInItsMetadata() {
+        final TabixIndex index = indexWithRecords(true, 0);
+        Assert.assertEquals(index.getRecordCount("c1"), OptionalLong.of(3));
+        Assert.assertEquals(index.getRecordCount("c2"), OptionalLong.of(2));
+    }
+
+    @Test
+    public void testRecordCountOfASequenceTheIndexDoesNotListIsZero() {
+        Assert.assertEquals(indexWithRecords(true, 0).getRecordCount("c3"), OptionalLong.of(0));
+    }
+
+    @Test
+    public void testRecordCountOfTheFileIncludesRecordsWithoutAPosition() {
+        Assert.assertEquals(indexWithRecords(true, 4).getRecordCount(), OptionalLong.of(9));
+    }
+
+    @Test
+    public void testRecordCountsOfAnIndexWithoutCountsAreEmpty() {
+        final TabixIndex index = indexWithRecords(false, 0);
+        Assert.assertEquals(index.getRecordCount("c1"), OptionalLong.empty());
+        Assert.assertEquals(index.getRecordCount("c3"), OptionalLong.empty());
+        Assert.assertEquals(index.getRecordCount(), OptionalLong.empty());
+    }
+
+    @Test
+    public void testRecordCountOfAnIndexWithNoRecordsIsZero() {
+        final TabixIndex index = new TabixIndex(
+                TabixFormat.VCF,
+                List.of(),
+                new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH).build(0));
+        Assert.assertEquals(index.getRecordCount(), OptionalLong.of(0));
     }
 }
