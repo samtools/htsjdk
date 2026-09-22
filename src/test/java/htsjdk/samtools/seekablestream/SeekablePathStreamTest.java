@@ -24,6 +24,9 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,5 +51,89 @@ public class SeekablePathStreamTest extends HtsjdkTest {
         Assert.assertEquals(is.position(), 30);
         Assert.assertEquals(is.length(), Files.size(testPath));
         is.close();
+    }
+
+    /** Delegates to a channel but reads nothing on every other call, as a channel is allowed to. */
+    private static final class SometimesEmptyChannel implements SeekableByteChannel {
+        private final SeekableByteChannel delegate;
+        private boolean readNothingNext = true;
+
+        SometimesEmptyChannel(final SeekableByteChannel delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public int read(final ByteBuffer dst) throws IOException {
+            readNothingNext = !readNothingNext;
+            return readNothingNext ? delegate.read(dst) : 0;
+        }
+
+        @Override
+        public int write(final ByteBuffer src) throws IOException {
+            return delegate.write(src);
+        }
+
+        @Override
+        public long position() throws IOException {
+            return delegate.position();
+        }
+
+        @Override
+        public SeekableByteChannel position(final long newPosition) throws IOException {
+            delegate.position(newPosition);
+            return this;
+        }
+
+        @Override
+        public long size() throws IOException {
+            return delegate.size();
+        }
+
+        @Override
+        public SeekableByteChannel truncate(final long size) throws IOException {
+            delegate.truncate(size);
+            return this;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return delegate.isOpen();
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
+    }
+
+    @Test
+    public void testReadOfOneByteRetriesWhenTheChannelReadsNothing() throws IOException {
+        final Path path = Files.createTempFile("SeekablePathStreamTest", ".bin");
+        try {
+            Files.write(path, new byte[] {7, 8, (byte) 0xFF});
+            try (SeekablePathStream in = new SeekablePathStream(path, SometimesEmptyChannel::new)) {
+                Assert.assertEquals(in.read(), 7);
+                Assert.assertEquals(in.read(), 8);
+                Assert.assertEquals(in.read(), 0xFF);
+                Assert.assertEquals(in.read(), -1);
+            }
+        } finally {
+            Files.delete(path);
+        }
+    }
+
+    @Test
+    public void testReadOfOneByteAtEndOfFileReturnsMinusOne() throws IOException {
+        final Path path = Files.createTempFile("SeekablePathStreamTest", ".bin");
+        try {
+            Files.write(path, new byte[] {7});
+            try (SeekablePathStream in = new SeekablePathStream(path)) {
+                Assert.assertEquals(in.read(), 7);
+                Assert.assertEquals(in.read(), -1);
+                Assert.assertEquals(in.read(), -1);
+            }
+        } finally {
+            Files.delete(path);
+        }
     }
 }
