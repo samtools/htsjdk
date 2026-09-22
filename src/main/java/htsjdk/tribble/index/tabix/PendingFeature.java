@@ -64,6 +64,7 @@ final class PendingFeature {
                     "Feature start position %d >= feature end position %d", startFilePosition, endFilePosition));
         }
         indexBuilder.add(referenceIndex, start, end, startFilePosition, endFilePosition);
+        indexBuilder.addRecordCounts(1, 0);
     }
 
     @Override

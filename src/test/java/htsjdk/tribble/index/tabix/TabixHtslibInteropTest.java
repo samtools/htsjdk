@@ -2,7 +2,6 @@ package htsjdk.tribble.index.tabix;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
-import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
@@ -242,30 +241,29 @@ public class TabixHtslibInteropTest extends HtsjdkTest {
         }
     }
 
-    /**
-     * tabix also writes each sequence a pseudo-bin of record counts, and a count of records without a position,
-     * which htsjdk leaves out of a TBI; so it is the bins and the linear indexes that are compared.
-     */
     @Test
-    public void testTbiWrittenByHtsjdkHasTheBinsAndLinearIndexOfTheOneTabixWrites() throws IOException {
+    public void testTbiWrittenByHtsjdkHasTheContentOfTheOneTabixWrites() throws IOException {
+        final Path vcf = writeVcf(Indexing.ON_THE_FLY, "c1", "c2");
+        final Path tbi = vcf.resolveSibling(vcf.getFileName() + FileExtensions.TABIX_INDEX);
+        final BinningIndex ours = new TabixIndex(tbi).getBinningIndex();
+        TabixTestUtils.indexVcf(vcf);
+        Assert.assertEquals(ours, new TabixIndex(tbi).getBinningIndex());
+    }
+
+    @Test
+    public void testTbiWrittenByHtsjdkHasTheRecordCountsOfTheOneTabixWrites() throws IOException {
         final Path vcf = writeVcf(Indexing.ON_THE_FLY, "c1", "c2");
         final Path tbi = vcf.resolveSibling(vcf.getFileName() + FileExtensions.TABIX_INDEX);
         final BinningIndex ours = new TabixIndex(tbi).getBinningIndex();
         TabixTestUtils.indexVcf(vcf);
         final BinningIndex theirs = new TabixIndex(tbi).getBinningIndex();
-
-        Assert.assertEquals(ours.getReferenceCount(), theirs.getReferenceCount());
-        for (int i = 0; i < ours.getReferenceCount(); i++) {
-            final ReferenceBins ourBins = ours.getReference(i);
-            final ReferenceBins theirBins = theirs.getReference(i);
-            Assert.assertEquals(ourBins.getBinCount(), theirBins.getBinCount(), "bins of sequence " + i);
-            for (int bin = 0; bin < ourBins.getBinCount(); bin++) {
-                Assert.assertEquals(ourBins.getBinNumber(bin), theirBins.getBinNumber(bin));
-                Assert.assertEquals(
-                        ourBins.getChunks(bin), theirBins.getChunks(bin), "bin " + ourBins.getBinNumber(bin));
-            }
-            Assert.assertEquals(ourBins.getLinearIndex(), theirBins.getLinearIndex(), "linear index of sequence " + i);
+        for (int i = 0; i < theirs.getReferenceCount(); i++) {
+            Assert.assertEquals(
+                    ours.getReference(i).getMetadata(),
+                    theirs.getReference(i).getMetadata(),
+                    "metadata pseudo-bin of sequence " + i);
         }
+        Assert.assertEquals(ours.getNoCoordinateCount(), theirs.getNoCoordinateCount());
     }
 
     @Test
