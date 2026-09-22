@@ -94,6 +94,11 @@ public class VCFEncoderTest extends HtsjdkTest {
         }
     }
 
+    @Test(expectedExceptions = NullPointerException.class)
+    public void aNullVersionIsRefusedAtConstruction() {
+        new VCFEncoder(createSyntheticHeader(Collections.singletonList("Sample1")), true, false, null);
+    }
+
     @DataProvider(name = "MissingFormatTestData")
     public Object[][] makeMissingFormatTestData() {
         final VCFHeader header = createSyntheticHeader(Collections.singletonList("Sample1"));

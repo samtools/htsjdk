@@ -89,6 +89,9 @@ public class VCFEncoder {
         if (header == null) {
             throw new NullPointerException("The VCF header must not be null.");
         }
+        if (version == null) {
+            throw new NullPointerException("The VCF version must not be null.");
+        }
         this.header = header;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.outputTrailingFormatFields = outputTrailingFormatFields;
