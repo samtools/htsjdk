@@ -473,10 +473,11 @@ public class BCFFileReaderTest extends VariantBaseTest {
                 new htsjdk.samtools.util.BlockCompressedOutputStream(patchedBcf)) {
             out.write(decompressed);
         }
-        // Reading should throw (not OOME or NegativeArraySizeException)
-        // because the reader will hit EOF before reading the declared bytes
+        // Reading should throw TribbleException (not OOME or NegativeArraySizeException) naming the offending field
         try (BCFFileReader reader = new BCFFileReader(patchedBcf, null)) {
-            Assert.expectThrows(Exception.class, () -> toList(reader.iterator()));
+            final TribbleException ex = Assert.expectThrows(TribbleException.class, () -> toList(reader.iterator()));
+            Assert.assertTrue(
+                    ex.getMessage().contains("l_shared"), "Message should name the field: " + ex.getMessage());
         }
     }
 

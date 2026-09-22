@@ -524,8 +524,9 @@ public class VariantContextWriterBuilder {
             else if (STREAM_TYPES.contains(this.outType)) typeToBuild = OutputType.BCF_STREAM;
         }
 
-        // BCF 2.2 uses a bare CSI index; a custom Tribble index creator is not compatible. Check before
-        // opening the output stream, so a validation failure does not truncate an existing file.
+        // Pre-open validation: catch configuration errors before opening (and potentially truncating) the output file
+
+        // BCF 2.2 uses a bare CSI index; a custom Tribble index creator is not compatible.
         if (typeToBuild == OutputType.BCF
                 && options.contains(Options.INDEX_ON_THE_FLY)
                 && outPath != null
@@ -536,6 +537,14 @@ public class VariantContextWriterBuilder {
                         "A BGZF BCF is indexed with a bare CSI and does not accept a custom IndexCreator."
                                 + " Remove the IndexCreator, or use setBCFVersion(BCFVersion.BCF_2_1) for a Tribble index.");
             }
+        }
+
+        // On-the-fly indexing requires a reference dictionary for VCF and BCF output types.
+        if (refDict == null
+                && options.contains(Options.INDEX_ON_THE_FLY)
+                && (typeToBuild == OutputType.VCF || typeToBuild == OutputType.BCF)) {
+            throw new IllegalArgumentException(
+                    "A reference dictionary is required for creating Tribble indices on the fly");
         }
 
         // If we are writing to a file, or a special file type (ex. pipe) where the stream is not yet open.
@@ -562,10 +571,6 @@ public class VariantContextWriterBuilder {
                                 + String.join(", ", FileExtensions.VCF_LIST)
                                 + ")?");
             case VCF:
-                if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
-                    throw new IllegalArgumentException(
-                            "A reference dictionary is required for creating Tribble indices on the fly");
-
                 writer = createVCFWriter(outPath, outStreamFromFile, idxCreator);
                 break;
             case BLOCK_COMPRESSED_VCF:
@@ -577,10 +582,6 @@ public class VariantContextWriterBuilder {
                                 : new TabixIndexCreator(refDict, TabixFormat.VCF, tabixIndexType, csiMinShift));
                 break;
             case BCF:
-                if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
-                    throw new IllegalArgumentException(
-                            "A reference dictionary is required for creating Tribble indices on the fly");
-
                 writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
             case VCF_STREAM:

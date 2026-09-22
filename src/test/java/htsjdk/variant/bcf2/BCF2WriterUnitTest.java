@@ -2032,6 +2032,62 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void aStaleCsiIsDeletedWhenTheHeaderIsWritten() throws IOException {
+        final VCFHeader header = createFakeHeader();
+        final Path output = Files.createTempFile(tempDir, "stale-csi.", ".bcf");
+        output.toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + FileExtensions.CSI);
+        csiPath.toFile().deleteOnExit();
+        // Plant a stale CSI from a previous run
+        Files.write(csiPath, new byte[] {0x43, 0x53, 0x49, 0x01});
+        Assert.assertTrue(Files.exists(csiPath), "Stale CSI should exist before writing");
+
+        // Write a BCF with an unsorted second record; the writer fails and close() skips the CSI
+        final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build();
+        writer.writeHeader(header);
+        // The stale CSI should already be gone after writeHeader
+        Assert.assertFalse(Files.exists(csiPath), "Stale CSI should be deleted when the header is written");
+        // Write a record and fail with an unsorted second record
+        writer.add(new VariantContextBuilder("test", "2", 10, 10, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
+                                .GQ(0)
+                                .attribute("BB", "1")
+                                .phased(true)
+                                .make(),
+                        new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
+                                .GQ(0)
+                                .attribute("BB", "1")
+                                .phased(true)
+                                .make())
+                .attribute("DP", "50")
+                .make());
+        Assert.expectThrows(
+                IllegalArgumentException.class,
+                () -> writer.add(new VariantContextBuilder("test", "1", 5, 5, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                        .genotypes(
+                                new GenotypeBuilder("extra1", Arrays.asList(Allele.ALT_C))
+                                        .GQ(0)
+                                        .attribute("BB", "1")
+                                        .phased(true)
+                                        .make(),
+                                new GenotypeBuilder("extra2", Arrays.asList(Allele.ALT_C))
+                                        .GQ(0)
+                                        .attribute("BB", "1")
+                                        .phased(true)
+                                        .make())
+                        .attribute("DP", "50")
+                        .make()));
+        writer.close();
+        // After close, the stale CSI is still gone (not re-created because csiFailed is set)
+        Assert.assertFalse(Files.exists(csiPath), "No CSI should be left after a sort-order violation");
+    }
+
+    @Test
     public void indexOnTheFlyWithRawBcfWorks() throws IOException {
         final VCFHeader header = createFakeHeader();
         final Path output = Files.createTempFile(tempDir, "iotf21.", ".bcf");

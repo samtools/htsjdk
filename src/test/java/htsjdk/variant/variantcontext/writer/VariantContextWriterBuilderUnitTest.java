@@ -760,4 +760,36 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 .build();
         Assert.assertNotNull(w);
     }
+
+    // ============================================================
+    // Missing refDict with INDEX_ON_THE_FLY does not truncate existing files
+    // ============================================================
+
+    @Test
+    public void aMissingRefDictWithBcfDoesNotTruncateAnExistingFile() throws IOException {
+        final Path existing = Files.createTempFile(TEST_BASENAME + ".nodict-bcf", FileExtensions.BCF);
+        existing.toFile().deleteOnExit();
+        Files.write(existing, new byte[] {1, 2, 3, 4, 5});
+        final long sizeBefore = Files.size(existing);
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setOutputPath(existing)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build());
+        Assert.assertEquals(
+                Files.size(existing), sizeBefore, "BCF file should not be truncated after a validation failure");
+    }
+
+    @Test
+    public void aMissingRefDictWithVcfDoesNotTruncateAnExistingFile() throws IOException {
+        final Path existing = Files.createTempFile(TEST_BASENAME + ".nodict-vcf", FileExtensions.VCF);
+        existing.toFile().deleteOnExit();
+        Files.write(existing, new byte[] {1, 2, 3, 4, 5});
+        final long sizeBefore = Files.size(existing);
+        Assert.expectThrows(IllegalArgumentException.class, () -> new VariantContextWriterBuilder()
+                .setOutputPath(existing)
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build());
+        Assert.assertEquals(
+                Files.size(existing), sizeBefore, "VCF file should not be truncated after a validation failure");
+    }
 }

@@ -246,6 +246,15 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     public void writeHeader(VCFHeader header) {
         setHeader(header);
 
+        // Delete any stale CSI from a previous run, so a failed write never leaves an old index beside a new BCF
+        if (csiIndexPath != null) {
+            try {
+                Files.deleteIfExists(csiIndexPath);
+            } catch (final IOException e) {
+                throw new RuntimeIOException("Could not delete stale CSI index at " + csiIndexPath, e);
+            }
+        }
+
         try {
             // Build a local header copy with IDX attributes matching the dictionary
             final VCFHeader headerWithIdx = headerWithIdxAttributes(this.header, idDictionary, contigDictionary);
@@ -334,7 +343,12 @@ public class BCF2Writer extends IndexingVariantContextWriter {
                                     + " follows a record at reference index " + prevRefIdx + " position " + prevStart);
                 }
                 final long chunkStart = bgzfStream.getFilePointer();
-                writeBlock(infoBlock, genotypesBlock);
+                try {
+                    writeBlock(infoBlock, genotypesBlock);
+                } catch (final IOException e) {
+                    csiFailed = true;
+                    throw e;
+                }
                 final long chunkEnd = bgzfStream.getFilePointer();
                 try {
                     csiIndexBuilder.add(refIdx, vc.getStart(), vc.getEnd(), chunkStart, chunkEnd);
