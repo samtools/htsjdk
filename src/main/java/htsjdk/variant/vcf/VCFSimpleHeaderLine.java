@@ -120,7 +120,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      * Returns the String value associated with the given key. Returns null if there is no value. Key
      * must not be null.
      */
-    String getGenericFieldValue(final String key) {
+    public String getGenericFieldValue(final String key) {
         return this.genericFields.get(key);
     }
 

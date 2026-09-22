@@ -25,6 +25,7 @@
 
 package htsjdk.variant.bcf2;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
@@ -229,5 +230,28 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     @Test(dataProvider = "toListTestProvider")
     public void testToList(final Class<?> cls, final Object input, final List<Object> expectedOutput) {
         assertListsAreEquivalent(BCF2Utils.toList(cls, input), expectedOutput);
+    }
+
+    // -- Integer widths leave the sentinel values of each type unused --
+
+    @Test
+    public void theLastInt8ValueIsMinus120() {
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-120), BCF2Type.INT8);
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-121), BCF2Type.INT16);
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-127), BCF2Type.INT16);
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-128), BCF2Type.INT16);
+    }
+
+    @Test
+    public void theLastInt16ValueIsMinus32760() {
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-32760), BCF2Type.INT16);
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-32761), BCF2Type.INT32);
+    }
+
+    @Test
+    public void theLastInt32ValueIsMinus2147483640() {
+        Assert.assertEquals(BCF2Utils.determineIntegerType(-2147483640), BCF2Type.INT32);
+        Assert.expectThrows(TribbleException.class, () -> BCF2Utils.determineIntegerType(-2147483641));
+        Assert.expectThrows(TribbleException.class, () -> BCF2Utils.determineIntegerType(Integer.MIN_VALUE));
     }
 }

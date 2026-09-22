@@ -292,7 +292,12 @@ public abstract class BCF2FieldWriter {
                     // we encode the actual allele
                     final Allele a = g.getAllele(i);
                     final int offset = getAlleleOffset(a);
-                    final int encoded = ((offset + 1) << 1) | ((i != 0 && g.isAllelePhased(i)) ? 0x01 : 0x00);
+                    // Every allele carries a phase bit, the first one's as htslib sets it: the phase the others
+                    // imply, and always set for a haploid call. A reader below VCF 4.4 ignores the first bit; one
+                    // at 4.4 or later takes it literally, so it must agree with the genotype's own phasing.
+                    final boolean phased = g.isAllelePhased(i)
+                            || (i == 0 && samplePloidy == 1 && !g.hasPerAllelePhasing() && !a.isNoCall());
+                    final int encoded = ((offset + 1) << 1) | (phased ? 0x01 : 0x00);
                     encoder.encodeRawBytes(encoded, encodingType);
                 } else {
                     // we need to pad with missing as we have ploidy < max for this sample

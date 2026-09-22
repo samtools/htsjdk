@@ -99,7 +99,7 @@ public final class BCF2Encoder {
     }
 
     public final void encodeTypedString(final String s) throws IOException {
-        encodeTypedString(s.getBytes());
+        encodeTypedString(s.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     public final void encodeTypedString(final byte[] s) throws IOException {
@@ -214,7 +214,7 @@ public final class BCF2Encoder {
     // --------------------------------------------------------------------------------
 
     public void encodeRawString(final String s, final int sizeToWrite) throws IOException {
-        final byte[] bytes = s.getBytes();
+        final byte[] bytes = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         for (int i = 0; i < sizeToWrite; i++)
             if (i < bytes.length) encodeRawChar(bytes[i]);
             else encodeRawMissingValue(BCF2Type.CHAR);
@@ -257,7 +257,7 @@ public final class BCF2Encoder {
         if (v == null || v.equals("")) return Collections.emptyList();
         else {
             // TODO -- this needs to be optimized away for efficiency
-            final byte[] bytes = v.getBytes();
+            final byte[] bytes = v.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             final List<Byte> l = new ArrayList<Byte>(bytes.length);
             for (int i = 0; i < bytes.length; i++) l.add(bytes[i]);
             return l;
