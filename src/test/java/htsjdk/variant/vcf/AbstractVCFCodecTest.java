@@ -9,6 +9,7 @@ import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -501,5 +502,147 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertTrue(genotypeOf(".|.").isPhased());
         Assert.assertTrue(genotypeOf("|.").isPhased());
         Assert.assertFalse(genotypeOf("|.").hasPerAllelePhasing());
+    }
+
+    // the end of a record: the furthest of the REF allele, INFO END, SVLEN for the alleles it applies to, FORMAT LEN
+
+    private static final String END_FIELDS_HEADER = "##fileformat=VCFv4.2\n"
+            + "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End\">\n"
+            + "##INFO=<ID=SVLEN,Number=A,Type=Integer,Description=\"SV length\">\n"
+            + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+            + "##FORMAT=<ID=LEN,Number=1,Type=Integer,Description=\"Reference block length\">\n"
+            + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tNA1\n";
+
+    /** The end of a record at position 100 with the given REF, ALT, INFO and, as GT:LEN, sample columns. */
+    private static int endOf(final String ref, final String alt, final String info, final String sample) {
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
+                new ByteArrayInputStream(END_FIELDS_HEADER.getBytes(StandardCharsets.UTF_8)))));
+        return codec.decode("chr1\t100\t.\t" + ref + "\t" + alt + "\t.\t.\t" + info + "\tGT:LEN\t" + sample)
+                .getEnd();
+    }
+
+    @Test
+    public void theEndIsTheLastBaseOfTheReferenceAllele() {
+        Assert.assertEquals(endOf("A", "C", ".", "0/1:."), 100);
+        Assert.assertEquals(endOf("ACG", "A", ".", "0/1:."), 102);
+    }
+
+    @Test
+    public void anInfoEndBeyondTheReferenceAlleleExtendsTheRecord() {
+        Assert.assertEquals(endOf("A", "<*>", "END=150", "0/0:."), 150);
+    }
+
+    @Test
+    public void anInfoEndShortOfTheReferenceAlleleIsOutdone() {
+        Assert.assertEquals(endOf("ACGT", "A", "END=101", "0/1:."), 103);
+    }
+
+    @Test
+    public void anInfoEndBeforePosOrMissingIsIgnored() {
+        Assert.assertEquals(endOf("A", "C", "END=-1", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "C", "END=99", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "C", "END=100", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "C", "END=.", "0/1:."), 100);
+    }
+
+    @Test
+    public void aLengthTooLongForAnIntIsClamped() {
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=2147483647", "0/1:."), Integer.MAX_VALUE);
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=-9223372036854775808", "0/1:."), Integer.MAX_VALUE);
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=9223372036854775807", "0/1:."), Integer.MAX_VALUE);
+        Assert.assertEquals(endOf("A", "<*>", ".", "0/0:2147483647"), Integer.MAX_VALUE);
+        Assert.assertEquals(endOf("A", "<*>", ".", "0/0:9223372036854775807"), Integer.MAX_VALUE);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void anInfoEndThatIsNotANumberIsRejected() {
+        endOf("A", "C", "END=soon", "0/1:.");
+    }
+
+    @Test
+    public void svlenExtendsADeletionDuplicationCopyNumberVariantOrInversion() {
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=-500", "0/1:."), 600);
+        Assert.assertEquals(endOf("A", "<DEL:ME:ALU>", "SVLEN=300", "0/1:."), 400);
+        Assert.assertEquals(endOf("A", "<DUP:TANDEM>", "SVLEN=300", "0/1:."), 400);
+        Assert.assertEquals(endOf("A", "<CNV:TR>", "SVLEN=30", "0/1:."), 130);
+        Assert.assertEquals(endOf("A", "<INV>", "SVLEN=50", "0/1:."), 150);
+    }
+
+    @Test
+    public void svlenDoesNotExtendAnInsertionOrAnyOtherAllele() {
+        Assert.assertEquals(endOf("A", "<INS>", "SVLEN=100", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "<INS:ME>", "SVLEN=100", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "<DELME>", "SVLEN=100", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "ACCCC", "SVLEN=100", "0/1:."), 100);
+    }
+
+    @Test
+    public void svlenIsMatchedToItsOwnAllele() {
+        Assert.assertEquals(endOf("A", "<INS>,<DEL>", "SVLEN=1000,-20", "1/2:."), 120);
+        Assert.assertEquals(endOf("A", "<DEL>,<DEL:ME>", "SVLEN=20,40", "1/2:."), 140);
+        Assert.assertEquals(endOf("A", "<DEL>,<INS>", "SVLEN=20", "1/2:."), 120, "one value, first allele's");
+        Assert.assertEquals(endOf("A", "<INS>,<DEL>", "SVLEN=1000", "1/2:."), 100, "one value, not the DEL's");
+    }
+
+    @Test
+    public void aDeletionAndAReferenceBlockEachExtendTheRecord() {
+        Assert.assertEquals(endOf("A", "<DEL>,<*>", "SVLEN=30", "1/2:100"), 199);
+        Assert.assertEquals(endOf("A", "<DEL>,<*>", "SVLEN=300", "1/2:100"), 400);
+    }
+
+    @Test
+    public void theFurthestOfEndAndSvlenWins() {
+        Assert.assertEquals(endOf("A", "<DEL>", "END=150;SVLEN=-500", "0/1:."), 600);
+        Assert.assertEquals(endOf("A", "<DEL>", "END=700;SVLEN=-500", "0/1:."), 700);
+    }
+
+    @Test
+    public void anUnreadableSvlenIsIgnored() {
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=.", "0/1:."), 100);
+        Assert.assertEquals(endOf("A", "<DEL>", "SVLEN=long", "0/1:."), 100);
+    }
+
+    @Test
+    public void aReferenceBlockWithoutEndTakesItsLengthFromFormatLen() {
+        Assert.assertEquals(endOf("A", "<*>", ".", "0/0:14"), 113);
+        Assert.assertEquals(endOf("A", "<NON_REF>", ".", "0/0:14"), 113);
+        Assert.assertEquals(endOf("A", "<*>", ".", "0/0:."), 100);
+    }
+
+    @Test
+    public void formatLenIsNotConsultedWhenEndIsPresent() {
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
+                new ByteArrayInputStream(END_FIELDS_HEADER.getBytes(StandardCharsets.UTF_8)))));
+        final VariantContext withEnd = codec.decode("chr1\t100\t.\tA\t<*>\t.\t.\tEND=110\tGT:LEN\t0/0:50");
+        Assert.assertEquals(withEnd.getEnd(), 110);
+        Assert.assertTrue(((LazyGenotypesContext) withEnd.getGenotypes()).isLazyWithData(), "not decoded");
+        final VariantContext withoutEnd = codec.decode("chr1\t100\t.\tA\t<*>\t.\t.\t.\tGT:LEN\t0/0:50");
+        Assert.assertEquals(withoutEnd.getEnd(), 149);
+        Assert.assertFalse(((LazyGenotypesContext) withoutEnd.getGenotypes()).isLazyWithData(), "decoded for LEN");
+    }
+
+    @Test
+    public void aRecordDecodedForItsLocationAloneGetsItsEndFromFormatLenToo() {
+        // decodeLoc is what index building reads with
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
+                new ByteArrayInputStream(END_FIELDS_HEADER.getBytes(StandardCharsets.UTF_8)))));
+        Assert.assertEquals(
+                codec.decodeLoc("chr1\t100\t.\tA\t<*>\t.\t.\t.\tGT:LEN\t0/0:50").getEnd(), 149);
+        Assert.assertEquals(
+                codec.decodeLoc("chr1\t100\t.\tA\t<DEL>\t.\t.\tSVLEN=30\tGT:LEN\t0/1:.")
+                        .getEnd(),
+                130);
+    }
+
+    @Test
+    public void formatLenIsNotLookedForUnlessTheHeaderDeclaresIt() {
+        // the variant records of a gVCF carry <NON_REF> without END: decoding each of them is expensive, for a LEN
+        // that is not there
+        final VariantContext vc = decodeUnderOneSampleHeader("chr1\t100\t.\tA\tC,<NON_REF>\t.\t.\t.\tGT:DP\t0/1:50");
+        Assert.assertEquals(vc.getEnd(), 100);
+        Assert.assertTrue(((LazyGenotypesContext) vc.getGenotypes()).isLazyWithData(), "not decoded");
     }
 }

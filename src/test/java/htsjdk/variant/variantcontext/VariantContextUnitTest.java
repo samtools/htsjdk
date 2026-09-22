@@ -1808,8 +1808,9 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @DataProvider(name = "referenceBlockData")
     public Object[][] referenceBlockData() {
         return new Object[][] {
-            {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false},
+            {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, true},
             {Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true},
+            {Arrays.asList(Aref, Allele.NON_REF_ALLELE), false, true},
             {Arrays.asList(Aref, Allele.NON_REF_ALLELE), true, true},
             {Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, false},
             {Arrays.asList(Aref, C), false, false}
@@ -1943,5 +1944,79 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .attribute("XX", "1,2,3")
                 .make();
         Assert.assertEquals(vc.fullyDecode(header, false).getAttribute("XX"), Arrays.asList(1, 2, 3));
+    }
+
+    // INFO END against getEnd(): only an END past the end is malformed
+
+    @Test
+    public void anEndEqualToTheEndIsAccepted() {
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 20)
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+    }
+
+    @Test
+    public void anEndShortOfTheEndIsAccepted() {
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 15)
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+    }
+
+    @Test
+    public void aMissingEndIsNotCompared() {
+        // a fresh String, not the interned constant, as a file gives it
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, new String(new char[] {'.'}))
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+    }
+
+    @Test
+    public void anEndGivenAsAnyNumberIsCompared() {
+        final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 20L)
+                .make();
+        Assert.assertEquals(vc.getEnd(), 20);
+        Assert.assertThrows(
+                TribbleException.class, () -> new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                        .attribute(VCFConstants.END_KEY, 21L)
+                        .make());
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void anEndPastAnIntIsRejectedRatherThanWrapped() {
+        // 4294967316L == 2^32 + 20; intValue() wraps this to 20, which would pass the old check
+        new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 4294967316L)
+                .make();
+    }
+
+    @Test(expectedExceptions = NumberFormatException.class)
+    public void anEndThatIsNotANumberIsRejected() {
+        new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, "soon")
+                .make();
+    }
+
+    @Test
+    public void aReferenceBlockNeedsNeitherAnEndAttributeNorASpanBeyondItsStart() {
+        final List<Allele> alleles = Arrays.asList(Aref, Allele.NON_REF_ALLELE);
+        Assert.assertTrue(new VariantContextBuilder("test", snpLoc, 10, 20, alleles)
+                .make()
+                .isReferenceBlock());
+        Assert.assertTrue(
+                new VariantContextBuilder("test", snpLoc, 10, 10, alleles)
+                        .make()
+                        .isReferenceBlock(),
+                "a one-base block");
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void anEndPastTheEndIsRejected() {
+        new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
+                .attribute(VCFConstants.END_KEY, 21)
+                .make();
     }
 }
