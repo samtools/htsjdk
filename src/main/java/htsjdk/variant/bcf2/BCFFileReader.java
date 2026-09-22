@@ -16,6 +16,8 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -57,34 +59,24 @@ public class BCFFileReader implements FeatureReader<VariantContext> {
         // Read the header from the BGZF stream by reading the exact header bytes, so that the BGZF
         // file pointer sits at the first record after this call.
         try {
-            // Read the 5 magic bytes (BCF + major + minor)
-            final byte[] magic = new byte[BCFVersion.MAGIC_HEADER_START.length + 2];
-            readFully(stream, magic);
-
-            // Read the 4-byte little-endian header length
-            final byte[] lenBytes = new byte[4];
-            readFully(stream, lenBytes);
-            final int headerLen = (lenBytes[0] & 0xFF)
-                    | ((lenBytes[1] & 0xFF) << 8)
-                    | ((lenBytes[2] & 0xFF) << 16)
-                    | ((lenBytes[3] & 0xFF) << 24);
-            if (headerLen < 0) {
+            // The magic ("BCF", major, minor) and the little-endian length of the header text that follows
+            final byte[] prefix = new byte[BCFVersion.MAGIC_HEADER_START.length + 2 + Integer.BYTES];
+            readFully(stream, prefix);
+            final int headerLen =
+                    ByteBuffer.wrap(prefix).order(ByteOrder.LITTLE_ENDIAN).getInt(prefix.length - Integer.BYTES);
+            if (headerLen < 0 || headerLen > Integer.MAX_VALUE - prefix.length) {
                 throw new TribbleException("Invalid BCF header length (l_text=" + Integer.toUnsignedString(headerLen)
                         + "): exceeds maximum array size");
             }
 
-            // Read the header text
-            final byte[] headerText = new byte[headerLen];
-            readFully(stream, headerText);
+            // The codec parses the whole header, prefix included, from one buffer
+            final byte[] headerBlob = new byte[prefix.length + headerLen];
+            System.arraycopy(prefix, 0, headerBlob, 0, prefix.length);
+            readFully(stream, headerBlob, prefix.length, headerLen);
 
             // The BGZF file pointer now sits at the first record
             firstRecordOffset = stream.getFilePointer();
 
-            // Give the codec a PositionalBufferedStream over the header bytes so it can parse them
-            final byte[] headerBlob = new byte[magic.length + lenBytes.length + headerText.length];
-            System.arraycopy(magic, 0, headerBlob, 0, magic.length);
-            System.arraycopy(lenBytes, 0, headerBlob, magic.length, lenBytes.length);
-            System.arraycopy(headerText, 0, headerBlob, magic.length + lenBytes.length, headerText.length);
             final PositionalBufferedStream pbs = new PositionalBufferedStream(new ByteArrayInputStream(headerBlob));
             final FeatureCodecHeader fch = codec.readHeader(pbs);
             pbs.close();
@@ -151,7 +143,7 @@ public class BCFFileReader implements FeatureReader<VariantContext> {
     @Override
     public CloseableTribbleIterator<VariantContext> query(final String chr, final int start, final int end)
             throws IOException {
-        if (index == null) {
+        if (!isQueryable()) {
             throw new TribbleException(
                     "Cannot query without a CSI index; open the BCF with an index or use iterator() for sequential access");
         }
@@ -188,8 +180,9 @@ public class BCFFileReader implements FeatureReader<VariantContext> {
         }
         sizeBytes[0] = (byte) firstByte;
         readFully(bgzfStream, sizeBytes, 1, 7);
-        final int sitesBlockSize = intLE(sizeBytes, 0);
-        final int genotypeBlockSize = intLE(sizeBytes, 4);
+        final ByteBuffer sizes = ByteBuffer.wrap(sizeBytes).order(ByteOrder.LITTLE_ENDIAN);
+        final int sitesBlockSize = sizes.getInt(0);
+        final int genotypeBlockSize = sizes.getInt(Integer.BYTES);
         if (sitesBlockSize < 0) {
             throw new TribbleException("Invalid BCF record: l_shared=" + Integer.toUnsignedString(sitesBlockSize)
                     + " exceeds maximum array size");
@@ -216,13 +209,6 @@ public class BCFFileReader implements FeatureReader<VariantContext> {
         final VariantContext vc = codec.decode(pbs);
         pbs.close();
         return vc;
-    }
-
-    private static int intLE(final byte[] bytes, final int offset) {
-        return (bytes[offset] & 0xFF)
-                | ((bytes[offset + 1] & 0xFF) << 8)
-                | ((bytes[offset + 2] & 0xFF) << 16)
-                | ((bytes[offset + 3] & 0xFF) << 24);
     }
 
     private static void readFully(final BlockCompressedInputStream in, final byte[] buf) throws IOException {
