@@ -113,6 +113,8 @@ Consumers should review these before upgrading.
 
 - **New: `TabixIndex.getRecordCount(String)` and `getRecordCount()`** (issue #1586) give the number of records on a sequence, and in the whole file, from the counts a TBI or CSI keeps, as `bcftools index -s` and `-n` do, without reading the data.  They are empty for an index that keeps no counts.
 
+- **A TBI index that htsjdk writes carries the record counts tabix writes** (issue #1586): each sequence's count in a metadata pseudo-bin, and a count of records without a position, which is 0.  A TBI written on the fly now equals the one tabix makes of the same file, and `bcftools index -n` / `-s` and `TabixIndex.getRecordCount` can answer from it.  A CSI already carried the per-sequence counts; in memory it now also reports the count of records without a position, as when read back from its file.
+
 ### BAM indexing
 
 - **New: CSI indexes for BAM**, for references longer than 512 Mbp, which a BAI cannot address.  `SAMFileWriterFactory.setBamIndexType(BamIndexType)` chooses the index written when index creation is on: `BAI` (the default, unchanged, written as `x.bai`), `CSI` (written as `x.bam.csi`, as samtools names it), or `AUTO`, which writes a CSI only when a sequence in the header is too long for a BAI, so that a pipeline expecting `.bai` files keeps getting them.  `setCsiMinShift` sets the span of the smallest bins (default 14, as for samtools); the rest of the binning scheme is chosen as `samtools index -c` chooses it.  `BAMIndexer` takes the same type, as does `BAMIndexer.createIndex(reader, output, log, indexType)` for indexing an existing BAM.  samtools reads the result, record counts included.

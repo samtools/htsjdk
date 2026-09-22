@@ -105,7 +105,8 @@ public class TabixIndexCreator implements IndexCreator {
 
     /**
      * A builder for the binning scheme an index type calls for: TBI's fixed scheme, or for CSI the one tabix would
-     * choose for the longest sequence in the dictionary.
+     * choose for the longest sequence in the dictionary. Either way it keeps the record counts tabix writes: each
+     * sequence's in a metadata pseudo-bin, and a count of records without a position, which is always 0 here.
      */
     static BinningIndex.Builder newBuilder(
             final SAMSequenceDictionary sequenceDictionary, final TabixIndexType indexType, final int csiMinShift) {
@@ -113,7 +114,7 @@ public class TabixIndexCreator implements IndexCreator {
             if (csiMinShift != DEFAULT_CSI_MIN_SHIFT) {
                 throw new IllegalArgumentException("A TBI index has a fixed binning scheme; minShift cannot be set");
             }
-            return new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH);
+            return new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH).reportingRecordCounts();
         }
         final long longestSequence = sequenceDictionary == null
                 ? 0
@@ -122,7 +123,7 @@ public class TabixIndexCreator implements IndexCreator {
                         .max()
                         .orElse(0);
         final BinningIndex.Geometry geometry = BinningIndex.csiGeometry(csiMinShift, longestSequence);
-        return new BinningIndex.Builder(geometry.minShift(), geometry.depth(), true);
+        return new BinningIndex.Builder(geometry.minShift(), geometry.depth(), true).reportingRecordCounts();
     }
 
     @Override
