@@ -358,13 +358,19 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
          */
         public WFIterator() throws IOException {
             final PositionalBufferedStream pbs = openDecompressedStream();
-            /*
-             * The header was already read from the original source in the constructor; don't read it again, since some codecs keep state
-             * about its initialization.  Instead, skip that part of the stream.
-             */
-            pbs.skip(header.getHeaderEnd());
-            source = codec.makeSourceFromStream(pbs);
-            readNextRecord();
+            try {
+                /*
+                 * The header was already read from the original source in the constructor; don't read it again, since some codecs keep state
+                 * about its initialization.  Instead, skip that part of the stream.
+                 */
+                pbs.skip(header.getHeaderEnd());
+                source = codec.makeSourceFromStream(pbs);
+                readNextRecord();
+            } catch (final IOException | RuntimeException e) {
+                // the caller gets no iterator to close
+                CloserUtil.close(pbs);
+                throw e;
+            }
         }
 
         @Override
