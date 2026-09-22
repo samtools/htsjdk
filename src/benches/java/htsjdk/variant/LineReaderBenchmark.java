@@ -1,11 +1,11 @@
 package htsjdk.variant;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.tribble.readers.Utf8LineReader;
 import htsjdk.tribble.readers.LineReader;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.tribble.readers.TabixReader;
+import htsjdk.tribble.readers.Utf8LineReader;
 import htsjdk.variant.VariantCodecBenchmark.Shape;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
