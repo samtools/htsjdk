@@ -57,6 +57,8 @@ public class VCFEncoder {
     private VCFHeader header;
     private final boolean percentEncode;
     private final boolean leadingPhaseAllowed;
+    private final boolean outputIs45Plus;
+    private final boolean outputHasLaaFormat;
 
     private boolean allowMissingFieldsInHeader = false;
 
@@ -97,6 +99,8 @@ public class VCFEncoder {
         this.outputTrailingFormatFields = outputTrailingFormatFields;
         this.percentEncode = version.percentEncodesText();
         this.leadingPhaseAllowed = version.leadingPhaseAllowed();
+        this.outputIs45Plus = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
+        this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.LAA_KEY);
     }
 
     /**
@@ -259,9 +263,9 @@ public class VCFEncoder {
 
     /**
      * Whether genotype text can be written as it was read, without decoding it: when the source and the output are
-     * on the same side of 4.3, where percent-encoding begins, and when the output can express a leading phase
-     * indicator if the source (4.4 or later) could carry one. Text whose source version is not known is written as
-     * it is.
+     * on the same side of 4.3, where percent-encoding begins; when the output can express a leading phase indicator
+     * if the source (4.4 or later) could carry one; and, if the header defines LAA, when both are on the same side of
+     * 4.5, from which LAA must follow GT. Text whose source version is not known is written as it is.
      */
     private boolean canPassThroughLazyGenotypes(final LazyGenotypesContext gc) {
         final VCFHeaderVersion source = gc.getHeaderVersion();
@@ -271,7 +275,13 @@ public class VCFEncoder {
         if (source.percentEncodesText() != percentEncode) {
             return false;
         }
-        return leadingPhaseAllowed || !source.leadingPhaseAllowed();
+        if (!leadingPhaseAllowed && source.leadingPhaseAllowed()) {
+            return false;
+        }
+        if (outputHasLaaFormat && source.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5) != outputIs45Plus) {
+            return false;
+        }
+        return true;
     }
 
     /**

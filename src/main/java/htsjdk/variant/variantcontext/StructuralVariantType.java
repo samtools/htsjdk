@@ -63,11 +63,14 @@ public enum StructuralVariantType {
             "BND", BND);
 
     /**
-     * Parses a structural variant type from a symbolic allele string, an SVTYPE value,
-     * or a breakend notation string. Accepts forms like {@code DEL}, {@code DEL:ME:ALU},
-     * {@code <DEL:ME:ALU>}, and {@code <BND>}. Returns the major type (the part before
-     * the first colon), or empty for anything that is not one of the six concrete names
-     * ({@code <NON_REF>}, {@code <*>}, {@code <FOO>}, sequence text, {@code .}, {@code *}).
+     * Parses a structural variant type from a symbolic allele string or an SVTYPE value.
+     * Accepts forms like {@code DEL}, {@code DEL:ME:ALU}, {@code <DEL:ME:ALU>}, and
+     * {@code <BND>}. Returns the major type (the part before the first colon), or empty
+     * for anything that is not one of the six concrete names ({@code <NON_REF>},
+     * {@code <*>}, {@code <FOO>}, sequence text, {@code .}, {@code *}).
+     *
+     * <p>This method does not recognise breakend notation (e.g. {@code ]13:123456]T});
+     * use {@link StructuralVariantAllele#parse(String)} for that.
      *
      * <p>Case-sensitive. Never returns {@link #MIXED}.
      *

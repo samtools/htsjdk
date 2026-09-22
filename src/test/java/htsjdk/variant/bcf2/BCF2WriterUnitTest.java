@@ -2516,4 +2516,113 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 readBack.getGenotype("s1").hasExtendedAttribute("LAA"),
                 "Sample with LAA should read back with LAA attribute");
     }
+
+    // BCF LAA pass-through boundary tests
+
+    @Test
+    public void bcfPassThrough44To45WithLaaReordersFormat() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        // Write a BCF at VCF 4.4 with FORMAT GT:XX:LAA (XX is a generic field to avoid special-cased keys)
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        lines.add(new VCFFormatHeaderLine("XX", 1, VCFHeaderLineType.Integer, "test field"));
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final VCFHeader header44 = new VCFHeader(VCFHeaderVersion.VCF4_4, lines, Set.of("s1"));
+        header44.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("LAA", List.of(1))
+                        .attribute("XX", 7)
+                        .make())
+                .make();
+        final Path bcf44 = writeBcf(header44, vc);
+
+        // Read back lazily and rewrite at 4.5
+        final Set<VCFHeaderLine> lines45 = new LinkedHashSet<>(lines);
+        final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines45, Set.of("s1"));
+        header45.setSequenceDictionary(header44.getSequenceDictionary());
+        final Path bcf45 = Files.createTempFile(tempDir, "laa44to45.", ".bcf");
+        bcf45.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf44, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf45)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                        .build()) {
+            writer.writeHeader(header45);
+            for (final VariantContext v : reader) writer.add(v);
+        }
+
+        final List<String> stdout = BcftoolsTestUtils.viewAsVcf(bcf45);
+        final String dataLine =
+                stdout.stream().filter(l -> !l.startsWith("#")).findFirst().orElseThrow();
+        Assert.assertTrue(
+                dataLine.contains("GT:LAA:XX"),
+                "BCF 4.4 source rewritten at 4.5 should reorder to GT:LAA:XX: " + dataLine);
+    }
+
+    @Test
+    public void bcfPassThrough44To45WithoutLaaIsIdentical() throws IOException {
+        // Write a BCF at VCF 4.4 without LAA
+        final VCFHeader header44 = oneSampleGtHeader(VCFHeaderVersion.VCF4_4);
+        final VariantContext vc = new VariantContextBuilder("t", "1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .phased(true)
+                        .make())
+                .make();
+        final Path bcf44 = writeBcf(header44, vc);
+
+        // Read back lazily and rewrite at 4.5 (no LAA in header)
+        final VCFHeader header45 = oneSampleGtHeader(VCFHeaderVersion.VCF4_5);
+        final Path bcf45 = Files.createTempFile(tempDir, "noLaa44to45.", ".bcf");
+        bcf45.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf44, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf45)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                        .build()) {
+            writer.writeHeader(header45);
+            for (final VariantContext v : reader) writer.add(v);
+        }
+
+        Assert.assertEquals(genotypeBlockOf(bcf45), genotypeBlockOf(bcf44), "Without LAA, genotype bytes should match");
+    }
+
+    @Test
+    public void bcfPassThrough45To45WithLaaIsIdentical() throws IOException {
+        // Write a BCF at VCF 4.5 with LAA and a generic field XX
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        lines.add(new VCFFormatHeaderLine("XX", 1, VCFHeaderLineType.Integer, "test field"));
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines, Set.of("s1"));
+        header45.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000))));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                        .attribute("LAA", List.of(1))
+                        .attribute("XX", 7)
+                        .make())
+                .make();
+        final Path bcf45a = writeBcf(header45, vc);
+
+        // Read back lazily and rewrite at 4.5
+        final Path bcf45b = Files.createTempFile(tempDir, "laa45to45.", ".bcf");
+        bcf45b.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(bcf45a, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(bcf45b)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                        .build()) {
+            writer.writeHeader(header45);
+            for (final VariantContext v : reader) writer.add(v);
+        }
+
+        Assert.assertEquals(
+                genotypeBlockOf(bcf45b), genotypeBlockOf(bcf45a), "4.5 to 4.5 with LAA should pass through unchanged");
+    }
 }

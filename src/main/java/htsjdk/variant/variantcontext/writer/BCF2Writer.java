@@ -108,6 +108,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     // The VCF version the caller asked for, or null to take the header's; resolved when the header is set
     private final VCFHeaderVersion explicitVersion;
     private VCFHeaderVersion outputVersion;
+    private boolean outputIs45Plus;
+    private boolean outputHasLaaFormat;
 
     // The BCF container version (2.1 or 2.2); resolved at construction time
     private final BCFVersion bcfVersion;
@@ -422,6 +424,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         // the writer's own copy carries the output version; the caller's header keeps whatever it declares
         this.outputVersion = VCFWriter.resolveOutputVersion(header, explicitVersion);
         this.header.setVCFHeaderVersion(this.outputVersion);
+        this.outputIs45Plus = this.outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
+        this.outputHasLaaFormat = this.header.hasFormatLine(VCFConstants.LAA_KEY);
         VCFWriter.checkHeaderCompatibility(this.header, this.outputVersion);
         requireSampleCountInRange(this.header.getNGenotypeSamples());
 
@@ -520,8 +524,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
      * Can we safely write on the raw (undecoded) genotypes of an input VC?
      *
      * Pass through only when the source BCF version equals this writer's, the VCF header versions are on the same
-     * side of the 4.3 percent-encoding boundary and on the same side of the 4.4 leading-phase-indicator boundary,
-     * and the source's ID dictionary equals this writer's.
+     * side of the 4.3 percent-encoding boundary, 4.4 leading-phase-indicator boundary and 4.5 LAA-order boundary
+     * (when the output header defines LAA), and the source's ID dictionary equals this writer's.
      */
     private boolean canSafelyWriteRawGenotypesBytes(final BCF2Codec.LazyData lazyData) {
         // A LazyData without version or dictionary (from old constructors) must be decoded
@@ -550,6 +554,15 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         final boolean outputIs44Plus = outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
         if (sourceIs44Plus != outputIs44Plus) {
             return false;
+        }
+
+        // At 4.5 LAA must follow GT; a source from the other side of that boundary has a different FORMAT order
+        if (outputHasLaaFormat) {
+            final boolean sourceIs45Plus =
+                    sourceVersion != null && sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
+            if (sourceIs45Plus != outputIs45Plus) {
+                return false;
+            }
         }
 
         // Dictionary equality: the same index->ID map
