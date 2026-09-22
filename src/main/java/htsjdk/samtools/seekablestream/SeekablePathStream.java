@@ -100,8 +100,13 @@ public class SeekablePathStream extends SeekableStream {
     @Override
     public int read() throws IOException {
         oneByteBuf.clear();
-        int n = sbc.read(oneByteBuf);
-        return n == 1 ? oneByteBuf.array()[0] & 0xff : n;
+        // A channel may read no bytes at all (see ReadableByteChannel.read); retry, as read(byte[], int, int)
+        // does, rather than return the count of zero as if it were a byte.
+        int n;
+        do {
+            n = sbc.read(oneByteBuf);
+        } while (n == 0);
+        return n < 0 ? -1 : oneByteBuf.get(0) & 0xff;
     }
 
     @Override
