@@ -34,7 +34,7 @@ import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
 import htsjdk.tribble.index.tabix.TabixFormat;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.Utf8LineReaderIterator;
 import htsjdk.tribble.util.ParsingUtils;
 import java.awt.*;
 import java.io.IOException;
@@ -68,7 +68,7 @@ public class BEDCodecTest extends HtsjdkTest {
         BEDCodec bedCodec = new BEDCodec();
         try (final InputStream is = ParsingUtils.openInputStream(gzippedBedFile.toString());
                 final BlockCompressedInputStream bcis = new BlockCompressedInputStream(is)) {
-            AsciiLineReaderIterator it = (AsciiLineReaderIterator) bedCodec.makeIndexableSourceFromStream(bcis);
+            Utf8LineReaderIterator it = (Utf8LineReaderIterator) bedCodec.makeIndexableSourceFromStream(bcis);
             Object header = bedCodec.readActualHeader(it);
             // BEDCodec doesn't model or return the BED header, even when there is one!
             Assert.assertNull(header);

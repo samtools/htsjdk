@@ -52,7 +52,7 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
 
     @Override
     public LocationAware makeIndexableSourceFromStream(final InputStream inputStream) {
-        return new AsciiLineReaderIterator(AsciiLineReader.from(inputStream));
+        return new Utf8LineReaderIterator(Utf8LineReader.from(inputStream));
     }
 
     @Override

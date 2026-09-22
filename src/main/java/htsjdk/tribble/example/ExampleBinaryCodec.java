@@ -30,9 +30,9 @@ import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.SimpleFeature;
-import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.Utf8LineReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -69,7 +69,7 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
     public FeatureCodecHeader readHeader(final PositionalBufferedStream stream) throws IOException {
         // Construct a reader that does not read ahead (because we don't want to consume data from the stream that is
         // not the header)
-        final AsciiLineReader nonReadAheadLineReader = new AsciiLineReader(stream);
+        final Utf8LineReader nonReadAheadLineReader = new Utf8LineReader(stream);
         final List<String> headerLines = new ArrayList<String>();
         long headerLengthInBytes = 0;
         while (stream.peek() == ('#' & 0xff)) { // Look for header lines, which are prefixed by '#'.

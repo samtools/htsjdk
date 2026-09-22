@@ -475,7 +475,7 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
 
     @Override
     public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
-        return new AsciiLineReaderIterator(AsciiLineReader.from(bufferedInputStream));
+        return new Utf8LineReaderIterator(Utf8LineReader.from(bufferedInputStream));
     }
 
     @Override

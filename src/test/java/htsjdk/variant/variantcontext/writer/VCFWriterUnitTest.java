@@ -33,8 +33,8 @@ import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.Tribble;
-import htsjdk.tribble.readers.AsciiLineReader;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.Utf8LineReader;
+import htsjdk.tribble.readers.Utf8LineReaderIterator;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -165,7 +165,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFPath);
                 InputStream fis = Files.newInputStream(fakeVCFPath)) {
-            AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(
+            Utf8LineReaderIterator iterator = new Utf8LineReaderIterator(new Utf8LineReader(
                     FileExtensions.COMPRESSED_VCF.equals(extension)
                                     || FileExtensions.COMPRESSED_VCF_BGZ.equals(extension)
                             ? bcis

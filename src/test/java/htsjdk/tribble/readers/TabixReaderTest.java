@@ -249,4 +249,39 @@ public class TabixReaderTest extends HtsjdkTest {
             Assert.assertNull(records.next());
         }
     }
+
+    // CRLF stripping
+
+    @Test
+    public void staticReadLineStripsTrailingCr() throws IOException {
+        final InputStream in = utf8("a\r\nb\r");
+        Assert.assertEquals(TabixReader.readLine(in), "a");
+        Assert.assertEquals(TabixReader.readLine(in), "b");
+        Assert.assertNull(TabixReader.readLine(in));
+    }
+
+    @Test
+    public void aQueryOnACrlfFileReturnsCleanLines() throws IOException {
+        final String header = "##fileformat=VCFv4.3\r\n" + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\r\n";
+        final String record = "chr1\t100\t.\tA\tG\t30\tPASS\t.\r\n";
+
+        final Path vcf = Files.createTempFile("crlf.", ".vcf.gz");
+        IOUtil.deleteOnExit(vcf);
+        try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(vcf)) {
+            out.write((header + record).getBytes(StandardCharsets.UTF_8));
+        }
+
+        final Path index = vcf.resolveSibling(vcf.getFileName() + FileExtensions.TABIX_INDEX);
+        IOUtil.deleteOnExit(index);
+        IndexFactory.createTabixIndex(vcf, new htsjdk.variant.vcf.VCFCodec(), TabixFormat.VCF, null)
+                .write(index);
+
+        try (final TabixReader reader = new TabixReader(vcf.toString())) {
+            final TabixReader.Iterator records = reader.query("chr1:1-1000");
+            final String line = records.next();
+            Assert.assertNotNull(line);
+            Assert.assertFalse(line.contains("\r"), "queried line should not contain \\r");
+            Assert.assertNull(records.next());
+        }
+    }
 }

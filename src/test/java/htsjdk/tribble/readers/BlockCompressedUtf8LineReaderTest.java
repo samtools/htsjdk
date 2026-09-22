@@ -11,26 +11,26 @@ import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
+public class BlockCompressedUtf8LineReaderTest extends HtsjdkTest {
 
     private static final String sentinelLine = "Sentinel line";
 
     @Test
     public void testLineReaderPosition() throws IOException {
-        final Path multiBlockFile = Files.createTempFile("BlockCompressedAsciiLineReaderTest", ".gz");
+        final Path multiBlockFile = Files.createTempFile("BlockCompressedUtf8LineReaderTest", ".gz");
         multiBlockFile.toFile().deleteOnExit();
 
         // write a file that has more than a single compressed block
         final long expectedFinalLineOffset = populateMultiBlockCompressedFile(multiBlockFile);
 
         try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(multiBlockFile);
-                final BlockCompressedAsciiLineReader asciiLineReader = new BlockCompressedAsciiLineReader(bcis)) {
+                final BlockCompressedUtf8LineReader lineReader = new BlockCompressedUtf8LineReader(bcis)) {
             String line = null;
             long actualFinalLineOffset = -1;
 
             do {
-                actualFinalLineOffset = asciiLineReader.getPosition();
-                line = asciiLineReader.readLine();
+                actualFinalLineOffset = lineReader.getPosition();
+                line = lineReader.readLine();
             } while (line != null && !line.equals(sentinelLine));
 
             // test that we read the sentinel line; its at the expected offset, and that offset
@@ -44,13 +44,13 @@ public class BlockCompressedAsciiLineReaderTest extends HtsjdkTest {
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void testRejectPositionalInputStream() throws IOException {
-        final Path multiBlockFile = Files.createTempFile("BlockCompressedAsciiLineReaderTest", ".gz");
+        final Path multiBlockFile = Files.createTempFile("BlockCompressedUtf8LineReaderTest", ".gz");
         multiBlockFile.toFile().deleteOnExit();
         populateMultiBlockCompressedFile(multiBlockFile);
 
         try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(multiBlockFile);
-                final BlockCompressedAsciiLineReader asciiLineReader = new BlockCompressedAsciiLineReader(bcis)) {
-            asciiLineReader.readLine(new PositionalBufferedStream(new ByteArrayInputStream(new byte[1100])));
+                final BlockCompressedUtf8LineReader lineReader = new BlockCompressedUtf8LineReader(bcis)) {
+            lineReader.readLine(new PositionalBufferedStream(new ByteArrayInputStream(new byte[1100])));
         }
     }
 

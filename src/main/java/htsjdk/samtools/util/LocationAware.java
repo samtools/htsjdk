@@ -9,8 +9,8 @@ package htsjdk.samtools.util;
  *
  * In the context of an iterator or any producer-like object that doesn't map directly to a byte stream, {@link #getPosition()} should
  * return the position (in the underlying stream being read/written to) of the most-recently read/written element.  For example, if you
- * are reading lines from a file with a {@link htsjdk.tribble.readers.AsciiLineReaderIterator}, calling {@link #getPosition()} should return the byte position
- * of the start of the most recent line returned by {@link htsjdk.tribble.readers.AsciiLineReaderIterator#next()}.
+ * are reading lines from a file with a {@link htsjdk.tribble.readers.Utf8LineReaderIterator}, calling {@link #getPosition()} should return the byte position
+ * of the start of the most recent line returned by {@link htsjdk.tribble.readers.Utf8LineReaderIterator#next()}.
  *
  * @author mccowan
  */

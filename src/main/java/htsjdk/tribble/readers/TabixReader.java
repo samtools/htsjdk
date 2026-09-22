@@ -211,8 +211,9 @@ public class TabixReader implements AutoCloseable {
     }
 
     /**
-     * Reads a line of UTF-8 encoded text terminated by {@code '\n'}. A final line that ends at the end of the
-     * stream without a terminator is returned like any other.
+     * Reads a line of UTF-8 encoded text terminated by {@code '\n'}. A trailing {@code '\r'} immediately before
+     * the newline (CRLF) or at the end of the stream is stripped, so CRLF files yield clean lines. A final line
+     * that ends at the end of the stream without a terminator is returned like any other.
      *
      * @param is the input stream
      * @param bufferCapacity the initial buffer size, must be greater than 0
@@ -230,6 +231,7 @@ public class TabixReader implements AutoCloseable {
             buf[len++] = (byte) c;
         }
         if (c < 0 && len == 0) return null;
+        if (len > 0 && buf[len - 1] == '\r') len--;
         return new String(buf, 0, len, StandardCharsets.UTF_8);
     }
 

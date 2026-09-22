@@ -1,7 +1,7 @@
 package htsjdk.variant;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.Utf8LineReader;
 import htsjdk.tribble.readers.LineReader;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.readers.SynchronousLineReader;
@@ -29,7 +29,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * {@link Shape}.
  *
  * <p>{@code VCFFileReader} reads through {@link SynchronousLineReader}, so {@link VariantCodecBenchmark#vcfRead}
- * measures only that one. Index building reads through {@link AsciiLineReader} (over a bgzipped file, through
+ * measures only that one. Index building reads through {@link Utf8LineReader} (over a bgzipped file, through
  * {@link BlockCompressedInputStream#readLine}) and a tabix query through {@link TabixReader#readLine}; those are
  * measured here.
  *
@@ -75,7 +75,7 @@ public class LineReaderBenchmark {
     public long asciiLineReader(final Input input) throws IOException {
         final PositionalBufferedStream stream =
                 new PositionalBufferedStream(new ByteArrayInputStream(input.uncompressed));
-        return sumOfLineLengths(AsciiLineReader.from(stream));
+        return sumOfLineLengths(Utf8LineReader.from(stream));
     }
 
     /** What {@code VCFFileReader} reads through, over the decompressed bytes. */

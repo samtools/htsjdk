@@ -29,8 +29,8 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.Tribble;
-import htsjdk.tribble.readers.AsciiLineReader;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.Utf8LineReader;
+import htsjdk.tribble.readers.Utf8LineReaderIterator;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -95,7 +95,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
         codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
 
         try (final InputStream fis = Files.newInputStream(fakeVCFPath)) {
-            final AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
+            final Utf8LineReaderIterator iterator = new Utf8LineReaderIterator(new Utf8LineReader(fis));
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());

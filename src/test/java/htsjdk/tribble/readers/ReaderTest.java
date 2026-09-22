@@ -144,7 +144,7 @@ public class ReaderTest extends HtsjdkTest {
         final InputStream is = new ByteArrayInputStream(bytes);
         final PositionalBufferedStream pbs = new PositionalBufferedStream(is);
         final LineReader alr =
-                new AsciiLineReader(pbs); // AsciiLineReader must be used here because it does not read ahead.
+                new Utf8LineReader(pbs); // Utf8LineReader must be used here because it does not read ahead.
 
         int bytePos = 0, linePos = 0;
         /**

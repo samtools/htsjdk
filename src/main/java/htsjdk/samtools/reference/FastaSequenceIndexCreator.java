@@ -28,8 +28,8 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.Utf8LineReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,10 +81,10 @@ public final class FastaSequenceIndexCreator {
      */
     public static FastaSequenceIndex buildFromFasta(final Path fastaFile) throws IOException, SAMException {
         // The .fai records offsets into the uncompressed sequence data, so the decompressed stream is
-        // always wrapped as positional. Passing a BlockCompressedInputStream to AsciiLineReader.from
+        // always wrapped as positional. Passing a BlockCompressedInputStream to Utf8LineReader.from
         // directly would make getPosition() return BGZF virtual file pointers instead.
-        try (final AsciiLineReader in =
-                AsciiLineReader.from(new PositionalBufferedStream(IOUtil.openFileForReading(fastaFile)))) {
+        try (final Utf8LineReader in =
+                Utf8LineReader.from(new PositionalBufferedStream(IOUtil.openFileForReading(fastaFile)))) {
 
             // sanity check reference format:
             // 1. Non-empty file
