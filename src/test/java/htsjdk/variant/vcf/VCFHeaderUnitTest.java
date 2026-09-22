@@ -31,10 +31,10 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.AsciiLineReader;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.SynchronousLineReader;
+import htsjdk.tribble.readers.Utf8LineReader;
+import htsjdk.tribble.readers.Utf8LineReaderIterator;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -109,8 +109,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingSingleSampleVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(
-                AsciiLineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "HiSeq.10000.vcf"))));
+        final Utf8LineReaderIterator vcfIterator = new Utf8LineReaderIterator(
+                Utf8LineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "HiSeq.10000.vcf"))));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
 
         Assert.assertEquals(header.getNGenotypeSamples(), 1, "Wrong number of samples in remapped header");
@@ -162,8 +162,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingMultiSampleVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(
-                AsciiLineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "ex2.vcf"))));
+        final Utf8LineReaderIterator vcfIterator = new Utf8LineReaderIterator(
+                Utf8LineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "ex2.vcf"))));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
@@ -171,8 +171,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingSitesOnlyVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(
-                AsciiLineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"))));
+        final Utf8LineReaderIterator vcfIterator = new Utf8LineReaderIterator(
+                Utf8LineReader.from(Files.newInputStream(Path.of(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"))));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 

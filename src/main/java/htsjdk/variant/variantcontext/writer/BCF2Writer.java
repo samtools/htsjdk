@@ -41,6 +41,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
+import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFUtils;
 import java.io.ByteArrayOutputStream;
@@ -163,7 +164,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
         try {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
-            final OutputStreamWriter writer = new OutputStreamWriter(capture);
+            final OutputStreamWriter writer = new OutputStreamWriter(capture, VCFEncoder.VCF_CHARSET);
             this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();

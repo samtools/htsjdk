@@ -246,6 +246,20 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         BlockGunzipper.setDefaultInflaterFactory(null);
     }
 
+    // readLine
+
+    @Test
+    public void readLineDecodesUtf8() throws IOException {
+        final String smiley = new String(Character.toChars(0x1F600));
+        final byte[] file = blockCompressed("café → λ\n日本" + smiley + "\nlast");
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new ByteArrayInputStream(file))) {
+            Assert.assertEquals(in.readLine(), "café → λ");
+            Assert.assertEquals(in.readLine(), "日本" + smiley);
+            Assert.assertEquals(in.readLine(), "last");
+            Assert.assertNull(in.readLine());
+        }
+    }
+
     // Blocks that hold no data, in mid-stream. Joining block-compressed files end to end, as cat does, leaves the
     // end-of-file marker of each part where the parts meet, and it is not the end of the data.
 

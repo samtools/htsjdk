@@ -1,9 +1,20 @@
 package htsjdk.tribble.readers;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -185,6 +196,92 @@ public class TabixReaderTest extends HtsjdkTest {
     public void testTabixReaderReadLine() throws IOException {
         try (TabixReader tabixReader = new TabixReader(tabixFile)) {
             Assert.assertNotNull(tabixReader.readLine());
+        }
+    }
+
+    // Line reading
+
+    private static InputStream utf8(final String text) {
+        return new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void readLineDecodesUtf8() throws IOException {
+        final String line = "chr1\t100\tcafé → λ 日本 " + new String(Character.toChars(0x1F600));
+        final InputStream in = utf8(line + "\nnext\n");
+        Assert.assertEquals(TabixReader.readLine(in), line);
+        Assert.assertEquals(TabixReader.readLine(in), "next");
+        Assert.assertNull(TabixReader.readLine(in));
+    }
+
+    @Test
+    public void readLineReturnsALastLineThatHasNoTrailingNewline() throws IOException {
+        final InputStream in = utf8("first\nlast");
+        Assert.assertEquals(TabixReader.readLine(in), "first");
+        Assert.assertEquals(TabixReader.readLine(in), "last");
+        Assert.assertNull(TabixReader.readLine(in));
+    }
+
+    @Test
+    public void readLineReadsALineLongerThanItsBufferWhole() throws IOException {
+        final String line = "x".repeat(5000) + "→";
+        Assert.assertEquals(TabixReader.readLine(utf8(line + "\n")), line);
+    }
+
+    @Test
+    public void aQueryReturnsTheLastRecordWhenTheFileHasNoTrailingNewline() throws IOException {
+        final String first = "chr1\t100\t200\tcafé";
+        final String last = "chr1\t300\t400\tλ→日本";
+        final Path bed = Files.createTempFile("noTrailingNewline.", ".bed.gz");
+        IOUtil.deleteOnExit(bed);
+        try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(bed)) {
+            out.write((first + "\n" + last).getBytes(StandardCharsets.UTF_8));
+        }
+        final Path index = bed.resolveSibling(bed.getFileName() + FileExtensions.TABIX_INDEX);
+        IOUtil.deleteOnExit(index);
+        IndexFactory.createTabixIndex(bed, new BEDCodec(), TabixFormat.BED, null)
+                .write(index);
+
+        try (final TabixReader reader = new TabixReader(bed.toString())) {
+            final TabixReader.Iterator records = reader.query("chr1:1-1000");
+            Assert.assertEquals(records.next(), first);
+            Assert.assertEquals(records.next(), last);
+            Assert.assertNull(records.next());
+        }
+    }
+
+    // CRLF stripping
+
+    @Test
+    public void staticReadLineStripsTrailingCr() throws IOException {
+        final InputStream in = utf8("a\r\nb\r");
+        Assert.assertEquals(TabixReader.readLine(in), "a");
+        Assert.assertEquals(TabixReader.readLine(in), "b");
+        Assert.assertNull(TabixReader.readLine(in));
+    }
+
+    @Test
+    public void aQueryOnACrlfFileReturnsCleanLines() throws IOException {
+        final String header = "##fileformat=VCFv4.3\r\n" + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\r\n";
+        final String record = "chr1\t100\t.\tA\tG\t30\tPASS\t.\r\n";
+
+        final Path vcf = Files.createTempFile("crlf.", ".vcf.gz");
+        IOUtil.deleteOnExit(vcf);
+        try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(vcf)) {
+            out.write((header + record).getBytes(StandardCharsets.UTF_8));
+        }
+
+        final Path index = vcf.resolveSibling(vcf.getFileName() + FileExtensions.TABIX_INDEX);
+        IOUtil.deleteOnExit(index);
+        IndexFactory.createTabixIndex(vcf, new htsjdk.variant.vcf.VCFCodec(), TabixFormat.VCF, null)
+                .write(index);
+
+        try (final TabixReader reader = new TabixReader(vcf.toString())) {
+            final TabixReader.Iterator records = reader.query("chr1:1-1000");
+            final String line = records.next();
+            Assert.assertNotNull(line);
+            Assert.assertFalse(line.contains("\r"), "queried line should not contain \\r");
+            Assert.assertNull(records.next());
         }
     }
 }

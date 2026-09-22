@@ -36,6 +36,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -333,7 +334,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
                 done = true;
             }
         }
-        return buf.toString();
+        return buf.toString(StandardCharsets.UTF_8);
     }
 
     /**

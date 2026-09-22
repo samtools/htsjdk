@@ -1,0 +1,103 @@
+package htsjdk.tribble.readers;
+
+import htsjdk.samtools.util.AbstractIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.Tuple;
+import java.io.Closeable;
+import java.io.IOException;
+
+/**
+ * A class that iterates over the lines and line positions in a {@link Utf8LineReader}.
+ *
+ * This class is slower than other {@link LineIterator}s because it is driven by {@link Utf8LineReader}, but offers the benefit of
+ * implementing {@link htsjdk.samtools.util.LocationAware}, which is required for indexing.  If you do not require {@link htsjdk.samtools.util.LocationAware}, consider using
+ * {@link LineIteratorImpl} as an alternative to this class.
+ *
+ * Note an important distinction in the way this class and its inner iterator differ: in the inner iterator, the position stored with
+ * a line is the position at the start of that line.  However, {@link #getPosition()} of the outer class must return the position at the
+ * end of the most-recently-returned line (or the start of the underlying {@link Utf8LineReader}, if no line has been read).  The latter
+ * bit of logic here is required to conform with the interface described by {@link htsjdk.samtools.util.LocationAware#getPosition()}.
+ *
+ * @author mccowan
+ */
+public class Utf8LineReaderIterator implements LocationAware, LineIterator, Closeable {
+    private final Utf8LineReader lineReader;
+    private final TupleIterator i;
+    private Tuple<String, Long> current = null;
+
+    public Utf8LineReaderIterator(final Utf8LineReader lineReader) {
+        this.lineReader = lineReader;
+        this.i = new TupleIterator();
+    }
+
+    @Override
+    public void close() throws IOException {
+        CloserUtil.close(lineReader);
+    }
+
+    @Override
+    public boolean hasNext() {
+        return i.hasNext();
+    }
+
+    @Override
+    public String next() {
+        current = i.next();
+        return current.a;
+    }
+
+    @Override
+    public void remove() {
+        i.remove();
+    }
+
+    /**
+     * Returns the byte position at the end of the most-recently-read line (a.k.a., the beginning of the next line) from {@link #next()} in
+     * the underlying {@link Utf8LineReader}.
+     */
+    @Override
+    public long getPosition() {
+        return i.getPosition();
+    }
+
+    @Override
+    public String peek() {
+        return i.peek().a;
+    }
+
+    /**
+     * This is stored internally since it iterates over {@link htsjdk.samtools.util.Tuple}, not {@link String} (and the outer
+     * class can't do both).
+     */
+    private class TupleIterator extends AbstractIterator<Tuple<String, Long>> implements LocationAware {
+
+        public TupleIterator() {
+            super.hasNext(); // Initialize the iterator, which appears to be a requirement of the parent class.
+            // TODO: Really?
+        }
+
+        @Override
+        protected Tuple<String, Long> advance() {
+            final String line;
+            final long position =
+                    lineReader
+                            .getPosition(); // A line's position is where it starts, so get it before reading the line.
+            try {
+                line = lineReader.readLine();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+            return line == null ? null : new Tuple<String, Long>(line, position);
+        }
+
+        /** Returns the byte position at the beginning of the next line. */
+        @Override
+        public long getPosition() {
+            final Tuple<String, Long> peek = peek();
+            // Be careful: peek will be null at the end of the stream.
+            return peek != null ? peek.b : lineReader.getPosition();
+        }
+    }
+}

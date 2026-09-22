@@ -42,6 +42,7 @@ import htsjdk.variant.vcf.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -427,6 +428,37 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             final VariantContext vcRead = reader.iterator().next().fullyDecode(headerRead, false);
             Assert.assertEquals(vcRead.getGenotype("s1").getExtendedAttribute("LAD"), List.of(10, 5));
             Assert.assertEquals(vcRead.getGenotype("s2").getExtendedAttribute("LAD"), List.of(0, 7, 3));
+        }
+    }
+
+    // Header text encoding
+
+    /** The header is stored as VCF text, which is UTF-8 whatever the platform's default charset. */
+    @Test
+    public void nonAsciiHeaderTextSurvivesABcfRoundTrip() throws IOException {
+        final String description = "Fréquence → λ 日本 " + new String(Character.toChars(0x1F600));
+        final String sample = "sample_λ→日本";
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "genotype"));
+        lines.add(new VCFInfoHeaderLine("FREQ", 1, VCFHeaderLineType.Float, description));
+        final VCFHeader header = new VCFHeader(lines, List.of(sample));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+
+        final Path output = Files.createTempFile(tempDir, "utf8Header.", ".bcf");
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+        }
+
+        final String fileAsUtf8 = new String(Files.readAllBytes(output), StandardCharsets.UTF_8);
+        Assert.assertTrue(fileAsUtf8.contains(description), "the header bytes are not UTF-8");
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            Assert.assertEquals(reader.getFileHeader().getInfoHeaderLine("FREQ").getDescription(), description);
+            Assert.assertEquals(reader.getFileHeader().getSampleNamesInOrder(), List.of(sample));
         }
     }
 

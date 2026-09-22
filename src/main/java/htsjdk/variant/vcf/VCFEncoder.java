@@ -25,10 +25,8 @@ import java.util.TreeMap;
  */
 public class VCFEncoder {
 
-    /**
-     * The encoding used for VCF files: ISO-8859-1. When writing VCF4.3 is implemented, this should change to UTF-8.
-     */
-    public static final Charset VCF_CHARSET = StandardCharsets.ISO_8859_1;
+    /** The encoding used for VCF files: UTF-8, as required by VCF 4.3+. */
+    public static final Charset VCF_CHARSET = StandardCharsets.UTF_8;
 
     private static final String QUAL_FORMAT_STRING = "%.2f";
     private static final String QUAL_FORMAT_EXTENSION_TO_TRIM = ".00";

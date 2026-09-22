@@ -34,7 +34,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Implementation of LineReader that is a thin wrapper around BufferedReader.  On Linux, this is faster
- * than AsciiLineReaderImpl.  If you use AsciiLineReader rather than this class, it will detect the OS
+ * than AsciiLineReaderImpl.  If you use Utf8LineReader rather than this class, it will detect the OS
  * and delegate to the preferred implementation.
  *
  * @author alecw@broadinstitute.org

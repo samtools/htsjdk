@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Writes VariantContext instances to an OutputStream without headers or metadata. For use
@@ -32,12 +33,12 @@ public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
 
     @Override
     public void setOutputStream(final OutputStream stream) {
-        this.outputStream = new PrintStream(stream);
+        this.outputStream = new PrintStream(stream, false, StandardCharsets.UTF_8);
     }
 
     @Override
     public void setInputStream(final InputStream stream) {
-        this.inputReader = new BufferedReader(new InputStreamReader(stream));
+        this.inputReader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 
     @Override
