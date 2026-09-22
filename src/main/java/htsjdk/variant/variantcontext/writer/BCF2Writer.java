@@ -396,7 +396,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
             }
         }
         super.close(); // closes the output stream (writes BGZF EOF block)
-        if (csiIndexBuilder != null && !csiFailed) {
+        // No CSI unless the header reached the file: a header that failed to write leaves nothing to index
+        if (csiIndexBuilder != null && !csiFailed && outputHasBeenWritten) {
             final int nRefs = contigDictionary.size();
             final BinningIndex index = csiIndexBuilder.build(nRefs);
             try (BinaryCodec codec = new BinaryCodec(
