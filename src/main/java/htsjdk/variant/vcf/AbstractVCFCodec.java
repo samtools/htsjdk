@@ -561,17 +561,15 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * insertion's SVLEN is not. Works on the bytes so as not to make a String of every symbolic allele read.
      */
     private static boolean spansReferenceBySvlen(final byte[] alt) {
-        final int length = alt.length;
-        if (length < 5 || alt[0] != '<' || alt[length - 1] != '>' || (alt[4] != '>' && alt[4] != ':')) {
+        // StructuralVariantType.parse also accepts a bare SVTYPE value such as DEL; an allele must be symbolic
+        if (alt.length == 0 || alt[0] != '<') {
             return false;
         }
-        final byte a = alt[1];
-        final byte b = alt[2];
-        final byte c = alt[3];
-        return (a == 'D' && b == 'E' && c == 'L')
-                || (a == 'D' && b == 'U' && c == 'P')
-                || (a == 'C' && b == 'N' && c == 'V')
-                || (a == 'I' && b == 'N' && c == 'V');
+        final StructuralVariantType type = StructuralVariantType.parse(alt).orElse(null);
+        return type == StructuralVariantType.DEL
+                || type == StructuralVariantType.DUP
+                || type == StructuralVariantType.CNV
+                || type == StructuralVariantType.INV;
     }
 
     /** The longest SVLEN of the alleles that span the reference, by absolute value; 0 without a usable one. */

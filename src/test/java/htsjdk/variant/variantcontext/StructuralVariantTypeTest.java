@@ -1,6 +1,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.VariantBaseTest;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -54,7 +55,41 @@ public class StructuralVariantTypeTest extends VariantBaseTest {
 
     @Test
     public void parseNullReturnsEmpty() {
-        Assert.assertEquals(StructuralVariantType.parse(null), Optional.empty());
+        Assert.assertEquals(StructuralVariantType.parse((String) null), Optional.empty());
+    }
+
+    @Test
+    public void parseBytesOfASymbolicAlleleWithSubtypes() {
+        Assert.assertEquals(StructuralVariantType.parse(bytes("<DUP:TANDEM>")), Optional.of(StructuralVariantType.DUP));
+    }
+
+    @Test
+    public void parseBytesOfAnSvtypeValue() {
+        Assert.assertEquals(StructuralVariantType.parse(bytes("CNV")), Optional.of(StructuralVariantType.CNV));
+    }
+
+    @Test
+    public void parseBytesOfANonStructuralSymbolicAlleleReturnsEmpty() {
+        Assert.assertEquals(StructuralVariantType.parse(bytes("<NON_REF>")), Optional.empty());
+    }
+
+    @Test
+    public void parseBytesOfAnUnclosedSymbolicAlleleReturnsEmpty() {
+        Assert.assertEquals(StructuralVariantType.parse(bytes("<DEL")), Optional.empty());
+    }
+
+    @Test
+    public void parseBytesOfANameThatOnlyStartsLikeATypeReturnsEmpty() {
+        Assert.assertEquals(StructuralVariantType.parse(bytes("<DELETION>")), Optional.empty());
+    }
+
+    @Test
+    public void parseEmptyBytesReturnsEmpty() {
+        Assert.assertEquals(StructuralVariantType.parse(new byte[0]), Optional.empty());
+    }
+
+    private static byte[] bytes(final String text) {
+        return text.getBytes(StandardCharsets.US_ASCII);
     }
 
     @Test

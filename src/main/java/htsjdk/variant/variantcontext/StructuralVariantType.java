@@ -24,8 +24,11 @@
 
 package htsjdk.variant.variantcontext;
 
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Major type of a structural variant as defined in the VCF specification.
@@ -54,13 +57,9 @@ public enum StructuralVariantType {
      */
     MIXED;
 
-    private static final Map<String, StructuralVariantType> BY_NAME = Map.of(
-            "DEL", DEL,
-            "INS", INS,
-            "DUP", DUP,
-            "INV", INV,
-            "CNV", CNV,
-            "BND", BND);
+    /** What {@link #parse} can return, one shared instance per type so that it allocates nothing. */
+    private static final List<Optional<StructuralVariantType>> PARSED =
+            Stream.of(DEL, INS, DUP, INV, CNV, BND).map(Optional::of).collect(Collectors.toUnmodifiableList());
 
     /**
      * Parses a structural variant type from a symbolic allele string or an SVTYPE value.
@@ -78,18 +77,51 @@ public enum StructuralVariantType {
      * @return the major structural variant type, or empty if the string is not a structural variant
      */
     public static Optional<StructuralVariantType> parse(final String s) {
-        if (s == null || s.isEmpty()) {
+        // a character outside Latin-1 becomes '?', which no type's name contains
+        return s == null ? Optional.empty() : parse(s.getBytes(StandardCharsets.ISO_8859_1));
+    }
+
+    /**
+     * As {@link #parse(String)}, from the bytes of a symbolic allele or an SVTYPE value. It allocates nothing, so a
+     * reader may call it for every allele it reads.
+     *
+     * @param text the bytes to parse
+     * @return the major structural variant type, or empty if the bytes are not a structural variant
+     */
+    public static Optional<StructuralVariantType> parse(final byte[] text) {
+        if (text == null || text.length == 0) {
             return Optional.empty();
         }
-
-        String text = s;
-        if (text.charAt(0) == '<' && text.charAt(text.length() - 1) == '>') {
-            text = text.substring(1, text.length() - 1);
+        int start = 0;
+        int end = text.length;
+        if (text[0] == '<' && text[end - 1] == '>') {
+            start++;
+            end--;
         }
+        int colon = start;
+        while (colon < end && text[colon] != ':') {
+            colon++;
+        }
+        for (final Optional<StructuralVariantType> parsed : PARSED) {
+            if (nameIs(parsed.get(), text, start, colon)) {
+                return parsed;
+            }
+        }
+        return Optional.empty();
+    }
 
-        final int colon = text.indexOf(':');
-        final String majorName = colon >= 0 ? text.substring(0, colon) : text;
-        return Optional.ofNullable(BY_NAME.get(majorName));
+    /** Whether {@code text[start, end)} is the type's name. */
+    private static boolean nameIs(final StructuralVariantType type, final byte[] text, final int start, final int end) {
+        final String name = type.name();
+        if (name.length() != end - start) {
+            return false;
+        }
+        for (int i = 0; i < name.length(); i++) {
+            if (text[start + i] != name.charAt(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
