@@ -25,7 +25,13 @@ public enum SamIndexes {
     CRAI(FileExtensions.CRAM_INDEX, new byte[] {(byte) 0x1f, (byte) 0x8b}),
     CSI(FileExtensions.CSI, "CSI\1".getBytes());
 
+    /** The extension of this format's index files, such as {@code .bai}. */
     public final String fileNameSuffix;
+
+    /**
+     * The bytes this format starts with: a BAI as stored, a CSI once BGZF-decompressed. A CRAI has no signature of its
+     * own, so this is the gzip magic number, which a stored CSI also starts with.
+     */
     public final byte[] magic;
 
     SamIndexes(final String fileNameSuffix, final byte[] magic) {
@@ -164,6 +170,16 @@ public enum SamIndexes {
         return null;
     }
 
+    /**
+     * Identifies the format of an index from its first bytes. A gzip-compressed stream whose decompressed bytes start
+     * with the CSI magic number is a CSI, and any other gzip-compressed stream is taken for a CRAI, which has no magic
+     * number of its own; an uncompressed stream that starts with the BAI magic number is a BAI. The stream is read
+     * from its start and left there.
+     *
+     * @param seekableStream the index; not closed
+     * @return the format, or null if the stream is none of these
+     * @throws RuntimeIOException if the stream cannot be read
+     */
     public static SamIndexes getSAMIndexTypeFromStream(final SeekableStream seekableStream) {
         SamIndexes indexType = null;
         try {
