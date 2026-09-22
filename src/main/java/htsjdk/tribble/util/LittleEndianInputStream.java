@@ -16,6 +16,7 @@ import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Input stream with methods to convert byte arrays to numeric values using "little endian" order.
@@ -97,21 +98,21 @@ public class LittleEndianInputStream extends FilterInputStream {
     }
 
     /**
-     * Read a null terminated byte array and return result as a string
+     * Reads a null-terminated string, as {@link LittleEndianOutputStream#writeString(String)} writes it.
      *
-     * @return
-     * @throws IOException
+     * @return the bytes before the terminator, decoded as UTF-8
+     * @throws EOFException if the stream ends before the terminator
      */
     public String readString() throws IOException {
-        ByteArrayOutputStream bis = new ByteArrayOutputStream(100);
-        byte b;
-        while ((b = (byte) in.read()) != 0) {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream(100);
+        int b;
+        while ((b = in.read()) != 0) {
             if (b < 0) {
                 throw new EOFException();
             }
-            bis.write(b);
+            bytes.write(b);
         }
-        return new String(bis.toByteArray());
+        return bytes.toString(StandardCharsets.UTF_8);
     }
 
     /**

@@ -15,6 +15,7 @@ package htsjdk.tribble.util;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public final class LittleEndianOutputStream extends FilterOutputStream {
 
@@ -97,14 +98,13 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
     }
 
     /**
-     * Srite a string as a null terminated byte array.
-     *
-     * @param s
-     * @throws IOException
+     * Writes a string as its UTF-8 bytes followed by a null terminator, as
+     * {@link LittleEndianInputStream#readString()} reads it.
      */
     public void writeString(String s) throws IOException {
-        writeBytes(s);
-        write((byte) 0);
+        final byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+        write(bytes, 0, bytes.length);
+        write(0);
     }
 
     public long getWrittenCount() {
