@@ -4,8 +4,10 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.utils.BcftoolsTestUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
@@ -283,6 +285,15 @@ public class BCFFileReaderTest extends VariantBaseTest {
             w.add(snp(header, "contigB", 200));
             w.add(snp(header, "contigA", 100));
         }
+
+        // The file really carries the swapped ordinals, so the queries below cannot pass by declaration order
+        final BCF2Codec codec = new BCF2Codec();
+        try (PositionalBufferedStream pbs =
+                new PositionalBufferedStream(IOUtil.openGzipOrBgzfStream(Files.newInputStream(bcf)))) {
+            codec.readHeader(pbs);
+        }
+        Assert.assertEquals(codec.getContigDictionary().getIndex("contigA"), 1);
+        Assert.assertEquals(codec.getContigDictionary().getIndex("contigB"), 0);
 
         // Verify queries resolve each contig correctly despite the swapped IDX values
         try (BCFFileReader reader =
