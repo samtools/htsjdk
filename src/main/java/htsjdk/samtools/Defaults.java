@@ -58,9 +58,6 @@ public class Defaults {
      */
     public static final String DEFAULT_VCF_EXTENSION;
 
-    // read VCF 4.4 and 4.5 files, on a best-effort basis, while their features are not yet fully supported
-    public static final boolean OPTIMISTIC_VCF_4_4;
-
     /**
      * Even if BUFFER_SIZE is 0, this is guaranteed to be non-zero.  If BUFFER_SIZE is non-zero,
      * this == BUFFER_SIZE (Default = 128k).
@@ -107,8 +104,6 @@ public class Defaults {
      */
     public static final String DISABLE_SNAPPY_PROPERTY_NAME = "snappy.disable";
 
-    public static final String OPTIMISTIC_VCF_4_4_PROPERTY = "optimistic_vcf_4_4";
-
     /**
      * Disable use of the Snappy compressor.  Default = false.
      */
@@ -139,7 +134,6 @@ public class Defaults {
                 SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         USE_LIBDEFLATE = getBooleanProperty("use_libdeflate", true);
         DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
-        OPTIMISTIC_VCF_4_4 = getBooleanProperty(OPTIMISTIC_VCF_4_4_PROPERTY, false);
     }
 
     /**

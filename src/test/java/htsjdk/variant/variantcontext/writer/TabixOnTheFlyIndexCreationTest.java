@@ -30,7 +30,7 @@ import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.vcf.VCF3Codec;
+import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +42,7 @@ public class TabixOnTheFlyIndexCreationTest extends HtsjdkTest {
 
     @Test
     public void simpleTest() throws Exception {
-        final VCF3Codec codec = new VCF3Codec();
+        final VCFCodec codec = new VCFCodec();
         final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(
                 SMALL_VCF.toAbsolutePath().toString(), codec, false);
         final VCFHeader headerFromFile = (VCFHeader) reader.getHeader();

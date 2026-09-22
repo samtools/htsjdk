@@ -36,8 +36,7 @@ public class VCFSpecCorpusTest extends HtsjdkTest {
             "the second sample at 1:1900 has GT 0|1 on a record whose ALT is '.': the genotype names an allele the"
                     + " record does not define (htslib accepts it only because it stores GT as bare integers)";
     /** {@code passed/} files the reader cannot fully decode today, keyed by path relative to the corpus root. */
-    private static final Map<String, String> PASSED_NOT_YET_DECODABLE =
-            Map.ofEntries(Map.entry("4.5/passed/zero_length_LAA.vcf", "VCF 4.5 is rejected outright"));
+    private static final Map<String, String> PASSED_NOT_YET_DECODABLE = Map.ofEntries();
 
     /**
      * {@code passed/} files that are in fact invalid and that the reader is right to reject. Unlike the list above,
