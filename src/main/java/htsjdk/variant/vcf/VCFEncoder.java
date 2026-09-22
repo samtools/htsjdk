@@ -58,7 +58,8 @@ public class VCFEncoder {
     private final boolean percentEncode;
     private final boolean leadingPhaseAllowed;
     private final boolean outputIs45Plus;
-    private final boolean outputHasLaaFormat;
+    // Follows the header, which setVCFHeader can replace
+    private boolean outputHasLaaFormat;
 
     private boolean allowMissingFieldsInHeader = false;
 
@@ -124,6 +125,7 @@ public class VCFEncoder {
     @Deprecated
     public void setVCFHeader(final VCFHeader header) {
         this.header = header;
+        this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.LAA_KEY);
     }
 
     /**
