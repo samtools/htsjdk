@@ -322,4 +322,66 @@ public class AlleleUnitTest extends VariantBaseTest {
     public void testWouldBeBreakend(String baseString, boolean isSymbolic, boolean isBreakpoint, boolean isBreakend) {
         Assert.assertEquals(Allele.wouldBeSingleBreakend(baseString.getBytes()), isBreakend);
     }
+
+    // asStructuralVariant tests
+
+    @Test
+    public void asStructuralVariantSimpleDel() {
+        final Allele allele = Allele.create("<DEL>", false);
+        Assert.assertTrue(allele.asStructuralVariant().isPresent());
+        Assert.assertEquals(allele.asStructuralVariant().get().getType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void asStructuralVariantDelMe() {
+        final Allele allele = Allele.create("<DEL:ME>", false);
+        Assert.assertTrue(allele.asStructuralVariant().isPresent());
+        Assert.assertEquals(allele.asStructuralVariant().get().getType(), StructuralVariantType.DEL);
+        Assert.assertEquals(allele.asStructuralVariant().get().getSubtypes(), java.util.List.of("ME"));
+    }
+
+    @Test
+    public void asStructuralVariantBreakendPaired() {
+        final Allele allele = Allele.create("G]17:198982]", false);
+        Assert.assertTrue(allele.asStructuralVariant().isPresent());
+        Assert.assertEquals(allele.asStructuralVariant().get().getType(), StructuralVariantType.BND);
+    }
+
+    @Test
+    public void asStructuralVariantBreakendSingle() {
+        final Allele allele = Allele.create(".A", false);
+        Assert.assertTrue(allele.asStructuralVariant().isPresent());
+        Assert.assertEquals(allele.asStructuralVariant().get().getType(), StructuralVariantType.BND);
+    }
+
+    @Test
+    public void asStructuralVariantNonRefIsEmpty() {
+        Assert.assertFalse(Allele.NON_REF_ALLELE.asStructuralVariant().isPresent());
+    }
+
+    @Test
+    public void asStructuralVariantStarIsEmpty() {
+        Assert.assertFalse(
+                Allele.UNSPECIFIED_ALTERNATE_ALLELE.asStructuralVariant().isPresent());
+    }
+
+    @Test
+    public void asStructuralVariantSequenceIsEmpty() {
+        Assert.assertFalse(Allele.create("ACGT", false).asStructuralVariant().isPresent());
+    }
+
+    @Test
+    public void asStructuralVariantReferenceIsEmpty() {
+        Assert.assertFalse(Allele.REF_A.asStructuralVariant().isPresent());
+    }
+
+    @Test
+    public void asStructuralVariantNoCallIsEmpty() {
+        Assert.assertFalse(Allele.NO_CALL.asStructuralVariant().isPresent());
+    }
+
+    @Test
+    public void asStructuralVariantSpanDelIsEmpty() {
+        Assert.assertFalse(Allele.SPAN_DEL.asStructuralVariant().isPresent());
+    }
 }

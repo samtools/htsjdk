@@ -1139,4 +1139,62 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             Assert.assertEquals(readBack.getAttribute("NOTE"), value);
         }
     }
+
+    // LAA ordering and missing-LAA tests
+
+    @Test
+    public void laaNotReorderedForVcf43() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header = new VCFHeader(VCFHeaderVersion.VCF4_3, lines, Set.of("s1"));
+        header.setSequenceDictionary(dict);
+
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "chr1", 100, 100, List.of(Allele.create("A", true), Allele.create("C")))
+                .genotypes(new GenotypeBuilder("s1", List.of(Allele.create("A", true), Allele.create("C")))
+                        .attribute("LAA", List.of(1))
+                        .DP(7)
+                        .make())
+                .make();
+
+        final Path output = writeInteropVcf(header, vc);
+        final String dataLine = Files.readAllLines(output, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        Assert.assertTrue(dataLine.contains("GT:DP:LAA"), "LAA should not be reordered at 4.3: " + dataLine);
+    }
+
+    @Test
+    public void missingLaaWrittenAsDotInVcf() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header =
+                new VCFHeader(VCFHeaderVersion.VCF4_5, lines, new LinkedHashSet<>(List.of("s1", "s2")));
+        header.setSequenceDictionary(dict);
+
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, alleles)
+                .genotypes(
+                        new GenotypeBuilder("s1", alleles)
+                                .attribute("LAA", List.of(1))
+                                .DP(10)
+                                .make(),
+                        new GenotypeBuilder("s2", alleles).DP(5).make())
+                .make();
+
+        final Path output = writeInteropVcf(header, vc);
+        final String dataLine = Files.readAllLines(output, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        Assert.assertTrue(dataLine.contains("GT:LAA:DP"), "FORMAT should be GT:LAA:DP at 4.5: " + dataLine);
+        final String[] columns = dataLine.split("\t");
+        final String s2Genotype = columns[columns.length - 1];
+        Assert.assertTrue(s2Genotype.contains(".:"), "Sample without LAA should have . for LAA: " + s2Genotype);
+    }
 }

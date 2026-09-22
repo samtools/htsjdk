@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.samtools.util.StringUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  *  An implementation of {@link Allele} which includes a byte[] of the bases in the allele or the symbolic name.
@@ -313,5 +314,19 @@ public class SimpleAllele implements Allele {
     @Override
     public boolean isNonRefAllele() {
         return equals(NON_REF_ALLELE) || equals(UNSPECIFIED_ALTERNATE_ALLELE);
+    }
+
+    @Override
+    public Optional<StructuralVariantAllele> asStructuralVariant() {
+        if (isBreakpoint() || isSingleBreakend()) {
+            return Optional.of(StructuralVariantAllele.of(StructuralVariantType.BND));
+        }
+        if (isSymbolic) {
+            final String display = getDisplayString();
+            if (display.length() > 2 && display.charAt(0) == '<' && display.charAt(display.length() - 1) == '>') {
+                return StructuralVariantAllele.parse(display);
+            }
+        }
+        return Optional.empty();
     }
 }

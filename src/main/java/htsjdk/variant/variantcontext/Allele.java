@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 /**
  * Immutable representation of an allele.
@@ -451,4 +452,18 @@ public interface Allele extends Comparable<Allele>, Serializable {
      *  @return true if Allele is either {@code <NON_REF>} or {@code <*>}
      */
     boolean isNonRefAllele();
+
+    /**
+     * Returns the structural-variant identity of this allele if it is a structural variant,
+     * or empty otherwise. Symbolic alleles whose interior parses as a structural variant type
+     * (e.g. {@code <DEL>}, {@code <DEL:ME:ALU>}) return the parsed result. Breakend alleles
+     * (paired and single) return BND with no subtypes. Reference alleles, sequence alleles,
+     * no-call, span-deletion ({@code *}), and non-SV symbolic alleles ({@code <NON_REF>},
+     * {@code <*>}) return empty.
+     *
+     * @return the structural variant allele, or empty
+     */
+    default Optional<StructuralVariantAllele> asStructuralVariant() {
+        return Optional.empty();
+    }
 }

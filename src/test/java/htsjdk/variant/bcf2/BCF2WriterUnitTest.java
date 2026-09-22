@@ -2443,4 +2443,77 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             throw new RuntimeException(e);
         }
     }
+
+    // BCF LAA ordering and missing-LAA tests
+
+    @Test
+    public void bcfLaaFollowsGtAtVersion45() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        lines.add(new VCFFormatHeaderLine("AD", VCFHeaderLineCount.R, VCFHeaderLineType.Integer, "depths"));
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header = new VCFHeader(VCFHeaderVersion.VCF4_5, lines, Set.of("s1"));
+        header.setSequenceDictionary(dict);
+
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, alleles)
+                .genotypes(new GenotypeBuilder("s1", alleles)
+                        .attribute("LAA", List.of(1))
+                        .attribute("AD", new int[] {10, 5})
+                        .make())
+                .make();
+
+        final Path output = writeBcf(header, vc);
+        final List<String> stdout = BcftoolsTestUtils.viewAsVcf(output);
+        final String dataLine =
+                stdout.stream().filter(l -> !l.startsWith("#")).findFirst().orElseThrow();
+        Assert.assertTrue(dataLine.contains("GT:LAA:AD"), "BCF LAA should follow GT at 4.5: " + dataLine);
+
+        final List<String> stdoutAndStderr =
+                BcftoolsTestUtils.executeBcftools("view", "--no-version", "-Ov", output.toString());
+        Assert.assertEquals(stdoutAndStderr, stdout, "bcftools warned about BCF with LAA ordering");
+    }
+
+    @Test
+    public void bcfMissingLaaRendersAsDot() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header =
+                new VCFHeader(VCFHeaderVersion.VCF4_5, lines, new LinkedHashSet<>(List.of("s1", "s2")));
+        header.setSequenceDictionary(dict);
+
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, alleles)
+                .genotypes(
+                        new GenotypeBuilder("s1", alleles)
+                                .attribute("LAA", List.of(1))
+                                .DP(10)
+                                .make(),
+                        new GenotypeBuilder("s2", alleles).DP(5).make())
+                .make();
+
+        final Path output = writeBcf(header, vc);
+
+        // bcftools should render the missing LAA as .
+        final List<String> stdout = BcftoolsTestUtils.viewAsVcf(output);
+        final String dataLine =
+                stdout.stream().filter(l -> !l.startsWith("#")).findFirst().orElseThrow();
+        final String[] columns = dataLine.split("\t");
+        final String s2Col = columns[columns.length - 1];
+        Assert.assertTrue(s2Col.contains(".:"), "bcftools should render missing LAA as .: " + s2Col);
+
+        // htsjdk should read back the missing LAA as absent
+        final VariantContext readBack = readOne(output);
+        Assert.assertFalse(
+                readBack.getGenotype("s2").hasExtendedAttribute("LAA"),
+                "Sample without LAA should read back without LAA attribute");
+        Assert.assertTrue(
+                readBack.getGenotype("s1").hasExtendedAttribute("LAA"),
+                "Sample with LAA should read back with LAA attribute");
+    }
 }

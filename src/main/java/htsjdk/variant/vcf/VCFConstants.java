@@ -67,16 +67,127 @@ public final class VCFConstants {
     public static final String VALIDATED_KEY = "VALIDATED";
     public static final String THOUSAND_GENOMES_KEY = "1000G";
 
-    // reserved INFO for structural variants
-    /** INFO Type of structural variant */
-    public static final String SVTYPE = "SVTYPE";
-    /** INFO Length of a structural variant, one per alternate allele */
-    public static final String SVLEN_KEY = "SVLEN";
+    // INFO keys with stable definitions — registered as standard header lines
+    /** INFO Total read depth for each allele */
+    public static final String INFO_ALLELE_DEPTHS_KEY = "AD";
+    /** INFO Read depth for each allele on the forward strand */
+    public static final String INFO_ALLELE_DEPTHS_FORWARD_KEY = "ADF";
+    /** INFO Read depth for each allele on the reverse strand */
+    public static final String INFO_ALLELE_DEPTHS_REVERSE_KEY = "ADR";
+    /** INFO Imprecise structural variation */
+    public static final String IMPRECISE_KEY = "IMPRECISE";
+    /** INFO Indicates a novel structural variation */
+    public static final String NOVEL_KEY = "NOVEL";
+    /** INFO Type of associated event */
+    public static final String EVENTTYPE_KEY = "EVENTTYPE";
+    /** INFO Claim made by the structural variant call (D, J, or DJ) */
+    public static final String SVCLAIM_KEY = "SVCLAIM";
+    /** INFO Total number of repeat sequences in this allele */
+    public static final String RN_KEY = "RN";
+    /** INFO Repeat unit sequence of the corresponding repeat sequence */
+    public static final String RUS_KEY = "RUS";
+    /** INFO Repeat unit length of the corresponding repeat sequence */
+    public static final String RUL_KEY = "RUL";
+    /** INFO Repeat unit count of corresponding repeat sequence */
+    public static final String RUC_KEY = "RUC";
+    /** INFO Total number of bases in the corresponding repeat sequence */
+    public static final String RB_KEY = "RB";
+    /** INFO Confidence interval around RUC */
+    public static final String CIRUC_KEY = "CIRUC";
+    /** INFO Confidence interval around RB */
+    public static final String CIRB_KEY = "CIRB";
+    /** INFO Number of bases in each individual repeat unit (VCF 4.5) */
+    public static final String RUB_KEY = "RUB";
 
+    // INFO keys whose Number or Type changed between versions — constant only, no standard header line
+    /** INFO Type of structural variant (deprecated in 4.4) */
+    public static final String SVTYPE = "SVTYPE";
+    /** INFO Length of structural variant (Number changed from {@code .} to {@code A} in 4.4) */
+    public static final String SVLEN_KEY = "SVLEN";
+    /** INFO Confidence interval around POS for symbolic SVs (Number changed in 4.4) */
+    public static final String CIPOS_KEY = "CIPOS";
+    /** INFO Confidence interval around END for symbolic SVs (Number changed in 4.4) */
+    public static final String CIEND_KEY = "CIEND";
+    /** INFO Confidence interval for the SVLEN field (Number changed in 4.4) */
+    public static final String CILEN_KEY = "CILEN";
+    /** INFO Length of base pair identical micro-homology at breakpoints (Number changed in 4.4) */
+    public static final String HOMLEN_KEY = "HOMLEN";
+    /** INFO Sequence of base pair identical micro-homology at breakpoints (Number changed in 4.4) */
+    public static final String HOMSEQ_KEY = "HOMSEQ";
+    /** INFO ID of the assembled alternate allele in the assembly file (Number changed in 4.4) */
+    public static final String BKPTID_KEY = "BKPTID";
+    /** INFO Mobile element info (Number changed in 4.4) */
+    public static final String MEINFO_KEY = "MEINFO";
+    /** INFO Mobile element transduction info (Number changed in 4.4) */
+    public static final String METRANS_KEY = "METRANS";
+    /** INFO ID of this element in Database of Genomic Variation (Number changed in 4.4) */
+    public static final String DGVID_KEY = "DGVID";
+    /** INFO ID of this element in DBVAR (Number changed in 4.4) */
+    public static final String DBVARID_KEY = "DBVARID";
+    /** INFO ID of this element in DBRIP (Number changed in 4.4) */
+    public static final String DBRIPID_KEY = "DBRIPID";
+    /** INFO ID of mate breakend (Number changed in 4.4) */
+    public static final String MATEID_KEY = "MATEID";
+    /** INFO ID of partner breakend (Number changed in 4.4) */
+    public static final String PARID_KEY = "PARID";
+    /** INFO ID of associated event (Number changed in 4.4) */
+    public static final String EVENT_KEY = "EVENT";
+    /** INFO Copy number of allele (Number and Type changed in 4.4) */
+    public static final String INFO_CN_KEY = "CN";
+    /** INFO Confidence interval around copy number (Number and Type changed in 4.4) */
+    public static final String INFO_CICN_KEY = "CICN";
+
+    // FORMAT keys with stable definitions — registered as standard header lines
+    /** FORMAT Phred-scaled genotype posterior probabilities (VCF 4.3) */
+    public static final String GENOTYPE_POSTERIORS_PHRED_KEY = "PP";
+    /** FORMAT Phase set list (VCF 4.4) */
+    public static final String PHASE_SET_LIST_KEY = "PSL";
+    /** FORMAT Phase set list ordinal (VCF 4.4) */
+    public static final String PHASE_SET_LIST_ORDINAL_KEY = "PSO";
+    /** FORMAT Phase set list quality (VCF 4.4) */
+    public static final String PHASE_SET_LIST_QUALITY_KEY = "PSQ";
     /** FORMAT Length of a sample's {@code <*>} reference block (VCF 4.5) */
     public static final String LEN_KEY = "LEN";
     /** FORMAT Local alternate alleles: the ALT indices a sample's local-allele fields refer to (VCF 4.5) */
     public static final String LAA_KEY = "LAA";
+    /** FORMAT Local-allele representation of AD (VCF 4.5) */
+    public static final String LAD_KEY = "LAD";
+    /** FORMAT Local-allele representation of ADF (VCF 4.5) */
+    public static final String LADF_KEY = "LADF";
+    /** FORMAT Local-allele representation of ADR (VCF 4.5) */
+    public static final String LADR_KEY = "LADR";
+    /** FORMAT Local-allele representation of EC (VCF 4.5) */
+    public static final String LEC_KEY = "LEC";
+    /** FORMAT Local-allele representation of GL (VCF 4.5) */
+    public static final String LGL_KEY = "LGL";
+    /** FORMAT Local-allele representation of GP (VCF 4.5) */
+    public static final String LGP_KEY = "LGP";
+    /** FORMAT Local-allele representation of PL (VCF 4.5) */
+    public static final String LPL_KEY = "LPL";
+    /** FORMAT Local-allele representation of PP (VCF 4.5) */
+    public static final String LPP_KEY = "LPP";
+    /** FORMAT RMS mapping quality (VCF 4.3) */
+    public static final String FORMAT_MQ_KEY = "MQ";
+    /** FORMAT Confidence interval around copy number (VCF 4.4) */
+    public static final String FORMAT_CICN_KEY = "CICN";
+    /** FORMAT Copy number genotype quality */
+    public static final String CNQ_KEY = "CNQ";
+    /** FORMAT Copy number genotype likelihood */
+    public static final String CNL_KEY = "CNL";
+    /** FORMAT Copy number posterior probabilities */
+    public static final String CNP_KEY = "CNP";
+    /** FORMAT Phred style probability score that the variant is novel */
+    public static final String NQ_KEY = "NQ";
+    /** FORMAT Unique haplotype identifier */
+    public static final String HAP_KEY = "HAP";
+    /** FORMAT Unique identifier of ancestral haplotype */
+    public static final String AHAP_KEY = "AHAP";
+
+    // FORMAT keys whose Type changed between versions — constant only, no standard header line
+    /** FORMAT Copy number (Type changed from Integer to Float in 4.4) */
+    public static final String FORMAT_CN_KEY = "CN";
+    /** Reserved placeholder for the LA (local alternate) number code (VCF 4.5) */
+    public static final String LA_KEY = "LA";
 
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";

@@ -1988,11 +1988,41 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     /**
-     * Search for the INFO=SVTYPE and return the type of Structural Variant
-     * @return the StructuralVariantType of null if there is no property SVTYPE
-     * */
+     * Returns the major structural-variant type of this record, consulting both the
+     * {@code SVTYPE} INFO attribute and the ALT alleles. Returns null if no structural
+     * variant type is found, the single type if all sources agree, or
+     * {@link StructuralVariantType#MIXED} if they disagree.
+     *
+     * <p>An unparseable {@code SVTYPE} value is ignored rather than throwing. Per-allele
+     * structural variant information is available via {@link Allele#asStructuralVariant()}.
+     *
+     * @return the structural variant type, {@link StructuralVariantType#MIXED}, or null
+     */
     public StructuralVariantType getStructuralVariantType() {
+        StructuralVariantType found = null;
+        boolean multiple = false;
+
         final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
-        return svType == null ? null : StructuralVariantType.valueOf(svType);
+        if (svType != null) {
+            found = StructuralVariantType.parse(svType).orElse(null);
+        }
+
+        for (final Allele allele : getAlternateAlleles()) {
+            final StructuralVariantType alleleType = allele.asStructuralVariant()
+                    .map(StructuralVariantAllele::getType)
+                    .orElse(null);
+            if (alleleType != null) {
+                if (found == null) {
+                    found = alleleType;
+                } else if (found != alleleType) {
+                    multiple = true;
+                }
+            }
+        }
+
+        if (multiple) {
+            return StructuralVariantType.MIXED;
+        }
+        return found;
     }
 }

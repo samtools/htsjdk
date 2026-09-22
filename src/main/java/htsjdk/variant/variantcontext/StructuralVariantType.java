@@ -24,9 +24,16 @@
 
 package htsjdk.variant.variantcontext;
 
+import java.util.Map;
+import java.util.Optional;
+
 /**
- * Type of Structural Variant as defined in the VCF spec 4.2
+ * Major type of a structural variant as defined in the VCF specification.
  *
+ * <p>The six concrete types (DEL, INS, DUP, INV, CNV, BND) are the first-level types
+ * recognised in symbolic alleles and SVTYPE values. {@link #MIXED} represents a record
+ * whose alleles or SVTYPE disagree on the major type; it is never produced by
+ * {@link #parse(String)}.
  */
 public enum StructuralVariantType {
     /** Deletion relative to the reference */
@@ -39,22 +46,61 @@ public enum StructuralVariantType {
     INV,
     /** Copy number variable region */
     CNV,
-    /** breakend structural variation. VCF Specification : <cite>An arbitrary rearrangement
-     *  event can be summarized as a set of novel adjacencies.
-     *  Each adjacency ties together two breakends.</cite>
-     */
-    BND;
-
-    // TODO: 10/10/18 one caveat: BND's have symbolic alt allele, but it takes more information (novel adjacency at the
-    // minimum)
+    /** Breakend structural variation */
+    BND,
     /**
-     * Create angle-bracketed alt allele for simple SV types
-     * @return angle-bracketed alt allele for simple SV types
-     * @throws UnsupportedOperationException if this is invoked on a {@link #BND} object
+     * A record whose alleles or SVTYPE value name more than one distinct major type.
+     * Never returned by {@link #parse(String)}.
+     */
+    MIXED;
+
+    private static final Map<String, StructuralVariantType> BY_NAME = Map.of(
+            "DEL", DEL,
+            "INS", INS,
+            "DUP", DUP,
+            "INV", INV,
+            "CNV", CNV,
+            "BND", BND);
+
+    /**
+     * Parses a structural variant type from a symbolic allele string, an SVTYPE value,
+     * or a breakend notation string. Accepts forms like {@code DEL}, {@code DEL:ME:ALU},
+     * {@code <DEL:ME:ALU>}, and {@code <BND>}. Returns the major type (the part before
+     * the first colon), or empty for anything that is not one of the six concrete names
+     * ({@code <NON_REF>}, {@code <*>}, {@code <FOO>}, sequence text, {@code .}, {@code *}).
+     *
+     * <p>Case-sensitive. Never returns {@link #MIXED}.
+     *
+     * @param s the string to parse
+     * @return the major structural variant type, or empty if the string is not a structural variant
+     */
+    public static Optional<StructuralVariantType> parse(final String s) {
+        if (s == null || s.isEmpty()) {
+            return Optional.empty();
+        }
+
+        String text = s;
+        if (text.charAt(0) == '<' && text.charAt(text.length() - 1) == '>') {
+            text = text.substring(1, text.length() - 1);
+        }
+
+        final int colon = text.indexOf(':');
+        final String majorName = colon >= 0 ? text.substring(0, colon) : text;
+        return Optional.ofNullable(BY_NAME.get(majorName));
+    }
+
+    /**
+     * Creates an angle-bracketed symbolic alt allele for this type (e.g. {@code <DEL>}).
+     *
+     * @return the symbolic alt allele
+     * @throws UnsupportedOperationException if this is {@link #BND} or {@link #MIXED}
      */
     Allele toSymbolicAltAllele() {
-        if (this.equals(StructuralVariantType.BND)) {
+        if (this == BND) {
             throw new UnsupportedOperationException("BND type does not have angle bracketed alt allele");
+        }
+        if (this == MIXED) {
+            throw new UnsupportedOperationException("MIXED type does not have angle bracketed alt allele");
         }
         return Allele.create("<" + name() + ">", false);
     }

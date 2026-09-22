@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BinaryOperator;
 
 /**
  * Manages header lines for standard VCF <pre>INFO</pre> and <pre>FORMAT</pre> fields.
@@ -191,7 +190,96 @@ public class VCFStandardHeaderLines {
                 VCFHeaderLineType.Integer,
                 "Phasing set (typically the position of the first variant in the set)"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.PHASE_QUALITY_KEY, 1, VCFHeaderLineType.Float, "Read-backed phasing quality"));
+                VCFConstants.PHASE_QUALITY_KEY, 1, VCFHeaderLineType.Integer, "Read-backed phasing quality"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.GENOTYPE_POSTERIORS_PHRED_KEY,
+                VCFHeaderLineCount.G,
+                VCFHeaderLineType.Integer,
+                "Phred-scaled genotype posterior probabilities rounded to the closest integer"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.PHASE_SET_LIST_KEY, VCFHeaderLineCount.P, VCFHeaderLineType.String, "Phase set list"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.PHASE_SET_LIST_ORDINAL_KEY,
+                VCFHeaderLineCount.P,
+                VCFHeaderLineType.Integer,
+                "Phase set list ordinal"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.PHASE_SET_LIST_QUALITY_KEY,
+                VCFHeaderLineCount.P,
+                VCFHeaderLineType.Integer,
+                "Phase set list quality"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LEN_KEY, 1, VCFHeaderLineType.Integer, "Length of <*> reference block"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LAA_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Integer,
+                "1-based indices into ALT, indicating which alleles are relevant (local) for the current sample"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LAD_KEY,
+                VCFHeaderLineCount.LR,
+                VCFHeaderLineType.Integer,
+                "Local-allele representation of AD"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LADF_KEY,
+                VCFHeaderLineCount.LR,
+                VCFHeaderLineType.Integer,
+                "Local-allele representation of ADF"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LADR_KEY,
+                VCFHeaderLineCount.LR,
+                VCFHeaderLineType.Integer,
+                "Local-allele representation of ADR"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LEC_KEY,
+                VCFHeaderLineCount.LA,
+                VCFHeaderLineType.Integer,
+                "Local-allele representation of EC"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LGL_KEY,
+                VCFHeaderLineCount.LG,
+                VCFHeaderLineType.Float,
+                "Local-allele representation of GL"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LGP_KEY,
+                VCFHeaderLineCount.LG,
+                VCFHeaderLineType.Float,
+                "Local-allele representation of GP"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LPL_KEY,
+                VCFHeaderLineCount.LG,
+                VCFHeaderLineType.Integer,
+                "Local-allele representation of PL"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.LPP_KEY,
+                VCFHeaderLineCount.LG,
+                VCFHeaderLineType.Integer,
+                "Local-allele representation of PP"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.FORMAT_MQ_KEY, 1, VCFHeaderLineType.Integer, "RMS mapping quality"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.FORMAT_CICN_KEY, 2, VCFHeaderLineType.Float, "Confidence interval around copy number"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.CNQ_KEY, 1, VCFHeaderLineType.Float, "Copy number genotype quality"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.CNL_KEY,
+                VCFHeaderLineCount.G,
+                VCFHeaderLineType.Float,
+                "Copy number genotype likelihood"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.CNP_KEY,
+                VCFHeaderLineCount.G,
+                VCFHeaderLineType.Float,
+                "Copy number posterior probabilities"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.NQ_KEY,
+                1,
+                VCFHeaderLineType.Integer,
+                "Phred style probability score that the variant is novel"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.HAP_KEY, 1, VCFHeaderLineType.Integer, "Unique haplotype identifier"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.AHAP_KEY, 1, VCFHeaderLineType.Integer, "Unique identifier of ancestral haplotype"));
 
         // INFO lines
         registerStandard(new VCFInfoHeaderLine(
@@ -227,14 +315,87 @@ public class VCFStandardHeaderLines {
         registerStandard(new VCFInfoHeaderLine(
                 VCFConstants.RMS_MAPPING_QUALITY_KEY, 1, VCFHeaderLineType.Float, "RMS Mapping Quality"));
         registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY, 0, VCFHeaderLineType.Flag, "Somatic event"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.INFO_ALLELE_DEPTHS_KEY,
+                VCFHeaderLineCount.R,
+                VCFHeaderLineType.Integer,
+                "Total read depth for each allele"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.INFO_ALLELE_DEPTHS_FORWARD_KEY,
+                VCFHeaderLineCount.R,
+                VCFHeaderLineType.Integer,
+                "Read depth for each allele on the forward strand"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.INFO_ALLELE_DEPTHS_REVERSE_KEY,
+                VCFHeaderLineCount.R,
+                VCFHeaderLineType.Integer,
+                "Read depth for each allele on the reverse strand"));
+        registerStandard(
+                new VCFInfoHeaderLine(VCFConstants.HAPMAP2_KEY, 0, VCFHeaderLineType.Flag, "HapMap2 membership"));
+        registerStandard(
+                new VCFInfoHeaderLine(VCFConstants.HAPMAP3_KEY, 0, VCFHeaderLineType.Flag, "HapMap3 membership"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.IMPRECISE_KEY, 0, VCFHeaderLineType.Flag, "Imprecise structural variation"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.NOVEL_KEY, 0, VCFHeaderLineType.Flag, "Indicates a novel structural variation"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.EVENTTYPE_KEY,
+                VCFHeaderLineCount.A,
+                VCFHeaderLineType.String,
+                "Type of associated event"));
+        registerStandard(
+                new VCFInfoHeaderLine(
+                        VCFConstants.SVCLAIM_KEY,
+                        VCFHeaderLineCount.A,
+                        VCFHeaderLineType.String,
+                        "Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RN_KEY,
+                VCFHeaderLineCount.A,
+                VCFHeaderLineType.Integer,
+                "Total number of repeat sequences in this allele"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RUS_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.String,
+                "Repeat unit sequence of the corresponding repeat sequence"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RUL_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Integer,
+                "Repeat unit length of the corresponding repeat sequence"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RUC_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Float,
+                "Repeat unit count of corresponding repeat sequence"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RB_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Integer,
+                "Total number of bases in the corresponding repeat sequence"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.CIRUC_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Float,
+                "Confidence interval around RUC"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.CIRB_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Integer,
+                "Confidence interval around RB"));
+        registerStandard(new VCFInfoHeaderLine(
+                VCFConstants.RUB_KEY,
+                VCFHeaderLineCount.UNBOUNDED,
+                VCFHeaderLineType.Integer,
+                "Number of bases in each individual repeat unit"));
     }
 
     private static class Standards<T extends VCFCompoundHeaderLine> {
         private final Map<String, T> standards = new HashMap<String, T>();
-        // makes a line from the standard definition and the line it repairs, which keeps its other attributes
-        private final BinaryOperator<T> repaired;
+        private final java.util.function.BiFunction<T, T, T> repaired;
 
-        Standards(final BinaryOperator<T> repaired) {
+        Standards(final java.util.function.BiFunction<T, T, T> repaired) {
             this.repaired = repaired;
         }
 
@@ -245,7 +406,20 @@ public class VCFStandardHeaderLines {
                 final boolean badCount = line.isFixedCount() && !badCountType && line.getCount() != standard.getCount();
                 final boolean badType = line.getType() != standard.getType();
                 final boolean badDesc = !line.getDescription().equals(standard.getDescription());
-                final boolean needsRepair = badCountType || badCount || badType || (REPAIR_BAD_DESCRIPTIONS && badDesc);
+
+                // A type mismatch is logged but not corrected: the file's declared type governs
+                // how values are parsed, and silently changing it would break files that rely on
+                // the historical definition (e.g. PQ declared as Float). When the type differs,
+                // count repair is also skipped because the standard's count may be invalid with
+                // the file's type (e.g. Number=0 for a Flag standard with an Integer file type).
+                final boolean needsRepair =
+                        !badType && (badCountType || badCount || (REPAIR_BAD_DESCRIPTIONS && badDesc));
+
+                if (badType && GeneralUtils.DEBUG_MODE_ENABLED) {
+                    System.err.println("Standard header line " + line.getID()
+                            + " has type " + line.getType() + " but the standard is " + standard.getType()
+                            + "; keeping the header's type");
+                }
 
                 if (needsRepair) {
                     if (GeneralUtils.DEBUG_MODE_ENABLED) {
@@ -253,10 +427,6 @@ public class VCFStandardHeaderLines {
                                 + (badCountType
                                         ? " -- count types disagree; header has " + line.getCountType()
                                                 + " but standard is " + standard.getCountType()
-                                        : "")
-                                + (badType
-                                        ? " -- type disagree; header has " + line.getType() + " but standard is "
-                                                + standard.getType()
                                         : "")
                                 + (badCount
                                         ? " -- counts disagree; header has " + line.getCount() + " but standard is "
