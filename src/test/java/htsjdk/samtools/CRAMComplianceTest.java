@@ -39,21 +39,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
             {"auxf#values"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-            {"c1#noseq"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-            {"c1#unknown"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-            {"ce#5b"}, // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-            {"ce#1000"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"ce#tag_depadded"}, // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-            {"ce#tag_padded"}, // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-            {"ce#unmap"}, // unmapped reads with non-zero MAPQ value that is not restored
-            // https://github.com/samtools/htsjdk/issues/714
-            {"xx#minimal"}, // cigar string "5H0M5H" is restored as "10H"
-            // https://github.com/samtools/htsjdk/issues/713
             {"xx#repeated"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"xx#tlen"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"xx#tlen2"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"xx#triplet"}, // the version 2.1 variant of this file has a bad insertSize, which is
-            // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
             {"md#1"}, // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
     }
@@ -75,26 +61,55 @@ public class CRAMComplianceTest extends HtsjdkTest {
             {"c1#pad1"},
             {"c1#pad2"},
             {"c1#pad3"},
+            {"c1#noseq"},
+            {"c1#unknown"},
             {"c2#pad"},
             {"ce#1"},
             {"ce#2"},
             {"ce#5"},
+            {"ce#5b"},
+            {"ce#1000"},
             {"ce#large_seq"},
             {"ce#supp"},
+            {"ce#tag_depadded"},
+            {"ce#tag_padded"},
+            {"ce#unmap"},
             {"ce#unmap1"},
             {"ce#unmap2"},
             {"xx#blank"},
             {"xx#large_aux2"},
             {"xx#large_aux"},
+            {"xx#minimal"},
             {"xx#pair"},
             {"xx#rg"},
+            {"xx#tlen"},
+            {"xx#tlen2"},
+            {"xx#triplet"},
             {"xx#unsorted"},
         };
     }
 
     @Test(dataProvider = "fullVerification")
     public void fullVerificationTest(String name) throws IOException {
-        doComplianceTest(name, (version, actual, expected) -> Assert.assertEquals(actual, expected));
+        doComplianceTest(name, this::assertSameRecordsFull);
+    }
+
+    // CRAM 2.1 cannot mark a record's bases as unknown, so a record with SEQ "*" reads back from a 2.1 file
+    // with the bases of the reference it aligns to, and MD and NM generated from them, in samtools too
+    // (https://github.com/samtools/htsjdk/issues/509)
+    private void assertSameRecordsFull(final Integer majorVersion, final SAMRecord actual, final SAMRecord expected) {
+        if (majorVersion < CramVersions.CRAM_v3.getMajor() && expected.getReadBases() == SAMRecord.NULL_SEQUENCE) {
+            final SAMRecord expectedWithBases = expected.deepCopy();
+            expectedWithBases.setReadBases(actual.getReadBases());
+            for (final SAMTag generated : new SAMTag[] {SAMTag.MD, SAMTag.NM}) {
+                if (expected.getAttribute(generated) == null) {
+                    expectedWithBases.setAttribute(generated, actual.getAttribute(generated));
+                }
+            }
+            Assert.assertEquals(actual, expectedWithBases);
+        } else {
+            Assert.assertEquals(actual, expected);
+        }
     }
 
     private static class TestCase {

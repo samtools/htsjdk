@@ -87,6 +87,47 @@ public class Spec30RoundTripTagsAndLayoutTest extends HtsSpecsComplianceTestBase
         assertRoundTrip("0900_comp_raw");
     }
 
+    // Read names, quality scores and sequence
+    @Test
+    public void roundTrip_1000() throws IOException {
+        assertRoundTrip("1000_name");
+    }
+
+    @Test
+    public void roundTrip_1001() throws IOException {
+        assertRoundTrip("1001_name");
+    }
+
+    @Test
+    public void roundTrip_1002() throws IOException {
+        assertRoundTrip("1002_qual");
+    }
+
+    @Test
+    public void roundTrip_1003() throws IOException {
+        assertRoundTrip("1003_qual");
+    }
+
+    @Test
+    public void roundTrip_1004() throws IOException {
+        assertRoundTrip("1004_qual");
+    }
+
+    @Test
+    public void roundTrip_1005() throws IOException {
+        assertRoundTrip("1005_qual");
+    }
+
+    @Test
+    public void roundTrip_1006() throws IOException {
+        assertRoundTrip("1006_seq");
+    }
+
+    @Test
+    public void roundTrip_1007() throws IOException {
+        assertRoundTrip("1007_seq");
+    }
+
     // Data layout
     @Test
     public void roundTrip_1100() throws IOException {
