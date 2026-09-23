@@ -3,9 +3,13 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.compression.range.RangeParams;
+import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Predefined CRAM compression profiles matching those in htslib/samtools. Each profile defines
@@ -27,8 +31,8 @@ import java.util.EnumMap;
 public enum CRAMCompressionProfile {
 
     /**
-     * Speed-optimized profile. Uses only GZIP at level 1. Writes CRAM 3.0 since no 3.1-specific
-     * codecs are used, avoiding the need for a 3.1-capable reader.
+     * Speed-optimized profile. Uses GZIP at level 1 for the data series, and GZIP or rANS 4x8 for tags. Writes
+     * CRAM 3.0, which readers without CRAM 3.1 support can read.
      */
     FAST(CramVersions.CRAM_v3, 1, 10_000),
 
@@ -51,7 +55,14 @@ public enum CRAMCompressionProfile {
      * <p>This profile uses trial compression: multiple codecs are tried per block and the smallest
      * result wins. Additional candidates include BZIP2, the Range (arithmetic) coder, and GZIP.
      */
-    ARCHIVE(CramVersions.CRAM_v3_1, 7, 100_000);
+    ARCHIVE(CramVersions.CRAM_v3_1, 7, 100_000),
+
+    /**
+     * Balanced profile for CRAM 3.0, which readers without CRAM 3.1 support can read. Uses the codecs htsjdk wrote
+     * CRAM 3.0 with before 5.0.0: rANS 4x8 for the low-entropy data series, GZIP for the rest, and GZIP or rANS 4x8
+     * for tags.
+     */
+    NORMAL_3_0(CramVersions.CRAM_v3, 5, 10_000);
 
     private final CRAMVersion cramVersion;
     private final int gzipLevel;
@@ -71,8 +82,8 @@ public enum CRAMCompressionProfile {
                 return profile;
             }
         }
-        throw new IllegalArgumentException(
-                "Unknown CRAM compression profile: " + name + ". Must be one of: fast, normal, small, archive");
+        throw new IllegalArgumentException("Unknown CRAM compression profile: " + name + ". Must be one of: "
+                + Arrays.stream(values()).map(p -> p.name().toLowerCase()).collect(Collectors.joining(", ")));
     }
 
     CRAMCompressionProfile(final CRAMVersion cramVersion, final int gzipLevel, final int readsPerSlice) {
@@ -95,7 +106,7 @@ public enum CRAMCompressionProfile {
 
     /**
      * Apply this profile's settings to an existing strategy, overwriting the CRAM version,
-     * GZIP compression level, reads-per-slice, and compressor map.
+     * GZIP compression level, reads-per-slice, compressor map, trial candidates, and tag compressors.
      *
      * @param strategy the strategy to modify
      */
@@ -105,6 +116,20 @@ public enum CRAMCompressionProfile {
         strategy.setReadsPerSlice(readsPerSlice);
         strategy.setCompressorMap(buildCompressorMap());
         strategy.setTrialCandidatesMap(buildTrialCandidatesMap());
+        strategy.setTagCompressorCandidates(buildTagCompressorCandidates());
+    }
+
+    /** The compressors tried on each tag's block: rANS 4x8 for a CRAM 3.0 profile, rANS Nx16 for 3.1, and GZIP. */
+    private List<CompressorDescriptor> buildTagCompressorCandidates() {
+        final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
+        if (cramVersion.equals(CramVersions.CRAM_v3)) {
+            return List.of(
+                    gzip,
+                    new CompressorDescriptor(BlockCompressionMethod.RANS, RANS4x8Params.ORDER.ZERO.ordinal()),
+                    new CompressorDescriptor(BlockCompressionMethod.RANS, RANS4x8Params.ORDER.ONE.ordinal()));
+        }
+        return List.of(
+                gzip, new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()));
     }
 
     /**
@@ -127,6 +152,9 @@ public enum CRAMCompressionProfile {
                 break;
             case ARCHIVE:
                 buildArchiveMap(map);
+                break;
+            case NORMAL_3_0:
+                buildNormal30Map(map);
                 break;
         }
 
@@ -180,6 +208,29 @@ public enum CRAMCompressionProfile {
         // Specialized codecs
         map.put(DataSeries.QS_QualityScore, new CompressorDescriptor(BlockCompressionMethod.FQZCOMP));
         map.put(DataSeries.RN_ReadName, new CompressorDescriptor(BlockCompressionMethod.NAME_TOKENISER));
+    }
+
+    /** NORMAL_3_0: htsjdk 4.x's CRAM 3.0 map, rANS 4x8 for low-entropy data series and GZIP for the rest. */
+    private void buildNormal30Map(final EnumMap<DataSeries, CompressorDescriptor> map) {
+        final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
+        final CompressorDescriptor ransOrder0 =
+                new CompressorDescriptor(BlockCompressionMethod.RANS, RANS4x8Params.ORDER.ZERO.ordinal());
+        final CompressorDescriptor ransOrder1 =
+                new CompressorDescriptor(BlockCompressionMethod.RANS, RANS4x8Params.ORDER.ONE.ordinal());
+
+        for (final DataSeries ds : getWrittenDataSeries()) {
+            map.put(ds, gzip);
+        }
+        map.put(DataSeries.AP_AlignmentPositionOffset, ransOrder0);
+        map.put(DataSeries.RI_RefId, ransOrder0);
+        map.put(DataSeries.BA_Base, ransOrder1);
+        map.put(DataSeries.BF_BitFlags, ransOrder1);
+        map.put(DataSeries.CF_CompressionBitFlags, ransOrder1);
+        map.put(DataSeries.NS_NextFragmentReferenceSequenceID, ransOrder1);
+        map.put(DataSeries.QS_QualityScore, ransOrder1);
+        map.put(DataSeries.RG_ReadGroup, ransOrder1);
+        map.put(DataSeries.RL_ReadLength, ransOrder1);
+        map.put(DataSeries.TS_InsertSize, ransOrder1);
     }
 
     /** SMALL: Same codec assignments as NORMAL but at higher compression level. Trial compression

@@ -247,6 +247,14 @@ public class CompressionHeaderEncodingMap {
     }
 
     /**
+     * @param dataSeries a data series
+     * @return the compressor for the data series' external block, or null if this map has none
+     */
+    public ExternalCompressor getCompressorForDataSeries(final DataSeries dataSeries) {
+        return externalCompressors.get(dataSeries.getExternalBlockContentId());
+    }
+
+    /**
      * Get a list of all external IDs for this encoding map
      * @return list of all external IDs for this encoding map
      */

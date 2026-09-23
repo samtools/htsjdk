@@ -30,6 +30,7 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
 import htsjdk.utils.ValidationUtils;
 import java.util.EnumMap;
+import java.util.List;
 
 /**
  * Parameters that control the encoding strategy used when writing CRAM. Includes the CRAM version,
@@ -68,6 +69,9 @@ public class CRAMEncodingStrategy {
     // TrialCompressor that tries all and picks the smallest output.
     private EnumMap<DataSeries, java.util.List<CompressorDescriptor>> trialCandidatesMap;
 
+    // The compressors tried on each tag's block; the smallest output is used.
+    private List<CompressorDescriptor> tagCompressorCandidates;
+
     // Whether to store NM:i and MD:Z tags verbatim. When false (default), these tags are stripped
     // during encoding for mapped reads and regenerated from the reference during decoding. Matches
     // htslib's store_nm/store_md options (both default to 0/false).
@@ -101,13 +105,20 @@ public class CRAMEncodingStrategy {
     }
 
     /**
-     * Set the CRAM version to write.
+     * Set the CRAM version to write. Every compressor the strategy uses must be available in that version (see
+     * {@link htsjdk.samtools.cram.structure.block.BlockCompressionMethod#getMinimumCramVersion()}), which the
+     * writer checks when it is created; the profiles for CRAM 3.0 are {@link CRAMCompressionProfile#NORMAL_3_0} and
+     * {@link CRAMCompressionProfile#FAST}.
      *
-     * @param cramVersion the CRAM version (e.g., {@link CramVersions#CRAM_v3} or {@link CramVersions#CRAM_v3_1})
+     * @param cramVersion {@link CramVersions#CRAM_v3} or {@link CramVersions#CRAM_v3_1}; htsjdk reads CRAM 2.1 but
+     *     does not write it
      * @return this strategy for chaining
      */
     public CRAMEncodingStrategy setCramVersion(final CRAMVersion cramVersion) {
         ValidationUtils.nonNull(cramVersion, "CRAM version must not be null");
+        ValidationUtils.validateArg(
+                cramVersion.equals(CramVersions.CRAM_v3) || cramVersion.equals(CramVersions.CRAM_v3_1),
+                "htsjdk writes CRAM 3.0 and 3.1, not " + cramVersion);
         this.cramVersion = cramVersion;
         return this;
     }
@@ -245,6 +256,27 @@ public class CRAMEncodingStrategy {
     /** @return the trial candidates map, or null if trial compression is not configured */
     public EnumMap<DataSeries, java.util.List<CompressorDescriptor>> getTrialCandidatesMap() {
         return trialCandidatesMap;
+    }
+
+    /**
+     * Set the compressors tried on the block of each tag's values. Each is tried on a tag's first few blocks, and the
+     * one giving the smallest output is used for that tag from then on (see
+     * {@link htsjdk.samtools.cram.compression.TrialCompressor}).
+     *
+     * @param tagCompressorCandidates one or more compressor descriptors
+     * @return this strategy for chaining
+     */
+    public CRAMEncodingStrategy setTagCompressorCandidates(final List<CompressorDescriptor> tagCompressorCandidates) {
+        ValidationUtils.validateArg(
+                tagCompressorCandidates != null && !tagCompressorCandidates.isEmpty(),
+                "at least one tag compressor is required");
+        this.tagCompressorCandidates = List.copyOf(tagCompressorCandidates);
+        return this;
+    }
+
+    /** @return the compressors tried on the block of each tag's values */
+    public List<CompressorDescriptor> getTagCompressorCandidates() {
+        return tagCompressorCandidates;
     }
 
     /**

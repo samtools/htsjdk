@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.compression;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import org.testng.Assert;
@@ -223,5 +224,15 @@ public class TrialCompressorTest extends HtsjdkTest {
         // so the result may be non-empty. Verify it decompresses back to empty.
         final byte[] roundTripped = trial.uncompress(result);
         Assert.assertEquals(roundTripped.length, 0);
+    }
+
+    @Test
+    public void possibleMethodsAreThoseOfEveryCandidate() {
+        final TrialCompressor trial = new TrialCompressor(List.of(
+                ExternalCompressor.getCompressorForMethod(BlockCompressionMethod.GZIP, 5),
+                ExternalCompressor.getCompressorForMethod(
+                        BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal())));
+        Assert.assertEquals(
+                trial.getPossibleMethods(), EnumSet.of(BlockCompressionMethod.GZIP, BlockCompressionMethod.RANSNx16));
     }
 }

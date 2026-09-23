@@ -2,8 +2,10 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.TestNGUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -185,5 +187,37 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
         Assert.assertEquals(
                 CompressionHeaderFactory.getTagValueByteSize((byte) 'B', new long[] {0, 1, 2}),
                 elementTypeLength + arraySizeByteLength + arraySize * int_float_long_elementSize);
+    }
+
+    @Test
+    public void cram30StrategyWithACram31CodecIsRejected() {
+        // the default (NORMAL) profile's compressors include rANS Nx16, FQZComp and the name tokeniser
+        final CRAMEncodingStrategy strategy = new CRAMEncodingStrategy().setCramVersion(CramVersions.CRAM_v3);
+        final IllegalArgumentException e =
+                Assert.expectThrows(IllegalArgumentException.class, () -> new CompressionHeaderFactory(strategy));
+        Assert.assertTrue(e.getMessage().startsWith("CRAM 3.0 does not specify the "), e.getMessage());
+    }
+
+    @Test
+    public void cram30StrategyWithACram31TagCompressorIsRejected() {
+        final CRAMEncodingStrategy strategy = CRAMCompressionProfile.NORMAL_3_0
+                .toStrategy()
+                .setTagCompressorCandidates(List.of(new CompressorDescriptor(BlockCompressionMethod.RANSNx16, 0)));
+        final IllegalArgumentException e =
+                Assert.expectThrows(IllegalArgumentException.class, () -> new CompressionHeaderFactory(strategy));
+        Assert.assertTrue(e.getMessage().contains("RANSNx16 codec, which the encoding strategy uses for tags"));
+    }
+
+    @Test
+    public void cram30StrategyWithACustomEncodingMapUsingACram31CodecIsRejected() {
+        final CRAMEncodingStrategy strategy = CRAMCompressionProfile.NORMAL_3_0.toStrategy();
+        strategy.setCustomCompressionHeaderEncodingMap(new CompressionHeaderEncodingMap(new CRAMEncodingStrategy()));
+        Assert.assertThrows(IllegalArgumentException.class, () -> new CompressionHeaderFactory(strategy));
+    }
+
+    @Test
+    public void cram30StrategyWithCram30CodecsIsAccepted() {
+        Assert.assertNotNull(new CompressionHeaderFactory(CRAMCompressionProfile.NORMAL_3_0.toStrategy()));
+        Assert.assertNotNull(new CompressionHeaderFactory(CRAMCompressionProfile.FAST.toStrategy()));
     }
 }

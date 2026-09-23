@@ -24,8 +24,16 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.build.CramContainerIterator;
+import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMCompressionProfile;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
+import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.cram.structure.SliceBlocks;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -447,5 +455,77 @@ public class CRAMFileWriterTest extends HtsjdkTest {
             Assert.assertEquals(decoded.getStringAttribute(SAMTag.MD), "10", "MD should be preserved verbatim");
             Assert.assertNull(decoded.getAttribute("cF"), "cF tag should not exist when NM/MD are stored verbatim");
         }
+    }
+
+    // ---- CRAM 3.0 ----
+
+    /** Records with string and integer tags, so that tag blocks are written too. */
+    private List<SAMRecord> createRecordsWithTags(final int count) {
+        final List<SAMRecord> records = createRecords(count);
+        for (int i = 0; i < records.size(); i++) {
+            records.get(i).setAttribute("XS", "tag-value-" + (i % 7));
+            records.get(i).setAttribute("XI", i % 13);
+        }
+        return records;
+    }
+
+    private byte[] writeWithProfile(
+            final CRAMCompressionProfile profile, final List<SAMRecord> records, final ReferenceSource refSource) {
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(
+                profile.toStrategy(),
+                os,
+                null,
+                true,
+                refSource,
+                createSAMHeader(SAMFileHeader.SortOrder.coordinate),
+                null)) {
+            writeRecordsToCRAM(writer, records);
+        }
+        return os.toByteArray();
+    }
+
+    /** Assert that a CRAM has the given version and that every block in it uses a codec that version specifies. */
+    private static void assertOnlyCodecsOfVersion(final byte[] cram, final CRAMVersion version) throws IOException {
+        try (CramContainerIterator containers = new CramContainerIterator(new ByteArrayInputStream(cram))) {
+            Assert.assertEquals(containers.getCramHeader().getCRAMVersion(), version);
+            int externalBlocks = 0;
+            while (containers.hasNext()) {
+                final Container container = containers.next();
+                for (final Slice slice : container.getSlices()) {
+                    final SliceBlocks blocks = slice.getSliceBlocks();
+                    final List<Block> all = new ArrayList<>();
+                    all.add(blocks.getCoreBlock());
+                    for (final Integer contentId : blocks.getExternalContentIDs()) {
+                        all.add(blocks.getExternalBlock(contentId));
+                        externalBlocks++;
+                    }
+                    for (final Block block : all) {
+                        Assert.assertTrue(
+                                block.getCompressionMethod().isAvailableIn(version),
+                                "block " + block.getContentId() + " uses " + block.getCompressionMethod());
+                    }
+                }
+            }
+            Assert.assertTrue(externalBlocks > 0);
+        }
+    }
+
+    @Test
+    public void fastProfileWritesOnlyCram30Codecs() throws IOException {
+        final List<SAMRecord> records = createRecordsWithTags(2000);
+        final ReferenceSource refSource = createReferenceSource();
+        final byte[] cram = writeWithProfile(CRAMCompressionProfile.FAST, records, refSource);
+        assertOnlyCodecsOfVersion(cram, CramVersions.CRAM_v3);
+        validateRecords(records, new ByteArrayInputStream(cram), refSource);
+    }
+
+    @Test
+    public void normal30ProfileWritesOnlyCram30Codecs() throws IOException {
+        final List<SAMRecord> records = createRecordsWithTags(2000);
+        final ReferenceSource refSource = createReferenceSource();
+        final byte[] cram = writeWithProfile(CRAMCompressionProfile.NORMAL_3_0, records, refSource);
+        assertOnlyCodecsOfVersion(cram, CramVersions.CRAM_v3);
+        validateRecords(records, new ByteArrayInputStream(cram), refSource);
     }
 }

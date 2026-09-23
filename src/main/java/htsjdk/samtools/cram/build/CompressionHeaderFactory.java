@@ -17,10 +17,10 @@
  */
 package htsjdk.samtools.cram.build;
 
+import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.compression.TrialCompressor;
-import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.encoding.*;
 import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
@@ -32,6 +32,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.utils.ValidationUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,7 +63,7 @@ public final class CompressionHeaderFactory {
     private final ByteArrayOutputStream baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
 
     // Per-tag trial compressors that persist across containers. Each tag ID gets its own
-    // TrialCompressor that learns which of GZIP/rANS-0/rANS-1 works best for that tag's data.
+    // TrialCompressor that learns which of the strategy's tag compressors works best for that tag's data.
     private final Map<Integer, ExternalCompressor> tagTrialCompressors = new HashMap<>();
 
     // Every tag's TrialCompressor draws its candidates from this one cache. A candidate's output depends only on the
@@ -81,6 +82,40 @@ public final class CompressionHeaderFactory {
                 ? encodingStrategy.getCustomCompressionHeaderEncodingMap()
                 : new CompressionHeaderEncodingMap(encodingStrategy);
         this.encodingStrategy = encodingStrategy;
+        checkCodecsAvailable(encodingStrategy.getCramVersion(), encodingMap, encodingStrategy);
+    }
+
+    /**
+     * Check that the CRAM version being written specifies every codec the encoding uses, so that, for example, a
+     * CRAM 3.0 file never holds a block compressed with a CRAM 3.1 codec.
+     *
+     * @throws IllegalArgumentException naming the first codec the version does not specify and what it is used for
+     */
+    private static void checkCodecsAvailable(
+            final CRAMVersion cramVersion,
+            final CompressionHeaderEncodingMap encodingMap,
+            final CRAMEncodingStrategy encodingStrategy) {
+        for (final DataSeries dataSeries : DataSeries.values()) {
+            final ExternalCompressor compressor = encodingMap.getCompressorForDataSeries(dataSeries);
+            if (compressor != null) {
+                for (final BlockCompressionMethod method : compressor.getPossibleMethods()) {
+                    checkCodecAvailable(cramVersion, method, dataSeries.getCanonicalName());
+                }
+            }
+        }
+        for (final CompressorDescriptor candidate : encodingStrategy.getTagCompressorCandidates()) {
+            checkCodecAvailable(cramVersion, candidate.method(), "tags");
+        }
+    }
+
+    private static void checkCodecAvailable(
+            final CRAMVersion cramVersion, final BlockCompressionMethod method, final String usedFor) {
+        ValidationUtils.validateArg(
+                method.isAvailableIn(cramVersion),
+                () -> String.format(
+                        "CRAM %s does not specify the %s codec, which the encoding strategy uses for %s; use a"
+                                + " CRAMCompressionProfile that writes CRAM %s, or write CRAM %s",
+                        cramVersion, method, usedFor, cramVersion, method.getMinimumCramVersion()));
     }
 
     /**
@@ -264,33 +299,26 @@ public final class CompressionHeaderFactory {
     }
 
     /**
-     * Get the trial compressor for a tag, creating one if it doesn't exist yet. The trial
-     * compressor tries GZIP, rANS order-0, and rANS order-1 on the first few blocks, then
-     * uses the winner for subsequent blocks until re-trial.
+     * Get the compressor for a tag, creating one if it doesn't exist yet: a trial compressor over the strategy's tag
+     * compressors, which tries them all on the first few blocks and then uses the winner until re-trial.
      */
     private ExternalCompressor getTagTrialCompressor(final int tagID) {
         return tagTrialCompressors.computeIfAbsent(tagID, id -> {
-            // Extract the two-character tag name from the encoded tag ID
-            final char tag1 = (char) ((id >> 16) & 0xFF);
-            final char tag2 = (char) ((id >> 8) & 0xFF);
+            final List<ExternalCompressor> candidates = new ArrayList<>();
+            for (final CompressorDescriptor descriptor : encodingStrategy.getTagCompressorCandidates()) {
+                candidates.add(tagCompressorCache.getCompressorForMethod(descriptor.method(), descriptor.arg()));
+            }
 
             // BZIP2's BWT excels on structured alignment tags (SA:Z, XA:Z) where
             // repeated substrings like contig names and CIGAR patterns are common
-            final boolean useBzip2 = (tag1 == 'S' && tag2 == 'A') || (tag1 == 'X' && tag2 == 'A');
-            if (useBzip2) {
-                return new TrialCompressor(List.of(
-                        tagCompressorCache.getCompressorForMethod(
-                                BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
-                        tagCompressorCache.getCompressorForMethod(
-                                BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()),
-                        tagCompressorCache.getCompressorForMethod(
-                                BlockCompressionMethod.BZIP2, ExternalCompressor.NO_COMPRESSION_ARG)));
+            final char tag1 = (char) ((id >> 16) & 0xFF);
+            final char tag2 = (char) ((id >> 8) & 0xFF);
+            final ExternalCompressor bzip2 = tagCompressorCache.getCompressorForMethod(
+                    BlockCompressionMethod.BZIP2, ExternalCompressor.NO_COMPRESSION_ARG);
+            if (((tag1 == 'S' && tag2 == 'A') || (tag1 == 'X' && tag2 == 'A')) && !candidates.contains(bzip2)) {
+                candidates.add(bzip2);
             }
-            return new TrialCompressor(List.of(
-                    tagCompressorCache.getCompressorForMethod(
-                            BlockCompressionMethod.GZIP, encodingStrategy.getGZIPCompressionLevel()),
-                    tagCompressorCache.getCompressorForMethod(
-                            BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal())));
+            return candidates.size() == 1 ? candidates.get(0) : new TrialCompressor(candidates);
         });
     }
 

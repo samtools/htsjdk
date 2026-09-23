@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import java.util.EnumMap;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -20,6 +21,7 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
             {CRAMCompressionProfile.NORMAL},
             {CRAMCompressionProfile.SMALL},
             {CRAMCompressionProfile.ARCHIVE},
+            {CRAMCompressionProfile.NORMAL_3_0},
         };
     }
 
@@ -175,5 +177,43 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         Assert.assertNull(
                 CRAMCompressionProfile.NORMAL.toStrategy().getTrialCandidatesMap(),
                 "NORMAL should not have trial candidates");
+    }
+
+    @Test(dataProvider = "profiles")
+    public void everyProfileUsesOnlyCodecsItsCramVersionSpecifies(final CRAMCompressionProfile profile) {
+        final CRAMEncodingStrategy strategy = profile.toStrategy();
+        final List<CompressorDescriptor> descriptors =
+                new java.util.ArrayList<>(strategy.getCompressorMap().values());
+        if (strategy.getTrialCandidatesMap() != null) {
+            strategy.getTrialCandidatesMap().values().forEach(descriptors::addAll);
+        }
+        descriptors.addAll(strategy.getTagCompressorCandidates());
+        for (final CompressorDescriptor descriptor : descriptors) {
+            Assert.assertTrue(
+                    descriptor.method().isAvailableIn(strategy.getCramVersion()),
+                    profile + " uses " + descriptor.method() + ", which CRAM " + strategy.getCramVersion()
+                            + " does not specify");
+        }
+    }
+
+    @Test
+    public void testNormal30Profile() {
+        final CRAMEncodingStrategy strategy = CRAMCompressionProfile.NORMAL_3_0.toStrategy();
+        Assert.assertEquals(strategy.getCramVersion(), CramVersions.CRAM_v3);
+        Assert.assertEquals(strategy.getGZIPCompressionLevel(), 5);
+        Assert.assertEquals(strategy.getReadsPerSlice(), 10_000);
+        Assert.assertNull(strategy.getTrialCandidatesMap());
+    }
+
+    @Test
+    public void normal30IsFoundByName() {
+        Assert.assertEquals(
+                CRAMCompressionProfile.valueOfCaseInsensitive("normal_3_0"), CRAMCompressionProfile.NORMAL_3_0);
+    }
+
+    @Test
+    public void strategyRefusesToWriteCram21() {
+        Assert.assertThrows(IllegalArgumentException.class, () -> new CRAMEncodingStrategy()
+                .setCramVersion(CramVersions.CRAM_v2_1));
     }
 }
