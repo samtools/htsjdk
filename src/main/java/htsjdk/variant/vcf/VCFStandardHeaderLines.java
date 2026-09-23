@@ -219,6 +219,16 @@ public class VCFStandardHeaderLines {
                 VCFHeaderLineType.Integer,
                 "1-based indices into ALT, indicating which alleles are relevant (local) for the current sample"));
         registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.FORMAT.ALLELE_DEPTHS_FORWARD_STRAND,
+                VCFHeaderLineCount.R,
+                VCFHeaderLineType.Integer,
+                "Read depth for each allele on the forward strand"));
+        registerStandard(new VCFFormatHeaderLine(
+                VCFConstants.FORMAT.ALLELE_DEPTHS_REVERSE_STRAND,
+                VCFHeaderLineCount.R,
+                VCFHeaderLineType.Integer,
+                "Read depth for each allele on the reverse strand"));
+        registerStandard(new VCFFormatHeaderLine(
                 VCFConstants.FORMAT.LOCAL_ALLELE_DEPTHS,
                 VCFHeaderLineCount.LR,
                 VCFHeaderLineType.Integer,

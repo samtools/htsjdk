@@ -147,6 +147,10 @@ public final class VCFConstants {
     /** Keys the VCF specification reserves for FORMAT (per-sample) fields. */
     public static final class FORMAT {
         // Keys with stable definitions — registered as standard header lines
+        /** Read depth for each allele on the forward strand (VCF 4.3) */
+        public static final String ALLELE_DEPTHS_FORWARD_STRAND = "ADF";
+        /** Read depth for each allele on the reverse strand (VCF 4.3) */
+        public static final String ALLELE_DEPTHS_REVERSE_STRAND = "ADR";
         /** Phred-scaled genotype posterior probabilities (VCF 4.3) */
         public static final String PHRED_SCALED_GENOTYPE_POSTERIORS = "PP";
         /** Phase set list (VCF 4.4) */

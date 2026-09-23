@@ -287,6 +287,15 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
     // PQ standard line tests
 
     @Test
+    public void formatAdfAndAdrAreStandardPerAlleleIntegers() {
+        for (final String key : new String[] {"ADF", "ADR"}) {
+            final VCFFormatHeaderLine line = VCFStandardHeaderLines.getFormatLine(key);
+            Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.R, key);
+            Assert.assertEquals(line.getType(), VCFHeaderLineType.Integer, key);
+        }
+    }
+
+    @Test
     public void pqStandardLineIsInteger() {
         Assert.assertEquals(VCFStandardHeaderLines.getFormatLine("PQ").getType(), VCFHeaderLineType.Integer);
         Assert.assertEquals(VCFStandardHeaderLines.getFormatLine("PQ").getCount(), 1);
