@@ -145,4 +145,36 @@ public class StructuralVariantAlleleTest extends VariantBaseTest {
     public void aSingleBreakendIsABreakend() {
         Assert.assertTrue(StructuralVariantAllele.parse(".A").get().isBreakend());
     }
+
+    @Test
+    public void aBreakendCarriesItsParsedBreakend() {
+        final StructuralVariantAllele sv =
+                StructuralVariantAllele.parse("C[2:321682[").get();
+        Assert.assertEquals(sv.getBreakend(), Breakend.parse("C[2:321682["));
+    }
+
+    @Test
+    public void aSymbolicAlleleHasNoBreakend() {
+        Assert.assertEquals(StructuralVariantAllele.parse("<DEL>").get().getBreakend(), Optional.empty());
+    }
+
+    @Test
+    public void aSymbolicBndIsSymbolicNotABreakend() {
+        final StructuralVariantAllele sv =
+                StructuralVariantAllele.parse("<BND>").get();
+        Assert.assertEquals(sv.getType(), StructuralVariantType.BND);
+        Assert.assertTrue(sv.isSymbolic());
+        Assert.assertFalse(sv.isBreakend());
+    }
+
+    @Test
+    public void malformedBreakendNotationIsNotAStructuralVariant() {
+        Assert.assertEquals(StructuralVariantAllele.parse("G]chr1:x]"), Optional.empty());
+    }
+
+    @Test
+    public void breakendsWithDifferentMatesAreNotEqual() {
+        Assert.assertNotEquals(
+                StructuralVariantAllele.parse("C[2:321682["), StructuralVariantAllele.parse("C[2:321683["));
+    }
 }

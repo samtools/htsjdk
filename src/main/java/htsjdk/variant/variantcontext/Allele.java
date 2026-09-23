@@ -457,7 +457,8 @@ public interface Allele extends Comparable<Allele>, Serializable {
      * Returns the structural-variant identity of this allele if it is a structural variant,
      * or empty otherwise. Symbolic alleles whose interior parses as a structural variant type
      * (e.g. {@code <DEL>}, {@code <DEL:ME:ALU>}) return the parsed result. Breakend alleles
-     * (paired and single) return BND with no subtypes. Reference alleles, sequence alleles,
+     * (paired and single) return BND with no subtypes and their {@link Breakend}; one whose
+     * breakend notation is malformed returns empty. Reference alleles, sequence alleles,
      * no-call, span-deletion ({@code *}), and non-SV symbolic alleles ({@code <NON_REF>},
      * {@code <*>}) return empty.
      *

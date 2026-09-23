@@ -348,6 +348,21 @@ public class AlleleUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void asStructuralVariantOfABreakendCarriesItsMate() {
+        final Allele allele = Allele.create("G]17:198982]", false);
+        final Breakend breakend =
+                allele.asStructuralVariant().get().getBreakend().get();
+        Assert.assertEquals(breakend.getMateContig(), java.util.Optional.of("17"));
+        Assert.assertTrue(breakend.isMateNegativeStrand());
+    }
+
+    @Test
+    public void asStructuralVariantOfMalformedBreakendNotationIsEmpty() {
+        Assert.assertFalse(
+                Allele.create("G[chr1:100]", false).asStructuralVariant().isPresent());
+    }
+
+    @Test
     public void asStructuralVariantBreakendSingle() {
         final Allele allele = Allele.create(".A", false);
         Assert.assertTrue(allele.asStructuralVariant().isPresent());
