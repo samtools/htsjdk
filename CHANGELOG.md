@@ -236,7 +236,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - `SeekablePathStream.read()` no longer returns 0 when the underlying channel reads no bytes, as a channel may, which a caller took for a byte of zero; it retries, as `read(byte[], int, int)` already did (issue #1399).
 
 - **A mapped read without bases (SEQ `*`, such as a minimap2 secondary alignment) keeps its CIGAR, NM and MD through a CRAM that htsjdk writes.**  htsjdk 5.0.0 read such a read back from its own CRAM with the CIGAR `0M` and without NM or MD, whatever it had been; samtools read the same files correctly.  The writer now stores these reads as htslib does, and CRAMs written by htsjdk 4.x and 5.0.0 read correctly again.
-- Reading CRAM matches samtools in three smaller details: MD for a read that runs off the end of the reference was empty; htslib's internal `cF` tag appeared on unmapped records; and the PNEXT of an unpaired read was dropped when writing and cleared when reading.
+- Reading CRAM matches samtools in three smaller details: MD for a read that runs off the end of the reference was empty; htslib's internal `cF` tag appeared on unmapped records; and the PNEXT of an unpaired read was dropped when writing and cleared when reading.  Such a read has no RNEXT, as in htslib, so `ValidationStringency.STRICT` rejects it as it rejects the same record in SAM or BAM; that error now reports the PNEXT, where it reported the read's own position.
 
 ### Testing
 

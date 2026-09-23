@@ -2216,7 +2216,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
             if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(
                     SAMValidationError.Type.INVALID_UNALIGNED_MATE_START,
-                    "The unaligned mate start position is " + getAlignmentStart() + ", should be "
+                    "The unaligned mate start position is " + getMateAlignmentStart() + ", should be "
                             + SAMRecord.NO_ALIGNMENT_START,
                     getReadName()));
             if (firstOnly) return ret;
