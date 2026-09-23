@@ -22,6 +22,7 @@ public final class Breakend {
 
     private final String bases;
     private final boolean joinedAfter;
+    // null for a single breakend, whose other mate fields are then unused
     private final String mateContig;
     private final int matePosition;
     private final boolean mateAssemblyContig;
@@ -56,6 +57,12 @@ public final class Breakend {
         return open < 0 ? parseSingle(allele) : parsePaired(allele, open);
     }
 
+    /**
+     * Parses a single breakend, {@code t.} (joined after {@code t}) or {@code .t} (joined before {@code t}).
+     *
+     * @param allele text of at least two characters that contains no square bracket
+     * @return the breakend, or empty unless exactly one end of the text is a {@code .} and the rest is bases
+     */
     private static Optional<Breakend> parseSingle(final String allele) {
         final boolean joinedAfter = allele.charAt(allele.length() - 1) == SINGLE_BREAKEND;
         final boolean joinedBefore = allele.charAt(0) == SINGLE_BREAKEND;
@@ -68,6 +75,17 @@ public final class Breakend {
                 : Optional.empty();
     }
 
+    /**
+     * Parses a paired breakend: {@code t[p[}, {@code t]p]}, {@code ]p]t} or {@code [p[t}. The text must hold exactly
+     * two square brackets, both the same, enclosing the mate {@code p}, with the bases {@code t} (or {@code .} at a
+     * telomere) on one side of them and nothing on the other. The side {@code t} is on gives the join, and the join
+     * together with the bracket gives the mate's strand.
+     *
+     * @param allele the text to parse
+     * @param open the index of the first square bracket in {@code allele}
+     * @return the breakend, or empty if the text does not have that shape, {@code t} is not bases, or {@code p} is
+     *     not a non-empty contig, a colon and a {@linkplain #parsePosition position}
+     */
     private static Optional<Breakend> parsePaired(final String allele, final int open) {
         final char bracket = allele.charAt(open);
         final int close = allele.indexOf(bracket, open + 1);
@@ -107,7 +125,14 @@ public final class Breakend {
                 new Breakend(bases, joinedAfter, contig, position.getAsInt(), assemblyContig, negativeStrand));
     }
 
-    /** A non-negative position; 0 and N+1 are the virtual telomeric breakends of a contig of length N. */
+    /**
+     * Parses a mate's position. Only digits are accepted, so a sign, a space or an empty string is not a position.
+     * Zero is, and so is a value past the contig's end, since 0 and N+1 are the virtual telomeric breakends of a
+     * contig of length N.
+     *
+     * @param text the text after the last colon of the mate
+     * @return the position, or empty if the text is not all digits or does not fit in an int
+     */
     private static OptionalInt parsePosition(final String text) {
         if (text.isEmpty()) {
             return OptionalInt.empty();
@@ -124,6 +149,13 @@ public final class Breakend {
         }
     }
 
+    /**
+     * The index of the first square bracket of either kind at or after {@code from}.
+     *
+     * @param s the text to search
+     * @param from the index to start at
+     * @return the bracket's index, or -1 if there is none
+     */
     private static int indexOfBracket(final String s, final int from) {
         for (int i = from; i < s.length(); i++) {
             if (s.charAt(i) == EXTENDS_RIGHT || s.charAt(i) == EXTENDS_LEFT) {
@@ -133,6 +165,12 @@ public final class Breakend {
         return -1;
     }
 
+    /**
+     * Whether the text is one or more bases: A, C, G, T or N in either case, the bases {@link Allele} accepts.
+     *
+     * @param s the text to check
+     * @return true if the text is a non-empty run of bases
+     */
     private static boolean areBases(final String s) {
         if (s.isEmpty()) {
             return false;
