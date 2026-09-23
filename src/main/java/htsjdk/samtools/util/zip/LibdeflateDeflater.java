@@ -37,6 +37,8 @@ import java.util.zip.Deflater;
  */
 class LibdeflateDeflater extends Deflater {
 
+    private static final byte[] EMPTY_INPUT = new byte[0];
+
     private final LibdeflateCompressor compressor;
     private final boolean nowrap;
 
@@ -90,14 +92,12 @@ class LibdeflateDeflater extends Deflater {
 
     @Override
     public int deflate(final byte[] output, final int off, final int len) {
-        if (inputBuf == null || inputLen == 0) {
-            done = true;
-            return 0;
-        }
-
+        // Empty input still needs a (tiny) DEFLATE stream, as java.util.zip.Deflater writes; readers such as
+        // GZIPInputStream reject a gzip member without one.
+        final byte[] input = inputBuf == null ? EMPTY_INPUT : inputBuf;
         final int compressed = nowrap
-                ? compressor.deflateCompress(inputBuf, inputOff, inputLen, output, off, len)
-                : compressor.zlibCompress(inputBuf, inputOff, inputLen, output, off, len);
+                ? compressor.deflateCompress(input, inputOff, inputLen, output, off, len)
+                : compressor.zlibCompress(input, inputOff, inputLen, output, off, len);
         if (compressed == -1) {
             // Output buffer too small — caller will handle this (e.g. fall back to no-compression)
             done = false;

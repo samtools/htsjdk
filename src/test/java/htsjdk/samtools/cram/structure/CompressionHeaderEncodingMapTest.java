@@ -3,6 +3,8 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
+import htsjdk.samtools.cram.structure.block.Block;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import java.io.*;
 import java.util.Set;
 import org.testng.Assert;
@@ -113,6 +115,23 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
                                 .getEncodingID()
                         == EncodingID.NULL);
             }
+        }
+    }
+
+    @Test
+    public void emptyBlockIsWrittenRaw() {
+        // the default profile compresses QS with FQZComp and RN with the name tokeniser; BA with rANS, AP with GZIP
+        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(new CRAMEncodingStrategy());
+        for (final DataSeries dataSeries : new DataSeries[] {
+            DataSeries.QS_QualityScore,
+            DataSeries.RN_ReadName,
+            DataSeries.BA_Base,
+            DataSeries.NP_NextFragmentAlignmentStart
+        }) {
+            final Block block = encodingMap.createCompressedBlockForStream(
+                    null, dataSeries.getExternalBlockContentId(), new ByteArrayOutputStream());
+            Assert.assertEquals(block.getCompressionMethod(), BlockCompressionMethod.RAW, dataSeries.name());
+            Assert.assertEquals(block.getCompressedContentSize(), 0, dataSeries.name());
         }
     }
 }
