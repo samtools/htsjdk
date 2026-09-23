@@ -30,49 +30,173 @@ import java.util.Locale;
 public final class VCFConstants {
     public static final Locale VCF_LOCALE = Locale.US;
 
-    // reserved INFO/FORMAT field keys
-    public static final String ANCESTRAL_ALLELE_KEY = "AA";
-    public static final String ALLELE_COUNT_KEY = "AC";
-    public static final String ALLELE_FREQUENCY_KEY = "AF";
-    public static final String ALLELE_NUMBER_KEY = "AN";
-    public static final String RMS_BASE_QUALITY_KEY = "BQ";
-    public static final String CIGAR_KEY = "CIGAR";
-    public static final String DBSNP_KEY = "DB";
-    public static final String DEPTH_KEY = "DP";
-    public static final String END_KEY = "END";
-
-    public static final String GENOTYPE_FILTER_KEY = "FT";
-    public static final String GENOTYPE_KEY = "GT";
-    public static final String GENOTYPE_POSTERIORS_KEY = "GP";
-    public static final String GENOTYPE_QUALITY_KEY = "GQ";
-    public static final String GENOTYPE_ALLELE_DEPTHS =
-            "AD"; // AD isn't reserved, but is specifically handled by VariantContext
-    public static final String GENOTYPE_PL_KEY = "PL"; // phred-scaled genotype likelihoods
-    public static final String EXPECTED_ALLELE_COUNT_KEY = "EC";
-
+    // The INFO and FORMAT keys under their top-level names, each an alias of its constant in INFO or FORMAT
+    /** @deprecated use {@link INFO#ANCESTRAL_ALLELE} */
     @Deprecated
-    public static final String GENOTYPE_LIKELIHOODS_KEY = "GL"; // log10 scaled genotype likelihoods
+    public static final String ANCESTRAL_ALLELE_KEY = INFO.ANCESTRAL_ALLELE;
 
-    public static final String HAPMAP2_KEY = "H2";
-    public static final String HAPMAP3_KEY = "H3";
-    public static final String HAPLOTYPE_QUALITY_KEY = "HQ";
-    public static final String RMS_MAPPING_QUALITY_KEY = "MQ";
-    public static final String MAPPING_QUALITY_ZERO_KEY = "MQ0";
-    public static final String SAMPLE_NUMBER_KEY = "NS";
-    public static final String PHASE_QUALITY_KEY = "PQ";
-    public static final String PHASE_SET_KEY = "PS";
+    /** @deprecated use {@link INFO#ALLELE_COUNT} */
+    @Deprecated
+    public static final String ALLELE_COUNT_KEY = INFO.ALLELE_COUNT;
+
+    /** @deprecated use {@link INFO#ALLELE_FREQUENCY} */
+    @Deprecated
+    public static final String ALLELE_FREQUENCY_KEY = INFO.ALLELE_FREQUENCY;
+
+    /** @deprecated use {@link INFO#ALLELE_NUMBER} */
+    @Deprecated
+    public static final String ALLELE_NUMBER_KEY = INFO.ALLELE_NUMBER;
+
+    /** @deprecated use {@link INFO#RMS_BASE_QUALITY} */
+    @Deprecated
+    public static final String RMS_BASE_QUALITY_KEY = INFO.RMS_BASE_QUALITY;
+
+    /** @deprecated use {@link INFO#CIGAR} */
+    @Deprecated
+    public static final String CIGAR_KEY = INFO.CIGAR;
+
+    /** @deprecated use {@link INFO#IN_DBSNP} */
+    @Deprecated
+    public static final String DBSNP_KEY = INFO.IN_DBSNP;
+
+    /** @deprecated use {@link FORMAT#READ_DEPTH} or {@link INFO#COMBINED_DEPTH} */
+    @Deprecated
+    public static final String DEPTH_KEY = FORMAT.READ_DEPTH;
+
+    /** @deprecated use {@link INFO#END_POSITION} */
+    @Deprecated
+    public static final String END_KEY = INFO.END_POSITION;
+
+    /** @deprecated use {@link FORMAT#GENOTYPE_FILTER} */
+    @Deprecated
+    public static final String GENOTYPE_FILTER_KEY = FORMAT.GENOTYPE_FILTER;
+
+    /** @deprecated use {@link FORMAT#GENOTYPE} */
+    @Deprecated
+    public static final String GENOTYPE_KEY = FORMAT.GENOTYPE;
+
+    /** @deprecated use {@link FORMAT#GENOTYPE_POSTERIORS} */
+    @Deprecated
+    public static final String GENOTYPE_POSTERIORS_KEY = FORMAT.GENOTYPE_POSTERIORS;
+
+    /** @deprecated use {@link FORMAT#GENOTYPE_QUALITY} */
+    @Deprecated
+    public static final String GENOTYPE_QUALITY_KEY = FORMAT.GENOTYPE_QUALITY;
+
+    /** @deprecated use {@link FORMAT#ALLELE_DEPTHS} */
+    @Deprecated
+    public static final String GENOTYPE_ALLELE_DEPTHS = FORMAT.ALLELE_DEPTHS;
+
+    /** @deprecated use {@link FORMAT#PHRED_SCALED_GENOTYPE_LIKELIHOODS} */
+    @Deprecated
+    public static final String GENOTYPE_PL_KEY = FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS;
+
+    /** @deprecated use {@link FORMAT#EXPECTED_ALLELE_COUNT} */
+    @Deprecated
+    public static final String EXPECTED_ALLELE_COUNT_KEY = FORMAT.EXPECTED_ALLELE_COUNT;
+
+    /** @deprecated use {@link FORMAT#GENOTYPE_LIKELIHOODS} */
+    @Deprecated
+    public static final String GENOTYPE_LIKELIHOODS_KEY = FORMAT.GENOTYPE_LIKELIHOODS;
+
+    /** @deprecated use {@link INFO#IN_HAPMAP2} */
+    @Deprecated
+    public static final String HAPMAP2_KEY = INFO.IN_HAPMAP2;
+
+    /** @deprecated use {@link INFO#IN_HAPMAP3} */
+    @Deprecated
+    public static final String HAPMAP3_KEY = INFO.IN_HAPMAP3;
+
+    /** @deprecated use {@link FORMAT#HAPLOTYPE_QUALITY} */
+    @Deprecated
+    public static final String HAPLOTYPE_QUALITY_KEY = FORMAT.HAPLOTYPE_QUALITY;
+
+    /** @deprecated use {@link INFO#RMS_MAPPING_QUALITY} or {@link FORMAT#RMS_MAPPING_QUALITY} */
+    @Deprecated
+    public static final String RMS_MAPPING_QUALITY_KEY = INFO.RMS_MAPPING_QUALITY;
+
+    /** @deprecated use {@link INFO#MAPPING_QUALITY_ZERO_READS} */
+    @Deprecated
+    public static final String MAPPING_QUALITY_ZERO_KEY = INFO.MAPPING_QUALITY_ZERO_READS;
+
+    /** @deprecated use {@link INFO#SAMPLES_WITH_DATA} */
+    @Deprecated
+    public static final String SAMPLE_NUMBER_KEY = INFO.SAMPLES_WITH_DATA;
+
+    /** @deprecated use {@link FORMAT#PHASING_QUALITY} */
+    @Deprecated
+    public static final String PHASE_QUALITY_KEY = FORMAT.PHASING_QUALITY;
+
+    /** @deprecated use {@link FORMAT#PHASE_SET} */
+    @Deprecated
+    public static final String PHASE_SET_KEY = FORMAT.PHASE_SET;
+
+    /** @deprecated {@code RD} is not a key the VCF specification reserves, and htsjdk does not use it */
+    @Deprecated
     public static final String OLD_DEPTH_KEY = "RD";
-    public static final String STRAND_BIAS_KEY = "SB";
-    public static final String SOMATIC_KEY = "SOMATIC";
-    public static final String VALIDATED_KEY = "VALIDATED";
-    public static final String THOUSAND_GENOMES_KEY = "1000G";
 
-    // reserved INFO for structural variants
-    /** INFO Type of structural variant (deprecated in 4.4) */
-    public static final String SVTYPE = "SVTYPE";
+    /** @deprecated use {@link INFO#STRAND_BIAS} */
+    @Deprecated
+    public static final String STRAND_BIAS_KEY = INFO.STRAND_BIAS;
+
+    /** @deprecated use {@link INFO#SOMATIC_MUTATION} */
+    @Deprecated
+    public static final String SOMATIC_KEY = INFO.SOMATIC_MUTATION;
+
+    /** @deprecated use {@link INFO#VALIDATED} */
+    @Deprecated
+    public static final String VALIDATED_KEY = INFO.VALIDATED;
+
+    /** @deprecated use {@link INFO#IN_1000_GENOMES} */
+    @Deprecated
+    public static final String THOUSAND_GENOMES_KEY = INFO.IN_1000_GENOMES;
+
+    /** @deprecated use {@link INFO#STRUCTURAL_VARIANT_TYPE} */
+    @Deprecated
+    public static final String SVTYPE = INFO.STRUCTURAL_VARIANT_TYPE;
 
     /** Keys the VCF specification reserves for INFO fields. */
     public static final class INFO {
+        // Keys defined before VCF 4.3
+        /** Ancestral allele */
+        public static final String ANCESTRAL_ALLELE = "AA";
+        /** Allele count in genotypes, for each ALT allele */
+        public static final String ALLELE_COUNT = "AC";
+        /** Allele frequency for each ALT allele */
+        public static final String ALLELE_FREQUENCY = "AF";
+        /** Total number of alleles in called genotypes */
+        public static final String ALLELE_NUMBER = "AN";
+        /** RMS base quality */
+        public static final String RMS_BASE_QUALITY = "BQ";
+        /** Cigar string describing how to align each alternate allele to the reference allele */
+        public static final String CIGAR = "CIGAR";
+        /** dbSNP membership */
+        public static final String IN_DBSNP = "DB";
+        /** Combined depth across samples */
+        public static final String COMBINED_DEPTH = "DP";
+        /** End position of the record on CHROM (deprecated by VCF 4.5, kept for earlier versions) */
+        public static final String END_POSITION = "END";
+        /** HapMap2 membership */
+        public static final String IN_HAPMAP2 = "H2";
+        /** HapMap3 membership */
+        public static final String IN_HAPMAP3 = "H3";
+        /** RMS mapping quality */
+        public static final String RMS_MAPPING_QUALITY = "MQ";
+        /** Number of MAPQ == 0 reads */
+        public static final String MAPPING_QUALITY_ZERO_READS = "MQ0";
+        /** Number of samples with data */
+        public static final String SAMPLES_WITH_DATA = "NS";
+        /** Strand bias */
+        public static final String STRAND_BIAS = "SB";
+        /** Somatic mutation (for cancer genomics) */
+        public static final String SOMATIC_MUTATION = "SOMATIC";
+        /** Validated by follow-up experiment */
+        public static final String VALIDATED = "VALIDATED";
+        /** 1000 Genomes membership */
+        public static final String IN_1000_GENOMES = "1000G";
+        /** Type of structural variant (deprecated in 4.4) */
+        public static final String STRUCTURAL_VARIANT_TYPE = "SVTYPE";
+
         // Keys with stable definitions — registered as standard header lines
         /** Total read depth for each allele */
         public static final String ALLELE_DEPTHS = "AD";
@@ -146,6 +270,32 @@ public final class VCFConstants {
 
     /** Keys the VCF specification reserves for FORMAT (per-sample) fields. */
     public static final class FORMAT {
+        // Keys defined before VCF 4.3
+        /** Genotype */
+        public static final String GENOTYPE = "GT";
+        /** Filter indicating if this genotype was called */
+        public static final String GENOTYPE_FILTER = "FT";
+        /** Conditional genotype quality */
+        public static final String GENOTYPE_QUALITY = "GQ";
+        /** Genotype posterior probabilities */
+        public static final String GENOTYPE_POSTERIORS = "GP";
+        /** Log10-scaled genotype likelihoods */
+        public static final String GENOTYPE_LIKELIHOODS = "GL";
+        /** Phred-scaled genotype likelihoods rounded to the closest integer */
+        public static final String PHRED_SCALED_GENOTYPE_LIKELIHOODS = "PL";
+        /** Read depth for each allele */
+        public static final String ALLELE_DEPTHS = "AD";
+        /** Read depth */
+        public static final String READ_DEPTH = "DP";
+        /** Expected alternate allele counts */
+        public static final String EXPECTED_ALLELE_COUNT = "EC";
+        /** Haplotype quality */
+        public static final String HAPLOTYPE_QUALITY = "HQ";
+        /** Phasing quality */
+        public static final String PHASING_QUALITY = "PQ";
+        /** Phase set */
+        public static final String PHASE_SET = "PS";
+
         // Keys with stable definitions — registered as standard header lines
         /** Read depth for each allele on the forward strand (VCF 4.3) */
         public static final String ALLELE_DEPTHS_FORWARD_STRAND = "ADF";

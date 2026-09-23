@@ -2450,7 +2450,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     public void bcfLaaFollowsGtAtVersion45() throws IOException {
         if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         lines.add(new VCFFormatHeaderLine("AD", VCFHeaderLineCount.R, VCFHeaderLineType.Integer, "depths"));
         lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
@@ -2480,7 +2480,8 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     public void bcfMissingLaaRendersAsDot() throws IOException {
         if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(
+                lines, true, VCFConstants.FORMAT.GENOTYPE, VCFConstants.FORMAT.READ_DEPTH);
         lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header =
@@ -2524,7 +2525,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
         // Write a BCF at VCF 4.4 with FORMAT GT:XX:LAA (XX is a generic field to avoid special-cased keys)
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         lines.add(new VCFFormatHeaderLine("XX", 1, VCFHeaderLineType.Integer, "test field"));
         lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final VCFHeader header44 = new VCFHeader(VCFHeaderVersion.VCF4_4, lines, Set.of("s1"));
@@ -2595,7 +2596,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     public void bcfPassThrough45To45WithLaaIsIdentical() throws IOException {
         // Write a BCF at VCF 4.5 with LAA and a generic field XX
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         lines.add(new VCFFormatHeaderLine("XX", 1, VCFHeaderLineType.Integer, "test field"));
         lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines, Set.of("s1"));

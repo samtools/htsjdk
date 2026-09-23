@@ -290,18 +290,18 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             if (g.isFiltered()) sawGenotypeFilter = true;
         }
 
-        if (sawGoodQual) keys.add(VCFConstants.GENOTYPE_QUALITY_KEY);
-        if (sawDP) keys.add(VCFConstants.DEPTH_KEY);
-        if (sawAD) keys.add(VCFConstants.GENOTYPE_ALLELE_DEPTHS);
-        if (sawPL) keys.add(VCFConstants.GENOTYPE_PL_KEY);
-        if (sawGenotypeFilter) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
+        if (sawGoodQual) keys.add(VCFConstants.FORMAT.GENOTYPE_QUALITY);
+        if (sawDP) keys.add(VCFConstants.FORMAT.READ_DEPTH);
+        if (sawAD) keys.add(VCFConstants.FORMAT.ALLELE_DEPTHS);
+        if (sawPL) keys.add(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS);
+        if (sawGenotypeFilter) keys.add(VCFConstants.FORMAT.GENOTYPE_FILTER);
 
         List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
 
         // make sure the GT is first
         if (sawGoodGT) {
             final List<String> newList = new ArrayList<>(sortedList.size() + 1);
-            newList.add(VCFConstants.GENOTYPE_KEY);
+            newList.add(VCFConstants.FORMAT.GENOTYPE);
             newList.addAll(sortedList);
             sortedList = newList;
         }
@@ -316,7 +316,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
         if (sortedList.isEmpty() && header.hasGenotypingData()) {
             // this needs to be done in case all samples are no-calls
-            return Collections.singletonList(VCFConstants.GENOTYPE_KEY);
+            return Collections.singletonList(VCFConstants.FORMAT.GENOTYPE);
         } else {
             return sortedList;
         }
@@ -1477,15 +1477,15 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     public void validateChromosomeCounts() {
         final int numberOfAlternateAlleles = alleles.size() - 1;
-        validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
-        validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
+        validateAttributeIsExpectedSize(VCFConstants.INFO.ALLELE_COUNT, numberOfAlternateAlleles);
+        validateAttributeIsExpectedSize(VCFConstants.INFO.ALLELE_FREQUENCY, numberOfAlternateAlleles);
 
         if (!hasGenotypes()) return;
 
         // AN
-        if (hasAttribute(VCFConstants.ALLELE_NUMBER_KEY)) {
+        if (hasAttribute(VCFConstants.INFO.ALLELE_NUMBER)) {
             final int reportedAN = Integer.parseInt(
-                    getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
+                    getAttribute(VCFConstants.INFO.ALLELE_NUMBER).toString());
             final int observedAN = getCalledChrCount();
             if (reportedAN != observedAN)
                 throw new TribbleException.InternalCodecException(String.format(
@@ -1494,7 +1494,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
 
         // AC
-        if (hasAttribute(VCFConstants.ALLELE_COUNT_KEY)) {
+        if (hasAttribute(VCFConstants.INFO.ALLELE_COUNT)) {
             final ArrayList<Integer> observedACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
@@ -1506,7 +1506,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 observedACs.add(0);
             }
 
-            final List<Object> reportedACs = getAttributeAsList(VCFConstants.ALLELE_COUNT_KEY);
+            final List<Object> reportedACs = getAttributeAsList(VCFConstants.INFO.ALLELE_COUNT);
 
             for (int i = 0; i < observedACs.size(); i++) {
                 // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
@@ -1535,8 +1535,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
      * alleles say (see {@link #getEnd()}), so a smaller END is merely stale, as sloppy files have them.
      */
     private void validateStop() {
-        if (hasAttribute(VCFConstants.END_KEY)) {
-            final Object endValue = getAttribute(VCFConstants.END_KEY);
+        if (hasAttribute(VCFConstants.INFO.END_POSITION)) {
+            final Object endValue = getAttribute(VCFConstants.INFO.END_POSITION);
             final long end;
             if (endValue instanceof Number) {
                 end = ((Number) endValue).longValue();
@@ -1774,7 +1774,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         for (final Map.Entry<String, Object> attr : attributes.entrySet()) {
             final String field = attr.getKey();
 
-            if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY))
+            if (field.equals(VCFConstants.FORMAT.GENOTYPE_FILTER))
                 continue; // gross, FT is part of the extended attributes
 
             final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
@@ -1799,7 +1799,8 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
         if (value instanceof String) {
-            if (field.equals(VCFConstants.GENOTYPE_PL_KEY)) return GenotypeLikelihoods.fromPLField((String) value);
+            if (field.equals(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS))
+                return GenotypeLikelihoods.fromPLField((String) value);
 
             final String string = (String) value;
             if (string.indexOf(',') != -1) {
@@ -2002,7 +2003,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         StructuralVariantType found = null;
         boolean multiple = false;
 
-        final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
+        final String svType = this.getAttributeAsString(VCFConstants.INFO.STRUCTURAL_VARIANT_TYPE, null);
         if (svType != null) {
             found = StructuralVariantType.parse(svType).orElse(null);
         }

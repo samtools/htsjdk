@@ -289,7 +289,8 @@ public class VCFFileReader implements VCFReader {
                 .filter(vc -> includeFiltered || !vc.isFiltered())
                 .map(vc -> {
                     String name = vc.getID();
-                    final int intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
+                    final int intervalEnd =
+                            vc.getCommonInfo().getAttributeAsInt(VCFConstants.INFO.END_POSITION, vc.getEnd());
                     if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null) {
                         name = "interval-" + intervalCount.incrementAndGet();
                         ;

@@ -71,12 +71,12 @@ public class BCF2GenotypeFieldDecoders {
                         ? new VCFPercentEncodedTextTransformer()
                         : new VCFPassThruTextTransformer();
         defaultDecoder = new GenericDecoder(textTransformer);
-        genotypeFieldDecoder.put(VCFConstants.GENOTYPE_KEY, new GTDecoder(phaseBitIsLiteral));
-        genotypeFieldDecoder.put(VCFConstants.GENOTYPE_FILTER_KEY, new FTDecoder(textTransformer));
-        genotypeFieldDecoder.put(VCFConstants.DEPTH_KEY, new DPDecoder());
-        genotypeFieldDecoder.put(VCFConstants.GENOTYPE_ALLELE_DEPTHS, new ADDecoder());
-        genotypeFieldDecoder.put(VCFConstants.GENOTYPE_PL_KEY, new PLDecoder());
-        genotypeFieldDecoder.put(VCFConstants.GENOTYPE_QUALITY_KEY, new GQDecoder());
+        genotypeFieldDecoder.put(VCFConstants.FORMAT.GENOTYPE, new GTDecoder(phaseBitIsLiteral));
+        genotypeFieldDecoder.put(VCFConstants.FORMAT.GENOTYPE_FILTER, new FTDecoder(textTransformer));
+        genotypeFieldDecoder.put(VCFConstants.FORMAT.READ_DEPTH, new DPDecoder());
+        genotypeFieldDecoder.put(VCFConstants.FORMAT.ALLELE_DEPTHS, new ADDecoder());
+        genotypeFieldDecoder.put(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS, new PLDecoder());
+        genotypeFieldDecoder.put(VCFConstants.FORMAT.GENOTYPE_QUALITY, new GQDecoder());
     }
 
     // -----------------------------------------------------------------

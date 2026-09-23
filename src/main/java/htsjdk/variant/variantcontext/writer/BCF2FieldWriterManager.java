@@ -152,7 +152,7 @@ public class BCF2FieldWriterManager {
                 System.err.println("Warning: field " + line.getID() + " expected to encode an integer but saw "
                         + line.getType() + " for record " + line);
             return new BCF2FieldEncoder.IntArray(line, dict, useEndOfVector, percentEncode, htslibStringLists);
-        } else if (createGenotypesEncoders && line.getID().equals(VCFConstants.GENOTYPE_KEY)) {
+        } else if (createGenotypesEncoders && line.getID().equals(VCFConstants.FORMAT.GENOTYPE)) {
             return new BCF2FieldEncoder.GenericInts(line, dict, useEndOfVector, percentEncode, htslibStringLists);
         } else {
             switch (line.getType()) {
@@ -197,9 +197,9 @@ public class BCF2FieldWriterManager {
         final BCF2FieldEncoder fieldEncoder =
                 createFieldEncoder(line, encoder, dict, true, useEndOfVector, percentEncode, htslibStringLists);
 
-        if (field.equals(VCFConstants.GENOTYPE_KEY)) {
+        if (field.equals(VCFConstants.FORMAT.GENOTYPE)) {
             return new BCF2FieldWriter.GTWriter(header, fieldEncoder, useEndOfVector, outputVersion);
-        } else if (line.getID().equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+        } else if (line.getID().equals(VCFConstants.FORMAT.GENOTYPE_FILTER)) {
             return new BCF2FieldWriter.FTGenotypesWriter(header, fieldEncoder);
         } else if (intGenotypeFieldAccessors.getAccessor(field) != null) {
             return new BCF2FieldWriter.IGFGenotypesWriter(

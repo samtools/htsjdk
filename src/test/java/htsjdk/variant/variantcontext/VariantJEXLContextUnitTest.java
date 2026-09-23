@@ -286,10 +286,10 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(jEXLContext.get("isMixed"), VariantJEXLContext.false_string);
         Assert.assertEquals(jEXLContext.get("isAvailable"), VariantJEXLContext.true_string);
         Assert.assertEquals(jEXLContext.get("isPassFT"), VariantJEXLContext.false_string);
-        Assert.assertEquals(jEXLContext.get(VCFConstants.GENOTYPE_KEY), gt.getGenotypeString());
-        Assert.assertEquals(jEXLContext.get(VCFConstants.GENOTYPE_FILTER_KEY), "lowDP");
+        Assert.assertEquals(jEXLContext.get(VCFConstants.FORMAT.GENOTYPE), gt.getGenotypeString());
+        Assert.assertEquals(jEXLContext.get(VCFConstants.FORMAT.GENOTYPE_FILTER), "lowDP");
         Assert.assertEquals(
-                jEXLContext.get(VCFConstants.GENOTYPE_QUALITY_KEY),
+                jEXLContext.get(VCFConstants.FORMAT.GENOTYPE_QUALITY),
                 Integer.valueOf(VCFConstants.MISSING_GENOTYPE_QUALITY_v3));
         Assert.assertEquals(jEXLContext.get("WA"), "whatEver"); // hasAnyAttribute->getAnyAttribute
         Assert.assertEquals(jEXLContext.get("lowDP"), VariantJEXLContext.true_string); // getFilters()!=null

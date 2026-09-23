@@ -42,10 +42,11 @@ public class IntGenotypeFieldAccessors {
     private final HashMap<String, Accessor> intGenotypeFieldEncoders = new HashMap<String, Accessor>();
 
     public IntGenotypeFieldAccessors() {
-        intGenotypeFieldEncoders.put(VCFConstants.DEPTH_KEY, new IntGenotypeFieldAccessors.DPAccessor());
-        intGenotypeFieldEncoders.put(VCFConstants.GENOTYPE_ALLELE_DEPTHS, new IntGenotypeFieldAccessors.ADAccessor());
-        intGenotypeFieldEncoders.put(VCFConstants.GENOTYPE_PL_KEY, new IntGenotypeFieldAccessors.PLAccessor());
-        intGenotypeFieldEncoders.put(VCFConstants.GENOTYPE_QUALITY_KEY, new IntGenotypeFieldAccessors.GQAccessor());
+        intGenotypeFieldEncoders.put(VCFConstants.FORMAT.READ_DEPTH, new IntGenotypeFieldAccessors.DPAccessor());
+        intGenotypeFieldEncoders.put(VCFConstants.FORMAT.ALLELE_DEPTHS, new IntGenotypeFieldAccessors.ADAccessor());
+        intGenotypeFieldEncoders.put(
+                VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS, new IntGenotypeFieldAccessors.PLAccessor());
+        intGenotypeFieldEncoders.put(VCFConstants.FORMAT.GENOTYPE_QUALITY, new IntGenotypeFieldAccessors.GQAccessor());
     }
 
     /**

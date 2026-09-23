@@ -1478,52 +1478,52 @@ public class VariantContextUnitTest extends VariantBaseTest {
         /** AN : total number of alleles in called genotypes **/
         // with AN set and hom-ref, we expect AN to be 2 for Aref/Aref
         final Map<String, Object> attributesAN = new HashMap<>();
-        attributesAN.put(VCFConstants.ALLELE_NUMBER_KEY, "2");
+        attributesAN.put(VCFConstants.INFO.ALLELE_NUMBER, "2");
         final VariantContext vcANSet = createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesAN, homRef);
 
         // with AN set, one no-call (no-calls get ignored by getCalledChrCount() in VariantContext)
         // we expect AN to be 1 for Aref/no-call
         final Map<String, Object> attributesANNoCall = new HashMap<>();
-        attributesANNoCall.put(VCFConstants.ALLELE_NUMBER_KEY, "1");
+        attributesANNoCall.put(VCFConstants.INFO.ALLELE_NUMBER, "1");
         final VariantContext vcANSetNoCall =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesANNoCall, homRefNoCall);
 
         /** AC : allele count in genotypes, for each ALT allele, in the same order as listed **/
         // with AC set, and T/T, we expect AC to be 2 (for 2 counts of ALT T)
         final Map<String, Object> attributesAC = new HashMap<>();
-        attributesAC.put(VCFConstants.ALLELE_COUNT_KEY, "2");
+        attributesAC.put(VCFConstants.INFO.ALLELE_COUNT, "2");
         final VariantContext vcACSet =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref, T), attributesAC, homVarT);
 
         // with AC set and no ALT (GT is 0/0), we expect AC count to be 0
         final Map<String, Object> attributesACNoAlts = new HashMap<>();
-        attributesACNoAlts.put(VCFConstants.ALLELE_COUNT_KEY, "0");
+        attributesACNoAlts.put(VCFConstants.INFO.ALLELE_COUNT, "0");
         final VariantContext vcACSetNoAlts =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesACNoAlts, homRef);
 
         // with AC set, and two different ALTs (T and C), with GT of 1/2, we expect a count of 1 for each.
         // With two ALTs, a list is expected, so we set the attribute as a list of 1,1
         final Map<String, Object> attributesACTwoAlts = new HashMap<>();
-        attributesACTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "1"));
+        attributesACTwoAlts.put(VCFConstants.INFO.ALLELE_COUNT, Arrays.asList("1", "1"));
         final VariantContext vcACSetTwoAlts =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAlts, hetVarTC);
 
         // with AC set, and two different ALTs (T and C), with no GT, we expect a 2 count values.
         final Map<String, Object> attributesACNoGtTwoAlts = new HashMap<>();
-        attributesACNoGtTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "1"));
+        attributesACNoGtTwoAlts.put(VCFConstants.INFO.ALLELE_COUNT, Arrays.asList("1", "1"));
         final VariantContext vcACNoGtSetTwoAlts = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesACNoGtTwoAlts, (Genotype[]) null);
 
         // with AF set, and two different ALTs (T and C), with GT of 1/2, we expect two frequncy values.
         // With two ALTs, a list is expected, so we set the attribute as a list of 0.5,0.5
         final Map<String, Object> attributesAFTwoAlts = new HashMap<>();
-        attributesAFTwoAlts.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5", "0.5"));
+        attributesAFTwoAlts.put(VCFConstants.INFO.ALLELE_FREQUENCY, Arrays.asList("0.5", "0.5"));
         final VariantContext vcAFSetTwoAlts =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFTwoAlts, hetVarTC);
 
         // with AF set, and two different ALTs (T and C), with no GT, we expect two frequency values.
         final Map<String, Object> attributesAFNoGtTwoAlts = new HashMap<>();
-        attributesAFNoGtTwoAlts.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5", "0.5"));
+        attributesAFNoGtTwoAlts.put(VCFConstants.INFO.ALLELE_FREQUENCY, Arrays.asList("0.5", "0.5"));
         final VariantContext vcAFNoGtSetTwoAlts = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesAFNoGtTwoAlts, (Genotype[]) null);
 
@@ -1555,56 +1555,56 @@ public class VariantContextUnitTest extends VariantBaseTest {
         /** AN : total number of alleles in called genotypes **/
         // with AN set and hom-ref, we expect AN to be 2 for Aref/Aref, so 3 will fail
         final Map<String, Object> attributesAN = new HashMap<>();
-        attributesAN.put(VCFConstants.ALLELE_NUMBER_KEY, "3");
+        attributesAN.put(VCFConstants.INFO.ALLELE_NUMBER, "3");
         final VariantContext vcANSet = createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesAN, homRef);
 
         // with AN set, one no-call (no-calls get ignored by getCalledChrCount() in VariantContext)
         // we expect AN to be 1 for Aref/no-call, so 2 will fail
         final Map<String, Object> attributesANNoCall = new HashMap<>();
-        attributesANNoCall.put(VCFConstants.ALLELE_NUMBER_KEY, "2");
+        attributesANNoCall.put(VCFConstants.INFO.ALLELE_NUMBER, "2");
         final VariantContext vcANSetNoCall =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesANNoCall, homRefNoCall);
 
         /** AC : allele count in genotypes, for each ALT allele, in the same order as listed **/
         // with AC set but no ALTs, we expect a count of 0, so the wrong count will fail here
         final Map<String, Object> attributesACWrongCount = new HashMap<>();
-        attributesACWrongCount.put(VCFConstants.ALLELE_COUNT_KEY, "2");
+        attributesACWrongCount.put(VCFConstants.INFO.ALLELE_COUNT, "2");
         final VariantContext vcACWrongCount =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesACWrongCount, homRef);
 
         // with AC set, two ALTs, but AC is not a list with count for each ALT
         final Map<String, Object> attributesACTwoAlts = new HashMap<>();
-        attributesACTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, "1");
+        attributesACTwoAlts.put(VCFConstants.INFO.ALLELE_COUNT, "1");
         final VariantContext vcACSetTwoAlts =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAlts, hetVarTC);
 
         // with AC set, two ALTs, and a list is correctly used, but wrong counts (we expect counts to be 1,1)
         final Map<String, Object> attributesACTwoAltsWrongCount = new HashMap<>();
-        attributesACTwoAltsWrongCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "2"));
+        attributesACTwoAltsWrongCount.put(VCFConstants.INFO.ALLELE_COUNT, Arrays.asList("1", "2"));
         final VariantContext vcACSetTwoAltsWrongCount = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesACTwoAltsWrongCount, hetVarTC);
 
         // with AC set, two ALTs, but only count for one ALT (we expect two items in the list: 1,1)
         final Map<String, Object> attributesACTwoAltsOneAltCount = new HashMap<>();
-        attributesACTwoAltsOneAltCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1"));
+        attributesACTwoAltsOneAltCount.put(VCFConstants.INFO.ALLELE_COUNT, Arrays.asList("1"));
         final VariantContext vcACSetTwoAltsOneAltCount = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesACTwoAltsOneAltCount, hetVarTC);
 
         // with AC set, no GT, two ALTs, but only count for one ALT (we expect two items in the list: 1,1)
         final Map<String, Object> attributesACNoGtTwoAltsOneAltCount = new HashMap<>();
-        attributesACNoGtTwoAltsOneAltCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1"));
+        attributesACNoGtTwoAltsOneAltCount.put(VCFConstants.INFO.ALLELE_COUNT, Arrays.asList("1"));
         final VariantContext vcACNoGtSetTwoAltsOneAltCount = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesACNoGtTwoAltsOneAltCount, (Genotype[]) null);
 
         // with AF set, two ALTs, but only frequency for one ALT (we expect two items in the list
         final Map<String, Object> attributesAFTwoAltsWrongFreq = new HashMap<>();
-        attributesAFTwoAltsWrongFreq.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5"));
+        attributesAFTwoAltsWrongFreq.put(VCFConstants.INFO.ALLELE_FREQUENCY, Arrays.asList("0.5"));
         final VariantContext vcAFSetTwoAltsWrongFreq = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesAFTwoAltsWrongFreq, hetVarTC);
 
         // with AF set, no GT, two ALTs, but only frequency for one ALT (we expect two items in the list
         final Map<String, Object> attributesAFNoGtTwoAltsWrongCount = new HashMap<>();
-        attributesAFNoGtTwoAltsWrongCount.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5"));
+        attributesAFNoGtTwoAltsWrongCount.put(VCFConstants.INFO.ALLELE_FREQUENCY, Arrays.asList("0.5"));
         final VariantContext vcAFNoGtSetTwoAltsWrongFreq = createValidateChromosomeCountsContext(
                 Arrays.asList(Aref, T, C), attributesAFNoGtTwoAltsWrongCount, (Genotype[]) null);
 
@@ -1951,7 +1951,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test
     public void anEndEqualToTheEndIsAccepted() {
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, 20)
+                .attribute(VCFConstants.INFO.END_POSITION, 20)
                 .make();
         Assert.assertEquals(vc.getEnd(), 20);
     }
@@ -1959,7 +1959,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test
     public void anEndShortOfTheEndIsAccepted() {
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, 15)
+                .attribute(VCFConstants.INFO.END_POSITION, 15)
                 .make();
         Assert.assertEquals(vc.getEnd(), 20);
     }
@@ -1968,7 +1968,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void aMissingEndIsNotCompared() {
         // a fresh String, not the interned constant, as a file gives it
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, new String(new char[] {'.'}))
+                .attribute(VCFConstants.INFO.END_POSITION, new String(new char[] {'.'}))
                 .make();
         Assert.assertEquals(vc.getEnd(), 20);
     }
@@ -1976,12 +1976,12 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test
     public void anEndGivenAsAnyNumberIsCompared() {
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, 20L)
+                .attribute(VCFConstants.INFO.END_POSITION, 20L)
                 .make();
         Assert.assertEquals(vc.getEnd(), 20);
         Assert.assertThrows(
                 TribbleException.class, () -> new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                        .attribute(VCFConstants.END_KEY, 21L)
+                        .attribute(VCFConstants.INFO.END_POSITION, 21L)
                         .make());
     }
 
@@ -1989,14 +1989,14 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void anEndPastAnIntIsRejectedRatherThanWrapped() {
         // 4294967316L == 2^32 + 20; intValue() wraps this to 20, which would pass the old check
         new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, 4294967316L)
+                .attribute(VCFConstants.INFO.END_POSITION, 4294967316L)
                 .make();
     }
 
     @Test(expectedExceptions = NumberFormatException.class)
     public void anEndThatIsNotANumberIsRejected() {
         new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, "soon")
+                .attribute(VCFConstants.INFO.END_POSITION, "soon")
                 .make();
     }
 
@@ -2016,7 +2016,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test(expectedExceptions = TribbleException.class)
     public void anEndPastTheEndIsRejected() {
         new VariantContextBuilder("test", snpLoc, 10, 20, Arrays.asList(Aref, T))
-                .attribute(VCFConstants.END_KEY, 21)
+                .attribute(VCFConstants.INFO.END_POSITION, 21)
                 .make();
     }
 
@@ -2034,10 +2034,10 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
                 Arrays.asList(
-                        VCFConstants.GENOTYPE_KEY,
+                        VCFConstants.FORMAT.GENOTYPE,
                         VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES,
-                        VCFConstants.GENOTYPE_ALLELE_DEPTHS,
-                        VCFConstants.DEPTH_KEY,
+                        VCFConstants.FORMAT.ALLELE_DEPTHS,
+                        VCFConstants.FORMAT.READ_DEPTH,
                         "ZZ"));
     }
 
@@ -2052,7 +2052,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .make();
         Assert.assertEquals(
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
-                Arrays.asList(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, VCFConstants.GENOTYPE_ALLELE_DEPTHS));
+                Arrays.asList(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, VCFConstants.FORMAT.ALLELE_DEPTHS));
     }
 
     @Test
@@ -2068,7 +2068,10 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
                 Arrays.asList(
-                        VCFConstants.GENOTYPE_KEY, VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFConstants.DEPTH_KEY, "ZZ"));
+                        VCFConstants.FORMAT.GENOTYPE,
+                        VCFConstants.FORMAT.ALLELE_DEPTHS,
+                        VCFConstants.FORMAT.READ_DEPTH,
+                        "ZZ"));
     }
 
     // getStructuralVariantType tests
@@ -2077,7 +2080,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void getStructuralVariantTypeFromSvtype() {
         final VariantContext vc = new VariantContextBuilder(
                         "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL>", false)))
-                .attribute(VCFConstants.SVTYPE, "DEL")
+                .attribute(VCFConstants.INFO.STRUCTURAL_VARIANT_TYPE, "DEL")
                 .make();
         Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
     }
@@ -2086,7 +2089,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void getStructuralVariantTypeFromSvtypeWithSubtype() {
         final VariantContext vc = new VariantContextBuilder(
                         "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL:ME>", false)))
-                .attribute(VCFConstants.SVTYPE, "DEL:ME")
+                .attribute(VCFConstants.INFO.STRUCTURAL_VARIANT_TYPE, "DEL:ME")
                 .make();
         Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
     }
@@ -2110,7 +2113,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void getStructuralVariantTypeMixedSvtypeVsAllele() {
         final VariantContext vc = new VariantContextBuilder(
                         "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<INS>", false)))
-                .attribute(VCFConstants.SVTYPE, "DEL")
+                .attribute(VCFConstants.INFO.STRUCTURAL_VARIANT_TYPE, "DEL")
                 .make();
         Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.MIXED);
     }
@@ -2131,7 +2134,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void getStructuralVariantTypeConsistentSvtypeAndAllele() {
         final VariantContext vc = new VariantContextBuilder(
                         "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL:ME>", false)))
-                .attribute(VCFConstants.SVTYPE, "DEL")
+                .attribute(VCFConstants.INFO.STRUCTURAL_VARIANT_TYPE, "DEL")
                 .make();
         Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
     }
@@ -2140,7 +2143,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void getStructuralVariantTypeUnparseableSvtypeWithDelAllele() {
         final VariantContext vc = new VariantContextBuilder(
                         "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL>", false)))
-                .attribute(VCFConstants.SVTYPE, "UNKNOWN")
+                .attribute(VCFConstants.INFO.STRUCTURAL_VARIANT_TYPE, "UNKNOWN")
                 .make();
         Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
     }

@@ -68,12 +68,12 @@ public class VariantContextUtils {
      * @throws AssertionError When either annotation is missing, or when the compuated frequency is outside the expected range
      */
     public static double calculateAltAlleleFrequency(final VariantContext vc) {
-        if (!vc.hasAttribute(VCFConstants.ALLELE_NUMBER_KEY) || !vc.hasAttribute(VCFConstants.ALLELE_COUNT_KEY))
+        if (!vc.hasAttribute(VCFConstants.INFO.ALLELE_NUMBER) || !vc.hasAttribute(VCFConstants.INFO.ALLELE_COUNT))
             throw new AssertionError(String.format(
                     "Cannot compute the provided variant's alt allele frequency because it does not have both %s and %s annotations: %s",
-                    VCFConstants.ALLELE_NUMBER_KEY, VCFConstants.ALLELE_COUNT_KEY, vc));
-        final double altAlleleCount = vc.getAttributeAsInt(VCFConstants.ALLELE_COUNT_KEY, 0);
-        final double totalCount = vc.getAttributeAsInt(VCFConstants.ALLELE_NUMBER_KEY, 0);
+                    VCFConstants.INFO.ALLELE_NUMBER, VCFConstants.INFO.ALLELE_COUNT, vc));
+        final double altAlleleCount = vc.getAttributeAsInt(VCFConstants.INFO.ALLELE_COUNT, 0);
+        final double totalCount = vc.getAttributeAsInt(VCFConstants.INFO.ALLELE_NUMBER, 0);
         final double aaf = altAlleleCount / totalCount;
         if (aaf > 1 || aaf < 0)
             throw new AssertionError(
@@ -115,16 +115,17 @@ public class VariantContextUtils {
 
         // if everyone is a no-call, remove the old attributes if requested
         if (AN == 0 && removeStaleValues) {
-            if (attributes.containsKey(VCFConstants.ALLELE_COUNT_KEY)) attributes.remove(VCFConstants.ALLELE_COUNT_KEY);
-            if (attributes.containsKey(VCFConstants.ALLELE_FREQUENCY_KEY))
-                attributes.remove(VCFConstants.ALLELE_FREQUENCY_KEY);
-            if (attributes.containsKey(VCFConstants.ALLELE_NUMBER_KEY))
-                attributes.remove(VCFConstants.ALLELE_NUMBER_KEY);
+            if (attributes.containsKey(VCFConstants.INFO.ALLELE_COUNT))
+                attributes.remove(VCFConstants.INFO.ALLELE_COUNT);
+            if (attributes.containsKey(VCFConstants.INFO.ALLELE_FREQUENCY))
+                attributes.remove(VCFConstants.INFO.ALLELE_FREQUENCY);
+            if (attributes.containsKey(VCFConstants.INFO.ALLELE_NUMBER))
+                attributes.remove(VCFConstants.INFO.ALLELE_NUMBER);
             return attributes;
         }
 
         if (vc.hasGenotypes()) {
-            attributes.put(VCFConstants.ALLELE_NUMBER_KEY, AN);
+            attributes.put(VCFConstants.INFO.ALLELE_NUMBER, AN);
 
             // if there are alternate alleles, record the relevant tags
             if (!vc.getAlternateAlleles().isEmpty()) {
@@ -146,13 +147,13 @@ public class VariantContextUtils {
                 }
 
                 attributes.put(
-                        VCFConstants.ALLELE_COUNT_KEY, alleleCounts.size() == 1 ? alleleCounts.get(0) : alleleCounts);
+                        VCFConstants.INFO.ALLELE_COUNT, alleleCounts.size() == 1 ? alleleCounts.get(0) : alleleCounts);
                 attributes.put(
-                        VCFConstants.ALLELE_FREQUENCY_KEY, alleleFreqs.size() == 1 ? alleleFreqs.get(0) : alleleFreqs);
+                        VCFConstants.INFO.ALLELE_FREQUENCY, alleleFreqs.size() == 1 ? alleleFreqs.get(0) : alleleFreqs);
             } else {
                 // if there's no alt AC and AF shouldn't be present
-                attributes.remove(VCFConstants.ALLELE_COUNT_KEY);
-                attributes.remove(VCFConstants.ALLELE_FREQUENCY_KEY);
+                attributes.remove(VCFConstants.INFO.ALLELE_COUNT);
+                attributes.remove(VCFConstants.INFO.ALLELE_FREQUENCY);
             }
         }
 

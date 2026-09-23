@@ -55,7 +55,8 @@ final class TestVcfs {
         final Path vcf = dir.resolve("records.vcf.gz");
         final VCFHeader header = new VCFHeader();
         header.setSequenceDictionary(dictionary);
-        header.addMetaDataLine(new VCFInfoHeaderLine(VCFConstants.END_KEY, 1, VCFHeaderLineType.Integer, "End"));
+        header.addMetaDataLine(
+                new VCFInfoHeaderLine(VCFConstants.INFO.END_POSITION, 1, VCFHeaderLineType.Integer, "End"));
         try (final VariantContextWriter writer =
                 builder.setOutputPath(vcf).setReferenceDictionary(dictionary).build()) {
             writer.writeHeader(header);
@@ -69,7 +70,7 @@ final class TestVcfs {
                                         position,
                                         position + 300_000,
                                         List.of(Allele.REF_A, Allele.create("<DEL>")))
-                                .attribute(VCFConstants.END_KEY, position + 300_000)
+                                .attribute(VCFConstants.INFO.END_POSITION, position + 300_000)
                                 .make());
                     } else {
                         writer.add(new VariantContextBuilder(

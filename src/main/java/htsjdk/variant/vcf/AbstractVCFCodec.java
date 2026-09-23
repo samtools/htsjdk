@@ -524,7 +524,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             final LazyGenotypesContext genotypes,
             final int lineNo) {
         int end = pos + refLength - 1;
-        final Object endValue = attrs.get(VCFConstants.END_KEY);
+        final Object endValue = attrs.get(VCFConstants.INFO.END_POSITION);
         final boolean hasEnd = endValue != null && !VCFConstants.MISSING_VALUE_v4.equals(endValue.toString());
         if (hasEnd) {
             try {
@@ -925,32 +925,32 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     boolean missing = i >= genotypeValues.size();
 
                     // todo -- all of these on the fly parsing of the missing value should be static constants
-                    if (gtKey.equals(VCFConstants.GENOTYPE_KEY)) {
+                    if (gtKey.equals(VCFConstants.FORMAT.GENOTYPE)) {
                         genotypeAlleleLocation = i;
                     } else if (missing) {
                         // if its truly missing (there no provided value) skip adding it to the attributes
-                    } else if (gtKey.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+                    } else if (gtKey.equals(VCFConstants.FORMAT.GENOTYPE_FILTER)) {
                         final List<String> filters = parseFilters(getCachedString(genotypeValues.get(i)), lineNo);
                         if (filters != null) gb.filters(filters);
                     } else if (genotypeValues.get(i).equals(VCFConstants.MISSING_VALUE_v4)) {
                         // don't add missing values to the map
                     } else {
                         try {
-                            if (gtKey.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
+                            if (gtKey.equals(VCFConstants.FORMAT.GENOTYPE_QUALITY)) {
                                 if (genotypeValues.get(i).equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3)) gb.noGQ();
                                 else gb.GQ((int) Math.round(VCFUtils.parseVcfDouble(genotypeValues.get(i))));
-                            } else if (gtKey.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
+                            } else if (gtKey.equals(VCFConstants.FORMAT.ALLELE_DEPTHS)) {
                                 gb.AD(decodeInts(genotypeValues.get(i)));
-                            } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
+                            } else if (gtKey.equals(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS)) {
                                 gb.PL(decodeInts(genotypeValues.get(i)));
                                 PlIsSet = true;
-                            } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
+                            } else if (gtKey.equals(VCFConstants.FORMAT.GENOTYPE_LIKELIHOODS)) {
                                 // Do not overwrite PL with data from GL
                                 if (!PlIsSet) {
                                     gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i))
                                             .getAsPLs());
                                 }
-                            } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
+                            } else if (gtKey.equals(VCFConstants.FORMAT.READ_DEPTH)) {
                                 gb.DP(Integer.parseInt(genotypeValues.get(i)));
                             } else {
                                 gb.attribute(gtKey, genotypeValues.get(i));
