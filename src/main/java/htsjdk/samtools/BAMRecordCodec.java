@@ -113,7 +113,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
 
         if (cigarSwitcharoo) {
             final int[] cigarEncoding = BinaryCigarCodec.encode(alignment.getCigar());
-            alignment.setAttribute(CG.name(), cigarEncoding);
+            alignment.setUnsignedArrayAttribute(CG.name(), cigarEncoding);
             cigarToWrite = makeSentinelCigar(alignment.getCigar());
         } else {
             cigarToWrite = alignment.getCigar();
