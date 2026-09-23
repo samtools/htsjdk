@@ -307,11 +307,11 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
         }
 
         // LAA precedes every field other than GT; sorted alphabetically it would land after AD, DP and GQ
-        final int laaIndex = sortedList.indexOf(VCFConstants.LAA_KEY);
+        final int laaIndex = sortedList.indexOf(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
         final int laaTarget = sawGoodGT ? 1 : 0;
         if (laaIndex > laaTarget) {
             sortedList.remove(laaIndex);
-            sortedList.add(laaTarget, VCFConstants.LAA_KEY);
+            sortedList.add(laaTarget, VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
         }
 
         if (sortedList.isEmpty() && header.hasGenotypingData()) {

@@ -192,94 +192,106 @@ public class VCFStandardHeaderLines {
         registerStandard(new VCFFormatHeaderLine(
                 VCFConstants.PHASE_QUALITY_KEY, 1, VCFHeaderLineType.Integer, "Read-backed phasing quality"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.GENOTYPE_POSTERIORS_PHRED_KEY,
+                VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_POSTERIORS,
                 VCFHeaderLineCount.G,
                 VCFHeaderLineType.Integer,
                 "Phred-scaled genotype posterior probabilities rounded to the closest integer"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.PHASE_SET_LIST_KEY, VCFHeaderLineCount.P, VCFHeaderLineType.String, "Phase set list"));
+                VCFConstants.FORMAT.PHASE_SET_LIST, VCFHeaderLineCount.P, VCFHeaderLineType.String, "Phase set list"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.PHASE_SET_LIST_ORDINAL_KEY,
+                VCFConstants.FORMAT.PHASE_SET_LIST_ORDINAL,
                 VCFHeaderLineCount.P,
                 VCFHeaderLineType.Integer,
                 "Phase set list ordinal"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.PHASE_SET_LIST_QUALITY_KEY,
+                VCFConstants.FORMAT.PHASE_SET_LIST_QUALITY,
                 VCFHeaderLineCount.P,
                 VCFHeaderLineType.Integer,
                 "Phase set list quality"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LEN_KEY, 1, VCFHeaderLineType.Integer, "Length of <*> reference block"));
+                VCFConstants.FORMAT.REFERENCE_BLOCK_LENGTH,
+                1,
+                VCFHeaderLineType.Integer,
+                "Length of <*> reference block"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LAA_KEY,
+                VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Integer,
                 "1-based indices into ALT, indicating which alleles are relevant (local) for the current sample"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LAD_KEY,
+                VCFConstants.FORMAT.LOCAL_ALLELE_DEPTHS,
                 VCFHeaderLineCount.LR,
                 VCFHeaderLineType.Integer,
                 "Local-allele representation of AD"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LADF_KEY,
+                VCFConstants.FORMAT.LOCAL_ALLELE_DEPTHS_FORWARD_STRAND,
                 VCFHeaderLineCount.LR,
                 VCFHeaderLineType.Integer,
                 "Local-allele representation of ADF"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LADR_KEY,
+                VCFConstants.FORMAT.LOCAL_ALLELE_DEPTHS_REVERSE_STRAND,
                 VCFHeaderLineCount.LR,
                 VCFHeaderLineType.Integer,
                 "Local-allele representation of ADR"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LEC_KEY,
+                VCFConstants.FORMAT.LOCAL_EXPECTED_ALLELE_COUNT,
                 VCFHeaderLineCount.LA,
                 VCFHeaderLineType.Integer,
                 "Local-allele representation of EC"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LGL_KEY,
+                VCFConstants.FORMAT.LOCAL_GENOTYPE_LIKELIHOODS,
                 VCFHeaderLineCount.LG,
                 VCFHeaderLineType.Float,
                 "Local-allele representation of GL"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LGP_KEY,
+                VCFConstants.FORMAT.LOCAL_GENOTYPE_POSTERIORS,
                 VCFHeaderLineCount.LG,
                 VCFHeaderLineType.Float,
                 "Local-allele representation of GP"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LPL_KEY,
+                VCFConstants.FORMAT.LOCAL_PHRED_SCALED_GENOTYPE_LIKELIHOODS,
                 VCFHeaderLineCount.LG,
                 VCFHeaderLineType.Integer,
                 "Local-allele representation of PL"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.LPP_KEY,
+                VCFConstants.FORMAT.LOCAL_PHRED_SCALED_GENOTYPE_POSTERIORS,
                 VCFHeaderLineCount.LG,
                 VCFHeaderLineType.Integer,
                 "Local-allele representation of PP"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.FORMAT_MQ_KEY, 1, VCFHeaderLineType.Integer, "RMS mapping quality"));
+                VCFConstants.FORMAT.RMS_MAPPING_QUALITY, 1, VCFHeaderLineType.Integer, "RMS mapping quality"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.FORMAT_CICN_KEY, 2, VCFHeaderLineType.Float, "Confidence interval around copy number"));
+                VCFConstants.FORMAT.CONFIDENCE_INTERVAL_AROUND_COPY_NUMBER,
+                2,
+                VCFHeaderLineType.Float,
+                "Confidence interval around copy number"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.CNQ_KEY, 1, VCFHeaderLineType.Float, "Copy number genotype quality"));
+                VCFConstants.FORMAT.COPY_NUMBER_GENOTYPE_QUALITY,
+                1,
+                VCFHeaderLineType.Float,
+                "Copy number genotype quality"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.CNL_KEY,
+                VCFConstants.FORMAT.COPY_NUMBER_GENOTYPE_LIKELIHOODS,
                 VCFHeaderLineCount.G,
                 VCFHeaderLineType.Float,
                 "Copy number genotype likelihood"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.CNP_KEY,
+                VCFConstants.FORMAT.COPY_NUMBER_POSTERIOR_PROBABILITIES,
                 VCFHeaderLineCount.G,
                 VCFHeaderLineType.Float,
                 "Copy number posterior probabilities"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.NQ_KEY,
+                VCFConstants.FORMAT.NOVELTY_QUALITY,
                 1,
                 VCFHeaderLineType.Integer,
                 "Phred style probability score that the variant is novel"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.HAP_KEY, 1, VCFHeaderLineType.Integer, "Unique haplotype identifier"));
+                VCFConstants.FORMAT.HAPLOTYPE_ID, 1, VCFHeaderLineType.Integer, "Unique haplotype identifier"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.AHAP_KEY, 1, VCFHeaderLineType.Integer, "Unique identifier of ancestral haplotype"));
+                VCFConstants.FORMAT.ANCESTRAL_HAPLOTYPE_ID,
+                1,
+                VCFHeaderLineType.Integer,
+                "Unique identifier of ancestral haplotype"));
 
         // INFO lines
         registerStandard(new VCFInfoHeaderLine(
@@ -316,17 +328,17 @@ public class VCFStandardHeaderLines {
                 VCFConstants.RMS_MAPPING_QUALITY_KEY, 1, VCFHeaderLineType.Float, "RMS Mapping Quality"));
         registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY, 0, VCFHeaderLineType.Flag, "Somatic event"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.INFO_ALLELE_DEPTHS_KEY,
+                VCFConstants.INFO.ALLELE_DEPTHS,
                 VCFHeaderLineCount.R,
                 VCFHeaderLineType.Integer,
                 "Total read depth for each allele"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.INFO_ALLELE_DEPTHS_FORWARD_KEY,
+                VCFConstants.INFO.ALLELE_DEPTHS_FORWARD_STRAND,
                 VCFHeaderLineCount.R,
                 VCFHeaderLineType.Integer,
                 "Read depth for each allele on the forward strand"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.INFO_ALLELE_DEPTHS_REVERSE_KEY,
+                VCFConstants.INFO.ALLELE_DEPTHS_REVERSE_STRAND,
                 VCFHeaderLineCount.R,
                 VCFHeaderLineType.Integer,
                 "Read depth for each allele on the reverse strand"));
@@ -335,57 +347,63 @@ public class VCFStandardHeaderLines {
         registerStandard(
                 new VCFInfoHeaderLine(VCFConstants.HAPMAP3_KEY, 0, VCFHeaderLineType.Flag, "HapMap3 membership"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.IMPRECISE_KEY, 0, VCFHeaderLineType.Flag, "Imprecise structural variation"));
+                VCFConstants.INFO.IMPRECISE_STRUCTURAL_VARIANT,
+                0,
+                VCFHeaderLineType.Flag,
+                "Imprecise structural variation"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.NOVEL_KEY, 0, VCFHeaderLineType.Flag, "Indicates a novel structural variation"));
+                VCFConstants.INFO.NOVEL_STRUCTURAL_VARIANT,
+                0,
+                VCFHeaderLineType.Flag,
+                "Indicates a novel structural variation"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.EVENTTYPE_KEY,
+                VCFConstants.INFO.EVENT_TYPE,
                 VCFHeaderLineCount.A,
                 VCFHeaderLineType.String,
                 "Type of associated event"));
         registerStandard(
                 new VCFInfoHeaderLine(
-                        VCFConstants.SVCLAIM_KEY,
+                        VCFConstants.INFO.STRUCTURAL_VARIANT_CLAIM,
                         VCFHeaderLineCount.A,
                         VCFHeaderLineType.String,
                         "Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RN_KEY,
+                VCFConstants.INFO.REPEAT_SEQUENCE_COUNT,
                 VCFHeaderLineCount.A,
                 VCFHeaderLineType.Integer,
                 "Total number of repeat sequences in this allele"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RUS_KEY,
+                VCFConstants.INFO.REPEAT_UNIT_SEQUENCE,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.String,
                 "Repeat unit sequence of the corresponding repeat sequence"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RUL_KEY,
+                VCFConstants.INFO.REPEAT_UNIT_LENGTH,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Integer,
                 "Repeat unit length of the corresponding repeat sequence"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RUC_KEY,
+                VCFConstants.INFO.REPEAT_UNIT_COUNT,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Float,
                 "Repeat unit count of corresponding repeat sequence"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RB_KEY,
+                VCFConstants.INFO.REPEAT_SEQUENCE_LENGTH,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Integer,
                 "Total number of bases in the corresponding repeat sequence"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.CIRUC_KEY,
+                VCFConstants.INFO.CONFIDENCE_INTERVAL_AROUND_REPEAT_UNIT_COUNT,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Float,
                 "Confidence interval around RUC"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.CIRB_KEY,
+                VCFConstants.INFO.CONFIDENCE_INTERVAL_AROUND_REPEAT_SEQUENCE_LENGTH,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Integer,
                 "Confidence interval around RB"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RUB_KEY,
+                VCFConstants.INFO.INDIVIDUAL_REPEAT_UNIT_LENGTH,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.Integer,
                 "Number of bases in each individual repeat unit"));

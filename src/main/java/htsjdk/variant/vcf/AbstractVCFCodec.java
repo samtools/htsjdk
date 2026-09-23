@@ -292,7 +292,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         this.version = newVersion;
         this.vcfTextTransformer = getTextTransformerForVCFVersion(newVersion);
-        this.headerDeclaresLen = this.header.getFormatHeaderLine(VCFConstants.LEN_KEY) != null;
+        this.headerDeclaresLen = this.header.getFormatHeaderLine(VCFConstants.FORMAT.REFERENCE_BLOCK_LENGTH) != null;
 
         return this.header;
     }
@@ -534,7 +534,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                         "the END value in the INFO field, " + endValue + ", cannot be parsed as an integer", lineNo);
             }
         }
-        end = furthest(end, pos + longestSvlen(alleles, attrs.get(VCFConstants.SVLEN_KEY)));
+        end = furthest(end, pos + longestSvlen(alleles, attrs.get(VCFConstants.INFO.STRUCTURAL_VARIANT_LENGTH)));
         if (!hasEnd && headerDeclaresLen && genotypes != null && hasReferenceBlockAllele(alleles)) {
             end = furthest(end, pos + longestLen(genotypes) - 1);
         }
@@ -600,7 +600,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     private static long longestLen(final LazyGenotypesContext genotypes) {
         long longest = 0;
         for (final Genotype genotype : genotypes) {
-            final Object len = genotype.getExtendedAttribute(VCFConstants.LEN_KEY);
+            final Object len = genotype.getExtendedAttribute(VCFConstants.FORMAT.REFERENCE_BLOCK_LENGTH);
             if (len != null) {
                 try {
                     longest = Math.max(longest, Math.min(Long.parseLong(len.toString()), Integer.MAX_VALUE));

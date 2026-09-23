@@ -425,7 +425,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         this.outputVersion = VCFWriter.resolveOutputVersion(header, explicitVersion);
         this.header.setVCFHeaderVersion(this.outputVersion);
         this.outputIs45Plus = this.outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
-        this.outputHasLaaFormat = this.header.hasFormatLine(VCFConstants.LAA_KEY);
+        this.outputHasLaaFormat = this.header.hasFormatLine(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
         VCFWriter.checkHeaderCompatibility(this.header, this.outputVersion);
         requireSampleCountInRange(this.header.getNGenotypeSamples());
 

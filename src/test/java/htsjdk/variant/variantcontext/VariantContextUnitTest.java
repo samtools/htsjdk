@@ -2025,7 +2025,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Genotype g = new GenotypeBuilder("s1", Arrays.asList(Aref, T))
                 .AD(new int[] {3, 4})
                 .DP(7)
-                .attribute(VCFConstants.LAA_KEY, Arrays.asList(1))
+                .attribute(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, Arrays.asList(1))
                 .attribute("ZZ", 1)
                 .make();
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
@@ -2035,7 +2035,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
                 Arrays.asList(
                         VCFConstants.GENOTYPE_KEY,
-                        VCFConstants.LAA_KEY,
+                        VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES,
                         VCFConstants.GENOTYPE_ALLELE_DEPTHS,
                         VCFConstants.DEPTH_KEY,
                         "ZZ"));
@@ -2045,14 +2045,14 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void laaComesFirstAmongTheGenotypeKeysWhenThereIsNoGt() {
         final Genotype g = new GenotypeBuilder("s1")
                 .AD(new int[] {3, 4})
-                .attribute(VCFConstants.LAA_KEY, Arrays.asList(1))
+                .attribute(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, Arrays.asList(1))
                 .make();
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
                 .genotypes(g)
                 .make();
         Assert.assertEquals(
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
-                Arrays.asList(VCFConstants.LAA_KEY, VCFConstants.GENOTYPE_ALLELE_DEPTHS));
+                Arrays.asList(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, VCFConstants.GENOTYPE_ALLELE_DEPTHS));
     }
 
     @Test

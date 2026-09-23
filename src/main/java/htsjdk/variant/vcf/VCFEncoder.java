@@ -101,7 +101,7 @@ public class VCFEncoder {
         this.percentEncode = version.percentEncodesText();
         this.leadingPhaseAllowed = version.leadingPhaseAllowed();
         this.outputIs45Plus = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
-        this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.LAA_KEY);
+        this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
     }
 
     /**
@@ -125,7 +125,7 @@ public class VCFEncoder {
     @Deprecated
     public void setVCFHeader(final VCFHeader header) {
         this.header = header;
-        this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.LAA_KEY);
+        this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
     }
 
     /**
