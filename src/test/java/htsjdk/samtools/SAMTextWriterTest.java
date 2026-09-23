@@ -37,6 +37,7 @@ import htsjdk.utils.SamtoolsTestUtils;
 import htsjdk.utils.TabixTestUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -548,5 +549,69 @@ public class SAMTextWriterTest extends HtsjdkTest {
         final byte[] fileTail = Arrays.copyOfRange(tail, tail.length - eofBlock.length, tail.length);
         Assert.assertEquals(fileTail, eofBlock, "data stream should be properly closed with EOF block");
         IOUtil.recursiveDelete(dir);
+    }
+
+    private static SAMRecord recordToWrite() {
+        return new SAMRecordSetBuilder().addFrag("readA", 0, 100, false);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testReadNameWithTabIsRejected() {
+        final SAMRecord record = recordToWrite();
+        record.setReadName("read\tA");
+        new SAMTextWriter(new StringWriter()).writeAlignment(record);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testStringTagWithTabIsRejected() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XS", "value\tXT:Z:injected");
+        new SAMTextWriter(new StringWriter()).writeAlignment(record);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testStringTagWithLineFeedIsRejected() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XS", "value\nreadB");
+        new SAMTextWriter(new StringWriter()).writeAlignment(record);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testStringTagWithCarriageReturnIsRejected() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XS", "value\r");
+        new SAMTextWriter(new StringWriter()).writeAlignment(record);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testCharacterTagThatIsATabIsRejected() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XC", '\t');
+        new SAMTextWriter(new StringWriter()).writeAlignment(record);
+    }
+
+    @Test
+    public void testRejectedRecordWritesNothing() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XS", "value\tXT:Z:injected");
+        final StringWriter text = new StringWriter();
+        Assert.assertThrows(IllegalArgumentException.class, () -> new SAMTextWriter(text).writeAlignment(record));
+        Assert.assertEquals(text.toString(), "");
+    }
+
+    @Test
+    public void testStringTagWithSpacesIsWritten() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XS", "two words");
+        final StringWriter text = new StringWriter();
+        new SAMTextWriter(text).writeAlignment(record);
+        Assert.assertTrue(text.toString().endsWith("\tXS:Z:two words\n"), text.toString());
+    }
+
+    @Test
+    public void testSamStringOfRecordWithTabInTagDoesNotThrow() {
+        final SAMRecord record = recordToWrite();
+        record.setAttribute("XS", "value\tXT:Z:injected");
+        Assert.assertTrue(SAMTextWriter.getSAMString(record).endsWith("\tXS:Z:value\tXT:Z:injected"));
     }
 }

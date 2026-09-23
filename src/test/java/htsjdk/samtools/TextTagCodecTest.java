@@ -149,4 +149,24 @@ public class TextTagCodecTest extends HtsjdkTest {
         codec.decodeValue(buf, 0, buf.length);
         Assert.assertEquals(codec.getLastValue(), Integer.MIN_VALUE);
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testEncodeUntypedTagRejectsTab() {
+        new TextTagCodec().encodeUntypedTag("DS", "text with INJECTION\tPI:123");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testEncodeUntypedTagRejectsLineFeed() {
+        new TextTagCodec().encodeUntypedTag("DS", "text\n@CO\tinjected");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testEncodeUntypedTagRejectsCarriageReturn() {
+        new TextTagCodec().encodeUntypedTag("DS", "text\r");
+    }
+
+    @Test
+    public void testEncodeUntypedTagWritesValueWithSpaces() {
+        Assert.assertEquals(new TextTagCodec().encodeUntypedTag("DS", "two words"), "DS:two words");
+    }
 }

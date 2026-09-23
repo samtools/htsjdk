@@ -165,6 +165,8 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      * Write the record.
      *
      * @param alignment SAMRecord.
+     * @throws IllegalArgumentException if the read name or a Z or A tag value contains a tab, line feed or carriage
+     *     return
      */
     @Override
     public void writeAlignment(final SAMRecord alignment) {
@@ -172,6 +174,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             throw new SAMException(
                     "Cannot write further alignments after a SAM indexing failure on " + indexPath, indexingFailure);
         }
+        requireNoFieldOrLineBreaks(alignment);
         writeAlignmentNoNewline(alignment);
         try {
             out.write("\n");
@@ -202,6 +205,27 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             deleteIndexQuietly(indexPath);
             indexingFailure = new SAMException("Exception when processing alignment for SAM index " + alignment, e);
             throw indexingFailure;
+        }
+    }
+
+    /**
+     * Rejects a record whose free-text fields would split its line. Checked here rather than in
+     * {@link #writeAlignmentNoNewline} because {@link SAMRecord#toString()} goes through that and must not throw.
+     */
+    private static void requireNoFieldOrLineBreaks(final SAMRecord alignment) {
+        if (TextTagCodec.hasFieldOrLineBreak(alignment.getReadName())) {
+            throw TextTagCodec.fieldOrLineBreakError("Read name", alignment.getReadName());
+        }
+        for (SAMBinaryTagAndValue attribute = alignment.getBinaryAttributes();
+                attribute != null;
+                attribute = attribute.getNext()) {
+            if (attribute.value instanceof String || attribute.value instanceof Character) {
+                final String text = attribute.value.toString();
+                if (TextTagCodec.hasFieldOrLineBreak(text)) {
+                    throw TextTagCodec.fieldOrLineBreakError(
+                            "Tag " + SAMTag.makeStringTag(attribute.tag) + " of read " + alignment.getReadName(), text);
+                }
+            }
         }
     }
 
