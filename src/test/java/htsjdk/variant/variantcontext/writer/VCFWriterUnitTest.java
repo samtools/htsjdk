@@ -1139,4 +1139,206 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             Assert.assertEquals(readBack.getAttribute("NOTE"), value);
         }
     }
+
+    // LAA ordering and missing-LAA tests
+
+    @Test
+    public void missingLaaWrittenAsDotInVcf() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header =
+                new VCFHeader(VCFHeaderVersion.VCF4_5, lines, new LinkedHashSet<>(List.of("s1", "s2")));
+        header.setSequenceDictionary(dict);
+
+        final List<Allele> alleles = List.of(Allele.create("A", true), Allele.create("C"));
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, alleles)
+                .genotypes(
+                        new GenotypeBuilder("s1", alleles)
+                                .attribute("LAA", List.of(1))
+                                .DP(10)
+                                .make(),
+                        new GenotypeBuilder("s2", alleles).DP(5).make())
+                .make();
+
+        final Path output = writeInteropVcf(header, vc);
+        final String dataLine = Files.readAllLines(output, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        Assert.assertTrue(dataLine.contains("GT:LAA:DP"), "FORMAT should be GT:LAA:DP at 4.5: " + dataLine);
+        final String[] columns = dataLine.split("\t");
+        final String s2Genotype = columns[columns.length - 1];
+        Assert.assertTrue(s2Genotype.contains(".:"), "Sample without LAA should have . for LAA: " + s2Genotype);
+    }
+
+    // LAA pass-through boundary tests
+
+    @Test
+    public void lazyVcf44WithLaaRewrittenAt45ProducesCorrectOrder() throws IOException {
+        final Set<VCFHeaderLine> lines44 = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines44, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines44.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header44 = new VCFHeader(VCFHeaderVersion.VCF4_4, lines44, Set.of("s1"));
+        header44.setSequenceDictionary(dict);
+
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "chr1", 100, 100, List.of(Allele.create("A", true), Allele.create("C")))
+                .genotypes(new GenotypeBuilder("s1", List.of(Allele.create("A", true), Allele.create("C")))
+                        .attribute("LAA", List.of(1))
+                        .DP(7)
+                        .make())
+                .make();
+
+        // Write a 4.4 VCF
+        final Path vcf44 = Files.createTempFile(tempDir, "laa44.", ".vcf");
+        vcf44.toFile().deleteOnExit();
+        try (final VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(vcf44)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header44);
+            w.add(vc);
+        }
+
+        // Read back lazily and rewrite under a 4.5 header
+        final Set<VCFHeaderLine> lines45 = new LinkedHashSet<>(lines44);
+        final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines45, Set.of("s1"));
+        header45.setSequenceDictionary(dict);
+
+        final Path vcf45 = Files.createTempFile(tempDir, "laa45.", ".vcf");
+        vcf45.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(vcf44, false);
+                final VariantContextWriter w = new VariantContextWriterBuilder()
+                        .setOutputPath(vcf45)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                        .unsetOption(Options.INDEX_ON_THE_FLY)
+                        .build()) {
+            w.writeHeader(header45);
+            for (final VariantContext v : reader) w.add(v);
+        }
+
+        final String dataLine = Files.readAllLines(vcf45, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        Assert.assertTrue(
+                dataLine.contains("GT:LAA:DP"), "4.4 source rewritten at 4.5 should reorder to GT:LAA:DP: " + dataLine);
+    }
+
+    @Test
+    public void lazyVcf44WithoutLaaPassesThroughAt45() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header44 = new VCFHeader(VCFHeaderVersion.VCF4_4, lines, Set.of("s1"));
+        header44.setSequenceDictionary(dict);
+
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "chr1", 100, 100, List.of(Allele.create("A", true), Allele.create("C")))
+                .genotypes(new GenotypeBuilder("s1", List.of(Allele.create("A", true), Allele.create("C")))
+                        .DP(7)
+                        .make())
+                .make();
+
+        // Write a 4.4 VCF
+        final Path vcf44 = Files.createTempFile(tempDir, "noLaa44.", ".vcf");
+        vcf44.toFile().deleteOnExit();
+        try (final VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(vcf44)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header44);
+            w.add(vc);
+        }
+
+        // Read and note the original text for the genotype columns
+        final String original44Line = Files.readAllLines(vcf44, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        final String originalGenoCols = original44Line.substring(original44Line.indexOf("GT:"));
+
+        // Read back lazily and rewrite under a 4.5 header (no LAA in header)
+        final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines, Set.of("s1"));
+        header45.setSequenceDictionary(dict);
+
+        final Path vcf45 = Files.createTempFile(tempDir, "noLaa45.", ".vcf");
+        vcf45.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(vcf44, false);
+                final VariantContextWriter w = new VariantContextWriterBuilder()
+                        .setOutputPath(vcf45)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                        .unsetOption(Options.INDEX_ON_THE_FLY)
+                        .build()) {
+            w.writeHeader(header45);
+            for (final VariantContext v : reader) w.add(v);
+        }
+
+        final String rewrittenLine = Files.readAllLines(vcf45, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        final String rewrittenGenoCols = rewrittenLine.substring(rewrittenLine.indexOf("GT:"));
+        Assert.assertEquals(
+                rewrittenGenoCols, originalGenoCols, "Without LAA, 4.4 to 4.5 should pass through unchanged");
+    }
+
+    @Test
+    public void lazyVcf45WithLaaPassesThroughAt45() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines, Set.of("s1"));
+        header45.setSequenceDictionary(dict);
+
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "chr1", 100, 100, List.of(Allele.create("A", true), Allele.create("C")))
+                .genotypes(new GenotypeBuilder("s1", List.of(Allele.create("A", true), Allele.create("C")))
+                        .attribute("LAA", List.of(1))
+                        .DP(7)
+                        .make())
+                .make();
+
+        // Write a 4.5 VCF
+        final Path vcf45a = Files.createTempFile(tempDir, "laa45a.", ".vcf");
+        vcf45a.toFile().deleteOnExit();
+        try (final VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(vcf45a)
+                .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header45);
+            w.add(vc);
+        }
+
+        final String originalLine = Files.readAllLines(vcf45a, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        final String originalGenoCols = originalLine.substring(originalLine.indexOf("GT:"));
+
+        // Read back lazily and rewrite under the same 4.5 header
+        final Path vcf45b = Files.createTempFile(tempDir, "laa45b.", ".vcf");
+        vcf45b.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(vcf45a, false);
+                final VariantContextWriter w = new VariantContextWriterBuilder()
+                        .setOutputPath(vcf45b)
+                        .setVCFVersion(VCFHeaderVersion.VCF4_5)
+                        .unsetOption(Options.INDEX_ON_THE_FLY)
+                        .build()) {
+            w.writeHeader(header45);
+            for (final VariantContext v : reader) w.add(v);
+        }
+
+        final String rewrittenLine = Files.readAllLines(vcf45b, StandardCharsets.UTF_8).stream()
+                .filter(l -> !l.startsWith("#"))
+                .findFirst()
+                .orElseThrow();
+        final String rewrittenGenoCols = rewrittenLine.substring(rewrittenLine.indexOf("GT:"));
+        Assert.assertEquals(rewrittenGenoCols, originalGenoCols, "4.5 to 4.5 with LAA should pass through unchanged");
+    }
 }

@@ -107,7 +107,7 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
             return line.getType().equals(VCFHeaderLineType.String)
                     && line.getCountType().equals(VCFHeaderLineCount.UNBOUNDED);
         else if (id.equals(VCFConstants.PHASE_QUALITY_KEY))
-            return line.getType().equals(VCFHeaderLineType.Float) && line.getCount() == 1;
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
         else if (id.equals(VCFConstants.END_KEY))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
         else if (id.equals(VCFConstants.DBSNP_KEY))
@@ -164,20 +164,20 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
 
         tests.add(new Object[] {new RepairHeaderTest(standardGT, standardGT)});
         tests.add(new Object[] {new RepairHeaderTest(goodGT, goodGT)});
+        // bad count -> repaired to standard (type is the same)
         tests.add(new Object[] {
             new RepairHeaderTest(new VCFFormatHeaderLine("GT", 2, VCFHeaderLineType.String, "x"), standardGT)
         });
-        tests.add(new Object[] {
-            new RepairHeaderTest(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.Integer, "x"), standardGT)
-        });
-        tests.add(new Object[] {
-            new RepairHeaderTest(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.Float, "x"), standardGT)
-        });
-        tests.add(new Object[] {
-            new RepairHeaderTest(
-                    new VCFFormatHeaderLine("GT", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "x"),
-                    standardGT)
-        });
+        // bad type only -> not repaired (type mismatch is preserved)
+        final VCFFormatHeaderLine gtBadTypeInt = new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.Integer, "x");
+        tests.add(new Object[] {new RepairHeaderTest(gtBadTypeInt, gtBadTypeInt)});
+        final VCFFormatHeaderLine gtBadTypeFloat = new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.Float, "x");
+        tests.add(new Object[] {new RepairHeaderTest(gtBadTypeFloat, gtBadTypeFloat)});
+        // bad countType + bad type -> not repaired (type mismatch blocks repair)
+        final VCFFormatHeaderLine gtBadBoth =
+                new VCFFormatHeaderLine("GT", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "x");
+        tests.add(new Object[] {new RepairHeaderTest(gtBadBoth, gtBadBoth)});
+        // bad countType, same type -> count repaired
         tests.add(new Object[] {
             new RepairHeaderTest(
                     new VCFFormatHeaderLine("GT", VCFHeaderLineCount.G, VCFHeaderLineType.String, "x"), standardGT)
@@ -189,9 +189,11 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
 
         tests.add(new Object[] {new RepairHeaderTest(standardAC, standardAC)});
         tests.add(new Object[] {new RepairHeaderTest(goodAC, goodAC)});
+        // bad count (1 vs A) -> repaired to standard
         tests.add(new Object[] {
             new RepairHeaderTest(new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.Integer, "x"), standardAC)
         });
+        // bad countType -> repaired
         tests.add(new Object[] {
             new RepairHeaderTest(
                     new VCFInfoHeaderLine("AC", VCFHeaderLineCount.G, VCFHeaderLineType.Integer, "x"), standardAC)
@@ -201,19 +203,16 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
                     new VCFInfoHeaderLine("AC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"),
                     standardAC)
         });
-        tests.add(new Object[] {
-            new RepairHeaderTest(new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.Float, "x"), standardAC)
-        });
-        tests.add(new Object[] {
-            new RepairHeaderTest(new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.String, "x"), standardAC)
-        });
-        tests.add(new Object[] {
-            new RepairHeaderTest(new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x"), standardAC)
-        });
-        tests.add(new Object[] {
-            new RepairHeaderTest(
-                    new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x", "source", "v1.2.3"), standardAC)
-        });
+        // bad count + bad type -> not repaired (type mismatch blocks repair)
+        final VCFInfoHeaderLine acBadFloat = new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.Float, "x");
+        tests.add(new Object[] {new RepairHeaderTest(acBadFloat, acBadFloat)});
+        final VCFInfoHeaderLine acBadString = new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.String, "x");
+        tests.add(new Object[] {new RepairHeaderTest(acBadString, acBadString)});
+        final VCFInfoHeaderLine acBadFlag = new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x");
+        tests.add(new Object[] {new RepairHeaderTest(acBadFlag, acBadFlag)});
+        final VCFInfoHeaderLine acBadFlagSrc =
+                new VCFInfoHeaderLine("AC", 0, VCFHeaderLineType.Flag, "x", "source", "v1.2.3");
+        tests.add(new Object[] {new RepairHeaderTest(acBadFlagSrc, acBadFlagSrc)});
 
         tests.add(new Object[] {
             new RepairHeaderTest(new VCFInfoHeaderLine("NON_STANDARD_INFO", 1, VCFHeaderLineType.String, "x"))
@@ -283,5 +282,76 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
                 "<ID=AD,Number=.,Type=Integer,Description=\"depths\",IDX=7>", VCFHeaderVersion.VCF4_3));
         VCFStandardHeaderLines.repairStandardHeaderLines(toRepair);
         Assert.assertNull(VCFStandardHeaderLines.getFormatLine("AD").getGenericFieldValue("IDX"));
+    }
+
+    // PQ standard line tests
+
+    @Test
+    public void formatAdfAndAdrAreStandardPerAlleleIntegers() {
+        for (final String key : new String[] {"ADF", "ADR"}) {
+            final VCFFormatHeaderLine line = VCFStandardHeaderLines.getFormatLine(key);
+            Assert.assertEquals(line.getCountType(), VCFHeaderLineCount.R, key);
+            Assert.assertEquals(line.getType(), VCFHeaderLineType.Integer, key);
+        }
+    }
+
+    @Test
+    public void pqStandardLineIsInteger() {
+        Assert.assertEquals(VCFStandardHeaderLines.getFormatLine("PQ").getType(), VCFHeaderLineType.Integer);
+        Assert.assertEquals(VCFStandardHeaderLines.getFormatLine("PQ").getCount(), 1);
+    }
+
+    @Test
+    public void repairDoesNotChangeTypeOfExistingPqFloat() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFFormatHeaderLine("PQ", 1, VCFHeaderLineType.Float, "phasing quality"));
+        final VCFFormatHeaderLine repaired =
+                VCFStandardHeaderLines.repairStandardHeaderLines(header).getFormatHeaderLine("PQ");
+        Assert.assertEquals(repaired.getType(), VCFHeaderLineType.Float);
+    }
+
+    @Test
+    public void repairFixesPqCount() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFFormatHeaderLine("PQ", 2, VCFHeaderLineType.Integer, "phasing quality"));
+        final VCFFormatHeaderLine repaired =
+                VCFStandardHeaderLines.repairStandardHeaderLines(header).getFormatHeaderLine("PQ");
+        Assert.assertEquals(repaired.getCount(), 1);
+        Assert.assertEquals(repaired.getType(), VCFHeaderLineType.Integer);
+    }
+
+    @Test
+    public void repairAddsMissingPqAsInteger() {
+        final java.util.Set<VCFHeaderLine> lines = new java.util.LinkedHashSet<>();
+        VCFStandardHeaderLines.addStandardFormatLines(lines, false, "PQ");
+        final VCFFormatHeaderLine pq = lines.stream()
+                .filter(l -> l instanceof VCFFormatHeaderLine
+                        && ((VCFFormatHeaderLine) l).getID().equals("PQ"))
+                .map(l -> (VCFFormatHeaderLine) l)
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(pq);
+        Assert.assertEquals(pq.getType(), VCFHeaderLineType.Integer);
+        Assert.assertEquals(pq.getCount(), 1);
+    }
+
+    @Test
+    public void repairSkipsEntirelyWhenTypeDiffers() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFFormatHeaderLine("PQ", 2, VCFHeaderLineType.Float, "phasing quality"));
+        final VCFFormatHeaderLine repaired =
+                VCFStandardHeaderLines.repairStandardHeaderLines(header).getFormatHeaderLine("PQ");
+        Assert.assertEquals(repaired.getCount(), 2);
+        Assert.assertEquals(repaired.getType(), VCFHeaderLineType.Float);
+    }
+
+    @Test
+    public void repairCorrectsSameTypeWrongNumber() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFInfoHeaderLine("AC", 1, VCFHeaderLineType.Integer, "wrong count"));
+        final VCFInfoHeaderLine repaired =
+                VCFStandardHeaderLines.repairStandardHeaderLines(header).getInfoHeaderLine("AC");
+        Assert.assertEquals(repaired.getCountType(), VCFHeaderLineCount.A);
+        Assert.assertEquals(repaired.getType(), VCFHeaderLineType.Integer);
     }
 }

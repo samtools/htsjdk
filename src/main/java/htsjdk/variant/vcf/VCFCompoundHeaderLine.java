@@ -273,6 +273,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * The definition of one line (ID, Number, Type, Description) with the attributes of another that a definition
      * does not cover: Source, Version and any non-standard ones.
      */
+    /** {@code definition}'s ID, Number, Type and Description with every other attribute of {@code attributes}. */
     protected VCFCompoundHeaderLine(final VCFCompoundHeaderLine definition, final VCFCompoundHeaderLine attributes) {
         super(definition.lineType.toString(), "");
         this.name = definition.name;

@@ -9,9 +9,20 @@ common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also a number of useful utilities for 
 manipulating HTS data.
 
-> **NOTE: _HTSJDK has only partial support for the latest Variant Call Format Specification.  VCFv4.3 can be read but not written, VCFv4.4 can be read in lenient mode only, and there is no support for BCFv2.2._**
-
 > **NOTE: _HTSJDK now supports both reading and writing CRAM 3.1 files.  CRAM 3.1 write support includes all codecs defined in the specification (rANS Nx16, adaptive arithmetic Range coder, FQZComp, Name Tokenisation, and STRIPE), configurable compression profiles (FAST, NORMAL, SMALL, ARCHIVE), and trial compression for automatic codec selection.  Files produced by htsjdk are interoperable with samtools/htslib._**
+
+### Supported VCF and BCF versions
+
+| Format | Version | Read | Write | Index |
+|---|---|---|---|---|
+| VCF | 3.2, 3.3 | Yes | No | `.idx` (Tribble) |
+| VCF | 4.0, 4.1, 4.2 | Yes | Yes | `.idx` (Tribble), TBI, CSI |
+| VCF | 4.3, 4.4, 4.5 | Yes | Yes | `.idx` (Tribble), TBI, CSI |
+| BCF | 1 | No | No | -- |
+| BCF | 2.1 (raw) | Yes | Yes (via `setBCFVersion`) | `.idx` (Tribble) |
+| BCF | 2.2 (BGZF) | Yes | Yes (default) | CSI (bare, as bcftools) |
+
+VCF 4.3 introduces percent-encoding of special characters in INFO and FORMAT string values and UTF-8 text; both are handled on read and write. VCF 4.4 adds per-allele phasing (leading phase indicator in GT) and new Number codes (P). VCF 4.5 adds local-allele fields (LAA, LAD, LPL, ...) and new Number codes (LA, LR, LG, M). The output version is the header's (with a floor of 4.2) or can be set explicitly via `VariantContextWriterBuilder.setVCFVersion`. Interoperability with bcftools is tested for every container and version.
 
 ### Documentation & Getting Help
 

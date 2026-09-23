@@ -2025,7 +2025,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Genotype g = new GenotypeBuilder("s1", Arrays.asList(Aref, T))
                 .AD(new int[] {3, 4})
                 .DP(7)
-                .attribute(VCFConstants.LAA_KEY, Arrays.asList(1))
+                .attribute(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, Arrays.asList(1))
                 .attribute("ZZ", 1)
                 .make();
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
@@ -2035,7 +2035,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
                 Arrays.asList(
                         VCFConstants.GENOTYPE_KEY,
-                        VCFConstants.LAA_KEY,
+                        VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES,
                         VCFConstants.GENOTYPE_ALLELE_DEPTHS,
                         VCFConstants.DEPTH_KEY,
                         "ZZ"));
@@ -2045,14 +2045,14 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void laaComesFirstAmongTheGenotypeKeysWhenThereIsNoGt() {
         final Genotype g = new GenotypeBuilder("s1")
                 .AD(new int[] {3, 4})
-                .attribute(VCFConstants.LAA_KEY, Arrays.asList(1))
+                .attribute(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, Arrays.asList(1))
                 .make();
         final VariantContext vc = new VariantContextBuilder("test", snpLoc, 10, 10, Arrays.asList(Aref, T))
                 .genotypes(g)
                 .make();
         Assert.assertEquals(
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
-                Arrays.asList(VCFConstants.LAA_KEY, VCFConstants.GENOTYPE_ALLELE_DEPTHS));
+                Arrays.asList(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES, VCFConstants.GENOTYPE_ALLELE_DEPTHS));
     }
 
     @Test
@@ -2069,5 +2069,99 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 vc.calcVCFGenotypeKeys(new VCFHeader()),
                 Arrays.asList(
                         VCFConstants.GENOTYPE_KEY, VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFConstants.DEPTH_KEY, "ZZ"));
+    }
+
+    // getStructuralVariantType tests
+
+    @Test
+    public void getStructuralVariantTypeFromSvtype() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL>", false)))
+                .attribute(VCFConstants.SVTYPE, "DEL")
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void getStructuralVariantTypeFromSvtypeWithSubtype() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL:ME>", false)))
+                .attribute(VCFConstants.SVTYPE, "DEL:ME")
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void getStructuralVariantTypeFromAllelesOnly() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL>", false)))
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void getStructuralVariantTypeNoneForSequenceAlleles() {
+        final VariantContext vc =
+                new VariantContextBuilder("test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T)).make();
+        Assert.assertNull(vc.getStructuralVariantType());
+    }
+
+    @Test
+    public void getStructuralVariantTypeMixedSvtypeVsAllele() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<INS>", false)))
+                .attribute(VCFConstants.SVTYPE, "DEL")
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.MIXED);
+    }
+
+    @Test
+    public void getStructuralVariantTypeBreakendFromAllele() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test",
+                        snpLoc,
+                        snpLocStart,
+                        snpLocStop,
+                        Arrays.asList(Aref, Allele.create("G]17:198982]", false)))
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.BND);
+    }
+
+    @Test
+    public void getStructuralVariantTypeConsistentSvtypeAndAllele() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL:ME>", false)))
+                .attribute(VCFConstants.SVTYPE, "DEL")
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void getStructuralVariantTypeUnparseableSvtypeWithDelAllele() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, Allele.create("<DEL>", false)))
+                .attribute(VCFConstants.SVTYPE, "UNKNOWN")
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void getStructuralVariantTypeSequenceAltWithDel() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T, Allele.create("<DEL>", false)))
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    @Test
+    public void getStructuralVariantTypeGvcfStyleDelAndNonRef() {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test",
+                        snpLoc,
+                        snpLocStart,
+                        snpLocStop,
+                        Arrays.asList(Aref, Allele.create("<DEL>", false), Allele.NON_REF_ALLELE))
+                .make();
+        Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
     }
 }
