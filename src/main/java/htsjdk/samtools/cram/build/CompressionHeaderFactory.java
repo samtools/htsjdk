@@ -57,6 +57,8 @@ public final class CompressionHeaderFactory {
     private static final int[] SINGLE_ZERO = new int[] {0};
 
     private final CRAMEncodingStrategy encodingStrategy;
+    // The strategy's tag compressors as they were when this factory checked them against the CRAM version
+    private final List<CompressorDescriptor> tagCompressorCandidates;
     private final CompressionHeaderEncodingMap encodingMap;
 
     private final Map<Integer, EncodingDetails> bestTagEncodings = new HashMap<>();
@@ -82,7 +84,8 @@ public final class CompressionHeaderFactory {
                 ? encodingStrategy.getCustomCompressionHeaderEncodingMap()
                 : new CompressionHeaderEncodingMap(encodingStrategy);
         this.encodingStrategy = encodingStrategy;
-        checkCodecsAvailable(encodingStrategy.getCramVersion(), encodingMap, encodingStrategy);
+        this.tagCompressorCandidates = encodingStrategy.getTagCompressorCandidates();
+        checkCodecsAvailable(encodingStrategy.getCramVersion(), encodingMap, tagCompressorCandidates);
     }
 
     /**
@@ -94,7 +97,7 @@ public final class CompressionHeaderFactory {
     private static void checkCodecsAvailable(
             final CRAMVersion cramVersion,
             final CompressionHeaderEncodingMap encodingMap,
-            final CRAMEncodingStrategy encodingStrategy) {
+            final List<CompressorDescriptor> tagCompressorCandidates) {
         for (final DataSeries dataSeries : DataSeries.values()) {
             final ExternalCompressor compressor = encodingMap.getCompressorForDataSeries(dataSeries);
             if (compressor != null) {
@@ -103,7 +106,7 @@ public final class CompressionHeaderFactory {
                 }
             }
         }
-        for (final CompressorDescriptor candidate : encodingStrategy.getTagCompressorCandidates()) {
+        for (final CompressorDescriptor candidate : tagCompressorCandidates) {
             checkCodecAvailable(cramVersion, candidate.method(), "tags");
         }
     }
@@ -305,7 +308,7 @@ public final class CompressionHeaderFactory {
     private ExternalCompressor getTagTrialCompressor(final int tagID) {
         return tagTrialCompressors.computeIfAbsent(tagID, id -> {
             final List<ExternalCompressor> candidates = new ArrayList<>();
-            for (final CompressorDescriptor descriptor : encodingStrategy.getTagCompressorCandidates()) {
+            for (final CompressorDescriptor descriptor : tagCompressorCandidates) {
                 candidates.add(tagCompressorCache.getCompressorForMethod(descriptor.method(), descriptor.arg()));
             }
 

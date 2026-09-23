@@ -92,8 +92,12 @@ class LibdeflateDeflater extends Deflater {
 
     @Override
     public int deflate(final byte[] output, final int off, final int len) {
-        // Empty input still needs a (tiny) DEFLATE stream, as java.util.zip.Deflater writes; readers such as
-        // GZIPInputStream reject a gzip member without one.
+        // Until finish(), empty input may yet be followed by more; after it, empty input still needs a (tiny) DEFLATE
+        // stream, as java.util.zip.Deflater writes, since readers such as GZIPInputStream reject a gzip member
+        // without one.
+        if (inputLen == 0 && !finishing) {
+            return 0;
+        }
         final byte[] input = inputBuf == null ? EMPTY_INPUT : inputBuf;
         final int compressed = nowrap
                 ? compressor.deflateCompress(input, inputOff, inputLen, output, off, len)

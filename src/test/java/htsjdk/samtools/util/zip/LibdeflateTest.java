@@ -88,6 +88,14 @@ public class LibdeflateTest extends HtsjdkTest {
     }
 
     @Test
+    public void emptyInputBeforeFinishDeflatesToNothing() {
+        final java.util.zip.Deflater deflater = new DeflaterFactory().makeDeflater(5, true);
+        deflater.setInput(new byte[0]);
+        Assert.assertEquals(deflater.deflate(new byte[64], 0, 64), 0);
+        Assert.assertFalse(deflater.finished());
+    }
+
+    @Test
     public void testCompressionLevels() throws IOException {
         final byte[] original = new byte[10_000];
         new Random(123).nextBytes(original);

@@ -216,4 +216,16 @@ public class CRAMCompressionProfileTest extends HtsjdkTest {
         Assert.assertThrows(IllegalArgumentException.class, () -> new CRAMEncodingStrategy()
                 .setCramVersion(CramVersions.CRAM_v2_1));
     }
+
+    @Test
+    public void nameTokeniserIsNotATagCompressor() {
+        Assert.assertThrows(IllegalArgumentException.class, () -> new CRAMEncodingStrategy()
+                .setTagCompressorCandidates(List.of(new CompressorDescriptor(BlockCompressionMethod.NAME_TOKENISER))));
+    }
+
+    @Test
+    public void fqzcompIsNotATagCompressor() {
+        Assert.assertThrows(IllegalArgumentException.class, () -> new CRAMEncodingStrategy()
+                .setTagCompressorCandidates(List.of(new CompressorDescriptor(BlockCompressionMethod.FQZCOMP))));
+    }
 }

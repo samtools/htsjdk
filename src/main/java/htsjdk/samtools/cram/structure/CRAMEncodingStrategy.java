@@ -28,6 +28,7 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceContextType;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
 import java.util.EnumMap;
 import java.util.List;
@@ -263,13 +264,20 @@ public class CRAMEncodingStrategy {
      * one giving the smallest output is used for that tag from then on (see
      * {@link htsjdk.samtools.cram.compression.TrialCompressor}).
      *
-     * @param tagCompressorCandidates one or more compressor descriptors
+     * @param tagCompressorCandidates one or more compressor descriptors; not the name tokeniser or FQZComp, which
+     *     model read names and quality scores and cannot compress arbitrary tag values
      * @return this strategy for chaining
      */
     public CRAMEncodingStrategy setTagCompressorCandidates(final List<CompressorDescriptor> tagCompressorCandidates) {
         ValidationUtils.validateArg(
                 tagCompressorCandidates != null && !tagCompressorCandidates.isEmpty(),
                 "at least one tag compressor is required");
+        for (final CompressorDescriptor candidate : tagCompressorCandidates) {
+            ValidationUtils.validateArg(
+                    candidate.method() != BlockCompressionMethod.NAME_TOKENISER
+                            && candidate.method() != BlockCompressionMethod.FQZCOMP,
+                    () -> candidate.method() + " cannot compress tag values");
+        }
         this.tagCompressorCandidates = List.copyOf(tagCompressorCandidates);
         return this;
     }

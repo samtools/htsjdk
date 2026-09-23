@@ -528,4 +528,19 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         assertOnlyCodecsOfVersion(cram, CramVersions.CRAM_v3);
         validateRecords(records, new ByteArrayInputStream(cram), refSource);
     }
+
+    @Test
+    public void tagCompressorsChangedAfterTheWriterIsCreatedAreNotUsed() throws IOException {
+        final List<SAMRecord> records = createRecordsWithTags(2000);
+        final ReferenceSource refSource = createReferenceSource();
+        final CRAMEncodingStrategy strategy = CRAMCompressionProfile.NORMAL_3_0.toStrategy();
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(
+                strategy, os, null, true, refSource, createSAMHeader(SAMFileHeader.SortOrder.coordinate), null)) {
+            strategy.setTagCompressorCandidates(List.of(new htsjdk.samtools.cram.structure.CompressorDescriptor(
+                    htsjdk.samtools.cram.structure.block.BlockCompressionMethod.RANSNx16, 0)));
+            writeRecordsToCRAM(writer, records);
+        }
+        assertOnlyCodecsOfVersion(os.toByteArray(), CramVersions.CRAM_v3);
+    }
 }
