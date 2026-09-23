@@ -39,14 +39,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
             {"auxf#values"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
-            {"ce#1000"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"ce#unmap"}, // unmapped reads with non-zero MAPQ value that is not restored
-            // https://github.com/samtools/htsjdk/issues/714
             {"xx#repeated"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"xx#tlen"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"xx#tlen2"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
-            {"xx#triplet"}, // the version 2.1 variant of this file has a bad insertSize, which is
-            // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
             {"md#1"}, // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
     }
@@ -75,10 +68,12 @@ public class CRAMComplianceTest extends HtsjdkTest {
             {"ce#2"},
             {"ce#5"},
             {"ce#5b"},
+            {"ce#1000"},
             {"ce#large_seq"},
             {"ce#supp"},
             {"ce#tag_depadded"},
             {"ce#tag_padded"},
+            {"ce#unmap"},
             {"ce#unmap1"},
             {"ce#unmap2"},
             {"xx#blank"},
@@ -87,6 +82,9 @@ public class CRAMComplianceTest extends HtsjdkTest {
             {"xx#minimal"},
             {"xx#pair"},
             {"xx#rg"},
+            {"xx#tlen"},
+            {"xx#tlen2"},
+            {"xx#triplet"},
             {"xx#unsorted"},
         };
     }
