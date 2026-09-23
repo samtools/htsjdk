@@ -6,9 +6,17 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
+import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
+import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.structure.*;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -88,5 +96,91 @@ public class CRAMRecordReadFeaturesTest extends HtsjdkTest {
             }
             Assert.assertEquals(samIterator.hasNext(), cramIterator.hasNext());
         }
+    }
+
+    private static final String REFERENCE = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
+
+    /**
+     * The read features htsjdk wrote before 6.0.0 for a mapped read with SEQ "*": it stored RL 0 and encoded the
+     * read as if every base were 'N', so each aligned base became a substitution against the reference.
+     */
+    private static List<ReadFeature> featuresWrittenBefore6(final String cigarString) {
+        final SAMRecord samRecord = CRAMStructureTestHelper.createSAMRecordMapped(0, 1);
+        samRecord.setCigarString(cigarString);
+        final byte[] nBases = new byte[TextCigarCodec.decode(cigarString).getReadLength()];
+        Arrays.fill(nBases, (byte) 'N');
+        return new CRAMRecordReadFeatures(samRecord, nBases, REFERENCE.getBytes()).getReadFeaturesList();
+    }
+
+    /** Decode a record without bases; the reference and substitution matrix are unused for one. */
+    private static CRAMRecordReadFeatures.DecodeResult decodeWithoutBases(
+            final List<ReadFeature> features, final int readLength) {
+        return CRAMRecordReadFeatures.restoreBasesAndTags(features, true, 1, readLength, null, null, false);
+    }
+
+    @Test
+    public void recordWithoutBasesOrFeaturesHasNoCigar() {
+        final CRAMRecordReadFeatures.DecodeResult result = decodeWithoutBases(Collections.emptyList(), 0);
+        Assert.assertEquals(result.cigar.toString(), "*");
+        Assert.assertEquals(result.readBases, SAMRecord.NULL_SEQUENCE);
+    }
+
+    @Test
+    public void recordWrittenBefore6WithoutBasesKeepsAMatchOnlyCigar() {
+        final CRAMRecordReadFeatures.DecodeResult result = decodeWithoutBases(featuresWrittenBefore6("20M"), 0);
+        Assert.assertEquals(result.cigar.toString(), "20M");
+        Assert.assertEquals(result.readBases, SAMRecord.NULL_SEQUENCE);
+    }
+
+    @Test
+    public void recordWrittenBefore6WithoutBasesKeepsItsSoftClips() {
+        Assert.assertEquals(
+                decodeWithoutBases(featuresWrittenBefore6("5S15M"), 0).cigar.toString(), "5S15M");
+    }
+
+    @Test
+    public void recordWrittenBefore6WithoutBasesKeepsItsInsertion() {
+        Assert.assertEquals(
+                decodeWithoutBases(featuresWrittenBefore6("10M2I8M"), 0).cigar.toString(), "10M2I8M");
+    }
+
+    @Test
+    public void recordWrittenBefore6WithoutBasesKeepsItsDeletion() {
+        Assert.assertEquals(
+                decodeWithoutBases(featuresWrittenBefore6("4M1D5M"), 0).cigar.toString(), "4M1D5M");
+    }
+
+    @Test
+    public void recordWrittenBefore6WithoutBasesKeepsItsHardClips() {
+        Assert.assertEquals(
+                decodeWithoutBases(featuresWrittenBefore6("5H10M5H"), 0).cigar.toString(), "5H10M5H");
+    }
+
+    @Test
+    public void recordWrittenBefore6WithoutBasesEndsWhereItsCigarEnds() {
+        final CRAMRecordReadFeatures features = new CRAMRecordReadFeatures(featuresWrittenBefore6("3S4M1D5M"));
+        Assert.assertEquals(features.getAlignmentEnd(100, 0), 109);
+    }
+
+    @Test
+    public void hardClipOnlyRecordWithoutBasesKeepsItsCigar() {
+        Assert.assertEquals(
+                decodeWithoutBases(List.of(new HardClip(1, 10)), 0).cigar.toString(), "10H");
+    }
+
+    @Test
+    public void zeroLengthOperationsAreDroppedFromTheCigar() {
+        final List<ReadFeature> features =
+                List.of(new HardClip(1, 5), new Insertion(1, new byte[0]), new Deletion(11, 0), new HardClip(11, 5));
+        Assert.assertEquals(decodeWithoutBases(features, 10).cigar.toString(), "5H10M5H");
+    }
+
+    @Test
+    public void recordWithOnlyZeroLengthOperationsHasNoCigar() {
+        Assert.assertEquals(
+                decodeWithoutBases(List.of(new Insertion(1, new byte[0])), 0)
+                        .cigar
+                        .toString(),
+                "*");
     }
 }

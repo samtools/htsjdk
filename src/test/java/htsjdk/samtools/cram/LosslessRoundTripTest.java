@@ -552,4 +552,59 @@ public class LosslessRoundTripTest extends HtsjdkTest {
                 noQualsInsertion,
                 noQualsSoftClip);
     }
+
+    // ---- Reads without bases (SEQ "*") ----
+
+    /** Creates a mapped SAMRecord with SEQ and QUAL "*", such as a secondary alignment from minimap2. */
+    private SAMRecord createRecordNoBases(
+            final SAMFileHeader header, final String name, final int alignmentStart, final String cigarString) {
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName(name);
+        record.setReferenceIndex(0);
+        record.setAlignmentStart(alignmentStart);
+        record.setCigarString(cigarString);
+        record.setReadBases(SAMRecord.NULL_SEQUENCE);
+        record.setBaseQualities(SAMRecord.NULL_QUALS);
+        record.setAttribute("RG", READ_GROUP);
+        return record;
+    }
+
+    @Test
+    public void readWithoutBasesKeepsAMatchOnlyCigar() throws IOException {
+        assertRoundTrip("noBasesMatch", createRecordNoBases(buildHeader(), "r", 10, "20M"));
+    }
+
+    @Test
+    public void readWithoutBasesKeepsSoftClipsInItsCigar() throws IOException {
+        assertRoundTrip("noBasesSoftClips", createRecordNoBases(buildHeader(), "r", 10, "5S15M3S"));
+    }
+
+    @Test
+    public void readWithoutBasesKeepsInsertionsAndDeletionsInItsCigar() throws IOException {
+        assertRoundTrip("noBasesIndels", createRecordNoBases(buildHeader(), "r", 10, "10M2I3M1D5M"));
+    }
+
+    @Test
+    public void readWithoutBasesKeepsHardClipsAndRefSkipsInItsCigar() throws IOException {
+        assertRoundTrip("noBasesClipsAndSkips", createRecordNoBases(buildHeader(), "r", 10, "5H10M20N10M5H"));
+    }
+
+    @Test
+    public void readWithoutBasesKeepsItsNmAndMd() throws IOException {
+        final SAMRecord record = createRecordNoBases(buildHeader(), "r", 10, "20M");
+        record.setAttribute("NM", 2);
+        record.setAttribute("MD", "5A10C3");
+        assertRoundTrip("noBasesNmMd", record);
+    }
+
+    @Test
+    public void readsWithoutBasesKeepTheirCigarsAmongReadsWithBases() throws IOException {
+        final SAMFileHeader header = buildHeader();
+        assertRoundTrip(
+                "noBasesMixed",
+                createRecord(header, "withBases", 1, "10M", refBases(1, 10), quals(10)),
+                createRecordNoBases(header, "noBases1", 5, "3S12M"),
+                createRecordNoQuals(header, "noQuals", 8, "5M", mismatchBases(8, 5)),
+                createRecordNoBases(header, "noBases2", 20, "4M1D6M"));
+    }
 }

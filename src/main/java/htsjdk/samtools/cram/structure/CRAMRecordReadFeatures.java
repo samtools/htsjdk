@@ -72,9 +72,11 @@ public class CRAMRecordReadFeatures {
         final List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
         int cigarLen = Cigar.getReadLength(cigarElements);
 
+        // For SEQ "*", soft clips and insertions still carry bases, so they get 'N's, as htslib gives them.
+        // Aligned bases get no features: the record's RL and unknown-bases flag stand in for them.
+        final boolean basesUnknown = bamReadBases.length == 0;
         byte[] readBases = bamReadBases;
-        if (readBases.length == 0) {
-            // for SAMRecords with SEQ="*", manufacture 'N's
+        if (basesUnknown) {
             readBases = new byte[cigarLen];
             Arrays.fill(readBases, (byte) 'N');
         }
@@ -107,6 +109,7 @@ public class CRAMRecordReadFeatures {
                 case M:
                 case X:
                 case EQ:
+                    if (basesUnknown) break;
                     addMismatchReadFeatures(
                             refBases,
                             samRecord.getAlignmentStart(),
@@ -209,11 +212,12 @@ public class CRAMRecordReadFeatures {
      * Compute the alignment end position from the read features, alignment start, and read length.
      *
      * @param alignmentStart 1-based alignment start position
-     * @param readLength length of the read in bases
+     * @param readLength length of the read in bases; 0 means the features determine it
      * @return 1-based alignment end position
      */
     public int getAlignmentEnd(int alignmentStart, int readLength) {
-        int alignmentSpan = readLength;
+        int alignmentSpan =
+                readLength == 0 && readFeatures != null ? queryLengthFromFeatures(readFeatures) : readLength;
         if (readFeatures != null) {
             for (final ReadFeature readFeature : readFeatures) {
                 // only adjust for read features that affect alignment end
@@ -526,7 +530,7 @@ public class CRAMRecordReadFeatures {
      * @param readFeatures list of read features (may be null for pure reference matches)
      * @param isUnknownBases true if the CF_UNKNOWN_BASES flag is set
      * @param readAlignmentStart 1-based alignment start
-     * @param readLength read length
+     * @param readLength read length; 0 for a record without bases, whose query length the features determine
      * @param cramReferenceRegion reference region covering this read's span
      * @param substitutionMatrix substitution matrix for base resolution
      * @param computeMdNm whether to compute MD string and NM count
@@ -541,11 +545,41 @@ public class CRAMRecordReadFeatures {
             final SubstitutionMatrix substitutionMatrix,
             final boolean computeMdNm) {
 
+        // A record with RL 0 has no bases. Its CIGAR either consumes no read bases, or it is a mapped SEQ "*"
+        // record written by htsjdk before 6.0.0, which stored RL 0 and encoded every aligned base as a read
+        // feature; in both cases the query length is where the features end.
         if (readLength == 0) {
-            final Cigar cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
-            return new DecodeResult(SAMRecord.NULL_SEQUENCE, cigar, null, -1);
+            if (readFeatures == null || readFeatures.isEmpty()) {
+                return new DecodeResult(SAMRecord.NULL_SEQUENCE, new Cigar(), null, -1);
+            }
+            return restoreFromFeatures(
+                    readFeatures,
+                    true,
+                    readAlignmentStart,
+                    queryLengthFromFeatures(readFeatures),
+                    cramReferenceRegion,
+                    substitutionMatrix,
+                    false);
         }
+        return restoreFromFeatures(
+                readFeatures,
+                isUnknownBases,
+                readAlignmentStart,
+                readLength,
+                cramReferenceRegion,
+                substitutionMatrix,
+                computeMdNm);
+    }
 
+    /** The body of {@link #restoreBasesAndTags} for a known query length, which may be 0. */
+    private static DecodeResult restoreFromFeatures(
+            final List<ReadFeature> readFeatures,
+            final boolean isUnknownBases,
+            final int readAlignmentStart,
+            final int readLength,
+            final CRAMReferenceRegion cramReferenceRegion,
+            final SubstitutionMatrix substitutionMatrix,
+            final boolean computeMdNm) {
         // When isUnknownBases (CF_UNKNOWN_BASES / seq '*'), we still need to process read features
         // to reconstruct the CIGAR (e.g. soft clips stored in SC data series), but skip all base
         // restoration, reference lookups, and MD/NM computation.
@@ -651,7 +685,7 @@ public class CRAMRecordReadFeatures {
             final int gap = featurePos - (lastCigPos + lastCigLen);
             if (gap > 0) {
                 if (lastCigOp != CigarOperator.MATCH_OR_MISMATCH) {
-                    cigarElements.add(new CigarElement(lastCigLen, lastCigOp));
+                    addCigarElement(cigarElements, lastCigLen, lastCigOp);
                     lastCigPos += lastCigLen;
                     lastCigLen = gap;
                 } else {
@@ -803,7 +837,7 @@ public class CRAMRecordReadFeatures {
 
             // Update CIGAR
             if (lastCigOp != featureCigOp) {
-                if (lastCigLen > 0) cigarElements.add(new CigarElement(lastCigLen, lastCigOp));
+                addCigarElement(cigarElements, lastCigLen, lastCigOp);
                 lastCigOp = featureCigOp;
                 lastCigLen = featureCigLen;
                 lastCigPos = feature.getPosition();
@@ -850,17 +884,22 @@ public class CRAMRecordReadFeatures {
 
         // Finalize CIGAR
         if (lastCigOp != CigarOperator.M) {
-            if (lastCigLen > 0) cigarElements.add(new CigarElement(lastCigLen, lastCigOp));
+            addCigarElement(cigarElements, lastCigLen, lastCigOp);
             if (readLength >= lastCigPos + lastCigLen) {
-                cigarElements.add(new CigarElement(readLength - (lastCigLen + lastCigPos) + 1, CigarOperator.M));
+                addCigarElement(cigarElements, readLength - (lastCigLen + lastCigPos) + 1, CigarOperator.M);
             }
         } else if (readLength > lastCigPos - 1) {
-            cigarElements.add(new CigarElement(readLength - lastCigPos + 1, CigarOperator.M));
+            addCigarElement(cigarElements, readLength - lastCigPos + 1, CigarOperator.M);
         }
 
-        final Cigar cigar = cigarElements.isEmpty()
-                ? new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)))
-                : new Cigar(cigarElements);
+        final Cigar cigar;
+        if (!cigarElements.isEmpty()) {
+            cigar = new Cigar(cigarElements);
+        } else if (readLength == 0) {
+            cigar = new Cigar(); // only zero-length operations, which htslib also drops
+        } else {
+            cigar = new Cigar(Collections.singletonList(new CigarElement(readLength, CigarOperator.M)));
+        }
 
         if (mdActive) mdString.append(mdMatchRun);
 
@@ -869,6 +908,50 @@ public class CRAMRecordReadFeatures {
                 cigar,
                 actuallyComputeMdNm ? mdString.toString() : null,
                 actuallyComputeMdNm ? nmCount : -1);
+    }
+
+    /** Append to a CIGAR being built, dropping a zero-length element and merging a repeated operator. */
+    private static void addCigarElement(
+            final List<CigarElement> elements, final int length, final CigarOperator operator) {
+        if (length == 0) return;
+        final int last = elements.size() - 1;
+        if (last >= 0 && elements.get(last).getOperator() == operator) {
+            elements.set(last, new CigarElement(elements.get(last).getLength() + length, operator));
+        } else {
+            elements.add(new CigarElement(length, operator));
+        }
+    }
+
+    /**
+     * The number of read bases the given features account for, i.e. where the last feature that consumes read
+     * bases ends. This is the query length of a record stored with RL 0 (see {@link #restoreBasesAndTags}).
+     */
+    private static int queryLengthFromFeatures(final List<ReadFeature> readFeatures) {
+        int end = 0;
+        for (final ReadFeature feature : readFeatures) {
+            final int consumed;
+            switch (feature.getOperator()) {
+                case Substitution.operator:
+                case ReadBase.operator:
+                case InsertBase.operator:
+                    consumed = 1;
+                    break;
+                case Bases.operator:
+                    consumed = ((Bases) feature).getBases().length;
+                    break;
+                case Insertion.operator:
+                    consumed = ((Insertion) feature).getSequence().length;
+                    break;
+                case SoftClip.operator:
+                    consumed = ((SoftClip) feature).getSequence().length;
+                    break;
+                default:
+                    consumed = 0;
+                    break;
+            }
+            end = Math.max(end, feature.getPosition() - 1 + consumed);
+        }
+        return end;
     }
 
     @Override

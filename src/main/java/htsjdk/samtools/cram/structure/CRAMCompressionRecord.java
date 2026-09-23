@@ -148,16 +148,21 @@ public class CRAMCompressionRecord {
         readName = samRecord.getReadName();
         referenceIndex = samRecord.getReferenceIndex();
 
-        readLength = samRecord.getReadLength();
         alignmentStart = samRecord.getAlignmentStart();
         // CRAM read base substitutions are limited to substitutions for ACGTN in the reference (see
         // https://github.com/samtools/hts-specs/blob/master/CRAMv3.pdf). However, BAM format allows upper case
         // IUPAC codes without a dot, so we follow the same approach to reproduce the behaviour of samtools.
         // copy read bases before we modify the bases to BAM bases to avoid changing the original record:
         final byte[] originalBases = samRecord.getReadBases();
-        readBases = originalBases == null || originalBases.equals(SAMRecord.NULL_SEQUENCE)
+        readBases = originalBases == null || originalBases.length == 0
                 ? SAMRecord.NULL_SEQUENCE
                 : SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(originalBases, samRecord.getReadLength()));
+        final boolean basesUnknown = readBases.length == 0;
+        // A mapped read with SEQ "*" is stored with its CIGAR's query length as RL, as htslib stores it, so that
+        // readers can rebuild the CIGAR from RL and the read features alone.
+        readLength = basesUnknown && !samRecord.getReadUnmappedFlag()
+                ? samRecord.getCigar().getReadLength()
+                : samRecord.getReadLength();
         if (samRecord.getReadUnmappedFlag()) {
             readFeatures = new CRAMRecordReadFeatures();
             alignmentEnd = AlignmentContext.NO_ALIGNMENT_END;
@@ -180,11 +185,14 @@ public class CRAMCompressionRecord {
         }
 
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
-            setUnknownBases(samRecord.getReadBases().equals(SAMRecord.NULL_SEQUENCE));
+            setUnknownBases(basesUnknown);
         }
 
         qualityScores = samRecord.getBaseQualities();
-        if (!qualityScores.equals(SAMRecord.NULL_QUALS)) {
+        if (basesUnknown) {
+            // QUAL must be "*" when SEQ is, and readers read RL scores for a record that preserves them.
+            qualityScores = SAMRecord.NULL_QUALS;
+        } else if (!qualityScores.equals(SAMRecord.NULL_QUALS)) {
             setForcePreserveQualityScores(true);
         } else if (readFeatures.getReadFeaturesList().size() > 0) {
             // Some ReadFeatures (such as ReadBase) have an associated quality score. If our read has no
@@ -204,8 +212,9 @@ public class CRAMCompressionRecord {
         // and regenerated from read features + reference during decode. If the stored NM/MD
         // values don't match what would be recomputed (non-standard values), they are kept verbatim.
         // RG is also skipped since read groups have a dedicated data series.
-        boolean stripNM = !samRecord.getReadUnmappedFlag() && !encodingStrategy.getStoreNM();
-        boolean stripMD = !samRecord.getReadUnmappedFlag() && !encodingStrategy.getStoreMD();
+        // NM and MD can't be regenerated without bases, so a read with SEQ "*" keeps them, as it does in htslib.
+        boolean stripNM = !samRecord.getReadUnmappedFlag() && !basesUnknown && !encodingStrategy.getStoreNM();
+        boolean stripMD = !samRecord.getReadUnmappedFlag() && !basesUnknown && !encodingStrategy.getStoreMD();
 
         // Validate that stored NM/MD match recomputed values; keep non-standard values verbatim
         if ((stripNM || stripMD)
@@ -569,6 +578,7 @@ public class CRAMCompressionRecord {
 
         final boolean computeMdNm = (needMD || needNM)
                 && readLength > 0
+                && !isUnknownBases()
                 && readFeatures != null
                 && cramReferenceRegion.getCurrentReferenceBases() != null;
 
