@@ -91,44 +91,44 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
     private boolean deeperTest(final VCFCompoundHeaderLine line) {
 
         final String id = line.getID();
-        if (id.equals(VCFConstants.GENOTYPE_KEY))
+        if (id.equals(VCFConstants.FORMAT.GENOTYPE))
             return line.getType().equals(VCFHeaderLineType.String) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.GENOTYPE_QUALITY_KEY))
+        else if (id.equals(VCFConstants.FORMAT.GENOTYPE_QUALITY))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.DEPTH_KEY))
+        else if (id.equals(VCFConstants.FORMAT.READ_DEPTH))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.GENOTYPE_PL_KEY))
+        else if (id.equals(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS))
             return line.getType().equals(VCFHeaderLineType.Integer)
                     && line.getCountType().equals(VCFHeaderLineCount.G);
-        else if (id.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS))
+        else if (id.equals(VCFConstants.FORMAT.ALLELE_DEPTHS))
             return line.getType().equals(VCFHeaderLineType.Integer)
                     && line.getCountType().equals(VCFHeaderLineCount.R);
-        else if (id.equals(VCFConstants.GENOTYPE_FILTER_KEY))
+        else if (id.equals(VCFConstants.FORMAT.GENOTYPE_FILTER))
             return line.getType().equals(VCFHeaderLineType.String)
                     && line.getCountType().equals(VCFHeaderLineCount.UNBOUNDED);
-        else if (id.equals(VCFConstants.PHASE_QUALITY_KEY))
+        else if (id.equals(VCFConstants.FORMAT.PHASING_QUALITY))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.END_KEY))
+        else if (id.equals(VCFConstants.INFO.END_POSITION))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.DBSNP_KEY))
+        else if (id.equals(VCFConstants.INFO.IN_DBSNP))
             return line.getType().equals(VCFHeaderLineType.Flag) && line.getCount() == 0;
-        else if (id.equals(VCFConstants.DEPTH_KEY))
+        else if (id.equals(VCFConstants.INFO.COMBINED_DEPTH))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.STRAND_BIAS_KEY))
+        else if (id.equals(VCFConstants.INFO.STRAND_BIAS))
             return line.getType().equals(VCFHeaderLineType.Float) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.ALLELE_FREQUENCY_KEY))
+        else if (id.equals(VCFConstants.INFO.ALLELE_FREQUENCY))
             return line.getType().equals(VCFHeaderLineType.Float)
                     && line.getCountType().equals(VCFHeaderLineCount.A);
-        else if (id.equals(VCFConstants.ALLELE_COUNT_KEY))
+        else if (id.equals(VCFConstants.INFO.ALLELE_COUNT))
             return line.getType().equals(VCFHeaderLineType.Integer)
                     && line.getCountType().equals(VCFHeaderLineCount.A);
-        else if (id.equals(VCFConstants.ALLELE_NUMBER_KEY))
+        else if (id.equals(VCFConstants.INFO.ALLELE_NUMBER))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.MAPPING_QUALITY_ZERO_KEY))
+        else if (id.equals(VCFConstants.INFO.MAPPING_QUALITY_ZERO_READS))
             return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.RMS_MAPPING_QUALITY_KEY))
+        else if (id.equals(VCFConstants.INFO.RMS_MAPPING_QUALITY))
             return line.getType().equals(VCFHeaderLineType.Float) && line.getCount() == 1;
-        else if (id.equals(VCFConstants.SOMATIC_KEY))
+        else if (id.equals(VCFConstants.INFO.SOMATIC_MUTATION))
             return line.getType().equals(VCFHeaderLineType.Flag) && line.getCount() == 0;
         else throw new IllegalArgumentException("Unexpected id : " + id);
     }

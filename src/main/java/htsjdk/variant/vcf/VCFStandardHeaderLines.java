@@ -161,36 +161,37 @@ public class VCFStandardHeaderLines {
     //
     static {
         // FORMAT lines
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_KEY, 1, VCFHeaderLineType.String, "Genotype"));
+        registerStandard(
+                new VCFFormatHeaderLine(VCFConstants.FORMAT.GENOTYPE, 1, VCFHeaderLineType.String, "Genotype"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.GENOTYPE_QUALITY_KEY, 1, VCFHeaderLineType.Integer, "Genotype Quality"));
+                VCFConstants.FORMAT.GENOTYPE_QUALITY, 1, VCFHeaderLineType.Integer, "Genotype Quality"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.DEPTH_KEY,
+                VCFConstants.FORMAT.READ_DEPTH,
                 1,
                 VCFHeaderLineType.Integer,
                 "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.GENOTYPE_PL_KEY,
+                VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS,
                 VCFHeaderLineCount.G,
                 VCFHeaderLineType.Integer,
                 "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.GENOTYPE_ALLELE_DEPTHS,
+                VCFConstants.FORMAT.ALLELE_DEPTHS,
                 VCFHeaderLineCount.R,
                 VCFHeaderLineType.Integer,
                 "Allelic depths for the ref and alt alleles in the order listed"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.GENOTYPE_FILTER_KEY,
+                VCFConstants.FORMAT.GENOTYPE_FILTER,
                 VCFHeaderLineCount.UNBOUNDED,
                 VCFHeaderLineType.String,
                 "Genotype-level filter"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.PHASE_SET_KEY,
+                VCFConstants.FORMAT.PHASE_SET,
                 1,
                 VCFHeaderLineType.Integer,
                 "Phasing set (typically the position of the first variant in the set)"));
         registerStandard(new VCFFormatHeaderLine(
-                VCFConstants.PHASE_QUALITY_KEY, 1, VCFHeaderLineType.Integer, "Read-backed phasing quality"));
+                VCFConstants.FORMAT.PHASING_QUALITY, 1, VCFHeaderLineType.Integer, "Read-backed phasing quality"));
         registerStandard(new VCFFormatHeaderLine(
                 VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_POSTERIORS,
                 VCFHeaderLineCount.G,
@@ -305,38 +306,40 @@ public class VCFStandardHeaderLines {
 
         // INFO lines
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.END_KEY, 1, VCFHeaderLineType.Integer, "Stop position of the interval"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.DBSNP_KEY, 0, VCFHeaderLineType.Flag, "dbSNP Membership"));
+                VCFConstants.INFO.END_POSITION, 1, VCFHeaderLineType.Integer, "Stop position of the interval"));
+        registerStandard(
+                new VCFInfoHeaderLine(VCFConstants.INFO.IN_DBSNP, 0, VCFHeaderLineType.Flag, "dbSNP Membership"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.DEPTH_KEY,
+                VCFConstants.INFO.COMBINED_DEPTH,
                 1,
                 VCFHeaderLineType.Integer,
                 "Approximate read depth; some reads may have been filtered"));
         registerStandard(
-                new VCFInfoHeaderLine(VCFConstants.STRAND_BIAS_KEY, 1, VCFHeaderLineType.Float, "Strand Bias"));
+                new VCFInfoHeaderLine(VCFConstants.INFO.STRAND_BIAS, 1, VCFHeaderLineType.Float, "Strand Bias"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.ALLELE_FREQUENCY_KEY,
+                VCFConstants.INFO.ALLELE_FREQUENCY,
                 VCFHeaderLineCount.A,
                 VCFHeaderLineType.Float,
                 "Allele Frequency, for each ALT allele, in the same order as listed"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.ALLELE_COUNT_KEY,
+                VCFConstants.INFO.ALLELE_COUNT,
                 VCFHeaderLineCount.A,
                 VCFHeaderLineType.Integer,
                 "Allele count in genotypes, for each ALT allele, in the same order as listed"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.ALLELE_NUMBER_KEY,
+                VCFConstants.INFO.ALLELE_NUMBER,
                 1,
                 VCFHeaderLineType.Integer,
                 "Total number of alleles in called genotypes"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.MAPPING_QUALITY_ZERO_KEY,
+                VCFConstants.INFO.MAPPING_QUALITY_ZERO_READS,
                 1,
                 VCFHeaderLineType.Integer,
                 "Total Mapping Quality Zero Reads"));
         registerStandard(new VCFInfoHeaderLine(
-                VCFConstants.RMS_MAPPING_QUALITY_KEY, 1, VCFHeaderLineType.Float, "RMS Mapping Quality"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY, 0, VCFHeaderLineType.Flag, "Somatic event"));
+                VCFConstants.INFO.RMS_MAPPING_QUALITY, 1, VCFHeaderLineType.Float, "RMS Mapping Quality"));
+        registerStandard(
+                new VCFInfoHeaderLine(VCFConstants.INFO.SOMATIC_MUTATION, 0, VCFHeaderLineType.Flag, "Somatic event"));
         registerStandard(new VCFInfoHeaderLine(
                 VCFConstants.INFO.ALLELE_DEPTHS,
                 VCFHeaderLineCount.R,
@@ -353,9 +356,9 @@ public class VCFStandardHeaderLines {
                 VCFHeaderLineType.Integer,
                 "Read depth for each allele on the reverse strand"));
         registerStandard(
-                new VCFInfoHeaderLine(VCFConstants.HAPMAP2_KEY, 0, VCFHeaderLineType.Flag, "HapMap2 membership"));
+                new VCFInfoHeaderLine(VCFConstants.INFO.IN_HAPMAP2, 0, VCFHeaderLineType.Flag, "HapMap2 membership"));
         registerStandard(
-                new VCFInfoHeaderLine(VCFConstants.HAPMAP3_KEY, 0, VCFHeaderLineType.Flag, "HapMap3 membership"));
+                new VCFInfoHeaderLine(VCFConstants.INFO.IN_HAPMAP3, 0, VCFHeaderLineType.Flag, "HapMap3 membership"));
         registerStandard(new VCFInfoHeaderLine(
                 VCFConstants.INFO.IMPRECISE_STRUCTURAL_VARIANT,
                 0,

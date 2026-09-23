@@ -438,19 +438,21 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Check for the presence of a format line with the deprecated key {@link VCFConstants#GENOTYPE_LIKELIHOODS_KEY}.
-     * If one is present, and there isn't a format line with the key {@link VCFConstants#GENOTYPE_PL_KEY}, adds
-     * a new format line with the key {@link VCFConstants#GENOTYPE_PL_KEY}.
+     * Check for the presence of a format line with the deprecated key {@link VCFConstants.FORMAT#GENOTYPE_LIKELIHOODS}.
+     * If one is present, and there isn't a format line with the key {@link VCFConstants.FORMAT#PHRED_SCALED_GENOTYPE_LIKELIHOODS}, adds
+     * a new format line with the key {@link VCFConstants.FORMAT#PHRED_SCALED_GENOTYPE_LIKELIHOODS}.
      */
     private void checkForDeprecatedGenotypeLikelihoodsKey() {
-        if (hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && !hasFormatLine(VCFConstants.GENOTYPE_PL_KEY)) {
+        if (hasFormatLine(VCFConstants.FORMAT.GENOTYPE_LIKELIHOODS)
+                && !hasFormatLine(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS)) {
             if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                System.err.println("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
-                        + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
+                System.err.println("Found " + VCFConstants.FORMAT.GENOTYPE_LIKELIHOODS + " format, but no "
+                        + VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS
+                        + " field.  We now only manage PL fields internally"
                         + " automatically adding a corresponding PL field to your VCF header");
             }
             addMetaDataLine(new VCFFormatHeaderLine(
-                    VCFConstants.GENOTYPE_PL_KEY,
+                    VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS,
                     VCFHeaderLineCount.G,
                     VCFHeaderLineType.Integer,
                     "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));

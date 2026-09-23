@@ -51,12 +51,12 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * extended attributes map
      */
     public static final Collection<String> PRIMARY_KEYS = Arrays.asList(
-            VCFConstants.GENOTYPE_FILTER_KEY,
-            VCFConstants.GENOTYPE_KEY,
-            VCFConstants.GENOTYPE_QUALITY_KEY,
-            VCFConstants.DEPTH_KEY,
-            VCFConstants.GENOTYPE_ALLELE_DEPTHS,
-            VCFConstants.GENOTYPE_PL_KEY);
+            VCFConstants.FORMAT.GENOTYPE_FILTER,
+            VCFConstants.FORMAT.GENOTYPE,
+            VCFConstants.FORMAT.GENOTYPE_QUALITY,
+            VCFConstants.FORMAT.READ_DEPTH,
+            VCFConstants.FORMAT.ALLELE_DEPTHS,
+            VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS);
 
     public static final String PHASED_ALLELE_SEPARATOR = "|";
     public static final String UNPHASED_ALLELE_SEPARATOR = "/";
@@ -478,11 +478,11 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
                 "[%s %s%s%s%s%s%s%s]",
                 getSampleName(),
                 getGenotypeString(false),
-                toStringIfExists(VCFConstants.GENOTYPE_QUALITY_KEY, getGQ()),
-                toStringIfExists(VCFConstants.DEPTH_KEY, getDP()),
-                toStringIfExists(VCFConstants.GENOTYPE_ALLELE_DEPTHS, getAD()),
-                toStringIfExists(VCFConstants.GENOTYPE_PL_KEY, getPL()),
-                toStringIfExists(VCFConstants.GENOTYPE_FILTER_KEY, getFilters()),
+                toStringIfExists(VCFConstants.FORMAT.GENOTYPE_QUALITY, getGQ()),
+                toStringIfExists(VCFConstants.FORMAT.READ_DEPTH, getDP()),
+                toStringIfExists(VCFConstants.FORMAT.ALLELE_DEPTHS, getAD()),
+                toStringIfExists(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS, getPL()),
+                toStringIfExists(VCFConstants.FORMAT.GENOTYPE_FILTER, getFilters()),
                 sortedString(getExtendedAttributes()));
     }
 
@@ -639,27 +639,27 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @return
      */
     public Object getAnyAttribute(final String key) {
-        if (key.equals(VCFConstants.GENOTYPE_KEY)) {
+        if (key.equals(VCFConstants.FORMAT.GENOTYPE)) {
             return getAlleles();
-        } else if (key.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.GENOTYPE_QUALITY)) {
             return getGQ();
-        } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
+        } else if (key.equals(VCFConstants.FORMAT.ALLELE_DEPTHS)) {
             if (hasAD()) {
                 final List<Integer> intList = new ArrayList<Integer>(getAD().length);
                 for (int i : getAD()) intList.add(i);
                 return intList;
             }
             return Collections.EMPTY_LIST;
-        } else if (key.equals(VCFConstants.GENOTYPE_PL_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS)) {
             if (hasPL()) {
                 final List<Integer> intList = new ArrayList<Integer>(getPL().length);
                 for (int i : getPL()) intList.add(i);
                 return intList;
             }
             return Collections.EMPTY_LIST;
-        } else if (key.equals(VCFConstants.DEPTH_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.READ_DEPTH)) {
             return getDP();
-        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.GENOTYPE_FILTER)) {
             return getFilters();
         } else {
             return getExtendedAttribute(key);
@@ -667,17 +667,17 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     }
 
     public boolean hasAnyAttribute(final String key) {
-        if (key.equals(VCFConstants.GENOTYPE_KEY)) {
+        if (key.equals(VCFConstants.FORMAT.GENOTYPE)) {
             return isAvailable();
-        } else if (key.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.GENOTYPE_QUALITY)) {
             return hasGQ();
-        } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
+        } else if (key.equals(VCFConstants.FORMAT.ALLELE_DEPTHS)) {
             return hasAD();
-        } else if (key.equals(VCFConstants.GENOTYPE_PL_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.PHRED_SCALED_GENOTYPE_LIKELIHOODS)) {
             return hasPL();
-        } else if (key.equals(VCFConstants.DEPTH_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.READ_DEPTH)) {
             return hasDP();
-        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+        } else if (key.equals(VCFConstants.FORMAT.GENOTYPE_FILTER)) {
             return true; // always available
         } else {
             return hasExtendedAttribute(key);

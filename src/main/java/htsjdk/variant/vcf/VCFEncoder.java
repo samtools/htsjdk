@@ -485,7 +485,7 @@ public class VCFEncoder {
             final List<String> attrs = new ArrayList<>(nKeys);
             for (int k = 0; k < nKeys; k++) {
                 final String field = genotypeFormatKeys.get(k);
-                if (field.equals(VCFConstants.GENOTYPE_KEY)) {
+                if (field.equals(VCFConstants.FORMAT.GENOTYPE)) {
                     if (!g.isAvailable()) {
                         throw new IllegalStateException(
                                 "GTs cannot be missing for some samples if they are available for others in the record");
@@ -496,7 +496,7 @@ public class VCFEncoder {
 
                 } else {
                     final String outputValue;
-                    if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+                    if (field.equals(VCFConstants.FORMAT.GENOTYPE_FILTER)) {
                         outputValue = g.isFiltered() ? g.getFilters() : VCFConstants.PASSES_FILTERS_v4;
                     } else {
                         final IntGenotypeFieldAccessors.Accessor accessor = GENOTYPE_FIELD_ACCESSORS.getAccessor(field);
@@ -541,7 +541,7 @@ public class VCFEncoder {
             }
 
             for (int i = 0; i < attrs.size(); i++) {
-                if (i > 0 || genotypeFormatKeys.contains(VCFConstants.GENOTYPE_KEY)) {
+                if (i > 0 || genotypeFormatKeys.contains(VCFConstants.FORMAT.GENOTYPE)) {
                     vcfoutput.append(VCFConstants.GENOTYPE_FIELD_SEPARATOR);
                 }
                 vcfoutput.append(attrs.get(i));

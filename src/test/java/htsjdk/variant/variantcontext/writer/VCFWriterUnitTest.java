@@ -579,7 +579,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFInfoHeaderLine("NOTE", 1, VCFHeaderLineType.String, "A note"));
         lines.add(new VCFFormatHeaderLine("CMT", 1, VCFHeaderLineType.String, "Comment"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         final VCFHeader header = new VCFHeader(lines, List.of(sampleName));
         header.setSequenceDictionary(dict);
         return header;
@@ -694,7 +694,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             lines.add(new VCFHeaderLine(version.getFormatString(), version.getVersionString()));
         }
         lines.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         final VCFHeader header = new VCFHeader(lines, List.of("s1"));
         header.setSequenceDictionary(createArtificialSequenceDictionary());
         return header;
@@ -846,7 +846,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(
                 new VCFFormatHeaderLine("PSL", VCFHeaderLineCount.P, VCFHeaderLineType.Integer, "phased set lengths"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         final VCFHeader header = new VCFHeader(lines, List.of("s1"));
         header.setSequenceDictionary(createArtificialSequenceDictionary());
         final Path output = createTempFile("refusedP42.", ".vcf");
@@ -863,7 +863,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void headerWithNumberLARefusedFor44() {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         final VCFHeader header = new VCFHeader(lines, List.of("s1"));
         header.setSequenceDictionary(createArtificialSequenceDictionary());
         final Path output = createTempFile("refusedLA44.", ".vcf");
@@ -881,7 +881,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFHeaderLine("fileformat", "VCFv4.5"));
         lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         final VCFHeader header = new VCFHeader(lines, List.of("s1"));
         header.setSequenceDictionary(createArtificialSequenceDictionary());
         final Path output = createTempFile("refusedLA43.", ".vcf");
@@ -902,7 +902,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     public void headerWithNumberLAAcceptedFor45() throws IOException {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFFormatHeaderLine("LAD", VCFHeaderLineCount.LA, VCFHeaderLineType.Integer, "local depths"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         final VCFHeader header = new VCFHeader(lines, List.of("s1"));
         header.setSequenceDictionary(createArtificialSequenceDictionary());
         final Path output = Files.createTempFile(tempDir, "acceptedLA45.", ".vcf");
@@ -1016,7 +1016,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFHeaderLine(version.getFormatString(), version.getVersionString()));
         lines.add(new VCFInfoHeaderLine("NOTE", 1, VCFHeaderLineType.String, "A note"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.FORMAT.GENOTYPE);
         lines.add(new VCFFormatHeaderLine("CMT", 1, VCFHeaderLineType.String, "comment"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header = new VCFHeader(lines, List.of("s1"));
@@ -1083,7 +1083,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final Set<VCFHeaderLine> lines45 = new LinkedHashSet<>();
         lines45.add(new VCFHeaderLine("fileformat", "VCFv4.5"));
         lines45.add(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"));
-        VCFStandardHeaderLines.addStandardFormatLines(lines45, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(
+                lines45, true, VCFConstants.FORMAT.GENOTYPE, VCFConstants.FORMAT.READ_DEPTH);
         lines45.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header = new VCFHeader(lines45, List.of("s1"));
@@ -1145,7 +1146,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test
     public void missingLaaWrittenAsDotInVcf() throws IOException {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(
+                lines, true, VCFConstants.FORMAT.GENOTYPE, VCFConstants.FORMAT.READ_DEPTH);
         lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header =
@@ -1178,7 +1180,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test
     public void lazyVcf44WithLaaRewrittenAt45ProducesCorrectOrder() throws IOException {
         final Set<VCFHeaderLine> lines44 = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines44, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(
+                lines44, true, VCFConstants.FORMAT.GENOTYPE, VCFConstants.FORMAT.READ_DEPTH);
         lines44.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header44 = new VCFHeader(VCFHeaderVersion.VCF4_4, lines44, Set.of("s1"));
@@ -1231,7 +1234,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test
     public void lazyVcf44WithoutLaaPassesThroughAt45() throws IOException {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(
+                lines, true, VCFConstants.FORMAT.GENOTYPE, VCFConstants.FORMAT.READ_DEPTH);
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header44 = new VCFHeader(VCFHeaderVersion.VCF4_4, lines, Set.of("s1"));
         header44.setSequenceDictionary(dict);
@@ -1289,7 +1293,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test
     public void lazyVcf45WithLaaPassesThroughAt45() throws IOException {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
-        VCFStandardHeaderLines.addStandardFormatLines(lines, true, VCFConstants.GENOTYPE_KEY, VCFConstants.DEPTH_KEY);
+        VCFStandardHeaderLines.addStandardFormatLines(
+                lines, true, VCFConstants.FORMAT.GENOTYPE, VCFConstants.FORMAT.READ_DEPTH);
         lines.add(new VCFFormatHeaderLine("LAA", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "local"));
         final SAMSequenceDictionary dict = new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
         final VCFHeader header45 = new VCFHeader(VCFHeaderVersion.VCF4_5, lines, Set.of("s1"));

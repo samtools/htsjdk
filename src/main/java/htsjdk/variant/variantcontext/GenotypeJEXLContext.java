@@ -23,7 +23,7 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
 
     static {
         attributes.put("g", (Genotype g) -> g);
-        attributes.put(VCFConstants.GENOTYPE_KEY, Genotype::getGenotypeString);
+        attributes.put(VCFConstants.FORMAT.GENOTYPE, Genotype::getGenotypeString);
 
         attributes.put("isHom", (Genotype g) -> g.isHom() ? true_string : false_string);
         attributes.put("isHomRef", (Genotype g) -> g.isHomRef() ? true_string : false_string);
@@ -35,9 +35,9 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
         attributes.put("isAvailable", (Genotype g) -> g.isAvailable() ? true_string : false_string);
         attributes.put("isPassFT", (Genotype g) -> g.isFiltered() ? false_string : true_string);
         attributes.put(
-                VCFConstants.GENOTYPE_FILTER_KEY,
+                VCFConstants.FORMAT.GENOTYPE_FILTER,
                 (Genotype g) -> g.isFiltered() ? g.getFilters() : VCFConstants.PASSES_FILTERS_v4);
-        attributes.put(VCFConstants.GENOTYPE_QUALITY_KEY, Genotype::getGQ);
+        attributes.put(VCFConstants.FORMAT.GENOTYPE_QUALITY, Genotype::getGQ);
     }
 
     public GenotypeJEXLContext(VariantContext vc, Genotype g) {
