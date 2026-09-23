@@ -124,4 +124,25 @@ public class StructuralVariantAlleleTest extends VariantBaseTest {
         Assert.assertEquals(StructuralVariantAllele.SUBTYPE_TR, "TR");
         Assert.assertEquals(StructuralVariantAllele.SUBTYPE_TANDEM, "TANDEM");
     }
+
+    @Test
+    public void aSymbolicDeletionIsSymbolicAndNotABreakend() {
+        final StructuralVariantAllele sv =
+                StructuralVariantAllele.parse("<DEL:ME>").get();
+        Assert.assertTrue(sv.isSymbolic());
+        Assert.assertFalse(sv.isBreakend());
+    }
+
+    @Test
+    public void aPairedBreakendIsABreakendAndNotSymbolic() {
+        final StructuralVariantAllele sv =
+                StructuralVariantAllele.parse("G]17:198982]").get();
+        Assert.assertTrue(sv.isBreakend());
+        Assert.assertFalse(sv.isSymbolic());
+    }
+
+    @Test
+    public void aSingleBreakendIsABreakend() {
+        Assert.assertTrue(StructuralVariantAllele.parse(".A").get().isBreakend());
+    }
 }

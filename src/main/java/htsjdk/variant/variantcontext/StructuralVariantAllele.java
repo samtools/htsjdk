@@ -36,9 +36,22 @@ public final class StructuralVariantAllele {
         return type;
     }
 
-    /** Returns the ordered, unmodifiable list of subtypes (may be empty). */
+    /** Returns the ordered, unmodifiable list of subtypes (may be empty; always empty for a breakend). */
     public List<String> getSubtypes() {
         return subtypes;
+    }
+
+    /**
+     * Whether this is a breakend ({@code G]17:198982]}, {@code .A}), whose type is {@link StructuralVariantType#BND}.
+     * The breakend's mate and orientation are not parsed.
+     */
+    public boolean isBreakend() {
+        return type == StructuralVariantType.BND;
+    }
+
+    /** Whether this is a symbolic structural variant such as {@code <DEL:ME:ALU>}: any type but a breakend. */
+    public boolean isSymbolic() {
+        return !isBreakend();
     }
 
     /**
