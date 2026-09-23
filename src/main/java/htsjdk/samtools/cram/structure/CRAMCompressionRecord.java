@@ -85,6 +85,7 @@ public class CRAMCompressionRecord {
     private byte[] readBases;
     private byte[] qualityScores;
     private Cigar cachedCigar; // populated by restoreBasesAndTags, used by toSAMRecord
+    private int cfTagFlags; // value of htslib's cF:C tag, removed from the tags on decode (0 if absent)
     private MutableInt tagIdsIndex = new MutableInt(0);
 
     // mate info
@@ -174,14 +175,12 @@ public class CRAMCompressionRecord {
         templateSize = samRecord.getInferredInsertSize();
         mappingQuality = samRecord.getMappingQuality();
 
+        // Mate fields are stored for unpaired reads too: nothing forbids a PNEXT there, and htslib stores it.
+        mateAlignmentStart = samRecord.getMateAlignmentStart();
+        mateReferenceIndex = samRecord.getMateReferenceIndex();
         if (samRecord.getReadPairedFlag()) {
-            mateAlignmentStart = samRecord.getMateAlignmentStart();
             setMateUnmapped(samRecord.getMateUnmappedFlag());
             setMateNegativeStrand(samRecord.getMateNegativeStrandFlag());
-            mateReferenceIndex = samRecord.getMateReferenceIndex();
-        } else {
-            mateAlignmentStart = 0;
-            mateReferenceIndex = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
         }
 
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
@@ -317,6 +316,7 @@ public class CRAMCompressionRecord {
         this.qualityScores = qualityScores;
         this.readBases = readBases;
         this.tags = readTags;
+        this.cfTagFlags = removeCfTag();
         this.readGroupID = readGroupID;
         this.mateFlags = mateFlags;
         this.mateReferenceIndex = mateReferenceIndex;
@@ -360,14 +360,13 @@ public class CRAMCompressionRecord {
             samRecord.setCigar(cachedCigar != null ? cachedCigar : readFeatures.getCigarForReadFeatures(readLength));
         }
 
+        // As in htslib, an unpaired read keeps its PNEXT but never has an RNEXT.
+        samRecord.setMateReferenceIndex(
+                samRecord.getReadPairedFlag() ? mateReferenceIndex : SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        samRecord.setMateAlignmentStart(mateAlignmentStart > 0 ? mateAlignmentStart : SAMRecord.NO_ALIGNMENT_START);
         if (samRecord.getReadPairedFlag()) {
-            samRecord.setMateReferenceIndex(mateReferenceIndex);
-            samRecord.setMateAlignmentStart(mateAlignmentStart > 0 ? mateAlignmentStart : SAMRecord.NO_ALIGNMENT_START);
             samRecord.setMateNegativeStrandFlag(isMateNegativeStrand());
             samRecord.setMateUnmappedFlag(isMateUnmapped());
-        } else {
-            samRecord.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
-            samRecord.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
         }
 
         samRecord.setInferredInsertSize(templateSize);
@@ -387,6 +386,23 @@ public class CRAMCompressionRecord {
         }
 
         return samRecord;
+    }
+
+    /**
+     * Remove htslib's cF:C tag, which holds CRAM flags rather than read data, from this record's tags.
+     *
+     * @return the tag's value, or 0 if absent: bit 1 means MD must not be generated on decode, bit 2 the same for NM
+     */
+    private int removeCfTag() {
+        if (tags == null) return 0;
+        for (int i = 0; i < tags.size(); i++) {
+            if ("cF".equals(tags.get(i).getKey())) {
+                final int flags = ((Number) tags.remove(i).getValue()).intValue();
+                if (tags.isEmpty()) tags = null;
+                return flags;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -549,20 +565,8 @@ public class CRAMCompressionRecord {
      */
     void restoreBasesAndTags(
             final CRAMReferenceRegion cramReferenceRegion, final SubstitutionMatrix substitutionMatrix) {
-        // Handle the cF internal tag from htslib's embed_ref=2 mode
-        boolean suppressMD = false;
-        boolean suppressNM = false;
-        if (tags != null) {
-            for (int i = tags.size() - 1; i >= 0; i--) {
-                if ("cF".equals(tags.get(i).getKey())) {
-                    final int cf = ((Number) tags.get(i).getValue()).intValue();
-                    suppressMD = (cf & 1) != 0;
-                    suppressNM = (cf & 2) != 0;
-                    tags.remove(i);
-                    break;
-                }
-            }
-        }
+        final boolean suppressMD = (cfTagFlags & 1) != 0;
+        final boolean suppressNM = (cfTagFlags & 2) != 0;
 
         // Determine if MD/NM computation is needed
         boolean hasNM = false;

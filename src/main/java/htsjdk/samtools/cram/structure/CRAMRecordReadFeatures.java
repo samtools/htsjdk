@@ -650,7 +650,12 @@ public class CRAMRecordReadFeatures {
             if (doBasesAndMdNm) {
                 while (posInRead < featurePos) {
                     final int rp = alignmentStart + posInSeq - refOffset;
-                    if (rp >= refBases.length) mdActive = false;
+                    if (mdActive && rp >= refBases.length) {
+                        // past the end of the reference: MD covers only the part that aligns to it
+                        mdString.append(mdMatchRun);
+                        mdMatchRun = 0;
+                        mdActive = false;
+                    }
                     final byte rawRef = getByteOrDefault(refBases, rp, (byte) 'N');
                     final byte nb = BAM_READ_BASE_LOOKUP[rawRef & 0x7F];
                     bases[posInRead - 1] = nb;
