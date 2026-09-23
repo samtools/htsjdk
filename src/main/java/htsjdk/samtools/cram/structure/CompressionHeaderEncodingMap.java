@@ -247,6 +247,14 @@ public class CompressionHeaderEncodingMap {
     }
 
     /**
+     * @param dataSeries a data series
+     * @return the compressor for the data series' external block, or null if this map has none
+     */
+    public ExternalCompressor getCompressorForDataSeries(final DataSeries dataSeries) {
+        return externalCompressors.get(dataSeries.getExternalBlockContentId());
+    }
+
+    /**
      * Get a list of all external IDs for this encoding map
      * @return list of all external IDs for this encoding map
      */
@@ -265,12 +273,7 @@ public class CompressionHeaderEncodingMap {
             final CRAMCodecModelContext contextModel,
             final Integer contentId,
             final ByteArrayOutputStream outputStream) {
-        final ExternalCompressor compressor = externalCompressors.get(contentId);
-        final byte[] rawContent = outputStream.toByteArray();
-        // Compress first, then query the method — TrialCompressor determines its method
-        // during the first call to compress().
-        final byte[] compressedContent = compressor.compress(rawContent, contextModel);
-        return Block.createExternalBlock(compressor.getMethod(), contentId, compressedContent, rawContent.length);
+        return createCompressedBlock(contextModel, contentId, outputStream.toByteArray());
     }
 
     /**
@@ -280,8 +283,19 @@ public class CompressionHeaderEncodingMap {
             final CRAMCodecModelContext contextModel,
             final Integer contentId,
             final htsjdk.samtools.cram.io.CRAMByteWriter writer) {
+        return createCompressedBlock(contextModel, contentId, writer.toByteArray());
+    }
+
+    private Block createCompressedBlock(
+            final CRAMCodecModelContext contextModel, final Integer contentId, final byte[] rawContent) {
+        // An empty block is written RAW, as htslib writes it: some codecs compress nothing to nothing, which is not a
+        // valid stream for every reader of that codec.
+        if (rawContent.length == 0) {
+            return Block.createExternalBlock(BlockCompressionMethod.RAW, contentId, rawContent, 0);
+        }
         final ExternalCompressor compressor = externalCompressors.get(contentId);
-        final byte[] rawContent = writer.toByteArray();
+        // Compress first, then query the method — TrialCompressor determines its method
+        // during the first call to compress().
         final byte[] compressedContent = compressor.compress(rawContent, contextModel);
         return Block.createExternalBlock(compressor.getMethod(), contentId, compressedContent, rawContent.length);
     }

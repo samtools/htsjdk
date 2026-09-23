@@ -9,7 +9,7 @@ common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also a number of useful utilities for 
 manipulating HTS data.
 
-> **NOTE: _HTSJDK now supports both reading and writing CRAM 3.1 files.  CRAM 3.1 write support includes all codecs defined in the specification (rANS Nx16, adaptive arithmetic Range coder, FQZComp, Name Tokenisation, and STRIPE), configurable compression profiles (FAST, NORMAL, SMALL, ARCHIVE), and trial compression for automatic codec selection.  Files produced by htsjdk are interoperable with samtools/htslib._**
+> **NOTE: _HTSJDK now supports both reading and writing CRAM 3.1 files.  CRAM 3.1 write support includes all codecs defined in the specification (rANS Nx16, adaptive arithmetic Range coder, FQZComp, Name Tokenisation, and STRIPE), configurable compression profiles (FAST, NORMAL, SMALL, ARCHIVE, and NORMAL_3_0 for readers without CRAM 3.1 support), and trial compression for automatic codec selection.  Files produced by htsjdk are interoperable with samtools/htslib._**
 
 ### Supported VCF and BCF versions
 

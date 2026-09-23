@@ -1,7 +1,10 @@
 package htsjdk.samtools.cram.compression;
 
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
+import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * An {@link ExternalCompressor} that tries multiple candidate compressors and selects the one
@@ -52,6 +55,15 @@ public class TrialCompressor extends ExternalCompressor {
         }
         this.candidates = List.copyOf(candidates);
         this.accumulatedSizes = new long[candidates.size()];
+    }
+
+    @Override
+    public Set<BlockCompressionMethod> getPossibleMethods() {
+        final Set<BlockCompressionMethod> methods = EnumSet.noneOf(BlockCompressionMethod.class);
+        for (final ExternalCompressor candidate : candidates) {
+            methods.addAll(candidate.getPossibleMethods());
+        }
+        return methods;
     }
 
     /**

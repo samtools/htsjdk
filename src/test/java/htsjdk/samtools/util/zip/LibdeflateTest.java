@@ -70,6 +70,32 @@ public class LibdeflateTest extends HtsjdkTest {
     }
 
     @Test
+    public void emptyInputDeflatesToAStreamTheJdkInflaterFinishes() throws Exception {
+        final java.util.zip.Deflater deflater = new DeflaterFactory().makeDeflater(5, true);
+        Assert.assertTrue(deflater instanceof LibdeflateDeflater);
+        deflater.setInput(new byte[0]);
+        deflater.finish();
+        final byte[] out = new byte[64];
+        int n = 0;
+        while (!deflater.finished()) {
+            n += deflater.deflate(out, n, out.length - n);
+        }
+
+        final java.util.zip.Inflater inflater = new java.util.zip.Inflater(true);
+        inflater.setInput(out, 0, n);
+        Assert.assertEquals(inflater.inflate(new byte[16]), 0);
+        Assert.assertTrue(inflater.finished(), "the JDK inflater should see a complete, empty DEFLATE stream");
+    }
+
+    @Test
+    public void emptyInputBeforeFinishDeflatesToNothing() {
+        final java.util.zip.Deflater deflater = new DeflaterFactory().makeDeflater(5, true);
+        deflater.setInput(new byte[0]);
+        Assert.assertEquals(deflater.deflate(new byte[64], 0, 64), 0);
+        Assert.assertFalse(deflater.finished());
+    }
+
+    @Test
     public void testCompressionLevels() throws IOException {
         final byte[] original = new byte[10_000];
         new Random(123).nextBytes(original);

@@ -26,7 +26,6 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.CRAMException;
-import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentContext;
@@ -161,7 +160,7 @@ public final class SliceFactory {
                 referenceBases = cramReferenceRegion.getCurrentReferenceBases();
             }
             final CRAMCompressionRecord cramCompressionRecord = new CRAMCompressionRecord(
-                    CramVersions.DEFAULT_CRAM_VERSION,
+                    encodingStrategy.getCramVersion(),
                     encodingStrategy,
                     samRecord,
                     referenceBases,

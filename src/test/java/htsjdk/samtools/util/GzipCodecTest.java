@@ -142,6 +142,17 @@ public class GzipCodecTest extends HtsjdkTest {
     }
 
     @Test
+    public void emptyInputCompressesToGzipThatGZIPInputStreamReads() throws IOException {
+        final ByteBuffer compressed = new GzipCodec().compress(ByteBuffer.wrap(new byte[0]));
+        final byte[] compressedBytes = new byte[compressed.remaining()];
+        compressed.get(compressedBytes);
+
+        try (final GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(compressedBytes))) {
+            Assert.assertEquals(gis.readAllBytes().length, 0);
+        }
+    }
+
+    @Test
     public void testGZIPOutputStreamReadableByCodec() throws IOException {
         final byte[] original = makeTestData(5000);
 

@@ -31,7 +31,8 @@ public class CramConverter {
             "",
             "Options:",
             "  --reference <path> Reference FASTA (required for CRAM input or output)",
-            "  --profile <name>   CRAM compression profile: fast, normal (default), small, archive",
+            "  --profile <name>   CRAM compression profile: fast (CRAM 3.0), normal (default), small, archive,"
+                    + " normal_3_0 (CRAM 3.0)",
             "  --help             Print this help message",
             "",
             "Examples:",

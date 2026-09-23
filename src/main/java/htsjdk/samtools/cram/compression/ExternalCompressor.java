@@ -16,6 +16,7 @@ import htsjdk.samtools.cram.compression.rans.RANSNx16Encode;
 import htsjdk.samtools.cram.structure.CRAMCodecModelContext;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import htsjdk.utils.ValidationUtils;
+import java.util.Set;
 
 /**
  * Abstract base class for CRAM external block compressors. Each subclass wraps a specific
@@ -73,6 +74,14 @@ public abstract class ExternalCompressor {
                     "Compression method has not been determined yet — compress() must be called before getMethod()");
         }
         return method;
+    }
+
+    /**
+     * @return every compression method this compressor may write a block with: its one method, or all of a
+     * {@link TrialCompressor}'s candidates
+     */
+    public Set<BlockCompressionMethod> getPossibleMethods() {
+        return Set.of(getMethod());
     }
 
     @Override

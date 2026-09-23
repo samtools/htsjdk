@@ -18,6 +18,8 @@
 package htsjdk.samtools.cram.structure.block;
 
 import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.common.CramVersions;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -27,24 +29,43 @@ import java.util.stream.Stream;
  * The block compression methods specified by Section 8 of the CRAM spec.
  */
 public enum BlockCompressionMethod {
-    RAW(0),
-    GZIP(1),
-    BZIP2(2),
-    LZMA(3),
-    RANS(4), // rAns 4x8
-    RANSNx16(5),
-    ADAPTIVE_ARITHMETIC(6),
-    FQZCOMP(7),
-    NAME_TOKENISER(8);
+    RAW(0, CramVersions.CRAM_v2_1),
+    GZIP(1, CramVersions.CRAM_v2_1),
+    BZIP2(2, CramVersions.CRAM_v2_1),
+    LZMA(3, CramVersions.CRAM_v2_1),
+    RANS(4, CramVersions.CRAM_v3), // rAns 4x8
+    RANSNx16(5, CramVersions.CRAM_v3_1),
+    ADAPTIVE_ARITHMETIC(6, CramVersions.CRAM_v3_1),
+    FQZCOMP(7, CramVersions.CRAM_v3_1),
+    NAME_TOKENISER(8, CramVersions.CRAM_v3_1);
 
     private final int methodId;
+    private final CRAMVersion minimumCramVersion;
 
     /**
      * The block compression methods specified by Section 8 of the CRAM spec
      * @param id the number assigned to each block compression method in the CRAM spec
+     * @param minimumCramVersion the earliest CRAM version (of those htsjdk supports) that specifies the method
      */
-    BlockCompressionMethod(final int id) {
+    BlockCompressionMethod(final int id, final CRAMVersion minimumCramVersion) {
         methodId = id;
+        this.minimumCramVersion = minimumCramVersion;
+    }
+
+    /**
+     * @return the earliest CRAM version (of those htsjdk supports) whose specification includes this method; a file
+     * of an earlier version cannot contain it
+     */
+    public CRAMVersion getMinimumCramVersion() {
+        return minimumCramVersion;
+    }
+
+    /**
+     * @param cramVersion a CRAM version
+     * @return true if a file of the given CRAM version may contain blocks compressed with this method
+     */
+    public boolean isAvailableIn(final CRAMVersion cramVersion) {
+        return cramVersion.compatibleWith(minimumCramVersion);
     }
 
     /**
