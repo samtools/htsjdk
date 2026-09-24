@@ -298,8 +298,7 @@ public abstract class BCF2FieldWriter {
         @Override
         public void addGenotype(final BCF2Encoder encoder, final VariantContext vc, final Genotype g)
                 throws IOException {
-            final boolean allowLeadingIndicator =
-                    outputVersion != null && outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
+            final boolean allowLeadingIndicator = outputVersion != null && outputVersion.leadingPhaseAllowed();
             if (g.needsLeadingPhaseIndicator() && !allowLeadingIndicator) {
                 throw new IllegalStateException("The genotype of sample " + g.getSampleName() + " ("
                         + g.getGenotypeString() + ") at " + vc.getContig() + ":" + vc.getStart()

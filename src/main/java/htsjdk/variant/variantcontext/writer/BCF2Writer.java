@@ -108,7 +108,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     // The VCF version the caller asked for, or null to take the header's; resolved when the header is set
     private final VCFHeaderVersion explicitVersion;
     private VCFHeaderVersion outputVersion;
-    private boolean outputIs45Plus;
+    private boolean laaFollowsGt;
     private boolean outputHasLaaFormat;
 
     // The BCF container version (2.1 or 2.2); resolved at construction time
@@ -127,7 +127,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
     public static final int MAX_SAMPLES = 0x00FFFFFF;
 
     private static BCFVersion requireSupportedVersion(final BCFVersion version) {
-        if (version.getMajorVersion() != 2 || version.getMinorVersion() < 1 || version.getMinorVersion() > 2) {
+        if (!version.isSupported()) {
             throw new IllegalArgumentException("Only BCF 2.1 and BCF 2.2 are supported, not " + version);
         }
         return version;
@@ -424,13 +424,13 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         // the writer's own copy carries the output version; the caller's header keeps whatever it declares
         this.outputVersion = VCFWriter.resolveOutputVersion(header, explicitVersion);
         this.header.setVCFHeaderVersion(this.outputVersion);
-        this.outputIs45Plus = this.outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
+        this.laaFollowsGt = this.outputVersion.laaFollowsGt();
         this.outputHasLaaFormat = this.header.hasFormatLine(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
         VCFWriter.checkHeaderCompatibility(this.header, this.outputVersion);
         requireSampleCountInRange(this.header.getNGenotypeSamples());
 
         // BCF 2.1 with >= 4.3 header is an error: percent-encoding differs and old readers cannot handle it
-        if (bcfVersion.getMinorVersion() <= 1 && outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+        if (!bcfVersion.canCarry(outputVersion)) {
             throw new IllegalStateException(
                     "BCF 2.1 cannot express the header's VCF " + outputVersion.getVersionString()
                             + ": BCF 2.1 was last specified alongside VCF 4.2. Call"
@@ -540,27 +540,22 @@ public class BCF2Writer extends IndexingVariantContextWriter {
 
         // The source and output must be on the same side of the 4.3 percent-encoding boundary
         final VCFHeaderVersion sourceVersion = lazyData.header.getVCFHeaderVersion();
-        final boolean sourceIs43Plus =
-                sourceVersion != null && sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
-        final boolean outputIs43Plus = outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
-        if (sourceIs43Plus != outputIs43Plus) {
+        final boolean sourcePercentEncodes = sourceVersion != null && sourceVersion.percentEncodesText();
+        if (sourcePercentEncodes != outputVersion.percentEncodesText()) {
             return false;
         }
 
         // The source and output must be on the same side of the 4.4 leading-phase-indicator boundary:
         // a 4.4 GT's first allele phase bit is a leading indicator; before 4.4 it is implied by the others.
-        final boolean sourceIs44Plus =
-                sourceVersion != null && sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
-        final boolean outputIs44Plus = outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
-        if (sourceIs44Plus != outputIs44Plus) {
+        final boolean sourceLeadingPhase = sourceVersion != null && sourceVersion.leadingPhaseAllowed();
+        if (sourceLeadingPhase != outputVersion.leadingPhaseAllowed()) {
             return false;
         }
 
         // At 4.5 LAA must follow GT; a source from the other side of that boundary has a different FORMAT order
         if (outputHasLaaFormat) {
-            final boolean sourceIs45Plus =
-                    sourceVersion != null && sourceVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
-            if (sourceIs45Plus != outputIs45Plus) {
+            final boolean sourceLaaFollowsGt = sourceVersion != null && sourceVersion.laaFollowsGt();
+            if (sourceLaaFollowsGt != laaFollowsGt) {
                 return false;
             }
         }

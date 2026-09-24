@@ -145,6 +145,14 @@ public enum VCFHeaderVersion {
         return isAtLeastAsRecentAs(VCF4_4);
     }
 
+    /**
+     * @return true if LAA, when a sample has it, must come right after GT among the FORMAT keys in this version (4.5
+     * and later); before 4.5 LAA is an ordinary key and any order is valid
+     */
+    public boolean laaFollowsGt() {
+        return isAtLeastAsRecentAs(VCF4_5);
+    }
+
     public String getVersionString() {
         return versionString;
     }

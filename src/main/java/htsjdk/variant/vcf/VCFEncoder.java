@@ -57,7 +57,7 @@ public class VCFEncoder {
     private VCFHeader header;
     private final boolean percentEncode;
     private final boolean leadingPhaseAllowed;
-    private final boolean outputIs45Plus;
+    private final boolean laaFollowsGt;
     // Follows the header, which setVCFHeader can replace
     private boolean outputHasLaaFormat;
 
@@ -100,7 +100,7 @@ public class VCFEncoder {
         this.outputTrailingFormatFields = outputTrailingFormatFields;
         this.percentEncode = version.percentEncodesText();
         this.leadingPhaseAllowed = version.leadingPhaseAllowed();
-        this.outputIs45Plus = version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5);
+        this.laaFollowsGt = version.laaFollowsGt();
         this.outputHasLaaFormat = header.hasFormatLine(VCFConstants.FORMAT.LOCAL_ALTERNATE_ALLELES);
     }
 
@@ -280,7 +280,7 @@ public class VCFEncoder {
         if (!leadingPhaseAllowed && source.leadingPhaseAllowed()) {
             return false;
         }
-        if (outputHasLaaFormat && source.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_5) != outputIs45Plus) {
+        if (outputHasLaaFormat && source.laaFollowsGt() != laaFollowsGt) {
             return false;
         }
         return true;
