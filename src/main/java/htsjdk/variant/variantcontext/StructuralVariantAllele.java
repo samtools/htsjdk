@@ -12,7 +12,8 @@ import java.util.Optional;
  * (e.g. {@code ME}, {@code ALU}).
  *
  * <p>Instances are obtained via {@link #parse(String)} or {@link #of(StructuralVariantType, String...)}.
- * Two instances are equal when they have the same major type and the same subtype list.
+ * Two instances are equal when they have the same major type, the same subtype list and the same
+ * {@link Breakend}, if any.
  */
 public final class StructuralVariantAllele {
 
@@ -25,10 +26,13 @@ public final class StructuralVariantAllele {
 
     private final StructuralVariantType type;
     private final List<String> subtypes;
+    private final Breakend breakend;
 
-    private StructuralVariantAllele(final StructuralVariantType type, final List<String> subtypes) {
+    private StructuralVariantAllele(
+            final StructuralVariantType type, final List<String> subtypes, final Breakend breakend) {
         this.type = type;
         this.subtypes = subtypes;
+        this.breakend = breakend;
     }
 
     /** Returns the major structural variant type (never {@link StructuralVariantType#MIXED}). */
@@ -42,16 +46,21 @@ public final class StructuralVariantAllele {
     }
 
     /**
-     * Whether this is a breakend ({@code G]17:198982]}, {@code .A}), whose type is {@link StructuralVariantType#BND}.
-     * The breakend's mate and orientation are not parsed.
+     * Whether this is a breakend written in breakend notation ({@code G]17:198982]}, {@code .A}), whose type is
+     * {@link StructuralVariantType#BND} and whose {@link #getBreakend()} is present.
      */
     public boolean isBreakend() {
-        return type == StructuralVariantType.BND;
+        return breakend != null;
     }
 
-    /** Whether this is a symbolic structural variant such as {@code <DEL:ME:ALU>}: any type but a breakend. */
+    /** Whether this is a symbolic structural variant such as {@code <DEL:ME:ALU>}, rather than a breakend. */
     public boolean isSymbolic() {
         return !isBreakend();
+    }
+
+    /** The breakend's position, mate and orientation; empty unless {@link #isBreakend()}. */
+    public Optional<Breakend> getBreakend() {
+        return Optional.ofNullable(breakend);
     }
 
     /**
@@ -74,18 +83,20 @@ public final class StructuralVariantAllele {
         if (this == o) return true;
         if (!(o instanceof StructuralVariantAllele)) return false;
         final StructuralVariantAllele that = (StructuralVariantAllele) o;
-        return type == that.type && subtypes.equals(that.subtypes);
+        return type == that.type && subtypes.equals(that.subtypes) && Objects.equals(breakend, that.breakend);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, subtypes);
+        return Objects.hash(type, subtypes, breakend);
     }
 
     /**
      * Parses a structural variant allele from a string. Accepts the same inputs as
      * {@link StructuralVariantType#parse(String)}, plus breakend notation (paired and
-     * single breakends), which resolves to BND with no subtypes.
+     * single breakends), which resolves to BND with no subtypes and its {@link Breakend}.
+     * Text that uses breakend syntax but is not well-formed breakend notation is not a
+     * structural variant.
      *
      * <p>Returns empty for non-SV symbolic alleles ({@code <NON_REF>}, {@code <*>},
      * {@code <FOO>}), sequence alleles, {@code .}, {@code *}, and null.
@@ -100,7 +111,9 @@ public final class StructuralVariantAllele {
 
         // Breakend notation: paired (e.g. G]17:198982] or ]13:123456]T) or single (e.g. .A or A.)
         if (isBreakendNotation(s)) {
-            return Optional.of(new StructuralVariantAllele(StructuralVariantType.BND, Collections.emptyList()));
+            return Breakend.parse(s)
+                    .map(breakend ->
+                            new StructuralVariantAllele(StructuralVariantType.BND, Collections.emptyList(), breakend));
         }
 
         String text = s;
@@ -118,11 +131,12 @@ public final class StructuralVariantAllele {
                 ? Collections.unmodifiableList(Arrays.asList(Arrays.copyOfRange(parts, 1, parts.length)))
                 : Collections.emptyList();
 
-        return Optional.of(new StructuralVariantAllele(majorType.get(), subtypes));
+        return Optional.of(new StructuralVariantAllele(majorType.get(), subtypes, null));
     }
 
     /**
-     * Creates a structural variant allele with the given major type and subtypes.
+     * Creates a symbolic structural variant allele with the given major type and subtypes; a breakend
+     * comes from {@link #parse(String)}.
      *
      * @param type the major type (must not be {@link StructuralVariantType#MIXED})
      * @param subtypes the subtypes (may be empty)
@@ -136,7 +150,7 @@ public final class StructuralVariantAllele {
         final List<String> subtypeList = subtypes.length == 0
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(Arrays.asList(subtypes.clone()));
-        return new StructuralVariantAllele(type, subtypeList);
+        return new StructuralVariantAllele(type, subtypeList, null);
     }
 
     /** Detects paired breakend (contains [ or ]) or single breakend (.X or X. where X is a base). */

@@ -319,7 +319,7 @@ public class SimpleAllele implements Allele {
     @Override
     public Optional<StructuralVariantAllele> asStructuralVariant() {
         if (isBreakpoint() || isSingleBreakend()) {
-            return Optional.of(StructuralVariantAllele.of(StructuralVariantType.BND));
+            return StructuralVariantAllele.parse(getDisplayString());
         }
         if (isSymbolic) {
             final String display = getDisplayString();
