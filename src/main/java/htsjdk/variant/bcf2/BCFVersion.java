@@ -25,6 +25,7 @@
 
 package htsjdk.variant.bcf2;
 
+import htsjdk.variant.vcf.VCFHeaderVersion;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -70,6 +71,49 @@ public final class BCFVersion {
      */
     public int getMinorVersion() {
         return minorVersion;
+    }
+
+    /** @return true if htsjdk reads and writes this version: BCF 2.1 or 2.2 */
+    public boolean isSupported() {
+        return majorVersion == 2 && (minorVersion == 1 || minorVersion == 2);
+    }
+
+    /**
+     * @return true if htsjdk writes this version BGZF-compressed, and so indexes it with a CSI: BCF 2.2, as bcftools
+     *     writes it. BCF 2.1 is written raw and indexed with a Tribble index.
+     */
+    public boolean isBgzfCompressed() {
+        return isAtLeastAsRecentAs(BCF_2_2);
+    }
+
+    /**
+     * @return true if a typed vector shorter than its field's width is padded with END_OF_VECTOR, as from BCF 2.2;
+     *     BCF 2.1 pads it with MISSING
+     */
+    public boolean padsWithEndOfVector() {
+        return isAtLeastAsRecentAs(BCF_2_2);
+    }
+
+    /**
+     * @return true if a list of strings is written with a leading comma ({@code ,a,b}), as in BCF 2.1; from BCF 2.2
+     *     it is written as htslib writes it ({@code a,b})
+     */
+    public boolean stringListsHaveLeadingComma() {
+        return !isAtLeastAsRecentAs(BCF_2_2);
+    }
+
+    /**
+     * @param vcfVersion a VCF version
+     * @return true if a file of this BCF version can carry a header of that VCF version: BCF 2.1 was specified
+     *     alongside VCF 4.2 and carries up to 4.2, while BCF 2.2 carries every version
+     */
+    public boolean canCarry(final VCFHeaderVersion vcfVersion) {
+        return isAtLeastAsRecentAs(BCF_2_2) || vcfVersion.isOlderThan(VCFHeaderVersion.VCF4_3);
+    }
+
+    private boolean isAtLeastAsRecentAs(final BCFVersion other) {
+        return majorVersion > other.majorVersion
+                || (majorVersion == other.majorVersion && minorVersion >= other.minorVersion);
     }
 
     /**

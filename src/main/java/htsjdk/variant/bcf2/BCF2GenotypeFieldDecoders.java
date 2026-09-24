@@ -65,11 +65,10 @@ public class BCF2GenotypeFieldDecoders {
      */
     public BCF2GenotypeFieldDecoders(final VCFHeader header) {
         final VCFHeaderVersion version = header.getVCFHeaderVersion();
-        final boolean phaseBitIsLiteral = version != null && version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_4);
-        final VCFTextTransformer textTransformer =
-                version != null && version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
-                        ? new VCFPercentEncodedTextTransformer()
-                        : new VCFPassThruTextTransformer();
+        final boolean phaseBitIsLiteral = version != null && version.leadingPhaseAllowed();
+        final VCFTextTransformer textTransformer = version != null && version.percentEncodesText()
+                ? new VCFPercentEncodedTextTransformer()
+                : new VCFPassThruTextTransformer();
         defaultDecoder = new GenericDecoder(textTransformer);
         genotypeFieldDecoder.put(VCFConstants.FORMAT.GENOTYPE, new GTDecoder(phaseBitIsLiteral));
         genotypeFieldDecoder.put(VCFConstants.FORMAT.GENOTYPE_FILTER, new FTDecoder(textTransformer));

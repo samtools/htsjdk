@@ -209,7 +209,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             throw new TribbleException("BCF2Codec can only process BCF2 files, this file has major version "
                     + actualVersion.getMajorVersion());
         }
-        if (actualVersion.getMinorVersion() != 1 && actualVersion.getMinorVersion() != 2) {
+        if (!actualVersion.isSupported()) {
             throw new TribbleException("BCF2Codec does not support BCF " + actualVersion.getMajorVersion() + "."
                     + actualVersion.getMinorVersion() + "; only BCF 2.1 and 2.2 are supported");
         }
@@ -266,7 +266,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         header = withoutIdx(rawHeader);
 
         final VCFHeaderVersion version = header.getVCFHeaderVersion();
-        infoTextTransformer = version != null && version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)
+        infoTextTransformer = version != null && version.percentEncodesText()
                 ? new VCFPercentEncodedTextTransformer()
                 : new VCFPassThruTextTransformer();
         gtFieldDecoders = new BCF2GenotypeFieldDecoders(header);
@@ -282,20 +282,19 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             // Try BGZF first
             if (BlockCompressedInputStream.isValidFile(bis)) {
                 try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(bis)) {
-                    return isSupportedVersion(BCFVersion.readBCFVersion(bcis));
+                    return isSupported(BCFVersion.readBCFVersion(bcis));
                 }
             }
             // Try raw BCF
-            return isSupportedVersion(BCFVersion.readBCFVersion(bis));
+            return isSupported(BCFVersion.readBCFVersion(bis));
         } catch (final IOException e) {
             return false;
         }
     }
 
-    private static boolean isSupportedVersion(final BCFVersion version) {
-        return version != null
-                && version.getMajorVersion() == ALLOWED_MAJOR_VERSION
-                && (version.getMinorVersion() == 1 || version.getMinorVersion() == 2);
+    /** Whether a version read from a file (null if the file is not BCF) is one htsjdk reads. */
+    private static boolean isSupported(final BCFVersion version) {
+        return version != null && version.isSupported();
     }
 
     /**

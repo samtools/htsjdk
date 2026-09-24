@@ -176,9 +176,7 @@ public class VariantContextWriterBuilder {
      */
     public VariantContextWriterBuilder setBCFVersion(final BCFVersion bcfVersion) {
         if (bcfVersion != null) {
-            if (bcfVersion.getMajorVersion() != 2
-                    || bcfVersion.getMinorVersion() < 1
-                    || bcfVersion.getMinorVersion() > 2) {
+            if (!bcfVersion.isSupported()) {
                 throw new IllegalArgumentException("Only BCF 2.1 and BCF 2.2 are supported, not " + bcfVersion);
             }
         }
@@ -532,7 +530,7 @@ public class VariantContextWriterBuilder {
                 && outPath != null
                 && idxCreator != null) {
             final BCFVersion resolvedBcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
-            if (resolvedBcfVersion.getMinorVersion() >= 2) {
+            if (resolvedBcfVersion.isBgzfCompressed()) {
                 throw new IllegalArgumentException(
                         "A BGZF BCF is indexed with a bare CSI and does not accept a custom IndexCreator."
                                 + " Remove the IndexCreator, or use setBCFVersion(BCFVersion.BCF_2_1) for a Tribble index.");
@@ -683,14 +681,14 @@ public class VariantContextWriterBuilder {
     private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {
         final BCFVersion resolvedBcfVersion = bcfVersion != null ? bcfVersion : BCFVersion.BCF_2_2;
         final OutputStream bcfStream;
-        if (resolvedBcfVersion.getMinorVersion() >= 2) {
+        if (resolvedBcfVersion.isBgzfCompressed()) {
             bcfStream = new BlockCompressedOutputStream(writerStream, writerPath);
         } else {
             bcfStream = writerStream;
         }
         final boolean wantIndex = options.contains(Options.INDEX_ON_THE_FLY);
         // BCF 2.2 uses a bare CSI index; BCF 2.1 uses the Tribble .idx path
-        if (wantIndex && resolvedBcfVersion.getMinorVersion() >= 2 && writerPath != null) {
+        if (wantIndex && resolvedBcfVersion.isBgzfCompressed() && writerPath != null) {
             // CSI path: <file>.csi (e.g. out.bcf.csi)
             final Path csiPath = writerPath.resolveSibling(writerPath.getFileName() + FileExtensions.CSI);
             return new BCF2Writer(

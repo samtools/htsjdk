@@ -85,4 +85,11 @@ public class VCFHeaderVersionTest extends VariantBaseTest {
         Assert.assertTrue(VCFHeaderVersion.VCF4_4.leadingPhaseAllowed());
         Assert.assertTrue(VCFHeaderVersion.VCF4_5.leadingPhaseAllowed());
     }
+
+    @Test
+    public void laaFollowsGtFrom4_5On() {
+        Assert.assertFalse(VCFHeaderVersion.VCF4_3.laaFollowsGt());
+        Assert.assertFalse(VCFHeaderVersion.VCF4_4.laaFollowsGt());
+        Assert.assertTrue(VCFHeaderVersion.VCF4_5.laaFollowsGt());
+    }
 }

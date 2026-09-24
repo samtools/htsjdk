@@ -79,10 +79,9 @@ public class BCF2FieldWriterManager {
             final Map<String, Integer> stringDictionary,
             final BCFVersion bcfVersion,
             final VCFHeaderVersion outputVersion) {
-        final boolean useEndOfVector = bcfVersion.getMinorVersion() >= 2;
-        final boolean percentEncode =
-                outputVersion != null && outputVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3);
-        final boolean htslibStringLists = bcfVersion.getMinorVersion() >= 2;
+        final boolean useEndOfVector = bcfVersion.padsWithEndOfVector();
+        final boolean percentEncode = outputVersion != null && outputVersion.percentEncodesText();
+        final boolean htslibStringLists = !bcfVersion.stringListsHaveLeadingComma();
 
         for (final VCFInfoHeaderLine line : header.getInfoHeaderLines()) {
             final String field = line.getID();
