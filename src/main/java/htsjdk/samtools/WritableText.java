@@ -4,7 +4,7 @@ package htsjdk.samtools;
  * Checks that text can be written without corrupting the file it goes into.
  *
  * <p>SAM text has no escapes, so a tab or line break inside a value would end its field or line. Header text is
- * UTF-8, so a header value may hold any other char. Read names and Z and A tags are stored one byte per char, as
+ * UTF-8, so a header value may hold any other char except half of a surrogate pair. Read names and Z and A tags are stored one byte per char, as
  * htsjdk reads them (ISO-8859-1), so they cannot hold a char above 0xFF; BAM and CRAM also end them with a NUL.
  * Bytes 0x80 to 0xFF are allowed although the spec asks for ASCII, so that records other tools wrote pass through
  * unchanged.
@@ -94,8 +94,18 @@ final class WritableText {
                         || ((c == '\n' || c == '\r') && destination.rejectsLineBreaks)) {
                     return i;
                 }
-            } else if (destination.oneBytePerChar && c > 0xFF) {
-                return i;
+            } else if (c > 0xFF) {
+                if (destination.oneBytePerChar) {
+                    return i;
+                }
+                // UTF-8 cannot encode half a surrogate pair; String.getBytes would write '?' for it.
+                if (Character.isHighSurrogate(c)
+                        && i + 1 < value.length()
+                        && Character.isLowSurrogate(value.charAt(i + 1))) {
+                    ++i;
+                } else if (Character.isSurrogate(c)) {
+                    return i;
+                }
             }
         }
         return -1;
@@ -110,7 +120,10 @@ final class WritableText {
                     case '\n' -> "a line feed";
                     case '\r' -> "a carriage return";
                     case 0 -> "a NUL";
-                    default -> String.format("U+%04X, which does not fit in one byte", (int) c);
+                    default ->
+                        destination.oneBytePerChar
+                                ? String.format("U+%04X, which does not fit in one byte", (int) c)
+                                : String.format("U+%04X, half of a surrogate pair, which UTF-8 cannot encode", (int) c);
                 };
         return new IllegalArgumentException(what + " cannot be written to " + destination.description
                 + " because it contains " + found + ": "

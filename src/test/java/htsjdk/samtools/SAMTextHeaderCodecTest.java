@@ -100,6 +100,22 @@ public class SAMTextHeaderCodecTest extends HtsjdkTest {
         Assert.assertTrue(encode(header).contains("\tDS:Universität č"));
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testHeaderValueWithUnpairedSurrogateIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("rg1");
+        readGroup.setDescription("half \uD83D pair");
+        header.addReadGroup(readGroup);
+        encode(header);
+    }
+
+    @Test
+    public void testHeaderValueWithSurrogatePairIsWritten() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addComment("smile \uD83D\uDE00");
+        Assert.assertTrue(encode(header).endsWith("@CO\tsmile \uD83D\uDE00\n"));
+    }
+
     @Test
     public void testCommentWithTabIsWritten() {
         final SAMFileHeader header = new SAMFileHeader();
