@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.Defaults;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -64,5 +65,35 @@ public class AsciiWriterTest extends HtsjdkTest {
         writer.writeBufferedBytes();
         Assert.assertEquals(sink.size(), 0);
         Assert.assertEquals(sink.flushCount, 0);
+    }
+
+    @Test
+    public void testWriteStoresEachCharAsOneByte() throws IOException {
+        final ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        final AsciiWriter writer = new AsciiWriter(sink);
+        writer.write("café");
+        writer.flush();
+        Assert.assertEquals(sink.toByteArray(), new byte[] {'c', 'a', 'f', (byte) 0xE9});
+    }
+
+    @Test
+    public void testWriteUtf8EncodesNonAsciiCharsAsUtf8() throws IOException {
+        final ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        final AsciiWriter writer = new AsciiWriter(sink);
+        writer.write("x");
+        writer.writeUtf8("café č");
+        writer.flush();
+        Assert.assertEquals(sink.toByteArray(), "xcafé č".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testWriteUtf8IsCorrectAcrossABufferBoundary() throws IOException {
+        final ByteArrayOutputStream sink = new ByteArrayOutputStream();
+        final AsciiWriter writer = new AsciiWriter(sink);
+        final String text = "é".repeat(Defaults.NON_ZERO_BUFFER_SIZE);
+        writer.write("x");
+        writer.writeUtf8(text);
+        writer.flush();
+        Assert.assertEquals(sink.toByteArray(), ("x" + text).getBytes(StandardCharsets.UTF_8));
     }
 }

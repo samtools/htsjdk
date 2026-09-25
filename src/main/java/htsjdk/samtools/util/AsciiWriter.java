@@ -27,9 +27,12 @@ import htsjdk.samtools.Defaults;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 /**
- * Fast (I hope) buffered Writer that converts char to byte merely by casting, rather than charset conversion.
+ * Fast (I hope) buffered Writer that converts char to byte merely by casting, rather than charset conversion, so
+ * chars up to 0xFF are written as ISO-8859-1 and any above lose their high byte. {@link #writeUtf8} writes text that
+ * must be UTF-8 instead.
  */
 public class AsciiWriter extends Writer {
 
@@ -73,6 +76,24 @@ public class AsciiWriter extends Writer {
     public void flush() throws IOException {
         writeBufferedBytes();
         os.flush();
+    }
+
+    /**
+     * Writes {@code text} encoded as UTF-8 rather than one byte per char.
+     */
+    public void writeUtf8(final String text) throws IOException {
+        final byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+        int offset = 0;
+        while (offset < bytes.length) {
+            final int bytesToCopy = Math.min(bytes.length - offset, buffer.length - numBytes);
+            System.arraycopy(bytes, offset, buffer, numBytes, bytesToCopy);
+            numBytes += bytesToCopy;
+            offset += bytesToCopy;
+            if (numBytes == buffer.length) {
+                os.write(buffer, 0, numBytes);
+                numBytes = 0;
+            }
+        }
     }
 
     /**

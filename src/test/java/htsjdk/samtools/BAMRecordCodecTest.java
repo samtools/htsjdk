@@ -20,6 +20,54 @@ public class BAMRecordCodecTest extends HtsjdkTest {
         return new String(bytes.toByteArray(), StandardCharsets.ISO_8859_1);
     }
 
+    private static SAMRecord unmappedRecord(final SAMFileHeader header, final String readName) {
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName(readName);
+        record.setReadUnmappedFlag(true);
+        record.setReadString("ACGT");
+        record.setBaseQualityString("IIII");
+        return record;
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testStringTagWithCharAboveFFIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = unmappedRecord(header, "read1");
+        // U+0100 would lose its high byte and end the string early as a NUL.
+        record.setAttribute("XS", "ab\u0100XT");
+        encode(header, record);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testStringTagWithNulIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = unmappedRecord(header, "read1");
+        record.setAttribute("XS", "ab\0XT");
+        encode(header, record);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testReadNameWithCharAboveFFIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        encode(header, unmappedRecord(header, "read\u010D"));
+    }
+
+    @Test
+    public void testStringTagWithLatin1CharIsStoredAsOneByte() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = unmappedRecord(header, "read1");
+        record.setAttribute("XS", "café");
+        Assert.assertTrue(encode(header, record).contains("XSZcafé\0"));
+    }
+
+    @Test
+    public void testStringTagWithTabIsStored() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = unmappedRecord(header, "read1");
+        record.setAttribute("XS", "a\tb");
+        Assert.assertTrue(encode(header, record).contains("XSZa\tb\0"));
+    }
+
     @Test
     public void testCigarTooLongForBamIsStoredAsUnsignedIntArrayInCgTag() {
         final SAMFileHeader header =

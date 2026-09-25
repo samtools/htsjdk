@@ -98,6 +98,7 @@ public class CRAMContainerStreamWriter {
      * @param alignment must not be null
      */
     public void writeAlignment(final SAMRecord alignment) {
+        WritableText.requireInRecord(alignment, WritableText.Destination.CRAM_RECORD);
         final Container container = containerFactory.getNextContainer(alignment, streamOffset);
         if (container != null) {
             writeContainer(container);

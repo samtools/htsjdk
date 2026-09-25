@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -239,8 +240,10 @@ public class BAMFileWriter extends SAMFileWriterImpl {
             final BinaryCodec outputBinaryCodec, final SAMFileHeader samFileHeader, final String headerText) {
         outputBinaryCodec.writeBytes(BAMFileConstants.BAM_MAGIC);
 
-        // calculate and write the length of the SAM file header text and the header text
-        outputBinaryCodec.writeString(headerText, true, false);
+        // The header text is UTF-8, which the spec allows in @CO and in DS and CL values.
+        final byte[] headerBytes = headerText.getBytes(StandardCharsets.UTF_8);
+        outputBinaryCodec.writeInt(headerBytes.length);
+        outputBinaryCodec.writeBytes(headerBytes);
 
         // write the sequences binarily.  This is redundant with the text header
         outputBinaryCodec.writeInt(samFileHeader.getSequenceDictionary().size());

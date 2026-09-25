@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -928,5 +929,20 @@ public class BAMFileWriterTest extends HtsjdkTest {
         final byte[] fileTail = Arrays.copyOfRange(tail, tail.length - eofBlock.length, tail.length);
         Assert.assertEquals(fileTail, eofBlock, "data stream should be properly closed with EOF block");
         IOUtil.recursiveDelete(dir);
+    }
+
+    @Test
+    public void testHeaderTextIsWrittenAsUtf8() throws IOException {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addComment("café č");
+        final ByteArrayOutputStream bam = new ByteArrayOutputStream();
+        BAMFileWriter.writeHeader(bam, header);
+
+        final BinaryCodec codec =
+                new BinaryCodec(new BlockCompressedInputStream(new ByteArrayInputStream(bam.toByteArray())));
+        codec.readBytes(new byte[BAMFileConstants.BAM_MAGIC.length]);
+        final byte[] text = new byte[codec.readInt()];
+        codec.readBytes(text);
+        Assert.assertTrue(new String(text, StandardCharsets.UTF_8).endsWith("@CO\tcafé č\n"));
     }
 }

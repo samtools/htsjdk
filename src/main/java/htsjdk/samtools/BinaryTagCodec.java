@@ -324,7 +324,8 @@ public class BinaryTagCodec {
             case 'Z':
                 return readNullTerminatedString(byteBuffer);
             case 'A':
-                return (char) byteBuffer.get();
+                // Mask off the sign so a byte 0x80-0xFF becomes the char it was written from.
+                return (char) (byteBuffer.get() & 0xFF);
             case 'I':
                 final long val = byteBuffer.getInt() & 0xffffffffL;
                 if (val <= Integer.MAX_VALUE) {

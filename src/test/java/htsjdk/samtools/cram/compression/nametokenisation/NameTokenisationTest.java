@@ -144,4 +144,28 @@ public class NameTokenisationTest extends HtsjdkTest {
         uncompressedBuffer.rewind();
         Assert.assertEquals(decompressedNames, uncompressedBuffer);
     }
+
+    /** Two names ending in 0xE9 ("é" in ISO-8859-1) and in 0xC3 0xA9 ("é" in UTF-8). */
+    private static byte[] namesWithNonAsciiBytes() {
+        final byte sep = NameTokenisationDecode.NAME_SEPARATOR;
+        return new byte[] {'r', 'e', 'a', 'd', (byte) 0xE9, sep, 'r', 'e', 'a', 'd', (byte) 0xC3, (byte) 0xA9, sep};
+    }
+
+    private static void assertRoundTripsUnchanged(final byte[] names, final boolean useArith) {
+        final ByteBuffer compressed = new NameTokenisationEncode()
+                .compress(ByteBuffer.wrap(names), useArith, NameTokenisationDecode.NAME_SEPARATOR);
+        final ByteBuffer decompressed = CompressionUtils.wrap(
+                new NameTokenisationDecode().uncompress(compressed, NameTokenisationDecode.NAME_SEPARATOR));
+        Assert.assertEquals(decompressed, ByteBuffer.wrap(names));
+    }
+
+    @Test
+    public void testNonAsciiBytesRoundTripUnchangedWithRans() {
+        assertRoundTripsUnchanged(namesWithNonAsciiBytes(), false);
+    }
+
+    @Test
+    public void testNonAsciiBytesRoundTripUnchangedWithArithmeticCoding() {
+        assertRoundTripsUnchanged(namesWithNonAsciiBytes(), true);
+    }
 }

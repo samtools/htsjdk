@@ -23,6 +23,15 @@ public class SAMTextHeaderCodecTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testReadGroupTagNameWithTabIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("rg1");
+        readGroup.setAttribute("DS:ok\tPI", "123");
+        header.addReadGroup(readGroup);
+        encode(header);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testReadGroupIdWithTabIsRejected() {
         final SAMFileHeader header = new SAMFileHeader();
         header.addReadGroup(new SAMReadGroupRecord("rg1\tPI:123"));
@@ -64,6 +73,31 @@ public class SAMTextHeaderCodecTest extends HtsjdkTest {
         final SAMFileHeader header = new SAMFileHeader();
         header.addComment("comment\r");
         encode(header);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testReadGroupAttributeWithNulIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("rg1");
+        readGroup.setSample("sample\0");
+        header.addReadGroup(readGroup);
+        encode(header);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testCommentWithNulIsRejected() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addComment("comment\0");
+        encode(header);
+    }
+
+    @Test
+    public void testNonAsciiHeaderValueIsWritten() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("rg1");
+        readGroup.setDescription("Universität č");
+        header.addReadGroup(readGroup);
+        Assert.assertTrue(encode(header).contains("\tDS:Universität č"));
     }
 
     @Test

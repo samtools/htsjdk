@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CRAMReferenceRegion;
@@ -10,10 +11,14 @@ import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceContext;
+import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.util.QuietTestWrapper;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Stream;
 import org.testng.Assert;
@@ -282,5 +287,24 @@ public class ContainerTest extends HtsjdkTest {
         // Container round-trips CRAM records,so perhaps these tests should use CRAM records, and
         // there should be a CRAMNormalizer test for round-tripping SAMRecords
         Assert.assertEquals(roundTripRecords, originalRecords);
+    }
+
+    @Test
+    public void testHeaderLineThatIsNotUtf8IsReadAsLatin1() throws IOException {
+        final byte[] text = "@HD\tVN:1.6\n@CO\tcafé\n".getBytes(StandardCharsets.ISO_8859_1);
+        final byte[] blockContent = ByteBuffer.allocate(4 + text.length)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putInt(text.length)
+                .put(text)
+                .array();
+        final ByteArrayOutputStream blocks = new ByteArrayOutputStream();
+        Block.createGZIPFileHeaderBlock(blockContent).write(CramVersions.CRAM_v3, blocks);
+        final ByteArrayOutputStream container = new ByteArrayOutputStream();
+        ContainerHeader.makeSAMFileHeaderContainer(blocks.size()).write(CramVersions.CRAM_v3, container);
+        blocks.writeTo(container);
+
+        final SAMFileHeader header = Container.readSAMFileHeaderContainer(
+                CramVersions.CRAM_v3, new ByteArrayInputStream(container.toByteArray()), "test");
+        Assert.assertEquals(header.getComments(), List.of("@CO\tcafé"));
     }
 }

@@ -165,6 +165,11 @@ public class TextTagCodecTest extends HtsjdkTest {
         new TextTagCodec().encodeUntypedTag("DS", "text\r");
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testEncodeUntypedTagRejectsTabInTagName() {
+        new TextTagCodec().encodeUntypedTag("DS:ok\tPI", "123");
+    }
+
     @Test
     public void testEncodeUntypedTagWritesValueWithSpaces() {
         Assert.assertEquals(new TextTagCodec().encodeUntypedTag("DS", "two words"), "DS:two words");

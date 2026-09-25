@@ -23,6 +23,7 @@ import htsjdk.samtools.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -311,7 +312,8 @@ public class ReadTag implements Comparable<ReadTag> {
         }
     };
 
-    private static final Charset charset = Charset.forName("US-ASCII");
+    // One byte per char, as BAM stores Z tags and as they are read back (StringUtil.bytesToString).
+    private static final Charset charset = StandardCharsets.ISO_8859_1;
 
     /**
      * Serialize a single tag value to a byte array in BAM binary format.
@@ -421,7 +423,8 @@ public class ReadTag implements Comparable<ReadTag> {
             case 'Z':
                 return readNullTerminatedString(byteBuffer);
             case 'A':
-                return (char) byteBuffer.get();
+                // Mask off the sign so a byte 0x80-0xFF becomes the char it was written from.
+                return (char) (byteBuffer.get() & 0xFF);
             case 'I':
                 final long val = byteBuffer.getInt() & 0xffffffffL;
                 if (val <= Integer.MAX_VALUE) {

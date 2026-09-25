@@ -103,6 +103,10 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
      */
     @Override
     public void encode(final SAMRecord alignment) {
+        // A record read from BAM and not changed since is written as the bytes it was read from.
+        if (alignment.getVariableBinaryRepresentation() == null) {
+            WritableText.requireInRecord(alignment, WritableText.Destination.BAM_RECORD);
+        }
         // Compute block size, as it is the first element of the file representation of SAMRecord
         final int readLength = alignment.getReadLength();
 

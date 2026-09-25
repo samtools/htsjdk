@@ -63,7 +63,8 @@ public class CramRecordWriter {
     private final DataSeriesWriter<Integer> refIdCodec;
     private final DataSeriesWriter<Integer> refSkipCodec;
 
-    private static final Charset charset = StandardCharsets.UTF_8;
+    // Read names are one byte per char, as BAM stores them.
+    private static final Charset charset = StandardCharsets.ISO_8859_1;
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;

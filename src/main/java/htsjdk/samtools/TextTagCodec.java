@@ -131,41 +131,13 @@ public class TextTagCodec {
      * @param value Not necessarily a String.  Some of these are integers but the type is implied by
      * the tagName.  Converted to String with toString().
      * @return Colon-separated text representation suitable for a SAM header, i.e. name:value.
-     * @throws IllegalArgumentException if the value contains a tab, line feed or carriage return
+     * @throws IllegalArgumentException if the tag name or value contains a tab, line feed, carriage return or NUL
      */
     public String encodeUntypedTag(final String tagName, final Object value) {
+        WritableText.require("Header tag name", tagName, WritableText.Destination.HEADER_FIELD);
         final String text = value.toString();
-        if (hasFieldOrLineBreak(text)) {
-            throw fieldOrLineBreakError("Header tag " + tagName, text);
-        }
+        WritableText.require("Header tag " + tagName, text, WritableText.Destination.HEADER_FIELD);
         return new StringBuilder(tagName).append(':').append(text).toString();
-    }
-
-    /**
-     * Returns whether {@code value} contains a tab, line feed or carriage return. SAM text has no escapes, so any of
-     * them would end the field or line early and the rest of the value would be read as further fields or lines.
-     */
-    static boolean hasFieldOrLineBreak(final String value) {
-        for (int i = 0; i < value.length(); ++i) {
-            final char c = value.charAt(i);
-            // One comparison for the common printable case; SAM writing scans every Z value with this.
-            if (c < ' ' && (c == '\t' || c == '\n' || c == '\r')) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Returns the exception for a value that {@link #hasFieldOrLineBreak} finds a break in.
-     *
-     * @param what names the value in the message, e.g. "Tag XY of read r1"
-     * @param value the rejected text, shown with its breaks escaped
-     */
-    static IllegalArgumentException fieldOrLineBreakError(final String what, final String value) {
-        return new IllegalArgumentException(what
-                + " cannot be written as SAM text because its value contains a tab or line break: "
-                + value.replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r"));
     }
 
     /**

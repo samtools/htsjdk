@@ -27,6 +27,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * A collection of methods to read and write special values to/from CRAM files.
@@ -206,7 +207,8 @@ public final class CramIO {
 
     public static byte[] samHeaderToByteArray(final SAMFileHeader samFileHeader) {
         try (final ByteArrayOutputStream headerBodyOS = new ByteArrayOutputStream()) {
-            try (final OutputStreamWriter outStreamWriter = new OutputStreamWriter(headerBodyOS)) {
+            try (final OutputStreamWriter outStreamWriter =
+                    new OutputStreamWriter(headerBodyOS, StandardCharsets.UTF_8)) {
                 new SAMTextHeaderCodec().encode(outStreamWriter, samFileHeader);
             }
             final ByteBuffer buf = ByteBuffer.allocate(4);

@@ -225,4 +225,18 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         }
         Assert.assertEquals(count, 2);
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testStringTagWithCharAboveFFIsRejected() {
+        final SAMRecord record = createRecords(2).get(0);
+        record.setAttribute("XS", "value\u0109");
+        final CRAMContainerStreamWriter containerStream = new CRAMContainerStreamWriter(
+                new ByteArrayOutputStream(),
+                null,
+                createReferenceSource(),
+                createSAMHeader(SAMFileHeader.SortOrder.coordinate),
+                "test");
+        containerStream.writeHeader();
+        containerStream.writeAlignment(record);
+    }
 }

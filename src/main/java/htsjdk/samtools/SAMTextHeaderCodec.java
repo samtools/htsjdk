@@ -445,11 +445,7 @@ public class SAMTextHeaderCodec {
             writePGLine(programRecord);
         }
         for (final String comment : header.getComments()) {
-            if (comment.indexOf('\n') >= 0 || comment.indexOf('\r') >= 0) {
-                throw new IllegalArgumentException(
-                        "Header comment cannot be written as SAM text because it contains a line break: "
-                                + comment.replace("\n", "\\n").replace("\r", "\\r"));
-            }
+            WritableText.require("Header comment", comment, WritableText.Destination.HEADER_COMMENT);
             println(comment);
         }
         try {

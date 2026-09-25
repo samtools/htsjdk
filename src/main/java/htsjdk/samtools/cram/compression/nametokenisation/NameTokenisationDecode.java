@@ -70,7 +70,7 @@ public class NameTokenisationDecode {
             // a future instance of this same name that refers to THIS name's tokens), and then reconstruct and
             // return the new name by joining the accumulated tokens
             decodedNameTokens.add(currentNameIndex, decodedNameTokens.get(referenceName));
-            return String.join("", decodedNameTokens.get(currentNameIndex)).getBytes();
+            return String.join("", decodedNameTokens.get(currentNameIndex)).getBytes(StandardCharsets.ISO_8859_1);
         } else if (referenceType != TokenStreams.TOKEN_DIFF) {
             throw new CRAMException(String.format(
                     "Invalid nameType %s. nameType must be either TOKEN_DIFF or TOKEN_DUP", referenceType));
@@ -91,9 +91,11 @@ public class NameTokenisationDecode {
 
             switch (type) {
                 case TokenStreams.TOKEN_CHAR:
-                    final char currentTokenChar = (char) tokenStreams
-                            .getStream(tokenPos, TokenStreams.TOKEN_CHAR)
-                            .get();
+                    // Mask off the sign so bytes 0x80-0xFF become chars 0x80-0xFF, not 0xFF80-0xFFFF.
+                    final char currentTokenChar = (char) (tokenStreams
+                                    .getStream(tokenPos, TokenStreams.TOKEN_CHAR)
+                                    .get()
+                            & 0xFF);
                     currentToken = String.valueOf(currentTokenChar);
                     break;
                 case TokenStreams.TOKEN_STRING:
@@ -146,7 +148,7 @@ public class NameTokenisationDecode {
         }
 
         decodedNameTokens.add(currentNameIndex, currentNameTokens);
-        return decodedNameBuilder.toString().getBytes();
+        return decodedNameBuilder.toString().getBytes(StandardCharsets.ISO_8859_1);
     }
 
     private String getDeltaToken(
@@ -195,7 +197,7 @@ public class NameTokenisationDecode {
                 inputBuffer.array(),
                 pos + inputBuffer.arrayOffset(), // include the offset since we're using the underlying array directly
                 count - pos,
-                StandardCharsets.UTF_8);
+                StandardCharsets.ISO_8859_1);
         inputBuffer.position(count + 1); // skip over the null
         return s;
     }

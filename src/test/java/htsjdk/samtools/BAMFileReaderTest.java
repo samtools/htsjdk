@@ -2,11 +2,17 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.index.FileBackedBinningIndex;
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -339,5 +345,29 @@ public class BAMFileReaderTest extends HtsjdkTest {
     @Test
     public static void testFindVirtualOffsetOfFirstRecord() throws IOException {
         Assert.assertEquals(BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile), 8384);
+    }
+
+    /** Reads a BAM header whose text is {@code headerText}, byte for byte, with no reference sequences. */
+    private static SAMFileHeader readHeaderWithText(final byte[] headerText) throws IOException {
+        final ByteBuffer bam =
+                ByteBuffer.allocate(4 + 4 + headerText.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+        bam.put(BAMFileConstants.BAM_MAGIC)
+                .putInt(headerText.length)
+                .put(headerText)
+                .putInt(0);
+        return BAMFileReader.readHeader(
+                new BinaryCodec(new ByteArrayInputStream(bam.array())), ValidationStringency.STRICT, "test");
+    }
+
+    @Test
+    public void testHeaderTextIsReadAsUtf8() throws IOException {
+        final byte[] text = "@HD\tVN:1.6\n@CO\tcafé č\n".getBytes(StandardCharsets.UTF_8);
+        Assert.assertEquals(readHeaderWithText(text).getComments(), List.of("@CO\tcafé č"));
+    }
+
+    @Test
+    public void testHeaderLineThatIsNotUtf8IsReadAsLatin1() throws IOException {
+        final byte[] text = "@HD\tVN:1.6\n@CO\tcafé\n".getBytes(StandardCharsets.ISO_8859_1);
+        Assert.assertEquals(readHeaderWithText(text).getComments(), List.of("@CO\tcafé"));
     }
 }
