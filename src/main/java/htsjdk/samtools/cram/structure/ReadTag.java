@@ -45,6 +45,8 @@ public class ReadTag implements Comparable<ReadTag> {
     public int keyType3BytesAsInt; // this is used as the content id for this tag series
     private char type;
     private Object value;
+    // A B array is stored with a signed or unsigned element type, which SAMRecord keeps apart from the value.
+    private boolean unsignedArray;
     private short code;
     private byte index;
 
@@ -58,7 +60,7 @@ public class ReadTag implements Comparable<ReadTag> {
     public ReadTag(final int id, final byte[] dataAsByteArray, ValidationStringency validationStringency) {
         this.type = (char) (0xFF & id);
         key = new String(new char[] {(char) ((id >> 16) & 0xFF), (char) ((id >> 8) & 0xFF)});
-        value = restoreValueFromByteArray(type, dataAsByteArray, validationStringency);
+        restoreValueFromByteArray(dataAsByteArray, validationStringency);
         keyType3Bytes = this.key + this.type;
 
         keyType3BytesAsInt = id;
@@ -82,7 +84,7 @@ public class ReadTag implements Comparable<ReadTag> {
         this.keyType3Bytes = cached.keyType3Bytes;
         this.keyType3BytesAsInt = cached.keyType3BytesAsInt;
         this.code = cached.code;
-        this.value = restoreValueFromByteArray(type, dataAsByteArray, validationStringency);
+        restoreValueFromByteArray(dataAsByteArray, validationStringency);
     }
 
     private ReadTag(final String key, final char type, final Object value) {
@@ -197,6 +199,22 @@ public class ReadTag implements Comparable<ReadTag> {
         return new ReadTag(key, getTagValueType(value), value);
     }
 
+    /**
+     * Create a ReadTag by inferring the CRAM type code from the Java type of the value, keeping whether an array
+     * value is unsigned.
+     *
+     * @param key two-character tag name (e.g. "NM")
+     * @param value the tag value (String, Character, Number, or array)
+     * @param unsignedArray whether {@code value} is an array of unsigned elements, as
+     *     {@link htsjdk.samtools.SAMRecord#isUnsignedArrayAttribute} reports
+     * @return a new ReadTag
+     */
+    public static ReadTag deriveTypeFromValue(final String key, final Object value, final boolean unsignedArray) {
+        final ReadTag tag = deriveTypeFromValue(key, value);
+        tag.unsignedArray = unsignedArray;
+        return tag;
+    }
+
     public String getKey() {
         return key;
     }
@@ -210,6 +228,11 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
+    /** Returns whether the value is an array of unsigned elements (a B array of type C, S or I). */
+    public boolean isUnsignedArray() {
+        return unsignedArray;
+    }
+
     char getType() {
         return type;
     }
@@ -220,14 +243,19 @@ public class ReadTag implements Comparable<ReadTag> {
 
     /** Serialize this tag's value to a byte array using CRAM/BAM binary encoding. */
     public byte[] getValueAsByteArray() {
-        return writeSingleValue((byte) type, value, false);
+        return writeSingleValue((byte) type, value, unsignedArray);
     }
 
-    private static Object restoreValueFromByteArray(
-            final char type, final byte[] array, ValidationStringency validationStringency) {
+    private void restoreValueFromByteArray(final byte[] array, final ValidationStringency validationStringency) {
         final ByteBuffer buffer = ByteBuffer.wrap(array);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return readSingleValue((byte) type, buffer, validationStringency);
+        if (type == 'B') {
+            final TagValueAndUnsignedArrayFlag valueAndFlag = readArray(buffer);
+            value = valueAndFlag.value;
+            unsignedArray = valueAndFlag.isUnsignedArray;
+        } else {
+            value = readSingleValue((byte) type, buffer, validationStringency);
+        }
     }
 
     // copied from net.sf.samtools.BinaryTagCodec 1.62:
@@ -546,6 +574,7 @@ public class ReadTag implements Comparable<ReadTag> {
                 && type == readTag.type
                 && code == readTag.code
                 && index == readTag.index
+                && unsignedArray == readTag.unsignedArray
                 && Objects.equals(key, readTag.key)
                 && Objects.equals(keyAndType, readTag.keyAndType)
                 && Objects.equals(keyType3Bytes, readTag.keyType3Bytes)
@@ -554,6 +583,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, keyAndType, keyType3Bytes, keyType3BytesAsInt, type, value, code, index);
+        return Objects.hash(
+                key, keyAndType, keyType3Bytes, keyType3BytesAsInt, type, value, code, index, unsignedArray);
     }
 }

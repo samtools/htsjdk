@@ -255,4 +255,114 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
                 SAMUtils.fastqToPhred(scores));
         return readFeatures;
     }
+
+    /**
+     * One read of a pair on reference 0, matching the reference: READ1 on the forward strand and READ2 on the
+     * reverse, with mate fields that agree.
+     */
+    private static SAMRecord pairRead(
+            final boolean firstOfPair,
+            final int start,
+            final int alignedLength,
+            final int mateStart,
+            final int templateLength) {
+        final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        read.setReadName("pair");
+        read.setReadPairedFlag(true);
+        read.setFirstOfPairFlag(firstOfPair);
+        read.setSecondOfPairFlag(!firstOfPair);
+        read.setReadNegativeStrandFlag(!firstOfPair);
+        read.setMateNegativeStrandFlag(firstOfPair);
+        read.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setAlignmentStart(start);
+        read.setCigarString(alignedLength + "M");
+        final byte[] bases = new byte[alignedLength];
+        Arrays.fill(bases, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO_BYTE);
+        read.setReadBases(bases);
+        read.setBaseQualities(new byte[alignedLength]);
+        read.setMateReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setMateAlignmentStart(mateStart);
+        read.setInferredInsertSize(templateLength);
+        return read;
+    }
+
+    /** The CRAM record the writer builds for {@code read}. */
+    private static CRAMCompressionRecord toCram(final SAMRecord read) {
+        final byte[] reference = CRAMStructureTestHelper.REFERENCE_SOURCE.getReferenceBases(
+                read.getHeader().getSequence(read.getReferenceIndex()), false);
+        return new CRAMCompressionRecord(
+                CramVersions.DEFAULT_CRAM_VERSION, new CRAMEncodingStrategy(), read, reference, 0, new HashMap<>());
+    }
+
+    @Test
+    public void testTemplateLengthsOfAPairStartingTogetherArePositiveForTheReadEndingFirst() {
+        final int[] lengths = CRAMCompressionRecord.deriveTemplateLengths(
+                List.of(toCram(pairRead(true, 100, 50, 100, 0)), toCram(pairRead(false, 100, 30, 100, 0))));
+        Assert.assertEquals(lengths, new int[] {-50, 50});
+    }
+
+    @Test
+    public void testTemplateLengthsOfAPairOnTheSameBasesArePositiveForTheFirstSegment() {
+        final int[] lengths = CRAMCompressionRecord.deriveTemplateLengths(
+                List.of(toCram(pairRead(false, 100, 50, 100, 0)), toCram(pairRead(true, 100, 50, 100, 0))));
+        Assert.assertEquals(lengths, new int[] {-50, 50});
+    }
+
+    @Test
+    public void testTemplateLengthsSpanEveryRecordOfATemplate() {
+        final SAMRecord middle = pairRead(true, 120, 50, 300, 0);
+        middle.setFirstOfPairFlag(false);
+        final int[] lengths = CRAMCompressionRecord.deriveTemplateLengths(List.of(
+                toCram(pairRead(true, 100, 50, 120, 0)), toCram(middle), toCram(pairRead(false, 300, 50, 100, 0))));
+        Assert.assertEquals(lengths, new int[] {250, -250, -250});
+    }
+
+    @Test
+    public void testTemplateLengthsAreZeroForATemplateOnTwoReferences() {
+        final SAMRecord second = pairRead(false, 300, 50, 100, 0);
+        second.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ONE);
+        final int[] lengths = CRAMCompressionRecord.deriveTemplateLengths(
+                List.of(toCram(pairRead(true, 100, 50, 300, 0)), toCram(second)));
+        Assert.assertEquals(lengths, new int[] {0, 0});
+    }
+
+    @Test
+    public void testTemplateLengthsAreZeroForAPairWithAnUnmappedRead() {
+        final SAMRecord unmapped = pairRead(false, 100, 50, 100, 0);
+        unmapped.setReadUnmappedFlag(true);
+        final SAMRecord mapped = pairRead(true, 100, 50, 100, 0);
+        mapped.setMateUnmappedFlag(true);
+        final int[] lengths = CRAMCompressionRecord.deriveTemplateLengths(List.of(toCram(mapped), toCram(unmapped)));
+        Assert.assertEquals(lengths, new int[] {0, 0});
+    }
+
+    @Test
+    public void testConsistentPairIsAttached() {
+        Assert.assertTrue(CRAMCompressionRecord.decodesUnchangedWhenAttached(
+                toCram(pairRead(true, 100, 50, 300, 250)), toCram(pairRead(false, 300, 50, 100, -250))));
+    }
+
+    @Test
+    public void testPairWhoseTemplateLengthsDecodingWouldSwapIsNotAttached() {
+        // READ1 ends last, so decoding would make it negative.
+        Assert.assertFalse(CRAMCompressionRecord.decodesUnchangedWhenAttached(
+                toCram(pairRead(true, 100, 50, 100, 50)), toCram(pairRead(false, 100, 30, 100, -50))));
+    }
+
+    @Test
+    public void testPairWhoseMateStrandDisagreesIsNotAttached() {
+        final SAMRecord first = pairRead(true, 100, 50, 300, 250);
+        first.setMateNegativeStrandFlag(false);
+        Assert.assertFalse(CRAMCompressionRecord.decodesUnchangedWhenAttached(
+                toCram(first), toCram(pairRead(false, 300, 50, 100, -250))));
+    }
+
+    @Test
+    public void testPairOfTwoFirstSegmentsIsNotAttached() {
+        final SAMRecord second = pairRead(false, 300, 50, 100, -250);
+        second.setFirstOfPairFlag(true);
+        second.setSecondOfPairFlag(false);
+        Assert.assertFalse(CRAMCompressionRecord.decodesUnchangedWhenAttached(
+                toCram(pairRead(true, 100, 50, 300, 250)), toCram(second)));
+    }
 }

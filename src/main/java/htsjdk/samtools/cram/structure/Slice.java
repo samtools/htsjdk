@@ -288,12 +288,9 @@ public class Slice {
                 // Second occurrence — attempt to link as attached mate pair
                 final CRAMCompressionRecord previous = records.get(previousIndex);
 
-                // Validate that TLEN is consistent — if the recomputed insert size
-                // would differ from the original, keep both records detached to preserve
-                // the original TLEN values (matching htslib's cross-validation behavior)
-                final int computedTlen = CRAMCompressionRecord.computeInsertSize(previous, record);
-                if (previous.getTemplateSize() != computedTlen || record.getTemplateSize() != -computedTlen) {
-                    // TLEN mismatch — keep both detached
+                // A pair whose mate fields or template lengths decoding would not restore as they are stays
+                // detached, as htslib keeps it, so that it reads back unchanged.
+                if (!CRAMCompressionRecord.decodesUnchangedWhenAttached(previous, record)) {
                     readNameToIndex.remove(readName);
                     continue;
                 }
