@@ -25,6 +25,8 @@ package htsjdk.samtools.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -32,7 +34,9 @@ import java.nio.charset.StandardCharsets;
  * and converts to {@link String} using the charset appropriate for the line content:
  * <ul>
  *   <li>Header lines (starting with {@code @}): decoded as UTF-8, since the SAM spec permits
- *       Unicode in certain header fields ({@code @CO}, {@code DS}, {@code CL}).</li>
+ *       Unicode in certain header fields ({@code @CO}, {@code DS}, {@code CL}). A line that is not
+ *       valid UTF-8 is decoded as ISO-8859-1 instead, as htsjdk 5.x and earlier wrote non-ASCII
+ *       SAM and BAM header text.</li>
  *   <li>Alignment lines: decoded as ISO-8859-1, which on modern JVMs with compact strings is
  *       a bulk array copy. The SAM spec restricts alignment fields to printable ASCII, so
  *       Latin-1 is lossless and avoids the overhead of UTF-8 multi-byte scanning.</li>
@@ -293,7 +297,15 @@ public class SamLineReader implements LineReader {
 
     private static String decodeBytes(final byte[] bytes, final int off, final int len) {
         if (len > 0 && bytes[off] == '@') {
-            return new String(bytes, off, len, StandardCharsets.UTF_8);
+            try {
+                // A fresh decoder reports malformed input, where new String(..., UTF_8) would replace it.
+                return StandardCharsets.UTF_8
+                        .newDecoder()
+                        .decode(ByteBuffer.wrap(bytes, off, len))
+                        .toString();
+            } catch (final CharacterCodingException e) {
+                return new String(bytes, off, len, StandardCharsets.ISO_8859_1);
+            }
         }
         return new String(bytes, off, len, StandardCharsets.ISO_8859_1);
     }

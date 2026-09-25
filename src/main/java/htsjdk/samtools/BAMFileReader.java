@@ -27,6 +27,7 @@ import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -800,11 +801,13 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             throw new IOException("Invalid BAM file header");
         }
 
-        final int headerTextLength = stream.readInt();
-        final String textHeader = stream.readString(headerTextLength);
+        final byte[] headerText = new byte[stream.readInt()];
+        stream.readBytes(headerText);
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
         headerCodec.setValidationStringency(validationStringency);
-        final SAMFileHeader samFileHeader = headerCodec.decode(BufferedLineReader.fromString(textHeader), source);
+        // SamLineReader decodes each header line as UTF-8, or as ISO-8859-1 if it is not valid UTF-8.
+        final SAMFileHeader samFileHeader =
+                headerCodec.decode(new SamLineReader(new ByteArrayInputStream(headerText)), source);
 
         final int sequenceCount = stream.readInt();
         if (!samFileHeader.getSequenceDictionary().isEmpty()) {

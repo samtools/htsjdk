@@ -175,4 +175,20 @@ public class ReadTagTest extends HtsjdkTest {
         Assert.assertEquals((packed >> 8) & 0xFF, 'B');
         Assert.assertEquals(packed & 0xFF, 'c');
     }
+
+    @Test
+    public void testStringValueStoresLatin1CharsAsOneByte() {
+        final byte[] stored = ReadTag.writeSingleValue((byte) 'Z', "café", false);
+        Assert.assertEquals(stored, new byte[] {'c', 'a', 'f', (byte) 0xE9, 0});
+        Assert.assertEquals(
+                ReadTag.readSingleValue((byte) 'Z', ByteBuffer.wrap(stored), ValidationStringency.STRICT), "café");
+    }
+
+    @Test
+    public void testCharValueAbove7FIsReadAsTheCharItWasWrittenFrom() {
+        final byte[] stored = ReadTag.writeSingleValue((byte) 'A', 'é', false);
+        Assert.assertEquals(stored, new byte[] {(byte) 0xE9});
+        Assert.assertEquals(
+                ReadTag.readSingleValue((byte) 'A', ByteBuffer.wrap(stored), ValidationStringency.STRICT), 'é');
+    }
 }

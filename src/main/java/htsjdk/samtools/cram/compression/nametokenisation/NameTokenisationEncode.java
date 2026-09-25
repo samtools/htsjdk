@@ -283,7 +283,7 @@ public class NameTokenisationEncode {
                         bytes,
                         0,
                         length - 1, // don't include the separator in the string
-                        StandardCharsets.UTF_8));
+                        StandardCharsets.ISO_8859_1));
                 lastPosition = inBuffer.position();
             }
         }
@@ -400,7 +400,7 @@ public class NameTokenisationEncode {
     }
 
     private static void writeString(final ByteBuffer tokenStreamBuffer, final String val) {
-        tokenStreamBuffer.put(val.getBytes(StandardCharsets.US_ASCII));
+        tokenStreamBuffer.put(val.getBytes(StandardCharsets.ISO_8859_1));
         tokenStreamBuffer.put((byte) 0);
     }
 

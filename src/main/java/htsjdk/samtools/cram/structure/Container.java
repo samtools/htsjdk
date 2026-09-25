@@ -28,9 +28,9 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.block.Block;
-import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.SamLineReader;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -252,8 +252,9 @@ public class Container {
             final byte[] bytes = new byte[size];
             dataInputStream.readFully(bytes);
             final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+            // SamLineReader decodes each header line as UTF-8, or as ISO-8859-1 if it is not valid UTF-8.
             try (final InputStream byteStream = new ByteArrayInputStream(bytes);
-                    final LineReader lineReader = new BufferedLineReader(byteStream)) {
+                    final LineReader lineReader = new SamLineReader(byteStream)) {
                 return codec.decode(lineReader, id);
             }
         } catch (final IOException e) {

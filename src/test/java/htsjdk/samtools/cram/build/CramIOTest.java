@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.build;
 import static htsjdk.samtools.cram.build.CramIO.*;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.InputStreamUtils;
@@ -14,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -99,5 +101,15 @@ public class CramIOTest extends HtsjdkTest {
         seekableStream.seek(seekableStream.length() - target.length);
         InputStreamUtils.readFully(seekableStream, tail, 0, tail.length);
         return Arrays.equals(tail, target);
+    }
+
+    @Test
+    public void testSamHeaderIsStoredAsUtf8() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addComment("café č");
+        final byte[] stored = samHeaderToByteArray(header);
+        // The first four bytes are the text's length.
+        final String text = new String(stored, 4, stored.length - 4, StandardCharsets.UTF_8);
+        Assert.assertTrue(text.endsWith("@CO\tcafé č\n"), text);
     }
 }

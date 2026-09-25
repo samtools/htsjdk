@@ -445,6 +445,7 @@ public class SAMTextHeaderCodec {
             writePGLine(programRecord);
         }
         for (final String comment : header.getComments()) {
+            WritableText.require("Header comment", comment, WritableText.Destination.HEADER_COMMENT);
             println(comment);
         }
         try {
@@ -494,7 +495,8 @@ public class SAMTextHeaderCodec {
     protected String getPGLine(final SAMProgramRecord programRecord) {
         final String[] fields = new String[2 + programRecord.getAttributes().size()];
         fields[0] = HEADER_LINE_START + HeaderRecordType.PG;
-        fields[1] = SAMProgramRecord.PROGRAM_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + programRecord.getProgramGroupId();
+        fields[1] =
+                mTagCodec.encodeUntypedTag(SAMProgramRecord.PROGRAM_GROUP_ID_TAG, programRecord.getProgramGroupId());
         encodeTags(programRecord, fields, 2);
         return StringUtil.join(FIELD_SEPARATOR, fields);
     }
@@ -506,7 +508,7 @@ public class SAMTextHeaderCodec {
     protected String getRGLine(final SAMReadGroupRecord readGroup) {
         final String[] fields = new String[2 + readGroup.getAttributes().size()];
         fields[0] = HEADER_LINE_START + HeaderRecordType.RG;
-        fields[1] = SAMReadGroupRecord.READ_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + readGroup.getReadGroupId();
+        fields[1] = mTagCodec.encodeUntypedTag(SAMReadGroupRecord.READ_GROUP_ID_TAG, readGroup.getReadGroupId());
         encodeTags(readGroup, fields, 2);
         return StringUtil.join(FIELD_SEPARATOR, fields);
     }

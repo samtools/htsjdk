@@ -165,6 +165,8 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      * Write the record.
      *
      * @param alignment SAMRecord.
+     * @throws IllegalArgumentException if the read name or a Z or A tag value contains a tab, line feed, carriage
+     *     return, NUL or a char above 0xFF
      */
     @Override
     public void writeAlignment(final SAMRecord alignment) {
@@ -172,6 +174,8 @@ public class SAMTextWriter extends SAMFileWriterImpl {
             throw new SAMException(
                     "Cannot write further alignments after a SAM indexing failure on " + indexPath, indexingFailure);
         }
+        // Checked here, not in writeAlignmentNoNewline, which SAMRecord.toString() uses and which must not throw.
+        WritableText.requireInRecord(alignment, WritableText.Destination.SAM_RECORD);
         writeAlignmentNoNewline(alignment);
         try {
             out.write("\n");
@@ -264,12 +268,17 @@ public class SAMTextWriter extends SAMFileWriterImpl {
      * Write the header text.  This method can also be used to write
      * an arbitrary String, not necessarily the header.
      *
-     * @param textHeader String containing the text to write.
+     * @param textHeader String containing the text to write, encoded as UTF-8 unless this writer was given a
+     *     {@link Writer}, which does its own encoding.
      */
     @Override
     public void writeHeader(final String textHeader) {
         try {
-            out.write(textHeader);
+            if (out instanceof AsciiWriter ascii) {
+                ascii.writeUtf8(textHeader);
+            } else {
+                out.write(textHeader);
+            }
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
@@ -277,7 +286,9 @@ public class SAMTextWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeHeader(final SAMFileHeader header) {
-        new SAMTextHeaderCodec().encode(out, header);
+        final StringWriter headerText = new StringWriter();
+        new SAMTextHeaderCodec().encode(headerText, header);
+        writeHeader(headerText.toString());
         if (bamIndexer != null) {
             try {
                 asciiWriter.writeBufferedBytes();

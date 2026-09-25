@@ -131,9 +131,13 @@ public class TextTagCodec {
      * @param value Not necessarily a String.  Some of these are integers but the type is implied by
      * the tagName.  Converted to String with toString().
      * @return Colon-separated text representation suitable for a SAM header, i.e. name:value.
+     * @throws IllegalArgumentException if the tag name or value contains a tab, line feed, carriage return or NUL
      */
     public String encodeUntypedTag(final String tagName, final Object value) {
-        return new StringBuilder(tagName).append(':').append(value.toString()).toString();
+        WritableText.require("Header tag name", tagName, WritableText.Destination.HEADER_FIELD);
+        final String text = value.toString();
+        WritableText.require("Header tag " + tagName, text, WritableText.Destination.HEADER_FIELD);
+        return new StringBuilder(tagName).append(':').append(text).toString();
     }
 
     /**

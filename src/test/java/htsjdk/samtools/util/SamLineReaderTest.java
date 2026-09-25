@@ -135,6 +135,44 @@ public class SamLineReaderTest extends HtsjdkTest {
     }
 
     @Test
+    public void testHeaderLineThatIsNotUtf8IsReadAsLatin1() {
+        // 0xE9 is "é" in ISO-8859-1, as htsjdk 5.x wrote it, and is not valid UTF-8 on its own.
+        final byte[] input = {'@', 'C', 'O', '\t', 'c', 'a', 'f', (byte) 0xE9, '\n'};
+        try (final SamLineReader reader = new SamLineReader(new ByteArrayInputStream(input))) {
+            Assert.assertEquals(reader.readLine(), "@CO\tcafé");
+        }
+    }
+
+    @Test
+    public void testEachHeaderLineFallsBackToLatin1OnItsOwn() {
+        final byte[] input = {
+            '@',
+            'C',
+            'O',
+            '\t',
+            'c',
+            'a',
+            'f',
+            (byte) 0xC3,
+            (byte) 0xA9,
+            '\n',
+            '@',
+            'C',
+            'O',
+            '\t',
+            'c',
+            'a',
+            'f',
+            (byte) 0xE9,
+            '\n'
+        };
+        try (final SamLineReader reader = new SamLineReader(new ByteArrayInputStream(input))) {
+            Assert.assertEquals(reader.readLine(), "@CO\tcafé");
+            Assert.assertEquals(reader.readLine(), "@CO\tcafé");
+        }
+    }
+
+    @Test
     public void testAsciiAlignmentLines() {
         final String input = "read1\t0\t*\t0\t0\t*\t*\t0\t0\tACGT\tFFFF\tNM:i:0\n";
         try (final SamLineReader reader = readerFrom(input)) {

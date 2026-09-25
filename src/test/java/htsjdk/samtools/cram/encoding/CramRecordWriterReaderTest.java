@@ -35,6 +35,36 @@ public class CramRecordWriterReaderTest extends HtsjdkTest {
         Assert.assertEquals(roundTripRecords, unmappedRecords);
     }
 
+    @Test
+    public void testReadNameWithLatin1CharRoundTrips() {
+        final List<CRAMCompressionRecord> records = List.of(new CRAMCompressionRecord(
+                2,
+                SAMFlag.READ_UNMAPPED.intValue(),
+                0,
+                "réad",
+                "AAA".length(),
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                0,
+                0,
+                SAMRecord.NULL_QUALS,
+                "AAA".getBytes(),
+                null,
+                null,
+                2,
+                0,
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START,
+                -1));
+        // The default strategy writes CRAM 3.1, whose read names go through the name tokeniser.
+        final CompressionHeader header =
+                new CompressionHeaderFactory(new CRAMEncodingStrategy()).createCompressionHeader(records, false);
+        final Slice slice = new Slice(records, header, 0L, 0L);
+        final List<CRAMCompressionRecord> roundTripRecords =
+                slice.deserializeCRAMRecords(new CompressorCache(), ValidationStringency.STRICT);
+        Assert.assertEquals(roundTripRecords.get(0).getReadName(), "réad");
+    }
+
     public static List<CRAMCompressionRecord> getUnmappedRecords() {
         final List<CRAMCompressionRecord> cramCompressionRecords = new ArrayList<>();
 

@@ -23,6 +23,7 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,8 @@ public final class CramRecordReader {
     private final DataSeriesReader<Byte> qualityScoreCodec;
     private final DataSeriesReader<byte[]> qualityScoresCodec;
 
-    private final Charset charset = Charset.forName("UTF8");
+    // Read names are one byte per char, as BAM stores them.
+    private final Charset charset = StandardCharsets.ISO_8859_1;
 
     private final Slice slice;
     private final CompressionHeader compressionHeader;

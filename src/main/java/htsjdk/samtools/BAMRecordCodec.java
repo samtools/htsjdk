@@ -111,9 +111,16 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final Cigar cigarToWrite;
         final boolean cigarSwitcharoo = alignment.getCigar().numCigarElements() > BAMRecord.MAX_CIGAR_OPERATORS;
 
+        // A record read from BAM and not changed since is written as the bytes it was read from; any other is
+        // checked here, after getCigar() (which marks a record whose CIGAR came from a CG tag as changed) and
+        // before anything is written or the CG tag is set.
+        if (alignment.getVariableBinaryRepresentation() == null) {
+            WritableText.requireInRecord(alignment, WritableText.Destination.BAM_RECORD);
+        }
+
         if (cigarSwitcharoo) {
             final int[] cigarEncoding = BinaryCigarCodec.encode(alignment.getCigar());
-            alignment.setAttribute(CG.name(), cigarEncoding);
+            alignment.setUnsignedArrayAttribute(CG.name(), cigarEncoding);
             cigarToWrite = makeSentinelCigar(alignment.getCigar());
         } else {
             cigarToWrite = alignment.getCigar();
