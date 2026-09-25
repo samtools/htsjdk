@@ -38,7 +38,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "partialVerification")
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
-            {"auxf#values"}, // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
             {"xx#repeated"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
             {"md#1"}, // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
@@ -56,6 +55,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         return new Object[][] {
             // TODO: this file has reads that are mapped beyond the bounds of the reference length that
             // is specified in the embedded sequence dictionary.
+            {"auxf#values"},
             {"c1#bounds"},
             {"c1#clip"},
             {"c1#pad1"},

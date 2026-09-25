@@ -191,4 +191,26 @@ public class ReadTagTest extends HtsjdkTest {
         Assert.assertEquals(
                 ReadTag.readSingleValue((byte) 'A', ByteBuffer.wrap(stored), ValidationStringency.STRICT), 'é');
     }
+
+    @Test
+    public void testUnsignedArrayIsStoredWithAnUnsignedElementTypeAndReadBackAsUnsigned() {
+        final byte[] value = {1, (byte) 200};
+        final ReadTag written = ReadTag.deriveTypeFromValue("XB", value, true);
+        final byte[] stored = written.getValueAsByteArray();
+        // The element type, then the count as a little-endian int, then the elements.
+        Assert.assertEquals(stored, new byte[] {'C', 2, 0, 0, 0, 1, (byte) 200});
+
+        final ReadTag read = new ReadTag(ReadTag.nameType3BytesToInt("XB", 'B'), stored, ValidationStringency.STRICT);
+        Assert.assertTrue(read.isUnsignedArray());
+        Assert.assertEquals(read.getValue(), value);
+    }
+
+    @Test
+    public void testSignedArrayIsStoredWithASignedElementType() {
+        final byte[] stored =
+                ReadTag.deriveTypeFromValue("XB", new byte[] {1, -56}, false).getValueAsByteArray();
+        Assert.assertEquals(stored[0], (byte) 'c');
+        final ReadTag read = new ReadTag(ReadTag.nameType3BytesToInt("XB", 'B'), stored, ValidationStringency.STRICT);
+        Assert.assertFalse(read.isUnsignedArray());
+    }
 }

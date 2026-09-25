@@ -60,28 +60,6 @@ public class CRAMSamtoolsParityTest extends HtsjdkTest {
                     Set.of("QNAME"),
                     "names generated for records stored without one: samtools derives them from the file name"),
             new KnownDifference(
-                    "decode spec30/0706_tag", Set.of("tag:BC", "tag:BI", "tag:BS"), "unsigned B arrays: #499"),
-            new KnownDifference(
-                    "round trip decoded by htsjdk spec30/0706_tag",
-                    Set.of("tag:BC", "tag:BI", "tag:BS"),
-                    "unsigned B arrays: #499"),
-            new KnownDifference(
-                    "round trip decoded by samtools spec30/0706_tag",
-                    Set.of("tag:BC", "tag:BI", "tag:BS"),
-                    "unsigned B arrays: #499"),
-            new KnownDifference(
-                    "decode comp/auxf#values.2.1", Set.of("tag:BC", "tag:BI", "tag:BS"), "unsigned B arrays: #499"),
-            new KnownDifference(
-                    "decode comp/auxf#values.3.0", Set.of("tag:BC", "tag:BI", "tag:BS"), "unsigned B arrays: #499"),
-            new KnownDifference(
-                    "round trip decoded by htsjdk comp/auxf#values",
-                    Set.of("tag:BC", "tag:BI", "tag:BS"),
-                    "unsigned B arrays: #499"),
-            new KnownDifference(
-                    "round trip decoded by samtools comp/auxf#values",
-                    Set.of("tag:BC", "tag:BI", "tag:BS"),
-                    "unsigned B arrays: #499"),
-            new KnownDifference(
                     "decode comp/xx#repeated.2.1",
                     Set.of("TLEN"),
                     "TLEN across a chain of more than two attached records: #1189"),

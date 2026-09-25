@@ -249,7 +249,9 @@ public class CRAMCompressionRecord {
                 if (SAMTag.RG.name().equals(tagAndValue.tag)) continue;
                 if (stripNM && SAMTag.NM.name().equals(tagAndValue.tag)) continue;
                 if (stripMD && SAMTag.MD.name().equals(tagAndValue.tag)) continue;
-                tags.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value));
+                final boolean unsignedArray =
+                        tagAndValue.value.getClass().isArray() && samRecord.isUnsignedArrayAttribute(tagAndValue.tag);
+                tags.add(ReadTag.deriveTypeFromValue(tagAndValue.tag, tagAndValue.value, unsignedArray));
             }
         } else {
             tags = null;
@@ -375,7 +377,11 @@ public class CRAMCompressionRecord {
 
         if (tags != null) {
             for (final ReadTag tag : tags) {
-                samRecord.setAttribute(tag.getKey(), tag.getValue());
+                if (tag.isUnsignedArray()) {
+                    samRecord.setUnsignedArrayAttribute(tag.getKey(), tag.getValue());
+                } else {
+                    samRecord.setAttribute(tag.getKey(), tag.getValue());
+                }
             }
         }
 
