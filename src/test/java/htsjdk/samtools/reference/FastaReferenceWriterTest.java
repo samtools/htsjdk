@@ -875,9 +875,6 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
     @Test
     public void testBlockCompressedOutputCanBeOpenedAndRead() throws IOException {
-        final Path dir = Files.createTempDirectory("fwr-bgzf");
-        IOUtil.deleteOnExit(dir);
-        final Path fasta = dir.resolve("out.fasta.gz");
         // Enough bases for several BGZF blocks, so the .gzi has entries to get wrong.
         final byte[] bases = new byte[200_000];
         final byte[] alphabet = {'A', 'C', 'G', 'T'};
@@ -885,16 +882,23 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         for (int i = 0; i < bases.length; i++) {
             bases[i] = alphabet[random.nextInt(alphabet.length)];
         }
-        try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
-                .setFastaFile(fasta)
-                .setMakeDictOutput(false)
-                .build()) {
-            writer.startSequence("chr1").appendBases(bases);
-        }
-        try (BlockCompressedIndexedFastaSequenceFile reference = new BlockCompressedIndexedFastaSequenceFile(fasta)) {
-            Assert.assertEquals(
-                    reference.getSubsequenceAt("chr1", 150_001, 150_100).getBases(),
-                    Arrays.copyOfRange(bases, 150_000, 150_100));
+        final Path dir = Files.createTempDirectory("fwr-bgzf");
+        try {
+            final Path fasta = dir.resolve("out.fasta.gz");
+            try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                    .setFastaFile(fasta)
+                    .setMakeDictOutput(false)
+                    .build()) {
+                writer.startSequence("chr1").appendBases(bases);
+            }
+            try (BlockCompressedIndexedFastaSequenceFile reference =
+                    new BlockCompressedIndexedFastaSequenceFile(fasta)) {
+                Assert.assertEquals(
+                        reference.getSubsequenceAt("chr1", 150_001, 150_100).getBases(),
+                        Arrays.copyOfRange(bases, 150_000, 150_100));
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
         }
     }
 }

@@ -665,11 +665,15 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     public void testConcurrentLookupsOnBlockCompressedFastaReturnTheRightBases() throws Exception {
         final byte[][] contigs = randomContigs();
         final Path dir = Files.createTempDirectory("concurrentFasta");
-        IOUtil.deleteOnExit(dir);
-        final Path fasta = dir.resolve("random.fasta.gz");
-        writeFasta(fasta, contigs);
-        try (BlockCompressedIndexedFastaSequenceFile reference = new BlockCompressedIndexedFastaSequenceFile(fasta)) {
-            assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+        try {
+            final Path fasta = dir.resolve("random.fasta.gz");
+            writeFasta(fasta, contigs);
+            try (BlockCompressedIndexedFastaSequenceFile reference =
+                    new BlockCompressedIndexedFastaSequenceFile(fasta)) {
+                assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
         }
     }
 
@@ -677,16 +681,19 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     public void testConcurrentLookupsOnStreamBackedFastaReturnTheRightBases() throws Exception {
         final byte[][] contigs = randomContigs();
         final Path dir = Files.createTempDirectory("concurrentFasta");
-        IOUtil.deleteOnExit(dir);
-        final Path fasta = dir.resolve("random.fasta");
-        writeFasta(fasta, contigs);
-        // A SeekableStream is read through a channel that is not a FileChannel, so reads must position it.
-        try (IndexedFastaSequenceFile reference = new IndexedFastaSequenceFile(
-                fasta.toString(),
-                new SeekableFileStream(fasta),
-                new FastaSequenceIndex(fasta.resolveSibling("random.fasta.fai")),
-                null)) {
-            assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+        try {
+            final Path fasta = dir.resolve("random.fasta");
+            writeFasta(fasta, contigs);
+            // A SeekableStream is read through a channel that is not a FileChannel, so reads must position it.
+            try (IndexedFastaSequenceFile reference = new IndexedFastaSequenceFile(
+                    fasta.toString(),
+                    new SeekableFileStream(fasta),
+                    new FastaSequenceIndex(fasta.resolveSibling("random.fasta.fai")),
+                    null)) {
+                assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
         }
     }
 
@@ -694,11 +701,14 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     public void testConcurrentLookupsOnFileChannelFastaReturnTheRightBases() throws Exception {
         final byte[][] contigs = randomContigs();
         final Path dir = Files.createTempDirectory("concurrentFasta");
-        IOUtil.deleteOnExit(dir);
-        final Path fasta = dir.resolve("random.fasta");
-        writeFasta(fasta, contigs);
-        try (IndexedFastaSequenceFile reference = new IndexedFastaSequenceFile(fasta)) {
-            assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+        try {
+            final Path fasta = dir.resolve("random.fasta");
+            writeFasta(fasta, contigs);
+            try (IndexedFastaSequenceFile reference = new IndexedFastaSequenceFile(fasta)) {
+                assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
         }
     }
 }
