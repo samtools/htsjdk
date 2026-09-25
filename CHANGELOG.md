@@ -254,6 +254,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **A CRAM labelled 3.0 no longer contains CRAM 3.1 codecs.**  The `FAST` profile, which writes CRAM 3.0, compressed tags with rANS Nx16, a CRAM 3.1 codec.  Each profile now sets the codecs tried on tags (`CRAMEncodingStrategy.setTagCompressorCandidates`), rANS 4x8 for the CRAM 3.0 profiles.  The new `NORMAL_3_0` profile writes CRAM 3.0 with the codecs htsjdk 4.x used, rANS 4x8 and GZIP, for readers without CRAM 3.1 support: on a 1.6M-read exome BAM it writes 7% smaller files than htsjdk 4.3.0 did, in under half the time, and htsjdk 4.1.3 reads them.
 - **A CIGAR too long for a BAM record is stored in a `CG:B:I` tag, as the SAM specification requires** (issue #1560).  htsjdk wrote `CG:B:i`, which older samtools releases reject.
 - **Bytes 0x80 to 0xFF in CRAM read names and tags are kept.**  A CRAM 3.1 read name went through the name tokeniser as UTF-8 and ASCII, so such a byte came back as `?`; Z tags were written as ASCII, with the same result; and an A tag above 0x7F, in BAM as in CRAM, was read as a char near 0xFFFF.
+- **A bgzipped FASTA written by `FastaReferenceWriter` can be opened by `BlockCompressedIndexedFastaSequenceFile`.**  The `.gzi` index that `BlockCompressedOutputStream` writes as it compresses (`GZIIndex.GZIIndexer`) held an entry for the first block, which bgzip leaves out and `GZIIndex.loadIndex` rejects, and kept the uncompressed offset in an `int`, which overflows past 2 GiB.
 
 ### Testing
 

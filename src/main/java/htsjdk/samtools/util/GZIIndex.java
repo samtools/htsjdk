@@ -457,7 +457,7 @@ public final class GZIIndex {
      * the entire index will be written out when close() is called.
      */
     public static final class GZIIndexer implements Closeable {
-        private int uncompressedFileOffset;
+        private long uncompressedFileOffset;
         private final OutputStream output;
         private final List<IndexEntry> entries = new ArrayList<>();
 
@@ -472,9 +472,11 @@ public final class GZIIndex {
         // Adds a new index location given the compressed file offset and a running tally based on the uncompressed
         // block sizes
         public void addGzipBlock(final long compressedFileOffset, final long uncompressedBlockSize) {
-            IndexEntry indexEntry = new IndexEntry(compressedFileOffset, uncompressedFileOffset);
+            // A GZI index leaves out the first block, at offset 0 in both, as bgzip does and loadIndex requires.
+            if (compressedFileOffset != 0 || uncompressedFileOffset != 0) {
+                entries.add(new IndexEntry(compressedFileOffset, uncompressedFileOffset));
+            }
             uncompressedFileOffset += uncompressedBlockSize;
-            entries.add(indexEntry);
         }
 
         @Override
