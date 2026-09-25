@@ -255,6 +255,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **A CIGAR too long for a BAM record is stored in a `CG:B:I` tag, as the SAM specification requires** (issue #1560).  htsjdk wrote `CG:B:i`, which older samtools releases reject.
 - **Bytes 0x80 to 0xFF in CRAM read names and tags are kept.**  A CRAM 3.1 read name went through the name tokeniser as UTF-8 and ASCII, so such a byte came back as `?`; Z tags were written as ASCII, with the same result; and an A tag above 0x7F, in BAM as in CRAM, was read as a char near 0xFFFF.
 - **A bgzipped FASTA written by `FastaReferenceWriter` can be opened by `BlockCompressedIndexedFastaSequenceFile`.**  The `.gzi` index that `BlockCompressedOutputStream` writes as it compresses (`GZIIndex.GZIIndexer`) held an entry for the first block, which bgzip leaves out and `GZIIndex.loadIndex` rejects, and kept the uncompressed offset in an `int`, which overflows past 2 GiB.
+- **Indexed FASTA lookups from several threads at once return the right bases** for a bgzipped FASTA (issue #1749), and for a plain one opened from a `SeekableStream` or a non-default filesystem.  Both shared one stream position without a lock; they now hold one around each seek and read, and a plain FASTA on the default filesystem reads without locking, as before.  `getSequence` and `getSubsequenceAt` are documented as safe to call concurrently.  A lookup also no longer moves the stream back to where it was afterwards, which re-inflated the first block of a bgzipped FASTA on every lookup (issue #1131).
 
 ### Testing
 

@@ -43,6 +43,14 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -586,6 +594,111 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         } finally {
             Files.deleteIfExists(fasta);
             Files.deleteIfExists(dir);
+        }
+    }
+
+    private static final int CONCURRENT_CONTIG_LENGTH = 300_000;
+    private static final int CONCURRENT_CONTIG_COUNT = 3;
+
+    /** Random bases for each contig of the FASTA files that the concurrency tests write. */
+    private static byte[][] randomContigs() {
+        final Random random = new Random(42);
+        final byte[] alphabet = {'A', 'C', 'G', 'T'};
+        final byte[][] contigs = new byte[CONCURRENT_CONTIG_COUNT][CONCURRENT_CONTIG_LENGTH];
+        for (final byte[] contig : contigs) {
+            for (int i = 0; i < contig.length; i++) {
+                contig[i] = alphabet[random.nextInt(alphabet.length)];
+            }
+        }
+        return contigs;
+    }
+
+    /** Writes {@code contigs} as chr0, chr1, ... to {@code fasta}, with a .fai, and a .gzi if it ends in .gz. */
+    private static void writeFasta(final Path fasta, final byte[][] contigs) throws IOException {
+        try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                .setFastaFile(fasta)
+                .setMakeDictOutput(false)
+                .build()) {
+            for (int i = 0; i < contigs.length; i++) {
+                writer.startSequence("chr" + i).appendBases(contigs[i]);
+            }
+        }
+    }
+
+    /**
+     * Looks up random subsequences of {@code reference} from several threads at once and checks each against
+     * {@code contigs}; any wrong bases or exception fails the test.
+     */
+    private static void assertConcurrentLookupsReturnTheRightBases(
+            final ReferenceSequenceFile reference, final byte[][] contigs) throws Exception {
+        final int threads = 8;
+        final ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try {
+            final CountDownLatch start = new CountDownLatch(1);
+            final List<Future<?>> results = new ArrayList<>();
+            for (int t = 0; t < threads; t++) {
+                final Random random = new Random(t);
+                results.add(executor.submit(() -> {
+                    start.await();
+                    for (int q = 0; q < 500; q++) {
+                        final int contig = random.nextInt(contigs.length);
+                        final int begin = 1 + random.nextInt(CONCURRENT_CONTIG_LENGTH - 2000);
+                        final int end = begin + random.nextInt(2000);
+                        final byte[] bases = reference
+                                .getSubsequenceAt("chr" + contig, begin, end)
+                                .getBases();
+                        Assert.assertEquals(bases, Arrays.copyOfRange(contigs[contig], begin - 1, end));
+                    }
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (final Future<?> result : results) {
+                result.get();
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    public void testConcurrentLookupsOnBlockCompressedFastaReturnTheRightBases() throws Exception {
+        final byte[][] contigs = randomContigs();
+        final Path dir = Files.createTempDirectory("concurrentFasta");
+        IOUtil.deleteOnExit(dir);
+        final Path fasta = dir.resolve("random.fasta.gz");
+        writeFasta(fasta, contigs);
+        try (BlockCompressedIndexedFastaSequenceFile reference = new BlockCompressedIndexedFastaSequenceFile(fasta)) {
+            assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+        }
+    }
+
+    @Test
+    public void testConcurrentLookupsOnStreamBackedFastaReturnTheRightBases() throws Exception {
+        final byte[][] contigs = randomContigs();
+        final Path dir = Files.createTempDirectory("concurrentFasta");
+        IOUtil.deleteOnExit(dir);
+        final Path fasta = dir.resolve("random.fasta");
+        writeFasta(fasta, contigs);
+        // A SeekableStream is read through a channel that is not a FileChannel, so reads must position it.
+        try (IndexedFastaSequenceFile reference = new IndexedFastaSequenceFile(
+                fasta.toString(),
+                new SeekableFileStream(fasta),
+                new FastaSequenceIndex(fasta.resolveSibling("random.fasta.fai")),
+                null)) {
+            assertConcurrentLookupsReturnTheRightBases(reference, contigs);
+        }
+    }
+
+    @Test
+    public void testConcurrentLookupsOnFileChannelFastaReturnTheRightBases() throws Exception {
+        final byte[][] contigs = randomContigs();
+        final Path dir = Files.createTempDirectory("concurrentFasta");
+        IOUtil.deleteOnExit(dir);
+        final Path fasta = dir.resolve("random.fasta");
+        writeFasta(fasta, contigs);
+        try (IndexedFastaSequenceFile reference = new IndexedFastaSequenceFile(fasta)) {
+            assertConcurrentLookupsReturnTheRightBases(reference, contigs);
         }
     }
 }
