@@ -507,38 +507,106 @@ public class CRAMCompressionRecord {
     }
 
     /**
-     * Compute the insert size (TLEN) for a mate pair using the htslib/samtools convention:
-     * the absolute value is the number of bases from the leftmost mapped base to the rightmost
-     * mapped base across both mates. The sign is positive for the leftmost read (by alignment
-     * start), negative for the rightmost, with ties broken by the first-of-pair flag.
+     * Returns the template lengths that decoding derives for the attached records of one template, as htslib
+     * derives them (cram_decode.c, cram_decode_slice_xref), so that htsjdk and samtools read a CRAM alike.
      *
-     * <p>This matches htslib's TLEN computation in cram_encode.c / cram_decode.c, ensuring
-     * that linked mate pairs produce identical TLEN values regardless of which CRAM implementation
-     * performs the decoding.
+     * <p>The length is the inclusive span from the leftmost start to the rightmost end over all the records, or 0
+     * if they are not all on one reference. The first record is positive if it starts leftmost and either ends
+     * before the rightmost end or is the only record starting there; if it spans the whole template and another
+     * record starts and another ends where it does, it is positive only if it is the first segment; otherwise it
+     * is negative. Every other record takes the opposite sign. A record that is unmapped, or whose mate (the next
+     * record, or the first for the last) is, gets 0.
      *
-     * <p>Note: this differs from {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)}
-     * which uses 5'-to-5' distance. This method is used only for CRAM mate linking and restoration.
-     *
-     * @param firstEnd  first mate of the pair
-     * @param secondEnd second mate of the pair
-     * @return template length for firstEnd (negate for secondEnd)
+     * @param template the records of one template, in slice order
+     * @return the template length of each record, in the same order
      */
-    static int computeInsertSize(final CRAMCompressionRecord firstEnd, final CRAMCompressionRecord secondEnd) {
-        if (firstEnd.isSegmentUnmapped()
-                || secondEnd.isSegmentUnmapped()
-                || firstEnd.referenceIndex != secondEnd.referenceIndex) {
-            return 0;
+    static int[] deriveTemplateLengths(final List<CRAMCompressionRecord> template) {
+        final CRAMCompressionRecord first = template.get(0);
+        final int firstEnd = first.endForTemplateLength();
+        int aleft = first.alignmentStart;
+        int aright = firstEnd;
+        int leftCount = 0;
+        int rightCount = 0;
+        boolean oneReference = true;
+        for (final CRAMCompressionRecord record : template) {
+            if (record.alignmentStart < aleft) {
+                aleft = record.alignmentStart;
+                leftCount = 1;
+            } else if (record.alignmentStart == aleft) {
+                leftCount++;
+            }
+            final int end = record.endForTemplateLength();
+            if (end > aright) {
+                aright = end;
+                rightCount = 1;
+            } else if (end == aright) {
+                rightCount++;
+            }
+            oneReference &= record.referenceIndex == first.referenceIndex;
         }
 
-        final int aleft = Math.min(firstEnd.alignmentStart, secondEnd.alignmentStart);
-        final int aright = Math.max(firstEnd.getAlignmentEnd(), secondEnd.getAlignmentEnd());
-        final int magnitude = aright - aleft + 1;
+        final int[] lengths = new int[template.size()];
+        if (!oneReference) {
+            return lengths;
+        }
+        final int span = aright - aleft + 1;
+        final boolean firstIsPositive;
+        if (first.alignmentStart == aleft && (firstEnd < aright || leftCount <= 1)) {
+            firstIsPositive = true;
+        } else if (first.alignmentStart == aleft && firstEnd == aright && leftCount > 1 && rightCount > 1) {
+            firstIsPositive = first.isFirstSegment();
+        } else {
+            firstIsPositive = false;
+        }
+        lengths[0] = firstIsPositive ? span : -span;
+        for (int i = 1; i < lengths.length; i++) {
+            lengths[i] = -lengths[0];
+        }
+        for (int i = 0; i < lengths.length; i++) {
+            if (template.get(i).isSegmentUnmapped()
+                    || template.get((i + 1) % template.size()).isSegmentUnmapped()) {
+                lengths[i] = 0;
+            }
+        }
+        return lengths;
+    }
 
-        // Positive for leftmost read, negative for rightmost; tie-break by first-of-pair flag.
-        if (firstEnd.alignmentStart < secondEnd.alignmentStart) return magnitude;
-        if (firstEnd.alignmentStart > secondEnd.alignmentStart) return -magnitude;
-        if (firstEnd.isFirstSegment()) return magnitude;
-        return -magnitude;
+    /** The end htslib uses for a template length: the last aligned base, or the start if none is aligned. */
+    private int endForTemplateLength() {
+        return Math.max(alignmentEnd, alignmentStart);
+    }
+
+    /**
+     * Returns whether decoding {@code upstream} and {@code downstream} as an attached pair would restore their mate
+     * fields and template lengths as they are. htslib makes the same checks before attaching a pair
+     * (cram_encode.c); a pair that fails them is written detached, so that it reads back unchanged.
+     *
+     * @param upstream the earlier record of the pair in the slice
+     * @param downstream the later record of the pair
+     */
+    static boolean decodesUnchangedWhenAttached(
+            final CRAMCompressionRecord upstream, final CRAMCompressionRecord downstream) {
+        // The tie-break between segments at the same place needs one first and one last segment.
+        if ((upstream.isFirstSegment() && downstream.isFirstSegment())
+                || (upstream.isLastSegment() && downstream.isLastSegment())) {
+            return false;
+        }
+        if (!hasMateFieldsOf(upstream, downstream) || !hasMateFieldsOf(downstream, upstream)) {
+            return false;
+        }
+        final int[] lengths = deriveTemplateLengths(List.of(upstream, downstream));
+        return upstream.templateSize == lengths[0] && downstream.templateSize == lengths[1];
+    }
+
+    /** Returns whether {@code record}'s mate fields are the ones decoding would copy from {@code mate}. */
+    private static boolean hasMateFieldsOf(final CRAMCompressionRecord record, final CRAMCompressionRecord mate) {
+        final int mateStart = mate.referenceIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX
+                ? SAMRecord.NO_ALIGNMENT_START
+                : mate.alignmentStart;
+        return record.mateReferenceIndex == mate.referenceIndex
+                && record.mateAlignmentStart == mateStart
+                && record.isMateUnmapped() == mate.isSegmentUnmapped()
+                && record.isMateNegativeStrand() == mate.isNegativeStrand();
     }
 
     /**
@@ -628,19 +696,18 @@ public class CRAMCompressionRecord {
         if (getNextSegment() == null) {
             return;
         }
-        CRAMCompressionRecord cur = this;
-        while (cur.getNextSegment() != null) {
-            cur.setNextMate(cur.getNextSegment());
-            cur = cur.getNextSegment();
+        final List<CRAMCompressionRecord> template = new ArrayList<>();
+        for (CRAMCompressionRecord record = this; record != null; record = record.getNextSegment()) {
+            template.add(record);
         }
-
-        // cur points to the last segment now:
-        final CRAMCompressionRecord last = cur;
-        last.setNextMate(this);
-
-        final int templateLength = computeInsertSize(this, last);
-        templateSize = templateLength;
-        last.templateSize = -templateLength;
+        // Each record's mate is the next in the template, and the last's is the first.
+        for (int i = 0; i < template.size(); i++) {
+            template.get(i).setNextMate(template.get((i + 1) % template.size()));
+        }
+        final int[] templateLengths = deriveTemplateLengths(template);
+        for (int i = 0; i < template.size(); i++) {
+            template.get(i).templateSize = templateLengths[i];
+        }
     }
 
     /** Mark this record as detached — mate info stored explicitly via MF, NS, NP, TS data series. */

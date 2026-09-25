@@ -38,7 +38,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "partialVerification")
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
-            {"xx#repeated"}, // SAMRecord mismatch: https://github.com/samtools/htsjdk/issues/1189
             {"md#1"}, // fails with "offensive record" errors: https://github.com/samtools/htsjdk/issues/1187
         };
     }
@@ -81,6 +80,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
             {"xx#large_aux"},
             {"xx#minimal"},
             {"xx#pair"},
+            {"xx#repeated"},
             {"xx#rg"},
             {"xx#tlen"},
             {"xx#tlen2"},

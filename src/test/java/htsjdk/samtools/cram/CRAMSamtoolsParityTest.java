@@ -60,14 +60,6 @@ public class CRAMSamtoolsParityTest extends HtsjdkTest {
                     Set.of("QNAME"),
                     "names generated for records stored without one: samtools derives them from the file name"),
             new KnownDifference(
-                    "decode comp/xx#repeated.2.1",
-                    Set.of("TLEN"),
-                    "TLEN across a chain of more than two attached records: #1189"),
-            new KnownDifference(
-                    "decode comp/xx#repeated.3.0",
-                    Set.of("TLEN"),
-                    "TLEN across a chain of more than two attached records: #1189"),
-            new KnownDifference(
                     "decode comp/md#1.2.1", Set.of("tag:NM"), "NM generated for a read with padding: #1187"),
             new KnownDifference(
                     "decode comp/md#1.3.0", Set.of("tag:NM"), "NM generated for a read with padding: #1187"),
@@ -174,6 +166,57 @@ public class CRAMSamtoolsParityTest extends HtsjdkTest {
                 "round trip decoded by htsjdk " + name, readWithHtsjdk(htsjdkCram, reference), samtoolsRoundTrip);
         assertSameRecords(
                 "round trip decoded by samtools " + name, decodeWithSamtools(htsjdkCram, reference), samtoolsRoundTrip);
+    }
+
+    @Test
+    public void pairStartingTogetherWrittenByHtsjdkReadsBackWithItsTemplateLengthsInSamtools() throws IOException {
+        requireSamtools();
+        // READ1 aligns 50 bases and READ2 30 from the same start, with READ1 positive, as an aligner may write
+        // them; samtools' decoder would make READ1 negative were the pair stored attached.
+        final String bases = "ACGT".repeat(250);
+        final Path reference = tempDir.resolve("sameStart.fa");
+        Files.writeString(reference, ">chr1\n" + bases + "\n");
+        SamtoolsTestUtils.executeSamToolsCommand("faidx " + reference.toAbsolutePath());
+        final Path sam = tempDir.resolve("sameStart.sam");
+        Files.writeString(
+                sam,
+                String.join(
+                        "\n",
+                        "@HD\tVN:1.6\tSO:coordinate",
+                        "@SQ\tSN:chr1\tLN:1000",
+                        String.join(
+                                "\t",
+                                "pair",
+                                "99",
+                                "chr1",
+                                "301",
+                                "60",
+                                "50M",
+                                "=",
+                                "301",
+                                "50",
+                                bases.substring(300, 350),
+                                "I".repeat(50)),
+                        String.join(
+                                "\t",
+                                "pair",
+                                "147",
+                                "chr1",
+                                "301",
+                                "60",
+                                "30M",
+                                "=",
+                                "301",
+                                "-50",
+                                bases.substring(300, 330),
+                                "I".repeat(30)),
+                        ""));
+        final Path cram = tempDir.resolve("sameStart.htsjdk.cram");
+        writeWithHtsjdk(sam, reference, cram);
+        final List<Integer> templateLengths = decodeWithSamtools(cram, reference).stream()
+                .map(SAMRecord::getInferredInsertSize)
+                .toList();
+        Assert.assertEquals(templateLengths, List.of(50, -50));
     }
 
     @Test
