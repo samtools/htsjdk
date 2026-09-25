@@ -25,13 +25,19 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -137,5 +143,50 @@ public class GZIIndexTest extends HtsjdkTest {
         final long virtualOffset = index.getVirtualOffsetForSeek(uncompressedOffset);
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(virtualOffset), expectedBlockAddress);
         Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(virtualOffset), expectedBlockOffset);
+    }
+
+    @Test
+    public void testIndexWrittenWhileCompressingMatchesOneBuiltFromTheFile() throws IOException {
+        final Path dir = Files.createTempDirectory("gziIndexer");
+        try {
+            final Path bgzf = dir.resolve("data.gz");
+            // Random bytes do not compress, so they fill several blocks.
+            final byte[] data = new byte[300_000];
+            new Random(7).nextBytes(data);
+            final ByteArrayOutputStream gzi = new ByteArrayOutputStream();
+            try (BlockCompressedOutputStream out = new BlockCompressedOutputStream(Files.newOutputStream(bgzf), bgzf)) {
+                out.addIndexer(gzi);
+                out.write(data);
+            }
+            final GZIIndex written = GZIIndex.loadIndex("written", new ByteArrayInputStream(gzi.toByteArray()));
+            final List<GZIIndex.IndexEntry> entries = written.getIndexEntries();
+            Assert.assertTrue(entries.size() > 1);
+            // As in bgzip's index, there is no entry for the empty block that ends the file.
+            Assert.assertTrue(entries.get(entries.size() - 1).getUncompressedOffset() < data.length);
+            try (BlockCompressedInputStream in = new BlockCompressedInputStream(new SeekableFileStream(bgzf))) {
+                for (final GZIIndex.IndexEntry entry : entries) {
+                    in.seek(BlockCompressedFilePointerUtil.makeFilePointer(entry.getCompressedOffset(), 0));
+                    final byte[] bytes = new byte[16];
+                    Assert.assertEquals(in.read(bytes), bytes.length);
+                    final int offset = (int) entry.getUncompressedOffset();
+                    Assert.assertEquals(bytes, Arrays.copyOfRange(data, offset, offset + bytes.length));
+                }
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void testIndexerKeepsUncompressedOffsetsPastTwoGibibytes() throws IOException {
+        final long blockSize = 1L << 30;
+        final ByteArrayOutputStream gzi = new ByteArrayOutputStream();
+        try (GZIIndex.GZIIndexer indexer = new GZIIndex.GZIIndexer(gzi)) {
+            indexer.addGzipBlock(0, blockSize);
+            indexer.addGzipBlock(100, blockSize);
+            indexer.addGzipBlock(200, blockSize);
+        }
+        final GZIIndex index = GZIIndex.loadIndex("indexer", new ByteArrayInputStream(gzi.toByteArray()));
+        Assert.assertEquals(index.getIndexEntries().get(1).getUncompressedOffset(), 2 * blockSize);
     }
 }

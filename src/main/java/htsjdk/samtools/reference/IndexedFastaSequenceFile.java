@@ -41,6 +41,9 @@ import java.nio.file.Path;
 /**
  * A fasta file driven by an index for fast, concurrent lookups.  Supports two interfaces:
  * the ReferenceSequenceFile for old-style, stateful lookups and a direct getter.
+ *
+ * <p>{@link #getSequence} and {@link #getSubsequenceAt} may be called from several threads at once; the stateful
+ * {@link #nextSequence} and {@link #reset} may not.
  */
 public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     /**
@@ -191,16 +194,14 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      */
     @Override
     protected int readFromPosition(final ByteBuffer buffer, long position) throws IOException {
-        if (channel instanceof FileChannel) { // special case to take advantage of native code path
-            return ((FileChannel) channel).read(buffer, position);
-        } else {
-            long oldPos = channel.position();
-            try {
-                channel.position(position);
-                return channel.read(buffer);
-            } finally {
-                channel.position(oldPos);
-            }
+        if (channel instanceof FileChannel fileChannel) {
+            // A positional read leaves the channel's position alone, so concurrent lookups need no lock.
+            return fileChannel.read(buffer, position);
+        }
+        // The position is shared by concurrent lookups, so no other positioning may come between this one and the read.
+        synchronized (channel) {
+            channel.position(position);
+            return channel.read(buffer);
         }
     }
 

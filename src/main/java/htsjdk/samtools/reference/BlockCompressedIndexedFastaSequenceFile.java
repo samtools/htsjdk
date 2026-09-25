@@ -42,6 +42,9 @@ import java.nio.file.Path;
  *
  * <p>Supports two interfaces: the ReferenceSequenceFile for old-style, stateful lookups and a direct getter.
  *
+ * <p>{@link #getSequence} and {@link #getSubsequenceAt} may be called from several threads at once; the stateful
+ * {@link #nextSequence} and {@link #reset} may not.
+ *
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
 public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
@@ -138,18 +141,16 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
 
     @Override
     protected int readFromPosition(final ByteBuffer buffer, final long position) throws IOException {
-        // old position to get back
-        final long oldPos = stream.getFilePointer();
-        try {
-            final long virtualOffset = gzindex.getVirtualOffsetForSeek(position);
+        final long virtualOffset = gzindex.getVirtualOffsetForSeek(position);
+        final byte[] array = new byte[buffer.remaining()];
+        final int read;
+        // The stream is shared by concurrent lookups, so no other seek may come between this seek and the read.
+        synchronized (stream) {
             stream.seek(virtualOffset);
-            final byte[] array = new byte[buffer.remaining()];
-            final int read = stream.read(array);
-            buffer.put(array);
-            return read;
-        } finally {
-            stream.seek(oldPos);
+            read = stream.read(array);
         }
+        buffer.put(array);
+        return read;
     }
 
     @Override

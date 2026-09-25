@@ -872,4 +872,33 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             IOUtil.recursiveDelete(dir);
         }
     }
+
+    @Test
+    public void testBlockCompressedOutputCanBeOpenedAndRead() throws IOException {
+        // Enough bases for several BGZF blocks, so the .gzi has entries to get wrong.
+        final byte[] bases = new byte[200_000];
+        final byte[] alphabet = {'A', 'C', 'G', 'T'};
+        final Random random = new Random(3);
+        for (int i = 0; i < bases.length; i++) {
+            bases[i] = alphabet[random.nextInt(alphabet.length)];
+        }
+        final Path dir = Files.createTempDirectory("fwr-bgzf");
+        try {
+            final Path fasta = dir.resolve("out.fasta.gz");
+            try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                    .setFastaFile(fasta)
+                    .setMakeDictOutput(false)
+                    .build()) {
+                writer.startSequence("chr1").appendBases(bases);
+            }
+            try (BlockCompressedIndexedFastaSequenceFile reference =
+                    new BlockCompressedIndexedFastaSequenceFile(fasta)) {
+                Assert.assertEquals(
+                        reference.getSubsequenceAt("chr1", 150_001, 150_100).getBases(),
+                        Arrays.copyOfRange(bases, 150_000, 150_100));
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
 }
