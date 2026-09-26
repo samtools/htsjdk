@@ -62,16 +62,25 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
     }
 
     VCFContigHeaderLine(final SAMSequenceRecord sequenceRecord, final String assembly) {
-        // Using LinkedHashMap to preserve order of keys in contig line (ID, length, assembly)
-        super(VCFHeader.CONTIG_KEY, new LinkedHashMap<String, String>() {
-            {
-                // Now inside an init block in an anon HashMap subclass
-                this.put("ID", sequenceRecord.getSequenceName());
-                this.put("length", Integer.toString(sequenceRecord.getSequenceLength()));
-                if (assembly != null) this.put("assembly", assembly);
-            }
-        });
+        super(VCFHeader.CONTIG_KEY, fieldsFor(sequenceRecord, assembly));
         this.contigIndex = sequenceRecord.getSequenceIndex();
+    }
+
+    /**
+     * The fields of the contig line for a sequence record, in the order they are written: ID and length, then each of
+     * assembly, md5, species and URL that is present. These are the contig keys with {@code @SQ} equivalents (AS, M5,
+     * SP and UR); the record's other tags have no key in VCF.
+     */
+    private static Map<String, String> fieldsFor(final SAMSequenceRecord sequenceRecord, final String assembly) {
+        final Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("ID", sequenceRecord.getSequenceName());
+        fields.put("length", Integer.toString(sequenceRecord.getSequenceLength()));
+        if (assembly != null) fields.put("assembly", assembly);
+        if (sequenceRecord.getMd5() != null) fields.put("md5", sequenceRecord.getMd5());
+        if (sequenceRecord.getSpecies() != null) fields.put("species", sequenceRecord.getSpecies());
+        final String url = sequenceRecord.getAttribute(SAMSequenceRecord.URI_TAG);
+        if (url != null) fields.put("URL", url);
+        return fields;
     }
 
     public Integer getContigIndex() {
@@ -83,8 +92,8 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
      * If the VCF header line does not have a length tag, the SAMSequenceRecord returned will be set to have a length of
      * SAMSequenceRecord.UNKNOWN_SEQUENCE_LENGTH. Records with unknown length will match any record with the same name
      * when evaluated by SAMSequenceRecord.isSameSequence.
-     * @return The SAMSequenceRecord containing the ID, length, assembly, and index of this contig. Returns null if the
-     * contig header line does not have a length.
+     * @return The SAMSequenceRecord containing the ID, length, assembly, md5, URL, species and index of this contig.
+     * Returns null if the contig header line does not have a length.
      */
     public SAMSequenceRecord getSAMSequenceRecord() {
         final String lengthString = this.getGenericFieldValue("length");
@@ -95,7 +104,11 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
             length = Integer.parseInt(lengthString);
         }
         final SAMSequenceRecord record = new SAMSequenceRecord(this.getID(), length);
+        // a null value leaves the tag out
         record.setAssembly(this.getGenericFieldValue("assembly"));
+        record.setMd5(this.getGenericFieldValue("md5"));
+        record.setAttribute(SAMSequenceRecord.URI_TAG, this.getGenericFieldValue("URL"));
+        record.setSpecies(this.getGenericFieldValue("species"));
         record.setSequenceIndex(this.contigIndex);
         return record;
     }

@@ -80,7 +80,10 @@ public class VCFHeader implements HtsHeader, Serializable {
     private final Map<String, VCFInfoHeaderLine> mInfoMetaData = new LinkedHashMap<String, VCFInfoHeaderLine>();
     private final Map<String, VCFFormatHeaderLine> mFormatMetaData = new LinkedHashMap<String, VCFFormatHeaderLine>();
     private final Map<String, VCFFilterHeaderLine> mFilterMetaData = new LinkedHashMap<String, VCFFilterHeaderLine>();
-    private final Map<String, VCFHeaderLine> mOtherMetaData = new LinkedHashMap<String, VCFHeaderLine>();
+    // the lines that are not INFO, FORMAT, FILTER or contig, in the order added, and the IDs taken by the structured
+    // ones under each key
+    private final Set<VCFHeaderLine> mOtherMetaData = new LinkedHashSet<>();
+    private final Map<String, Set<String>> otherLineIDsByKey = new HashMap<>();
     private final Map<String, VCFContigHeaderLine> contigMetaData = new LinkedHashMap<>();
 
     // the list of auxillary tags
@@ -215,9 +218,9 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Adds a new line to the VCFHeader. If there is an existing header line of the
-     * same type with the same key, the new line is not added and the existing line
-     * is preserved.
+     * Adds a new line to the VCFHeader. A line whose ID is already taken by a line of the same kind (INFO, FORMAT,
+     * FILTER, contig, or another structured line with the same key) is not added, and the existing line is
+     * preserved. An unstructured line is added unless an identical line is already present.
      *
      * @param headerLine header line to attempt to add
      */
@@ -228,9 +231,8 @@ public class VCFHeader implements HtsHeader, Serializable {
             setVCFHeaderVersion(declared);
             return;
         }
-        // Try to create a lookup entry for the new line. If this succeeds (because there was
-        // no line of this type with the same key), add the line to our master list of header
-        // lines in mMetaData.
+        // Try to create a lookup entry for the new line. If this succeeds, add the line to our
+        // master list of header lines in mMetaData.
         if (addMetadataLineLookupEntry(headerLine)) {
             mMetaData.add(headerLine);
             checkForDeprecatedGenotypeLikelihoodsKey();
@@ -361,13 +363,13 @@ public class VCFHeader implements HtsHeader, Serializable {
      * Add a single header line to the appropriate type-specific lookup table (but NOT to the master
      * list of lines in mMetaData -- this must be done separately if desired).
      *
-     * If a header line is present that has the same key as an existing line, it will not be added.  A warning
-     * will be shown if this occurs when GeneralUtils.DEBUG_MODE_ENABLED is true, otherwise this will occur
-     * silently.
+     * A line whose ID is already taken by a line of the same kind (INFO, FORMAT, FILTER, contig, or another
+     * structured line with the same key) will not be added. A warning will be shown if this occurs when
+     * GeneralUtils.DEBUG_MODE_ENABLED is true, otherwise this will occur silently. An unstructured line will
+     * not be added only if an identical line is already present.
      *
      * @param line header line to attempt to add to its type-specific lookup table
-     * @return true if the line was added to the appropriate lookup table, false if there was an existing
-     *         line with the same key and the new line was not added
+     * @return true if the line was added to the appropriate lookup table, false if it was not added
      */
     private boolean addMetadataLineLookupEntry(final VCFHeaderLine line) {
         if (line instanceof VCFInfoHeaderLine) {
@@ -382,8 +384,34 @@ public class VCFHeader implements HtsHeader, Serializable {
         } else if (line instanceof VCFContigHeaderLine) {
             return addContigMetaDataLineLookupEntry((VCFContigHeaderLine) line);
         } else {
-            return addMetaDataLineMapLookupEntry(mOtherMetaData, line.getKey(), line);
+            return addOtherMetaDataLineLookupEntry(line);
         }
+    }
+
+    /**
+     * Add a line that is not INFO, FORMAT, FILTER or contig to the other lines (mOtherMetaData). The VCF
+     * specification requires a structured line's ID to be unique among the lines with its key, so the first line
+     * with an ID wins, but lets an unstructured key repeat.
+     *
+     * Note: does not add the line to the master list of header lines in mMetaData --
+     *       this must be done separately if desired.
+     *
+     * @param line header line to add
+     * @return true if the line was added to the other lines, otherwise false
+     */
+    private boolean addOtherMetaDataLineLookupEntry(final VCFHeaderLine line) {
+        if (line instanceof VCFIDHeaderLine) {
+            final String id = ((VCFIDHeaderLine) line).getID();
+            final Set<String> idsTaken = otherLineIDsByKey.computeIfAbsent(line.getKey(), key -> new HashSet<>());
+            if (!idsTaken.add(id)) {
+                if (GeneralUtils.DEBUG_MODE_ENABLED) {
+                    System.err.println("Found duplicate VCF " + line.getKey() + " header lines for " + id
+                            + "; keeping the first only");
+                }
+                return false;
+            }
+        }
+        return mOtherMetaData.add(line);
     }
 
     /**
@@ -596,17 +624,35 @@ public class VCFHeader implements HtsHeader, Serializable {
 
     /**
      * @param key    the header key name
-     * @return the meta data line, or null if there is none
+     * @return the first of the other header lines (those that are not INFO, FORMAT, FILTER or contig) with that key,
+     *     or null if there is none
      */
     public VCFHeaderLine getOtherHeaderLine(final String key) {
-        return mOtherMetaData.get(key);
+        for (final VCFHeaderLine line : mOtherMetaData) {
+            if (line.getKey().equals(key)) return line;
+        }
+        return null;
     }
 
     /**
-     * Returns the other HeaderLines in their original ordering
+     * @param key    the header key name
+     * @return every one of the other header lines (those that are not INFO, FORMAT, FILTER or contig) with that key,
+     *     in the order they were added, or an empty list if there are none
+     */
+    public List<VCFHeaderLine> getOtherHeaderLines(final String key) {
+        final List<VCFHeaderLine> lines = new ArrayList<>();
+        for (final VCFHeaderLine line : mOtherMetaData) {
+            if (line.getKey().equals(key)) lines.add(line);
+        }
+        return lines;
+    }
+
+    /**
+     * Returns the other HeaderLines (those that are not INFO, FORMAT, FILTER or contig) in the order they were
+     * added, as an unmodifiable collection
      */
     public Collection<VCFHeaderLine> getOtherHeaderLines() {
-        return mOtherMetaData.values();
+        return Collections.unmodifiableSet(mOtherMetaData);
     }
 
     /**
