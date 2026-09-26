@@ -392,20 +392,24 @@ public class VCFEncoder {
     }
 
     /**
-     * Takes a double value and pretty prints it to a String for display
-     * <p>
-     * Large doubles =&gt; gets %.2f style formatting
-     * Doubles &lt; 1 / 10 but &gt; 1/100 =&gt; get %.3f style formatting
-     * Double &lt; 1/100 =&gt; %.3e formatting
+     * Formats a double for a VCF field, choosing the style by the value's magnitude:
+     * <ul>
+     *     <li>magnitude 1 or more: {@code %.2f}</li>
+     *     <li>magnitude at least 0.01 and less than 1: {@code %.3f}</li>
+     *     <li>magnitude at least 1e-20 and less than 0.01: {@code %.3e}</li>
+     *     <li>magnitude less than 1e-20, zero included: {@code 0.00}</li>
+     * </ul>
+     * A negative value is formatted as its magnitude is, with the sign kept, so -5.0 is {@code -5.00}.
      *
-     * @param d
-     * @return
+     * @param d the value to format
+     * @return the value as VCF text
      */
     public static String formatVCFDouble(final double d) {
+        final double magnitude = Math.abs(d);
         final String format;
-        if (d < 1) {
-            if (d < 0.01) {
-                if (Math.abs(d) >= 1e-20) {
+        if (magnitude < 1) {
+            if (magnitude < 0.01) {
+                if (magnitude >= 1e-20) {
                     format = "%.3e";
                 } else {
                     // return a zero format

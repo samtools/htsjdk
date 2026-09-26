@@ -469,6 +469,20 @@ public class BCFCodecTest extends VariantBaseTest {
         }
     }
 
+    @Test
+    public void toStringOfARecordDescribesItsUndecodedGenotypesWithoutDecodingThem() throws IOException {
+        final Path bcf = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false);
+                final CloseableIterator<VariantContext> records = reader.iterator()) {
+            final VariantContext vc = records.next();
+            Assert.assertTrue(vc.getGenotypes().isLazyWithData(), "decoded on read");
+            final String text = vc.toString();
+            Assert.assertTrue(vc.getGenotypes().isLazyWithData(), "decoded by toString");
+            Assert.assertFalse(text.contains("LazyData@"), text);
+            Assert.assertTrue(text.contains("BCF genotype data, not yet decoded"), text);
+        }
+    }
+
     // -- Malformed records --
 
     @Test

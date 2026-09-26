@@ -293,8 +293,12 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     //
     // ---------------------------------------------------------------------------
 
+    /**
+     * @return true if this context holds genotype data it has not yet decoded; always false here, as only a
+     *     {@link LazyGenotypesContext} defers decoding
+     */
     public boolean isLazyWithData() {
-        return this instanceof LazyGenotypesContext && ((LazyGenotypesContext) this).getUnparsedGenotypeData() != null;
+        return false;
     }
 
     // ---------------------------------------------------------------------------

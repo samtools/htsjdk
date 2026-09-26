@@ -312,5 +312,10 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         }
     }
 
+    @Test
+    public void aPlainGenotypesContextIsNotLazyWithData() {
+        Assert.assertFalse(GenotypesContext.create(AA, AT).isLazyWithData());
+    }
+
     // subset to samples tested in VariantContextUnitTest
 }
