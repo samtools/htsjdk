@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -337,5 +338,46 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
                 new BlockCompressedInputStream(new ByteArrayInputStream(target.toByteArray()))) {
             Assert.assertEquals(bcis.readAllBytes(), content);
         }
+    }
+
+    @Test
+    public void writingAfterCloseThrows() throws IOException {
+        final BlockCompressedOutputStream bcos =
+                new BlockCompressedOutputStream(new ByteArrayOutputStream(), (Path) null);
+        bcos.write("Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII));
+        bcos.close();
+
+        Assert.expectThrows(IOException.class, () -> bcos.write('x'));
+        Assert.expectThrows(IOException.class, () -> bcos.write("Hi, Dad!\n".getBytes(StandardCharsets.US_ASCII)));
+    }
+
+    @Test
+    public void aFailedCloseStillClosesTheUnderlyingStream() throws IOException {
+        final IOException diskFull = new IOException("disk full");
+        final boolean[] underlyingClosed = {false};
+        final OutputStream failingOnWrite = new OutputStream() {
+            @Override
+            public void write(final int b) throws IOException {
+                throw diskFull;
+            }
+
+            @Override
+            public void write(final byte[] b, final int off, final int len) throws IOException {
+                throw diskFull;
+            }
+
+            @Override
+            public void close() {
+                underlyingClosed[0] = true;
+            }
+        };
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(failingOnWrite, (Path) null);
+        bcos.write("Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII));
+
+        final RuntimeIOException failure = Assert.expectThrows(RuntimeIOException.class, bcos::close);
+
+        Assert.assertSame(failure.getCause(), diskFull);
+        Assert.assertTrue(underlyingClosed[0], "the underlying stream should be closed");
+        bcos.close();
     }
 }

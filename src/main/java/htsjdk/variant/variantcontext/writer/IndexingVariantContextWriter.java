@@ -191,7 +191,8 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * add a record to the file
      *
      * <p>With on-the-fly indexing, records must be sorted by start within each contig and each contig's records must
-     * be contiguous; the contigs may come in any order.
+     * be contiguous. The contigs may otherwise come in any order, except that a BGZF BCF writer, which indexes with a
+     * CSI, also needs them in reference-dictionary order and refuses a record out of it (see {@link BCF2Writer#add}).
      *
      * @param vc      the Variant Context object
      * @throws IllegalArgumentException with on-the-fly indexing, if the record starts before the last one on its
