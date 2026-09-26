@@ -263,6 +263,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
      */
     @Override
     public void write(final byte[] bytes, int startIndex, int numBytes) throws IOException {
+        if (closed) throw new IOException("Stream closed");
         assert (numUncompressedBytes < uncompressedBuffer.length);
         while (numBytes > 0) {
             final int bytesToWrite = Math.min(uncompressedBuffer.length - numUncompressedBytes, numBytes);
@@ -279,6 +280,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
 
     @Override
     public void write(final int b) throws IOException {
+        if (closed) throw new IOException("Stream closed");
         uncompressedBuffer[numUncompressedBytes++] = (byte) b;
         if (numUncompressedBytes == uncompressedBuffer.length) deflateBlock();
     }
@@ -309,24 +311,41 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
 
     /**
      * Flushes and closes the stream, writing the empty terminator block first if asked; a second call does nothing.
+     * The underlying stream and the GZI indexer are closed even if the flush fails, and the first failure is thrown
+     * with any later ones suppressed.
      */
     public void close(final boolean writeTerminatorBlock) throws IOException {
-        // Set before the work, as java.io.FilterOutputStream does, so that a close that fails part way is not retried
+        // Set before the work, so that a close that fails part way is not retried
         if (closed) return;
         closed = true;
-        flush();
-        // For debugging...
-        // if (numberOfThrottleBacks > 0) {
-        //     System.err.println("In BlockCompressedOutputStream, had to throttle back " + numberOfThrottleBacks +
-        //                        " times for file " + codec.getOutputFileName());
-        // }
-        if (writeTerminatorBlock) {
-            codec.writeBytes(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
+        Exception failure = null;
+        try {
+            flush();
+            // For debugging...
+            // if (numberOfThrottleBacks > 0) {
+            //     System.err.println("In BlockCompressedOutputStream, had to throttle back " + numberOfThrottleBacks +
+            //                        " times for file " + codec.getOutputFileName());
+            // }
+            if (writeTerminatorBlock) {
+                codec.writeBytes(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
+            }
+        } catch (final IOException | RuntimeException e) {
+            failure = e;
         }
-        codec.close();
+        try {
+            codec.close();
+        } catch (final RuntimeException e) {
+            failure = firstFailure(failure, e);
+        }
         if (indexer != null) {
-            indexer.close();
+            try {
+                indexer.close();
+            } catch (final IOException | RuntimeException e) {
+                failure = firstFailure(failure, e);
+            }
         }
+        if (failure instanceof IOException) throw (IOException) failure;
+        if (failure != null) throw (RuntimeException) failure;
 
         // If a terminator block was written, ensure that it's there and valid
         if (writeTerminatorBlock) {
@@ -337,6 +356,13 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
                 throw new IOException("Terminator block not found after closing BGZF file " + this.file);
             }
         }
+    }
+
+    /** Returns {@code first}, with {@code later} added to it as suppressed, or {@code later} if there is no first. */
+    private static Exception firstFailure(final Exception first, final Exception later) {
+        if (first == null) return later;
+        first.addSuppressed(later);
+        return first;
     }
 
     /** Encode virtual file pointer
