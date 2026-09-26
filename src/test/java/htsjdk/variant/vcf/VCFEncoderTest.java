@@ -72,6 +72,32 @@ public class VCFEncoderTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void negativeDoublesAreFormattedByTheirMagnitude() {
+        Assert.assertEquals(VCFEncoder.formatVCFDouble(-5.0), "-5.00");
+        Assert.assertEquals(VCFEncoder.formatVCFDouble(-0.05), "-0.050");
+        Assert.assertEquals(VCFEncoder.formatVCFDouble(-0.001), "-1.000e-03");
+        Assert.assertEquals(VCFEncoder.formatVCFDouble(-123.456), "-123.46");
+    }
+
+    @Test
+    public void negativeZeroIsFormattedAsZero() {
+        Assert.assertEquals(VCFEncoder.formatVCFDouble(-0.0), "0.00");
+    }
+
+    @Test
+    public void aNegativeFloatInfoValueIsWrittenInFixedPoint() {
+        final Set<VCFHeaderLine> lines = new TreeSet<>();
+        lines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "1"), 0));
+        lines.add(new VCFInfoHeaderLine("XD", 1, VCFHeaderLineType.Float, "float info"));
+        final VCFEncoder encoder = new VCFEncoder(new VCFHeader(lines), true, false);
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                .attribute("XD", -5.0)
+                .make();
+        Assert.assertEquals(encoder.encode(vc), "1\t100\t.\tA\tC\t.\t.\tXD=-5.00");
+    }
+
     /**
      * test for https://github.com/samtools/htsjdk/issues/1510
      */

@@ -189,4 +189,13 @@ public class GenotypeUnitTest extends VariantBaseTest {
                 .make();
         Assert.assertEquals(g.getGenotypeString(), "|A/C");
     }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void getAttributeAsIntReturnsTheDefaultForAMissingValue() {
+        // a "." of its own, as a parser produces, rather than the interned constant
+        final Genotype g =
+                new GenotypeBuilder("s").attribute("X", new String(".")).make();
+        Assert.assertEquals(g.getAttributeAsInt("X", -1), -1);
+    }
 }

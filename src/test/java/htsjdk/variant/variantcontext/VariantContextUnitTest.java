@@ -31,6 +31,8 @@ import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
@@ -39,6 +41,8 @@ import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
@@ -2166,5 +2170,71 @@ public class VariantContextUnitTest extends VariantBaseTest {
                         Arrays.asList(Aref, Allele.create("<DEL>", false), Allele.NON_REF_ALLELE))
                 .make();
         Assert.assertEquals(vc.getStructuralVariantType(), StructuralVariantType.DEL);
+    }
+
+    // Records decoded from VCF text: missing values and lazy genotypes
+
+    /** Decodes {@code record} with a codec that has read {@code header}, as a reader of the file does. */
+    private static VariantContext decodeVcfRecord(final String header, final String record) {
+        final VCFCodec codec = new VCFCodec();
+        codec.readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new ByteArrayInputStream(header.getBytes(StandardCharsets.UTF_8)))));
+        return codec.decode(record);
+    }
+
+    private static final String MISSING_VALUES_HEADER = "##fileformat=VCFv4.2\n"
+            + "##INFO=<ID=X,Number=.,Type=Integer,Description=\"x\">\n"
+            + "##INFO=<ID=Y,Number=.,Type=Float,Description=\"y\">\n"
+            + "##INFO=<ID=Z,Number=1,Type=Integer,Description=\"z\">\n"
+            + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+
+    /** A record whose INFO values hold "." as the codec reads it: a string of its own, not the interned constant. */
+    private static VariantContext recordWithMissingInfoValues() {
+        return decodeVcfRecord(MISSING_VALUES_HEADER, "chr1\t100\t.\tA\tC\t50\tPASS\tX=1,.,3;Y=0.5,.;Z=.");
+    }
+
+    @Test
+    public void getAttributeAsIntListReturnsTheDefaultForAMissingElement() {
+        Assert.assertEquals(recordWithMissingInfoValues().getAttributeAsIntList("X", -1), Arrays.asList(1, -1, 3));
+    }
+
+    @Test
+    public void getAttributeAsDoubleListReturnsTheDefaultForAMissingElement() {
+        Assert.assertEquals(
+                recordWithMissingInfoValues().getAttributeAsDoubleList("Y", -1.0), Arrays.asList(0.5, -1.0));
+    }
+
+    @Test
+    public void getAttributeAsIntReturnsTheDefaultForAMissingValue() {
+        Assert.assertEquals(recordWithMissingInfoValues().getAttributeAsInt("Z", -1), -1);
+    }
+
+    private static final String TWO_SAMPLE_HEADER = "##fileformat=VCFv4.2\n"
+            + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+            + "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Depth\">\n"
+            + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1\ts2\n";
+
+    /** A record whose genotypes are not yet decoded; its samples are in sorted order, else the codec decodes them. */
+    private static VariantContext recordWithLazyGenotypes() {
+        final VariantContext vc =
+                decodeVcfRecord(TWO_SAMPLE_HEADER, "chr1\t100\t.\tA\tC\t50\tPASS\t.\tGT:DP\t0/1:12\t1/1:7");
+        Assert.assertTrue(vc.getGenotypes().isLazyWithData(), "decoded on read");
+        return vc;
+    }
+
+    @Test
+    public void toStringDoesNotDecodeLazyGenotypes() {
+        final VariantContext vc = recordWithLazyGenotypes();
+        final String text = vc.toString();
+        Assert.assertTrue(vc.getGenotypes().isLazyWithData(), "decoded by toString");
+        Assert.assertTrue(text.contains("GT=GT:DP\t0/1:12\t1/1:7 "), text);
+    }
+
+    @Test
+    public void toStringDecodeGenotypesDecodesLazyGenotypes() {
+        final VariantContext vc = recordWithLazyGenotypes();
+        final String text = vc.toStringDecodeGenotypes();
+        Assert.assertFalse(vc.getGenotypes().isLazyWithData(), "not decoded");
+        Assert.assertTrue(text.contains("GT=[" + vc.getGenotype("s1") + "," + vc.getGenotype("s2") + "]"), text);
     }
 }

@@ -278,7 +278,7 @@ public final class CommonInfo implements Serializable {
 
     public List<Integer> getAttributeAsIntList(String key, Integer defaultValue) {
         return getAttributeAsList(key, x -> {
-            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+            if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) {
                 return defaultValue;
             } else if (x instanceof Number) {
                 return ((Number) x).intValue();
@@ -290,7 +290,7 @@ public final class CommonInfo implements Serializable {
 
     public List<Double> getAttributeAsDoubleList(String key, Double defaultValue) {
         return getAttributeAsList(key, x -> {
-            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+            if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) {
                 return defaultValue;
             } else if (x instanceof Number) {
                 return ((Number) x).doubleValue();
@@ -309,7 +309,7 @@ public final class CommonInfo implements Serializable {
 
     public int getAttributeAsInt(String key, int defaultValue) {
         Object x = getAttribute(key);
-        if (x == null || x == VCFConstants.MISSING_VALUE_v4) return defaultValue;
+        if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) return defaultValue;
         if (x instanceof Integer) return (Integer) x;
         return Integer.parseInt((String) x); // throws an exception if this isn't a string
     }

@@ -785,6 +785,27 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     }
 
     @Test
+    public void anEmptyInputSaysItIsEmpty() {
+        final VCFCodec codec = new VCFCodec();
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.InvalidHeader.class,
+                () -> codec.readActualHeader(
+                        new LineIteratorImpl(new SynchronousLineReader(new ByteArrayInputStream(new byte[0])))));
+        Assert.assertTrue(e.getMessage().contains("empty"), e.getMessage());
+    }
+
+    @Test
+    public void aHeaderWithoutAChromLineSaysSo() {
+        final String vcf = "##fileformat=VCFv4.2\n" + "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"dp\">\n";
+        final VCFCodec codec = new VCFCodec();
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.InvalidHeader.class,
+                () -> codec.readActualHeader(new LineIteratorImpl(
+                        new SynchronousLineReader(new ByteArrayInputStream(vcf.getBytes(StandardCharsets.UTF_8))))));
+        Assert.assertTrue(e.getMessage().contains("never saw the required CHROM header line"), e.getMessage());
+    }
+
+    @Test
     public void aVcf44LeadingPhaseGtDecodesWithoutAnyFlag() {
         final String vcf = "##fileformat=VCFv4.4\n"
                 + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
