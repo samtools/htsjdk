@@ -77,6 +77,8 @@ Consumers should review these before upgrading.
 
 - **`BCF2Type`'s integer ranges leave each type's sentinel values unused**, as the BCF specification and htslib have them: INT8 encodes −120..127 (it was −127..127), INT16 −32760..32767 and INT32 −2147483640..2147483647.  The BCF writer therefore stores −127..−121 as INT16 where it stored them as INT8, whose byte for −127 is END_OF_VECTOR to htslib; and the seven values above `Integer.MIN_VALUE` can no longer be written and are refused with a `TribbleException`.  A BCF written by an earlier htsjdk that holds an INT8 −127 (or an INT16 −32767, or an INT32 −2147483647) now reads that value as END_OF_VECTOR, which ends its vector.
 
+- **Writing records out of order with on-the-fly indexing now throws** (issue #787).  `INDEX_ON_THE_FLY` is a default option, so this applies to any VCF or BCF writer given a reference dictionary, whichever indexer it uses (including a custom `IndexCreator`): a record that starts before the previous one on its contig, or a contig that comes back after another, is refused with an `IllegalArgumentException` and not written.  Such input used to run out of memory or silently produce an index that misses records.  Sort the records, or build the writer without `Options.INDEX_ON_THE_FLY`.
+
 ### CRAM indexing
 
 - **CRAM region queries are answered from the CRAI directly** by the new `CRAIQueryIndex`, instead of rebuilding the whole CRAI as an in-memory BAI on every reader open (issue #851).  The index is not read until a query needs it, so opening a reader for sequential reading no longer touches it.  Measured on a 102 MB GRCh38 CRAM (2,395 CRAI entries, 3,366 sequences):
@@ -260,6 +262,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **CRAM template lengths of mates stored together in a slice are derived as htslib derives them, and the writer stores a pair that way only if they decode unchanged** (issue #1189).  htsjdk set TLEN on only the first and last record of a template, so a chain of three or more got the middle ones wrong, and it broke the tie between two mates starting at the same position by which was READ1, where htslib gives the plus sign to the one that ends first.  htsjdk 5.0.0 wrote such pairs, and pairs whose mate fields disagreed with their mate, in a form that samtools decodes with the TLEN signs swapped or the mate fields copied from the mate; they are now stored with their mate fields written out.  A CRAM written by htsjdk 5.0.0 with such a pair now reads as samtools reads it.
 - **`SamReaderFactory.makeDefault()` now uses the default inflater factory (`BlockGunzipper.setDefaultInflaterFactory`) in force when it is called** (issues #1666, #831); it used the one in force when the class was first loaded.
 - **A sort-order check on a `SamReader` iterator (`assertSorted`) no longer fails because the caller changed a record it had already been given** (issue #760).  The check now reads one record ahead and compares each record with the next before the caller has seen either; an out-of-order record still fails when the caller asks for it.
+- **Closing a VCF or BCF writer, or a `BlockCompressedOutputStream`, a second time does nothing** (issue #469); it threw, or wrote the index again.
 
 ### Testing
 

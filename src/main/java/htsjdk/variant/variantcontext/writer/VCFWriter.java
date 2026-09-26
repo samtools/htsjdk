@@ -241,10 +241,11 @@ class VCFWriter extends IndexingVariantContextWriter {
     }
 
     /**
-     * attempt to close the VCF file
+     * attempt to close the VCF file; a second call does nothing
      */
     @Override
     public void close() {
+        if (isClosed()) return;
         // try to close the vcf stream
         try {
             // TODO -- would it be useful to null out the line buffer so we don't have it around unnecessarily?

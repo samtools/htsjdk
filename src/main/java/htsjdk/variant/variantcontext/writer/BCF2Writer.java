@@ -371,8 +371,10 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         }
     }
 
+    /** Closes the file and writes its CSI index, if it has one; a second call does nothing. */
     @Override
     public void close() {
+        if (isClosed()) return;
         long endOfRecords = 0;
         if (bgzfStream != null && csiIndexBuilder != null) {
             try {
