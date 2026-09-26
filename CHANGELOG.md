@@ -275,6 +275,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **`toString()` on lazily decoded genotypes no longer decodes them** (issue #1011), so a debugger showing a `VariantContext` or its `GenotypesContext` does not change it; a BCF record's undecoded genotypes print as a short description instead of an object id.
 - **The NM that htsjdk works out for a CRAM record counts every inserted base** (issue #1187), as samtools does.  For a read ending in an insertion, NM came out short by the insertion's length when the read was the last to end in its slice, was in a multi-reference slice, or ended at the end of the reference.
 - **The CRAM writer stores the bases of a read that runs past the end of its reference as they are, and keeps its NM and MD**, as htslib does; it compared them with a pretend `N` reference, so samtools worked out a different MD for them.
+- **The CRAM writer takes any empty quality array as missing qualities**, as `SAMRecord` does; for a record built with `setBaseQualities(new byte[0])` rather than `SAMRecord.NULL_QUALS`, it wrote a CRAM that could not be read back, or failed with an `ArrayIndexOutOfBoundsException`.
 
 ### Testing
 

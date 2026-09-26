@@ -187,7 +187,8 @@ public class CRAMCompressionRecord {
             setUnknownBases(basesUnknown);
         }
 
-        qualityScores = samRecord.getBaseQualities();
+        // SAMRecord takes any empty array as missing qualities, not only its NULL_QUALS instance
+        qualityScores = samRecord.getBaseQualities().length == 0 ? SAMRecord.NULL_QUALS : samRecord.getBaseQualities();
         if (basesUnknown) {
             // QUAL must be "*" when SEQ is, and readers read RL scores for a record that preserves them.
             qualityScores = SAMRecord.NULL_QUALS;
