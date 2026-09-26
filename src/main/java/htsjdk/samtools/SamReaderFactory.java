@@ -220,25 +220,21 @@ public abstract class SamReaderFactory {
      * Returns the factory itself. */
     public abstract SamReaderFactory setUseAsyncIo(final boolean asynchronousIO);
 
-    private static SamReaderFactoryImpl DEFAULT = new SamReaderFactoryImpl(
-            Option.DEFAULTS,
-            defaultValidationStringency,
-            DefaultSAMRecordFactory.getInstance(),
-            BlockGunzipper.getDefaultInflaterFactory());
-
     public static void setDefaultValidationStringency(final ValidationStringency defaultValidationStringency) {
         SamReaderFactory.defaultValidationStringency = defaultValidationStringency;
-        // The default may have changed, so reset the default SamReader
-        DEFAULT = new SamReaderFactoryImpl(
+    }
+
+    /**
+     * Creates a new factory with the default {@link Option}s, the default validation stringency (see
+     * {@link #setDefaultValidationStringency}) and the default inflater factory (see
+     * {@link BlockGunzipper#setDefaultInflaterFactory}), each as it stands when this is called.
+     */
+    public static SamReaderFactory makeDefault() {
+        return new SamReaderFactoryImpl(
                 Option.DEFAULTS,
                 defaultValidationStringency,
                 DefaultSAMRecordFactory.getInstance(),
                 BlockGunzipper.getDefaultInflaterFactory());
-    }
-
-    /** Creates a copy of the default {@link SamReaderFactory}. */
-    public static SamReaderFactory makeDefault() {
-        return SamReaderFactoryImpl.copyOf(DEFAULT);
     }
 
     /**
@@ -560,14 +556,6 @@ public abstract class SamReaderFactory {
             } catch (final IOException | URISyntaxException e) {
                 throw new RuntimeIOException(e);
             }
-        }
-
-        public static SamReaderFactory copyOf(final SamReaderFactoryImpl target) {
-            return new SamReaderFactoryImpl(
-                    target.enabledOptions,
-                    target.validationStringency,
-                    target.samRecordFactory,
-                    target.inflaterFactory);
         }
     }
 

@@ -10,7 +10,9 @@ import java.util.Optional;
 public interface ReadsQuery<R extends HtsRecord> {
 
     /**
-     * Get an iterator of unmapped reads.
+     * Get an iterator of the unplaced reads, those with no reference sequence, which a coordinate-sorted file keeps
+     * after every placed read. An unmapped read placed at its mate's position is not included; to see every read with
+     * the unmapped flag, iterate over the whole file.
      */
     CloseableIterator<R> queryUnmapped();
 
