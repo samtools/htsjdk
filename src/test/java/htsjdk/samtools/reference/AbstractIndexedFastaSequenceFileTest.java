@@ -39,6 +39,8 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StringUtil;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +53,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -437,6 +440,63 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     @Test(expectedExceptions = SAMException.class)
     public void testBadInputForBlockCompressedIndexedFastaSequenceFile() throws Exception {
         new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE);
+    }
+
+    /**
+     * Writes a small FASTA to {@code fasta}, gzipped but not bgzipped, writes the .fai for its uncompressed text
+     * next to it, and returns that index.
+     */
+    private static FastaSequenceIndex writeGzippedFastaWithIndex(final Path fasta) throws IOException {
+        final String text = ">chr1\n" + "ACGT".repeat(50) + "\n>chr2\n" + "GGCCTTAA".repeat(20) + "\n";
+        final Path uncompressed = fasta.resolveSibling("uncompressed.fasta");
+        Files.writeString(uncompressed, text, StandardCharsets.US_ASCII);
+        final FastaSequenceIndex index = FastaSequenceIndexCreator.buildFromFasta(uncompressed);
+        index.write(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta));
+        try (OutputStream out = new GZIPOutputStream(Files.newOutputStream(fasta))) {
+            out.write(text.getBytes(StandardCharsets.US_ASCII));
+        }
+        return index;
+    }
+
+    @Test
+    public void openingAGzippedFastaSaysItMustBeBgzipped() throws IOException {
+        final Path dir = IOUtil.createTempDir("AbstractIndexedFastaSequenceFileTest");
+        try {
+            final Path fasta = dir.resolve("gzipped.fasta.gz");
+            final FastaSequenceIndex index = writeGzippedFastaWithIndex(fasta);
+            final SAMException e =
+                    Assert.expectThrows(SAMException.class, () -> new IndexedFastaSequenceFile(fasta, index));
+            Assert.assertTrue(e.getMessage().contains("bgzip"), e.getMessage());
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void openingAGzippedFastaByIOPathSaysItMustBeBgzipped() throws IOException {
+        final Path dir = IOUtil.createTempDir("AbstractIndexedFastaSequenceFileTest");
+        try {
+            final Path fasta = dir.resolve("gzipped.fasta.gz");
+            final FastaSequenceIndex index = writeGzippedFastaWithIndex(fasta);
+            final SAMException e = Assert.expectThrows(
+                    SAMException.class,
+                    () -> new IndexedFastaSequenceFile(new HtsPath(fasta.toUri().toString()), null, index));
+            Assert.assertTrue(e.getMessage().contains("bgzip"), e.getMessage());
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void theDeprecatedCanCreateIndexedFastaReaderIsFalseForAGzippedFasta() throws IOException {
+        final Path dir = IOUtil.createTempDir("AbstractIndexedFastaSequenceFileTest");
+        try {
+            final Path fasta = dir.resolve("gzipped.fasta.gz");
+            writeGzippedFastaWithIndex(fasta);
+            Assert.assertFalse(IndexedFastaSequenceFile.canCreateIndexedFastaReader(fasta));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
     }
 
     @Test

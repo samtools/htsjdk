@@ -10,10 +10,14 @@ import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -90,6 +94,57 @@ public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
     @Test(dataProvider = "canCreateIndexedFastaParams")
     public void testCanCreateIndexedFastaReader(final Path path, final boolean indexed) {
         Assert.assertEquals(ReferenceSequenceFileFactory.canCreateIndexedFastaReader(path), indexed);
+    }
+
+    private static final String GZIPPED_CHR1 = "ACGT".repeat(50);
+    private static final String GZIPPED_CHR2 = "GGCCTTAA".repeat(20);
+
+    /**
+     * Writes a FASTA of {@link #GZIPPED_CHR1} and {@link #GZIPPED_CHR2} to {@code fasta}, gzipped but not bgzipped,
+     * and writes the .fai for its uncompressed text next to it.
+     */
+    private static void writeGzippedFastaWithIndex(final Path fasta) throws IOException {
+        final String text = ">chr1\n" + GZIPPED_CHR1 + "\n>chr2\n" + GZIPPED_CHR2 + "\n";
+        final Path uncompressed = fasta.resolveSibling("uncompressed.fasta");
+        Files.writeString(uncompressed, text, StandardCharsets.US_ASCII);
+        FastaSequenceIndexCreator.buildFromFasta(uncompressed)
+                .write(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta));
+        try (OutputStream out = new GZIPOutputStream(Files.newOutputStream(fasta))) {
+            out.write(text.getBytes(StandardCharsets.US_ASCII));
+        }
+    }
+
+    @Test
+    public void aGzippedFastaWithAnIndexIsNotIndexable() throws IOException {
+        final Path dir = IOUtil.createTempDir("ReferenceSequenceFileFactoryTests");
+        try {
+            final Path fasta = dir.resolve("gzipped.fa.gz");
+            writeGzippedFastaWithIndex(fasta);
+            Assert.assertFalse(ReferenceSequenceFileFactory.canCreateIndexedFastaReader(fasta));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aGzippedFastaWithAnIndexIsReadSequentially() throws IOException {
+        final Path dir = IOUtil.createTempDir("ReferenceSequenceFileFactoryTests");
+        try {
+            final Path fasta = dir.resolve("gzipped.fa.gz");
+            writeGzippedFastaWithIndex(fasta);
+            try (ReferenceSequenceFile reader = ReferenceSequenceFileFactory.getReferenceSequenceFile(fasta)) {
+                Assert.assertFalse(reader.isIndexed());
+                final ReferenceSequence chr1 = reader.nextSequence();
+                Assert.assertEquals(chr1.getName(), "chr1");
+                Assert.assertEquals(chr1.getBaseString(), GZIPPED_CHR1);
+                final ReferenceSequence chr2 = reader.nextSequence();
+                Assert.assertEquals(chr2.getName(), "chr2");
+                Assert.assertEquals(chr2.getBaseString(), GZIPPED_CHR2);
+                Assert.assertNull(reader.nextSequence());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
     }
 
     @DataProvider
