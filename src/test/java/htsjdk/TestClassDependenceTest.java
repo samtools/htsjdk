@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 import org.testng.collections.Sets;
 
 /**
- * Our testing framework assumes that all java tests extend HtsjdkTest (while Scala tests extend from UnitSpec)
+ * Our testing framework assumes that all java tests extend HtsjdkTest.
  *
  * Tests that do not extend HtsjdkTest will not be run during testing leading to possible silent "passage" of broken tests.
  * This test suite examines the all classes that contain methods that are annotated with the {@link Test} annotation,
