@@ -212,8 +212,11 @@ public class CRAMCompressionRecord {
         // values don't match what would be recomputed (non-standard values), they are kept verbatim.
         // RG is also skipped since read groups have a dedicated data series.
         // NM and MD can't be regenerated without bases, so a read with SEQ "*" keeps them, as it does in htslib.
-        boolean stripNM = !samRecord.getReadUnmappedFlag() && !basesUnknown && !encodingStrategy.getStoreNM();
-        boolean stripMD = !samRecord.getReadUnmappedFlag() && !basesUnknown && !encodingStrategy.getStoreMD();
+        // htslib also keeps them for a read with M, X or = bases past the end of the reference.
+        final boolean mayStripNmAndMd =
+                !samRecord.getReadUnmappedFlag() && !basesUnknown && !readFeatures.hasAlignedBasesPastReferenceEnd();
+        boolean stripNM = mayStripNmAndMd && !encodingStrategy.getStoreNM();
+        boolean stripMD = mayStripNmAndMd && !encodingStrategy.getStoreMD();
 
         // Validate that stored NM/MD match recomputed values; keep non-standard values verbatim
         if ((stripNM || stripMD)

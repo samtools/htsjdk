@@ -60,22 +60,9 @@ public class CRAMSamtoolsParityTest extends HtsjdkTest {
                     Set.of("QNAME"),
                     "names generated for records stored without one: samtools derives them from the file name"),
             new KnownDifference(
-                    "decode comp/md#1.2.1", Set.of("tag:NM"), "NM generated for a read with padding: #1187"),
-            new KnownDifference(
-                    "decode comp/md#1.3.0", Set.of("tag:NM"), "NM generated for a read with padding: #1187"),
-            new KnownDifference(
-                    "round trip decoded by htsjdk comp/md#1",
-                    Set.of("tag:NM"),
-                    "NM generated for a read with padding: #1187"),
-            new KnownDifference(
                     "decode comp/amb#amb.3.0",
                     Set.of("tag:MD", "tag:NM"),
                     "MD and NM generated against a reference with ambiguity codes"),
-            new KnownDifference(
-                    "round trip decoded by samtools spec30/1200_overflow",
-                    Set.of("tag:MD"),
-                    "htsjdk writes the bases past the end of the reference as implicit matches to 'N', which"
-                            + " samtools counts in MD; htslib writes them as explicit bases"),
             new KnownDifference(
                     "decode comp/xx#minimal.2.1",
                     Set.of("tag:MD", "tag:NM"),

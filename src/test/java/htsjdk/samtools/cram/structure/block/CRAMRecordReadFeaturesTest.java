@@ -7,9 +7,12 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
 import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
+import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
 import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.structure.*;
 import java.io.IOException;
@@ -182,5 +185,95 @@ public class CRAMRecordReadFeaturesTest extends HtsjdkTest {
                         .cigar
                         .toString(),
                 "*");
+    }
+
+    /** The last ten bases, 9,991 to 10,000, of contig "0" of {@link CRAMStructureTestHelper}'s reference. */
+    private static final int LAST_TEN_BASES_START = CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH - 9;
+
+    /** A region of just the reference bases 100 to 109 of contig "0", as a slice's reference would be. */
+    private static CRAMReferenceRegion sliceReferenceOfBases100To109() {
+        final CRAMReferenceRegion region = new CRAMReferenceRegion(
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        region.fetchReferenceBasesByRegion(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, 99, 10);
+        return region;
+    }
+
+    /** A region of the whole of contig "0" (10,000 bases). */
+    private static CRAMReferenceRegion wholeContigReference() {
+        final CRAMReferenceRegion region = new CRAMReferenceRegion(
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                CRAMStructureTestHelper.SAM_FILE_HEADER.getSequenceDictionary());
+        region.fetchReferenceBases(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        return region;
+    }
+
+    /** Decode a 12-base record with bases, generating its MD and NM. */
+    private static CRAMRecordReadFeatures.DecodeResult decodeWithMdAndNm(
+            final List<ReadFeature> features, final int alignmentStart, final CRAMReferenceRegion reference) {
+        return CRAMRecordReadFeatures.restoreBasesAndTags(
+                features, false, alignmentStart, 12, reference, new SubstitutionMatrix(List.of()), true);
+    }
+
+    /** The features of a 10M2I read with the inserted bases "CG" as one insertion. */
+    private static List<ReadFeature> trailingInsertion() {
+        return List.of(new Insertion(11, "CG".getBytes()));
+    }
+
+    /** The features of a 10M2I read with the inserted bases "CG" as single inserted bases, as htsjdk writes them. */
+    private static List<ReadFeature> trailingInsertBases() {
+        return List.of(new InsertBase(11, (byte) 'C'), new InsertBase(12, (byte) 'G'));
+    }
+
+    @Test
+    public void nmCountsAnInsertionAfterTheLastReferenceBaseOfASlice() {
+        final CRAMRecordReadFeatures.DecodeResult result =
+                decodeWithMdAndNm(trailingInsertion(), 100, sliceReferenceOfBases100To109());
+        Assert.assertEquals(new String(result.readBases), "AAAAAAAAAACG");
+        Assert.assertEquals(result.cigar.toString(), "10M2I");
+        Assert.assertEquals(result.mdString, "10");
+        Assert.assertEquals(result.nmCount, 2);
+    }
+
+    @Test
+    public void nmCountsAnInsertionAfterTheLastReferenceBaseOfTheContig() {
+        final CRAMRecordReadFeatures.DecodeResult result =
+                decodeWithMdAndNm(trailingInsertion(), LAST_TEN_BASES_START, wholeContigReference());
+        Assert.assertEquals(new String(result.readBases), "AAAAAAAAAACG");
+        Assert.assertEquals(result.cigar.toString(), "10M2I");
+        Assert.assertEquals(result.mdString, "10");
+        Assert.assertEquals(result.nmCount, 2);
+    }
+
+    @Test
+    public void nmCountsInsertBasesAfterTheLastReferenceBaseOfASlice() {
+        final CRAMRecordReadFeatures.DecodeResult result =
+                decodeWithMdAndNm(trailingInsertBases(), 100, sliceReferenceOfBases100To109());
+        Assert.assertEquals(new String(result.readBases), "AAAAAAAAAACG");
+        Assert.assertEquals(result.cigar.toString(), "10M2I");
+        Assert.assertEquals(result.mdString, "10");
+        Assert.assertEquals(result.nmCount, 2);
+    }
+
+    @Test
+    public void nmCountsInsertBasesAfterTheLastReferenceBaseOfTheContig() {
+        final CRAMRecordReadFeatures.DecodeResult result =
+                decodeWithMdAndNm(trailingInsertBases(), LAST_TEN_BASES_START, wholeContigReference());
+        Assert.assertEquals(new String(result.readBases), "AAAAAAAAAACG");
+        Assert.assertEquals(result.cigar.toString(), "10M2I");
+        Assert.assertEquals(result.mdString, "10");
+        Assert.assertEquals(result.nmCount, 2);
+    }
+
+    @Test
+    public void readBasesPastTheEndOfTheContigAreRestoredWithoutAddingToMdOrNm() {
+        final List<ReadFeature> features =
+                List.of(new ReadBase(11, (byte) 'G', (byte) 30), new ReadBase(12, (byte) 'N', (byte) 30));
+        final CRAMRecordReadFeatures.DecodeResult result =
+                decodeWithMdAndNm(features, LAST_TEN_BASES_START, wholeContigReference());
+        Assert.assertEquals(new String(result.readBases), "AAAAAAAAAAGN");
+        Assert.assertEquals(result.cigar.toString(), "12M");
+        Assert.assertEquals(result.mdString, "10");
+        Assert.assertEquals(result.nmCount, 0);
     }
 }

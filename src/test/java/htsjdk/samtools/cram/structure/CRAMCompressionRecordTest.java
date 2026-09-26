@@ -8,6 +8,10 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.util.SequenceUtil;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -236,6 +240,92 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(1, readBaseFeature.getPosition());
         Assert.assertEquals('F', readBaseFeature.getBase());
         Assert.assertEquals(SAMUtils.fastqToPhred('1'), readBaseFeature.getQualityScore());
+    }
+
+    /**
+     * A 20M read whose first ten bases are the last ten of contig "0" (all 'A'), with one substitution among them,
+     * and whose last ten run past the end of the contig: an 'N', bases a substitution could express, and ambiguity
+     * codes. Its base qualities are 10 to 29.
+     */
+    private static SAMRecord readPastTheReferenceEnd() {
+        final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        read.setReadName("pastEnd");
+        read.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setAlignmentStart(CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH - 9);
+        read.setCigarString("20M");
+        read.setReadBases("AAAAACAAAANACGTRYNAA".getBytes());
+        final byte[] qualities = new byte[20];
+        for (int i = 0; i < qualities.length; i++) qualities[i] = (byte) (10 + i);
+        read.setBaseQualities(qualities);
+        return read;
+    }
+
+    /** The reference bases of contig "0", against which {@link #toCram} writes. */
+    private static byte[] contigZeroBases() {
+        return CRAMStructureTestHelper.REFERENCE_SOURCE.getReferenceBases(
+                CRAMStructureTestHelper.SAM_FILE_HEADER.getSequence(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO),
+                false);
+    }
+
+    /** The tags the writer stores for a record, by key. */
+    private static Map<String, Object> storedTags(final CRAMCompressionRecord cramRecord) {
+        final Map<String, Object> tags = new HashMap<>();
+        if (cramRecord.getTags() != null) {
+            for (final ReadTag tag : cramRecord.getTags()) tags.put(tag.getKey(), tag.getValue());
+        }
+        return tags;
+    }
+
+    @Test
+    public void basesPastTheReferenceEndAreStoredAsReadBases() {
+        final SAMRecord read = readPastTheReferenceEnd();
+        final CRAMCompressionRecord cramRecord = toCram(read);
+
+        final List<ReadFeature> expected = new ArrayList<>();
+        expected.add(new Substitution(6, (byte) 'C', (byte) 'A'));
+        final byte[] basesPastTheEnd = "NACGTRYNAA".getBytes();
+        for (int i = 0; i < basesPastTheEnd.length; i++) {
+            expected.add(new ReadBase(11 + i, basesPastTheEnd[i], (byte) (20 + i)));
+        }
+        Assert.assertEquals(cramRecord.getReadFeatures(), expected);
+        Assert.assertEquals(cramRecord.getAlignmentEnd(), read.getAlignmentEnd());
+    }
+
+    @Test
+    public void nmAndMdAreKeptForAReadPastTheReferenceEnd() {
+        final SAMRecord read = readPastTheReferenceEnd();
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+        Assert.assertEquals(storedTags(toCram(read)), Map.of("NM", 1, "MD", "5A4"));
+    }
+
+    @Test
+    public void nmAndMdAreStrippedForAReadEndingAtTheReferenceEndWhenTheyMatch() {
+        final SAMRecord read = readPastTheReferenceEnd();
+        read.setAlignmentStart(CRAMStructureTestHelper.REFERENCE_CONTIG_LENGTH - 19);
+        read.setReadBases("AAAAACAAAAAAAAAAAAAA".getBytes());
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+        Assert.assertEquals(storedTags(toCram(read)), Map.of());
+    }
+
+    @Test
+    public void readPastTheReferenceEndRoundTripsWithItsNmAndMd() throws IOException {
+        final SAMRecord read = readPastTheReferenceEnd();
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+
+        final ByteArrayOutputStream cram = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(
+                cram, CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER, null)) {
+            writer.addAlignment(read);
+        }
+        try (CRAMFileReader reader = new CRAMFileReader(
+                new ByteArrayInputStream(cram.toByteArray()),
+                (Path) null,
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                ValidationStringency.STRICT)) {
+            final SAMRecordIterator iterator = reader.getIterator();
+            Assert.assertEquals(iterator.next(), read);
+            Assert.assertFalse(iterator.hasNext());
+        }
     }
 
     private List<ReadFeature> buildMatchOrMismatchReadFeatures(
