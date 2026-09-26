@@ -1,6 +1,9 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.testng.Assert;
@@ -226,5 +229,24 @@ public class VCFUtilsTest extends HtsjdkTest {
                         headerWithInfoLineOfType(VCFHeaderLineType.Float)),
                 false));
         Assert.assertEquals(merged.getInfoHeaderLine("X").getType(), VCFHeaderLineType.Float);
+    }
+
+    @Test
+    public void makeContigHeaderLinesCarryMd5UrlAndSpecies() {
+        final SAMSequenceRecord record = new SAMSequenceRecord("chr1", 248956422);
+        record.setMd5("6aef897c3d6ff0c78aff06ac189178dd");
+        record.setAttribute(SAMSequenceRecord.URI_TAG, "https://example.com/hg38.fa");
+        record.setSpecies("Homo sapiens");
+
+        // the assembly comes from the reference's file name, which is not opened
+        final List<VCFContigHeaderLine> lines =
+                VCFUtils.makeContigHeaderLines(new SAMSequenceDictionary(List.of(record)), Path.of("hg38.fa"));
+
+        Assert.assertEquals(lines.size(), 1);
+        Assert.assertEquals(
+                lines.get(0).toString(),
+                "contig=<ID=chr1,length=248956422,assembly=hg38,md5=6aef897c3d6ff0c78aff06ac189178dd,"
+                        + "species=\"Homo sapiens\",URL=https://example.com/hg38.fa>");
+        Assert.assertEquals(lines.get(0).getContigIndex(), Integer.valueOf(0));
     }
 }

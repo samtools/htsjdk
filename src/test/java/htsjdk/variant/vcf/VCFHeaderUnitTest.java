@@ -29,6 +29,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIteratorImpl;
@@ -443,6 +444,131 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         // assert that we have the same number of other header lines before and after
         Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
+    }
+
+    @Test
+    public void addMetaDataLineKeepsStructuredLinesWithTheSameKeyAndDifferentIDs() {
+        final VCFAltHeaderLine deletion =
+                new VCFAltHeaderLine("<ID=DEL,Description=\"Deletion\">", VCFHeaderVersion.VCF4_2);
+        final VCFAltHeaderLine insertion =
+                new VCFAltHeaderLine("<ID=INS,Description=\"Insertion\">", VCFHeaderVersion.VCF4_2);
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(deletion);
+        header.addMetaDataLine(insertion);
+
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(deletion, insertion));
+        Assert.assertEquals(header.getOtherHeaderLines("ALT"), List.of(deletion, insertion));
+    }
+
+    @Test
+    public void addMetaDataLineKeepsTheFirstOfTwoStructuredLinesWithTheSameKeyAndID() {
+        final VCFAltHeaderLine first =
+                new VCFAltHeaderLine("<ID=DEL,Description=\"Deletion\">", VCFHeaderVersion.VCF4_2);
+        final VCFAltHeaderLine second = new VCFAltHeaderLine(
+                "<ID=DEL,Description=\"Deletion relative to the reference\">", VCFHeaderVersion.VCF4_2);
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(first);
+        header.addMetaDataLine(second);
+
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(first));
+        Assert.assertEquals(new ArrayList<>(header.getOtherHeaderLines()), List.of(first));
+    }
+
+    @Test
+    public void addMetaDataLineKeepsRepeatedUnstructuredKeys() {
+        final VCFHeaderLine a = new VCFHeaderLine("source", "a");
+        final VCFHeaderLine b = new VCFHeaderLine("source", "b");
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(a);
+        header.addMetaDataLine(b);
+
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(a, b));
+        Assert.assertEquals(header.getOtherHeaderLine("source"), a);
+        Assert.assertEquals(header.getOtherHeaderLines("source"), List.of(a, b));
+    }
+
+    @Test
+    public void getOtherHeaderLinesFromAParsedHeaderHasEveryRepeatedLine() {
+        final String text = "##fileformat=VCFv4.3\n"
+                + "##source=a\n"
+                + "##SAMPLE=<ID=NA1,Description=\"First\">\n"
+                + "##source=b\n"
+                + "##SAMPLE=<ID=NA2,Description=\"Second\">\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+        final VCFHeader header = (VCFHeader) new VCFCodec()
+                .readActualHeader(new LineIteratorImpl(new SynchronousLineReader(new StringReader(text))));
+        final VCFHeaderLine sourceA = new VCFHeaderLine("source", "a");
+        final VCFHeaderLine sourceB = new VCFHeaderLine("source", "b");
+        final VCFSampleHeaderLine sample1 =
+                new VCFSampleHeaderLine("<ID=NA1,Description=\"First\">", VCFHeaderVersion.VCF4_3);
+        final VCFSampleHeaderLine sample2 =
+                new VCFSampleHeaderLine("<ID=NA2,Description=\"Second\">", VCFHeaderVersion.VCF4_3);
+
+        Assert.assertEquals(new ArrayList<>(header.getOtherHeaderLines()), List.of(sourceA, sample1, sourceB, sample2));
+        Assert.assertEquals(header.getOtherHeaderLines("source"), List.of(sourceA, sourceB));
+        Assert.assertEquals(header.getOtherHeaderLines("SAMPLE"), List.of(sample1, sample2));
+    }
+
+    @Test
+    public void getOtherHeaderLinesIsUnmodifiable() {
+        final VCFHeaderLine line = new VCFHeaderLine("source", "a");
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(line);
+
+        final Collection<VCFHeaderLine> otherLines = header.getOtherHeaderLines();
+        Assert.assertThrows(UnsupportedOperationException.class, () -> otherLines.remove(line));
+    }
+
+    @Test
+    public void twoAltLinesAddedInCodeAreWritten() throws IOException {
+        final VCFAltHeaderLine deletion =
+                new VCFAltHeaderLine("<ID=DEL,Description=\"Deletion\">", VCFHeaderVersion.VCF4_2);
+        final VCFAltHeaderLine insertion =
+                new VCFAltHeaderLine("<ID=INS,Description=\"Insertion\">", VCFHeaderVersion.VCF4_2);
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(deletion);
+        header.addMetaDataLine(insertion);
+
+        Assert.assertEquals(writeAndReadBack(header).getOtherHeaderLines("ALT"), List.of(deletion, insertion));
+    }
+
+    @Test
+    public void setSequenceDictionaryKeepsMd5UrlAndSpeciesThroughAWrittenHeader() throws IOException {
+        final SAMSequenceRecord record = new SAMSequenceRecord("chr1", 248956422);
+        record.setAssembly("GRCh38");
+        record.setMd5("6aef897c3d6ff0c78aff06ac189178dd");
+        record.setAttribute(SAMSequenceRecord.URI_TAG, "https://example.com/GRCh38.fa");
+        record.setSpecies("Homo sapiens");
+        final VCFHeader header = new VCFHeader();
+        header.setSequenceDictionary(new SAMSequenceDictionary(List.of(record)));
+
+        final SAMSequenceRecord readBack =
+                writeAndReadBack(header).getSequenceDictionary().getSequence("chr1");
+
+        Assert.assertEquals(readBack.getAssembly(), "GRCh38");
+        Assert.assertEquals(readBack.getMd5(), "6aef897c3d6ff0c78aff06ac189178dd");
+        Assert.assertEquals(readBack.getAttribute(SAMSequenceRecord.URI_TAG), "https://example.com/GRCh38.fa");
+        Assert.assertEquals(readBack.getSpecies(), "Homo sapiens");
+    }
+
+    /** Writes a VCF of the header alone and reads its header back. */
+    private static VCFHeader writeAndReadBack(final VCFHeader header) throws IOException {
+        final Path dir = Files.createTempDirectory("VCFHeaderUnitTest.");
+        try {
+            final Path vcf = dir.resolve("header.vcf");
+            // without INDEX_ON_THE_FLY, a default option that needs a sequence dictionary
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .setOutputPath(vcf)
+                    .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER))
+                    .build()) {
+                writer.writeHeader(header);
+            }
+            try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
+                return reader.getFileHeader();
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
     }
 
     @Test

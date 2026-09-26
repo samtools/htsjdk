@@ -207,7 +207,8 @@ public class VCFUtils {
     }
 
     /**
-     * Create VCFHeaderLines for each refDict entry, and optionally the assembly if referencePath != null
+     * Create VCFHeaderLines for each refDict entry, carrying each entry's md5, URL and species when it has them, and
+     * optionally the assembly if referencePath != null
      *
      * @param refDict       reference dictionary
      * @param referencePath for assembly name.  May be null
@@ -219,16 +220,10 @@ public class VCFUtils {
         final String assembly = referencePath != null
                 ? getReferenceAssembly(referencePath.getFileName().toString())
                 : null;
-        for (final SAMSequenceRecord contig : refDict.getSequences()) lines.add(makeContigHeaderLine(contig, assembly));
+        for (final SAMSequenceRecord contig : refDict.getSequences()) {
+            lines.add(new VCFContigHeaderLine(contig, assembly));
+        }
         return lines;
-    }
-
-    private static VCFContigHeaderLine makeContigHeaderLine(final SAMSequenceRecord contig, final String assembly) {
-        final Map<String, String> map = new LinkedHashMap<>(3);
-        map.put("ID", contig.getSequenceName());
-        map.put("length", String.valueOf(contig.getSequenceLength()));
-        if (assembly != null) map.put("assembly", assembly);
-        return new VCFContigHeaderLine(map, contig.getSequenceIndex());
     }
 
     /**
