@@ -105,4 +105,59 @@ public class BamFileIoUtilsUnitTest extends HtsjdkTest {
             throw new HtsjdkException("Caught an IO exception block copying a bam file to " + output, e);
         }
     }
+
+    @Test
+    public void isBamFileIsTrueForADotBamName() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("test.bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueWhenBamIsTheLastOfSeveralExtensions() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("test.sam.bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueForANameThatIsOnlyTheExtension() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of(".bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueForARelativePath() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("./test.bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueWhenTheExtensionFollowsADoubleDot() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("./test..bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueForAWindowsStylePath() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("c:\\path\\to\\test.bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueForAMixedCaseExtension() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("test.Bam")));
+    }
+
+    @Test
+    public void isBamFileIsTrueForAnUpperCaseExtension() {
+        Assert.assertTrue(BamFileIoUtils.isBamFile(Path.of("test.BAM")));
+    }
+
+    @Test
+    public void isBamFileIsFalseForADotSamName() {
+        Assert.assertFalse(BamFileIoUtils.isBamFile(Path.of("test.sam")));
+    }
+
+    @Test
+    public void isBamFileIsFalseWhenBamIsNotTheLastExtension() {
+        Assert.assertFalse(BamFileIoUtils.isBamFile(Path.of("test.bam.sam")));
+    }
+
+    @Test
+    public void isBamFileIsFalseWhenBamIsNotPrecededByADot() {
+        Assert.assertFalse(BamFileIoUtils.isBamFile(Path.of("testbam")));
+    }
 }
