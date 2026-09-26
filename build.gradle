@@ -373,6 +373,16 @@ publishing {
                         url = 'http://opensource.org/licenses/MIT'
                         distribution = 'repo'
                     }
+                    license {
+                        name = 'Apache License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0'
+                        distribution = 'repo'
+                    }
+                    license {
+                        name = 'GNU Lesser General Public License, Version 2.1'
+                        url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html'
+                        distribution = 'repo'
+                    }
                 }
             }
         }
