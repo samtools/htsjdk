@@ -411,6 +411,20 @@ public class LosslessRoundTripTest extends HtsjdkTest {
         assertRoundTrip("readExtendsPastReference", rec);
     }
 
+    @Test
+    public void readEndingInAnInsertionAtTheEndOfItsSliceKeepsItsNm() throws IOException {
+        final SAMFileHeader header = buildHeader();
+        // Mid-contig, the slice's reference ends where the last read to end in it does, so its trailing insertion
+        // lies past the end of the reference the reader decodes it against.
+        final SAMRecord endsLast =
+                createRecord(header, "endsLast", 20, "10M2I", buildInsertionBases(20, 10, "GG", 0), quals(12));
+        Assert.assertEquals(endsLast.getIntegerAttribute("NM"), Integer.valueOf(2));
+        assertRoundTrip(
+                "insertionAtSliceEnd",
+                createRecord(header, "endsFirst", 10, "10M", refBases(10, 10), quals(10)),
+                endsLast);
+    }
+
     // ---- Existing test (preserved) ----
 
     @Test
