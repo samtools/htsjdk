@@ -307,11 +307,8 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(storedTags(toCram(read)), Map.of());
     }
 
-    @Test
-    public void readPastTheReferenceEndRoundTripsWithItsNmAndMd() throws IOException {
-        final SAMRecord read = readPastTheReferenceEnd();
-        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
-
+    /** Write a single read to an in-memory CRAM against the test reference and read it back. */
+    private static SAMRecord roundTrip(final SAMRecord read) throws IOException {
         final ByteArrayOutputStream cram = new ByteArrayOutputStream();
         try (CRAMFileWriter writer = new CRAMFileWriter(
                 cram, CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER, null)) {
@@ -323,9 +320,56 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
                 CRAMStructureTestHelper.REFERENCE_SOURCE,
                 ValidationStringency.STRICT)) {
             final SAMRecordIterator iterator = reader.getIterator();
-            Assert.assertEquals(iterator.next(), read);
+            final SAMRecord readBack = iterator.next();
             Assert.assertFalse(iterator.hasNext());
+            return readBack;
         }
+    }
+
+    @Test
+    public void readPastTheReferenceEndRoundTripsWithItsNmAndMd() throws IOException {
+        final SAMRecord read = readPastTheReferenceEnd();
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+        Assert.assertEquals(roundTrip(read), read);
+    }
+
+    /** A 10M read at base 100 of contig "0" with the given bases, NM and MD, and an empty quality array. */
+    private static SAMRecord readWithAnEmptyQualityArray(final String bases) {
+        final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        read.setReadName("emptyQualities");
+        read.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setAlignmentStart(100);
+        read.setCigarString("10M");
+        read.setReadBases(bases.getBytes());
+        read.setBaseQualities(new byte[0]);
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+        return read;
+    }
+
+    @Test
+    public void readWithAnEmptyQualityArrayRoundTripsWithMissingQualities() throws IOException {
+        final SAMRecord read = readWithAnEmptyQualityArray("AAAAAAAAAA");
+        final SAMRecord readBack = roundTrip(read);
+        Assert.assertEquals(readBack, read);
+        Assert.assertEquals(readBack.getBaseQualityString(), SAMRecord.NULL_QUALS_STRING);
+    }
+
+    @Test
+    public void readWithAnEmptyQualityArrayAndAnAmbiguityCodeRoundTripsWithMissingQualities() throws IOException {
+        final SAMRecord read = readWithAnEmptyQualityArray("AAAARAAAAA");
+        final SAMRecord readBack = roundTrip(read);
+        Assert.assertEquals(readBack, read);
+        Assert.assertEquals(readBack.getBaseQualityString(), SAMRecord.NULL_QUALS_STRING);
+    }
+
+    @Test
+    public void readPastTheReferenceEndWithAnEmptyQualityArrayRoundTripsWithMissingQualities() throws IOException {
+        final SAMRecord read = readPastTheReferenceEnd();
+        read.setBaseQualities(new byte[0]);
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+        final SAMRecord readBack = roundTrip(read);
+        Assert.assertEquals(readBack, read);
+        Assert.assertEquals(readBack.getBaseQualityString(), SAMRecord.NULL_QUALS_STRING);
     }
 
     private List<ReadFeature> buildMatchOrMismatchReadFeatures(

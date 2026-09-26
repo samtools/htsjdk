@@ -216,7 +216,7 @@ public class CRAMRecordReadFeatures {
                 }
             }
 
-            final byte score = baseQualities.equals(SAMRecord.NULL_QUALS)
+            final byte score = baseQualities.length == 0
                     ? CRAMCompressionRecord.MISSING_QUALITY_SCORE
                     : baseQualities[i + fromPosInRead];
             features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
