@@ -8,6 +8,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -172,6 +173,15 @@ public class VCFFileReaderTest extends HtsjdkTest {
             Assert.assertEquals(reader.getFileHeader().getVCFHeaderVersion(), VCFHeaderVersion.VCF3_2);
             Assert.assertEquals(reader.iterator().toList().size(), 1);
         }
+    }
+
+    @Test
+    public void anEmptyVcfFileSaysItIsEmpty() throws IOException {
+        final Path vcf = Files.createTempFile("VCFFileReaderTest", ".vcf");
+        vcf.toFile().deleteOnExit();
+        // the reader wraps every header error in one of its own, so it is the message that tells them apart
+        final TribbleException e = Assert.expectThrows(TribbleException.class, () -> new VCFFileReader(vcf, false));
+        Assert.assertTrue(e.getMessage().contains("empty"), e.getMessage());
     }
 
     @Test

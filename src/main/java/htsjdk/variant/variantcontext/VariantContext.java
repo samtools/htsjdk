@@ -1053,22 +1053,24 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     /**
-     * Gets the alleles.  This method should return all of the alleles present at the location,
-     * including the reference allele.  There are no constraints imposed on the ordering of alleles
-     * in the set. If the reference is not an allele in this context it will not be included.
+     * Gets the alleles: the reference allele first, then the alternate alleles in the order they were given (for a
+     * record read from VCF or BCF, the order of the ALT column). The list is never empty and holds exactly one
+     * reference allele.
+     * <p>
+     * This order defines the allele indices (0 for the reference, 1 for the first alternate allele, and so on) that
+     * GT, the fields with Number=A, R or G, and the local-allele fields (LAA, and through it the fields with
+     * Number=LA, LR or LG) refer to.
      *
-     * @return the set of alleles
+     * @return the alleles, reference first
      */
     public List<Allele> getAlleles() {
         return alleles;
     }
 
     /**
-     * Gets the alternate alleles.  This method should return all the alleles present at the location,
-     * NOT including the reference allele.  There are no constraints imposed on the ordering of alleles
-     * in the set.
+     * Gets the alternate alleles, in the order {@link #getAlleles()} holds them; index i here is allele index i+1.
      *
-     * @return the set of alternate alleles
+     * @return the alternate alleles
      */
     public List<Allele> getAlternateAlleles() {
         return alleles.subList(1, alleles.size());
@@ -1652,36 +1654,27 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     public String toString() {
-        // Note: passing genotypes to String.format() will implicitly decode the genotypes
-        // This may not be desirable, so don't decode by default
-
-        return genotypes.isLazyWithData() ? toStringUnparsedGenotypes() : toStringDecodeGenotypes();
+        // Genotypes not yet decoded are shown as their unparsed data and stay undecoded, so that a debugger showing
+        // this record does not change it; toStringDecodeGenotypes() decodes them first.
+        return String.format(
+                "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
+                getSource(),
+                contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+                hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
+                this.getType(),
+                ParsingUtils.sortList(this.getAlleles()),
+                ParsingUtils.sortedString(this.getAttributes()),
+                this.genotypes,
+                String.join(",", commonInfo.getFilters()));
     }
 
+    /**
+     * @return this record as {@link #toString()} describes it, with any lazily held genotypes decoded first and
+     *     listed
+     */
     public String toStringDecodeGenotypes() {
-        return String.format(
-                "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
-                getSource(),
-                contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
-                hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
-                this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()),
-                this.getGenotypes(),
-                String.join(",", commonInfo.getFilters()));
-    }
-
-    private String toStringUnparsedGenotypes() {
-        return String.format(
-                "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
-                getSource(),
-                contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
-                hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
-                this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()),
-                ((LazyGenotypesContext) this.genotypes).getUnparsedGenotypeData(),
-                String.join(",", commonInfo.getFilters()));
+        if (genotypes instanceof LazyGenotypesContext) ((LazyGenotypesContext) genotypes).decode();
+        return toString();
     }
 
     public String toStringWithoutGenotypes() {

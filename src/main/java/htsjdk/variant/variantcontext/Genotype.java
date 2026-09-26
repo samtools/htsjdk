@@ -617,7 +617,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     @Deprecated
     public int getAttributeAsInt(String key, int defaultValue) {
         Object x = getExtendedAttribute(key);
-        if (x == null || x == VCFConstants.MISSING_VALUE_v4) return defaultValue;
+        if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) return defaultValue;
         if (x instanceof Integer) return (Integer) x;
         return Integer.parseInt((String) x); // throws an exception if this isn't a string
     }
