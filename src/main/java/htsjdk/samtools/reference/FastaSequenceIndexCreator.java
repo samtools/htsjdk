@@ -72,6 +72,9 @@ public final class FastaSequenceIndexCreator {
      * .gzi index required for use it with samtools. To generate that index, use
      * {@link GZIIndex#buildIndex(Path)}.
      *
+     * <p>Blank lines may come before the first header, between sequences and at the end of the file. A
+     * sequence with no bases, or a sequence line after a blank line, is an error.
+     *
      * @param fastaFile the FASTA file.
      *
      * @return a fai index.
@@ -86,48 +89,48 @@ public final class FastaSequenceIndexCreator {
         try (final Utf8LineReader in =
                 Utf8LineReader.from(new PositionalBufferedStream(IOUtil.openFileForReading(fastaFile)))) {
 
-            // sanity check reference format:
-            // 1. Non-empty file
-            // 2. Header name starts with >
-            String previous = in.readLine();
-            if (previous == null) {
+            // Blank lines before the first header are skipped, as samtools skips them
+            String line = in.readLine();
+            while (line != null && line.isEmpty()) {
+                line = in.readLine();
+            }
+            if (line == null) {
                 throw new SAMException("Cannot index empty file: " + fastaFile);
-            } else if (previous.charAt(0) != '>') {
-                throw new SAMException("Wrong sequence header: " + previous);
+            } else if (line.charAt(0) != '>') {
+                throw new SAMException("Wrong sequence header: " + line);
             }
 
-            // initialize the sequence index
-            int sequenceIndex = -1;
-            // the location should be kept before iterating over the rest of the lines
-            long location = in.getPosition();
-
-            // initialize an empty index and the entry builder to null
             final FastaSequenceIndex index = new FastaSequenceIndex();
-            FaiEntryBuilder entry = null;
+            int sequenceIndex = 0;
 
-            // read the lines two by two
-            for (String line = in.readLine(); previous != null; line = in.readLine()) {
-                // in this case, the previous line contains a header and the current line the first sequence
-                if (previous.charAt(0) == '>') {
-                    // first entry should be skipped; otherwise it should be added to the index
-                    if (entry != null) index.add(entry.build());
-                    // creates a new entry (and update sequence index)
-                    entry = new FaiEntryBuilder(
-                            sequenceIndex++, previous, line, in.getLineTerminatorLength(), location);
-                } else if (line != null && line.charAt(0) == '>') {
-                    // update the location, next iteration the sequence will be handled
-                    location = in.getPosition();
-                } else if (line != null && !line.isEmpty()) {
-                    // update in case it is not a blank-line
+            // Each pass indexes one sequence, starting with `line` holding its header
+            while (line != null) {
+                final long location = in.getPosition();
+                final String firstSequenceLine = in.readLine();
+                final FaiEntryBuilder entry = new FaiEntryBuilder(
+                        sequenceIndex++, line, firstSequenceLine, in.getLineTerminatorLength(), location);
+
+                line = in.readLine();
+                while (line != null && !line.isEmpty() && line.charAt(0) != '>') {
                     entry.updateWithSequence(line, in.getLineTerminatorLength());
+                    line = in.readLine();
                 }
-                // set the previous to the current line
-                previous = line;
-            }
-            // add the last entry
-            index.add(entry.build());
 
-            // and return the index
+                // A blank line ends the sequence. A .fai entry cannot describe bases after a gap, so only more
+                // blank lines, the next header or the end of the file may follow it.
+                while (line != null && line.isEmpty()) {
+                    line = in.readLine();
+                }
+                if (line != null && line.charAt(0) != '>') {
+                    throw new SAMException(String.format(
+                            "A sequence line follows a blank line in sequence '%s'; a blank line may be followed "
+                                    + "only by a header, another blank line or the end of the file",
+                            entry.contig));
+                }
+
+                index.add(entry.build());
+            }
+
             return index;
         }
     }
@@ -154,13 +157,17 @@ public final class FastaSequenceIndexCreator {
                 final long location) {
             if (header == null || header.charAt(0) != '>') {
                 throw new SAMException("Wrong sequence header: " + header);
-            } else if (firstSequenceLine == null) {
-                throw new SAMException("Empty sequences could not be indexed");
             }
             this.index = index;
             // parse the contig name (without the starting '>' and truncating white-spaces)
             this.contig =
                     SAMSequenceRecord.truncateSequenceName(header.substring(1).trim());
+            // A header followed by another header, a blank line or the end of the file has no bases. samtools
+            // leaves such a sequence out of its index, but that would make the index disagree with the dictionary.
+            if (firstSequenceLine == null || firstSequenceLine.isEmpty() || firstSequenceLine.charAt(0) == '>') {
+                throw new SAMException(
+                        String.format("Empty sequences could not be indexed: sequence '%s' has no bases", contig));
+            }
             this.location = location;
             this.basesPerLine = firstSequenceLine.length();
             this.endOfLineLength = endOfLineLength;
@@ -169,22 +176,19 @@ public final class FastaSequenceIndexCreator {
         }
 
         private void updateWithSequence(final String sequence, final int endOfLineLength) {
-            if (this.endOfLineLength != endOfLineLength) {
+            // Only the last line of the file can have no terminator (length 0), so that is not a mismatch
+            if (endOfLineLength != 0 && this.endOfLineLength != endOfLineLength) {
                 throw new SAMException(String.format("Different end of line for the same sequence was found."));
             }
             if (sequence.length() > basesPerLine) {
                 throw new SAMException(String.format(
-                        "Sequence line for {} was longer than the expected length ({}): {}",
-                        contig,
-                        basesPerLine,
-                        sequence));
+                        "Sequence line for %s was longer than the expected length (%d): %s",
+                        contig, basesPerLine, sequence));
             } else if (sequence.length() < basesPerLine) {
                 if (lessBasesFound) {
                     throw new SAMException(String.format(
-                            "Only last line could have less than {} bases for '{}' sequence, but at least two are different. Last sequence line: {}",
-                            basesPerLine,
-                            contig,
-                            sequence));
+                            "Only last line could have less than %d bases for '%s' sequence, but at least two are different. Last sequence line: %s",
+                            basesPerLine, contig, sequence));
                 }
                 lessBasesFound = true;
             }

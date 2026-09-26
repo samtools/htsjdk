@@ -42,6 +42,8 @@ import java.nio.file.Path;
  * @author Tim Fennell
  */
 public class FastaSequenceFile extends AbstractFastaSequenceFile {
+    /** The most bases one sequence can have: its bases are held in one array, and this is the largest safe length. */
+    private static final int MAX_SEQUENCE_LENGTH = Integer.MAX_VALUE - 8;
 
     private final boolean truncateNamesAtWhitespace;
     private final SeekableStream seekableStream;
@@ -114,7 +116,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         final int knownLength = (getSequenceDictionary() == null)
                 ? -1
                 : getSequenceDictionary().getSequence(this.sequenceIndex).getSequenceLength();
-        final byte[] bases = readSequence(knownLength);
+        final byte[] bases = readSequence(knownLength, name);
         return new ReferenceSequence(name, this.sequenceIndex, bases);
     }
 
@@ -168,9 +170,10 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     /**
      * Read bases from input
      * @param knownLength For performance:: -1 if length is not known, otherwise the length of the sequence.
+     * @param sequenceName the name of the sequence, for error messages
      * @return ASCII bases for sequence
      */
-    private byte[] readSequence(final int knownLength) {
+    private byte[] readSequence(final int knownLength, final String sequenceName) {
         byte[] bases = (knownLength == -1) ? basesBuffer : new byte[knownLength];
 
         int sequenceLength = 0;
@@ -182,6 +185,13 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
             if (sawEoln && in.peekByte() == '>') {
                 break;
             }
+            // Grow only when there is more to read, so a sequence that exactly fills the largest buffer can
+            // still be read.
+            if (knownLength == -1 && sequenceLength == bases.length) {
+                final byte[] tmp = new byte[nextBufferLength(bases.length, sequenceName, getSource())];
+                System.arraycopy(bases, 0, tmp, 0, sequenceLength);
+                bases = tmp;
+            }
             sequenceLength += in.readToEndOfOutputBufferOrEoln(bases, sequenceLength);
             while (sequenceLength > 0 && Character.isWhitespace(StringUtil.byteToChar(bases[sequenceLength - 1]))) {
                 --sequenceLength;
@@ -190,11 +200,6 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
                 // When length is known, make sure there is no trailing whitespace that hasn't been traversed.
                 skipToEoln();
                 break;
-            }
-            if (sequenceLength == bases.length) {
-                final byte[] tmp = new byte[bases.length * 2];
-                System.arraycopy(bases, 0, tmp, 0, sequenceLength);
-                bases = tmp;
             }
         }
 
@@ -205,6 +210,25 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
             bases = tmp;
         }
         return bases;
+    }
+
+    /**
+     * Returns the length to grow a full buffer of bases to: double its length, but no more than
+     * {@link #MAX_SEQUENCE_LENGTH}.
+     *
+     * @param currentLength the length of the full buffer
+     * @param sequenceName the sequence being read, for the error message
+     * @param source the FASTA being read, for the error message
+     * @throws SAMException if the buffer is already {@link #MAX_SEQUENCE_LENGTH} long, so the sequence is too long
+     *     to read
+     */
+    static int nextBufferLength(final int currentLength, final String sequenceName, final String source) {
+        if (currentLength >= MAX_SEQUENCE_LENGTH) {
+            throw new SAMException(String.format(
+                    "Sequence '%s' in FASTA %s is longer than %d bases, the most htsjdk can hold for one sequence",
+                    sequenceName, source, MAX_SEQUENCE_LENGTH));
+        }
+        return (int) Math.min(2L * currentLength, MAX_SEQUENCE_LENGTH);
     }
 
     private void skipToEoln() {
