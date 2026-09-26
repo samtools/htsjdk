@@ -24,12 +24,17 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -109,5 +114,68 @@ public class FastaSequenceFileTest extends HtsjdkTest {
             Assert.assertEquals(referenceSequence2.getName(), chr1);
             Assert.assertEquals(StringUtil.bytesToString(referenceSequence2.getBases()), sequence + sequence);
         }
+    }
+
+    @Test
+    public void nextBufferLengthDoubles() {
+        Assert.assertEquals(FastaSequenceFile.nextBufferLength(1000, "chr1", "test.fasta"), 2000);
+    }
+
+    @Test
+    public void nextBufferLengthStopsAtTheLargestArray() {
+        Assert.assertEquals(FastaSequenceFile.nextBufferLength(1 << 30, "chr1", "test.fasta"), Integer.MAX_VALUE - 8);
+        Assert.assertEquals(
+                FastaSequenceFile.nextBufferLength((Integer.MAX_VALUE - 8) / 2 + 1, "chr1", "test.fasta"),
+                Integer.MAX_VALUE - 8);
+    }
+
+    @Test
+    public void nextBufferLengthFailsClearlyAtTheLargestArray() {
+        final SAMException e = Assert.expectThrows(
+                SAMException.class,
+                () -> FastaSequenceFile.nextBufferLength(Integer.MAX_VALUE - 8, "chrHuge", "huge.fasta"));
+        Assert.assertTrue(e.getMessage().contains("chrHuge"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("huge.fasta"), e.getMessage());
+    }
+
+    @Test
+    public void sequencesLongerThanTheInitialBufferAreReadWithoutADictionary() throws Exception {
+        // One sequence exactly fills the initial buffer and the next needs it grown twice
+        final Random random = new Random(42);
+        final String[] sequences = {
+            randomBases(random, Defaults.NON_ZERO_BUFFER_SIZE),
+            randomBases(random, 2 * Defaults.NON_ZERO_BUFFER_SIZE + 1)
+        };
+        final StringBuilder text = new StringBuilder();
+        for (int i = 0; i < sequences.length; i++) {
+            text.append(">chr").append(i + 1).append('\n');
+            for (int start = 0; start < sequences[i].length(); start += 60) {
+                text.append(sequences[i], start, Math.min(start + 60, sequences[i].length()))
+                        .append('\n');
+            }
+        }
+        final Path dir = IOUtil.createTempDir("FastaSequenceFileTest");
+        try {
+            final Path fasta = Files.writeString(dir.resolve("long.fasta"), text, StandardCharsets.US_ASCII);
+            try (FastaSequenceFile reader = new FastaSequenceFile(fasta, true)) {
+                Assert.assertNull(reader.getSequenceDictionary());
+                for (int i = 0; i < sequences.length; i++) {
+                    final ReferenceSequence sequence = reader.nextSequence();
+                    Assert.assertEquals(sequence.getName(), "chr" + (i + 1));
+                    Assert.assertEquals(sequence.getBaseString(), sequences[i]);
+                }
+                Assert.assertNull(reader.nextSequence());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    private static String randomBases(final Random random, final int length) {
+        final char[] bases = new char[length];
+        for (int i = 0; i < length; i++) {
+            bases[i] = "ACGT".charAt(random.nextInt(4));
+        }
+        return new String(bases);
     }
 }

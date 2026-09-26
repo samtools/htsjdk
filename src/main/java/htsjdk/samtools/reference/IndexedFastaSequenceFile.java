@@ -25,13 +25,18 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.io.IOPath;
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.IOUtil;
+import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -46,6 +51,9 @@ import java.nio.file.Path;
  * {@link #nextSequence} and {@link #reset} may not.
  */
 public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
+    private static final String GZIP_FASTA_MESSAGE = "FASTA file is gzip-compressed, but indexed access needs an "
+            + "uncompressed or bgzip-compressed FASTA (compress it with bgzip and index it with samtools faidx): ";
+
     /**
      * The interface facilitating direct access to the fasta.
      */
@@ -62,6 +70,9 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
             // check if it is a valid block-compressed file
             if (IOUtil.isBlockCompressed(path, true)) {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
+            }
+            if (isGzipButNotBlockCompressed(path)) {
+                throw new SAMException(GZIP_FASTA_MESSAGE + path);
             }
             this.channel = Files.newByteChannel(path);
             sanityCheckFastaAgainstIndex(path, index);
@@ -83,6 +94,9 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
             // reject block-compressed files (use BlockCompressedIndexedFastaSequenceFile)
             if (IOUtil.isBlockCompressed(path.toPath(), true)) {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
+            }
+            if (isGzipButNotBlockCompressed(path.toPath())) {
+                throw new SAMException(GZIP_FASTA_MESSAGE + path);
             }
             this.channel = Files.newByteChannel(path.toPath());
         } catch (IOException e) {
@@ -118,12 +132,32 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     @Deprecated
     public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
         try {
-            if (IOUtil.isBlockCompressed(fastaFile, true)) {
+            if (IOUtil.isBlockCompressed(fastaFile, true) || isGzipButNotBlockCompressed(fastaFile)) {
                 return false;
             }
             return (Files.exists(fastaFile) && findFastaIndex(fastaFile) != null);
         } catch (IOException e) {
             return false;
+        }
+    }
+
+    /**
+     * Returns whether {@code path} is gzip-compressed but not BGZF, which can be read only from the start. Only a
+     * file whose name has a gzip or BGZF extension ({@link IOUtil#hasBlockCompressedExtension(Path)}) is opened to
+     * check; any other file is taken to be uncompressed.
+     *
+     * @param path the FASTA file
+     * @return true if the file starts with the gzip magic number but is not BGZF
+     * @throws IOException if the file cannot be read
+     */
+    static boolean isGzipButNotBlockCompressed(final Path path) throws IOException {
+        if (!IOUtil.hasBlockCompressedExtension(path)) {
+            return false;
+        }
+        try (final InputStream stream = new BufferedInputStream(
+                Files.newInputStream(path),
+                Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE))) {
+            return IOUtil.isGZIPInputStream(stream) && !BlockCompressedInputStream.isValidFile(stream);
         }
     }
 
