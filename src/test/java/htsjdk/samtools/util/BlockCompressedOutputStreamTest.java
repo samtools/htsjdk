@@ -27,9 +27,13 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -295,5 +299,85 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         bcis.close();
         Assert.assertEquals(deflateCalls[0], 3, "deflate calls");
         Assert.assertEquals(reader.readLine(), null);
+    }
+
+    @Test
+    public void closingTwiceWritesOneTerminatorBlockAndDoesNotThrow() throws IOException {
+        final Path f = Files.createTempFile("BCOST.", ".gz");
+        IOUtil.deleteOnExit(f);
+        final byte[] content = "Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII);
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
+        bcos.write(content);
+        bcos.close();
+        final long sizeAfterFirstClose = Files.size(f);
+
+        bcos.close();
+
+        Assert.assertEquals(Files.size(f), sizeAfterFirstClose);
+        Assert.assertEquals(
+                BlockCompressedInputStream.checkTermination(f),
+                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK);
+        try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(f)) {
+            Assert.assertEquals(bcis.readAllBytes(), content);
+        }
+    }
+
+    @Test
+    public void closingTwiceOverAStreamDoesNotThrow() throws IOException {
+        final ByteArrayOutputStream target = new ByteArrayOutputStream();
+        final byte[] content = "Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII);
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(target, (Path) null);
+        bcos.write(content);
+        bcos.close();
+        final int sizeAfterFirstClose = target.size();
+
+        bcos.close();
+
+        Assert.assertEquals(target.size(), sizeAfterFirstClose);
+        try (final BlockCompressedInputStream bcis =
+                new BlockCompressedInputStream(new ByteArrayInputStream(target.toByteArray()))) {
+            Assert.assertEquals(bcis.readAllBytes(), content);
+        }
+    }
+
+    @Test
+    public void writingAfterCloseThrows() throws IOException {
+        final BlockCompressedOutputStream bcos =
+                new BlockCompressedOutputStream(new ByteArrayOutputStream(), (Path) null);
+        bcos.write("Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII));
+        bcos.close();
+
+        Assert.expectThrows(IOException.class, () -> bcos.write('x'));
+        Assert.expectThrows(IOException.class, () -> bcos.write("Hi, Dad!\n".getBytes(StandardCharsets.US_ASCII)));
+    }
+
+    @Test
+    public void aFailedCloseStillClosesTheUnderlyingStream() throws IOException {
+        final IOException diskFull = new IOException("disk full");
+        final boolean[] underlyingClosed = {false};
+        final OutputStream failingOnWrite = new OutputStream() {
+            @Override
+            public void write(final int b) throws IOException {
+                throw diskFull;
+            }
+
+            @Override
+            public void write(final byte[] b, final int off, final int len) throws IOException {
+                throw diskFull;
+            }
+
+            @Override
+            public void close() {
+                underlyingClosed[0] = true;
+            }
+        };
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(failingOnWrite, (Path) null);
+        bcos.write("Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII));
+
+        final RuntimeIOException failure = Assert.expectThrows(RuntimeIOException.class, bcos::close);
+
+        Assert.assertSame(failure.getCause(), diskFull);
+        Assert.assertTrue(underlyingClosed[0], "the underlying stream should be closed");
+        bcos.close();
     }
 }

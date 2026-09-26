@@ -39,6 +39,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * this class writes VCF files
@@ -51,6 +53,13 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     private OutputStream outputStream;
     private LocationAware locationSource = null;
     private IndexCreator indexer = null;
+
+    // The contig and start of the last record indexed, and the contigs whose records are finished
+    private String lastContig = null;
+    private int lastStart;
+    private final Set<String> finishedContigs = new HashSet<>();
+
+    private boolean closed;
 
     private IndexingVariantContextWriter(
             final String name, final Path location, final OutputStream output, final SAMSequenceDictionary refDict) {
@@ -141,10 +150,13 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     public abstract void writeHeader(VCFHeader header);
 
     /**
-     * attempt to close the VCF file
+     * attempt to close the VCF file; a second call does nothing
      */
     @Override
     public void close() {
+        // Set before the work, so that a close that fails part way is not retried
+        if (closed) return;
+        closed = true;
         try {
             // close the underlying output stream
             outputStream.close();
@@ -162,6 +174,13 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     }
 
     /**
+     * @return whether {@link #close()} has run, so that a subclass's own closing work is done only once
+     */
+    protected final boolean isClosed() {
+        return closed;
+    }
+
+    /**
      * @return the reference sequence dictionary used for the variant contexts being written
      */
     public SAMSequenceDictionary getRefDict() {
@@ -171,12 +190,40 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
     /**
      * add a record to the file
      *
+     * <p>With on-the-fly indexing, records must be sorted by start within each contig and each contig's records must
+     * be contiguous. The contigs may otherwise come in any order, except that a BGZF BCF writer, which indexes with a
+     * CSI, also needs them in reference-dictionary order and refuses a record out of it (see {@link BCF2Writer#add}).
+     *
      * @param vc      the Variant Context object
+     * @throws IllegalArgumentException with on-the-fly indexing, if the record starts before the last one on its
+     *     contig, or another contig's records have come since its contig's; the record is neither indexed nor
+     *     written, so the caller may carry on with a correctly ordered one
      */
     @Override
     public void add(final VariantContext vc) {
         // if we are doing on the fly indexing, add the record ***before*** we write any bytes
-        if (indexer != null) indexer.addFeature(vc, locationSource.getPosition());
+        if (indexer != null) {
+            final String contig = vc.getContig();
+            final int start = vc.getStart();
+            final boolean sameContig = contig.equals(lastContig);
+            // Checked before any indexer, so that all refuse alike: the Tribble linear index would otherwise start a
+            // new per-contig index on each return to a contig and, binning only forwards, miss a record that goes back
+            if (sameContig && start < lastStart) {
+                throw new IllegalArgumentException("Records are not coordinate-sorted: " + contig + ":" + start
+                        + " follows " + contig + ":" + lastStart
+                        + "; sort them, or build the writer without Options.INDEX_ON_THE_FLY");
+            }
+            if (!sameContig && finishedContigs.contains(contig)) {
+                throw new IllegalArgumentException("Records are not coordinate-sorted: " + contig + ":" + start
+                        + " follows " + lastContig + ":" + lastStart + ", but " + contig
+                        + " came earlier and each contig's records must be contiguous"
+                        + "; sort them, or build the writer without Options.INDEX_ON_THE_FLY");
+            }
+            indexer.addFeature(vc, locationSource.getPosition());
+            if (!sameContig && lastContig != null) finishedContigs.add(lastContig);
+            lastContig = contig;
+            lastStart = start;
+        }
     }
 
     /**
