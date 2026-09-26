@@ -110,6 +110,7 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     private Path file = null;
     private long mBlockAddress = 0;
     private GZIIndex.GZIIndexer indexer;
+    private boolean closed;
 
     /**
      * Uses default compression level, which is 5 unless changed by setCompressionLevel
@@ -306,7 +307,13 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
         close(true);
     }
 
+    /**
+     * Flushes and closes the stream, writing the empty terminator block first if asked; a second call does nothing.
+     */
     public void close(final boolean writeTerminatorBlock) throws IOException {
+        // Set before the work, as java.io.FilterOutputStream does, so that a close that fails part way is not retried
+        if (closed) return;
+        closed = true;
         flush();
         // For debugging...
         // if (numberOfThrottleBacks > 0) {

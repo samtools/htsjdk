@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
@@ -1345,5 +1346,183 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .orElseThrow();
         final String rewrittenGenoCols = rewrittenLine.substring(rewrittenLine.indexOf("GT:"));
         Assert.assertEquals(rewrittenGenoCols, originalGenoCols, "4.5 to 4.5 with LAA should pass through unchanged");
+    }
+
+    // On-the-fly indexing needs sorted records; closing twice
+
+    /** A sites-only header over two contigs, chr1 and chr2. */
+    private static VCFHeader twoContigHeader() {
+        final VCFHeader header = new VCFHeader();
+        header.setSequenceDictionary(new SAMSequenceDictionary(
+                List.of(new SAMSequenceRecord("chr1", 10000), new SAMSequenceRecord("chr2", 10000))));
+        return header;
+    }
+
+    private static VariantContext siteAt(final String contig, final int start) {
+        return new VariantContextBuilder("test", contig, start, start, List.of(Allele.REF_A, Allele.ALT_C)).make();
+    }
+
+    /** A temporary {@code .vcf} or {@code .vcf.gz} whose index, Tribble or tabix, is also deleted on exit. */
+    private Path temporaryIndexedOutput(final String prefix, final String extension) throws IOException {
+        final Path output = Files.createTempFile(tempDir, prefix, extension);
+        output.toFile().deleteOnExit();
+        final Path index = FileExtensions.COMPRESSED_VCF.equals(extension)
+                ? Tribble.tabixIndexPath(output)
+                : Tribble.indexPath(output);
+        index.toFile().deleteOnExit();
+        return output;
+    }
+
+    private static VariantContextWriter indexingWriter(final Path output, final VCFHeader header) {
+        return new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build();
+    }
+
+    private static List<String> contigsAndStarts(final Iterator<VariantContext> records) {
+        final List<String> contigsAndStarts = new ArrayList<>();
+        records.forEachRemaining(vc -> contigsAndStarts.add(vc.getContig() + ":" + vc.getStart()));
+        return contigsAndStarts;
+    }
+
+    /** The records on a contig, found through the file's index, as {@code contig:start}. */
+    private static List<String> queryThroughIndex(final Path vcf, final String contig) {
+        try (final VCFFileReader reader = new VCFFileReader(vcf, true);
+                final CloseableIterator<VariantContext> records = reader.query(contig, 1, 10000)) {
+            return contigsAndStarts(records);
+        }
+    }
+
+    @Test
+    public void onTheFlyIndexingRefusesARecordThatStartsBeforeTheLastOnItsContig() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("backwards.", FileExtensions.VCF);
+        try (final VariantContextWriter writer = indexingWriter(output, header)) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 10));
+            final IllegalArgumentException refusal =
+                    Assert.expectThrows(IllegalArgumentException.class, () -> writer.add(siteAt("chr1", 5)));
+            Assert.assertTrue(refusal.getMessage().contains("chr1:5 follows chr1:10"), refusal.getMessage());
+        }
+    }
+
+    @Test
+    public void onTheFlyIndexingRefusesAContigThatComesBack() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("contigComesBack.", FileExtensions.VCF);
+        try (final VariantContextWriter writer = indexingWriter(output, header)) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 1));
+            writer.add(siteAt("chr2", 1));
+            final IllegalArgumentException refusal =
+                    Assert.expectThrows(IllegalArgumentException.class, () -> writer.add(siteAt("chr1", 2)));
+            Assert.assertTrue(
+                    refusal.getMessage().startsWith("Records are not coordinate-sorted: chr1:2 follows chr2:1"),
+                    refusal.getMessage());
+            Assert.assertTrue(refusal.getMessage().contains("contiguous"), refusal.getMessage());
+        }
+    }
+
+    @Test
+    public void onTheFlyTabixIndexingRefusesARecordThatStartsBeforeTheLastOnItsContig() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("backwards.", FileExtensions.COMPRESSED_VCF);
+        try (final VariantContextWriter writer = indexingWriter(output, header)) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 10));
+            final IllegalArgumentException refusal =
+                    Assert.expectThrows(IllegalArgumentException.class, () -> writer.add(siteAt("chr1", 5)));
+            Assert.assertTrue(
+                    refusal.getMessage().startsWith("Records are not coordinate-sorted: chr1:5 follows chr1:10"),
+                    refusal.getMessage());
+            Assert.assertTrue(refusal.getMessage().contains("INDEX_ON_THE_FLY"), refusal.getMessage());
+        }
+    }
+
+    @Test
+    public void aRefusedRecordIsNotWrittenAndTheWriterCarriesOn() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("refusedThenCarriedOn.", FileExtensions.VCF);
+        try (final VariantContextWriter writer = indexingWriter(output, header)) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 10));
+            writer.add(siteAt("chr2", 1));
+            Assert.expectThrows(IllegalArgumentException.class, () -> writer.add(siteAt("chr1", 5)));
+            writer.add(siteAt("chr2", 2));
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, true)) {
+            Assert.assertEquals(contigsAndStarts(reader.iterator()), List.of("chr1:10", "chr2:1", "chr2:2"));
+        }
+        Assert.assertEquals(queryThroughIndex(output, "chr1"), List.of("chr1:10"));
+        Assert.assertEquals(queryThroughIndex(output, "chr2"), List.of("chr2:1", "chr2:2"));
+    }
+
+    @Test
+    public void recordsWithEqualStartsAreAccepted() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("equalStarts.", FileExtensions.VCF);
+        try (final VariantContextWriter writer = indexingWriter(output, header)) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 10));
+            writer.add(siteAt("chr1", 10));
+        }
+        Assert.assertEquals(queryThroughIndex(output, "chr1"), List.of("chr1:10", "chr1:10"));
+    }
+
+    @Test
+    public void unsortedRecordsAreWrittenWithoutOnTheFlyIndexing() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = Files.createTempFile(tempDir, "unsortedUnindexed.", FileExtensions.VCF);
+        output.toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 10));
+            writer.add(siteAt("chr1", 5));
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            Assert.assertEquals(contigsAndStarts(reader.iterator()), List.of("chr1:10", "chr1:5"));
+        }
+    }
+
+    @Test
+    public void closingAnIndexedVcfWriterTwiceLeavesTheIndexAsTheFirstCloseWroteIt() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("closedTwice.", FileExtensions.VCF);
+        final VariantContextWriter writer = indexingWriter(output, header);
+        writer.writeHeader(header);
+        writer.add(siteAt("chr1", 10));
+        writer.add(siteAt("chr2", 20));
+        writer.close();
+        final byte[] vcfAfterFirstClose = Files.readAllBytes(output);
+        final byte[] indexAfterFirstClose = Files.readAllBytes(Tribble.indexPath(output));
+
+        writer.close();
+
+        Assert.assertEquals(Files.readAllBytes(output), vcfAfterFirstClose);
+        Assert.assertEquals(Files.readAllBytes(Tribble.indexPath(output)), indexAfterFirstClose);
+        Assert.assertEquals(queryThroughIndex(output, "chr1"), List.of("chr1:10"));
+        Assert.assertEquals(queryThroughIndex(output, "chr2"), List.of("chr2:20"));
+    }
+
+    @Test
+    public void closingABgzippedVcfWriterTwiceDoesNotThrow() throws IOException {
+        final VCFHeader header = twoContigHeader();
+        final Path output = temporaryIndexedOutput("closedTwice.", FileExtensions.COMPRESSED_VCF);
+        final VariantContextWriter writer = indexingWriter(output, header);
+        writer.writeHeader(header);
+        writer.add(siteAt("chr1", 10));
+        writer.add(siteAt("chr2", 20));
+        writer.close();
+
+        writer.close();
+
+        Assert.assertEquals(queryThroughIndex(output, "chr1"), List.of("chr1:10"));
+        Assert.assertEquals(queryThroughIndex(output, "chr2"), List.of("chr2:20"));
     }
 }

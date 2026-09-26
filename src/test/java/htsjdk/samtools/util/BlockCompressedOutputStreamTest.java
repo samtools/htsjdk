@@ -27,9 +27,12 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -295,5 +298,44 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         bcis.close();
         Assert.assertEquals(deflateCalls[0], 3, "deflate calls");
         Assert.assertEquals(reader.readLine(), null);
+    }
+
+    @Test
+    public void closingTwiceWritesOneTerminatorBlockAndDoesNotThrow() throws IOException {
+        final Path f = Files.createTempFile("BCOST.", ".gz");
+        IOUtil.deleteOnExit(f);
+        final byte[] content = "Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII);
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
+        bcos.write(content);
+        bcos.close();
+        final long sizeAfterFirstClose = Files.size(f);
+
+        bcos.close();
+
+        Assert.assertEquals(Files.size(f), sizeAfterFirstClose);
+        Assert.assertEquals(
+                BlockCompressedInputStream.checkTermination(f),
+                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK);
+        try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(f)) {
+            Assert.assertEquals(bcis.readAllBytes(), content);
+        }
+    }
+
+    @Test
+    public void closingTwiceOverAStreamDoesNotThrow() throws IOException {
+        final ByteArrayOutputStream target = new ByteArrayOutputStream();
+        final byte[] content = "Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII);
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(target, (Path) null);
+        bcos.write(content);
+        bcos.close();
+        final int sizeAfterFirstClose = target.size();
+
+        bcos.close();
+
+        Assert.assertEquals(target.size(), sizeAfterFirstClose);
+        try (final BlockCompressedInputStream bcis =
+                new BlockCompressedInputStream(new ByteArrayInputStream(target.toByteArray()))) {
+            Assert.assertEquals(bcis.readAllBytes(), content);
+        }
     }
 }
