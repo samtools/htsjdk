@@ -361,7 +361,8 @@ public class BlockCompressedOutputStream extends OutputStream implements Locatio
     /** Returns {@code first}, with {@code later} added to it as suppressed, or {@code later} if there is no first. */
     private static Exception firstFailure(final Exception first, final Exception later) {
         if (first == null) return later;
-        first.addSuppressed(later);
+        // A stream can throw the same instance twice, and an exception cannot suppress itself
+        if (first != later) first.addSuppressed(later);
         return first;
     }
 

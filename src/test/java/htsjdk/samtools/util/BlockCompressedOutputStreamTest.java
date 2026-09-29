@@ -380,4 +380,31 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         Assert.assertTrue(underlyingClosed[0], "the underlying stream should be closed");
         bcos.close();
     }
+
+    @Test
+    public void aCloseThatFailsTwiceWithTheSameExceptionThrowsIt() throws IOException {
+        final IllegalStateException flushFailure = new IllegalStateException("flush failed");
+        final OutputStream failingOnFlush = new OutputStream() {
+            @Override
+            public void write(final int b) {}
+
+            @Override
+            public void flush() {
+                throw flushFailure;
+            }
+        };
+        final boolean[] indexClosed = {false};
+        final OutputStream index = new ByteArrayOutputStream() {
+            @Override
+            public void close() {
+                indexClosed[0] = true;
+            }
+        };
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(failingOnFlush, (Path) null);
+        bcos.addIndexer(index);
+        bcos.write("Hi, Mom!\n".getBytes(StandardCharsets.US_ASCII));
+
+        Assert.assertSame(Assert.expectThrows(IllegalStateException.class, bcos::close), flushFailure);
+        Assert.assertTrue(indexClosed[0], "the GZI index should be closed");
+    }
 }
