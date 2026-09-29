@@ -2105,6 +2105,78 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Assert.assertTrue(Files.exists(Tribble.indexPath(output)));
     }
 
+    /** A sites-only header over two contigs, chr1 and chr2. */
+    private static VCFHeader twoContigSitesHeader() {
+        final VCFHeader header = new VCFHeader();
+        header.setSequenceDictionary(new SAMSequenceDictionary(
+                List.of(new SAMSequenceRecord("chr1", 10000), new SAMSequenceRecord("chr2", 10000))));
+        return header;
+    }
+
+    private static VariantContext siteAt(final String contig, final int start) {
+        return new VariantContextBuilder("test", contig, start, start, List.of(REF_A, ALT_C)).make();
+    }
+
+    private static List<String> contigsAndStarts(final Iterator<VariantContext> records) {
+        final List<String> contigsAndStarts = new ArrayList<>();
+        records.forEachRemaining(vc -> contigsAndStarts.add(vc.getContig() + ":" + vc.getStart()));
+        return contigsAndStarts;
+    }
+
+    @Test
+    public void onTheFlyTribbleIndexingOfBcf21RefusesUnsortedRecords() throws IOException {
+        final VCFHeader header = twoContigSitesHeader();
+        final Path output = Files.createTempFile(tempDir, "unsorted21.", ".bcf");
+        output.toFile().deleteOnExit();
+        Tribble.indexPath(output).toFile().deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .setBCFVersion(BCFVersion.BCF_2_1)
+                .build()) {
+            writer.writeHeader(header);
+            writer.add(siteAt("chr1", 10));
+            final IllegalArgumentException refusal =
+                    Assert.expectThrows(IllegalArgumentException.class, () -> writer.add(siteAt("chr1", 5)));
+            Assert.assertTrue(
+                    refusal.getMessage().startsWith("Records are not coordinate-sorted: chr1:5 follows chr1:10"),
+                    refusal.getMessage());
+        }
+        try (final VCFFileReader reader = new VCFFileReader(output, false)) {
+            Assert.assertEquals(contigsAndStarts(reader.iterator()), List.of("chr1:10"));
+        }
+    }
+
+    @Test
+    public void closingABcfWriterTwiceDoesNotThrow() throws IOException {
+        final VCFHeader header = twoContigSitesHeader();
+        final Path output = Files.createTempFile(tempDir, "closedTwice.", ".bcf");
+        output.toFile().deleteOnExit();
+        final Path csiPath = output.resolveSibling(output.getFileName() + FileExtensions.CSI);
+        csiPath.toFile().deleteOnExit();
+        final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build();
+        writer.writeHeader(header);
+        writer.add(siteAt("chr1", 10));
+        writer.add(siteAt("chr2", 20));
+        writer.close();
+
+        writer.close();
+
+        try (final BCFFileReader reader = new BCFFileReader(output, csiPath)) {
+            try (final CloseableIterator<VariantContext> records = reader.query("chr1", 1, 10000)) {
+                Assert.assertEquals(contigsAndStarts(records), List.of("chr1:10"));
+            }
+            try (final CloseableIterator<VariantContext> records = reader.query("chr2", 1, 10000)) {
+                Assert.assertEquals(contigsAndStarts(records), List.of("chr2:20"));
+            }
+        }
+    }
+
     // ============================================================
     // Constructor guard: Tribble indexing over a BGZF stream is refused
     // ============================================================
