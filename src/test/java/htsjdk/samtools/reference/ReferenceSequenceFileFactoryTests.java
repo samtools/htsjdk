@@ -147,6 +147,48 @@ public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void aGzippedFastaWithAnIndexInABundleIsReadSequentiallyWithItsDictionary() throws IOException {
+        final Path dir = IOUtil.createTempDir("ReferenceSequenceFileFactoryTests");
+        try {
+            final Path fasta = dir.resolve("gzipped.fa.gz");
+            writeGzippedFastaWithIndex(fasta);
+            final Path dict = dir.resolve("gzipped.dict");
+            Files.writeString(
+                    dict,
+                    "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:" + GZIPPED_CHR1.length() + "\n@SQ\tSN:chr2\tLN:"
+                            + GZIPPED_CHR2.length() + "\n",
+                    StandardCharsets.US_ASCII);
+            final Bundle bundle = new BundleBuilder()
+                    .addPrimary(new IOPathResource(
+                            new HtsPath(fasta.toUri().toString()), BundleResourceType.CT_HAPLOID_REFERENCE))
+                    .addSecondary(new IOPathResource(
+                            new HtsPath(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta)
+                                    .toUri()
+                                    .toString()),
+                            BundleResourceType.CT_REFERENCE_INDEX))
+                    .addSecondary(new IOPathResource(
+                            new HtsPath(dict.toUri().toString()), BundleResourceType.CT_REFERENCE_DICTIONARY))
+                    .build();
+
+            try (ReferenceSequenceFile reader =
+                    ReferenceSequenceFileFactory.getReferenceSequenceFileFromBundle(bundle, true, true)) {
+                Assert.assertFalse(reader.isIndexed());
+                Assert.assertEquals(
+                        reader.getSequenceDictionary().getSequence("chr2").getSequenceLength(), GZIPPED_CHR2.length());
+                final ReferenceSequence chr1 = reader.nextSequence();
+                Assert.assertEquals(chr1.getName(), "chr1");
+                Assert.assertEquals(chr1.getBaseString(), GZIPPED_CHR1);
+                final ReferenceSequence chr2 = reader.nextSequence();
+                Assert.assertEquals(chr2.getName(), "chr2");
+                Assert.assertEquals(chr2.getBaseString(), GZIPPED_CHR2);
+                Assert.assertNull(reader.nextSequence());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
     @DataProvider
     public Object[][] fastaNames() {
         return new Object[][] {

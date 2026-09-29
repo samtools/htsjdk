@@ -236,7 +236,10 @@ public class ReferenceSequenceFileFactory {
                         dictPath,
                         new FastaSequenceIndex(indexPath.toPath()),
                         GZIIndex.loadIndex(gziIndexPath.toPath()));
-            } else if (preferIndexed && indexPath != null) {
+            } else if (preferIndexed
+                    && indexPath != null
+                    // A gzipped (not bgzipped) FASTA can only be read from the start, whatever indexes it has
+                    && !IndexedFastaSequenceFile.isGzipButNotBlockCompressed(fastaPath.toPath())) {
                 return new IndexedFastaSequenceFile(fastaPath, dictPath, new FastaSequenceIndex(indexPath.toPath()));
             } else {
                 return new FastaSequenceFile(fastaPath, dictPath, truncateNamesAtWhitespace);
