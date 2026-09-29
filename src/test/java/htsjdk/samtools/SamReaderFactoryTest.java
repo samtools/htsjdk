@@ -75,6 +75,37 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         Assert.assertNotEquals(inflateCalls[0], 0, "Not using Inflater from InflateFactory on file : " + inputFile);
     }
 
+    @Test
+    public void makeDefaultUsesTheInflaterFactoryInForceWhenCalled() throws IOException {
+        // Initialises the class before the default changes, so nothing built then can hold the new default.
+        SamReaderFactory.makeDefault();
+
+        // Other test classes run in parallel in this JVM, so the new default must still work for them.
+        final InflaterFactory previousDefault = BlockGunzipper.getDefaultInflaterFactory();
+        final Set<Thread> callingThreads = ConcurrentHashMap.newKeySet();
+        final InflaterFactory recordingFactory = new InflaterFactory() {
+            @Override
+            public Inflater makeInflater(final boolean gzipCompatible) {
+                callingThreads.add(Thread.currentThread());
+                return previousDefault.makeInflater(gzipCompatible);
+            }
+        };
+
+        BlockGunzipper.setDefaultInflaterFactory(recordingFactory);
+        try {
+            // A seekable stream named .bam is taken to be BAM without sniffing its magic, which would inflate with
+            // the global default whichever inflater factory the reader factory holds.
+            final Path input = TEST_DATA_DIR.resolve("compressed.bam");
+            try (final SamReader reader =
+                    SamReaderFactory.makeDefault().open(SamInputResource.of(new SeekableFileStream(input)))) {
+                for (final SAMRecord ignored : reader) {}
+            }
+        } finally {
+            BlockGunzipper.setDefaultInflaterFactory(previousDefault);
+        }
+        Assert.assertTrue(callingThreads.contains(Thread.currentThread()));
+    }
+
     private int countRecordsInQueryInterval(final SamReader reader, final QueryInterval query) {
         final SAMRecordIterator iter = reader.queryOverlapping(new QueryInterval[] {query});
         int count = 0;

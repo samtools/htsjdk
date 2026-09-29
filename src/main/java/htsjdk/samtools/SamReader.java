@@ -354,6 +354,20 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      */
     public SAMRecordIterator queryContained(final QueryInterval[] intervals);
 
+    /**
+     * Iterate over the unplaced reads, those with no reference sequence (RNAME {@code *}), which a coordinate-sorted
+     * file keeps after every placed read; these are the records {@code samtools view <file> '*'} returns.
+     * <p/>
+     * An unmapped read placed at its mate's position is not included (a query overlapping that position returns it).
+     * To see every read with the unmapped flag, iterate over the whole file.
+     * <p/>
+     * Only valid to call this if hasIndex() == true.
+     * <p/>
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
+     * a second iteration, the first one must be closed first.
+     *
+     * @return Iterator over the unplaced reads.
+     */
     public SAMRecordIterator queryUnmapped();
 
     /**
@@ -632,6 +646,14 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
     }
 
+    /**
+     * Wraps a record iterator so that {@link #assertSorted} can check the records' order.
+     *
+     * <p>While checking, it reads one record ahead and compares each record it returns with the one after it, before
+     * the caller has seen either, so a caller that changes a record it has been given cannot affect the check. A
+     * record found out of order is still reported when the caller asks for it: the exception is built as soon as the
+     * two are compared, and thrown by the following call to {@link #next()}.
+     */
     static class AssertingIterator implements SAMRecordIterator {
 
         static AssertingIterator of(final CloseableIterator<SAMRecord> iterator) {
@@ -639,7 +661,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         private final CloseableIterator<SAMRecord> wrappedIterator;
-        private SAMSortOrderChecker checker;
+        private SAMFileHeader.SortOrder sortOrder;
+        /** Null while the order is not being checked. */
+        private SAMRecordComparator comparator;
+        /** The record read ahead of the one last returned, if any; it is returned next. */
+        private SAMRecord heldRecord;
+        /** Thrown by the next call to {@link #next()}, because {@link #heldRecord} is out of order. */
+        private IllegalStateException pendingFailure;
 
         public AssertingIterator(final CloseableIterator<SAMRecord> iterator) {
             wrappedIterator = iterator;
@@ -647,19 +675,32 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         @Override
         public SAMRecordIterator assertSorted(final SAMFileHeader.SortOrder sortOrder) {
-            checker = new SAMSortOrderChecker(sortOrder);
+            this.sortOrder = sortOrder;
+            this.comparator = sortOrder == null ? null : sortOrder.getComparatorInstance();
             return this;
         }
 
         @Override
         public SAMRecord next() {
-            final SAMRecord result = wrappedIterator.next();
-            if (checker != null) {
-                final SAMRecord previous = checker.getPreviousRecord();
-                if (!checker.isSorted(result)) {
-                    throw new IllegalStateException(String.format(
+            if (pendingFailure != null) {
+                // The out-of-order record stays held, so iteration can carry on from it after the failure.
+                final IllegalStateException failure = pendingFailure;
+                pendingFailure = null;
+                throw failure;
+            }
+            if (comparator == null && heldRecord == null) {
+                return wrappedIterator.next();
+            }
+
+            final SAMRecord result = heldRecord != null ? heldRecord : wrappedIterator.next();
+            heldRecord = null;
+            if (comparator != null && wrappedIterator.hasNext()) {
+                heldRecord = wrappedIterator.next();
+                if (comparator.fileOrderCompare(result, heldRecord) > 0) {
+                    // Formatted now, while the caller cannot yet have changed either record.
+                    pendingFailure = new IllegalStateException(String.format(
                             "Record %s should come after %s when sorting with %s ordering.",
-                            previous.getSAMString(), result.getSAMString(), checker.getSortOrder()));
+                            result.getSAMString(), heldRecord.getSAMString(), sortOrder));
                 }
             }
             return result;
@@ -672,11 +713,15 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         @Override
         public boolean hasNext() {
-            return wrappedIterator.hasNext();
+            return heldRecord != null || wrappedIterator.hasNext();
         }
 
         @Override
         public void remove() {
+            if (heldRecord != null) {
+                throw new UnsupportedOperationException(
+                        "Cannot remove a record while the record after it is held for the sort-order check.");
+            }
             wrappedIterator.remove();
         }
     }

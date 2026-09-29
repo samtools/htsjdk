@@ -292,6 +292,99 @@ public class SamReaderTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void assertingIteratorIgnoresChangesToARecordAlreadyReturned() {
+        final SAMRecord first = createRecord(1, 1);
+        final SAMRecord second = createRecord(2, 1);
+        final SamReader.AssertingIterator iter =
+                new SamReader.AssertingIterator(new CountingIterator(Arrays.asList(first, second)));
+        iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
+
+        Assert.assertSame(iter.next(), first);
+        first.setAlignmentStart(3);
+        Assert.assertSame(iter.next(), second);
+    }
+
+    @Test
+    public void assertingIteratorThrowsWhenAskedForTheOutOfOrderRecord() {
+        final SAMRecord first = createRecord(10, 1);
+        first.setReadName("first");
+        final SAMRecord second = createRecord(1, 1);
+        second.setReadName("second");
+        final SamReader.AssertingIterator iter =
+                new SamReader.AssertingIterator(new CountingIterator(Arrays.asList(first, second)));
+        iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
+
+        Assert.assertSame(iter.next(), first);
+        final IllegalStateException failure = Assert.expectThrows(IllegalStateException.class, iter::next);
+        Assert.assertTrue(failure.getMessage().contains(first.getSAMString()), failure.getMessage());
+        Assert.assertTrue(failure.getMessage().contains(second.getSAMString()), failure.getMessage());
+    }
+
+    @Test
+    public void assertingIteratorReturnsTheOutOfOrderRecordAfterReportingIt() {
+        final SAMRecord first = createRecord(10, 1);
+        final SAMRecord outOfOrder = createRecord(1, 1);
+        final SAMRecord third = createRecord(20, 1);
+        final SamReader.AssertingIterator iter =
+                new SamReader.AssertingIterator(new CountingIterator(Arrays.asList(first, outOfOrder, third)));
+        iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
+
+        Assert.assertSame(iter.next(), first);
+        Assert.expectThrows(IllegalStateException.class, iter::next);
+        Assert.assertSame(iter.next(), outOfOrder);
+        Assert.assertSame(iter.next(), third);
+        Assert.assertFalse(iter.hasNext());
+    }
+
+    @Test
+    public void assertingIteratorDoesNotReadAheadWithoutASortCheck() {
+        final CountingIterator wrapped = new CountingIterator(Arrays.asList(createRecord(1, 1), createRecord(2, 1)));
+        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(wrapped);
+
+        iter.next();
+        Assert.assertEquals(wrapped.nextCalls, 1);
+    }
+
+    @Test
+    public void assertingIteratorHasNextWhileARecordIsHeldAhead() {
+        final SAMRecord first = createRecord(1, 1);
+        final SAMRecord second = createRecord(2, 1);
+        final CountingIterator wrapped = new CountingIterator(Arrays.asList(first, second));
+        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(wrapped);
+        iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
+
+        Assert.assertSame(iter.next(), first);
+        Assert.assertFalse(wrapped.hasNext());
+        Assert.assertTrue(iter.hasNext());
+        Assert.assertSame(iter.next(), second);
+        Assert.assertFalse(iter.hasNext());
+    }
+
+    /** Iterates over the given records, counting the calls to {@link #next()}. */
+    private static final class CountingIterator implements CloseableIterator<SAMRecord> {
+        private final Iterator<SAMRecord> records;
+        private int nextCalls = 0;
+
+        private CountingIterator(final List<SAMRecord> records) {
+            this.records = records.iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return records.hasNext();
+        }
+
+        @Override
+        public SAMRecord next() {
+            nextCalls++;
+            return records.next();
+        }
+
+        @Override
+        public void close() {}
+    }
+
     private static SAMRecord createRecord(int start, int mappingQuality) {
         final SAMRecord rec = new SAMRecord(getHeader());
         rec.setReadName("read");
