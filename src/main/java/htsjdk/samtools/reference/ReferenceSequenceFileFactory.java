@@ -236,7 +236,10 @@ public class ReferenceSequenceFileFactory {
                         dictPath,
                         new FastaSequenceIndex(indexPath.toPath()),
                         GZIIndex.loadIndex(gziIndexPath.toPath()));
-            } else if (preferIndexed && indexPath != null) {
+            } else if (preferIndexed
+                    && indexPath != null
+                    // A gzipped (not bgzipped) FASTA can only be read from the start, whatever indexes it has
+                    && !IndexedFastaSequenceFile.isGzipButNotBlockCompressed(fastaPath.toPath())) {
                 return new IndexedFastaSequenceFile(fastaPath, dictPath, new FastaSequenceIndex(indexPath.toPath()));
             } else {
                 return new FastaSequenceFile(fastaPath, dictPath, truncateNamesAtWhitespace);
@@ -267,6 +270,7 @@ public class ReferenceSequenceFileFactory {
      *     <li>Associated .fai index ({@link FastaSequenceIndex}).</li>
      *     <li>Associated .gzi index if it is block-compressed ({@link GZIIndex}).</li>
      * </ul>
+     * A gzip-compressed FASTA that is not block-compressed cannot be opened as indexed, whatever indexes it has.
      *
      * @param fastaFile the reference sequence file path.
      * @return {@code true} if the file can be open as indexed; {@code false} otherwise.
@@ -280,8 +284,10 @@ public class ReferenceSequenceFileFactory {
             // open the file for checking for block-compressed input
             try {
                 // if it is bgzip, it requires the .gzi index
-                return !IOUtil.isBlockCompressed(fastaFile, true)
-                        || Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
+                if (IOUtil.isBlockCompressed(fastaFile, true)) {
+                    return Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
+                }
+                return !IndexedFastaSequenceFile.isGzipButNotBlockCompressed(fastaFile);
             } catch (IOException e) {
                 return false;
             }
