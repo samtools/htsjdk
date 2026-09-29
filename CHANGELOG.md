@@ -265,6 +265,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **Closing a VCF or BCF writer, or a `BlockCompressedOutputStream`, a second time does nothing** (issue #469); it threw, or wrote the index again.  Writing to a closed `BlockCompressedOutputStream` throws an `IOException`, and a close whose flush fails still closes the stream beneath it.
 - **`VCFHeader.addMetaDataLine` keeps every structured line with a distinct ID, and repeated unstructured lines** (issues #500, #277).  A second `##ALT`, `##SAMPLE`, `##META` or other structured line with a different ID, or a second `##source`-style line, was silently dropped.  `getOtherHeaderLines(String)` returns every line with a key; `getOtherHeaderLine(String)` returns the first; `getOtherHeaderLines()` is now unmodifiable.
 - **`##contig` lines carry `md5`, `URL` and `species` to and from a `SAMSequenceDictionary`** (issue #730).  `VCFHeader.setSequenceDictionary` wrote only the ID, length and assembly, and `getSequenceDictionary` read back only the length and assembly.  `VCFUtils.withUpdatedContigs` and `VCFUtils.makeContigHeaderLines`, which also wrote only the ID, length and assembly, now carry them too.
+- The published POM lists the Apache 2.0 and LGPL licences that parts of htsjdk are under, as well as MIT (issue #1710).
 
 ### Testing
 
