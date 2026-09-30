@@ -99,6 +99,11 @@ public final class CanonicalHuffmanByteEncoding extends CRAMEncoding<Byte> {
                 huffmanParams);
     }
 
+    /** @return the symbols and code word lengths of this encoding's per-byte code */
+    HuffmanParams<Byte> getHuffmanParams() {
+        return huffmanParams;
+    }
+
     @Override
     public String toString() {
         return huffmanParams.toString();

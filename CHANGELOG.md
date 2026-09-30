@@ -281,6 +281,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **`TabixReader.parseReg` and `query(String)` accept contig names containing `:` or `-`** (issue #1017), such as GRCh38's `HLA-A*01:01:01:01`, by trying the whole string as a contig first and then splitting at the last `:`, as the SAM spec and htslib do; `{name}` braces resolve an ambiguous region, which is otherwise an error. `chr:-100`, `chr:100-` and thousands separators are accepted as in htslib.
 - **`SortingCollection` buffers its temp files on large heaps** (issue #1741); with more than 2 GiB available per file an int overflow turned buffering off.
 - **`TagFilter` accepts a list of any type** (issue #1082); a `List<String>` matched the single-value constructor and so matched nothing.  A record without the tag no longer makes an immutable list (`List.of`) throw.
+- **CRAM files whose quality scores use a HUFFMAN encoding can be read** (issue #518), as samtools reads them; htsjdk had no HUFFMAN codec for the byte-array form it reads preserved quality strings with.
+- **`EncodingFactory` rejects an encoding that doesn't suit a series' type** instead of returning one for a different type (an INT or LONG series given a byte-array encoding fell through to it and failed later with a `ClassCastException`).
 
 ### Testing
 
