@@ -1,11 +1,19 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.CRAMContainerStreamWriter;
+import htsjdk.samtools.CRAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.compression.GZIPExternalCompressor;
+import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanByteEncoding;
 import htsjdk.samtools.cram.structure.block.Block;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -132,6 +140,56 @@ public class CompressionHeaderEncodingMapTest extends HtsjdkTest {
                     null, dataSeries.getExternalBlockContentId(), new ByteArrayOutputStream());
             Assert.assertEquals(block.getCompressionMethod(), BlockCompressionMethod.RAW, dataSeries.name());
             Assert.assertEquals(block.getCompressedContentSize(), 0, dataSeries.name());
+        }
+    }
+
+    @Test
+    public void aHuffmanEncodedQualityScoreSeriesRoundTrips() throws IOException {
+        // every read with qualities stores its whole quality array through the byte-array QS codec
+        final CRAMEncodingStrategy encodingStrategy = new CRAMEncodingStrategy();
+        final CompressionHeaderEncodingMap encodingMap = new CompressionHeaderEncodingMap(encodingStrategy);
+        encodingMap.putCoreEncoding(
+                DataSeries.QS_QualityScore,
+                new CanonicalHuffmanByteEncoding(new byte[] {30}, new int[] {0}).toEncodingDescriptor());
+        encodingStrategy.setCustomCompressionHeaderEncodingMap(encodingMap);
+
+        final List<SAMRecord> records = new ArrayList<>();
+        records.addAll(
+                CRAMStructureTestHelper.createSAMRecordsMapped(3, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO));
+        records.addAll(CRAMStructureTestHelper.createSAMRecordsUnmapped(2));
+        for (final SAMRecord record : records) {
+            final byte[] qualities = new byte[record.getReadLength()];
+            Arrays.fill(qualities, (byte) 30);
+            record.setBaseQualities(qualities);
+        }
+
+        final ByteArrayOutputStream cramBytes = new ByteArrayOutputStream();
+        final CRAMContainerStreamWriter writer = new CRAMContainerStreamWriter(
+                encodingStrategy,
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                CRAMStructureTestHelper.SAM_FILE_HEADER,
+                cramBytes,
+                null,
+                "huffman-qs");
+        writer.writeHeader();
+        for (final SAMRecord record : records) {
+            writer.writeAlignment(record);
+        }
+        writer.finish(true);
+
+        final List<SAMRecord> roundTripped = new ArrayList<>();
+        try (final CRAMFileReader reader = new CRAMFileReader(
+                new ByteArrayInputStream(cramBytes.toByteArray()),
+                (java.nio.file.Path) null,
+                CRAMStructureTestHelper.REFERENCE_SOURCE,
+                ValidationStringency.STRICT)) {
+            reader.getIterator().forEachRemaining(roundTripped::add);
+        }
+
+        Assert.assertEquals(roundTripped.size(), records.size());
+        for (int i = 0; i < records.size(); i++) {
+            Assert.assertEquals(
+                    roundTripped.get(i).getSAMString(), records.get(i).getSAMString());
         }
     }
 }

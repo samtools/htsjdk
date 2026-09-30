@@ -81,6 +81,7 @@ public class EncodingFactory {
                     case SUBEXPONENTIAL:
                         return (CRAMEncoding<T>) SubexponentialIntegerEncoding.fromSerializedEncodingParams(params);
                 }
+                break;
 
             case LONG:
                 switch (encodingID) {
@@ -89,6 +90,7 @@ public class EncodingFactory {
                     case EXTERNAL:
                         return (CRAMEncoding<T>) ExternalLongEncoding.fromSerializedEncodingParams(params);
                 }
+                break;
 
             case BYTE_ARRAY:
                 switch (encodingID) {
@@ -99,7 +101,10 @@ public class EncodingFactory {
                         return (CRAMEncoding<T>) ByteArrayStopEncoding.fromSerializedEncodingParams(params);
                     case EXTERNAL:
                         return (CRAMEncoding<T>) ExternalByteArrayEncoding.fromSerializedEncodingParams(params);
+                    case HUFFMAN:
+                        return (CRAMEncoding<T>) CanonicalHuffmanByteArrayEncoding.fromSerializedEncodingParams(params);
                 }
+                break;
         }
 
         throw new IllegalArgumentException(
