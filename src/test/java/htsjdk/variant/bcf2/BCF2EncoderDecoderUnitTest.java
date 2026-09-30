@@ -26,6 +26,7 @@
 package htsjdk.variant.bcf2;
 
 // the imports for unit testing.
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.writer.BCF2Encoder;
 import java.io.ByteArrayInputStream;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
@@ -536,6 +538,135 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     private final void decodeRecord(final List<BCF2TypedValue> toEncode, final byte[] record) throws IOException {
         decodeRecord(toEncode, new BCF2Decoder(record));
+    }
+
+    // ----------------------------------------------------------------------
+    //
+    // Decoding straight from the record's bytes
+    //
+    // ----------------------------------------------------------------------
+
+    @Test
+    public void decodeIntMatchesTypeReadForEveryInt8AndCharByte() throws IOException {
+        for (int b = 0; b < 256; b++) {
+            final byte[] bytes = {(byte) b};
+            for (final BCF2Type type : Arrays.asList(BCF2Type.INT8, BCF2Type.CHAR)) {
+                Assert.assertEquals(
+                        new BCF2Decoder(bytes).decodeInt(type),
+                        type.read(new ByteArrayInputStream(bytes)),
+                        type + " byte " + b);
+            }
+        }
+    }
+
+    @Test
+    public void decodeIntMatchesTypeReadForEveryInt16Pattern() throws IOException {
+        for (int v = 0; v < 65536; v++) {
+            final byte[] bytes = {(byte) v, (byte) (v >> 8)};
+            Assert.assertEquals(
+                    new BCF2Decoder(bytes).decodeInt(BCF2Type.INT16),
+                    BCF2Type.INT16.read(new ByteArrayInputStream(bytes)),
+                    "INT16 pattern " + v);
+        }
+    }
+
+    @Test
+    public void decodeIntMatchesTypeReadForInt32AndFloatPatterns() throws IOException {
+        final List<Integer> patterns = new ArrayList<>(Arrays.asList(
+                0,
+                1,
+                -1,
+                0x7FFFFFFF,
+                0x80000000,
+                0x80000001,
+                0x7F800001,
+                0x7F800000,
+                0x000000FF,
+                0x0000FF00,
+                0x00FF0000,
+                0xFF000000,
+                0x01020304));
+        final Random random = new Random(42);
+        for (int i = 0; i < 100_000; i++) patterns.add(random.nextInt());
+
+        for (final int v : patterns) {
+            final byte[] bytes = {(byte) v, (byte) (v >> 8), (byte) (v >> 16), (byte) (v >> 24)};
+            for (final BCF2Type type : Arrays.asList(BCF2Type.INT32, BCF2Type.FLOAT)) {
+                Assert.assertEquals(
+                        new BCF2Decoder(bytes).decodeInt(type),
+                        type.read(new ByteArrayInputStream(bytes)),
+                        type + " pattern " + Integer.toHexString(v));
+            }
+        }
+    }
+
+    @Test
+    public void decodeIntReadsValuesBackToBackUntilTheBlockIsFullyDecoded() throws IOException {
+        final byte[] bytes = {(byte) 0xFE, 0x34, 0x12, 0x78, 0x56, 0x34, 0x12};
+        final BCF2Decoder decoder = new BCF2Decoder(bytes);
+
+        Assert.assertEquals(decoder.decodeInt(BCF2Type.INT8), -2);
+        Assert.assertEquals(decoder.decodeInt(BCF2Type.INT16), 0x1234);
+        Assert.assertFalse(decoder.blockIsFullyDecoded());
+        Assert.assertEquals(decoder.decodeInt(BCF2Type.INT32), 0x12345678);
+        Assert.assertTrue(decoder.blockIsFullyDecoded());
+    }
+
+    @Test
+    public void decodeSingleValueReturnsNullForEachTypesMissingValue() throws IOException {
+        Assert.assertNull(new BCF2Decoder(new byte[] {(byte) 0x80}).decodeSingleValue(BCF2Type.INT8));
+        Assert.assertNull(new BCF2Decoder(new byte[] {0x00, (byte) 0x80}).decodeSingleValue(BCF2Type.INT16));
+        Assert.assertNull(
+                new BCF2Decoder(new byte[] {0x00, 0x00, 0x00, (byte) 0x80}).decodeSingleValue(BCF2Type.INT32));
+        Assert.assertNull(
+                new BCF2Decoder(new byte[] {0x01, 0x00, (byte) 0x80, 0x7F}).decodeSingleValue(BCF2Type.FLOAT));
+    }
+
+    @Test
+    public void decodeTypedValueReadsAStringUpToItsFirstNulAndSkipsThePadding() throws IOException {
+        final byte[] bytes = {BCF2Utils.encodeTypeDescriptor(4, BCF2Type.CHAR), 'A', 'B', 0, 0, 0x05};
+        final BCF2Decoder decoder = new BCF2Decoder(bytes);
+
+        Assert.assertEquals(decoder.decodeTypedValue(), "AB");
+        Assert.assertEquals(decoder.decodeInt(BCF2Type.INT8), 5);
+        Assert.assertTrue(decoder.blockIsFullyDecoded());
+    }
+
+    @Test
+    public void decodeTypedValueReturnsNullForAStringOfNuls() throws IOException {
+        final byte[] bytes = {BCF2Utils.encodeTypeDescriptor(2, BCF2Type.CHAR), 0, 0};
+        final BCF2Decoder decoder = new BCF2Decoder(bytes);
+
+        Assert.assertNull(decoder.decodeTypedValue());
+        Assert.assertTrue(decoder.blockIsFullyDecoded());
+    }
+
+    @Test
+    public void decodeTypedValueExplodesACollapsedStringList() throws IOException {
+        final byte[] bytes = {BCF2Utils.encodeTypeDescriptor(4, BCF2Type.CHAR), ',', 'a', ',', 'b'};
+
+        Assert.assertEquals(new BCF2Decoder(bytes).decodeTypedValue(), Arrays.asList("a", "b"));
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void decodeIntPastTheEndOfTheRecordThrows() throws IOException {
+        new BCF2Decoder(new byte[] {0x01, 0x02, 0x03}).decodeInt(BCF2Type.INT32);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void readTypeDescriptorOfAnEmptyRecordThrows() throws IOException {
+        new BCF2Decoder(new byte[0]).readTypeDescriptor();
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void decodeTypedValueOfAStringLongerThanTheRecordThrows() throws IOException {
+        new BCF2Decoder(new byte[] {BCF2Utils.encodeTypeDescriptor(5, BCF2Type.CHAR), 'A', 'B', 'C'})
+                .decodeTypedValue();
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void decodeIntOfTheMissingTypeThrows() throws IOException {
+        new BCF2Decoder(new byte[] {0x01}).decodeInt(BCF2Type.MISSING);
     }
 
     private final void decodeRecord(final List<BCF2TypedValue> toEncode, final BCF2Decoder decoder) throws IOException {

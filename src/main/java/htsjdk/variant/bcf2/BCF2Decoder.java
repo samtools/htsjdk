@@ -27,7 +27,6 @@ package htsjdk.variant.bcf2;
 
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ import java.util.Arrays;
 
 public final class BCF2Decoder {
     byte[] recordBytes = null;
-    ByteArrayInputStream recordStream = null;
+    int pos = 0;
 
     public BCF2Decoder() {
         // nothing to do
@@ -79,7 +78,7 @@ public final class BCF2Decoder {
             throw new TribbleException("I/O error while reading BCF2 file", e);
         }
         this.recordBytes = null;
-        this.recordStream = null;
+        this.pos = 0;
     }
 
     /**
@@ -100,7 +99,7 @@ public final class BCF2Decoder {
     }
 
     public boolean blockIsFullyDecoded() {
-        return recordStream.available() == 0;
+        return pos >= recordBytes.length;
     }
 
     /**
@@ -110,7 +109,24 @@ public final class BCF2Decoder {
      */
     public void setRecordBytes(final byte[] recordBytes) {
         this.recordBytes = recordBytes;
-        this.recordStream = new ByteArrayInputStream(recordBytes);
+        this.pos = 0;
+    }
+
+    /**
+     * Reads one signed byte from the record and advances past it.  Reading straight from the array rather than
+     * through a {@link java.io.ByteArrayInputStream} matters: its {@code read()} is synchronized, and every value
+     * of every genotype is read a byte at a time.
+     *
+     * @throws TribbleException if the record has no bytes left
+     */
+    private byte readRecordByte() {
+        if (pos >= recordBytes.length) throw truncatedRecord();
+        return recordBytes[pos++];
+    }
+
+    private TribbleException truncatedRecord() {
+        return new TribbleException("BCF record is truncated or corrupt: tried to read past the end of its "
+                + recordBytes.length + " bytes");
     }
 
     // ----------------------------------------------------------------------
@@ -182,21 +198,17 @@ public final class BCF2Decoder {
     private final Object decodeLiteralString(final int size) {
         assert size > 0;
 
-        // TODO -- assumes size > 0
-        final byte[] bytes = new byte[size]; // TODO -- in principle should just grab bytes from underlying array
-        try {
-            recordStream.read(bytes);
+        if (size > recordBytes.length - pos) throw truncatedRecord();
+        final int start = pos;
+        pos += size;
 
-            int goodLength = 0;
-            for (; goodLength < bytes.length; goodLength++) if (bytes[goodLength] == 0) break;
+        int goodLength = 0;
+        for (; goodLength < size; goodLength++) if (recordBytes[start + goodLength] == 0) break;
 
-            if (goodLength == 0) return null;
-            else {
-                final String s = new String(bytes, 0, goodLength);
-                return BCF2Utils.isCollapsedString(s) ? BCF2Utils.explodeStringList(s) : s;
-            }
-        } catch (IOException e) {
-            throw new TribbleException("readByte failure", e);
+        if (goodLength == 0) return null;
+        else {
+            final String s = new String(recordBytes, start, goodLength);
+            return BCF2Utils.isCollapsedString(s) ? BCF2Utils.explodeStringList(s) : s;
         }
     }
 
@@ -223,8 +235,33 @@ public final class BCF2Decoder {
         return i == type.getMissingBytes() ? missingValue : i;
     }
 
+    /**
+     * Decodes one value of the given type from the record, little-endian, as {@link BCF2Type#read} does from a
+     * stream: INT8 and CHAR sign-extended from a byte, INT16 from a short, and INT32 and FLOAT as the raw 32 bits.
+     *
+     * @throws TribbleException if the record ends before the value does
+     */
     public final int decodeInt(final BCF2Type type) throws IOException {
-        return type.read(recordStream);
+        switch (type) {
+            case INT8:
+            case CHAR:
+                return readRecordByte();
+            case INT16: {
+                final int b2 = readRecordByte() & 0xFF;
+                final int b1 = readRecordByte() & 0xFF;
+                return (short) ((b1 << 8) | b2);
+            }
+            case INT32:
+            case FLOAT: {
+                final int b4 = readRecordByte() & 0xFF;
+                final int b3 = readRecordByte() & 0xFF;
+                final int b2 = readRecordByte() & 0xFF;
+                final int b1 = readRecordByte() & 0xFF;
+                return b1 << 24 | b2 << 16 | b3 << 8 | b4;
+            }
+            default:
+                return type.read(null); // MISSING, which refuses to be read
+        }
     }
 
     /**
@@ -358,6 +395,6 @@ public final class BCF2Decoder {
     }
 
     public final byte readTypeDescriptor() throws IOException {
-        return BCF2Utils.readByte(recordStream);
+        return readRecordByte();
     }
 }
