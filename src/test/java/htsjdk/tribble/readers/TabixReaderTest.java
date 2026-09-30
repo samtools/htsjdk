@@ -284,4 +284,183 @@ public class TabixReaderTest extends HtsjdkTest {
             Assert.assertNull(records.next());
         }
     }
+
+    // Region strings
+
+    private static final int MAX = Integer.MAX_VALUE;
+    private static final String HLA = "HLA-A*01:01:01:01";
+
+    private interface ReaderAction {
+        void accept(TabixReader reader) throws IOException;
+    }
+
+    /** Writes a tabix-indexed BED with the given contigs, one 100-200 record each, and hands it to the action. */
+    private static void withRegionReader(final ReaderAction action) throws IOException {
+        final Path dir = Files.createTempDirectory("tabixRegions.");
+        try {
+            final Path bed = dir.resolve("regions.bed.gz");
+            try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(bed)) {
+                final StringBuilder lines = new StringBuilder();
+                for (final String contig : new String[] {"chr1", HLA, "chrUn-1", "chrA", "chrA:1-10"}) {
+                    lines.append(contig)
+                            .append("\t100\t200\tin-")
+                            .append(contig)
+                            .append('\n');
+                }
+                out.write(lines.toString().getBytes(StandardCharsets.UTF_8));
+            }
+            final Path index = dir.resolve("regions.bed.gz" + FileExtensions.TABIX_INDEX);
+            IndexFactory.createTabixIndex(bed, new BEDCodec(), TabixFormat.BED, null)
+                    .write(index);
+            try (final TabixReader reader = new TabixReader(bed.toString())) {
+                action.accept(reader);
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    private static void assertRegion(final String region, final String contig, final int begin, final int end)
+            throws IOException {
+        withRegionReader(reader -> {
+            final int[] parsed = reader.parseReg(region);
+            Assert.assertEquals(parsed[0], reader.chr2tid(contig));
+            Assert.assertEquals(parsed[1], begin);
+            Assert.assertEquals(parsed[2], end);
+        });
+    }
+
+    private static void assertRegionThrows(final String region, final String messagePart) throws IOException {
+        withRegionReader(reader -> {
+            try {
+                reader.parseReg(region);
+                Assert.fail("Expected IllegalArgumentException for " + region);
+            } catch (final IllegalArgumentException e) {
+                Assert.assertTrue(e.getMessage().contains(messagePart), e.getMessage());
+            }
+        });
+    }
+
+    @Test
+    public void aWholeContigParsesAsTheWholeContig() throws IOException {
+        assertRegion("chr1", "chr1", 0, MAX);
+    }
+
+    @Test
+    public void aStartOnlyRangeRunsToTheEnd() throws IOException {
+        assertRegion("chr1:100", "chr1", 99, MAX);
+    }
+
+    @Test
+    public void aStartAndEndRangeIsZeroBasedHalfOpen() throws IOException {
+        assertRegion("chr1:100-200", "chr1", 99, 200);
+    }
+
+    @Test
+    public void aContigNameWithColonsIsFoundWhole() throws IOException {
+        assertRegion(HLA, HLA, 0, MAX);
+    }
+
+    @Test
+    public void aRangeOnAContigNameWithColonsSplitsAtTheLastColon() throws IOException {
+        assertRegion(HLA + ":100-200", HLA, 99, 200);
+    }
+
+    @Test
+    public void aContigNameWithAHyphenIsFoundWhole() throws IOException {
+        assertRegion("chrUn-1", "chrUn-1", 0, MAX);
+    }
+
+    @Test
+    public void aRangeOnAContigNameWithAHyphen() throws IOException {
+        assertRegion("chrUn-1:5-10", "chrUn-1", 4, 10);
+    }
+
+    @Test
+    public void anAmbiguousRegionIsAnError() throws IOException {
+        assertRegionThrows("chrA:1-10", "Use {chrA:1-10} or {chrA}:1-10 instead");
+    }
+
+    @Test
+    public void bracesChooseTheWholeName() throws IOException {
+        assertRegion("{chrA:1-10}", "chrA:1-10", 0, MAX);
+    }
+
+    @Test
+    public void bracesChooseTheShorterName() throws IOException {
+        assertRegion("{chrA}:1-10", "chrA", 0, 10);
+    }
+
+    @Test
+    public void mismatchedBracesAreAnError() throws IOException {
+        assertRegionThrows("{chrA:1-10", "Mismatching braces");
+    }
+
+    @Test
+    public void textAfterTheClosingBraceOtherThanAColonIsAnError() throws IOException {
+        assertRegionThrows("{chrA}1-10", "closing brace");
+    }
+
+    @Test
+    public void anEndOnlyRangeStartsAtOne() throws IOException {
+        assertRegion("chr1:-100", "chr1", 0, 100);
+    }
+
+    @Test
+    public void aTrailingHyphenRunsToTheEnd() throws IOException {
+        assertRegion("chr1:100-", "chr1", 99, MAX);
+    }
+
+    @Test
+    public void thousandsSeparatorsAreAccepted() throws IOException {
+        assertRegion("chr1:1,000-2,000,000", "chr1", 999, 2_000_000);
+    }
+
+    @Test
+    public void aZeroStartReadsFromTheStart() throws IOException {
+        assertRegion("chr1:0-50", "chr1", 0, 50);
+    }
+
+    @Test
+    public void aZeroEndRunsToTheEnd() throws IOException {
+        assertRegion("chr1:100-0", "chr1", 99, MAX);
+    }
+
+    @Test
+    public void aStartAfterTheEndGivesAnEmptyRange() throws IOException {
+        assertRegion("chr1:10-1", "chr1", 9, 1);
+        withRegionReader(reader -> Assert.assertNull(reader.query("chr1:10-1").next()));
+    }
+
+    @Test
+    public void trailingTextIsAnError() throws IOException {
+        assertRegionThrows("chr1:100-200x", "chr1:100-200x");
+    }
+
+    @Test
+    public void aNonNumericPositionIsAnError() throws IOException {
+        assertRegionThrows("chr1:abc-200", "chr1:abc-200");
+    }
+
+    @Test
+    public void aPositionBeyondIntRangeIsAnError() throws IOException {
+        assertRegionThrows("chr1:1-99999999999", "too large");
+    }
+
+    @Test
+    public void anUnknownContigHasIndexMinusOne() throws IOException {
+        withRegionReader(reader -> {
+            Assert.assertEquals(reader.parseReg("chrNope:0-1"), new int[] {-1, 0, MAX});
+            Assert.assertEquals(reader.parseReg("chrNope"), new int[] {-1, 0, MAX});
+        });
+    }
+
+    @Test
+    public void aQueryOnAContigNameWithColonsReturnsItsRecords() throws IOException {
+        withRegionReader(reader -> {
+            final TabixReader.Iterator records = reader.query(HLA + ":150");
+            Assert.assertEquals(records.next(), HLA + "\t100\t200\tin-" + HLA);
+            Assert.assertNull(records.next());
+        });
+    }
 }
