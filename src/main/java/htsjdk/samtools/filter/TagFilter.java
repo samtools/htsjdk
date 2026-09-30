@@ -35,7 +35,7 @@ import java.util.List;
 public class TagFilter implements SamRecordFilter {
 
     private final String tag; // The key of the tag to match
-    private final List<Object> values; // The list of matching values
+    private final List<?> values; // The list of matching values
     private Boolean includeReads;
 
     /**
@@ -54,7 +54,7 @@ public class TagFilter implements SamRecordFilter {
      * @param tag       the key of the tag to match
      * @param values    the matching values
      */
-    public TagFilter(String tag, List<Object> values) {
+    public TagFilter(String tag, List<?> values) {
         this(tag, values, null);
     }
 
@@ -76,7 +76,7 @@ public class TagFilter implements SamRecordFilter {
      * @param values        the matching values
      * @param includeReads  whether to include or not include reads that match filter
      */
-    public TagFilter(String tag, List<Object> values, final Boolean includeReads) {
+    public TagFilter(String tag, List<?> values, final Boolean includeReads) {
         this.tag = tag;
         this.values = values;
         this.includeReads = includeReads == null ? false : includeReads;
@@ -90,7 +90,7 @@ public class TagFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(SAMRecord record) {
-        return values.contains(record.getAttribute(tag)) != includeReads;
+        return matches(record) != includeReads;
     }
 
     /**
@@ -108,9 +108,16 @@ public class TagFilter implements SamRecordFilter {
         // With includeReads==true, allow any pairs through that contain the tag value
         // With includeReads==false, exclude pairs where both reads contain the tag value
         if (includeReads) {
-            return !(values.contains(first.getAttribute(tag)) || values.contains(second.getAttribute(tag)));
+            return !(matches(first) || matches(second));
         } else {
-            return values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag));
+            return matches(first) && matches(second);
         }
+    }
+
+    /** True if the record has the tag with one of the values; a record without the tag matches none. */
+    private boolean matches(final SAMRecord record) {
+        // Not values.contains(null): immutable lists such as List.of throw on it.
+        final Object value = record.getAttribute(tag);
+        return value != null && values.contains(value);
     }
 }

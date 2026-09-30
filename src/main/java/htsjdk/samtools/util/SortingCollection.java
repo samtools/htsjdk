@@ -449,6 +449,23 @@ public class SortingCollection<T> implements Iterable<T> {
     }
 
     /**
+     * Works out the read buffer size for each of {@code numFiles} temp files that must all be open at once.
+     *
+     * @param allocatableMemory the bytes the heap can still supply
+     * @param numFiles the number of temp files, at least one
+     * @param defaultBufferSize the buffer size to use if memory allows
+     * @return {@code defaultBufferSize}, or less if memory is short, or zero if there is no room for buffering
+     */
+    static int bufferSizePerFile(final long allocatableMemory, final int numFiles, final int defaultBufferSize) {
+        // There is ~20k in overhead per file.  Long arithmetic: these products and quotients exceed an int on big
+        // heaps.
+        final long freeMemory = allocatableMemory - numFiles * 20L * 1024;
+        final long memoryPerFile = freeMemory / numFiles;
+        if (memoryPerFile < 0) return 0;
+        return (int) Math.min(defaultBufferSize, memoryPerFile);
+    }
+
+    /**
      * For iteration when spilling to disk has occurred.
      * Each file is has records in sort order within the file.
      * This iterator automatically closes when it iterates to the end, but if not iterating
@@ -487,8 +504,6 @@ public class SortingCollection<T> implements Iterable<T> {
         // is appropriate given the number of temp files and the amount of memory left on the heap. If there isn't
         // enough memory for buffering it will return zero and all reading will be unbuffered.
         private int checkMemoryAndAdjustBuffer(int numFiles) {
-            int bufferSize = Defaults.BUFFER_SIZE;
-
             // garbage collect so that our calculation is accurate.
             final Runtime rt = Runtime.getRuntime();
             rt.gc();
@@ -496,20 +511,14 @@ public class SortingCollection<T> implements Iterable<T> {
             //                             free in heap       space available to expand heap
             final long allocatableMemory = rt.freeMemory() + (rt.maxMemory() - rt.totalMemory());
 
-            // There is ~20k in overhead per file.
-            final long freeMemory = allocatableMemory - (numFiles * 20 * 1024);
-            // use the floor value from the divide
-            final int memoryPerFile = (int) (freeMemory / numFiles);
-
-            if (memoryPerFile < 0) {
+            final int bufferSize = bufferSizePerFile(allocatableMemory, numFiles, Defaults.BUFFER_SIZE);
+            if (bufferSize == 0 && Defaults.BUFFER_SIZE > 0) {
                 log.warn("There is not enough memory per file for buffering. Reading will be unbuffered.");
-                bufferSize = 0;
-            } else if (bufferSize > memoryPerFile) {
+            } else if (bufferSize < Defaults.BUFFER_SIZE) {
                 log.warn(String.format(
-                        "Default io buffer size of %s is larger than available memory per file of %s.",
-                        StringUtil.humanReadableByteCount(bufferSize),
-                        StringUtil.humanReadableByteCount(memoryPerFile)));
-                bufferSize = memoryPerFile;
+                        "Default io buffer size of %s is larger than available memory per file; using %s.",
+                        StringUtil.humanReadableByteCount(Defaults.BUFFER_SIZE),
+                        StringUtil.humanReadableByteCount(bufferSize)));
             }
             return bufferSize;
         }

@@ -279,6 +279,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **The `.md5` written beside a gzipped file is the MD5 of the file on disk** (issue #758), as `md5sum` gives it; `IOUtil.openFileForMd5CalculatingWriting`, and so `BasicFastqWriter` with `createMd5` for a `.fq.gz`, digested the bytes before compression.
 - **`BasicFastqWriter` ends every line with `\n`** (issue #1105); on Windows each record ended with `\r\n`.
 - **`TabixReader.parseReg` and `query(String)` accept contig names containing `:` or `-`** (issue #1017), such as GRCh38's `HLA-A*01:01:01:01`, by trying the whole string as a contig first and then splitting at the last `:`, as the SAM spec and htslib do; `{name}` braces resolve an ambiguous region, which is otherwise an error. `chr:-100`, `chr:100-` and thousands separators are accepted as in htslib.
+- **`SortingCollection` buffers its temp files on large heaps** (issue #1741); with more than 2 GiB available per file an int overflow turned buffering off.
+- **`TagFilter` accepts a list of any type** (issue #1082); a `List<String>` matched the single-value constructor and so matched nothing.  A record without the tag no longer makes an immutable list (`List.of`) throw.
 
 ### Testing
 

@@ -278,4 +278,29 @@ public class SortingCollectionTest extends HtsjdkTest {
             }
         }
     }
+
+    private static final int DEFAULT_BUFFER_SIZE = 128 * 1024;
+
+    @Test
+    public void bufferSizePerFileKeepsTheDefaultWhenMoreThan2GiBIsAvailablePerFile() {
+        final long eightGiB = 8L * 1024 * 1024 * 1024;
+        Assert.assertEquals(SortingCollection.bufferSizePerFile(eightGiB, 2, DEFAULT_BUFFER_SIZE), DEFAULT_BUFFER_SIZE);
+    }
+
+    @Test
+    public void bufferSizePerFileIsZeroWhenMemoryRunsOut() {
+        Assert.assertEquals(SortingCollection.bufferSizePerFile(10 * 1024, 2, DEFAULT_BUFFER_SIZE), 0);
+    }
+
+    @Test
+    public void bufferSizePerFileShrinksToTheMemoryAvailablePerFile() {
+        final long allocatableMemory = 10L * (20 * 1024 + 1000);
+        Assert.assertEquals(SortingCollection.bufferSizePerFile(allocatableMemory, 10, DEFAULT_BUFFER_SIZE), 1000);
+    }
+
+    @Test
+    public void bufferSizePerFileHandlesManyFiles() {
+        final long sixteenGiB = 16L * 1024 * 1024 * 1024;
+        Assert.assertEquals(SortingCollection.bufferSizePerFile(sixteenGiB, 200_000, DEFAULT_BUFFER_SIZE), 65_419);
+    }
 }
