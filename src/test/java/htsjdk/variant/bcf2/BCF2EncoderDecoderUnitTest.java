@@ -664,6 +664,19 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
                 .decodeTypedValue();
     }
 
+    @Test(expectedExceptions = TribbleException.class)
+    public void decodeTypedValueOfAStringWithANegativeLengthThrows() throws IOException {
+        // a CHAR descriptor whose length overflows into a typed INT8 of -5
+        final byte[] bytes = {
+            BCF2Utils.encodeTypeDescriptor(BCF2Utils.OVERFLOW_ELEMENT_MARKER, BCF2Type.CHAR),
+            BCF2Utils.encodeTypeDescriptor(1, BCF2Type.INT8),
+            -5,
+            'A',
+            'B'
+        };
+        new BCF2Decoder(bytes).decodeTypedValue();
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void decodeIntOfTheMissingTypeThrows() throws IOException {
         new BCF2Decoder(new byte[] {0x01}).decodeInt(BCF2Type.MISSING);

@@ -196,9 +196,7 @@ public final class BCF2Decoder {
     // ----------------------------------------------------------------------
 
     private final Object decodeLiteralString(final int size) {
-        assert size > 0;
-
-        if (size > recordBytes.length - pos) throw truncatedRecord();
+        if (size < 0 || size > recordBytes.length - pos) throw truncatedRecord();
         final int start = pos;
         pos += size;
 
