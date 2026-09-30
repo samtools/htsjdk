@@ -123,4 +123,50 @@ public class TagFilterTest extends HtsjdkTest {
             {"dataIncludeMatchingPairedFilter", 3, true, true, true, true}
         };
     }
+
+    private static SAMRecord recordWithAttribute(final String tag, final Object value) {
+        final SAMRecord record = new SAMRecordSetBuilder().addFrag("read", 0, 100, false);
+        if (value != null) record.setAttribute(tag, value);
+        return record;
+    }
+
+    @Test
+    public void aListOfStringsMatchesAnyOfItsValues() {
+        final List<String> values = List.of("A", "B");
+        final TagFilter exclude = new TagFilter("XT", values);
+        Assert.assertTrue(exclude.filterOut(recordWithAttribute("XT", "B")));
+        Assert.assertFalse(exclude.filterOut(recordWithAttribute("XT", "C")));
+    }
+
+    @Test
+    public void aListOfIntegersMatchesAnyOfItsValues() {
+        final List<Integer> values = List.of(1, 2);
+        final TagFilter exclude = new TagFilter("XN", values);
+        Assert.assertTrue(exclude.filterOut(recordWithAttribute("XN", 2)));
+        Assert.assertFalse(exclude.filterOut(recordWithAttribute("XN", 3)));
+    }
+
+    @Test
+    public void aListOfStringsWithIncludeReadsKeepsOnlyMatchingReads() {
+        final List<String> values = List.of("A", "B");
+        final TagFilter include = new TagFilter("XT", values, true);
+        Assert.assertFalse(include.filterOut(recordWithAttribute("XT", "A")));
+        Assert.assertTrue(include.filterOut(recordWithAttribute("XT", "C")));
+    }
+
+    @Test
+    public void aRecordWithoutTheTagMatchesNoValueOfAnImmutableList() {
+        final List<Object> values = List.of("A", "B");
+        final SAMRecord untagged = recordWithAttribute("XT", null);
+        Assert.assertFalse(new TagFilter("XT", values).filterOut(untagged));
+        Assert.assertTrue(new TagFilter("XT", values, true).filterOut(untagged));
+    }
+
+    @Test
+    public void aPairWithoutTheTagMatchesNoValueOfAnImmutableList() {
+        final List<Object> values = List.of("A", "B");
+        final SAMRecord untagged = recordWithAttribute("XT", null);
+        Assert.assertFalse(new TagFilter("XT", values).filterOut(untagged, untagged));
+        Assert.assertTrue(new TagFilter("XT", values, true).filterOut(untagged, untagged));
+    }
 }
