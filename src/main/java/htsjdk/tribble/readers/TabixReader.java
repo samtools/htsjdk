@@ -285,23 +285,83 @@ public class TabixReader implements AutoCloseable {
     }
 
     /**
-     * Parse a region in the format of "chr1", "chr1:100" or "chr1:100-1000"
+     * Parses a region string into a contig index and a 0-based, half-open interval, following the SAM specification
+     * and htslib's {@code hts_parse_region}. The accepted forms are {@code name}, {@code name:B}, {@code name:B-E},
+     * {@code name:-E} and {@code name:B-}, with 1-based inclusive positions that may contain {@code ,} thousands
+     * separators. An empty range ({@code name:}) is the whole contig, and an end of 0 means the end of the contig.
+     *
+     * <p>The name may itself contain {@code :} and {@code -}. The whole string is tried as a contig name first, and
+     * otherwise the string is split at its last {@code :}. If both the whole string and the part before the last
+     * {@code :} are contigs the region is ambiguous and an {@link IllegalArgumentException} is thrown; write
+     * {@code {name}} or {@code {name}:range} in braces to say which is meant.
+     *
+     * <p>A region on a contig the index doesn't know gets contig index -1, and its range is not parsed. A begin at or
+     * after the end is returned as is; querying it finds nothing.
      *
      * @param reg Region string
-     * @return An array where the three elements are sequence_id,
-     *         region_begin and region_end. On failure, sequence_id==-1.
+     * @return An array where the three elements are sequence_id, region_begin (0-based) and region_end. The
+     *         sequence_id is -1 if the contig is not in the index.
+     * @throws IllegalArgumentException if the braces are mismatched, the region is ambiguous, or a position is not a
+     *         number that fits in an int
      */
-    public int[] parseReg(final String reg) { // FIXME: NOT working when the sequence name contains : or -.
-        String chr;
-        int colon, hyphen;
-        int[] ret = new int[3];
-        colon = reg.indexOf(':');
-        hyphen = reg.indexOf('-');
-        chr = colon >= 0 ? reg.substring(0, colon) : reg;
-        ret[1] = colon >= 0 ? Integer.parseInt(reg.substring(colon + 1, hyphen >= 0 ? hyphen : reg.length())) - 1 : 0;
-        ret[2] = hyphen >= 0 ? Integer.parseInt(reg.substring(hyphen + 1)) : 0x7fffffff;
-        ret[0] = this.chr2tid(chr);
-        return ret;
+    public int[] parseReg(final String reg) {
+        if (reg.startsWith("{")) {
+            final int close = reg.indexOf('}');
+            if (close < 0) throw new IllegalArgumentException("Mismatching braces in \"" + reg + "\"");
+            final boolean hasRange = close + 1 < reg.length();
+            if (hasRange && reg.charAt(close + 1) != ':') {
+                throw new IllegalArgumentException("Unexpected text after the closing brace in \"" + reg + "\"");
+            }
+            return regionOn(reg.substring(1, close), hasRange ? reg.substring(close + 2) : "", reg);
+        }
+
+        final int lastColon = reg.lastIndexOf(':');
+        if (lastColon < 0 || chr2tid(reg) >= 0) {
+            if (lastColon >= 0 && chr2tid(reg.substring(0, lastColon)) >= 0) {
+                final String name = reg.substring(0, lastColon);
+                throw new IllegalArgumentException("Range is ambiguous. Use {" + reg + "} or {" + name + "}"
+                        + reg.substring(lastColon) + " instead");
+            }
+            return regionOn(reg, "", reg);
+        }
+        return regionOn(reg.substring(0, lastColon), reg.substring(lastColon + 1), reg);
+    }
+
+    /** Builds the result of {@link #parseReg(String)} for a contig name and a range; {@code reg} is for messages. */
+    private int[] regionOn(final String name, final String range, final String reg) {
+        final int tid = chr2tid(name);
+        if (tid < 0) return new int[] {-1, 0, Integer.MAX_VALUE};
+        final int[] bounds = parseRange(range, reg);
+        return new int[] {tid, bounds[0], bounds[1]};
+    }
+
+    /**
+     * Parses the part of a region after the colon into {begin (0-based), end}. A missing or zero end is the end of
+     * the contig, and a missing or zero start is the start of it.
+     */
+    private static int[] parseRange(final String range, final String reg) {
+        final int hyphen = range.indexOf('-');
+        final String startText = hyphen < 0 ? range : range.substring(0, hyphen);
+        final String endText = hyphen < 0 ? "" : range.substring(hyphen + 1);
+        final int start = parsePosition(startText, reg);
+        final int end = parsePosition(endText, reg);
+        return new int[] {Math.max(start - 1, 0), end == 0 ? Integer.MAX_VALUE : end};
+    }
+
+    /** Parses a position of decimal digits and {@code ,} separators; empty text is 0. */
+    private static int parsePosition(final String text, final String reg) {
+        final String digits = text.replace(",", "");
+        if (digits.isEmpty()) return 0;
+        for (int i = 0; i < digits.length(); i++) {
+            if (digits.charAt(i) < '0' || digits.charAt(i) > '9') {
+                throw new IllegalArgumentException("Invalid position \"" + text + "\" in region \"" + reg + "\"");
+            }
+        }
+        try {
+            return Integer.parseInt(digits);
+        } catch (final NumberFormatException e) {
+            throw new IllegalArgumentException("Position \"" + text + "\" is too large in region \"" + reg + "\"", e);
+        }
     }
 
     private TIntv getIntv(final String s) {
@@ -438,9 +498,10 @@ public class TabixReader implements AutoCloseable {
     }
 
     /**
-     *
+     * Get an iterator for a region string such as {@code chr1}, {@code chr1:100-200} or {@code {chr1:100-200}}.
      * @see #parseReg(String)
-     * @param reg A region string of the form acceptable by {@link #parseReg(String)}
+     * @param reg A region string of the form acceptable by {@link #parseReg(String)}, which also describes the
+     *            exceptions thrown for a malformed or ambiguous region
      * @return an iterator over the specified interval
      */
     public Iterator query(final String reg) {
