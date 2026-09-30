@@ -3,6 +3,7 @@ package htsjdk.samtools.fastq;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.SequenceUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -103,5 +104,46 @@ public class BasicFastqWriterTest extends HtsjdkTest {
         final List<String> lines = writeAndReadLines(randomRecord(new Random(42), "q1", 0));
         Assert.assertEquals(lines.get(1).length(), 0);
         Assert.assertEquals(lines.get(3).length(), 0);
+    }
+
+    @Test
+    public void md5OfAGzippedFastqIsOfTheCompressedFile() throws IOException {
+        final Path dir = Files.createTempDirectory("BasicFastqWriterTest.md5");
+        try {
+            final Path fastq = dir.resolve("x.fq.gz");
+            try (BasicFastqWriter writer = new BasicFastqWriter(fastq, true)) {
+                writer.write(new FastqRecord("r1", "ACGT", "", "IIII"));
+            }
+            final String md5 = new String(Files.readAllBytes(dir.resolve("x.fq.gz.md5")));
+            Assert.assertEquals(md5, SequenceUtil.calculateMD5String(Files.readAllBytes(fastq)));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void recordsEndWithALineFeedEvenWhereTheLineSeparatorIsCrlf() {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        final PrintStream crlfPrintStream = new PrintStream(bytes) {
+            @Override
+            public void println() {
+                print("\r\n");
+            }
+        };
+        try (BasicFastqWriter writer = new BasicFastqWriter(crlfPrintStream)) {
+            writer.write(new FastqRecord("r1", "ACGT", "", "IIII"));
+            writer.write(new FastqRecord("r2", "TTGA", "", "IIII"));
+        }
+        Assert.assertFalse(bytes.toString().contains("\r"));
+    }
+
+    @Test
+    public void recordsEndWithALineFeedOnly() {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (BasicFastqWriter writer = new BasicFastqWriter(new PrintStream(bytes))) {
+            writer.write(new FastqRecord("r1", "ACGT", "", "IIII"));
+            writer.write(new FastqRecord("r2", "TTGA", "", "IIII"));
+        }
+        Assert.assertEquals(bytes.toString(), "@r1\nACGT\n+\nIIII\n@r2\nTTGA\n+\nIIII\n");
     }
 }

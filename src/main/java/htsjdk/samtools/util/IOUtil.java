@@ -642,21 +642,34 @@ public class IOUtil {
      */
     public static OutputStream openGzipFileForWriting(final Path path, final OpenOption... openOptions) {
         try {
-            final OutputStream out = Files.newOutputStream(path, openOptions);
-            if (Defaults.BUFFER_SIZE > 0) {
-                return new CustomGzipOutputStream(out, Defaults.BUFFER_SIZE, compressionLevel);
-            } else {
-                return new CustomGzipOutputStream(out, compressionLevel);
-            }
+            return gzipWrapper(Files.newOutputStream(path, openOptions));
         } catch (final IOException ioe) {
             throw new SAMException(
                     "Error opening file for writing: " + path.toUri().toString(), ioe);
         }
     }
 
+    private static OutputStream gzipWrapper(final OutputStream out) throws IOException {
+        if (Defaults.BUFFER_SIZE > 0) {
+            return new CustomGzipOutputStream(out, Defaults.BUFFER_SIZE, compressionLevel);
+        } else {
+            return new CustomGzipOutputStream(out, compressionLevel);
+        }
+    }
+
+    /**
+     * Opens a file for writing and writes {@code <file>.md5} on close, holding the MD5 of the bytes written to disk
+     * (compressed, if the name says so).
+     */
     public static OutputStream openFileForMd5CalculatingWriting(final Path file) {
         final Path digestFile = file.resolveSibling(file.getFileName() + FileExtensions.MD5);
-        return new Md5CalculatingOutputStream(IOUtil.openFileForWriting(file), digestFile);
+        try {
+            final OutputStream md5Stream = new Md5CalculatingOutputStream(Files.newOutputStream(file), digestFile);
+            return hasGzipFileExtension(file) ? gzipWrapper(md5Stream) : md5Stream;
+        } catch (final IOException ioe) {
+            throw new SAMException(
+                    "Error opening file for writing: " + file.toUri().toString(), ioe);
+        }
     }
 
     /**

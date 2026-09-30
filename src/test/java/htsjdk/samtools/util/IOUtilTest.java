@@ -851,4 +851,34 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertTrue(md5FileName.endsWith(".bam.md5"));
         Assert.assertTrue(Files.exists(output.resolveSibling(md5FileName)));
     }
+
+    private static void assertMd5FileMatchesFileAndContentRoundTrips(final String fileName) throws IOException {
+        final Path dir = Files.createTempDirectory("IOUtilTest.md5");
+        try {
+            final Path file = dir.resolve(fileName);
+            final byte[] content = "some text to digest, repeated. ".repeat(100).getBytes();
+            try (final OutputStream out = IOUtil.openFileForMd5CalculatingWriting(file)) {
+                out.write(content);
+            }
+
+            final String expectedMd5 = SequenceUtil.calculateMD5String(Files.readAllBytes(file));
+            final String md5 = new String(Files.readAllBytes(dir.resolve(fileName + FileExtensions.MD5)));
+            Assert.assertEquals(md5, expectedMd5);
+            try (final InputStream in = IOUtil.openFileForReading(file)) {
+                Assert.assertEquals(in.readAllBytes(), content);
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void md5OfAGzippedFileIsOfTheCompressedBytes() throws IOException {
+        assertMd5FileMatchesFileAndContentRoundTrips("x.txt.gz");
+    }
+
+    @Test
+    public void md5OfAnUncompressedFileIsOfItsBytes() throws IOException {
+        assertMd5FileMatchesFileAndContentRoundTrips("x.txt");
+    }
 }
