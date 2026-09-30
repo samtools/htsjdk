@@ -276,6 +276,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **The NM that htsjdk works out for a CRAM record counts every inserted base** (issue #1187), as samtools does.  For a read ending in an insertion, NM came out short by the insertion's length when the read was the last to end in its slice, was in a multi-reference slice, or ended at the end of the reference.
 - **The CRAM writer stores the bases of a read that runs past the end of its reference as they are, and keeps its NM and MD**, as htslib does; it compared them with a pretend `N` reference, so samtools worked out a different MD for them.
 - **The CRAM writer takes any empty quality array as missing qualities**, as `SAMRecord` does; for a record built with `setBaseQualities(new byte[0])` rather than `SAMRecord.NULL_QUALS`, it wrote a CRAM that could not be read back, or failed with an `ArrayIndexOutOfBoundsException`.
+- **The `.md5` written beside a gzipped file is the MD5 of the file on disk** (issue #758), as `md5sum` gives it; `IOUtil.openFileForMd5CalculatingWriting`, and so `BasicFastqWriter` with `createMd5` for a `.fq.gz`, digested the bytes before compression.
+- **`BasicFastqWriter` ends every line with `\n`** (issue #1105); on Windows each record ended with `\r\n`.
 
 ### Testing
 

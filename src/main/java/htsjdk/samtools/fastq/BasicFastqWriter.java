@@ -59,8 +59,8 @@ public class BasicFastqWriter implements FastqWriter, Flushable {
     public void write(final FastqRecord rec) {
         // encode without creating a String
         FastqEncoder.write(writer, rec);
-        // and print a new line
-        writer.println();
+        // end the record with '\n' rather than the platform separator, to match the encoder's inner lines
+        writer.write('\n');
     }
 
     private void checkError() {
