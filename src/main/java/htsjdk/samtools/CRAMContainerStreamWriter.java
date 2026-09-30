@@ -198,8 +198,10 @@ public class CRAMContainerStreamWriter {
     private static String md5OfUpperCaseBases(final byte[] bases) {
         final MessageDigest digest = newMD5Digest();
         final byte[] buffer = new byte[UPPER_CASE_BUFFER_SIZE];
-        for (int start = 0; start < bases.length; start += buffer.length) {
-            final int length = Math.min(buffer.length, bases.length - start);
+        // Advance by the chunk just hashed, so start never passes bases.length (and can't overflow near the largest
+        // array)
+        for (int start = 0, length; start < bases.length; start += length) {
+            length = Math.min(buffer.length, bases.length - start);
             for (int i = 0; i < length; i++) {
                 final byte base = bases[start + i];
                 buffer[i] = base >= 'a' && base <= 'z' ? (byte) (base - ('a' - 'A')) : base;
