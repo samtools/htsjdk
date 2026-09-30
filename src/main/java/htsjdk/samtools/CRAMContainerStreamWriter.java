@@ -3,16 +3,28 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.ref.CRAMLazyReferenceSource;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.SequenceUtil;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class for writing SAMRecords into a series of CRAM containers on an output stream, with an optional index.
  */
 public class CRAMContainerStreamWriter {
+    private static final Log log = Log.getInstance(CRAMContainerStreamWriter.class);
+    private static final int UPPER_CASE_BUFFER_SIZE = 64 * 1024;
+    private static final int MAX_MISSING_CONTIGS_LISTED = 10;
+
+    private final CRAMReferenceSource referenceSource;
     private final OutputStream outputStream;
     private final String outputStreamIdentifier;
     private final SAMFileHeader samFileHeader;
@@ -86,6 +98,7 @@ public class CRAMContainerStreamWriter {
             final CRAMIndexer indexer,
             final String outputIdentifier) {
         this.samFileHeader = samFileHeader;
+        this.referenceSource = referenceSource;
         this.outputStream = outputStream;
         this.cramIndexer = indexer;
         this.outputStreamIdentifier = outputIdentifier;
@@ -108,12 +121,100 @@ public class CRAMContainerStreamWriter {
     /**
      * Write a CRAM file header and the provided SAM header to the stream.
      * Retained for backward compatibility with external projects (disq, GATK).
+     *
+     * <p>Any {@code @SQ} line lacking an {@code M5} gets one, as the CRAM specification requires, taken from the
+     * reference's sequence dictionary or computed from the reference bases. The header passed in is not modified.
      */
     public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
         final CramHeader cramHeader = new CramHeader(cramVersion, outputStreamIdentifier);
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
         streamOffset += Container.writeSAMFileHeaderContainer(
-                cramHeader.getCRAMVersion(), requestedSAMFileHeader, outputStream);
+                cramHeader.getCRAMVersion(), withReferenceMD5s(requestedSAMFileHeader), outputStream);
+    }
+
+    /**
+     * Returns a copy of {@code header} in which every {@code @SQ} line without an {@code M5} has one, or the
+     * header itself when there is no reference to take them from. An {@code M5} comes from the reference's own
+     * dictionary when that has the same contig name and length with an {@code M5}, and is otherwise the MD5 of
+     * the reference bases. A contig missing from the reference is left without {@code M5}. Existing
+     * {@code M5}s are kept unchecked.
+     *
+     * <p>Cost: reads each contig that lacks an {@code M5} the reference's dictionary cannot supply, once, when the
+     * header is written (twice overall for a whole genome, as the reference source caches only weakly).
+     */
+    private SAMFileHeader withReferenceMD5s(final SAMFileHeader header) {
+        if (referenceSource == null || referenceSource instanceof CRAMLazyReferenceSource) {
+            return header;
+        }
+        final SAMFileHeader copy = header.clone();
+        final SAMSequenceDictionary referenceDictionary = referenceSource.getSequenceDictionary();
+        final List<String> missingContigs = new ArrayList<>();
+        int resolvedContigs = 0;
+        for (final SAMSequenceRecord sequence : copy.getSequenceDictionary().getSequences()) {
+            if (sequence.getAttribute(SAMSequenceRecord.MD5_TAG) != null) {
+                continue;
+            }
+            final SAMSequenceRecord referenceSequence =
+                    referenceDictionary == null ? null : referenceDictionary.getSequence(sequence.getSequenceName());
+            final String dictionaryMD5 =
+                    referenceSequence != null && referenceSequence.getSequenceLength() == sequence.getSequenceLength()
+                            ? referenceSequence.getAttribute(SAMSequenceRecord.MD5_TAG)
+                            : null;
+            if (dictionaryMD5 != null) {
+                sequence.setMd5(dictionaryMD5);
+                resolvedContigs++;
+                continue;
+            }
+            final byte[] bases = referenceSource.getReferenceBases(sequence, true);
+            if (bases == null) {
+                missingContigs.add(sequence.getSequenceName());
+            } else {
+                sequence.setMd5(md5OfUpperCaseBases(bases));
+                resolvedContigs++;
+            }
+        }
+
+        if (!missingContigs.isEmpty()) {
+            if (resolvedContigs == 0) {
+                log.warn("No reference bases available; @SQ lines are written without M5.");
+            } else {
+                final int listed = Math.min(missingContigs.size(), MAX_MISSING_CONTIGS_LISTED);
+                final String names = String.join(", ", missingContigs.subList(0, listed));
+                final int more = missingContigs.size() - listed;
+                log.warn(
+                        "No reference bases available for ",
+                        names,
+                        more > 0 ? " and " + more + " more" : "",
+                        "; their @SQ lines are written without M5, so readers will need the reference supplied explicitly.");
+            }
+        }
+        return copy;
+    }
+
+    /**
+     * MD5 of the bases in upper case, as 32 lower-case hex digits. Upper-cases through a small buffer rather than in
+     * place, because the reference source may cache the array.
+     */
+    private static String md5OfUpperCaseBases(final byte[] bases) {
+        final MessageDigest digest = newMD5Digest();
+        final byte[] buffer = new byte[UPPER_CASE_BUFFER_SIZE];
+        for (int start = 0; start < bases.length; start += buffer.length) {
+            final int length = Math.min(buffer.length, bases.length - start);
+            for (int i = 0; i < length; i++) {
+                final byte base = bases[start + i];
+                buffer[i] = base >= 'a' && base <= 'z' ? (byte) (base - ('a' - 'A')) : base;
+            }
+            digest.update(buffer, 0, length);
+        }
+        return SequenceUtil.md5DigestToString(digest.digest());
+    }
+
+    private static MessageDigest newMD5Digest() {
+        try {
+            return MessageDigest.getInstance("MD5");
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

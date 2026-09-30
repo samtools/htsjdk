@@ -9,6 +9,7 @@ import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.CRAMReferenceRegion;
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.build.ContainerFactory;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -218,6 +219,43 @@ public class SliceTests extends HtsjdkTest {
                 TEST_RECORD_COUNT,
                 expectedBaseCount,
                 0L);
+    }
+
+    @Test
+    public void aSliceOfPlacedUnmappedReadsSpansOneBase() {
+        final List<CRAMCompressionRecord> records = List.of(placedUnmappedRecord(15));
+        final Slice slice = sliceOf(records);
+        Assert.assertEquals(
+                slice.getAlignmentContext(),
+                new AlignmentContext(new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO), 15, 1));
+    }
+
+    @Test
+    public void aSliceOfPlacedUnmappedReadsSpansFromTheFirstStartToTheLastStart() {
+        final List<CRAMCompressionRecord> records = List.of(placedUnmappedRecord(15), placedUnmappedRecord(40));
+        final Slice slice = sliceOf(records);
+        Assert.assertEquals(
+                slice.getAlignmentContext(),
+                new AlignmentContext(new ReferenceContext(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO), 15, 26));
+    }
+
+    /** A record converted from an unmapped SAM record placed on the first contig, so its alignment end is unset. */
+    private static CRAMCompressionRecord placedUnmappedRecord(final int alignmentStart) {
+        final SAMRecord samRecord = CRAMStructureTestHelper.createSAMRecordUnmappedPlaced(
+                CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, alignmentStart);
+        return new CRAMCompressionRecord(
+                CramVersions.DEFAULT_CRAM_VERSION,
+                CRAMStructureTestHelper.ENCODING_STRATEGY,
+                samRecord,
+                null,
+                alignmentStart,
+                CRAMStructureTestHelper.READ_GROUP_MAP);
+    }
+
+    private static Slice sliceOf(final List<CRAMCompressionRecord> records) {
+        final CompressionHeader header =
+                new CompressionHeaderFactory(new CRAMEncodingStrategy()).createCompressionHeader(records, true);
+        return new Slice(records, header, 0L, 0L);
     }
 
     @Test

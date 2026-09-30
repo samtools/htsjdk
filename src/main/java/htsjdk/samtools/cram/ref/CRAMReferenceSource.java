@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.ref;
 
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 
 /**
@@ -32,4 +33,13 @@ public interface CRAMReferenceSource {
      */
     byte[] getReferenceBasesByRegion(
             final SAMSequenceRecord sequenceRecord, final int zeroBasedStart, final int requestedRegionLength);
+
+    /**
+     * The reference's own sequence dictionary, for example from its {@code .dict} file.
+     *
+     * @return the dictionary, or null if this source has none
+     */
+    default SAMSequenceDictionary getSequenceDictionary() {
+        return null;
+    }
 }

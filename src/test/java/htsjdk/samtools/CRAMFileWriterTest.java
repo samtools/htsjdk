@@ -543,4 +543,36 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         }
         assertOnlyCodecsOfVersion(os.toByteArray(), CramVersions.CRAM_v3);
     }
+
+    @Test
+    public void aPlacedUnmappedReadWithAMappingQualityAndCigarIsWritten() throws IOException {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final SAMRecord read = new SAMRecord(header);
+        read.setReadName("u");
+        read.setFlags(SAMFlag.READ_UNMAPPED.intValue());
+        read.setReferenceName("chr1");
+        read.setAlignmentStart(15);
+        read.setMappingQuality(42);
+        read.setCigarString("10M");
+        read.setReadString("ACGTACGTAC");
+        read.setBaseQualityString("??????????");
+
+        final ReferenceSource refSource = createReferenceSource();
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(os, refSource, header, "test")) {
+            writer.addAlignment(read);
+        }
+
+        try (CRAMFileReader reader = new CRAMFileReader(
+                new ByteArrayInputStream(os.toByteArray()), (Path) null, refSource, ValidationStringency.SILENT)) {
+            final SAMRecordIterator iterator = reader.getIterator();
+            final SAMRecord readBack = iterator.next();
+            Assert.assertFalse(iterator.hasNext());
+            Assert.assertTrue(readBack.getReadUnmappedFlag());
+            Assert.assertEquals(readBack.getReferenceName(), "chr1");
+            Assert.assertEquals(readBack.getAlignmentStart(), 15);
+            Assert.assertEquals(readBack.getMappingQuality(), 0);
+            Assert.assertEquals(readBack.getCigarString(), "*");
+        }
+    }
 }

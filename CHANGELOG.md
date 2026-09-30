@@ -283,6 +283,8 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **`TagFilter` accepts a list of any type** (issue #1082); a `List<String>` matched the single-value constructor and so matched nothing.  A record without the tag no longer makes an immutable list (`List.of`) throw.
 - **CRAM files whose quality scores use a HUFFMAN encoding can be read** (issue #518), as samtools reads them; htsjdk had no HUFFMAN codec for the byte-array form it reads preserved quality strings with.
 - **`EncodingFactory` rejects an encoding that doesn't suit a series' type** instead of returning one for a different type (an INT or LONG series given a byte-array encoding fell through to it and failed later with a `ClassCastException`).
+- **The CRAM writer no longer fails on a slice whose placed reads are all unmapped** (issue #714); such a slice got a negative span. It now spans from the first read's start to the last's, as htslib writes it.
+- **The CRAM writer fills in `M5` on `@SQ` lines that lack it** (issue #506), as the CRAM spec requires and htslib does, taking it from the reference's sequence dictionary when that has it and otherwise computing it from the reference, so samtools can find the reference through `REF_PATH`. Header lines that already have `M5` are written unchanged.
 
 ### Testing
 
