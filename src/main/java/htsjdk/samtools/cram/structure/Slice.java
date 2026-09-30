@@ -214,7 +214,9 @@ public class Slice {
             if (record.isPlaced()) {
                 referenceContexts.add(new ReferenceContext(record.getReferenceIndex()));
                 singleRefAlignmentStart = Math.min(record.getAlignmentStart(), singleRefAlignmentStart);
-                singleRefAlignmentEnd = Math.max(record.getAlignmentEnd(), singleRefAlignmentEnd);
+                // A placed unmapped read has no alignment end of its own; it occupies its start position, as in htslib.
+                singleRefAlignmentEnd =
+                        Math.max(Math.max(record.getAlignmentEnd(), record.getAlignmentStart()), singleRefAlignmentEnd);
 
                 if (record.isSegmentUnmapped()) {
                     unmappedReadsCount++;

@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.ref;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -189,6 +190,12 @@ public class ReferenceSource implements CRAMReferenceSource {
 
         // sequence not found, give up:
         return null;
+    }
+
+    /** The sequence dictionary of the backing reference file, or null if there is no file or it has no dictionary. */
+    @Override
+    public SAMSequenceDictionary getSequenceDictionary() {
+        return rsFile == null ? null : rsFile.getSequenceDictionary();
     }
 
     @Override

@@ -1,9 +1,17 @@
 package htsjdk.samtools.cram.ref;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceDictionaryCodec;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.reference.FastaSequenceIndexCreator;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -30,5 +38,45 @@ public class ReferenceSourceTest extends HtsjdkTest {
 
         Assert.assertNotEquals(refBasesFromSource, originalRefBases);
         Assert.assertEquals(refBasesFromSource, SequenceUtil.upperCase(originalRefBases));
+    }
+
+    private static Path writeFasta(final Path dir) throws IOException {
+        final Path fasta = dir.resolve("ref.fa");
+        Files.writeString(fasta, ">chr1\nacgtacgt\n>chr2\ngggg\n");
+        FastaSequenceIndexCreator.create(fasta, true);
+        return fasta;
+    }
+
+    @Test
+    public void theSequenceDictionaryComesFromTheReferenceFile() throws IOException {
+        final Path dir = Files.createTempDirectory("referenceSourceTest");
+        try {
+            final Path fasta = writeFasta(dir);
+            final SAMSequenceDictionary dictionary = new SAMSequenceDictionary(Arrays.asList(
+                    new SAMSequenceRecord("chr1", 8).setMd5("a".repeat(32)), new SAMSequenceRecord("chr2", 4)));
+            try (BufferedWriter writer = Files.newBufferedWriter(dir.resolve("ref.dict"))) {
+                new SAMSequenceDictionaryCodec(writer).encode(dictionary);
+            }
+            final SAMSequenceDictionary read = new ReferenceSource(fasta).getSequenceDictionary();
+            Assert.assertEquals(read.size(), 2);
+            Assert.assertEquals(read.getSequence("chr1").getMd5(), "a".repeat(32));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void theSequenceDictionaryIsNullWithoutOne() throws IOException {
+        final Path dir = Files.createTempDirectory("referenceSourceTest");
+        try {
+            Assert.assertNull(new ReferenceSource(writeFasta(dir)).getSequenceDictionary());
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void theSequenceDictionaryIsNullWithoutAReferenceFile() {
+        Assert.assertNull(new ReferenceSource((Path) null).getSequenceDictionary());
     }
 }

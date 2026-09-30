@@ -1,14 +1,20 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.ref.CRAMLazyReferenceSource;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.reference.FastaSequenceIndexCreator;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -238,5 +244,167 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
                 "test");
         containerStream.writeHeader();
         containerStream.writeAlignment(record);
+    }
+
+    private static final String CHR1_BASES = "acgtacgtnnacgtRYacgt";
+    private static final String CHR2_BASES = "ggggccccaaaatttt";
+    private static final String CHR3_BASES = "tttttttt";
+
+    /** Writes a lower-case FASTA of chr1 to chr3 with a .fai, and returns its path. */
+    private static Path writeFasta(final Path dir) throws IOException {
+        final Path fasta = dir.resolve("ref.fa");
+        Files.writeString(fasta, ">chr1\n" + CHR1_BASES + "\n>chr2\n" + CHR2_BASES + "\n>chr3\n" + CHR3_BASES + "\n");
+        FastaSequenceIndexCreator.create(fasta, true);
+        return fasta;
+    }
+
+    private static void writeDictionary(final Path dir, final SAMSequenceRecord... records) throws IOException {
+        try (BufferedWriter writer = Files.newBufferedWriter(dir.resolve("ref.dict"))) {
+            new SAMSequenceDictionaryCodec(writer).encode(new SAMSequenceDictionary(Arrays.asList(records)));
+        }
+    }
+
+    private static SAMFileHeader headerWithoutM5s() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+        header.addSequence(new SAMSequenceRecord("chr1", CHR1_BASES.length()));
+        header.addSequence(new SAMSequenceRecord("chr2", CHR2_BASES.length()));
+        header.addSequence(new SAMSequenceRecord("chr3", CHR3_BASES.length()));
+        return header;
+    }
+
+    private static String md5OfUpperCased(final String bases) {
+        return SequenceUtil.calculateMD5String(bases.toUpperCase().getBytes(StandardCharsets.US_ASCII));
+    }
+
+    /** Writes one unmapped read with the header and reference source, and returns the header read back from the CRAM. */
+    private static SAMFileHeader writeAndReadBackHeader(final SAMFileHeader header, final CRAMReferenceSource source) {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final CRAMContainerStreamWriter writer = new CRAMContainerStreamWriter(out, null, source, header, "test");
+        writer.writeHeader();
+        final SAMRecord read = new SAMRecord(header);
+        read.setReadName("unmapped");
+        read.setReadUnmappedFlag(true);
+        read.setReadString("ACGT");
+        read.setBaseQualityString("????");
+        writer.writeAlignment(read);
+        writer.finish(true);
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(SamInputResource.of(new ByteArrayInputStream(out.toByteArray())))) {
+            return reader.getFileHeader();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void missingM5sAreComputedFromTheReference() throws IOException {
+        final Path dir = Files.createTempDirectory("cramM5Test");
+        try {
+            final SAMFileHeader written =
+                    writeAndReadBackHeader(headerWithoutM5s(), new ReferenceSource(writeFasta(dir)));
+            Assert.assertEquals(written.getSequence("chr1").getMd5(), md5OfUpperCased(CHR1_BASES));
+            Assert.assertEquals(written.getSequence("chr2").getMd5(), md5OfUpperCased(CHR2_BASES));
+            Assert.assertEquals(written.getSequence("chr3").getMd5(), md5OfUpperCased(CHR3_BASES));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void m5sAreTakenFromTheReferenceDictionary() throws IOException {
+        final Path dir = Files.createTempDirectory("cramM5Test");
+        try {
+            final Path fasta = writeFasta(dir);
+            writeDictionary(
+                    dir,
+                    new SAMSequenceRecord("chr1", CHR1_BASES.length()).setMd5("a".repeat(32)),
+                    new SAMSequenceRecord("chr2", CHR2_BASES.length()),
+                    new SAMSequenceRecord("chr3", CHR3_BASES.length()));
+            final SAMFileHeader written = writeAndReadBackHeader(headerWithoutM5s(), new ReferenceSource(fasta));
+            Assert.assertEquals(written.getSequence("chr1").getMd5(), "a".repeat(32));
+            Assert.assertEquals(written.getSequence("chr2").getMd5(), md5OfUpperCased(CHR2_BASES));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aReferenceDictionaryM5ForADifferentLengthIsNotUsed() throws IOException {
+        final Path dir = Files.createTempDirectory("cramM5Test");
+        try {
+            final Path fasta = writeFasta(dir);
+            writeDictionary(
+                    dir,
+                    new SAMSequenceRecord("chr1", CHR1_BASES.length()).setMd5("a".repeat(32)),
+                    new SAMSequenceRecord("chr2", CHR2_BASES.length()),
+                    new SAMSequenceRecord("chr3", CHR3_BASES.length()));
+            final SAMFileHeader header = new SAMFileHeader();
+            header.addSequence(new SAMSequenceRecord("chr1", CHR1_BASES.length() + 1));
+            final SAMFileHeader written = writeAndReadBackHeader(header, new ReferenceSource(fasta));
+            Assert.assertEquals(written.getSequence("chr1").getMd5(), md5OfUpperCased(CHR1_BASES));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void existingM5sAreKept() throws IOException {
+        final Path dir = Files.createTempDirectory("cramM5Test");
+        try {
+            final SAMFileHeader header = headerWithoutM5s();
+            header.getSequence("chr1").setMd5("b".repeat(32));
+            final SAMFileHeader written = writeAndReadBackHeader(header, new ReferenceSource(writeFasta(dir)));
+            Assert.assertEquals(written.getSequence("chr1").getMd5(), "b".repeat(32));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aContigMissingFromTheReferenceIsLeftWithoutM5() throws IOException {
+        final Path dir = Files.createTempDirectory("cramM5Test");
+        try {
+            final SAMFileHeader header = headerWithoutM5s();
+            header.addSequence(new SAMSequenceRecord("chrNotInReference", 100));
+            final SAMFileHeader written = writeAndReadBackHeader(header, new ReferenceSource(writeFasta(dir)));
+            Assert.assertNull(written.getSequence("chrNotInReference").getMd5());
+            Assert.assertEquals(written.getSequence("chr1").getMd5(), md5OfUpperCased(CHR1_BASES));
+            Assert.assertEquals(written.getSequence("chr3").getMd5(), md5OfUpperCased(CHR3_BASES));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void theCallersHeaderIsNotModified() throws IOException {
+        final Path dir = Files.createTempDirectory("cramM5Test");
+        try {
+            final SAMFileHeader header = headerWithoutM5s();
+            writeAndReadBackHeader(header, new ReferenceSource(writeFasta(dir)));
+            for (final SAMSequenceRecord sequence :
+                    header.getSequenceDictionary().getSequences()) {
+                Assert.assertNull(sequence.getMd5());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void noReferenceWritesTheHeaderAsGiven() {
+        final SAMFileHeader written = writeAndReadBackHeader(headerWithoutM5s(), new CRAMLazyReferenceSource());
+        for (final SAMSequenceRecord sequence : written.getSequenceDictionary().getSequences()) {
+            Assert.assertNull(sequence.getMd5());
+        }
+    }
+
+    @Test
+    public void aReferenceWithNoContigsLeavesAllM5sAbsent() {
+        final SAMFileHeader written = writeAndReadBackHeader(headerWithoutM5s(), new ReferenceSource((Path) null));
+        for (final SAMSequenceRecord sequence : written.getSequenceDictionary().getSequences()) {
+            Assert.assertNull(sequence.getMd5());
+        }
     }
 }
