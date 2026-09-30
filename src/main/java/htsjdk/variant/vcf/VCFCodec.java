@@ -121,6 +121,11 @@ public class VCFCodec extends AbstractVCFCodec {
                         "We never saw the required CHROM header line (starting with one #) for the input VCF file");
             }
         }
+        // every line the loop sees is either kept or ends it, so no lines kept means there were none
+        if (headerStrings.isEmpty()) {
+            throw new TribbleException.InvalidHeader(
+                    "The VCF input is empty: a VCF starts with a ##fileformat line and has a #CHROM header line");
+        }
         throw new TribbleException.InvalidHeader(
                 "We never saw the required CHROM header line (starting with one #) for the input VCF file");
     }

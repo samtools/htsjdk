@@ -258,4 +258,19 @@ public class LazyGenotypesContext extends GenotypesContext {
     public Object getUnparsedGenotypeData() {
         return unparsedGenotypeData;
     }
+
+    @Override
+    public boolean isLazyWithData() {
+        return getUnparsedGenotypeData() != null;
+    }
+
+    /**
+     * Describes the genotypes without decoding them, so that a debugger showing this context does not change it:
+     * until they are decoded, the unparsed data (for VCF, the FORMAT and sample columns as read); after, the
+     * genotypes, as {@link GenotypesContext#toString()} lists them.
+     */
+    @Override
+    public String toString() {
+        return loaded ? super.toString() : String.valueOf(getUnparsedGenotypeData());
+    }
 }

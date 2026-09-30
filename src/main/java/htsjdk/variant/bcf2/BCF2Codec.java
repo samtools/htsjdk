@@ -613,6 +613,12 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             this.bcfVersion = bcfVersion;
             this.idDictionary = idDictionary;
         }
+
+        /** Describes the block without decoding it, as a record's {@code toString()} shows undecoded genotypes. */
+        @Override
+        public String toString() {
+            return "[BCF genotype data, not yet decoded: " + (bytes == null ? 0 : bytes.length) + " bytes]";
+        }
     }
 
     /**

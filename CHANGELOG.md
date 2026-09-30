@@ -269,6 +269,10 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **`FastaSequenceIndexCreator` indexes a FASTA with blank lines between or after its sequences** (issue #1748), as samtools does; it failed with a `StringIndexOutOfBoundsException` at any blank line, even one at the end of the file.  A FASTA whose last line has no newline is indexed too; it failed with "Different end of line …" when the last sequence spanned more than one line.  A sequence line after a blank line, or a sequence with no bases, is an error naming the contig.  An index built in memory numbers its sequences from 0 (it started at -1).
 - **A FASTA sequence longer than 2^30 bases read without a dictionary no longer fails with a negative array size** (issue #1380); one longer than the largest Java array fails with a message saying so.
 - **A gzipped (not bgzipped) FASTA with a `.fai` is read sequentially by `ReferenceSequenceFileFactory`** rather than opened as indexed and rejected with a misleading length mismatch (issue #1143); `IndexedFastaSequenceFile` says it needs bgzip.
+- **`VariantContext.getAttributeAsInt`, `getAttributeAsIntList` and `getAttributeAsDoubleList`, and the deprecated `Genotype.getAttributeAsInt`, return the default for a missing value (`.`) read from VCF** (issue #1228); they compared it by identity, so `X=.` or `X=1,.,3` threw `NumberFormatException`.
+- **Negative doubles are written to VCF in the same style as positive ones**: `-5.0` is written `-5.00`, not `-5.000e+00`.
+- **An empty VCF is reported as empty** (issue #973), rather than as one missing its `#CHROM` line.
+- **`toString()` on lazily decoded genotypes no longer decodes them** (issue #1011), so a debugger showing a `VariantContext` or its `GenotypesContext` does not change it; a BCF record's undecoded genotypes print as a short description instead of an object id.
 
 ### Testing
 
