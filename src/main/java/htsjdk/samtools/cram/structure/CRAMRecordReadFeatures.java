@@ -44,6 +44,8 @@ public class CRAMRecordReadFeatures {
 
     final List<ReadFeature> readFeatures;
 
+    private boolean alignedBasesPastReferenceEnd;
+
     /**
      * Create a CRAMRecordReadFeatures with no actual read features (i.e. an unmapped record).
      */
@@ -110,7 +112,7 @@ public class CRAMRecordReadFeatures {
                 case X:
                 case EQ:
                     if (basesUnknown) break;
-                    addMismatchReadFeatures(
+                    alignedBasesPastReferenceEnd |= addMismatchReadFeatures(
                             refBases,
                             samRecord.getAlignmentStart(),
                             readFeatures,
@@ -138,6 +140,14 @@ public class CRAMRecordReadFeatures {
         return readFeatures;
     }
 
+    /**
+     * Whether an M, X or = base of the record lies past the end of the reference, and so is stored as a
+     * {@link ReadBase}. Always false for features that were not built from a {@link SAMRecord}.
+     */
+    boolean hasAlignedBasesPastReferenceEnd() {
+        return alignedBasesPastReferenceEnd;
+    }
+
     private void addSoftClip(final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] readBases) {
         final byte[] insertedBases =
                 Arrays.copyOfRange(readBases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
@@ -163,9 +173,11 @@ public class CRAMRecordReadFeatures {
      * <ul><li>emit nothing for a read base matching corresponding reference base.</li>
      * <li>emit a {@link Substitution} read feature for each ACTGN-ACTGN mismatch.</li>
      * <li>emit {@link ReadBase} for a non-ACTGN mismatch. The side effect is the quality score stored twice.</li>
+     * <li>emit {@link ReadBase} for every base past the end of the reference, whatever it is, as htslib does.</li>
      * <p>
      * IMPORTANT: reference and read bases are always compared for match/mismatch in upper case due to BAM limitations.
      *
+     * @param refBases             the reference bases for the entire contig
      * @param alignmentStart       CRAM record alignment start
      * @param features             a list of read features to add to
      * @param fromPosInRead        a zero based position in the read to start with
@@ -173,9 +185,10 @@ public class CRAMRecordReadFeatures {
      * @param nofReadBases         how many read bases to process
      * @param bases                the read bases array
      * @param baseQualities        the quality score array
+     * @return whether any of the bases lies past the end of the reference
      */
     // Visible for testing
-    static void addMismatchReadFeatures(
+    static boolean addMismatchReadFeatures(
             final byte[] refBases,
             final int alignmentStart,
             final List<ReadFeature> features,
@@ -186,26 +199,29 @@ public class CRAMRecordReadFeatures {
             final byte[] baseQualities) {
         int oneBasedPositionInRead = fromPosInRead + 1;
         int refIndex = alignmentStart + alignmentStartOffset - 1;
+        boolean anyPastReferenceEnd = false;
 
-        byte refBase;
         for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
-            refBase = refIndex >= refBases.length ? (byte) 'N' : refBases[refIndex];
-
             final byte readBase = bases[i + fromPosInRead];
 
-            if (readBase != refBase) {
-                final boolean isSubstitution =
-                        SequenceUtil.isUpperACGTN(readBase) && SequenceUtil.isUpperACGTN(refBase);
-                if (isSubstitution) {
+            // Past the end of the reference there is no base to match or substitute, so the base is stored as it is
+            if (refIndex >= refBases.length) {
+                anyPastReferenceEnd = true;
+            } else {
+                final byte refBase = refBases[refIndex];
+                if (readBase == refBase) continue;
+                if (SequenceUtil.isUpperACGTN(readBase) && SequenceUtil.isUpperACGTN(refBase)) {
                     features.add(new Substitution(oneBasedPositionInRead, readBase, refBase));
-                } else {
-                    final byte score = baseQualities.equals(SAMRecord.NULL_QUALS)
-                            ? CRAMCompressionRecord.MISSING_QUALITY_SCORE
-                            : baseQualities[i + fromPosInRead];
-                    features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
+                    continue;
                 }
             }
+
+            final byte score = baseQualities.length == 0
+                    ? CRAMCompressionRecord.MISSING_QUALITY_SCORE
+                    : baseQualities[i + fromPosInRead];
+            features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
         }
+        return anyPastReferenceEnd;
     }
 
     /**
@@ -589,8 +605,10 @@ public class CRAMRecordReadFeatures {
         final byte[] refBases = isUnknownBases ? null : cramReferenceRegion.getCurrentReferenceBases();
         final boolean doBasesAndMdNm = !isUnknownBases;
 
-        // MD/NM state — mdActive tracks whether we're still within the reference boundary.
-        // Once we exceed the reference, we stop MD/NM computation (matching calculateMdAndNm's break behavior).
+        // MD/NM state — mdActive tracks whether we're still within the reference boundary. Past it MD stops and
+        // bases add nothing to NM, but inserted bases count towards NM wherever they are, as htslib counts them.
+        // The reference here may cover only the slice, or in a multi-reference slice only this record, so a read can
+        // end in an insertion past it.
         int nmCount = 0;
         final boolean actuallyComputeMdNm = computeMdNm && doBasesAndMdNm;
         final StringBuilder mdString = actuallyComputeMdNm ? new StringBuilder(readLength) : null;
@@ -774,7 +792,7 @@ public class CRAMRecordReadFeatures {
                     if (doBasesAndMdNm) {
                         for (int i = 0; i < seq.length; i++)
                             bases[posInRead - 1 + i] = BAM_READ_BASE_LOOKUP[seq[i] & 0x7F];
-                        if (mdActive) nmCount += seq.length;
+                        if (actuallyComputeMdNm) nmCount += seq.length;
                     }
                     posInRead += seq.length;
                     featureCigOp = CigarOperator.INSERTION;
@@ -784,7 +802,7 @@ public class CRAMRecordReadFeatures {
                 case InsertBase.operator: {
                     if (doBasesAndMdNm) {
                         bases[posInRead - 1] = BAM_READ_BASE_LOOKUP[((InsertBase) feature).getBase() & 0x7F];
-                        if (mdActive) nmCount++;
+                        if (actuallyComputeMdNm) nmCount++;
                     }
                     posInRead++;
                     featureCigOp = CigarOperator.INSERTION;
