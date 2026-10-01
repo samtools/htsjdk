@@ -352,9 +352,9 @@ publishing {
 signing {
     useGpgCmd()
     sign(publishing.publications.htsjdk)
-    required = { isRelease && gradle.taskGraph.hasTask("publishAllPublicationsToCentralPortal") }
+    required = { isRelease }
     tasks.withType(Sign).configureEach {
-        onlyIf { isRelease && gradle.taskGraph.hasTask("publishAllPublicationsToCentralPortal") }
+        onlyIf { isRelease }
     }
 }
 
