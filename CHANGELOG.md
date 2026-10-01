@@ -10,6 +10,18 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 5.0.1
+
+Patch release on the 5.0 line.
+
+### Performance
+
+- **BCF records decode faster**, most of all their genotypes.  `BCF2Decoder` reads each value straight from the record's bytes rather than a byte at a time through a synchronized `ByteArrayInputStream`.  Reading a 3,000-sample BCF and decoding every genotype takes 40–60% less time on Apple silicon.  Decoded values are unchanged.
+
+### Bug fixes
+
+- **A truncated or corrupt BCF record now fails with a `TribbleException`** when decoding reaches the end of the record's bytes.  It used to read each missing byte as `0xFF` (so a value came out as `-1`) and carry on.
+
 ## 5.0.0
 
 Major release.  
