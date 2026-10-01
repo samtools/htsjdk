@@ -32,6 +32,11 @@ public class NameTokeniserExternalCompressor extends ExternalCompressor {
         this.useArith = useArith;
     }
 
+    /** @return true if the token streams are coded with the arithmetic (Range) coder rather than rANS Nx16 */
+    public boolean usesArith() {
+        return useArith;
+    }
+
     @Override
     public byte[] compress(byte[] data, final CRAMCodecModelContext unused_contextModel) {
         return CompressionUtils.toByteArray(

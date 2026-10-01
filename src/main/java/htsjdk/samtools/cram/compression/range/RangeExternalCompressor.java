@@ -12,6 +12,11 @@ public class RangeExternalCompressor extends ExternalCompressor {
     private final RangeEncode rangeEncode;
     private final RangeDecode rangeDecode;
 
+    /** @return the Range coder flags this compressor encodes with ({@link RangeParams}) */
+    public int getFlags() {
+        return formatFlags;
+    }
+
     public RangeExternalCompressor(final RangeEncode rangeEncode, final RangeDecode rangeDecode) {
         this(0, rangeEncode, rangeDecode);
     }

@@ -311,7 +311,9 @@ public final class CompressionHeaderFactory {
             for (final CompressorDescriptor descriptor : tagCompressorCandidates) {
                 candidates.add(tagCompressorCache.getCompressorForMethod(descriptor.method(), descriptor.arg()));
             }
-            return candidates.size() == 1 ? candidates.get(0) : new TrialCompressor(candidates);
+            return candidates.size() == 1
+                    ? candidates.get(0)
+                    : new TrialCompressor(candidates, encodingStrategy.getGZIPCompressionLevel());
         });
     }
 

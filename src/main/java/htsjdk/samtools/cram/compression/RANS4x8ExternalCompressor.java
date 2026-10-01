@@ -47,6 +47,11 @@ public final class RANS4x8ExternalCompressor extends ExternalCompressor {
      * @param ransEncode ransEncoder to use
      * @param ransDecode ransDecoder to use
      */
+    /** @return the rANS order this compressor encodes with */
+    public RANSParams.ORDER getOrder() {
+        return order;
+    }
+
     public RANS4x8ExternalCompressor(final RANS4x8Encode ransEncode, final RANS4x8Decode ransDecode) {
         this(RANSParams.ORDER.ZERO, ransEncode, ransDecode);
     }
