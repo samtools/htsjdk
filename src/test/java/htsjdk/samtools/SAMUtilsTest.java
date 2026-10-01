@@ -146,6 +146,52 @@ public class SAMUtilsTest extends HtsjdkTest {
         }
     }
 
+    /** The nibble a byte packs to in BAM, from the spec's =ACMGRSVTWYHKDBN order, or -1 for a byte that isn't a base. */
+    private static int expectedNibble(final int b) {
+        if (b == '.') return 15;
+        final int upperCase = b >= 'a' && b <= 'z' ? b - ('a' - 'A') : b;
+        return "=ACMGRSVTWYHKDBN".indexOf(upperCase);
+    }
+
+    @Test
+    public void everyByteIsPackedIntoTheHighNibbleOrRejected() {
+        for (int b = 0; b < 256; b++) {
+            final byte[] bases = {(byte) b, 'A'};
+            if (expectedNibble(b) < 0) {
+                Assert.assertThrows(IllegalArgumentException.class, () -> SAMUtils.bytesToCompressedBases(bases));
+            } else {
+                Assert.assertEquals(
+                        SAMUtils.bytesToCompressedBases(bases), new byte[] {(byte) (expectedNibble(b) << 4 | 1)});
+            }
+        }
+    }
+
+    @Test
+    public void everyByteIsPackedIntoTheLowNibbleOrRejected() {
+        for (int b = 0; b < 256; b++) {
+            final byte[] bases = {'A', (byte) b};
+            if (expectedNibble(b) < 0) {
+                Assert.assertThrows(IllegalArgumentException.class, () -> SAMUtils.bytesToCompressedBases(bases));
+            } else {
+                Assert.assertEquals(
+                        SAMUtils.bytesToCompressedBases(bases), new byte[] {(byte) (1 << 4 | expectedNibble(b))});
+            }
+        }
+    }
+
+    @Test
+    public void everyByteIsPackedAsTheLastBaseOfAnOddLengthReadOrRejected() {
+        for (int b = 0; b < 256; b++) {
+            final byte[] bases = {'A', 'C', (byte) b};
+            if (expectedNibble(b) < 0) {
+                Assert.assertThrows(IllegalArgumentException.class, () -> SAMUtils.bytesToCompressedBases(bases));
+            } else {
+                Assert.assertEquals(
+                        SAMUtils.bytesToCompressedBases(bases), new byte[] {0x12, (byte) (expectedNibble(b) << 4)});
+            }
+        }
+    }
+
     @Test
     public void testCompressedBasesToBytesAllNibbleValues() {
         // Each byte encodes two bases. Test all 16 nibble values in both high and low positions.
