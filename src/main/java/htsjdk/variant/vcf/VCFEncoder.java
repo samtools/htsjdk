@@ -416,6 +416,25 @@ public class VCFEncoder {
         final GenotypesContext genotypes = vc.getGenotypes();
         final boolean inSampleOrder = isInSampleOrder(genotypes, samples);
 
+        // the GT code of no-call and of each of the record's alleles, for lookup by identity before alleleMap
+        final Allele[] knownAlleles;
+        final String[] knownCodes;
+        if (hasGenotypeKey) {
+            final List<Allele> recordAlleles = vc.getAlleles();
+            knownAlleles = new Allele[recordAlleles.size() + 1];
+            knownCodes = new String[knownAlleles.length];
+            knownAlleles[0] = Allele.NO_CALL;
+            for (int i = 0; i < recordAlleles.size(); i++) {
+                knownAlleles[i + 1] = recordAlleles.get(i);
+            }
+            for (int i = 0; i < knownAlleles.length; i++) {
+                knownCodes[i] = alleleMap.get(knownAlleles[i]);
+            }
+        } else {
+            knownAlleles = new Allele[0];
+            knownCodes = new String[0];
+        }
+
         for (int s = 0; s < samples.size(); s++) {
             final String sample = samples.get(s);
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
@@ -434,7 +453,7 @@ public class VCFEncoder {
                                 "GTs cannot be missing for some samples if they are available for others in the record");
                     }
 
-                    writeGtField(alleleMap, vcfoutput, g);
+                    writeGtField(knownAlleles, knownCodes, alleleMap, vcfoutput, g);
                     continue;
 
                 } else {
@@ -522,6 +541,40 @@ public class VCFEncoder {
             vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
             writeAllele(g.getAllele(i), alleleMap, vcfoutput);
         }
+    }
+
+    /**
+     * {@link #writeGtField(Map, Appendable, Genotype)}, finding each allele's code among {@code knownAlleles} by
+     * identity first, which is the same answer as alleleMap without hashing the allele's bases.
+     */
+    private static void writeGtField(
+            final Allele[] knownAlleles,
+            final String[] knownCodes,
+            final Map<Allele, String> alleleMap,
+            final Appendable vcfoutput,
+            final Genotype g)
+            throws IOException {
+        writeAllele(g.getAllele(0), knownAlleles, knownCodes, alleleMap, vcfoutput);
+        for (int i = 1; i < g.getPloidy(); i++) {
+            vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
+            writeAllele(g.getAllele(i), knownAlleles, knownCodes, alleleMap, vcfoutput);
+        }
+    }
+
+    private static void writeAllele(
+            final Allele allele,
+            final Allele[] knownAlleles,
+            final String[] knownCodes,
+            final Map<Allele, String> alleleMap,
+            final Appendable vcfOutput)
+            throws IOException {
+        for (int i = 0; i < knownAlleles.length; i++) {
+            if (knownAlleles[i] == allele && knownCodes[i] != null) {
+                vcfOutput.append(knownCodes[i]);
+                return;
+            }
+        }
+        writeAllele(allele, alleleMap, vcfOutput);
     }
 
     /*

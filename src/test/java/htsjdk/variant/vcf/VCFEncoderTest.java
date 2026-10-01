@@ -371,6 +371,28 @@ public class VCFEncoderTest extends HtsjdkTest {
         Assert.assertEquals(sampleColumns(Collections.singletonList("s1"), unnamed), Arrays.asList("./."));
     }
 
+    @Test
+    public void encodeWritesTheCodeOfAnAlleleEqualToButNotTheSameObjectAsTheRecords() {
+        final Genotype separatelyCreated = new GenotypeBuilder(
+                        "s1", Arrays.asList(Allele.create("A", true), Allele.create("C"), Allele.NO_CALL))
+                .phased(true)
+                .make();
+        Assert.assertEquals(sampleColumns(Collections.singletonList("s1"), separatelyCreated), Arrays.asList("0|1|."));
+    }
+
+    @Test
+    public void addGenotypeDataNeedsNoAlleleMapWithoutAGenotypeKey() {
+        final VCFEncoder encoder = new VCFEncoder(createSyntheticHeader(Collections.singletonList("s1")), false, false);
+        final VariantContext vc = new VariantContextBuilder("test", "1", 10, 10, REF_AND_ALT)
+                .genotypes(new GenotypeBuilder("s1", REF_AND_ALT)
+                        .attribute("BB", 7)
+                        .make())
+                .make();
+        final StringBuilder out = new StringBuilder();
+        encoder.addGenotypeData(vc, null, Collections.singletonList("BB"), out);
+        Assert.assertEquals(out.toString(), "\t7");
+    }
+
     private static Set<VCFHeaderLine> createSyntheticMetadata() {
         final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
