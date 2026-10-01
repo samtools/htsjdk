@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.compression.nametokenisation;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -122,6 +123,25 @@ public class NameTokenisationTest extends HtsjdkTest {
         readNamesTestCases.add("H0164ALXX140820:2:1101:10003:23460" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "1"
                 + LOCAL_NAME_SEPARATOR_CHARSEQUENCE + "A read name" + LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
 
+        // IonTorrent, ONT and PacBio CLR names, each a format whose prefix the encoder treats as fixed
+        readNamesTestCases.add(joinNames(List.of("ZBP6J:02796:01418", "K3NWE:00012:00345", "ZBP6J:02797:01420")));
+        readNamesTestCases.add(joinNames(List.of(
+                "f33d30d5-6eb8-4115-8f46-154c2620a5da_Basecall_1D_template",
+                "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d_Basecall_1D_template")));
+        readNamesTestCases.add(joinNames(List.of(
+                "m140905_042212_sidney_c100564852550000001823085912221377_s1_X0/1234/0_5000",
+                "m140905_042212_sidney_c100564852550000001823085912221377_s1_X0/1235/0_7000",
+                "m140905_042212_sidney_c100564852550000001823085912221377_s1_X0/1234/0_5000")));
+
+        // two Illumina flowcells interleaved, with mates repeating earlier names
+        readNamesTestCases.add(joinNames(List.of(
+                "A00217:60:HCVVJDSXX:2:2558:1108:18537",
+                "A00404:52:HG25YDSXX:4:2678:14516:34115",
+                "A00217:60:HCVVJDSXX:2:2558:1108:18537",
+                "A00217:60:HCVVJDSXX:2:2558:1120:18540",
+                "A00404:52:HG25YDSXX:4:2678:14516:34115",
+                "A00404:52:HG25YDSXX:4:2678:14530:34120")));
+
         final List<Object[]> testCases = new ArrayList<>();
         for (final String readName : readNamesTestCases) {
             for (boolean useArith : Arrays.asList(true, false)) {
@@ -143,6 +163,83 @@ public class NameTokenisationTest extends HtsjdkTest {
                 nameTokenisationDecode.uncompress(compressedBuffer, NameTokenisationDecode.NAME_SEPARATOR));
         uncompressedBuffer.rewind();
         Assert.assertEquals(decompressedNames, uncompressedBuffer);
+    }
+
+    private static String joinNames(final List<String> names) {
+        final StringBuilder joined = new StringBuilder();
+        for (final String name : names) {
+            joined.append(name).append(LOCAL_NAME_SEPARATOR_CHARSEQUENCE);
+        }
+        return joined.toString();
+    }
+
+    private static int compressedSize(final List<String> names) {
+        return new NameTokenisationEncode()
+                .compress(
+                        ByteBuffer.wrap(joinNames(names).getBytes(StandardCharsets.ISO_8859_1)),
+                        false,
+                        NameTokenisationDecode.NAME_SEPARATOR)
+                .limit();
+    }
+
+    /** Names from one Illumina flowcell lane and tile, each a small step further across the tile than the last. */
+    private static List<String> illuminaNames(final String flowcellPrefix, final int count) {
+        final List<String> names = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            names.add(flowcellPrefix + "2:1101:" + (1000 + 7 * i) + ":" + (2000 + 13 * i));
+        }
+        return names;
+    }
+
+    private static List<String> interleaved(final List<String> first, final List<String> second) {
+        final List<String> names = new ArrayList<>();
+        for (int i = 0; i < first.size(); i++) {
+            names.add(first.get(i));
+            names.add(second.get(i));
+        }
+        return names;
+    }
+
+    private static List<String> grouped(final List<String> first, final List<String> second) {
+        final List<String> names = new ArrayList<>(first);
+        names.addAll(second);
+        return names;
+    }
+
+    @Test
+    public void namesInterleavedFromTwoIlluminaFlowcellsCompressAboutAsWellAsGrouped() {
+        final List<String> first = illuminaNames("A00217:60:HCVVJDSXX:", 1000);
+        final List<String> second = illuminaNames("A00404:52:HG25YDSXX:", 1000);
+        Assert.assertTrue(
+                compressedSize(interleaved(first, second)) < 1.25 * compressedSize(grouped(first, second)),
+                "each name should be encoded against the last name from its own flowcell");
+    }
+
+    @Test
+    public void namesInterleavedFromTwoIonTorrentRunsCompressAboutAsWellAsGrouped() {
+        final List<String> first = new ArrayList<>();
+        final List<String> second = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            first.add(String.format("ZBP6J:%05d:%05d", 100 + i / 50, 200 + 3 * (i % 50)));
+            second.add(String.format("K3NWE:%05d:%05d", 100 + i / 50, 200 + 3 * (i % 50)));
+        }
+        Assert.assertTrue(
+                compressedSize(interleaved(first, second)) < 1.25 * compressedSize(grouped(first, second)),
+                "each name should be encoded against the last name from its own run");
+    }
+
+    @Test
+    public void namesFollowingTheirMatesCompressAboutAsWellAsWithoutThem() {
+        final List<String> names = illuminaNames("A00217:60:HCVVJDSXX:", 2000);
+        // each name is repeated, as its mate's, after the next name: n0 n1 n0 n2 n1 n3 n2 ...
+        final List<String> withMates = new ArrayList<>();
+        for (int i = 0; i < names.size(); i++) {
+            withMates.add(names.get(i));
+            if (i > 0) withMates.add(names.get(i - 1));
+        }
+        Assert.assertTrue(
+                compressedSize(withMates) < 2 * compressedSize(names),
+                "a name after a repeated one should be encoded against the repeated name's tokens");
     }
 
     /** Two names ending in 0xE9 ("é" in ISO-8859-1) and in 0xC3 0xA9 ("é" in UTF-8). */

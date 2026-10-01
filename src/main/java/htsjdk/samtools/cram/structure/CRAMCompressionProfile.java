@@ -2,10 +2,12 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.compression.nametokenisation.NameTokeniserExternalCompressor;
 import htsjdk.samtools.cram.compression.range.RangeParams;
 import htsjdk.samtools.cram.compression.rans.RANS4x8Params;
 import htsjdk.samtools.cram.compression.rans.RANSNx16Params;
 import htsjdk.samtools.cram.structure.block.BlockCompressionMethod;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
@@ -37,23 +39,23 @@ public enum CRAMCompressionProfile {
     FAST(CramVersions.CRAM_v3, 1, 10_000),
 
     /**
-     * Balanced profile (default). Uses rANS Nx16 for entropy-rich data series, FQZComp for quality
-     * scores, and Name Tokeniser for read names. Writes CRAM 3.1.
+     * Balanced profile (default), matching htslib's normal. Uses rANS Nx16 for entropy-rich data series and the Name
+     * Tokeniser for read names; quality scores and tags each use the smallest of GZIP and the rANS Nx16 variants
+     * htslib tries. Writes CRAM 3.1.
      */
     NORMAL(CramVersions.CRAM_v3_1, 5, 10_000),
 
     /**
-     * Size-optimized profile. Uses GZIP at higher compression level with FQZComp for quality scores.
-     * Does not use Name Tokeniser or rANS (matching htslib SMALL behavior). Writes CRAM 3.1.
+     * Size-optimized profile, matching htslib's small. Uses the same codecs as NORMAL at a higher GZIP level and with
+     * larger slices; quality scores and tags also try BZIP2 and two more rANS Nx16 variants, and quality scores
+     * FQZComp. Writes CRAM 3.1.
      */
     SMALL(CramVersions.CRAM_v3_1, 6, 25_000),
 
     /**
-     * Maximum compression profile. Uses rANS Nx16 for entropy-rich data, FQZComp for quality scores,
-     * and Name Tokeniser for read names at higher compression settings. Writes CRAM 3.1.
-     *
-     * <p>This profile uses trial compression: multiple codecs are tried per block and the smallest
-     * result wins. Additional candidates include BZIP2, the Range (arithmetic) coder, and GZIP.
+     * Maximum compression profile, matching htslib's archive. As SMALL, with still larger slices, the Range
+     * (arithmetic) coder among the candidates for quality scores, tags and the entropy-rich data series, and read names
+     * tokenised with the arithmetic coder. Writes CRAM 3.1.
      */
     ARCHIVE(CramVersions.CRAM_v3_1, 7, 100_000),
 
@@ -119,7 +121,10 @@ public enum CRAMCompressionProfile {
         strategy.setTagCompressorCandidates(buildTagCompressorCandidates());
     }
 
-    /** The compressors tried on each tag's block: rANS 4x8 for a CRAM 3.0 profile, rANS Nx16 for 3.1, and GZIP. */
+    /**
+     * The compressors tried on each tag's block: for a CRAM 3.0 profile GZIP and rANS 4x8, and for 3.1 those htslib
+     * tries on a block for the same profile.
+     */
     private List<CompressorDescriptor> buildTagCompressorCandidates() {
         final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
         if (cramVersion.equals(CramVersions.CRAM_v3)) {
@@ -128,8 +133,40 @@ public enum CRAMCompressionProfile {
                     new CompressorDescriptor(BlockCompressionMethod.RANS, RANS4x8Params.ORDER.ZERO.ordinal()),
                     new CompressorDescriptor(BlockCompressionMethod.RANS, RANS4x8Params.ORDER.ONE.ordinal()));
         }
-        return List.of(
-                gzip, new CompressorDescriptor(BlockCompressionMethod.RANSNx16, RANSNx16Params.ORDER.ZERO.ordinal()));
+        return htslibBlockCompressors();
+    }
+
+    /**
+     * The compressors htslib tries on a block for this CRAM 3.1 profile ({@code cram_compress_slice}): GZIP at the
+     * profile's level; BZIP2 for SMALL and ARCHIVE; rANS Nx16 with the flag combinations htslib tries at the profile's
+     * level; and for ARCHIVE the Range coder with its combinations. It leaves out htslib's GZIP at level 1 and with
+     * the RLE strategy.
+     */
+    private List<CompressorDescriptor> htslibBlockCompressors() {
+        final List<CompressorDescriptor> compressors = new ArrayList<>();
+        compressors.add(new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel));
+        if (this == SMALL || this == ARCHIVE) {
+            compressors.add(new CompressorDescriptor(BlockCompressionMethod.BZIP2));
+        }
+        final int order1 = RANSNx16Params.ORDER_FLAG_MASK;
+        final int rle = RANSNx16Params.RLE_FLAG_MASK;
+        final int pack = RANSNx16Params.PACK_FLAG_MASK;
+        final int stripe = RANSNx16Params.STRIPE_FLAG_MASK;
+        final List<Integer> ransFlags =
+                new ArrayList<>(List.of(0, order1, rle, order1 | stripe, pack, order1 | pack | rle));
+        if (gzipLevel > 5) {
+            ransFlags.addAll(List.of(order1 | pack, pack | rle));
+        }
+        for (final int flags : ransFlags) {
+            compressors.add(new CompressorDescriptor(BlockCompressionMethod.RANSNx16, flags));
+        }
+        if (this == ARCHIVE) {
+            for (final int flags :
+                    List.of(0, order1, rle, order1 | stripe, pack, order1 | pack, pack | rle, order1 | pack | rle)) {
+                compressors.add(new CompressorDescriptor(BlockCompressionMethod.ADAPTIVE_ARITHMETIC, flags));
+            }
+        }
+        return compressors;
     }
 
     /**
@@ -169,7 +206,10 @@ public enum CRAMCompressionProfile {
         }
     }
 
-    /** NORMAL: rANS Nx16 for low-entropy data, GZIP for positional/byte-array data, FQZComp for QS, NameTok for RN. */
+    /**
+     * NORMAL: rANS Nx16 for low-entropy data, GZIP for positional/byte-array data, NameTok for RN, and rANS Nx16
+     * order 1 as the first of QS's trial candidates.
+     */
     private void buildNormalMap(final EnumMap<DataSeries, CompressorDescriptor> map) {
         final CompressorDescriptor gzip = new CompressorDescriptor(BlockCompressionMethod.GZIP, gzipLevel);
         final CompressorDescriptor ransOrder0 =
@@ -205,8 +245,7 @@ public enum CRAMCompressionProfile {
         // NP (mate position), FP (feature position) — these have high variance
         // IN (insertions), SC (soft clips) — byte arrays benefit from LZ77
 
-        // Specialized codecs
-        map.put(DataSeries.QS_QualityScore, new CompressorDescriptor(BlockCompressionMethod.FQZCOMP));
+        map.put(DataSeries.QS_QualityScore, ransOrder1);
         map.put(DataSeries.RN_ReadName, new CompressorDescriptor(BlockCompressionMethod.NAME_TOKENISER));
     }
 
@@ -233,31 +272,40 @@ public enum CRAMCompressionProfile {
         map.put(DataSeries.TS_InsertSize, ransOrder1);
     }
 
-    /** SMALL: Same codec assignments as NORMAL but at higher compression level. Trial compression
-     *  adds BZIP2 alongside rANS/GZIP to let the trial pick the best per data series. */
+    /** SMALL: as NORMAL, with FQZComp as the first of QS's trial candidates. */
     private void buildSmallMap(final EnumMap<DataSeries, CompressorDescriptor> map) {
         buildNormalMap(map);
+        map.put(DataSeries.QS_QualityScore, new CompressorDescriptor(BlockCompressionMethod.FQZCOMP));
     }
 
-    /** ARCHIVE: Same primary codecs as NORMAL but at higher compression, plus larger slices.
-     *  Trial compression candidates (BZIP2, Range coder) are provided via buildTrialCandidatesMap. */
+    /** ARCHIVE: as SMALL, with read names tokenised using the arithmetic coder, as htslib's archive does. */
     private void buildArchiveMap(final EnumMap<DataSeries, CompressorDescriptor> map) {
-        buildNormalMap(map);
+        buildSmallMap(map);
+        map.put(
+                DataSeries.RN_ReadName,
+                new CompressorDescriptor(
+                        BlockCompressionMethod.NAME_TOKENISER, NameTokeniserExternalCompressor.USE_ARITH));
     }
 
     /**
-     * Build the trial compression candidates map for this profile. Only ARCHIVE and SMALL profiles
-     * currently use trial compression. For data series with trial candidates, the primary compressor
-     * (from buildCompressorMap) plus these additional candidates are all tried, and the smallest wins.
+     * Build the trial compression candidates map for this profile. The CRAM 3.1 profiles try htslib's candidates on
+     * quality scores, and SMALL and ARCHIVE also on most other data series. For data series with trial candidates,
+     * the primary compressor (from buildCompressorMap) plus these additional candidates are all tried, and the
+     * smallest wins.
      *
      * @return the trial candidates map, or null if this profile doesn't use trial compression
      */
     private EnumMap<DataSeries, java.util.List<CompressorDescriptor>> buildTrialCandidatesMap() {
-        if (this != ARCHIVE && this != SMALL) {
+        if (!cramVersion.equals(CramVersions.CRAM_v3_1)) {
             return null;
         }
 
         final EnumMap<DataSeries, java.util.List<CompressorDescriptor>> trialMap = new EnumMap<>(DataSeries.class);
+
+        // Quality scores try every compressor htslib does besides the primary
+        final List<CompressorDescriptor> qsCandidates = htslibBlockCompressors();
+        qsCandidates.remove(buildCompressorMap().get(DataSeries.QS_QualityScore));
+        trialMap.put(DataSeries.QS_QualityScore, qsCandidates);
 
         // BZIP2 as an alternative for general data series
         final CompressorDescriptor bzip2 = new CompressorDescriptor(BlockCompressionMethod.BZIP2);

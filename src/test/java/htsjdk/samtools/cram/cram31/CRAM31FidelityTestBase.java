@@ -54,7 +54,7 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
 
     /**
      * The core fidelity test. Converts a CRAM 3.0 source to 3.1 with both samtools and HTSJDK
-     * using this class's profile, then compares all three pairwise.
+     * using this class's profile, compares all three pairwise, and checks that samtools decodes HTSJDK's output.
      */
     public void testCRAM31Fidelity(final IOPath testInput, final IOPath testReference) throws IOException {
         final String profile = getProfile();
@@ -77,6 +77,11 @@ public abstract class CRAM31FidelityTestBase extends HtsjdkTest {
 
         // compare HTSJDK output vs samtools 3.1
         compareCRAMFiles(cramHtsjdk31.toPath(), cramSamtools31.toPath(), testReference.toPath());
+
+        // samtools must decode HTSJDK's output too: re-encode it as CRAM 3.0 and compare with the original
+        final IOPath cramHtsjdk31BySamtools =
+                SamtoolsTestUtils.convertToCRAM(cramHtsjdk31, testReference, "--output-fmt cram,version=3.0");
+        compareCRAMFiles(testInput.toPath(), cramHtsjdk31BySamtools.toPath(), testReference.toPath());
     }
 
     static void convertToCRAM31WithSamtools(

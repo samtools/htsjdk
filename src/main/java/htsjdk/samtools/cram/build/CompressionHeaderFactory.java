@@ -311,16 +311,6 @@ public final class CompressionHeaderFactory {
             for (final CompressorDescriptor descriptor : tagCompressorCandidates) {
                 candidates.add(tagCompressorCache.getCompressorForMethod(descriptor.method(), descriptor.arg()));
             }
-
-            // BZIP2's BWT excels on structured alignment tags (SA:Z, XA:Z) where
-            // repeated substrings like contig names and CIGAR patterns are common
-            final char tag1 = (char) ((id >> 16) & 0xFF);
-            final char tag2 = (char) ((id >> 8) & 0xFF);
-            final ExternalCompressor bzip2 = tagCompressorCache.getCompressorForMethod(
-                    BlockCompressionMethod.BZIP2, ExternalCompressor.NO_COMPRESSION_ARG);
-            if (((tag1 == 'S' && tag2 == 'A') || (tag1 == 'X' && tag2 == 'A')) && !candidates.contains(bzip2)) {
-                candidates.add(bzip2);
-            }
             return candidates.size() == 1 ? candidates.get(0) : new TrialCompressor(candidates);
         });
     }
