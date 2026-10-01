@@ -12,9 +12,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import org.testng.Assert;
@@ -194,6 +196,122 @@ public class VCFEncoderTest extends HtsjdkTest {
         final int nCol = ParsingUtils.split(sb.toString(), columns, VCFConstants.FIELD_SEPARATOR_CHAR);
         Assert.assertEquals(
                 columns[nCol - 1], expectedLastColumn, "Format fields don't handle missing data in the expected way");
+    }
+
+    /** formatVCFDouble as it was before its fixed-point fast path: always through String.format. */
+    private static String formatVCFDoubleWithFormatter(final double d) {
+        final String format;
+        if (d < 1) {
+            if (d < 0.01) {
+                if (Math.abs(d) >= 1e-20) {
+                    format = "%.3e";
+                } else {
+                    return "0.00";
+                }
+            } else {
+                format = "%.3f";
+            }
+        } else {
+            format = "%.2f";
+        }
+        return String.format(Locale.US, format, d);
+    }
+
+    private static void assertFormatsAsFormatterDoes(final double d) {
+        Assert.assertEquals(VCFEncoder.formatVCFDouble(d), formatVCFDoubleWithFormatter(d), "formatting " + d);
+    }
+
+    @Test
+    public void formatVCFDoubleMatchesStringFormatOverEveryMagnitude() {
+        final Random random = new Random(42);
+        for (int i = 0; i < 1_000_000; i++) {
+            final double magnitude = Math.pow(10, -4 + 20 * random.nextDouble());
+            assertFormatsAsFormatterDoes(random.nextInt(10) == 0 ? -magnitude : magnitude);
+        }
+    }
+
+    @Test
+    public void formatVCFDoubleMatchesStringFormatForFloatsReadFromBcf() {
+        // BCF stores Float values, which reach the encoder widened to double
+        final Random random = new Random(42);
+        for (int i = 0; i < 1_000_000; i++) {
+            assertFormatsAsFormatterDoes((float) Math.pow(10, -3 + 9 * random.nextDouble()));
+            assertFormatsAsFormatterDoes(
+                    Float.parseFloat(String.format(Locale.US, "%.2f", 1000 * random.nextDouble())));
+        }
+    }
+
+    @Test
+    public void formatVCFDoubleMatchesStringFormatOnAndAroundHalfwayPoints() {
+        for (int i = 0; i < 200_000; i++) {
+            for (final double halfway : new double[] {(i + 0.5) / 100, (i + 0.5) / 1000}) {
+                double below = halfway, above = halfway;
+                for (int step = 0; step < 12; step++) {
+                    assertFormatsAsFormatterDoes(below);
+                    assertFormatsAsFormatterDoes(above);
+                    below = Math.nextDown(below);
+                    above = Math.nextUp(above);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void formatVCFDoubleMatchesStringFormatAtTheEdgesOfEachFormat() {
+        final double[] edges = {
+            0.0,
+            -0.0,
+            1e-20,
+            0.01,
+            0.0099999,
+            0.9995,
+            0.99949999,
+            0.99999,
+            1.0,
+            9.995,
+            99.995,
+            0x1p52 / 1000,
+            0x1p52 / 100,
+            1e15,
+            1e300,
+            Double.MAX_VALUE,
+            Double.MIN_VALUE,
+            Double.NaN,
+            Double.POSITIVE_INFINITY,
+            Double.NEGATIVE_INFINITY
+        };
+        for (final double edge : edges) {
+            double below = edge, above = edge;
+            for (int step = 0; step < 4; step++) {
+                assertFormatsAsFormatterDoes(below);
+                assertFormatsAsFormatterDoes(above);
+                below = Math.nextDown(below);
+                above = Math.nextUp(above);
+            }
+        }
+    }
+
+    @Test
+    public void formatVCFFieldJoinsAListWithCommas() {
+        Assert.assertEquals(VCFEncoder.formatVCFField(Arrays.asList(40.23, 0.0, 0.5, 7, "x")), "40.23,0.00,0.500,7,x");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new LinkedList<>(Arrays.asList(1, 2))), "1,2");
+        Assert.assertEquals(VCFEncoder.formatVCFField(Arrays.asList(1, null, 3)), "1,.,3");
+    }
+
+    @Test
+    public void formatVCFFieldFormatsArraysAsItFormatsTheirBoxedElements() {
+        Assert.assertEquals(VCFEncoder.formatVCFField(new int[] {1, -2, 30}), "1,-2,30");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new double[] {1.5, 0.05, 0.001}), "1.50,0.050,1.000e-03");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new Object[] {1, "a", null, 2.5}), "1,a,.,2.50");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new long[] {5L, 6L}), "5,6");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new float[] {1.5f}), "1.5");
+    }
+
+    @Test
+    public void formatVCFFieldWritesAnEmptyListOrArrayAsMissing() {
+        Assert.assertEquals(VCFEncoder.formatVCFField(Collections.emptyList()), ".");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new int[0]), ".");
+        Assert.assertEquals(VCFEncoder.formatVCFField(new Object[0]), ".");
     }
 
     private static Set<VCFHeaderLine> createSyntheticMetadata() {

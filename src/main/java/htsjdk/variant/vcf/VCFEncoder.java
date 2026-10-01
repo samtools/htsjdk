@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -238,16 +239,27 @@ public class VCFEncoder {
         } else if (val instanceof Boolean) {
             result = (Boolean) val ? "" : null; // empty string for true, null for false
         } else if (val instanceof List) {
-            result = formatVCFField(((List) val).toArray());
+            final List list = (List) val;
+            if (list.isEmpty()) {
+                return formatVCFField(null);
+            }
+            final Iterator values = list.iterator();
+            final StringBuilder sb = new StringBuilder(formatVCFField(values.next()));
+            while (values.hasNext()) {
+                sb.append(',');
+                sb.append(formatVCFField(values.next()));
+            }
+            result = sb.toString();
         } else if (val.getClass().isArray()) {
+            // Object[], int[] and double[] are read directly: reflective Array.get is slow on every element
             final int length = Array.getLength(val);
             if (length == 0) {
                 return formatVCFField(null);
             }
-            final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
+            final StringBuilder sb = new StringBuilder(formatArrayElement(val, 0));
             for (int i = 1; i < length; i++) {
                 sb.append(',');
-                sb.append(formatVCFField(Array.get(val, i)));
+                sb.append(formatArrayElement(val, i));
             }
             result = sb.toString();
         } else {
@@ -255,6 +267,19 @@ public class VCFEncoder {
         }
 
         return result;
+    }
+
+    /** Formats element {@code i} of an array as {@link #formatVCFField} formats that element boxed. */
+    private static String formatArrayElement(final Object array, final int i) {
+        if (array instanceof Object[]) {
+            return formatVCFField(((Object[]) array)[i]);
+        } else if (array instanceof int[]) {
+            return Integer.toString(((int[]) array)[i]);
+        } else if (array instanceof double[]) {
+            return formatVCFDouble(((double[]) array)[i]);
+        } else {
+            return formatVCFField(Array.get(array, i));
+        }
     }
 
     /**
@@ -269,22 +294,65 @@ public class VCFEncoder {
      */
     public static String formatVCFDouble(final double d) {
         final String format;
+        final String fixed;
         if (d < 1) {
             if (d < 0.01) {
                 if (Math.abs(d) >= 1e-20) {
                     format = "%.3e";
+                    fixed = null;
                 } else {
                     // return a zero format
                     return "0.00";
                 }
             } else {
                 format = "%.3f";
+                fixed = formatFixedPoint(d, 3);
             }
         } else {
             format = "%.2f";
+            fixed = formatFixedPoint(d, 2);
         }
 
-        return String.format(Locale.US, format, d);
+        return fixed != null ? fixed : String.format(Locale.US, format, d);
+    }
+
+    /** Scaled values below this are exact in a long and have at least one fractional bit to round on. */
+    private static final double MAX_FIXED_POINT_SCALED = 0x1p52;
+
+    /**
+     * How far, in ulps of the scaled value, it must be from a rounding tie for {@link #formatFixedPoint} to answer.
+     * The decimal {@link java.util.Formatter} rounds is within an ulp of {@code d}, which is at most two ulps of
+     * {@code d} scaled, and scaling adds half an ulp; the rest is margin.
+     */
+    private static final int FIXED_POINT_TIE_MARGIN_ULPS = 8;
+
+    /**
+     * Formats a positive {@code d} with 2 or 3 decimal places as {@code String.format(Locale.US, "%.2f", d)} or
+     * {@code "%.3f"} would, without the cost of a {@link java.util.Formatter}, or returns null where it can't be sure
+     * of matching it.  Formatter rounds half up on the decimal digits of {@code Double.toString(d)}, which lie within
+     * an ulp of {@code d}.  So when {@code d} scaled by 100 or 1000 is clearly away from a halfway point, rounding
+     * the scaled value to the nearest integer gives the same digits.  Near a halfway point, and for NaN, infinities
+     * and very large values, it returns null.
+     */
+    private static String formatFixedPoint(final double d, final int decimalPlaces) {
+        final long scale = decimalPlaces == 2 ? 100 : 1000;
+        final double scaled = d * scale;
+        if (!(scaled > 0 && scaled < MAX_FIXED_POINT_SCALED)) {
+            return null;
+        }
+        final double whole = Math.floor(scaled);
+        final double fraction = scaled - whole;
+        if (Math.abs(fraction - 0.5) <= FIXED_POINT_TIE_MARGIN_ULPS * Math.ulp(scaled)) {
+            return null;
+        }
+        final long rounded = (long) whole + (fraction > 0.5 ? 1 : 0);
+
+        final String fractionDigits = Long.toString(scale + rounded % scale); // leading 1 keeps the zeros
+        return new StringBuilder(24)
+                .append(rounded / scale)
+                .append('.')
+                .append(fractionDigits, 1, fractionDigits.length())
+                .toString();
     }
 
     static int countOccurrences(final char c, final String s) {

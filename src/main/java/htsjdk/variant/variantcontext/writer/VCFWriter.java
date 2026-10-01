@@ -82,6 +82,13 @@ class VCFWriter extends IndexingVariantContextWriter {
     private final ByteArrayOutputStream lineBuffer = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE);
     /* Wrapping in a {@link BufferedWriter} avoids frequent conversions with individual writes to OutputStreamWriter. */
     private final Writer writer = new BufferedWriter(new OutputStreamWriter(lineBuffer, VCFEncoder.VCF_CHARSET));
+    /*
+     * Each record is encoded into recordBuffer and handed to the writer in one call: the encoder appends a few
+     * characters at a time, and every call into the BufferedWriter takes its lock.
+     */
+    private final StringBuilder recordBuffer = new StringBuilder(INITIAL_BUFFER_SIZE);
+
+    private char[] recordChars = new char[INITIAL_BUFFER_SIZE];
 
     public VCFWriter(
             final File location,
@@ -155,18 +162,6 @@ class VCFWriter extends IndexingVariantContextWriter {
     // VCFWriter interface functions
     //
     // --------------------------------------------------------------------------------
-
-    /*
-     * Write String s to the internal buffered writer.
-     *
-     * writeAndResetBuffer() must be called to actually write the data to the true output stream.
-     *
-     * @param s the string to write
-     * @throws IOException
-     */
-    private void write(final String s) throws IOException {
-        writer.write(s);
-    }
 
     /*
      * Actually write the line buffer contents to the destination output stream. After calling this function
@@ -268,15 +263,22 @@ class VCFWriter extends IndexingVariantContextWriter {
                 throw new IllegalStateException(
                         "Unable to write the VCF: header is missing, " + "try to call writeHeader or setHeader first.");
             }
+            recordBuffer.setLength(0);
             if (this.doNotWriteGenotypes) {
                 this.vcfEncoder.write(
-                        this.writer,
+                        recordBuffer,
                         new VariantContextBuilder(context).noGenotypes().make());
             } else {
-                this.vcfEncoder.write(this.writer, context);
+                this.vcfEncoder.write(recordBuffer, context);
             }
-            write("\n");
+            recordBuffer.append('\n');
 
+            final int length = recordBuffer.length();
+            if (recordChars.length < length) {
+                recordChars = new char[Math.max(length, 2 * recordChars.length)];
+            }
+            recordBuffer.getChars(0, length, recordChars, 0);
+            writer.write(recordChars, 0, length);
             writeAndResetBuffer();
             outputHasBeenWritten = true;
         } catch (IOException e) {
