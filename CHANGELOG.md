@@ -17,10 +17,12 @@ Patch release on the 5.0 line.
 ### Performance
 
 - **BCF records decode faster**, most of all their genotypes.  `BCF2Decoder` reads each value straight from the record's bytes rather than a byte at a time through a synchronized `ByteArrayInputStream`.  Reading a 3,000-sample BCF and decoding every genotype takes 40–60% less time on Apple silicon.  Decoded values are unchanged.
+- **Writing VCF records with many samples is faster**, and the output is unchanged.  `VCFEncoder.formatVCFDouble` formats `%.2f` and `%.3f` values without a `java.util.Formatter` except near a rounding halfway point.  List and array attributes are formatted without reflection.  `VCFWriter` encodes each record into a `StringBuilder` and writes it in one call, rather than taking the `BufferedWriter`'s lock for every few characters.
 
 ### Bug fixes
 
 - **A truncated or corrupt BCF record now fails with a `TribbleException`** when decoding reaches the end of the record's bytes.  It used to read each missing byte as `0xFF` (so a value came out as `-1`) and carry on.
+- **A VCF record that fails to encode no longer corrupts the next one.**  `VCFWriter` used to leave the columns it had written before the failure at the start of the next record's line.
 
 ## 5.0.0
 

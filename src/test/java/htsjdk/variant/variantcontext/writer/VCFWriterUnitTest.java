@@ -45,12 +45,18 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -215,6 +221,36 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             writer3.add(createVC(header));
             writer3.setHeader(header);
         }
+    }
+
+    @Test
+    public void aRecordThatFailsToEncodeLeavesNothingInTheOutput() throws IOException {
+        final VCFHeader header = new VCFHeader(
+                new HashSet<>(
+                        Collections.singletonList(new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"))),
+                Collections.emptyList());
+        final List<Allele> alleles = Arrays.asList(Allele.create("A", true), Allele.create("C"));
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputVCFStream(out)
+                .clearOptions()
+                .build()) {
+            writer.writeHeader(header);
+            final VariantContext undeclaredInfo = new VariantContextBuilder("test", "1", 10, 10, alleles)
+                    .attribute("XX", 1)
+                    .make();
+            Assert.assertThrows(IllegalStateException.class, () -> writer.add(undeclaredInfo));
+            writer.add(new VariantContextBuilder("test", "1", 20, 20, alleles)
+                    .attribute("DP", 5)
+                    .make());
+        }
+
+        final List<String> body = new ArrayList<>();
+        for (final String line :
+                out.toString(StandardCharsets.ISO_8859_1.name()).split("\n")) {
+            if (!line.startsWith("#")) body.add(line);
+        }
+        Assert.assertEquals(body, Collections.singletonList("1\t20\t.\tA\tC\t.\t.\tDP=5"));
     }
 
     /**
