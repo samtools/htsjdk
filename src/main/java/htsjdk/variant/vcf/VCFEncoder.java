@@ -355,17 +355,15 @@ public class VCFEncoder {
                 .toString();
     }
 
-    static int countOccurrences(final char c, final String s) {
-        int count = 0;
-        for (int i = 0; i < s.length(); i++) {
-            count += s.charAt(i) == c ? 1 : 0;
-        }
-        return count;
-    }
-
+    /** True for "", "." and a list of missing values such as ".,.": nothing but '.' and ','. */
     static boolean isMissingValue(final String s) {
-        // we need to deal with the case that it's a list of missing values
-        return (countOccurrences(VCFConstants.MISSING_VALUE_v4.charAt(0), s) + countOccurrences(',', s) == s.length());
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (c != '.' && c != ',') {
+                return false;
+            }
+        }
+        return true;
     }
 
     /*
@@ -456,10 +454,9 @@ public class VCFEncoder {
                                 outputValue = sb.toString();
                             }
                         } else {
-                            Object val = g.hasExtendedAttribute(field)
-                                    ? g.getExtendedAttribute(field)
+                            outputValue = g.hasExtendedAttribute(field)
+                                    ? formatVCFField(g.getExtendedAttribute(field))
                                     : VCFConstants.MISSING_VALUE_v4;
-                            outputValue = formatVCFField(val);
                         }
                     }
 

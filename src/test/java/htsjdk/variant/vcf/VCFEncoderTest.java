@@ -314,6 +314,16 @@ public class VCFEncoderTest extends HtsjdkTest {
         Assert.assertEquals(VCFEncoder.formatVCFField(new Object[0]), ".");
     }
 
+    @Test
+    public void isMissingValueIsTrueOnlyForDotsAndCommas() {
+        for (final String missing : Arrays.asList("", ".", ".,.", ",", "..", ".,.,.")) {
+            Assert.assertTrue(VCFEncoder.isMissingValue(missing), "'" + missing + "'");
+        }
+        for (final String present : Arrays.asList("0", ".1", "1.", "a,.", ".,1", " ", "NaN")) {
+            Assert.assertFalse(VCFEncoder.isMissingValue(present), "'" + present + "'");
+        }
+    }
+
     private static Set<VCFHeaderLine> createSyntheticMetadata() {
         final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
