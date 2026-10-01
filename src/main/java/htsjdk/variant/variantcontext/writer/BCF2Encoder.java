@@ -25,9 +25,9 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.util.UnsynchronizedByteArrayOutputStream;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +43,8 @@ import java.util.List;
 public final class BCF2Encoder {
     // TODO -- increase default size?
     public static final int WRITE_BUFFER_INITIAL_SIZE = 16384;
-    private ByteArrayOutputStream encodeStream = new ByteArrayOutputStream(WRITE_BUFFER_INITIAL_SIZE);
+    private final UnsynchronizedByteArrayOutputStream encodeStream =
+            new UnsynchronizedByteArrayOutputStream(WRITE_BUFFER_INITIAL_SIZE);
 
     // --------------------------------------------------------------------------------
     //

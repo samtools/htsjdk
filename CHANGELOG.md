@@ -211,6 +211,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 
 - **BCF genotypes with padded or missing vectors decode faster.**  `BCF2Decoder` moves past the rest of a vector after END_OF_VECTOR or a leading MISSING rather than decoding each value it discards, such as the PLs of a cohort's no-call samples.  A GnarlyGenotyper-like run over 3,000 samples read from BCF takes 3–5% less time.  Decoded values are unchanged.
 - **Writing BCF is faster.**  When a record's genotypes are the header's samples in the header's order, as in a record read from VCF, `BCF2Writer` takes each by position rather than through a sample-name map built for every record.  Converting a 3,000-sample VCF to BCF takes 17% less time and a single-sample gVCF 8% less.  The output is unchanged.
+- **BCF records are encoded without a lock per byte.**  `BCF2Encoder` encodes each record into a new `htsjdk.samtools.util.UnsynchronizedByteArrayOutputStream` rather than a `ByteArrayOutputStream`, which takes a lock for every byte written.  Converting a single-sample gVCF to BCF takes 10% less time and a 3,000-sample VCF 6.5% less.  The output is unchanged.
 - **Writing BAM is faster.**  Read bases are packed into BAM's 4-bit codes through a lookup table rather than a switch per base.  Converting a CRAM to BAM takes 12% less time.  The output is unchanged.
 
 ### Bug fixes
