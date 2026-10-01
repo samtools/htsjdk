@@ -12,7 +12,7 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ## 6.0.0
 
-Major release.
+Major release.  It includes every change in 5.0.1.
 
 ### Headlines
 
