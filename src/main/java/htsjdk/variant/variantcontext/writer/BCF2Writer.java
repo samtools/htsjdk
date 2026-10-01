@@ -41,6 +41,7 @@ import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -652,6 +653,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
 
         // we have to do work to convert the VC into a BCF2 byte stream
         final List<String> genotypeFields = vc.calcVCFGenotypeKeys(header);
+        final GenotypesContext genotypes = vc.getGenotypes();
+        final boolean inSampleOrder = isInSampleOrder(genotypes, sampleNames);
         for (final String field : genotypeFields) {
             final BCF2FieldWriter.GenotypesWriter writer = fieldManager.getGenotypeFieldWriter(field);
             if (writer == null) errorUnexpectedFieldToWrite(vc, field, "FORMAT");
@@ -659,14 +662,32 @@ public class BCF2Writer extends IndexingVariantContextWriter {
             assert writer != null;
 
             writer.start(encoder, vc);
-            for (final String name : sampleNames) {
-                Genotype g = vc.getGenotype(name);
+            for (int s = 0; s < sampleNames.length; s++) {
+                final String name = sampleNames[s];
+                Genotype g = inSampleOrder ? genotypes.get(s) : vc.getGenotype(name);
                 if (g == null) g = GenotypeBuilder.createMissing(name, writer.nValuesPerGenotype);
                 writer.addGenotype(encoder, vc, g);
             }
             writer.done(encoder, vc);
         }
         return encoder.getRecordBytes();
+    }
+
+    /**
+     * True if the genotypes are exactly the header's samples, in the header's order, so each can be taken by position
+     * rather than through a map from sample name that the GenotypesContext builds for every record.  The header's
+     * sample names are unique, so this also means no sample has two genotypes.
+     */
+    private static boolean isInSampleOrder(final GenotypesContext genotypes, final String[] samples) {
+        if (genotypes.size() != samples.length) {
+            return false;
+        }
+        for (int i = 0; i < samples.length; i++) {
+            if (!samples[i].equals(genotypes.get(i).getSampleName())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
