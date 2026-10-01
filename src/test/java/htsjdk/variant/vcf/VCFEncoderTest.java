@@ -287,8 +287,13 @@ public class VCFEncoderTest extends HtsjdkTest {
 
     @Test
     public void encodeWritesTheCodeOfAnAlleleEqualToButNotTheSameObjectAsTheRecords() {
+        // Allele.create returns a shared constant for a single base, so copy the record's alleles instead
+        final Allele separatelyCreatedRef = Allele.create(REF_AND_ALT.get(0), false);
+        final Allele separatelyCreatedAlt = Allele.create(REF_AND_ALT.get(1), false);
+        Assert.assertNotSame(separatelyCreatedRef, REF_AND_ALT.get(0));
+        Assert.assertNotSame(separatelyCreatedAlt, REF_AND_ALT.get(1));
         final Genotype separatelyCreated = new GenotypeBuilder(
-                        "s1", Arrays.asList(Allele.create("A", true), Allele.create("C"), Allele.NO_CALL))
+                        "s1", Arrays.asList(separatelyCreatedRef, separatelyCreatedAlt, Allele.NO_CALL))
                 .phased(true)
                 .make();
         Assert.assertEquals(sampleColumns(Collections.singletonList("s1"), separatelyCreated), Arrays.asList("0|1|."));
