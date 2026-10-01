@@ -412,10 +412,15 @@ public class VCFEncoder {
         }
         final boolean hasGenotypeKey = genotypeFormatKeys.contains(VCFConstants.GENOTYPE_KEY);
 
-        for (final String sample : this.header.getGenotypeSamples()) {
+        final List<String> samples = this.header.getGenotypeSamples();
+        final GenotypesContext genotypes = vc.getGenotypes();
+        final boolean inSampleOrder = isInSampleOrder(genotypes, samples);
+
+        for (int s = 0; s < samples.size(); s++) {
+            final String sample = samples.get(s);
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
 
-            Genotype g = vc.getGenotype(sample);
+            Genotype g = inSampleOrder ? genotypes.get(s) : vc.getGenotype(sample);
             if (g == null) {
                 g = GenotypeBuilder.createMissing(sample, ploidy);
             }
@@ -484,6 +489,23 @@ public class VCFEncoder {
                 vcfoutput.append(attrs.get(i));
             }
         }
+    }
+
+    /**
+     * True if the genotypes are exactly the header's samples, in the header's order, so each can be taken by position
+     * rather than through a map from sample name that the GenotypesContext builds for every record.  The header's
+     * sample names are unique, so this also means no sample has two genotypes.
+     */
+    private static boolean isInSampleOrder(final GenotypesContext genotypes, final List<String> samples) {
+        if (genotypes.size() != samples.size()) {
+            return false;
+        }
+        for (int i = 0; i < samples.size(); i++) {
+            if (!samples.get(i).equals(genotypes.get(i).getSampleName())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

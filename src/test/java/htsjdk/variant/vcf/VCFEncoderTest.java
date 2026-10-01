@@ -324,6 +324,53 @@ public class VCFEncoderTest extends HtsjdkTest {
         }
     }
 
+    private static final List<Allele> REF_AND_ALT = Arrays.asList(Allele.create("A", true), Allele.create("C"));
+
+    private static Genotype genotype(final String sample, final int allele1, final int allele2) {
+        return new GenotypeBuilder(sample, Arrays.asList(REF_AND_ALT.get(allele1), REF_AND_ALT.get(allele2))).make();
+    }
+
+    /** The sample columns of a record encoded against a header with the given samples. */
+    private static List<String> sampleColumns(final List<String> samples, final Genotype... genotypes) {
+        final VCFEncoder encoder = new VCFEncoder(createSyntheticHeader(samples), false, false);
+        final VariantContext vc = new VariantContextBuilder("test", "1", 10, 10, REF_AND_ALT)
+                .genotypes(genotypes)
+                .make();
+        final String[] columns = encoder.encode(vc).split("\t");
+        return Arrays.asList(columns).subList(9, columns.length);
+    }
+
+    @Test
+    public void encodeWritesGenotypesInTheHeadersSampleOrder() {
+        Assert.assertEquals(
+                sampleColumns(
+                        Arrays.asList("s1", "s2", "s3"),
+                        genotype("s3", 1, 1),
+                        genotype("s1", 0, 0),
+                        genotype("s2", 0, 1)),
+                Arrays.asList("0/0", "0/1", "1/1"));
+    }
+
+    @Test
+    public void encodeWritesASampleWithoutAGenotypeAsANoCall() {
+        Assert.assertEquals(
+                sampleColumns(Arrays.asList("s1", "s2", "s3"), genotype("s1", 0, 0), genotype("s3", 1, 1)),
+                Arrays.asList("0/0", "./.", "1/1"));
+    }
+
+    @Test
+    public void encodeWritesTheLastGenotypeOfASampleWithTwo() {
+        Assert.assertEquals(
+                sampleColumns(Arrays.asList("s1", "s2"), genotype("s1", 0, 0), genotype("s1", 1, 1)),
+                Arrays.asList("1/1", "./."));
+    }
+
+    @Test
+    public void encodeWritesAGenotypeWithoutASampleNameAsMissing() {
+        final Genotype unnamed = new GenotypeBuilder((String) null, REF_AND_ALT).make();
+        Assert.assertEquals(sampleColumns(Collections.singletonList("s1"), unnamed), Arrays.asList("./."));
+    }
+
     private static Set<VCFHeaderLine> createSyntheticMetadata() {
         final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
