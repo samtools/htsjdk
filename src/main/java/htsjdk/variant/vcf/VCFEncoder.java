@@ -503,17 +503,15 @@ public class VCFEncoder {
                 .toString();
     }
 
-    static int countOccurrences(final char c, final String s) {
-        int count = 0;
-        for (int i = 0; i < s.length(); i++) {
-            count += s.charAt(i) == c ? 1 : 0;
-        }
-        return count;
-    }
-
+    /** True for "", "." and a list of missing values such as ".,.": nothing but '.' and ','. */
     static boolean isMissingValue(final String s) {
-        // we need to deal with the case that it's a list of missing values
-        return (countOccurrences(VCFConstants.MISSING_VALUE_v4.charAt(0), s) + countOccurrences(',', s) == s.length());
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (c != '.' && c != ',') {
+                return false;
+            }
+        }
+        return true;
     }
 
     /*
@@ -546,42 +544,76 @@ public class VCFEncoder {
             final Appendable vcfoutput)
             throws IOException {
         final int ploidy = vc.getMaxPloidy(2);
-        final int nKeys = genotypeFormatKeys.size();
 
-        // how each key's values are percent-encoded, decided once per record rather than once per sample
+        // what each key is and how its values are percent-encoded, worked out once per record rather than per sample
+        final int nKeys = genotypeFormatKeys.size();
+        final String[] keys = genotypeFormatKeys.toArray(new String[nKeys]);
+        final boolean[] isGenotypeKey = new boolean[nKeys];
+        final boolean[] isFilterKey = new boolean[nKeys];
+        final IntGenotypeFieldAccessors.Accessor[] accessors = new IntGenotypeFieldAccessors.Accessor[nKeys];
         final ValueEncoding[] encodings = percentEncode ? new ValueEncoding[nKeys] : null;
-        if (encodings != null) {
-            for (int k = 0; k < nKeys; k++) {
-                encodings[k] = valueEncoding(this.header.getFormatHeaderLine(genotypeFormatKeys.get(k)));
+        for (int k = 0; k < nKeys; k++) {
+            isGenotypeKey[k] = keys[k].equals(VCFConstants.FORMAT.GENOTYPE);
+            isFilterKey[k] = !isGenotypeKey[k] && keys[k].equals(VCFConstants.FORMAT.GENOTYPE_FILTER);
+            if (!isGenotypeKey[k] && !isFilterKey[k]) {
+                accessors[k] = GENOTYPE_FIELD_ACCESSORS.getAccessor(keys[k]);
+            }
+            if (encodings != null) {
+                encodings[k] = valueEncoding(this.header.getFormatHeaderLine(keys[k]));
             }
         }
+        final boolean hasGenotypeKey = genotypeFormatKeys.contains(VCFConstants.FORMAT.GENOTYPE);
 
-        for (final String sample : this.header.getGenotypeSamples()) {
+        final List<String> samples = this.header.getGenotypeSamples();
+        final GenotypesContext genotypes = vc.getGenotypes();
+        final boolean inSampleOrder = isInSampleOrder(genotypes, samples);
+
+        // the GT code of no-call and of each of the record's alleles, for lookup by identity before alleleMap
+        final Allele[] knownAlleles;
+        final String[] knownCodes;
+        if (hasGenotypeKey) {
+            final List<Allele> recordAlleles = vc.getAlleles();
+            knownAlleles = new Allele[recordAlleles.size() + 1];
+            knownCodes = new String[knownAlleles.length];
+            knownAlleles[0] = Allele.NO_CALL;
+            for (int i = 0; i < recordAlleles.size(); i++) {
+                knownAlleles[i + 1] = recordAlleles.get(i);
+            }
+            for (int i = 0; i < knownAlleles.length; i++) {
+                knownCodes[i] = alleleMap.get(knownAlleles[i]);
+            }
+        } else {
+            knownAlleles = NO_KNOWN_ALLELES;
+            knownCodes = NO_KNOWN_CODES;
+        }
+
+        for (int s = 0; s < samples.size(); s++) {
+            final String sample = samples.get(s);
             vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
 
-            Genotype g = vc.getGenotype(sample);
+            Genotype g = inSampleOrder ? genotypes.get(s) : vc.getGenotype(sample);
             if (g == null) {
                 g = GenotypeBuilder.createMissing(sample, ploidy);
             }
 
             final List<String> attrs = new ArrayList<>(nKeys);
             for (int k = 0; k < nKeys; k++) {
-                final String field = genotypeFormatKeys.get(k);
-                if (field.equals(VCFConstants.FORMAT.GENOTYPE)) {
+                final String field = keys[k];
+                if (isGenotypeKey[k]) {
                     if (!g.isAvailable()) {
                         throw new IllegalStateException(
                                 "GTs cannot be missing for some samples if they are available for others in the record");
                     }
 
-                    writeGtField(alleleMap, vcfoutput, g, leadingPhaseAllowed);
+                    writeGtField(knownAlleles, knownCodes, alleleMap, vcfoutput, g, leadingPhaseAllowed);
                     continue;
 
                 } else {
                     final String outputValue;
-                    if (field.equals(VCFConstants.FORMAT.GENOTYPE_FILTER)) {
+                    if (isFilterKey[k]) {
                         outputValue = g.isFiltered() ? g.getFilters() : VCFConstants.PASSES_FILTERS_v4;
                     } else {
-                        final IntGenotypeFieldAccessors.Accessor accessor = GENOTYPE_FIELD_ACCESSORS.getAccessor(field);
+                        final IntGenotypeFieldAccessors.Accessor accessor = accessors[k];
                         if (accessor != null) {
                             final int[] intValues = accessor.getValues(g);
                             if (intValues == null) {
@@ -598,10 +630,11 @@ public class VCFEncoder {
                                 outputValue = sb.toString();
                             }
                         } else {
-                            final Object val = g.hasExtendedAttribute(field)
-                                    ? g.getExtendedAttribute(field)
+                            outputValue = g.hasExtendedAttribute(field)
+                                    ? formatVCFField(
+                                            g.getExtendedAttribute(field),
+                                            encodings == null ? ValueEncoding.NONE : encodings[k])
                                     : VCFConstants.MISSING_VALUE_v4;
-                            outputValue = formatVCFField(val, encodings == null ? ValueEncoding.NONE : encodings[k]);
                         }
                     }
 
@@ -623,12 +656,29 @@ public class VCFEncoder {
             }
 
             for (int i = 0; i < attrs.size(); i++) {
-                if (i > 0 || genotypeFormatKeys.contains(VCFConstants.FORMAT.GENOTYPE)) {
+                if (i > 0 || hasGenotypeKey) {
                     vcfoutput.append(VCFConstants.GENOTYPE_FIELD_SEPARATOR);
                 }
                 vcfoutput.append(attrs.get(i));
             }
         }
+    }
+
+    /**
+     * True if the genotypes are exactly the header's samples, in the header's order, so each can be taken by position
+     * rather than through a map from sample name that the GenotypesContext builds for every record.  The header's
+     * sample names are unique, so this also means no sample has two genotypes.
+     */
+    private static boolean isInSampleOrder(final GenotypesContext genotypes, final List<String> samples) {
+        if (genotypes.size() != samples.size()) {
+            return false;
+        }
+        for (int i = 0; i < samples.size(); i++) {
+            if (!samples.get(i).equals(genotypes.get(i).getSampleName())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -662,6 +712,24 @@ public class VCFEncoder {
             final Genotype g,
             final boolean leadingPhaseIndicatorAllowed)
             throws IOException {
+        writeGtField(NO_KNOWN_ALLELES, NO_KNOWN_CODES, alleleMap, vcfoutput, g, leadingPhaseIndicatorAllowed);
+    }
+
+    private static final Allele[] NO_KNOWN_ALLELES = new Allele[0];
+    private static final String[] NO_KNOWN_CODES = new String[0];
+
+    /**
+     * {@link #writeGtField(Map, Appendable, Genotype, boolean)}, finding each allele's code among
+     * {@code knownAlleles} by identity first, which is the same answer as alleleMap without hashing the allele's bases.
+     */
+    private static void writeGtField(
+            final Allele[] knownAlleles,
+            final String[] knownCodes,
+            final Map<Allele, String> alleleMap,
+            final Appendable vcfoutput,
+            final Genotype g,
+            final boolean leadingPhaseIndicatorAllowed)
+            throws IOException {
         if (g.needsLeadingPhaseIndicator()) {
             if (!leadingPhaseIndicatorAllowed) {
                 throw new IllegalStateException("The genotype of sample " + g.getSampleName() + " ("
@@ -670,10 +738,10 @@ public class VCFEncoder {
             }
             vcfoutput.append(g.isAllelePhased(0) ? VCFConstants.PHASED : VCFConstants.UNPHASED);
         }
-        writeAllele(g.getAllele(0), alleleMap, vcfoutput);
+        writeAllele(g.getAllele(0), knownAlleles, knownCodes, alleleMap, vcfoutput);
         for (int i = 1; i < g.getPloidy(); i++) {
             vcfoutput.append(g.isAllelePhased(i) ? VCFConstants.PHASED : VCFConstants.UNPHASED);
-            writeAllele(g.getAllele(i), alleleMap, vcfoutput);
+            writeAllele(g.getAllele(i), knownAlleles, knownCodes, alleleMap, vcfoutput);
         }
     }
 
@@ -750,5 +818,21 @@ public class VCFEncoder {
             throw new RuntimeException("Allele " + allele + " is not an allele in the variant context");
         }
         vcfOutput.append(encoding);
+    }
+
+    private static void writeAllele(
+            final Allele allele,
+            final Allele[] knownAlleles,
+            final String[] knownCodes,
+            final Map<Allele, String> alleleMap,
+            final Appendable vcfOutput)
+            throws IOException {
+        for (int i = 0; i < knownAlleles.length; i++) {
+            if (knownAlleles[i] == allele && knownCodes[i] != null) {
+                vcfOutput.append(knownCodes[i]);
+                return;
+            }
+        }
+        writeAllele(allele, alleleMap, vcfOutput);
     }
 }
