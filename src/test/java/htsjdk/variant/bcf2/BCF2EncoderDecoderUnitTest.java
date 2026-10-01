@@ -718,6 +718,38 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
         Assert.assertEquals(intArray(10, 5, -120), new int[] {10, 5, -120});
     }
 
+    /** A decoder over a typed vector of {@code type} holding the given little-endian bytes, then an INT8 of 42. */
+    private static BCF2Decoder vectorThen42(final int size, final BCF2Type type, final int... valueBytes) {
+        final byte[] bytes = new byte[valueBytes.length + 3];
+        bytes[0] = BCF2Utils.encodeTypeDescriptor(size, type);
+        for (int i = 0; i < valueBytes.length; i++) bytes[i + 1] = (byte) valueBytes[i];
+        bytes[valueBytes.length + 1] = BCF2Utils.encodeTypeDescriptor(1, BCF2Type.INT8);
+        bytes[valueBytes.length + 2] = 42;
+        return new BCF2Decoder(bytes);
+    }
+
+    @Test
+    public void anInt16ArrayStartingWithMissingIsSkippedWhole() throws IOException {
+        final BCF2Decoder decoder = vectorThen42(3, BCF2Type.INT16, 0x00, 0x80, 5, 0, 6, 0);
+        Assert.assertNull(decoder.decodeIntArray(decoder.readTypeDescriptor(), 3));
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void anInt32ArrayEndingAtEndOfVectorIsSkippedWhole() throws IOException {
+        final BCF2Decoder decoder = vectorThen42(3, BCF2Type.INT32, 7, 0, 0, 0, 1, 0, 0, 0x80, 9, 0, 0, 0);
+        Assert.assertEquals(decoder.decodeIntArray(decoder.readTypeDescriptor(), 3), new int[] {7});
+        assertNextIs42(decoder);
+    }
+
+    @Test(expectedExceptions = ArrayIndexOutOfBoundsException.class)
+    public void skippingAnIntArrayPastTheEndOfTheRecordThrows() throws IOException {
+        // a 4-value INT32 vector starting with MISSING, but with the bytes of only two values
+        final byte[] bytes = {BCF2Utils.encodeTypeDescriptor(4, BCF2Type.INT32), 0, 0, 0, (byte) 0x80, 5, 0, 0, 0};
+        final BCF2Decoder decoder = new BCF2Decoder(bytes);
+        decoder.decodeIntArray(decoder.readTypeDescriptor(), 4);
+    }
+
     // -- Strings --
 
     private static Object decodeString(final String s) throws IOException {

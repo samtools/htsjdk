@@ -291,8 +291,20 @@ public final class BCF2Decoder {
         }
     }
 
-    private void skipInts(final BCF2Type type, final int count) throws IOException {
-        for (int i = 0; i < count; i++) decodeInt(type);
+    /**
+     * Moves past {@code count} values of an integer or float type without decoding them. Skipping past the end of
+     * the record throws {@code ArrayIndexOutOfBoundsException}, as reading those values would.
+     */
+    private void skipInts(final BCF2Type type, final int count) {
+        if (count <= 0) {
+            return;
+        }
+        final long end = pos + (long) count * type.getSizeInBytes();
+        if (end > recordBytes.length) {
+            throw new ArrayIndexOutOfBoundsException("skipping " + count + " " + type + " values from offset " + pos
+                    + " passes the end of the " + recordBytes.length + "-byte record");
+        }
+        pos = (int) end;
     }
 
     /**
