@@ -3,11 +3,11 @@ package htsjdk.samtools.cram.compression.rans;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.CompressionUtils;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Encoder for the CRAM 3.1 rANSNx16 codec. Internal encoding uses byte[] with backwards-write
- * to eliminate the O(N) reverse pass. Pack/RLE/Stripe preprocessing still bridges through ByteBuffer
- * where CompressionUtils methods require it.
+ * to eliminate the O(N) reverse pass. Stripe preprocessing still bridges through ByteBuffer.
  */
 public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
@@ -33,22 +33,20 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             CompressionUtils.writeUint7(input.length, outBuffer);
         }
 
-        ByteBuffer inputBuffer = CompressionUtils.wrap(input);
-
         // Stripe
         if (ransNx16Params.isStripe()) {
-            compressStripe(inputBuffer, outBuffer);
+            compressStripe(CompressionUtils.wrap(input), outBuffer);
             final byte[] result = new byte[outBuffer.remaining()];
             outBuffer.get(result);
             return result;
         }
 
+        // the bytes the core encoder codes, after any pack and RLE transforms; never written to
+        byte[] in = input;
+
         // Pack
         if (ransNx16Params.isPack()) {
-            final int[] frequencyTable = new int[Constants.NUMBER_OF_SYMBOLS];
-            for (int i = 0; i < input.length; i++) {
-                frequencyTable[input[i] & 0xFF]++;
-            }
+            final int[] frequencyTable = CompressionUtils.symbolCounts(in);
             int numSymbols = 0;
             final int[] packMappingTable = new int[Constants.NUMBER_OF_SYMBOLS];
             for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
@@ -57,8 +55,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
                 }
             }
             if (numSymbols > 1 && numSymbols <= 16) {
-                inputBuffer = CompressionUtils.encodePack(
-                        inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
+                in = CompressionUtils.encodePack(in, outBuffer, frequencyTable, packMappingTable, numSymbols);
             } else {
                 outBuffer.put(0, (byte) (outBuffer.get(0) & ~RANSNx16Params.PACK_FLAG_MASK));
             }
@@ -66,12 +63,8 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
 
         // RLE
         if (ransNx16Params.isRLE()) {
-            inputBuffer = encodeRLE(inputBuffer, outBuffer, ransNx16Params);
+            in = encodeRLE(in, outBuffer, ransNx16Params);
         }
-
-        // Extract input bytes for the core encoder
-        final byte[] in = new byte[inputBuffer.remaining()];
-        inputBuffer.get(in);
 
         if (ransNx16Params.isCAT()) {
             outBuffer.put(in);
@@ -306,9 +299,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
     // ---- Frequency helpers (byte[]) ----
 
     private static int[] buildFrequenciesOrder0(final byte[] in) {
-        final int[] F = new int[Constants.NUMBER_OF_SYMBOLS];
-        for (final byte b : in) F[b & 0xFF]++;
-        return F;
+        return CompressionUtils.symbolCounts(in);
     }
 
     private static int[][] buildFrequenciesOrder1(final byte[] in, final int Nway) {
@@ -387,15 +378,20 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         out[pos[0]++] = 0;
     }
 
-    // ---- RLE and Stripe (ByteBuffer bridge) ----
+    // ---- RLE and Stripe ----
 
-    private ByteBuffer encodeRLE(
-            final ByteBuffer inBuffer, final ByteBuffer outBuffer, final RANSNx16Params ransNx16Params) {
+    /**
+     * Run-length encodes {@code in}: symbols that more often repeat than not are written once per run, with the
+     * run's length in the RLE metadata, which goes compressed into outBuffer.
+     *
+     * @return the input with each run of an RLE symbol cut to its first byte
+     */
+    private byte[] encodeRLE(final byte[] in, final ByteBuffer outBuffer, final RANSNx16Params ransNx16Params) {
         final int[] runCounts = new int[Constants.NUMBER_OF_SYMBOLS];
-        final int inputSize = inBuffer.remaining();
+        final int inputSize = in.length;
         int lastSymbol = -1;
         for (int i = 0; i < inputSize; i++) {
-            final int s = inBuffer.get(i) & 0xFF;
+            final int s = in[i] & 0xFF;
             runCounts[s] += (s == lastSymbol ? 1 : -1);
             lastSymbol = s;
         }
@@ -406,28 +402,27 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
             runCounts[0] = 1;
         }
 
-        final ByteBuffer rleMetaData = CompressionUtils.allocateByteBuffer(numRLESymbols + 1 + inputSize);
-        rleMetaData.put((byte) numRLESymbols);
-        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) if (runCounts[i] > 0) rleMetaData.put((byte) i);
+        // each run length's uint7 takes no more bytes than the run, so the input size bounds the metadata
+        final byte[] rleMetaData = new byte[numRLESymbols + 1 + inputSize];
+        final int[] metaPos = {0};
+        rleMetaData[metaPos[0]++] = (byte) numRLESymbols;
+        for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++)
+            if (runCounts[i] > 0) rleMetaData[metaPos[0]++] = (byte) i;
 
-        final ByteBuffer encodedBuffer = CompressionUtils.allocateByteBuffer(inputSize);
+        final byte[] encoded = new byte[inputSize];
         int idx = 0;
         for (int i = 0; i < inputSize; i++) {
-            encodedBuffer.put(idx++, inBuffer.get(i));
-            if (runCounts[inBuffer.get(i) & 0xFF] > 0) {
-                lastSymbol = inBuffer.get(i) & 0xFF;
+            final byte b = in[i];
+            encoded[idx++] = b;
+            if (runCounts[b & 0xFF] > 0) {
                 int run = 0;
-                while (i + run + 1 < inputSize && (inBuffer.get(i + run + 1) & 0xFF) == lastSymbol) run++;
-                CompressionUtils.writeUint7(run, rleMetaData);
+                while (i + run + 1 < inputSize && in[i + run + 1] == b) run++;
+                CompressionUtils.writeUint7(run, rleMetaData, metaPos);
                 i += run;
             }
         }
-        encodedBuffer.limit(idx);
-        rleMetaData.limit(rleMetaData.position());
-        rleMetaData.rewind();
 
-        final byte[] rleMeta = new byte[rleMetaData.remaining()];
-        rleMetaData.get(rleMeta);
+        final byte[] rleMeta = Arrays.copyOf(rleMetaData, metaPos[0]);
         final byte[] compressedRleMeta = compressOrder0WayN(
                 rleMeta, new RANSNx16Params(0x00 | ransNx16Params.getFormatFlags() & RANSNx16Params.N32_FLAG_MASK));
 
@@ -436,8 +431,7 @@ public class RANSNx16Encode extends RANSEncode<RANSNx16Params> {
         CompressionUtils.writeUint7(compressedRleMeta.length, outBuffer);
         outBuffer.put(compressedRleMeta);
 
-        inBuffer.position(inBuffer.limit());
-        return encodedBuffer;
+        return Arrays.copyOf(encoded, idx);
     }
 
     private void compressStripe(final ByteBuffer inBuffer, final ByteBuffer outBuffer) {

@@ -21,6 +21,86 @@ import org.testng.annotations.Test;
 public class CompressionUtilsTest extends HtsjdkTest {
 
     @Test
+    public void symbolCountsCountsEveryByteIncludingThoseAfterTheLastFour() {
+        final int[] counts = CompressionUtils.symbolCounts(new byte[] {5, 5, (byte) 200, 0, 5, (byte) 200, 5});
+        Assert.assertEquals(counts[5], 4);
+        Assert.assertEquals(counts[200], 2);
+        Assert.assertEquals(counts[0], 1);
+        Assert.assertEquals(java.util.Arrays.stream(counts).sum(), 7);
+    }
+
+    /** Packs {@code values} as the rANS and Range encoders do: each distinct value gets its rank as its code. */
+    private static byte[] pack(final byte[] values, final ByteBuffer header) {
+        final int[] counts = CompressionUtils.symbolCounts(values);
+        final int[] codes = new int[256];
+        int numSymbols = 0;
+        for (int s = 0; s < 256; s++) {
+            if (counts[s] > 0) codes[s] = numSymbols++;
+        }
+        return CompressionUtils.encodePack(values, header, counts, codes, numSymbols);
+    }
+
+    @Test
+    public void twoSymbolsPackEightValuesToAByteFirstValueLowest() {
+        // codes 0 1 1 0 0 0 0 1 | 1
+        final byte[] values = {10, 20, 20, 10, 10, 10, 10, 20, 20};
+        Assert.assertEquals(pack(values, ByteBuffer.allocate(16)), new byte[] {(byte) 0b10000110, 1});
+    }
+
+    @Test
+    public void fourSymbolsPackFourValuesToAByteFirstValueLowest() {
+        // codes 0 1 2 3 | 1
+        final byte[] values = {10, 20, 30, 40, 20};
+        Assert.assertEquals(pack(values, ByteBuffer.allocate(16)), new byte[] {(byte) 0b11100100, 1});
+    }
+
+    @Test
+    public void sixteenSymbolsPackTwoValuesToAByteFirstValueLowest() {
+        final byte[] values = new byte[17];
+        for (int i = 0; i < 16; i++) values[i] = (byte) (i * 3);
+        values[16] = 21; // code 7
+        final byte[] packed = pack(values, ByteBuffer.allocate(64));
+        Assert.assertEquals(packed.length, 9);
+        Assert.assertEquals(packed[0], (byte) 0x10); // codes 0 and 1
+        Assert.assertEquals(packed[7], (byte) 0xFE); // codes 14 and 15
+        Assert.assertEquals(packed[8], (byte) 7);
+    }
+
+    @Test
+    public void oneSymbolPacksToNothing() {
+        Assert.assertEquals(pack(new byte[] {9, 9, 9}, ByteBuffer.allocate(16)), new byte[0]);
+    }
+
+    @Test
+    public void packWritesTheSymbolCountTheSymbolsAndThePackedLength() {
+        final ByteBuffer header = ByteBuffer.allocate(16);
+        pack(new byte[] {30, 10, 20, 10, 30}, header);
+        Assert.assertEquals(java.util.Arrays.copyOf(header.array(), header.position()), new byte[] {3, 10, 20, 30, 2});
+    }
+
+    @Test
+    public void packedValuesUnpackToTheInputForEveryWidthAndTailLength() {
+        final Random random = new Random(7);
+        for (final int numSymbols : new int[] {2, 3, 4, 5, 16}) {
+            for (int length = 1; length <= 20; length++) {
+                final byte[] values = new byte[length];
+                for (int i = 0; i < length; i++) values[i] = (byte) random.nextInt(numSymbols);
+                final ByteBuffer header = ByteBuffer.allocate(64);
+                final byte[] packed = pack(values, header);
+                final int[] counts = CompressionUtils.symbolCounts(values);
+                final byte[] symbols = new byte[256];
+                int distinct = 0;
+                for (int s = 0; s < 256; s++) {
+                    if (counts[s] > 0) symbols[distinct++] = (byte) s;
+                }
+                final ByteBuffer unpacked =
+                        CompressionUtils.decodePack(CompressionUtils.wrap(packed), symbols, distinct, length);
+                Assert.assertEquals(unpacked.array(), values, numSymbols + " symbols, length " + length);
+            }
+        }
+    }
+
+    @Test
     public void testBuildStripeUncompressedSizesEvenlyDivisible() {
         // 12 bytes / 4 streams = 3 each
         final int[] sizes = CompressionUtils.buildStripeUncompressedSizes(12);
