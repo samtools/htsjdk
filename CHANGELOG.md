@@ -210,6 +210,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 ### Performance
 
 - **BCF genotypes with padded or missing vectors decode faster.**  `BCF2Decoder` moves past the rest of a vector after END_OF_VECTOR or a leading MISSING rather than decoding each value it discards, such as the PLs of a cohort's no-call samples.  A GnarlyGenotyper-like run over 3,000 samples read from BCF takes 3–5% less time.  Decoded values are unchanged.
+- **Writing BCF is faster.**  When a record's genotypes are the header's samples in the header's order, as in a record read from VCF, `BCF2Writer` takes each by position rather than through a sample-name map built for every record.  Converting a 3,000-sample VCF to BCF takes 17% less time and a single-sample gVCF 8% less.  The output is unchanged.
 
 ### Bug fixes
 

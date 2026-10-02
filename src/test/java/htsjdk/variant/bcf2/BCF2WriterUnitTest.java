@@ -2698,4 +2698,39 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Assert.assertEquals(
                 genotypeBlockOf(bcf45b), genotypeBlockOf(bcf45a), "4.5 to 4.5 with LAA should pass through unchanged");
     }
+
+    private static Genotype diploid(final String sample, final Allele allele1, final Allele allele2) {
+        return new GenotypeBuilder(sample, List.of(allele1, allele2)).make();
+    }
+
+    /** The GTs of a record written against a GT-only header with samples s1..sN, read back in the file's order. */
+    private List<String> gtsReadBack(final int nSamples, final Genotype... genotypes) throws IOException {
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(genotypes)
+                .make();
+        final VariantContext readBack = readOne(writeBcf(gtHeader(VCFHeaderVersion.VCF4_3, nSamples), vc));
+        final List<String> gts = new ArrayList<>();
+        for (final Genotype g : readBack.getGenotypes()) gts.add(g.getSampleName() + "=" + g.getGenotypeString(true));
+        return gts;
+    }
+
+    @Test
+    public void genotypesAreWrittenInTheHeadersSampleOrder() throws IOException {
+        Assert.assertEquals(
+                gtsReadBack(3, diploid("s3", ALT_C, ALT_C), diploid("s1", REF_A, REF_A), diploid("s2", REF_A, ALT_C)),
+                List.of("s1=A/A", "s2=A/C", "s3=C/C"));
+    }
+
+    @Test
+    public void aSampleWithoutAGenotypeIsWrittenAsANoCall() throws IOException {
+        Assert.assertEquals(
+                gtsReadBack(3, diploid("s1", REF_A, REF_A), diploid("s3", ALT_C, ALT_C)),
+                List.of("s1=A/A", "s2=./.", "s3=C/C"));
+    }
+
+    @Test
+    public void theLastGenotypeOfASampleWithTwoIsWritten() throws IOException {
+        Assert.assertEquals(
+                gtsReadBack(2, diploid("s1", REF_A, REF_A), diploid("s1", ALT_C, ALT_C)), List.of("s1=C/C", "s2=./."));
+    }
 }
