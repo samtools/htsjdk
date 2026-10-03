@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -60,41 +61,6 @@ public final class SAMUtils {
      */
     private static final Pattern COMMA_PAT = Pattern.compile("[,]");
 
-    // Representation of bases, one for when in low-order nybble, one for when in high-order nybble.
-    private static final byte COMPRESSED_EQUAL_LOW = 0;
-    private static final byte COMPRESSED_A_LOW = 1;
-    private static final byte COMPRESSED_C_LOW = 2;
-    private static final byte COMPRESSED_M_LOW = 3;
-    private static final byte COMPRESSED_G_LOW = 4;
-    private static final byte COMPRESSED_R_LOW = 5;
-    private static final byte COMPRESSED_S_LOW = 6;
-    private static final byte COMPRESSED_V_LOW = 7;
-    private static final byte COMPRESSED_T_LOW = 8;
-    private static final byte COMPRESSED_W_LOW = 9;
-    private static final byte COMPRESSED_Y_LOW = 10;
-    private static final byte COMPRESSED_H_LOW = 11;
-    private static final byte COMPRESSED_K_LOW = 12;
-    private static final byte COMPRESSED_D_LOW = 13;
-    private static final byte COMPRESSED_B_LOW = 14;
-    private static final byte COMPRESSED_N_LOW = 15;
-    private static final byte COMPRESSED_EQUAL_HIGH = COMPRESSED_EQUAL_LOW << 4;
-    private static final byte COMPRESSED_A_HIGH = COMPRESSED_A_LOW << 4;
-    private static final byte COMPRESSED_C_HIGH = COMPRESSED_C_LOW << 4;
-    private static final byte COMPRESSED_G_HIGH = COMPRESSED_G_LOW << 4;
-    private static final byte COMPRESSED_T_HIGH = (byte) (COMPRESSED_T_LOW << 4);
-    private static final byte COMPRESSED_N_HIGH = (byte) (COMPRESSED_N_LOW << 4);
-
-    private static final byte COMPRESSED_M_HIGH = (byte) (COMPRESSED_M_LOW << 4);
-    private static final byte COMPRESSED_R_HIGH = (byte) (COMPRESSED_R_LOW << 4);
-    private static final byte COMPRESSED_S_HIGH = (byte) (COMPRESSED_S_LOW << 4);
-    private static final byte COMPRESSED_V_HIGH = (byte) (COMPRESSED_V_LOW << 4);
-    private static final byte COMPRESSED_W_HIGH = (byte) (COMPRESSED_W_LOW << 4);
-    private static final byte COMPRESSED_Y_HIGH = (byte) (COMPRESSED_Y_LOW << 4);
-    private static final byte COMPRESSED_H_HIGH = (byte) (COMPRESSED_H_LOW << 4);
-    private static final byte COMPRESSED_K_HIGH = (byte) (COMPRESSED_K_LOW << 4);
-    private static final byte COMPRESSED_D_HIGH = (byte) (COMPRESSED_D_LOW << 4);
-    private static final byte COMPRESSED_B_HIGH = (byte) (COMPRESSED_B_LOW << 4);
-
     private static final byte[] COMPRESSED_LOOKUP_TABLE = {
         '=', 'A', 'C', 'M', 'G', 'R', 'S', 'V', 'T', 'W', 'Y', 'H', 'K', 'D', 'B', 'N'
     };
@@ -114,6 +80,22 @@ public final class SAMUtils {
         }
     }
 
+    /**
+     * The BAM nibble of each byte that is a base, indexed by the byte's unsigned value, or -1 for a byte that is not.
+     * Lower-case bases pack as their upper-case forms and '.' packs as N.
+     */
+    private static final byte[] BASE_TO_NIBBLE = new byte[256];
+
+    static {
+        Arrays.fill(BASE_TO_NIBBLE, (byte) -1);
+        for (int nibble = 0; nibble < COMPRESSED_LOOKUP_TABLE.length; nibble++) {
+            final byte base = COMPRESSED_LOOKUP_TABLE[nibble];
+            BASE_TO_NIBBLE[base] = (byte) nibble;
+            BASE_TO_NIBBLE[Character.toLowerCase(base)] = (byte) nibble;
+        }
+        BASE_TO_NIBBLE['.'] = BASE_TO_NIBBLE['N'];
+    }
+
     public static final int MAX_PHRED_SCORE = 93;
 
     /**
@@ -127,14 +109,27 @@ public final class SAMUtils {
         final byte[] compressedBases = new byte[(readBases.length + 1) / 2];
         int i;
         for (i = 1; i < readBases.length; i += 2) {
-            compressedBases[i / 2] =
-                    (byte) (charToCompressedBaseHigh(readBases[i - 1]) | charToCompressedBaseLow(readBases[i]));
+            final int high = BASE_TO_NIBBLE[readBases[i - 1] & 0xFF];
+            final int low = BASE_TO_NIBBLE[readBases[i] & 0xFF];
+            if ((high | low) < 0) {
+                throw badBase(high < 0 ? readBases[i - 1] : readBases[i]);
+            }
+            compressedBases[i / 2] = (byte) (high << 4 | low);
         }
         // Last nybble
         if (i == readBases.length) {
-            compressedBases[i / 2] = charToCompressedBaseHigh(readBases[i - 1]);
+            final int high = BASE_TO_NIBBLE[readBases[i - 1] & 0xFF];
+            if (high < 0) {
+                throw badBase(readBases[i - 1]);
+            }
+            compressedBases[i / 2] = (byte) (high << 4);
         }
         return compressedBases;
+    }
+
+    private static IllegalArgumentException badBase(final byte base) {
+        return new IllegalArgumentException(
+                "Bad base passed to bytesToCompressedBases: " + Character.toString((char) base) + "(" + base + ")");
     }
 
     /**
@@ -168,136 +163,6 @@ public final class SAMUtils {
             ret[length - 1] = COMPRESSED_LOOKUP_TABLE[(compressedBases[pairs + compressedOffset] >> 4) & 0xF];
         }
         return ret;
-    }
-
-    /**
-     * Convert from ASCII byte to BAM nybble representation of a base in low-order nybble.
-     *
-     * @param base One of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
-     * @return Low-order nybble-encoded equivalent.
-     * @throws IllegalArgumentException if the base is not one of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
-     */
-    private static byte charToCompressedBaseLow(final byte base) {
-        switch (base) {
-            case '=':
-                return COMPRESSED_EQUAL_LOW;
-            case 'a':
-            case 'A':
-                return COMPRESSED_A_LOW;
-            case 'c':
-            case 'C':
-                return COMPRESSED_C_LOW;
-            case 'g':
-            case 'G':
-                return COMPRESSED_G_LOW;
-            case 't':
-            case 'T':
-                return COMPRESSED_T_LOW;
-            case 'n':
-            case 'N':
-            case '.':
-                return COMPRESSED_N_LOW;
-
-            // IUPAC ambiguity codes
-            case 'M':
-            case 'm':
-                return COMPRESSED_M_LOW;
-            case 'R':
-            case 'r':
-                return COMPRESSED_R_LOW;
-            case 'S':
-            case 's':
-                return COMPRESSED_S_LOW;
-            case 'V':
-            case 'v':
-                return COMPRESSED_V_LOW;
-            case 'W':
-            case 'w':
-                return COMPRESSED_W_LOW;
-            case 'Y':
-            case 'y':
-                return COMPRESSED_Y_LOW;
-            case 'H':
-            case 'h':
-                return COMPRESSED_H_LOW;
-            case 'K':
-            case 'k':
-                return COMPRESSED_K_LOW;
-            case 'D':
-            case 'd':
-                return COMPRESSED_D_LOW;
-            case 'B':
-            case 'b':
-                return COMPRESSED_B_LOW;
-            default:
-                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseLow: "
-                        + Character.toString((char) base) + "(" + base + ")");
-        }
-    }
-
-    /**
-     * Convert from ASCII byte to BAM nybble representation of a base in high-order nybble.
-     *
-     * @param base One of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
-     * @return High-order nybble-encoded equivalent.
-     * @throws IllegalArgumentException if the base is not one of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
-     */
-    private static byte charToCompressedBaseHigh(final byte base) {
-        switch (base) {
-            case '=':
-                return COMPRESSED_EQUAL_HIGH;
-            case 'a':
-            case 'A':
-                return COMPRESSED_A_HIGH;
-            case 'c':
-            case 'C':
-                return COMPRESSED_C_HIGH;
-            case 'g':
-            case 'G':
-                return COMPRESSED_G_HIGH;
-            case 't':
-            case 'T':
-                return COMPRESSED_T_HIGH;
-            case 'n':
-            case 'N':
-            case '.':
-                return COMPRESSED_N_HIGH;
-
-            // IUPAC ambiguity codes
-            case 'M':
-            case 'm':
-                return COMPRESSED_M_HIGH;
-            case 'R':
-            case 'r':
-                return COMPRESSED_R_HIGH;
-            case 'S':
-            case 's':
-                return COMPRESSED_S_HIGH;
-            case 'V':
-            case 'v':
-                return COMPRESSED_V_HIGH;
-            case 'W':
-            case 'w':
-                return COMPRESSED_W_HIGH;
-            case 'Y':
-            case 'y':
-                return COMPRESSED_Y_HIGH;
-            case 'H':
-            case 'h':
-                return COMPRESSED_H_HIGH;
-            case 'K':
-            case 'k':
-                return COMPRESSED_K_HIGH;
-            case 'D':
-            case 'd':
-                return COMPRESSED_D_HIGH;
-            case 'B':
-            case 'b':
-                return COMPRESSED_B_HIGH;
-            default:
-                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: "
-                        + Character.toString((char) base) + "(" + base + ")");
-        }
     }
 
     /**
