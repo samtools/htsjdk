@@ -78,65 +78,95 @@ public class CompressionUtils {
     }
 
     /**
-     * Pack input symbols into a smaller number of bits per value based on the number of distinct
-     * symbols. Writes the pack header (symbol count, mapping table, packed length) to outBuffer
-     * and returns the packed data as a separate buffer.
+     * How many times each byte value occurs in {@code in}. Counts into four tables in turn and sums them, as htscodecs'
+     * {@code hist8} does, so that a run of one value doesn't make each increment wait on the one before.
      *
-     * @param inBuffer the input data to pack
+     * @param in the bytes to count
+     * @return the count of each byte value (0-255)
+     */
+    public static int[] symbolCounts(final byte[] in) {
+        final int[] counts = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int[] counts1 = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int[] counts2 = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int[] counts3 = new int[Constants.NUMBER_OF_SYMBOLS];
+        final int quadEnd = in.length & ~3;
+        int i = 0;
+        for (; i < quadEnd; i += 4) {
+            counts[in[i] & 0xFF]++;
+            counts1[in[i + 1] & 0xFF]++;
+            counts2[in[i + 2] & 0xFF]++;
+            counts3[in[i + 3] & 0xFF]++;
+        }
+        for (; i < in.length; i++) {
+            counts[in[i] & 0xFF]++;
+        }
+        for (int s = 0; s < Constants.NUMBER_OF_SYMBOLS; s++) {
+            counts[s] += counts1[s] + counts2[s] + counts3[s];
+        }
+        return counts;
+    }
+
+    /**
+     * Pack input symbols into a smaller number of bits per value based on the number of distinct
+     * symbols: 1 bit for 2 symbols, 2 for up to 4 and 4 for up to 16, the first value in a byte in its low bits.
+     * Writes the pack header (symbol count, mapping table, packed length) to outBuffer
+     * and returns the packed data.
+     *
+     * @param in the input data to pack
      * @param outBuffer the output buffer for the pack header (symbol count, mapping table, packed length)
      * @param frequencyTable frequency counts for each byte value (0-255)
      * @param packMappingTable mapping from original symbol to packed value
      * @param numSymbols the number of distinct symbols in the input
-     * @return a ByteBuffer containing the packed data
+     * @return the packed data, empty if there is only one symbol
      */
-    public static ByteBuffer encodePack(
-            final ByteBuffer inBuffer,
+    public static byte[] encodePack(
+            final byte[] in,
             final ByteBuffer outBuffer,
             final int[] frequencyTable,
             final int[] packMappingTable,
             final int numSymbols) {
-        final int inSize = inBuffer.remaining();
-        final ByteBuffer encodedBuffer;
+        final byte[] packed;
         if (numSymbols <= 1) {
-            encodedBuffer = CompressionUtils.allocateByteBuffer(0);
-        } else if (numSymbols <= 2) {
-
-            // 1 bit per value
-            final int encodedBufferSize = (int) Math.ceil((double) inSize / 8);
-            encodedBuffer = CompressionUtils.allocateByteBuffer(encodedBufferSize);
-            int j = -1;
-            for (int i = 0; i < inSize; i++) {
-                if (i % 8 == 0) {
-                    encodedBuffer.put(++j, (byte) 0);
-                }
-                encodedBuffer.put(
-                        j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << (i % 8))));
-            }
-        } else if (numSymbols <= 4) {
-
-            // 2 bits per value
-            final int encodedBufferSize = (int) Math.ceil((double) inSize / 4);
-            encodedBuffer = CompressionUtils.allocateByteBuffer(encodedBufferSize);
-            int j = -1;
-            for (int i = 0; i < inSize; i++) {
-                if (i % 4 == 0) {
-                    encodedBuffer.put(++j, (byte) 0);
-                }
-                encodedBuffer.put(
-                        j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 4) * 2))));
-            }
+            packed = new byte[0];
         } else {
-
-            // 4 bits per value
-            final int encodedBufferSize = (int) Math.ceil((double) inSize / 2);
-            encodedBuffer = CompressionUtils.allocateByteBuffer(encodedBufferSize);
-            int j = -1;
-            for (int i = 0; i < inSize; i++) {
-                if (i % 2 == 0) {
-                    encodedBuffer.put(++j, (byte) 0);
+            final int bitsPerValue = numSymbols <= 2 ? 1 : numSymbols <= 4 ? 2 : 4;
+            final int valuesPerByte = 8 / bitsPerValue;
+            final byte[] code = new byte[Constants.NUMBER_OF_SYMBOLS];
+            for (int s = 0; s < Constants.NUMBER_OF_SYMBOLS; s++) {
+                code[s] = (byte) packMappingTable[s];
+            }
+            packed = new byte[(in.length + valuesPerByte - 1) / valuesPerByte];
+            final int fullBytes = in.length / valuesPerByte;
+            int i = 0;
+            if (bitsPerValue == 4) {
+                for (int j = 0; j < fullBytes; j++, i += 2) {
+                    packed[j] = (byte) (code[in[i] & 0xFF] | code[in[i + 1] & 0xFF] << 4);
                 }
-                encodedBuffer.put(
-                        j, (byte) (encodedBuffer.get(j) + (packMappingTable[inBuffer.get(i) & 0xFF] << ((i % 2) * 4))));
+            } else if (bitsPerValue == 2) {
+                for (int j = 0; j < fullBytes; j++, i += 4) {
+                    packed[j] = (byte) (code[in[i] & 0xFF]
+                            | code[in[i + 1] & 0xFF] << 2
+                            | code[in[i + 2] & 0xFF] << 4
+                            | code[in[i + 3] & 0xFF] << 6);
+                }
+            } else {
+                for (int j = 0; j < fullBytes; j++, i += 8) {
+                    packed[j] = (byte) (code[in[i] & 0xFF]
+                            | code[in[i + 1] & 0xFF] << 1
+                            | code[in[i + 2] & 0xFF] << 2
+                            | code[in[i + 3] & 0xFF] << 3
+                            | code[in[i + 4] & 0xFF] << 4
+                            | code[in[i + 5] & 0xFF] << 5
+                            | code[in[i + 6] & 0xFF] << 6
+                            | code[in[i + 7] & 0xFF] << 7);
+                }
+            }
+            if (i < in.length) {
+                int last = 0;
+                for (int shift = 0; i < in.length; i++, shift += bitsPerValue) {
+                    last |= code[in[i] & 0xFF] << shift;
+                }
+                packed[fullBytes] = (byte) last;
             }
         }
 
@@ -151,8 +181,8 @@ public class CompressionUtils {
         }
 
         // write the length of data
-        CompressionUtils.writeUint7(encodedBuffer.limit(), outBuffer);
-        return encodedBuffer; // Here position = 0 since we have always accessed the data buffer using index
+        CompressionUtils.writeUint7(packed.length, outBuffer);
+        return packed;
     }
 
     /**

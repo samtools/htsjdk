@@ -144,6 +144,13 @@ public class RangeTest extends HtsjdkTest {
         }
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testCompressRejectsBufferNotAtPositionZero() {
+        final ByteBuffer in = CompressionUtils.wrap(smallData.testArray);
+        in.position(1);
+        rangeEncoder.compress(in, new RangeParams(RangeParams.PACK_FLAG_MASK));
+    }
+
     private static void rangeRoundTrip(
             final RangeEncode rangeEncode,
             final RangeDecode rangeDecode,

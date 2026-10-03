@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.compression.range;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
 import htsjdk.samtools.cram.compression.CompressionUtils;
+import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -19,13 +20,18 @@ public class RangeEncode {
 
     /**
      * Compress data using the CRAM 3.1 arithmetic (range) codec with the given parameters.
-     * The input buffer is consumed (position advanced to limit) and the returned buffer is rewound.
      *
-     * @param inBuffer input data to compress (position to limit is compressed)
+     * @param inBuffer input data to compress; must be at position 0, and its bytes from 0 to its limit are
+     *     compressed. Its position on return is unspecified.
      * @param rangeParams encoding parameters controlling order, RLE, PACK, STRIPE, and other flags
      * @return a rewound ByteBuffer containing the compressed data
+     * @throws IllegalArgumentException if {@code inBuffer} is not at position 0
      */
     public ByteBuffer compress(final ByteBuffer inBuffer, final RangeParams rangeParams) {
+        // the transforms and coders below read from index 0 but take their length from remaining()
+        ValidationUtils.validateArg(
+                inBuffer.position() == 0,
+                () -> "RangeEncode.compress needs a buffer at position 0, not " + inBuffer.position());
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }
@@ -51,10 +57,16 @@ public class RangeEncode {
 
         // Pack
         if (rangeParams.isPack()) {
-            final int[] frequencyTable = new int[Constants.NUMBER_OF_SYMBOLS];
-            for (int i = 0; i < inSize; i++) {
-                frequencyTable[inputBuffer.get(i) & 0xFF]++;
+            // the packing works on the input's bytes, which this reads from index 0 as the coders below do. A
+            // buffer wrapping exactly those bytes, as RangeExternalCompressor's does, is read without a copy.
+            final byte[] input;
+            if (inputBuffer.hasArray() && inputBuffer.arrayOffset() == 0 && inputBuffer.array().length == inSize) {
+                input = inputBuffer.array();
+            } else {
+                input = new byte[inSize];
+                inputBuffer.get(0, input);
             }
+            final int[] frequencyTable = CompressionUtils.symbolCounts(input);
             int numSymbols = 0;
             final int[] packMappingTable = new int[Constants.NUMBER_OF_SYMBOLS];
             for (int i = 0; i < Constants.NUMBER_OF_SYMBOLS; i++) {
@@ -65,8 +77,8 @@ public class RangeEncode {
 
             // skip Packing if numSymbols = 0  or numSymbols > 16
             if (numSymbols != 0 && numSymbols <= 16) {
-                inputBuffer = CompressionUtils.encodePack(
-                        inputBuffer, outBuffer, frequencyTable, packMappingTable, numSymbols);
+                inputBuffer = CompressionUtils.wrap(
+                        CompressionUtils.encodePack(input, outBuffer, frequencyTable, packMappingTable, numSymbols));
             } else {
                 // unset pack flag in the first byte of the outBuffer
                 outBuffer.put(0, (byte) (outBuffer.get(0) & ~RangeParams.PACK_FLAG_MASK));
