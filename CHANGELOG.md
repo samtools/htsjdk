@@ -10,6 +10,14 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 5.0.2
+
+Patch release on the 5.0 line.
+
+### Bug fixes
+
+- **A CRAM `ReferenceSource` shared between threads no longer returns another contig's bases** ([#1643](https://github.com/samtools/htsjdk/issues/1643)).  It cached the most recent contig's bases and that contig's index in two fields, written without a lock from `getReferenceBasesByRegion`, so two threads asking for different contigs could leave one contig's bases labelled as the other's.  The pair is now published as one immutable object, so a caller can no longer silently get the wrong reference bases and encode or decode CRAM records against them.
+
 ## 5.0.1
 
 Patch release on the 5.0 line.
