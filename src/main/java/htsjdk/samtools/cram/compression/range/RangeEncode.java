@@ -3,6 +3,7 @@ package htsjdk.samtools.cram.compression.range;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.compression.BZIP2ExternalCompressor;
 import htsjdk.samtools.cram.compression.CompressionUtils;
+import htsjdk.utils.ValidationUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -19,13 +20,18 @@ public class RangeEncode {
 
     /**
      * Compress data using the CRAM 3.1 arithmetic (range) codec with the given parameters.
-     * The input buffer is consumed (position advanced to limit) and the returned buffer is rewound.
      *
-     * @param inBuffer input data to compress (position to limit is compressed)
+     * @param inBuffer input data to compress; must be at position 0, and its bytes from 0 to its limit are
+     *     compressed. Its position on return is unspecified.
      * @param rangeParams encoding parameters controlling order, RLE, PACK, STRIPE, and other flags
      * @return a rewound ByteBuffer containing the compressed data
+     * @throws IllegalArgumentException if {@code inBuffer} is not at position 0
      */
     public ByteBuffer compress(final ByteBuffer inBuffer, final RangeParams rangeParams) {
+        // the transforms and coders below read from index 0 but take their length from remaining()
+        ValidationUtils.validateArg(
+                inBuffer.position() == 0,
+                () -> "RangeEncode.compress needs a buffer at position 0, not " + inBuffer.position());
         if (inBuffer.remaining() == 0) {
             return EMPTY_BUFFER;
         }

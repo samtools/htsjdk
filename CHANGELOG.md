@@ -294,6 +294,7 @@ The build enforces this list.  Main sources are checked at the bytecode level by
 - **`EncodingFactory` rejects an encoding that doesn't suit a series' type** instead of returning one for a different type (an INT or LONG series given a byte-array encoding fell through to it and failed later with a `ClassCastException`).
 - **The CRAM writer no longer fails on a slice whose placed reads are all unmapped** (issue #714); such a slice got a negative span. It now spans from the first read's start to the last's, as htslib writes it.
 - **The CRAM writer fills in `M5` on `@SQ` lines that lack it** (issue #506), as the CRAM spec requires and htslib does, taking it from the reference's sequence dictionary when that has it and otherwise computing it from the reference, so samtools can find the reference through `REF_PATH`. Header lines that already have `M5` are written unchanged.
+- **`RangeEncode.compress` rejects a buffer that isn't at position 0.**  It compressed `limit - position` bytes but read them from index 0 on most paths, so such a buffer was compressed wrongly and without an error.  htsjdk's own callers always pass position 0.
 
 ### Testing
 
