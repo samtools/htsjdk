@@ -131,7 +131,8 @@ public class CompressionHeaderEncodingMap {
             final CompressorDescriptor desc = entry.getValue();
 
             // Build the compressor, potentially wrapping in TrialCompressor if trial candidates exist
-            final ExternalCompressor compressor = buildCompressor(ds, desc, trialMap);
+            final ExternalCompressor compressor =
+                    buildCompressor(ds, desc, trialMap, encodingStrategy.getGZIPCompressionLevel());
 
             // Data series with special encoding types
             if (ds == DataSeries.RN_ReadName) {
@@ -164,14 +165,11 @@ public class CompressionHeaderEncodingMap {
      * Build a compressor for a data series, wrapping in {@link TrialCompressor} if additional
      * trial candidates are configured for that series.
      */
-    /**
-     * Build a compressor for a data series, wrapping in {@link TrialCompressor} if additional
-     * trial candidates are configured for that series.
-     */
     private ExternalCompressor buildCompressor(
             final DataSeries ds,
             final CompressorDescriptor primaryDesc,
-            final EnumMap<DataSeries, java.util.List<CompressorDescriptor>> trialMap) {
+            final EnumMap<DataSeries, java.util.List<CompressorDescriptor>> trialMap,
+            final int compressionLevel) {
         final ExternalCompressor primary =
                 compressorCache.getCompressorForMethod(primaryDesc.method(), primaryDesc.arg());
 
@@ -183,7 +181,7 @@ public class CompressionHeaderEncodingMap {
                 for (final CompressorDescriptor td : trialDescs) {
                     candidates.add(compressorCache.getCompressorForMethod(td.method(), td.arg()));
                 }
-                return new TrialCompressor(candidates);
+                return new TrialCompressor(candidates, compressionLevel);
             }
         }
 

@@ -53,6 +53,11 @@ public final class RANSNx16ExternalCompressor extends ExternalCompressor {
         return ransDecode.uncompress(data);
     }
 
+    /** @return the rANS Nx16 flags this compressor encodes with ({@link RANSNx16Params}) */
+    public int getFlags() {
+        return flags;
+    }
+
     @Override
     public String toString() {
         return String.format("%s(%x)", this.getMethod(), flags);

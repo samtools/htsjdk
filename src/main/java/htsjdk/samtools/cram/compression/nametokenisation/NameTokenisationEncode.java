@@ -113,13 +113,19 @@ public class NameTokenisationEncode {
         // note that using a map with a read name key is a little sketchy here, since read names can be duplicates;
         // but its fine since it doesn't really matter which index is recorded here - any one will suffice
         final HashMap<String, Integer> nameIndexMap = new HashMap<>();
+        final HashMap<String, Integer> lastIndexByPrefix = new HashMap<>();
         final int[] tokenFrequencies = new int[256]; // DELTA vs DIGIT frequency
         // keep track of the list of encoded tokens for each name
         final List<List<EncodeToken>> encodedTokensByName = new ArrayList<>(numNames);
 
         for (int nameIndex = 0; nameIndex < numNames; nameIndex++) {
             encodedTokensByName.add(tokeniseName(
-                    namesToEncode.get(nameIndex), nameIndex, encodedTokensByName, nameIndexMap, tokenFrequencies));
+                    namesToEncode.get(nameIndex),
+                    nameIndex,
+                    encodedTokensByName,
+                    nameIndexMap,
+                    lastIndexByPrefix,
+                    tokenFrequencies));
         }
 
         // Track all previously compressed streams for cross-position duplicate detection.
@@ -144,7 +150,14 @@ public class NameTokenisationEncode {
             final int nameIndex,
             final List<List<EncodeToken>> encodedTokensByName,
             final HashMap<String, Integer> nameIndexMap,
+            final HashMap<String, Integer> lastIndexByPrefix,
             final int[] tokenFrequencies) {
+
+        // Names from several flowcells or runs interleave in a coordinate-sorted file, so compare with the most
+        // recent name from the same one (sharing its fixed prefix) rather than simply the previous name, as htslib does
+        final int prefixLength = fixedPrefixLength(name);
+        final Integer samePrefixIndex =
+                prefixLength > 0 ? lastIndexByPrefix.put(name.substring(0, prefixLength), nameIndex) : null;
 
         if (nameIndexMap.containsKey(name)) {
             // duplicate name, there is no need to tokenise the name, just encode the index of the duplicate
@@ -154,10 +167,12 @@ public class NameTokenisationEncode {
 
         final List<EncodeToken> encodedTokens = new ArrayList<>(NameTokenisationDecode.DEFAULT_POSITION_ALLOCATION);
 
+        final int prevNameIndex = samePrefixIndex != null ? samePrefixIndex : nameIndex - 1;
         encodedTokens.add(
-                0, new EncodeToken.DupOrDiffToken(TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : 1)));
+                0,
+                new EncodeToken.DupOrDiffToken(
+                        TokenStreams.TOKEN_DIFF, String.valueOf(nameIndex == 0 ? 0 : nameIndex - prevNameIndex)));
         nameIndexMap.put(name, nameIndex);
-        final int prevNameIndex = nameIndex - 1;
 
         // Tokenize the name by splitting on alphanumeric / non-alphanumeric boundaries.
         // Equivalent to regex: "([a-zA-Z0-9]{1,9})|([^a-zA-Z0-9]+)" but without regex overhead.
@@ -191,10 +206,9 @@ public class NameTokenisationEncode {
 
             // compare the current token with the corresponding token from the previous name,
             // but ONLY if the previous name actually has a corresponding token and is not the terminal token
-            final EncodeToken prevToken =
-                    prevNameIndex >= 0 && encodedTokensByName.get(prevNameIndex).size() > i + 1
-                            ? encodedTokensByName.get(prevNameIndex).get(i)
-                            : null;
+            final List<EncodeToken> prevTokens =
+                    prevNameIndex >= 0 ? tokensOfName(encodedTokensByName, prevNameIndex) : null;
+            final EncodeToken prevToken = prevTokens != null && prevTokens.size() > i + 1 ? prevTokens.get(i) : null;
             if (prevToken != null && prevToken.getTokenType() != TokenStreams.TOKEN_END) {
                 if (prevToken.getActualValue().equals(fragmentValue)) {
                     // identical to the previous name's token in this position
@@ -242,6 +256,56 @@ public class NameTokenisationEncode {
         }
 
         return encodedTokens;
+    }
+
+    /**
+     * The tokens a name decodes to. A name that repeats an earlier one is encoded as a single DUP token, but the
+     * decoder gives it the earlier name's tokens, so the next name can be compared against those.
+     */
+    private static List<EncodeToken> tokensOfName(
+            final List<List<EncodeToken>> encodedTokensByName, final int nameIndex) {
+        final List<EncodeToken> tokens = encodedTokensByName.get(nameIndex);
+        final EncodeToken first = tokens.get(0);
+        return first.getTokenType() == TokenStreams.TOKEN_DUP
+                ? encodedTokensByName.get(nameIndex - first.getRelativeValueAsInt())
+                : tokens;
+    }
+
+    /**
+     * The length of the prefix that htslib's tok3 encoder treats as fixed for a read name of a known format, or -1:
+     * Illumina's up to lane:tile:x:y, the first 60 chars of PacBio, 6 of IonTorrent and 37 of ONT.
+     */
+    private static int fixedPrefixLength(final String name) {
+        final int len = name.length();
+        if (len > 70
+                && name.charAt(0) == 'm'
+                && name.charAt(7) == '_'
+                && name.charAt(14) == '_'
+                && name.charAt(61) == '/') {
+            return 60;
+        }
+        if (len == 17 && name.charAt(5) == ':' && name.charAt(11) == ':') {
+            return 6;
+        }
+        if (len > 37
+                && name.charAt(8) == '-'
+                && name.charAt(13) == '-'
+                && name.charAt(18) == '-'
+                && name.charAt(23) == '-'
+                && isLowerHexDigit(name.charAt(0))
+                && isLowerHexDigit(name.charAt(35))) {
+            return 37;
+        }
+        int colons = 0;
+        int i = len;
+        while (i > 0 && colons < 4) {
+            if (name.charAt(--i) == ':') colons++;
+        }
+        return colons == 4 ? i + 1 : -1;
+    }
+
+    private static boolean isLowerHexDigit(final char c) {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
     }
 
     /** Check if a character is alphanumeric (a-z, A-Z, 0-9). */

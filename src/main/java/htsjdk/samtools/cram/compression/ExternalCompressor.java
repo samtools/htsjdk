@@ -109,7 +109,8 @@ public abstract class ExternalCompressor {
      * must be populated by the caller.
      * @param compressionMethod the type of compressor required ({@link BlockCompressionMethod})
      * @param compressorSpecificArg the required order for RANS compressors; or the desired write compression
-     *                             level for GZIP
+     *                             level for GZIP; or {@link NameTokeniserExternalCompressor#USE_ARITH} for a name
+     *                             tokeniser that codes its token streams with the arithmetic coder
      * @return an ExternalCompressor of the requested type, populated with an compressor-specific args
      */
     public static ExternalCompressor getCompressorForMethod(
@@ -150,7 +151,10 @@ public abstract class ExternalCompressor {
                         : new RangeExternalCompressor(compressorSpecificArg, new RangeEncode(), new RangeDecode());
 
             case NAME_TOKENISER:
-                return new NameTokeniserExternalCompressor(new NameTokenisationEncode(), new NameTokenisationDecode());
+                return new NameTokeniserExternalCompressor(
+                        new NameTokenisationEncode(),
+                        new NameTokenisationDecode(),
+                        compressorSpecificArg == NameTokeniserExternalCompressor.USE_ARITH);
 
             case FQZCOMP:
                 return new FQZCompExternalCompressor(new FQZCompEncode(), new FQZCompDecode());
