@@ -307,19 +307,27 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(storedTags(toCram(read)), Map.of());
     }
 
-    /** Write a single read to an in-memory CRAM against the test reference and read it back. */
+    /** Write a single read to an in-memory CRAM, with its own header, against the test reference and read it back. */
     private static SAMRecord roundTrip(final SAMRecord read) throws IOException {
-        final List<SAMRecord> readsBack = roundTrip(ValidationStringency.STRICT, read);
+        return roundTrip(read, ValidationStringency.STRICT);
+    }
+
+    /** As {@link #roundTrip(SAMRecord)}, reading back with the given validation. */
+    private static SAMRecord roundTrip(final SAMRecord read, final ValidationStringency validation) throws IOException {
+        final List<SAMRecord> readsBack = roundTrip(validation, read);
         Assert.assertEquals(readsBack.size(), 1);
         return readsBack.get(0);
     }
 
-    /** Write reads to an in-memory CRAM against the test reference and read them back with the given validation. */
+    /**
+     * Write reads to an in-memory CRAM, with the first read's header, against the test reference and read them back
+     * with the given validation.
+     */
     private static List<SAMRecord> roundTrip(final ValidationStringency validation, final SAMRecord... reads)
             throws IOException {
         final ByteArrayOutputStream cram = new ByteArrayOutputStream();
-        try (CRAMFileWriter writer = new CRAMFileWriter(
-                cram, CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER, null)) {
+        try (CRAMFileWriter writer =
+                new CRAMFileWriter(cram, CRAMStructureTestHelper.REFERENCE_SOURCE, reads[0].getHeader(), null)) {
             for (final SAMRecord read : reads) writer.addAlignment(read);
         }
         try (CRAMFileReader reader = new CRAMFileReader(
@@ -401,6 +409,60 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(readBack.getBaseQualityString(), SAMRecord.NULL_QUALS_STRING);
     }
 
+    /**
+     * A 10M read at base 100 of contig "0", matching the reference, with NM and MD and tagged {@code RG:Z:readGroup},
+     * in a header whose read groups are "first" and "known".
+     */
+    private static SAMRecord readInReadGroup(final String readGroup) {
+        final SAMFileHeader header = CRAMStructureTestHelper.createSAMFileHeader();
+        header.addReadGroup(new SAMReadGroupRecord("first"));
+        header.addReadGroup(new SAMReadGroupRecord("known"));
+        final SAMRecord read = new SAMRecord(header);
+        read.setReadName("readGroup");
+        read.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setAlignmentStart(100);
+        read.setCigarString("10M");
+        read.setReadBases("AAAAAAAAAA".getBytes());
+        read.setBaseQualities(new byte[10]);
+        read.setAttribute(SAMTag.RG.name(), readGroup);
+        SequenceUtil.calculateMdAndNmTags(read, contigZeroBases(), true, true);
+        return read;
+    }
+
+    @Test
+    public void readGroupWithAnRgLineIsStoredAsTheLinesIndexRatherThanATag() {
+        final CRAMCompressionRecord cramRecord = toCram(readInReadGroup("known"));
+        Assert.assertEquals(cramRecord.getReadGroupID(), 1);
+        Assert.assertEquals(storedTags(cramRecord), Map.of());
+    }
+
+    @Test
+    public void readGroupWithNoRgLineIsStoredAsATag() {
+        final CRAMCompressionRecord cramRecord = toCram(readInReadGroup("unknown"));
+        Assert.assertEquals(cramRecord.getReadGroupID(), CRAMCompressionRecord.NO_READGROUP_ID);
+        Assert.assertEquals(storedTags(cramRecord), Map.of("RG", "unknown"));
+    }
+
+    @Test
+    public void readGroupWithAnRgLineOnlyInTheReadsOwnHeaderIsStoredAsATag() {
+        final CRAMCompressionRecord cramRecord = toCram(readInReadGroup("known"), Map.of());
+        Assert.assertEquals(cramRecord.getReadGroupID(), CRAMCompressionRecord.NO_READGROUP_ID);
+        Assert.assertEquals(storedTags(cramRecord), Map.of("RG", "known"));
+    }
+
+    @Test
+    public void readGroupWithAnRgLineRoundTrips() throws IOException {
+        final SAMRecord read = readInReadGroup("known");
+        Assert.assertEquals(roundTrip(read), read);
+    }
+
+    @Test
+    public void readGroupWithNoRgLineRoundTripsAsATag() throws IOException {
+        final SAMRecord read = readInReadGroup("unknown");
+        // STRICT reading would reject the read for naming a read group the header doesn't have
+        Assert.assertEquals(roundTrip(read, ValidationStringency.SILENT), read);
+    }
+
     private List<ReadFeature> buildMatchOrMismatchReadFeatures(
             final String refBases, final String readBases, final String scores) {
         final List<ReadFeature> readFeatures = new ArrayList<>();
@@ -449,12 +511,22 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         return read;
     }
 
-    /** The CRAM record the writer builds for {@code read}. */
+    /** The CRAM record the writer builds for {@code read} when writing the read's own header. */
     private static CRAMCompressionRecord toCram(final SAMRecord read) {
+        final Map<String, Integer> readGroupIndexes = new HashMap<>();
+        final List<SAMReadGroupRecord> readGroups = read.getHeader().getReadGroups();
+        for (int i = 0; i < readGroups.size(); i++) {
+            readGroupIndexes.put(readGroups.get(i).getId(), i);
+        }
+        return toCram(read, readGroupIndexes);
+    }
+
+    /** The CRAM record the writer builds for {@code read} when writing a header with the given @RG line indexes. */
+    private static CRAMCompressionRecord toCram(final SAMRecord read, final Map<String, Integer> readGroupIndexes) {
         final byte[] reference = CRAMStructureTestHelper.REFERENCE_SOURCE.getReferenceBases(
                 read.getHeader().getSequence(read.getReferenceIndex()), false);
         return new CRAMCompressionRecord(
-                CramVersions.DEFAULT_CRAM_VERSION, new CRAMEncodingStrategy(), read, reference, 0, new HashMap<>());
+                CramVersions.DEFAULT_CRAM_VERSION, new CRAMEncodingStrategy(), read, reference, 0, readGroupIndexes);
     }
 
     @Test

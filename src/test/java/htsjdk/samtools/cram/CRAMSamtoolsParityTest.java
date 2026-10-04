@@ -5,6 +5,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
@@ -260,6 +261,85 @@ public class CRAMSamtoolsParityTest extends HtsjdkTest {
                 .map(SAMRecord::getFlags)
                 .toList();
         Assert.assertEquals(flagsBack, UNPAIRED_READ_FLAGS);
+    }
+
+    @Test
+    public void readGroupWithNoRgLineWrittenByHtsjdkReadsBackWithItsTagInSamtools() throws IOException {
+        requireSamtools();
+        final Path sam = writeSamWithAReadGroupMissingItsRgLine("rgByHtsjdk");
+        final Path reference = tempDir.resolve("rgByHtsjdk.fa");
+        final Path cram = tempDir.resolve("rgByHtsjdk.htsjdk.cram");
+        writeWithHtsjdk(sam, reference, cram);
+        final List<Object> readGroups = decodeWithSamtools(cram, reference).stream()
+                .map(record -> record.getAttribute(SAMTag.RG))
+                .toList();
+        Assert.assertEquals(readGroups, List.of("known", "unknown"));
+    }
+
+    @Test
+    public void readGroupWithNoRgLineWrittenBySamtoolsReadsBackWithItsTagInHtsjdk() throws IOException {
+        requireSamtools();
+        final Path sam = writeSamWithAReadGroupMissingItsRgLine("rgBySamtools");
+        final Path reference = tempDir.resolve("rgBySamtools.fa");
+        final Path cram = tempDir.resolve("rgBySamtools.samtools.cram");
+        SamtoolsTestUtils.executeSamToolsCommand(String.format(
+                "view --no-PG -C -T %s -o %s %s",
+                reference.toAbsolutePath(), cram.toAbsolutePath(), sam.toAbsolutePath()));
+        final List<Object> readGroups = readWithHtsjdk(cram, reference).stream()
+                .map(record -> record.getAttribute(SAMTag.RG))
+                .toList();
+        Assert.assertEquals(readGroups, List.of("known", "unknown"));
+    }
+
+    /**
+     * Write {@code name.fa}, a reference of one 1,000-base contig, and {@code name.sam}, whose only @RG line is
+     * "known", holding a read tagged {@code RG:Z:known} and then one tagged {@code RG:Z:unknown}.
+     *
+     * @return the SAM
+     */
+    private Path writeSamWithAReadGroupMissingItsRgLine(final String name) throws IOException {
+        final String bases = "ACGT".repeat(250);
+        final Path reference = tempDir.resolve(name + ".fa");
+        Files.writeString(reference, ">chr1\n" + bases + "\n");
+        SamtoolsTestUtils.executeSamToolsCommand("faidx " + reference.toAbsolutePath());
+        final Path sam = tempDir.resolve(name + ".sam");
+        Files.writeString(
+                sam,
+                String.join(
+                        "\n",
+                        "@HD\tVN:1.6\tSO:coordinate",
+                        "@SQ\tSN:chr1\tLN:1000",
+                        "@RG\tID:known",
+                        String.join(
+                                "\t",
+                                "inKnown",
+                                "0",
+                                "chr1",
+                                "101",
+                                "60",
+                                "10M",
+                                "*",
+                                "0",
+                                "0",
+                                bases.substring(100, 110),
+                                "I".repeat(10),
+                                "RG:Z:known"),
+                        String.join(
+                                "\t",
+                                "inUnknown",
+                                "0",
+                                "chr1",
+                                "201",
+                                "60",
+                                "10M",
+                                "*",
+                                "0",
+                                "0",
+                                bases.substring(200, 210),
+                                "I".repeat(10),
+                                "RG:Z:unknown"),
+                        ""));
+        return sam;
     }
 
     @Test

@@ -107,7 +107,7 @@ public class CRAMCompressionRecord {
      * @param samRecord
      * @param referenceBases
      * @param sequentialIndex
-     * @param readGroupMap
+     * @param readGroupMap the index of each @RG line in the header being written, by ID
      */
     public CRAMCompressionRecord(
             final CRAMVersion cramVersion,
@@ -207,13 +207,17 @@ public class CRAMCompressionRecord {
             setForcePreserveQualityScores(true);
         }
 
-        final SAMReadGroupRecord readGroup = samRecord.getReadGroup();
-        readGroupID = readGroup == null ? NO_READGROUP_ID : readGroupMap.get(readGroup.getId());
+        // The read group is looked up in the writer's @RG lines, not the record's own header, since the RG data
+        // series indexes the @RG lines of the header written to the file.
+        final Object readGroupTag = samRecord.getAttribute(SAMTag.RG);
+        final Integer readGroupIndex = readGroupTag instanceof String ? readGroupMap.get(readGroupTag) : null;
+        readGroupID = readGroupIndex == null ? NO_READGROUP_ID : readGroupIndex;
 
         // Tag handling: NM:i and MD:Z are stripped for mapped reads (matching htslib default)
         // and regenerated from read features + reference during decode. If the stored NM/MD
         // values don't match what would be recomputed (non-standard values), they are kept verbatim.
-        // RG is also skipped since read groups have a dedicated data series.
+        // RG is skipped when it names an @RG line, since the RG data series holds it; one with no @RG line
+        // can't be stored there and is kept as an ordinary tag, as htslib keeps it.
         // NM and MD can't be regenerated without bases, so a read with SEQ "*" keeps them, as it does in htslib.
         // htslib also keeps them for a read with M, X or = bases past the end of the reference.
         final boolean mayStripNmAndMd =
@@ -252,7 +256,7 @@ public class CRAMCompressionRecord {
         if (!samRecord.getAttributes().isEmpty()) {
             tags = new ArrayList<>(samRecord.getAttributes().size());
             for (final SAMRecord.SAMTagAndValue tagAndValue : samRecord.getAttributes()) {
-                if (SAMTag.RG.name().equals(tagAndValue.tag)) continue;
+                if (readGroupID != NO_READGROUP_ID && SAMTag.RG.name().equals(tagAndValue.tag)) continue;
                 if (stripNM && SAMTag.NM.name().equals(tagAndValue.tag)) continue;
                 if (stripMD && SAMTag.MD.name().equals(tagAndValue.tag)) continue;
                 final boolean unsignedArray =
