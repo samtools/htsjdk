@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 
 /**
  * This class encompasses all the basic information about a genotype.  It is immutable.
@@ -506,23 +505,32 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         return getSampleName().compareTo(genotype.getSampleName());
     }
 
+    /** Same as {@link #sameGenotype(Genotype, boolean)} with {@code ignorePhase} true. */
     public boolean sameGenotype(final Genotype other) {
         return sameGenotype(other, true);
     }
 
+    /**
+     * @param other the genotype to compare to
+     * @param ignorePhase if true, the genotypes match when they hold the same alleles the same number of times, in any
+     *     order; if false, they must hold the same alleles in the same order
+     * @return true if this and other carry the same alleles; sample names, phasing flags and other fields are not
+     *     compared
+     */
     public boolean sameGenotype(final Genotype other, boolean ignorePhase) {
         if (getPloidy() != other.getPloidy()) return false; // gotta have the same number of allele to be equal
 
-        // By default, compare the elements in the lists of alleles, element-by-element
-        Collection<Allele> thisAlleles = this.getAlleles();
-        Collection<Allele> otherAlleles = other.getAlleles();
+        final List<Allele> thisAlleles = this.getAlleles();
+        final List<Allele> otherAlleles = other.getAlleles();
+        if (thisAlleles.equals(otherAlleles)) return true;
+        if (!ignorePhase) return false;
 
-        if (ignorePhase) { // do not care about order, only identity of Alleles
-            thisAlleles = new TreeSet<Allele>(thisAlleles); // implemented Allele.compareTo()
-            otherAlleles = new TreeSet<Allele>(otherAlleles);
-        }
-
-        return thisAlleles.equals(otherAlleles);
+        // sorted, not made sets, so how often each allele occurs still counts: A/A/C is not A/C/C
+        final List<Allele> thisSorted = new ArrayList<>(thisAlleles);
+        final List<Allele> otherSorted = new ArrayList<>(otherAlleles);
+        Collections.sort(thisSorted);
+        Collections.sort(otherSorted);
+        return thisSorted.equals(otherSorted);
     }
 
     // ---------------------------------------------------------------------------------------------------------

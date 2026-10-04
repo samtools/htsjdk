@@ -190,6 +190,86 @@ public class GenotypeUnitTest extends VariantBaseTest {
         Assert.assertEquals(g.getGenotypeString(), "|A/C");
     }
 
+    // sameGenotype
+
+    private static Genotype genotypeOf(final Allele... alleles) {
+        return GenotypeBuilder.create("s", Arrays.asList(alleles));
+    }
+
+    @Test
+    public void sameGenotypeIgnoringPhaseCountsEachAllele() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        Assert.assertFalse(genotypeOf(ref, ref, alt).sameGenotype(genotypeOf(ref, alt, alt), true));
+        Assert.assertFalse(genotypeOf(ref, alt, alt).sameGenotype(genotypeOf(ref, ref, alt), true));
+    }
+
+    @Test
+    public void sameGenotypeIgnoringPhaseMatchesTheSameAllelesInAnotherOrder() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        Assert.assertTrue(genotypeOf(ref, alt).sameGenotype(genotypeOf(alt, ref), true));
+        Assert.assertTrue(genotypeOf(ref, ref, alt).sameGenotype(genotypeOf(alt, ref, ref), true));
+    }
+
+    @Test
+    public void sameGenotypeIgnoresPhaseByDefault() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        Assert.assertTrue(genotypeOf(ref, ref, alt).sameGenotype(genotypeOf(ref, alt, ref)));
+        Assert.assertFalse(genotypeOf(ref, ref, alt).sameGenotype(genotypeOf(ref, alt, alt)));
+    }
+
+    @Test
+    public void sameGenotypeDoesNotMatchADifferentPloidy() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        Assert.assertFalse(genotypeOf(ref, alt).sameGenotype(genotypeOf(ref, alt, alt), true));
+        Assert.assertFalse(genotypeOf(ref, alt).sameGenotype(genotypeOf(ref, alt, alt), false));
+    }
+
+    @Test
+    public void sameGenotypeMatchesNoCallsOfTheSamePloidy() {
+        Assert.assertTrue(genotypeOf(Allele.NO_CALL, Allele.NO_CALL)
+                .sameGenotype(genotypeOf(Allele.NO_CALL, Allele.NO_CALL), true));
+        Assert.assertFalse(genotypeOf(Allele.NO_CALL, Allele.NO_CALL).sameGenotype(genotypeOf(Allele.NO_CALL), true));
+    }
+
+    @Test
+    public void sameGenotypeIgnoringPhaseCountsNoCalls() {
+        final Allele ref = Allele.create("A", true);
+        Assert.assertTrue(genotypeOf(ref, Allele.NO_CALL).sameGenotype(genotypeOf(Allele.NO_CALL, ref), true));
+        Assert.assertFalse(genotypeOf(ref, Allele.NO_CALL, Allele.NO_CALL)
+                .sameGenotype(genotypeOf(ref, ref, Allele.NO_CALL), true));
+    }
+
+    @Test
+    public void sameGenotypeIgnoringPhaseTellsRefFromAltWithTheSameBases() {
+        final Allele ref = Allele.create("A", true);
+        final Allele altWithRefBases = Allele.create("A");
+        Assert.assertFalse(genotypeOf(ref, altWithRefBases).sameGenotype(genotypeOf(ref, ref), true));
+    }
+
+    @Test
+    public void sameGenotypeWithPhaseComparesAllelesInOrder() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        Assert.assertTrue(genotypeOf(ref, ref, alt).sameGenotype(genotypeOf(ref, ref, alt), false));
+        Assert.assertFalse(genotypeOf(ref, ref, alt).sameGenotype(genotypeOf(ref, alt, ref), false));
+        Assert.assertFalse(genotypeOf(ref, alt).sameGenotype(genotypeOf(alt, ref), false));
+    }
+
+    @Test
+    public void sameGenotypeDoesNotCompareSampleNamesOrPhasing() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        final Genotype phased =
+                new GenotypeBuilder("s1", Arrays.asList(ref, alt)).phased(true).make();
+        final Genotype unphased = new GenotypeBuilder("s2", Arrays.asList(ref, alt)).make();
+        Assert.assertTrue(phased.sameGenotype(unphased, true));
+        Assert.assertTrue(phased.sameGenotype(unphased, false));
+    }
+
     @SuppressWarnings("deprecation")
     @Test
     public void getAttributeAsIntReturnsTheDefaultForAMissingValue() {
