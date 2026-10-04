@@ -8,12 +8,15 @@ import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -41,6 +44,18 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
                     CRAMCRAIIndexer.readIndex(indexStream).getCRAIEntries();
             Assert.assertEquals(craiEntries.size(), 1);
         }
+    }
+
+    @Test
+    public void anIndexCoversTheContainersAfterAnInternalEofContainer() throws IOException {
+        final ByteArrayOutputStream crai = new ByteArrayOutputStream();
+        CRAMCRAIIndexer.writeIndex(
+                new SeekableMemoryStream(CRAMTestUtils.cramWithAnInternalEofContainer(), "internalEof.cram"), crai);
+        final Set<Integer> indexedContigs =
+                CRAMCRAIIndexer.readIndex(new ByteArrayInputStream(crai.toByteArray())).getCRAIEntries().stream()
+                        .map(CRAIEntry::getSequenceId)
+                        .collect(Collectors.toSet());
+        Assert.assertEquals(indexedContigs, Set.of(0, 1));
     }
 
     @Test

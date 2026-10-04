@@ -4,8 +4,11 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.util.Iterator;
 
 /**
@@ -14,23 +17,47 @@ import java.util.Iterator;
 public class CramContainerIterator implements Iterator<Container>, Closeable {
     private CramHeader cramHeader;
     private final SAMFileHeader samFileHeader;
+    // lets the iterator look one byte past an EOF container without counting it as read
+    private final PushbackInputStream pushbackInputStream;
     private final CountingInputStream countingInputStream;
 
     private Container nextContainer;
     private boolean eof = false;
 
     public CramContainerIterator(final InputStream inputStream) {
-        this.countingInputStream = new CountingInputStream(inputStream);
+        this.pushbackInputStream = new PushbackInputStream(inputStream, 1);
+        this.countingInputStream = new CountingInputStream(pushbackInputStream);
         cramHeader = CramIO.readCramHeader(countingInputStream);
         samFileHeader = Container.readSAMFileHeaderContainer(cramHeader.getCRAMVersion(), countingInputStream, null);
     }
 
+    /**
+     * Reads the next container, skipping any EOF container that more bytes follow: samtools cat before 1.13 left
+     * each input's EOF container in its output, and htslib reads past them.
+     */
     private void readNextContainer() {
         nextContainer = containerFromStream(countingInputStream);
 
-        if (nextContainer.isEOF()) {
-            eof = true;
-            nextContainer = null;
+        while (nextContainer.isEOF()) {
+            if (isAtEndOfStream()) {
+                eof = true;
+                nextContainer = null;
+                return;
+            }
+            nextContainer = containerFromStream(countingInputStream);
+        }
+    }
+
+    private boolean isAtEndOfStream() {
+        try {
+            final int next = pushbackInputStream.read();
+            if (next == -1) {
+                return true;
+            }
+            pushbackInputStream.unread(next);
+            return false;
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
         }
     }
 

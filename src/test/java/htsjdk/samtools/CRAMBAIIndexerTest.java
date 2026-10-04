@@ -11,10 +11,13 @@ import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -299,5 +302,31 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         Assert.assertThrows(IllegalArgumentException.class, indexer::finish);
         Assert.assertTrue(closed[0], "the output should be closed even though nothing could be written");
+    }
+
+    @Test
+    public void anIndexCoversTheContainersAfterAnInternalEofContainer() throws IOException {
+        final byte[] cram = CRAMTestUtils.cramWithAnInternalEofContainer();
+        final Path bai = Files.createTempFile("internalEof.", ".bai");
+        try {
+            CRAMBAIIndexer.createIndex(
+                    new SeekableMemoryStream(cram, "internalEof.cram"), bai, null, ValidationStringency.SILENT);
+            try (CRAMFileReader reader = new CRAMFileReader(
+                            new SeekableMemoryStream(cram, "internalEof.cram"),
+                            new SeekableMemoryStream(Files.readAllBytes(bai), "internalEof.bai"),
+                            CRAMTestUtils.getFakeReferenceSource(),
+                            ValidationStringency.SILENT);
+                    CloseableIterator<SAMRecord> records =
+                            reader.query(new QueryInterval[] {new QueryInterval(1, 1, -1)}, false)) {
+                int count = 0;
+                while (records.hasNext()) {
+                    Assert.assertEquals(records.next().getReferenceIndex().intValue(), 1);
+                    count++;
+                }
+                Assert.assertEquals(count, CRAMTestUtils.READS_PER_CONTIG_AROUND_THE_INTERNAL_EOF);
+            }
+        } finally {
+            Files.deleteIfExists(bai);
+        }
     }
 }

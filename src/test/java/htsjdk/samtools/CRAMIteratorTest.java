@@ -3,7 +3,11 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -38,5 +42,23 @@ public class CRAMIteratorTest extends HtsjdkTest {
         final CRAMFileReader cramFileReader = new CRAMFileReader(cramFile, (SeekableStream) null, source);
         cramFileReader.setValidationStringency(valStringency);
         return cramFileReader.getIterator();
+    }
+
+    @Test
+    public void readingContinuesPastAnInternalEofContainer() throws IOException {
+        try (CRAMFileReader reader = new CRAMFileReader(
+                        new ByteArrayInputStream(CRAMTestUtils.cramWithAnInternalEofContainer()),
+                        (SeekableStream) null,
+                        CRAMTestUtils.getFakeReferenceSource(),
+                        ValidationStringency.SILENT);
+                SAMRecordIterator records = reader.getIterator()) {
+            final Map<String, Integer> readsPerContig = new HashMap<>();
+            records.forEachRemaining(r -> readsPerContig.merge(r.getReferenceName(), 1, Integer::sum));
+            Assert.assertEquals(
+                    readsPerContig,
+                    Map.of(
+                            "chr1", CRAMTestUtils.READS_PER_CONTIG_AROUND_THE_INTERNAL_EOF,
+                            "chr2", CRAMTestUtils.READS_PER_CONTIG_AROUND_THE_INTERNAL_EOF));
+        }
     }
 }

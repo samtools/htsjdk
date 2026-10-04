@@ -78,7 +78,9 @@ public final class CramSpanContainerIterator extends CramContainerIterator {
         @Override
         public boolean hasNext() {
             try {
-                return seekableStream.position() <= (end >> 16);
+                // a span may be open-ended (getFilePointerSpanningReads ends one at Long.MAX_VALUE), so the end
+                // of the stream ends it too
+                return seekableStream.position() <= (end >> 16) && !CramIO.isAtEndOfStream(seekableStream);
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
             }
