@@ -208,11 +208,16 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 validationStringency,
                 samRecordFactory);
 
-        if (mIndexPath != null
-                && Files.getLastModifiedTime(mIndexPath).toMillis()
+        if (mIndexPath != null) {
+            try {
+                if (Files.getLastModifiedTime(mIndexPath).toMillis()
                         < Files.getLastModifiedTime(path).toMillis() - 5000) {
-            System.err.println("WARNING: BAM index file " + mIndexPath.toAbsolutePath() + " is older than BAM "
-                    + path.toAbsolutePath());
+                    System.err.println("WARNING: BAM index file " + mIndexPath.toAbsolutePath() + " is older than BAM "
+                            + path.toAbsolutePath());
+                }
+            } catch (final IOException | UnsupportedOperationException e) {
+                // The warning is advisory, and some filesystems (http-nio, for one) have no modification times
+            }
         }
 
         // Provide better error message when there is an error reading.

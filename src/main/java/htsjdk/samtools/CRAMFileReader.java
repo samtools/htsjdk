@@ -367,6 +367,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 }
             } catch (final IOException e) {
                 log.warn("Could not check modification times for " + indexPath + " and " + cramPath);
+            } catch (final UnsupportedOperationException e) {
+                // Some filesystems (http-nio, for one) have no modification times to compare
             }
         }
         return indexPath;
