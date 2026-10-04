@@ -106,7 +106,7 @@ public class SortingLongCollection {
         }
         this.tmpDir = tmpDir;
         this.maxValuesInRam = Math.min(maxValuesInRam, MAX_ITEMS_IN_RAM);
-        this.ramValues = new long[maxValuesInRam];
+        this.ramValues = new long[this.maxValuesInRam];
     }
 
     /**
