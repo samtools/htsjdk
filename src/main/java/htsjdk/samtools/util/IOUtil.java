@@ -283,8 +283,9 @@ public class IOUtil {
         // Path is itself an Iterable<Path> which causes very confusing behavior if we don't explicitly check here.
         if (paths instanceof Path) {
             deletePath((Path) paths);
+        } else {
+            paths.forEach(IOUtil::deletePath);
         }
-        paths.forEach(IOUtil::deletePath);
     }
 
     /**
