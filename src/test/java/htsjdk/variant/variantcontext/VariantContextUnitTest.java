@@ -1994,6 +1994,28 @@ public class VariantContextUnitTest extends VariantBaseTest {
         }
     }
 
+    @Test
+    public void strictDecodingDoesNotCountTheValuesOfAStringField() {
+        // GATK's allele-specific raw annotations: a Number=1 String with commas in it, which the VCF reader splits
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFInfoHeaderLine("AS_RAW", 1, VCFHeaderLineType.String, "raw"));
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "1", 100, 100, Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .attribute("AS_RAW", Arrays.asList("|-0.2", "1|NaN"))
+                .make();
+        Assert.assertEquals(vc.fullyDecode(header, false).getAttribute("AS_RAW"), Arrays.asList("|-0.2", "1|NaN"));
+    }
+
+    @Test(expectedExceptions = TribbleException.InvalidHeader.class)
+    public void strictDecodingCountsTheValuesOfAnIntegerField() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFInfoHeaderLine("XI", 1, VCFHeaderLineType.Integer, "xi"));
+        new VariantContextBuilder("test", "1", 100, 100, Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .attribute("XI", "1,2")
+                .make()
+                .fullyDecode(header, false);
+    }
+
     // INFO END against getEnd(): only an END past the end is malformed
 
     @Test

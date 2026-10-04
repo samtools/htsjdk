@@ -1784,7 +1784,9 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                             + field);
         }
         final Object decoded = decodeValue(field, value, headerLine);
-        if (decoded != null && !lenientDecoding && headerLine.getType() != VCFHeaderLineType.Flag) {
+        // BCF stores a String or Character field as one text whatever its Number says, and the VCF reader splits such a
+        // value at any commas in it (GATK's AS_RAW annotations, for one), so only Integer and Float values are counted
+        if (decoded != null && !lenientDecoding && isCounted(headerLine.getType())) {
             final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
             // -1 when the header line doesn't fix the number of values for this record
             final int expSize = headerLine.getCount(this);
@@ -1796,6 +1798,10 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             }
         }
         return decoded;
+    }
+
+    private static boolean isCounted(final VCFHeaderLineType type) {
+        return type == VCFHeaderLineType.Integer || type == VCFHeaderLineType.Float;
     }
 
     private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
