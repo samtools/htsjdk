@@ -206,6 +206,62 @@ public class CRAMSamtoolsParityTest extends HtsjdkTest {
         Assert.assertEquals(templateLengths, List.of(50, -50));
     }
 
+    /**
+     * Each bit the SAM spec leaves undefined on an unpaired read, and an unmapped secondary supplementary read marked
+     * as a proper pair.
+     */
+    private static final List<Integer> UNPAIRED_READ_FLAGS =
+            List.of(0x2, 0x8, 0x20, 0x40, 0x80, 0x4 | 0x2 | 0x100 | 0x800);
+
+    /** The reference for {@link #unpairedReadsSam()}. */
+    private Path unpairedReadsReference() {
+        return tempDir.resolve("unpairedFlags.fa");
+    }
+
+    /** Write a SAM with one unpaired read for each of {@link #UNPAIRED_READ_FLAGS}, and its reference. */
+    private Path unpairedReadsSam() throws IOException {
+        Files.writeString(unpairedReadsReference(), ">chr1\n" + "ACGT".repeat(25) + "\n");
+        SamtoolsTestUtils.executeSamToolsCommand(
+                "faidx " + unpairedReadsReference().toAbsolutePath());
+        final StringBuilder sam = new StringBuilder("@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:100\n");
+        for (final int flag : UNPAIRED_READ_FLAGS) {
+            final String cigar = (flag & 0x4) != 0 ? "*" : "4M";
+            sam.append(String.join("\t", "read" + flag, String.valueOf(flag), "chr1", "5", "30", cigar))
+                    .append("\t*\t0\t0\tACGT\tIIII\n");
+        }
+        final Path samPath = tempDir.resolve("unpairedFlags.sam");
+        Files.writeString(samPath, sam);
+        return samPath;
+    }
+
+    @Test
+    public void unpairedReadFlagsWrittenByHtsjdkReadBackUnchangedInSamtools() throws IOException {
+        requireSamtools();
+        // samtools reads 0x20 back from its own CRAM with 0x1 added, but not from htsjdk's.
+        final Path sam = unpairedReadsSam();
+        final Path cram = tempDir.resolve("unpairedFlags.htsjdk.cram");
+        writeWithHtsjdk(sam, unpairedReadsReference(), cram);
+        final List<Integer> flagsBack = decodeWithSamtools(cram, unpairedReadsReference()).stream()
+                .map(SAMRecord::getFlags)
+                .toList();
+        Assert.assertEquals(flagsBack, UNPAIRED_READ_FLAGS);
+    }
+
+    @Test
+    public void unpairedReadFlagsWrittenBySamtoolsReadBackUnchangedInHtsjdk() throws IOException {
+        requireSamtools();
+        // samtools itself reads 0x20 back with 0x1 added.
+        final Path sam = unpairedReadsSam();
+        final Path cram = tempDir.resolve("unpairedFlags.samtools.cram");
+        SamtoolsTestUtils.executeSamToolsCommand(String.format(
+                "view --no-PG -C -T %s -o %s %s",
+                unpairedReadsReference().toAbsolutePath(), cram.toAbsolutePath(), sam.toAbsolutePath()));
+        final List<Integer> flagsBack = readWithHtsjdk(cram, unpairedReadsReference()).stream()
+                .map(SAMRecord::getFlags)
+                .toList();
+        Assert.assertEquals(flagsBack, UNPAIRED_READ_FLAGS);
+    }
+
     @Test
     public void everyKnownDifferenceNamesACorpusCase() throws IOException {
         final Set<String> caseNames = new TreeSet<>();

@@ -309,20 +309,27 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
 
     /** Write a single read to an in-memory CRAM against the test reference and read it back. */
     private static SAMRecord roundTrip(final SAMRecord read) throws IOException {
+        final List<SAMRecord> readsBack = roundTrip(ValidationStringency.STRICT, read);
+        Assert.assertEquals(readsBack.size(), 1);
+        return readsBack.get(0);
+    }
+
+    /** Write reads to an in-memory CRAM against the test reference and read them back with the given validation. */
+    private static List<SAMRecord> roundTrip(final ValidationStringency validation, final SAMRecord... reads)
+            throws IOException {
         final ByteArrayOutputStream cram = new ByteArrayOutputStream();
         try (CRAMFileWriter writer = new CRAMFileWriter(
                 cram, CRAMStructureTestHelper.REFERENCE_SOURCE, CRAMStructureTestHelper.SAM_FILE_HEADER, null)) {
-            writer.addAlignment(read);
+            for (final SAMRecord read : reads) writer.addAlignment(read);
         }
         try (CRAMFileReader reader = new CRAMFileReader(
                 new ByteArrayInputStream(cram.toByteArray()),
                 (Path) null,
                 CRAMStructureTestHelper.REFERENCE_SOURCE,
-                ValidationStringency.STRICT)) {
-            final SAMRecordIterator iterator = reader.getIterator();
-            final SAMRecord readBack = iterator.next();
-            Assert.assertFalse(iterator.hasNext());
-            return readBack;
+                validation)) {
+            final List<SAMRecord> readsBack = new ArrayList<>();
+            reader.getIterator().forEachRemaining(readsBack::add);
+            return readsBack;
         }
     }
 
@@ -498,5 +505,83 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         second.setSecondOfPairFlag(false);
         Assert.assertFalse(CRAMCompressionRecord.decodesUnchangedWhenAttached(
                 toCram(pairRead(true, 100, 50, 300, 250)), toCram(second)));
+    }
+
+    /** An unpaired 10M read at base 100 of contig "0", matching the reference, with exactly the given flags. */
+    private static SAMRecord unpairedRead(final int flags) {
+        final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        read.setReadName("unpaired");
+        read.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setAlignmentStart(100);
+        read.setCigarString("10M");
+        read.setReadBases("AAAAAAAAAA".getBytes());
+        read.setBaseQualities(new byte[10]);
+        read.setFlags(flags);
+        return read;
+    }
+
+    /**
+     * The flags of {@code read} after a CRAM round trip, read without validation, which rejects pair bits on an
+     * unpaired read.
+     */
+    private static int flagsAfterRoundTrip(final SAMRecord read) throws IOException {
+        return roundTrip(ValidationStringency.SILENT, read).get(0).getFlags();
+    }
+
+    @Test
+    public void unpairedReadKeepsItsProperPairFlag() throws IOException {
+        Assert.assertEquals(flagsAfterRoundTrip(unpairedRead(0x2)), 0x2);
+    }
+
+    @Test
+    public void unpairedReadKeepsItsMateUnmappedFlag() throws IOException {
+        Assert.assertEquals(flagsAfterRoundTrip(unpairedRead(0x8)), 0x8);
+    }
+
+    @Test
+    public void unpairedReadKeepsItsMateReverseStrandFlag() throws IOException {
+        Assert.assertEquals(flagsAfterRoundTrip(unpairedRead(0x20)), 0x20);
+    }
+
+    @Test
+    public void unpairedReadKeepsItsFirstOfPairFlag() throws IOException {
+        Assert.assertEquals(flagsAfterRoundTrip(unpairedRead(0x40)), 0x40);
+    }
+
+    @Test
+    public void unpairedReadKeepsItsSecondOfPairFlag() throws IOException {
+        Assert.assertEquals(flagsAfterRoundTrip(unpairedRead(0x80)), 0x80);
+    }
+
+    @Test
+    public void unmappedUnpairedReadKeepsItsProperPairFlag() throws IOException {
+        final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        read.setReadName("unmapped");
+        read.setReadBases("ACGTACGTAC".getBytes());
+        read.setBaseQualities(new byte[10]);
+        read.setFlags(0x4 | 0x2 | 0x100 | 0x800);
+        Assert.assertEquals(flagsAfterRoundTrip(read), 0x4 | 0x2 | 0x100 | 0x800);
+    }
+
+    @Test
+    public void detachedPairedReadKeepsItsFlags() throws IOException {
+        final SAMRecord read = pairRead(true, 100, 50, 300, 250);
+        read.setProperPairFlag(true);
+        read.setDuplicateReadFlag(true);
+        Assert.assertEquals(roundTrip(read).getFlags(), read.getFlags());
+    }
+
+    @Test
+    public void attachedPairKeepsItsFlags() throws IOException {
+        final SAMRecord first = pairRead(true, 100, 50, 300, 250);
+        final SAMRecord second = pairRead(false, 300, 50, 100, -250);
+        for (final SAMRecord read : List.of(first, second)) {
+            read.setProperPairFlag(true);
+            read.setReadFailsVendorQualityCheckFlag(true);
+        }
+        final List<Integer> flagsBack = roundTrip(ValidationStringency.STRICT, first, second).stream()
+                .map(SAMRecord::getFlags)
+                .toList();
+        Assert.assertEquals(flagsBack, List.of(first.getFlags(), second.getFlags()));
     }
 }
