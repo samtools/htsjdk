@@ -1,6 +1,5 @@
 package htsjdk.variant.bcf2;
 
-import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -125,9 +124,19 @@ public class BCF2GenotypeFieldDecodersTest extends VariantBaseTest {
     }
 
     @Test
-    public void endOfVectorInTheFirstAlleleIsAnErrorOnEitherPath() {
-        Assert.expectThrows(TribbleException.class, () -> decodeGT(VCFHeaderVersion.VCF4_2, BIALLELIC, 2, EOV, 2));
-        Assert.expectThrows(TribbleException.class, () -> decodeGT(VCFHeaderVersion.VCF4_2, TRIALLELIC, 3, EOV, 2, 2));
+    public void allEndOfVectorIsASampleWithoutAGtOnTheBiallelicDiploidPath() {
+        final Genotype[] gts = decodeGT(VCFHeaderVersion.VCF4_2, BIALLELIC, 2, 2, 4, EOV, EOV);
+        Assert.assertEquals(gts[0].getGenotypeString(), "A/C");
+        Assert.assertEquals(gts[1].getPloidy(), 0);
+        Assert.assertFalse(gts[1].isAvailable());
+    }
+
+    @Test
+    public void allEndOfVectorIsASampleWithoutAGtOnTheGeneralPath() {
+        final Genotype[] gts = decodeGT(VCFHeaderVersion.VCF4_2, TRIALLELIC, 3, 2, 4, 6, EOV, EOV, EOV);
+        Assert.assertEquals(gts[0].getGenotypeString(), "A/C/G");
+        Assert.assertEquals(gts[1].getPloidy(), 0);
+        Assert.assertFalse(gts[1].isAvailable());
     }
 
     // -- Other fields --
