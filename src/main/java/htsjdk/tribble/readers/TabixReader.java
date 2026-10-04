@@ -43,6 +43,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.ProviderNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -161,7 +162,7 @@ public class TabixReader implements AutoCloseable {
         mFp = new BlockCompressedInputStream(stream);
         mIndexWrapper = indexWrapper;
         if (indexPath == null) {
-            mIndexPath = TabixUtils.findIndex(filePath);
+            mIndexPath = findIndex(filePath);
             if (mIndexPath == null) {
                 throw new TribbleException(String.format(
                         "No tabix index found for %s: neither %s nor %s exists",
@@ -173,6 +174,19 @@ public class TabixReader implements AutoCloseable {
             mIndexPath = indexPath;
         }
         readIndex();
+    }
+
+    /**
+     * The CSI or TBI index beside {@code filePath}, or null if there is neither. A scheme served only by a custom
+     * {@link SeekableStreamFactory} has no NIO provider to ask whether a file exists, so for one the TBI is taken
+     * on trust; {@link #readIndex} opens it through the factory.
+     */
+    private static String findIndex(final String filePath) throws IOException {
+        try {
+            return TabixUtils.findIndex(filePath);
+        } catch (final ProviderNotFoundException e) {
+            return ParsingUtils.appendToPath(filePath, FileExtensions.TABIX_INDEX);
+        }
     }
 
     /**

@@ -1,6 +1,9 @@
 package htsjdk.tribble.readers;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -12,12 +15,15 @@ import htsjdk.tribble.index.tabix.TabixFormat;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -247,6 +253,73 @@ public class TabixReaderTest extends HtsjdkTest {
             Assert.assertEquals(records.next(), first);
             Assert.assertEquals(records.next(), last);
             Assert.assertNull(records.next());
+        }
+    }
+
+    // Custom stream factories
+
+    /** Serves {@code myfs://<path>}, a scheme no NIO provider handles, from the local file at {@code <path>}. */
+    private static final class MyfsStreamFactory implements ISeekableStreamFactory {
+        private final ISeekableStreamFactory delegate;
+
+        MyfsStreamFactory(final ISeekableStreamFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        private static String local(final String path) {
+            return path.startsWith("myfs://") ? path.substring("myfs://".length()) : path;
+        }
+
+        @Override
+        public SeekableStream getStreamFor(final URL url) throws IOException {
+            return delegate.getStreamFor(url);
+        }
+
+        @Override
+        public SeekableStream getStreamFor(final String path) throws IOException {
+            return delegate.getStreamFor(local(path));
+        }
+
+        @Override
+        public SeekableStream getStreamFor(
+                final String path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+                throws IOException {
+            return delegate.getStreamFor(local(path), wrapper);
+        }
+
+        @Override
+        public SeekableStream getBufferedStream(final SeekableStream stream) {
+            return delegate.getBufferedStream(stream);
+        }
+
+        @Override
+        public SeekableStream getBufferedStream(final SeekableStream stream, final int bufferSize) {
+            return delegate.getBufferedStream(stream, bufferSize);
+        }
+    }
+
+    @Test
+    public void aFileServedOnlyByACustomStreamFactoryOpensWithoutAnIndexPath() throws IOException {
+        final String record = "chr1\t100\t200\tfeature";
+        final Path dir = Files.createTempDirectory("tabixCustomFactory.");
+        final ISeekableStreamFactory original = SeekableStreamFactory.getInstance();
+        try {
+            final Path bed = dir.resolve("features.bed.gz");
+            try (final BlockCompressedOutputStream out = new BlockCompressedOutputStream(bed)) {
+                out.write((record + "\n").getBytes(StandardCharsets.UTF_8));
+            }
+            IndexFactory.createTabixIndex(bed, new BEDCodec(), TabixFormat.BED, null)
+                    .write(dir.resolve("features.bed.gz" + FileExtensions.TABIX_INDEX));
+
+            SeekableStreamFactory.setInstance(new MyfsStreamFactory(original));
+            try (final TabixReader reader = new TabixReader("myfs://" + bed.toAbsolutePath())) {
+                final TabixReader.Iterator records = reader.query("chr1:1-1000");
+                Assert.assertEquals(records.next(), record);
+                Assert.assertNull(records.next());
+            }
+        } finally {
+            SeekableStreamFactory.setInstance(original);
+            IOUtil.recursiveDelete(dir);
         }
     }
 
