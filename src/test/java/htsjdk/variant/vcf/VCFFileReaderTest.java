@@ -19,6 +19,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -301,6 +303,19 @@ public class VCFFileReaderTest extends HtsjdkTest {
                 count++;
             }
             Assert.assertEquals(count, 2);
+        }
+    }
+
+    @Test
+    public void isBcfAcceptsAPathWithAnOpaqueUri() throws IOException {
+        // a zip file system's paths have opaque jar: URIs
+        final Path zip = Files.createTempFile("isBcf.", ".zip");
+        Files.delete(zip);
+        try (FileSystem zipFileSystem = FileSystems.newFileSystem(zip, Map.of("create", "true"))) {
+            Assert.assertTrue(VCFFileReader.isBCF(zipFileSystem.getPath("/calls.bcf")));
+            Assert.assertFalse(VCFFileReader.isBCF(zipFileSystem.getPath("/calls.vcf")));
+        } finally {
+            Files.deleteIfExists(zip);
         }
     }
 }
