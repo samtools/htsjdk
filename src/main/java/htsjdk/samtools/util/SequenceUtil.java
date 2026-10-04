@@ -62,7 +62,10 @@ public class SequenceUtil {
 
     private static final int BASES_ARRAY_LENGTH = 127;
     private static final int SHIFT_TO_LOWER_CASE = a - A;
-    /** Lookup table mapping any byte to its BAM-valid upper-case equivalent (or N if invalid). */
+    /**
+     * Lookup table mapping any byte to its BAM-valid upper-case equivalent (or N if invalid). U (RNA) maps to T, as
+     * htslib packs it.
+     */
     private static final byte[] bamReadBaseLookup = new byte[BASES_ARRAY_LENGTH];
 
     static {
@@ -71,12 +74,14 @@ public class SequenceUtil {
             bamReadBaseLookup[base] = base;
             bamReadBaseLookup[base + SHIFT_TO_LOWER_CASE] = base;
         }
+        bamReadBaseLookup['U'] = T;
+        bamReadBaseLookup['u'] = T;
     }
 
     /**
      * Returns a defensive copy of the BAM read base lookup table. The table maps each byte
      * value (indexed by {@code value & 0x7F}) to its BAM-valid upper-case base equivalent
-     * (one of A, C, G, T, N, M, R, W, S, Y, K, V, H, D, B), or 'N' if the input is not a
+     * (one of A, C, G, T, N, M, R, W, S, Y, K, V, H, D, B), U to T, or 'N' if the input is not a
      * recognized base. Both upper and lower case inputs map to the upper case base.
      *
      * <p>Callers that need repeated lookups on a hot path should store the returned array
@@ -227,7 +232,10 @@ public class SequenceUtil {
         return isValidBase(base, BAM_READ_BASE_SET);
     }
 
-    /** Update and return the given array of bases by upper casing and then replacing all non-BAM read bases with N */
+    /**
+     * Update and return the given array of bases by upper casing, replacing U with T and then replacing all non-BAM
+     * read bases with N
+     */
     public static byte[] toBamReadBasesInPlace(final byte[] bases) {
         for (int i = 0; i < bases.length; i++) bases[i] = bamReadBaseLookup[bases[i]];
         return bases;

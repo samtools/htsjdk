@@ -632,14 +632,15 @@ public class SAMLineParser {
 
     /**
      * Lookup table for valid read-base characters: indexed by ASCII codepoint (0-127), value
-     * is {@code true} iff that character is a legal IUPAC base, ambiguity code, '.', or '='.
+     * is {@code true} iff that character is a legal IUPAC base, ambiguity code, U (RNA, stored as
+     * T as htslib stores it), '.', or '='.
      * Branch-free check replaces the ~30-case switch used previously.
      */
     private static final boolean[] VALID_READ_BASE = new boolean[128];
 
     static {
         for (final char c :
-                new char[] {'A', 'C', 'M', 'G', 'R', 'S', 'V', 'T', 'W', 'Y', 'H', 'K', 'D', 'B', 'N', '.', '='}) {
+                new char[] {'A', 'C', 'M', 'G', 'R', 'S', 'V', 'T', 'W', 'Y', 'H', 'K', 'D', 'B', 'N', 'U', '.', '='}) {
             VALID_READ_BASE[c] = true;
             // Lowercase variants (except '.' and '=' which have no lowercase form)
             if (c >= 'A' && c <= 'Z') {

@@ -672,11 +672,16 @@ public class SequenceUtilTest extends HtsjdkTest {
 
         /**
          * This can be obtained by :
-         * echo 'blah' | tr a-z A-Z | tr -c '=ABCDGHKMNRSTVWY' N
+         * echo 'blah' | tr a-z A-Z | tr U T | tr -c '=ABCDGHKMNRSTVWY' N
          */
-        final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
+        final String expected = "ABCDNNGHNNKNMNNNNRSTTVWNYNABCDNNGHNNKNMNNNNRSTTVWNYNNNN=";
 
         Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace(testInput.getBytes()), expected.getBytes());
+    }
+
+    @Test
+    public void testToBamReadBasesReplacesUracilWithThymine() {
+        Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace("ACGUuACGT".getBytes()), "ACGTTACGT".getBytes());
     }
 
     @DataProvider

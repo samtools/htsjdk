@@ -146,11 +146,19 @@ public class SAMUtilsTest extends HtsjdkTest {
         }
     }
 
-    /** The nibble a byte packs to in BAM, from the spec's =ACMGRSVTWYHKDBN order, or -1 for a byte that isn't a base. */
+    /**
+     * The nibble a byte packs to in BAM, from the spec's =ACMGRSVTWYHKDBN order with U packed as T, or -1 for a byte
+     * that isn't a base.
+     */
     private static int expectedNibble(final int b) {
         if (b == '.') return 15;
         final int upperCase = b >= 'a' && b <= 'z' ? b - ('a' - 'A') : b;
-        return "=ACMGRSVTWYHKDBN".indexOf(upperCase);
+        return "=ACMGRSVTWYHKDBN".indexOf(upperCase == 'U' ? 'T' : upperCase);
+    }
+
+    @Test
+    public void testBytesToCompressedBasesPacksUracilAsThymine() {
+        Assert.assertEquals(SAMUtils.bytesToCompressedBases("UuU".getBytes()), new byte[] {(byte) 0x88, (byte) 0x80});
     }
 
     @Test
@@ -329,6 +337,24 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(actual, expected);
         // Sanity check: result is upper case with '.' -> 'N'
         Assert.assertEquals(new String(actual), "ACGTNNNAACCGGTT");
+    }
+
+    @Test
+    public void testReadStringToNormalizedBasesReplacesUracilWithThymine() {
+        Assert.assertEquals(new String(SAMUtils.readStringToNormalizedBases("ACGUuACGT")), "ACGTTACGT");
+    }
+
+    @Test
+    public void testReadStringToNormalizedBasesByteOverloadReplacesUracilWithThymine() {
+        final byte[] src = "xxxACGUuACGTyyy".getBytes();
+        Assert.assertEquals(new String(SAMUtils.readStringToNormalizedBases(src, 3, 9)), "ACGTTACGT");
+    }
+
+    @Test
+    public void testNormalizeBasesReplacesUracilWithThymine() {
+        final byte[] bases = "ACGUuACGT".getBytes();
+        SAMUtils.normalizeBases(bases);
+        Assert.assertEquals(new String(bases), "ACGTTACGT");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -66,6 +67,18 @@ public class BAMRecordCodecTest extends HtsjdkTest {
         final SAMRecord record = unmappedRecord(header, "read1");
         record.setAttribute("XS", "a\tb");
         Assert.assertTrue(encode(header, record).contains("XSZa\tb\0"));
+    }
+
+    @Test
+    public void testUracilBasesRoundTripAsThymine() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = unmappedRecord(header, "read1");
+        record.setReadBases("ACGUuACGT".getBytes());
+        record.setBaseQualityString("IIIIIIIII");
+
+        final BAMRecordCodec codec = new BAMRecordCodec(header);
+        codec.setInputStream(new ByteArrayInputStream(encode(header, record).getBytes(StandardCharsets.ISO_8859_1)));
+        Assert.assertEquals(codec.decode().getReadString(), "ACGTTACGT");
     }
 
     @Test

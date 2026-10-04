@@ -244,6 +244,31 @@ public class SAMTextReaderTest extends HtsjdkTest {
         }
     }
 
+    /** Parses an unmapped record whose SEQ is {@code seq}, at the given stringency. */
+    private static SAMRecord parseUnmappedRecordWithSeq(final ValidationStringency stringency, final String seq) {
+        final SAMLineParser parser =
+                new SAMLineParser(new DefaultSAMRecordFactory(), stringency, new SAMFileHeader(), null, null);
+        return parser.parseLine("Read\t4\t*\t0\t0\t*\t*\t0\t0\t" + seq + "\t*");
+    }
+
+    @Test
+    public void testUracilInSeqIsReadAsThymineWhenStrict() {
+        final SAMRecord record = parseUnmappedRecordWithSeq(ValidationStringency.STRICT, "ACGUuACGT");
+        Assert.assertEquals(record.getReadString(), "ACGTTACGT");
+    }
+
+    @Test
+    public void testUracilInSeqIsReadAsThymineWhenLenient() {
+        final SAMRecord record = parseUnmappedRecordWithSeq(ValidationStringency.LENIENT, "ACGUuACGT");
+        Assert.assertEquals(record.getReadString(), "ACGTTACGT");
+    }
+
+    @Test
+    public void testUracilInSeqIsReadAsThymineWhenSilent() {
+        final SAMRecord record = parseUnmappedRecordWithSeq(ValidationStringency.SILENT, "ACGUuACGT");
+        Assert.assertEquals(record.getReadString(), "ACGTTACGT");
+    }
+
     // Block-compressed SAM: where in the file each record lies, and reading the file from such a place.
 
     private static final int RECORDS = 6_000; // enough text for a good many BGZF blocks
