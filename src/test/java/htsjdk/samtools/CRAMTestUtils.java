@@ -1,5 +1,8 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.build.CramContainerHeaderIterator;
+import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
@@ -8,8 +11,10 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 public final class CRAMTestUtils {
 
@@ -100,6 +105,48 @@ public final class CRAMTestUtils {
                     source,
                     ValidationStringency.SILENT);
         }
+    }
+
+    /** The number of reads on each of the two contigs in {@link #cramWithAnInternalEofContainer()}. */
+    public static final int READS_PER_CONTIG_AROUND_THE_INTERNAL_EOF = 20;
+
+    /**
+     * A coordinate-sorted CRAM in memory with {@link #READS_PER_CONTIG_AROUND_THE_INTERNAL_EOF} reads on each of
+     * contigs 0 and 1, one container per contig, and an EOF container between the two, as samtools cat before
+     * 1.13 wrote when concatenating CRAMs. Written against {@link #getFakeReferenceSource()}.
+     */
+    public static byte[] cramWithAnInternalEofContainer() throws IOException {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder();
+        for (int contig = 0; contig < 2; contig++) {
+            for (int i = 0; i < READS_PER_CONTIG_AROUND_THE_INTERNAL_EOF; i++) {
+                records.addFrag("read" + contig + "_" + i, contig, 100 + i * 10, false);
+            }
+        }
+        final CRAMEncodingStrategy oneContigPerContainer =
+                new CRAMEncodingStrategy().setMinimumSingleReferenceSliceSize(1).setSlicesPerContainer(1);
+        final ByteArrayOutputStream cram = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(
+                oneContigPerContainer, cram, null, true, getFakeReferenceSource(), records.getHeader(), "eof")) {
+            records.forEach(writer::addAlignment);
+        }
+        final byte[] bytes = cram.toByteArray();
+
+        final List<Long> containerOffsets = new ArrayList<>();
+        final CRAMVersion cramVersion;
+        try (CramContainerHeaderIterator containers =
+                new CramContainerHeaderIterator(new ByteArrayInputStream(bytes))) {
+            cramVersion = containers.getCramHeader().getCRAMVersion();
+            containers.forEachRemaining(container -> containerOffsets.add(container.getContainerByteOffset()));
+        }
+        if (containerOffsets.size() != 2) {
+            throw new IllegalStateException("expected one container per contig, got " + containerOffsets.size());
+        }
+        final int secondContainer = Math.toIntExact(containerOffsets.get(1));
+        final ByteArrayOutputStream spliced = new ByteArrayOutputStream();
+        spliced.write(bytes, 0, secondContainer);
+        CramIO.writeCramEOF(cramVersion, spliced);
+        spliced.write(bytes, secondContainer, bytes.length - secondContainer);
+        return spliced.toByteArray();
     }
 
     /**

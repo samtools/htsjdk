@@ -22,6 +22,7 @@ import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.cram.common.CRAMVersion;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.*;
@@ -124,6 +125,24 @@ public final class CramIO {
     public static final int EOF_BLOCK_SIZE_V3 = 15; // defined by CRAM spec
     public static final int EOF_BLOCK_SIZE_V2 = 11; // defined by CRAM spec
     public static final int EOF_ALIGNMENT_SPAN = 0;
+
+    /**
+     * Whether no bytes follow {@code stream}'s position, found by reading one and seeking back, since
+     * {@link SeekableStream#eof()} can't tell for a stream of unknown length. An EOF container ends a CRAM only
+     * where nothing follows it: samtools cat before 1.13 left each input's EOF container in its output, and
+     * htslib reads past them.
+     *
+     * @param stream the stream to test
+     * @return true if the stream has no more bytes
+     */
+    public static boolean isAtEndOfStream(final SeekableStream stream) throws IOException {
+        final long position = stream.position();
+        if (stream.read() == -1) {
+            return true;
+        }
+        stream.seek(position);
+        return false;
+    }
 
     /**
      * Write an end-of-file marker to the {@link OutputStream}. The specific EOF marker is chosen based on

@@ -218,16 +218,19 @@ public class CRAMBAIIndexer implements CRAMIndexer {
         }
         final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, samFileHeader);
 
-        Container container = null;
         final ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
-        do {
+        while (true) {
+            final Container container;
             try {
                 container = new Container(cramHeader.getCRAMVersion(), stream, stream.position());
+                if (container.isEOF()) {
+                    if (CramIO.isAtEndOfStream(stream)) {
+                        break;
+                    }
+                    continue;
+                }
             } catch (final IOException e) {
-                throw new RuntimeIOException("error getting stream position", e);
-            }
-            if (container == null || container.isEOF()) {
-                break;
+                throw new RuntimeIOException("error reading the CRAM stream", e);
             }
 
             indexer.processContainer(container, validationStringency);
@@ -251,8 +254,7 @@ public class CRAMBAIIndexer implements CRAMIndexer {
                 }
                 progressLogger.record(sequenceName, alignmentContext.getAlignmentStart());
             }
-
-        } while (!container.isEOF());
+        }
 
         indexer.finish();
     }

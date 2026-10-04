@@ -131,11 +131,13 @@ public class Container {
             slices = Collections.EMPTY_LIST;
             this.containerByteOffset = containerByteOffset;
 
-            // Read-through and consume the remainder of the EOF container.
+            // Consume all of the rest of the EOF container, since more containers may follow it; a stream that ends
+            // within it has nothing after it to misread.
             try {
-                final byte[] eofBytes = new byte[containerHeader.getContainerBlocksByteSize()];
-                inputStream.read(eofBytes, 0, containerHeader.getContainerBlocksByteSize());
-            } catch (IOException e) {
+                for (int remaining = containerHeader.getContainerBlocksByteSize();
+                        remaining > 0 && inputStream.read() != -1;
+                        remaining--) {}
+            } catch (final IOException e) {
                 throw new RuntimeIOException("Malformed CRAM EOF block", e);
             }
             return;

@@ -90,23 +90,14 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
     }
 
     private BAMIteratorFilter.FilteringIteratorState nextContainer() {
-        if (containerIterator != null) {
-            if (!containerIterator.hasNext()) {
-                samRecords.clear();
-                return BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION;
-            }
-            container = containerIterator.next();
-            if (container.isEOF()) {
-                samRecords.clear();
-                return BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION;
-            }
-        } else {
-            final long containerByteOffset = countingInputStream.getCount();
-            container = new Container(cramHeader.getCRAMVersion(), countingInputStream, containerByteOffset);
-            if (container.isEOF()) {
-                samRecords.clear();
-                return BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION;
-            }
+        if (!containerIterator.hasNext()) {
+            samRecords.clear();
+            return BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION;
+        }
+        container = containerIterator.next();
+        if (container.isEOF()) {
+            // the container iterator decides where the stream ends, so skip any EOF container it returns
+            return BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION;
         }
 
         if (containerMatchesQuery(container)) {
@@ -197,10 +188,6 @@ public class CRAMIterator implements SAMRecordIterator, Closeable {
 
     @Override
     public boolean hasNext() {
-        if (container != null && container.isEOF()) {
-            return false;
-        }
-
         if (!samRecordIterator.hasNext()) {
             BAMIteratorFilter.FilteringIteratorState nextContainerPasses =
                     BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION;
