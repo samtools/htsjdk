@@ -158,12 +158,13 @@ public class BAMQueryMultipleIntervalsIteratorFilterTest extends HtsjdkTest {
                 BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION
             },
             {
+                // past chr2's interval, but chr1's records may yet come later in the file
                 new QueryInterval[] {new QueryInterval(0, 0, 5), new QueryInterval(1, 5, 5)},
                 1,
                 10,
                 5,
                 true,
-                BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION
+                BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION
             },
             {
                 new QueryInterval[] {new QueryInterval(1, 10, 5), new QueryInterval(1, 10, 10)},
@@ -211,6 +212,76 @@ public class BAMQueryMultipleIntervalsIteratorFilterTest extends HtsjdkTest {
         SAMRecord samRec = getSAMRecord(refIndex, start, length);
         BAMQueryMultipleIntervalsIteratorFilter it = new BAMQueryMultipleIntervalsIteratorFilter(query, contained);
         Assert.assertEquals(it.compareToFilter(samRec), expectedState);
+    }
+
+    @Test
+    public void recordsOfAReferenceThatComesLaterInTheDictionaryButEarlierInTheFileDoNotEndTheQuery() {
+        // the file holds chr2's records before chr1's, as samtools cat of per-contig files writes them
+        final BAMQueryMultipleIntervalsIteratorFilter filter = new BAMQueryMultipleIntervalsIteratorFilter(
+                new QueryInterval[] {new QueryInterval(0, 1, 100), new QueryInterval(1, 1, 100)}, false);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(1, 10, 5)),
+                BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(1, 150, 5)),
+                BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(0, 10, 5)),
+                BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(0, 150, 5)),
+                BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION);
+    }
+
+    @Test
+    public void eachReferenceKeepsItsOwnPlaceAmongItsIntervals() {
+        final BAMQueryMultipleIntervalsIteratorFilter filter = new BAMQueryMultipleIntervalsIteratorFilter(
+                new QueryInterval[] {
+                    new QueryInterval(0, 1, 20), new QueryInterval(0, 50, 60),
+                    new QueryInterval(1, 1, 20), new QueryInterval(1, 50, 60)
+                },
+                false);
+        // chr2 first, past its first interval, then chr1 from its start
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(1, 30, 5)),
+                BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(1, 55, 5)),
+                BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(0, 5, 5)), BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(0, 55, 5)),
+                BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER);
+    }
+
+    @Test
+    public void recordsOnAReferenceWithoutIntervalsAreSkippedUntilEveryIntervalIsBehind() {
+        final BAMQueryMultipleIntervalsIteratorFilter filter =
+                new BAMQueryMultipleIntervalsIteratorFilter(new QueryInterval[] {new QueryInterval(0, 1, 100)}, false);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(1, 10, 5)),
+                BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(0, 150, 5)),
+                BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION);
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(1, 10, 5)),
+                BAMIteratorFilter.FilteringIteratorState.STOP_ITERATION);
+    }
+
+    @Test
+    public void moreRecordsPastAReferencesLastIntervalDoNotEndTheQueryWhileAnotherReferenceHasIntervalsAhead() {
+        final BAMQueryMultipleIntervalsIteratorFilter filter = new BAMQueryMultipleIntervalsIteratorFilter(
+                new QueryInterval[] {new QueryInterval(0, 1, 100), new QueryInterval(1, 1, 100)}, true);
+        for (final int start : new int[] {150, 160, 170}) {
+            Assert.assertEquals(
+                    filter.compareToFilter(getSAMRecord(1, start, 5)),
+                    BAMIteratorFilter.FilteringIteratorState.CONTINUE_ITERATION);
+        }
+        Assert.assertEquals(
+                filter.compareToFilter(getSAMRecord(0, 10, 5)),
+                BAMIteratorFilter.FilteringIteratorState.MATCHES_FILTER);
     }
 
     /**
