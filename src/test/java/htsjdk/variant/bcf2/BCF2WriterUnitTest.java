@@ -1403,6 +1403,18 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Assert.assertTrue(record.endsWith("\t0/1:1,2,3,4,5,6\t2:7,8,9"), record);
     }
 
+    @Test
+    public void aStringInfoValueWithMoreCommasThanItsNumberIsWritten() throws IOException {
+        // GATK's allele-specific raw annotations are Number=1 Strings with commas in them
+        final VCFHeader header = gtHeader(VCFHeaderVersion.VCF4_2, 1);
+        header.addMetaDataLine(new VCFInfoHeaderLine("AS_RAW", 1, VCFHeaderLineType.String, "raw"));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .attribute("AS_RAW", List.of("|-0.2", "1|NaN"))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make())
+                .make();
+        Assert.assertEquals(readOne(writeBcf(header, vc)).getAttribute("AS_RAW"), List.of("|-0.2", "1|NaN"));
+    }
+
     // FORMAT vector sizes
 
     /** A GT header for samples s1 and s2 declaring {@code lines} as well. */
