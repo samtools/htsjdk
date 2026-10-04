@@ -7,6 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -26,12 +28,14 @@ public class LogTest extends HtsjdkTest {
         try (final PrintStream stream = new PrintStream(Files.newOutputStream(logFile, StandardOpenOption.APPEND))) {
             Log.setGlobalPrintStream(stream);
             Log.setGlobalLogLevel(Log.LogLevel.DEBUG);
-            final String words = "Hello World";
+            final String words = "Hello World " + UUID.randomUUID();
             log.info(words);
-            final List<String> list = Files.readAllLines(logFile);
+            // other test classes run alongside and log to the global stream too, so count only this message
+            final List<String> lines = Files.readAllLines(logFile).stream()
+                    .filter(line -> line.contains(words))
+                    .collect(Collectors.toList());
             Assert.assertEquals(Log.getGlobalLogLevel(), Log.LogLevel.DEBUG);
-            Assert.assertEquals(list.size(), 1);
-            Assert.assertTrue(list.get(0).contains(words));
+            Assert.assertEquals(lines.size(), 1);
         } finally {
             Log.setGlobalLogLevel(originalLogLevel);
             Log.setGlobalPrintStream(originalStream);
@@ -49,12 +53,14 @@ public class LogTest extends HtsjdkTest {
         try (final PrintStream stream = new PrintStream(Files.newOutputStream(logFile, StandardOpenOption.APPEND))) {
             Log.setGlobalPrintStream(stream);
             Log.setGlobalLogLevel(Log.LogLevel.DEBUG);
-            final String words = "Hello World";
+            final String words = "Hello World " + UUID.randomUUID();
             log.info(() -> words);
-            final List<String> list = Files.readAllLines(logFile);
+            // other test classes run alongside and log to the global stream too, so count only this message
+            final List<String> lines = Files.readAllLines(logFile).stream()
+                    .filter(line -> line.contains(words))
+                    .collect(Collectors.toList());
             Assert.assertEquals(Log.getGlobalLogLevel(), Log.LogLevel.DEBUG);
-            Assert.assertEquals(list.size(), 1);
-            Assert.assertTrue(list.get(0).contains(words));
+            Assert.assertEquals(lines.size(), 1);
         } finally {
             Log.setGlobalLogLevel(originalLogLevel);
             Log.setGlobalPrintStream(originalStream);
