@@ -1757,37 +1757,45 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
 
     private final void fullyDecodeInfo(
             final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
-        builder.attributes(fullyDecodeAttributes(getAttributes(), header, lenientDecoding));
+        final Map<String, Object> decoded = new HashMap<>(10);
+        for (final Map.Entry<String, Object> attr : getAttributes().entrySet()) {
+            final String field = attr.getKey();
+            decoded.put(
+                    field, decodeAttribute(field, attr.getValue(), header.getInfoHeaderLine(field), lenientDecoding));
+        }
+        builder.attributes(decoded);
     }
 
-    private final Map<String, Object> fullyDecodeAttributes(
-            final Map<String, Object> attributes, final VCFHeader header, final boolean lenientDecoding) {
-        final Map<String, Object> newAttributes = new HashMap<>(10);
-
-        for (final Map.Entry<String, Object> attr : attributes.entrySet()) {
-            final String field = attr.getKey();
-
-            if (field.equals(VCFConstants.FORMAT.GENOTYPE_FILTER))
-                continue; // gross, FT is part of the extended attributes
-
-            final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
-            final Object decoded = decodeValue(field, attr.getValue(), format);
-
-            if (decoded != null && !lenientDecoding && format.getType() != VCFHeaderLineType.Flag) {
-                final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
-                // -1 when the header line doesn't fix the number of values for this record
-                final int expSize = format.getCount(this);
-                if (expSize != -1 && obsSize != expSize) {
-                    throw new TribbleException.InvalidHeader("Discordant field size detected for field " + field
-                            + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values "
-                            + "but the header says this should have "
-                            + expSize + " values based on header record " + format);
-                }
-            }
-            newAttributes.put(field, decoded);
+    /**
+     * Decodes one INFO or FORMAT value to the type its header line declares, checking how many values it has unless
+     * decoding leniently.
+     *
+     * @param headerLine the field's INFO or FORMAT line, or null if the header doesn't declare it
+     * @throws TribbleException if the header doesn't declare the field
+     */
+    private Object decodeAttribute(
+            final String field,
+            final Object value,
+            final VCFCompoundHeaderLine headerLine,
+            final boolean lenientDecoding) {
+        if (headerLine == null) {
+            throw new TribbleException(
+                    "Fully decoding VariantContext requires header line for all fields, but none was found for "
+                            + field);
         }
-
-        return newAttributes;
+        final Object decoded = decodeValue(field, value, headerLine);
+        if (decoded != null && !lenientDecoding && headerLine.getType() != VCFHeaderLineType.Flag) {
+            final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
+            // -1 when the header line doesn't fix the number of values for this record
+            final int expSize = headerLine.getCount(this);
+            if (expSize != -1 && obsSize != expSize) {
+                throw new TribbleException.InvalidHeader("Discordant field size detected for field " + field
+                        + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values "
+                        + "but the header says this should have "
+                        + expSize + " values based on header record " + headerLine);
+            }
+        }
+        return decoded;
     }
 
     private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
@@ -1854,8 +1862,14 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     private final Genotype fullyDecodeGenotypes(final Genotype g, final VCFHeader header) {
-        final Map<String, Object> map = fullyDecodeAttributes(g.getExtendedAttributes(), header, true);
-        return new GenotypeBuilder(g).attributes(map).make();
+        final Map<String, Object> decoded = new HashMap<>(10);
+        for (final Map.Entry<String, Object> attr : g.getExtendedAttributes().entrySet()) {
+            final String field = attr.getKey();
+            if (field.equals(VCFConstants.FORMAT.GENOTYPE_FILTER))
+                continue; // gross, FT is part of the extended attributes
+            decoded.put(field, decodeAttribute(field, attr.getValue(), header.getFormatHeaderLine(field), true));
+        }
+        return new GenotypeBuilder(g).attributes(decoded).make();
     }
 
     // ---------------------------------------------------------------------------------------------------------

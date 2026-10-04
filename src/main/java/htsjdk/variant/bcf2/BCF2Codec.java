@@ -41,7 +41,6 @@ import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.variantcontext.VariantContextUtils;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFConstants;
@@ -523,8 +522,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             final String key = getDictionaryString((Integer) decoder.decodeTypedValue());
             final byte typeDescriptor = decoder.readTypeDescriptor();
             Object value = decoder.decodeTypedValue(typeDescriptor);
-            final VCFCompoundHeaderLine metaData = VariantContextUtils.getMetaDataForField(header, key);
-            if (metaData.getType() == VCFHeaderLineType.Flag) {
+            final VCFInfoHeaderLine infoLine = header.getInfoHeaderLine(key);
+            if (infoLine != null && infoLine.getType() == VCFHeaderLineType.Flag) {
                 value = true; // whichever way the flag was encoded, its presence is what it says
             } else if (value != null && BCF2Utils.decodeType(typeDescriptor) == BCF2Type.CHAR) {
                 value = infoStringValue(value);

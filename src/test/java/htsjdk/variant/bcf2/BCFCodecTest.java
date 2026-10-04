@@ -355,6 +355,21 @@ public class BCFCodecTest extends VariantBaseTest {
     }
 
     @Test
+    public void anInfoFlagSharingItsIdWithAFormatFieldDecodesAsAFlag() throws IOException {
+        final Path vcf = writeVcf(
+                "##fileformat=VCFv4.2",
+                "##INFO=<ID=XF,Number=0,Type=Flag,Description=\"info xf\">",
+                "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"gt\">",
+                "##FORMAT=<ID=XF,Number=1,Type=Integer,Description=\"format xf\">",
+                "##contig=<ID=chr1,length=1000>",
+                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1",
+                "chr1\t100\t.\tA\tC\t.\t.\tXF\tGT:XF\t0/1:7");
+        final VariantContext fromBcf = readAll(bcftools(vcf, "view", "-Ob")).get(0);
+        Assert.assertEquals(fromBcf.getAttribute("XF"), Boolean.TRUE);
+        Assert.assertEquals(fromBcf.getGenotype("s1").getExtendedAttribute("XF"), 7);
+    }
+
+    @Test
     public void anAdWithAnInteriorMissingValueDecodesAsTheVcfReaderDecodesIt() throws IOException {
         final Path vcf = writeVcf(A42_VCF);
         final Genotype fromBcf = readAll(bcftools(vcf, "view", "-Ob")).get(0).getGenotype("s1");
