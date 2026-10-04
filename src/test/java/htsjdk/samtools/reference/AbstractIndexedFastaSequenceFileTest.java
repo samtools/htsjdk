@@ -657,6 +657,36 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
         }
     }
 
+    /** Writes {@code fastaText} to a fasta with an empty .fai beside it, and opens it. */
+    private static void openWithAnEmptyIndex(final String fastaText) throws IOException {
+        final Path dir = Files.createTempDirectory("fastaSanity");
+        try {
+            final Path fasta = dir.resolve("empty.fasta");
+            Files.write(fasta, fastaText.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+            Files.createFile(dir.resolve("empty.fasta.fai"));
+            try (IndexedFastaSequenceFile reader = new IndexedFastaSequenceFile(fasta)) {
+                Assert.assertNull(reader.nextSequence());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void testSanityCheckAcceptsAnEmptyFastaWithAnEmptyIndex() throws IOException {
+        openWithAnEmptyIndex("");
+    }
+
+    @Test
+    public void testSanityCheckAcceptsAWhitespaceOnlyFastaWithAnEmptyIndex() throws IOException {
+        openWithAnEmptyIndex("\n\n");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testSanityCheckRejectsAFastaWithSequencesAndAnEmptyIndex() throws IOException {
+        openWithAnEmptyIndex(">c\nACGT\n");
+    }
+
     private static final int CONCURRENT_CONTIG_LENGTH = 300_000;
     private static final int CONCURRENT_CONTIG_COUNT = 3;
 
