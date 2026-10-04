@@ -341,6 +341,22 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertFalse(Files.exists(toDelete));
     }
 
+    @Test
+    public void testDeletePathsGivenOnePathDeletesNothingElse() throws Exception {
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            // A Path is an Iterable of its name elements, which as relative paths resolve against the working
+            // directory, /work in Jimfs; files named like them there must survive.
+            final Path toDelete = Files.createFile(
+                    Files.createDirectory(jimfs.getPath("/data")).resolve("x.txt"));
+            final Path dataInWorkingDir = Files.createFile(jimfs.getPath("data"));
+            final Path fileInWorkingDir = Files.createFile(jimfs.getPath("x.txt"));
+            IOUtil.deletePaths(toDelete);
+            Assert.assertFalse(Files.exists(toDelete));
+            Assert.assertTrue(Files.exists(dataInWorkingDir));
+            Assert.assertTrue(Files.exists(fileInWorkingDir));
+        }
+    }
+
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeletePathJims(final List<String> fileNames) throws Exception {
         final List<Path> paths = createJimfsFiles("testDeletePath", fileNames);
