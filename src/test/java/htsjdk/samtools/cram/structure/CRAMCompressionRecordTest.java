@@ -340,6 +340,28 @@ public class CRAMCompressionRecordTest extends HtsjdkTest {
         Assert.assertEquals(roundTrip(read), read);
     }
 
+    /** A 9M read at base 100 of contig "0" whose bases include upper- and lower-case U. */
+    private static SAMRecord readWithUracilBases() {
+        final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);
+        read.setReadName("rna");
+        read.setReferenceIndex(CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO);
+        read.setAlignmentStart(100);
+        read.setCigarString("9M");
+        read.setReadBases("ACGUuACGT".getBytes());
+        read.setBaseQualities(new byte[9]);
+        return read;
+    }
+
+    @Test
+    public void uracilReadBasesAreStoredAsThymine() {
+        Assert.assertEquals(toCram(readWithUracilBases()).getReadBases(), "ACGTTACGT".getBytes());
+    }
+
+    @Test
+    public void readWithUracilBasesRoundTripsWithThymine() throws IOException {
+        Assert.assertEquals(roundTrip(readWithUracilBases()).getReadString(), "ACGTTACGT");
+    }
+
     /** A 10M read at base 100 of contig "0" with the given bases, NM and MD, and an empty quality array. */
     private static SAMRecord readWithAnEmptyQualityArray(final String bases) {
         final SAMRecord read = new SAMRecord(CRAMStructureTestHelper.SAM_FILE_HEADER);

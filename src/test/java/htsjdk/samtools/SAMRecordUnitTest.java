@@ -1122,6 +1122,13 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(sam.getReadLength(), readLength);
     }
 
+    @Test
+    public void testSetReadStringReplacesUracilWithThymine() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadString("ACGUuACGT");
+        Assert.assertEquals(sam.getReadString(), "ACGTTACGT");
+    }
+
     @DataProvider(name = "attributeAccessTestData")
     private Object[][] hasAttributeTestData() throws IOException {
         final SamReader reader = SamReaderFactory.makeDefault()

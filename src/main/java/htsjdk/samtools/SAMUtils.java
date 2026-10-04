@@ -82,7 +82,7 @@ public final class SAMUtils {
 
     /**
      * The BAM nibble of each byte that is a base, indexed by the byte's unsigned value, or -1 for a byte that is not.
-     * Lower-case bases pack as their upper-case forms and '.' packs as N.
+     * Lower-case bases pack as their upper-case forms, '.' packs as N and U (RNA) packs as T, as htslib packs them.
      */
     private static final byte[] BASE_TO_NIBBLE = new byte[256];
 
@@ -94,6 +94,23 @@ public final class SAMUtils {
             BASE_TO_NIBBLE[Character.toLowerCase(base)] = (byte) nibble;
         }
         BASE_TO_NIBBLE['.'] = BASE_TO_NIBBLE['N'];
+        BASE_TO_NIBBLE['U'] = BASE_TO_NIBBLE['T'];
+        BASE_TO_NIBBLE['u'] = BASE_TO_NIBBLE['T'];
+    }
+
+    /**
+     * The canonical form of each read-base byte, indexed by the byte's unsigned value: lower case is upper-cased,
+     * '.' becomes N and U (RNA) becomes T, as htslib stores SAM SEQ. Every other byte maps to itself.
+     */
+    private static final byte[] NORMALIZED_READ_BASE = new byte[256];
+
+    static {
+        for (int b = 0; b < NORMALIZED_READ_BASE.length; b++) {
+            NORMALIZED_READ_BASE[b] = StringUtil.toUpperCase((byte) b);
+        }
+        NORMALIZED_READ_BASE['.'] = 'N';
+        NORMALIZED_READ_BASE['U'] = 'T';
+        NORMALIZED_READ_BASE['u'] = 'T';
     }
 
     public static final int MAX_PHRED_SCORE = 93;
@@ -167,8 +184,8 @@ public final class SAMUtils {
 
     /**
      * Fused decode of an ASCII read-bases String into a canonical byte[] (upper-cased,
-     * '.' replaced with 'N'). Single pass and a single allocation, avoiding the separate
-     * {@code stringToBytes} + {@code normalizeBases} traversals used by callers that go
+     * '.' replaced with 'N', 'U' replaced with 'T'). Single pass and a single allocation, avoiding
+     * the separate {@code stringToBytes} + {@code normalizeBases} traversals used by callers that go
      * via String.
      */
     @SuppressWarnings("deprecation")
@@ -180,50 +197,33 @@ public final class SAMUtils {
         final byte[] bases = new byte[length];
         value.getBytes(0, length, bases, 0);
         for (int i = 0; i < length; ++i) {
-            byte b = bases[i];
-            if (b >= 'a' && b <= 'z') {
-                b = (byte) (b - ('a' - 'A'));
-            }
-            if (b == '.') {
-                b = 'N';
-            }
-            bases[i] = b;
+            bases[i] = NORMALIZED_READ_BASE[bases[i] & 0xFF];
         }
         return bases;
     }
 
     /**
      * Decode a byte range holding ASCII read bases into a canonical byte[] (upper-cased,
-     * '.' replaced with 'N'). Skips the round-trip through {@link String} for callers that
-     * already have the bases as bytes.
+     * '.' replaced with 'N', 'U' replaced with 'T'). Skips the round-trip through {@link String}
+     * for callers that already have the bases as bytes.
      */
     static byte[] readStringToNormalizedBases(final byte[] src, final int off, final int len) {
         final byte[] bases = new byte[len];
         final int end = off + len;
         for (int i = off, j = 0; i < end; i++, j++) {
-            byte b = src[i];
-            if (b >= 'a' && b <= 'z') {
-                b = (byte) (b - ('a' - 'A'));
-            }
-            if (b == '.') {
-                b = 'N';
-            }
-            bases[j] = b;
+            bases[j] = NORMALIZED_READ_BASE[src[i] & 0xFF];
         }
         return bases;
     }
 
     /**
-     * Convert bases in place into canonical form, upper case, and with no-call represented as N.
+     * Convert bases in place into canonical form, upper case, with no-call represented as N and U as T.
      *
      * @param bases byte array of bases to "normalize", in place.
      */
     static void normalizeBases(final byte[] bases) {
         for (int i = 0; i < bases.length; ++i) {
-            bases[i] = StringUtil.toUpperCase(bases[i]);
-            if (bases[i] == '.') {
-                bases[i] = 'N';
-            }
+            bases[i] = NORMALIZED_READ_BASE[bases[i] & 0xFF];
         }
     }
 

@@ -243,6 +243,11 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
         return StringUtil.bytesToString(readBases);
     }
 
+    /**
+     * Sets the read bases from SAM SEQ text, stored as htslib stores them: upper case, with '.' as N and U as T.
+     *
+     * @param value the bases, or {@value #NULL_SEQUENCE_STRING} for none
+     */
     public void setReadString(final String value) {
         if (NULL_SEQUENCE_STRING.equals(value)) {
             mReadBases = NULL_SEQUENCE;
