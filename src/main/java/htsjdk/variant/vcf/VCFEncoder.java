@@ -655,6 +655,10 @@ public class VCFEncoder {
                 }
             }
 
+            // an empty sample column is not valid VCF
+            if (attrs.isEmpty() && !hasGenotypeKey) {
+                vcfoutput.append(VCFConstants.MISSING_VALUE_v4);
+            }
             for (int i = 0; i < attrs.size(); i++) {
                 if (i > 0 || hasGenotypeKey) {
                     vcfoutput.append(VCFConstants.GENOTYPE_FIELD_SEPARATOR);
