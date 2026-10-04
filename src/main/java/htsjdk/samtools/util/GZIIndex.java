@@ -398,7 +398,7 @@ public final class GZIIndex {
             final List<IndexEntry> entries = new ArrayList<>();
 
             // accumulator for number of bytes read to use in the offset for the index-entry
-            int currentOffset = 0;
+            long currentOffset = 0;
             // until the end of the stream
             while (bgzipStream.read() != -1) {
                 currentOffset++;
