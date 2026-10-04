@@ -80,7 +80,7 @@ public class VCFUtils {
 
                 if (map.containsKey(key)) {
                     final VCFHeaderLine other = map.get(key);
-                    if (line.equals(other)) {
+                    if (line.equals(other) || isTheSameContigAtAnotherIndex(line, other)) {
                         // continue;
                     } else if (!line.getClass().equals(other.getClass())) {
                         throw new IllegalStateException("Incompatible header types: " + line + " " + other);
@@ -154,8 +154,27 @@ public class VCFUtils {
             }
         }
 
-        // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
-        return new LinkedHashSet<>(map.values());
+        // Each contig line carries its index in its own header, so the same index can name different contigs in
+        // headers whose dictionaries differ; renumber them in the merged order, every contig in the order it was first
+        // seen, as bcftools merge does. A LinkedHashSet keeps that order.
+        final Set<VCFHeaderLine> merged = new LinkedHashSet<>();
+        int contigIndex = 0;
+        for (final VCFHeaderLine line : map.values()) {
+            merged.add(
+                    line instanceof VCFContigHeaderLine
+                            ? new VCFContigHeaderLine(((VCFContigHeaderLine) line).getGenericFields(), contigIndex++)
+                            : line);
+        }
+        return merged;
+    }
+
+    /** Whether two header lines are contig lines that differ only in the index they had in their own headers. */
+    private static boolean isTheSameContigAtAnotherIndex(final VCFHeaderLine line, final VCFHeaderLine other) {
+        return line instanceof VCFContigHeaderLine
+                && other instanceof VCFContigHeaderLine
+                && ((VCFContigHeaderLine) line)
+                        .getGenericFields()
+                        .equals(((VCFContigHeaderLine) other).getGenericFields());
     }
 
     /**

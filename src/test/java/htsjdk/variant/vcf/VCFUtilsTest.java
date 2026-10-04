@@ -249,4 +249,78 @@ public class VCFUtilsTest extends HtsjdkTest {
                         + "species=\"Homo sapiens\",URL=https://example.com/hg38.fa>");
         Assert.assertEquals(lines.get(0).getContigIndex(), Integer.valueOf(0));
     }
+
+    /** A header whose dictionary is the given contigs, in order, each 1000 bases long. */
+    private static VCFHeader headerWithContigs(final String... contigs) {
+        final VCFHeader header = new VCFHeader();
+        header.setSequenceDictionary(new SAMSequenceDictionary(Arrays.stream(contigs)
+                .map(contig -> new SAMSequenceRecord(contig, 1000))
+                .collect(Collectors.toList())));
+        return header;
+    }
+
+    /** The merged header's contigs as {@code name@index}, in the order the header lists them. */
+    private static List<String> mergedContigs(final VCFHeader... headers) {
+        final VCFHeader merged = new VCFHeader(VCFUtils.smartMergeHeaders(List.of(headers), false));
+        final List<String> contigLines = merged.getContigLines().stream()
+                .map(line -> line.getID() + "@" + line.getContigIndex())
+                .collect(Collectors.toList());
+        final List<String> sortedLines = merged.getMetaDataInSortedOrder().stream()
+                .filter(line -> line instanceof VCFContigHeaderLine)
+                .map(line -> ((VCFContigHeaderLine) line).getID() + "@" + ((VCFContigHeaderLine) line).getContigIndex())
+                .collect(Collectors.toList());
+        final List<String> dictionary = merged.getSequenceDictionary().getSequences().stream()
+                .map(record -> record.getSequenceName() + "@" + record.getSequenceIndex())
+                .collect(Collectors.toList());
+        // the lines written out come from the sorted view, so all three must agree
+        Assert.assertEquals(sortedLines, contigLines);
+        Assert.assertEquals(dictionary, contigLines);
+        return contigLines;
+    }
+
+    @Test
+    public void mergingASubsetDictionaryFirstKeepsEveryContigInTheOrderFirstSeen() {
+        Assert.assertEquals(
+                mergedContigs(headerWithContigs("chr3", "chr4"), headerWithContigs("chr1", "chr2", "chr3", "chr4")),
+                List.of("chr3@0", "chr4@1", "chr1@2", "chr2@3"));
+    }
+
+    @Test
+    public void mergingASupersetDictionaryFirstKeepsItsOrder() {
+        Assert.assertEquals(
+                mergedContigs(headerWithContigs("chr1", "chr2", "chr3", "chr4"), headerWithContigs("chr3", "chr4")),
+                List.of("chr1@0", "chr2@1", "chr3@2", "chr4@3"));
+    }
+
+    @Test
+    public void mergingDisjointDictionariesKeepsEveryContig() {
+        Assert.assertEquals(
+                mergedContigs(headerWithContigs("x", "y"), headerWithContigs("p", "q")),
+                List.of("x@0", "y@1", "p@2", "q@3"));
+    }
+
+    @Test
+    public void aContigRedefinedWithAnotherLengthKeepsTheFirstDefinition() {
+        final VCFHeader first = headerWithContigs("chr1", "chr2");
+        final VCFHeader second = new VCFHeader();
+        second.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr2", 5000))));
+        final VCFHeader merged = new VCFHeader(VCFUtils.smartMergeHeaders(List.of(first, second), false));
+        Assert.assertEquals(merged.getSequenceDictionary().getSequence("chr2").getSequenceLength(), 1000);
+        Assert.assertEquals(merged.getContigLines().size(), 2);
+    }
+
+    @Test
+    public void renumberedContigsKeepTheirOtherAttributes() {
+        final SAMSequenceRecord chr9 = new SAMSequenceRecord("chr9", 1000);
+        chr9.setMd5("0123456789abcdef0123456789abcdef");
+        chr9.setAssembly("hg38");
+        final VCFHeader second = new VCFHeader();
+        second.setSequenceDictionary(new SAMSequenceDictionary(List.of(chr9)));
+        final VCFHeader merged =
+                new VCFHeader(VCFUtils.smartMergeHeaders(List.of(headerWithContigs("chr1"), second), false));
+        final SAMSequenceRecord mergedChr9 = merged.getSequenceDictionary().getSequence("chr9");
+        Assert.assertEquals(mergedChr9.getSequenceIndex(), 1);
+        Assert.assertEquals(mergedChr9.getMd5(), "0123456789abcdef0123456789abcdef");
+        Assert.assertEquals(mergedChr9.getAssembly(), "hg38");
+    }
 }
