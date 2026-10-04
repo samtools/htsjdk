@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -401,6 +402,110 @@ public class BCFCodecTest extends VariantBaseTest {
         Assert.assertEquals(readAll(bcf).get(0).getGenotype("s1").getAD(), new int[] {10});
     }
 
+    // -- MISSING at the end of a vector: padding in BCF 2.1, a missing value from BCF 2.2 --
+
+    @Test
+    public void aTrailingMissingValueMakesAnAdIn22Absent() {
+        final byte[] ad = bytes(0x11, AD_KEY, 0x31, 10, 5, 0x80);
+        final Genotype s1 = readAll(rawBcf(2, 2, VECTORS_HEADER, record(sites(0, 99, 1, 0, 1, 1), ad)))
+                .get(0)
+                .getGenotype("s1");
+        Assert.assertFalse(s1.hasAD(), "the text reader cannot hold 10,5,. in an int[]");
+    }
+
+    @Test
+    public void aTrailingMissingAdValueIn21IsPadding() {
+        final byte[] ad = bytes(0x11, AD_KEY, 0x31, 10, 5, 0x80);
+        final Genotype s1 = readAll(rawBcf(2, 1, VECTORS_HEADER, record(sites(0, 99, 1, 0, 1, 1), ad)))
+                .get(0)
+                .getGenotype("s1");
+        Assert.assertEquals(s1.getAD(), new int[] {10, 5});
+    }
+
+    @Test
+    public void aTrailingMissingValueIsKeptInAFormatVectorIn22() {
+        final byte[] xi = bytes(0x11, XI_KEY, 0x31, 10, 5, 0x80);
+        final Genotype s1 = readAll(rawBcf(2, 2, VECTORS_HEADER, record(sites(0, 99, 1, 0, 1, 1), xi)))
+                .get(0)
+                .getGenotype("s1");
+        Assert.assertEquals(s1.getExtendedAttribute("XI"), Arrays.asList(10, 5, null));
+    }
+
+    @Test
+    public void aTrailingMissingValueIsKeptInAnInfoVectorIn22() {
+        final byte[] info = bytes(0x11, XI_KEY, 0x31, 10, 5, 0x80);
+        final VariantContext vc = readAll(
+                        rawBcf(2, 2, VECTORS_HEADER, record(sites(0, 99, 1, info, 1, 0, 1), new byte[0])))
+                .get(0);
+        Assert.assertEquals(vc.getAttribute("XI"), Arrays.asList(10, 5, null));
+    }
+
+    @Test
+    public void aSampleWithNoValuesIn22HasNoAdAndNoFormatVector() {
+        // one MISSING then END_OF_VECTOR: how htslib and htsjdk write a sample with no values
+        final byte[] genotypes = bytes(0x11, AD_KEY, 0x31, 0x80, 0x81, 0x81, 0x11, XI_KEY, 0x31, 0x80, 0x81, 0x81);
+        final Genotype s1 = readAll(rawBcf(2, 2, VECTORS_HEADER, record(sites(0, 99, 1, 0, 2, 1), genotypes)))
+                .get(0)
+                .getGenotype("s1");
+        Assert.assertFalse(s1.hasAD());
+        Assert.assertFalse(s1.hasExtendedAttribute("XI"));
+    }
+
+    @Test
+    public void aTrailingMissingAdValueFromBcftoolsIsAbsentAsTheVcfReaderHasIt() throws IOException {
+        final Path vcf = writeVcf(TRAILING_MISSING_VCF);
+        final VariantContext fromBcf = readAll(bcftools(vcf, "view", "-Ob")).get(0);
+        final VariantContext fromVcf = readAll(vcf).get(0);
+        Assert.assertFalse(fromVcf.getGenotype("s1").hasAD(), "the text reader cannot hold 10,5,. in an int[]");
+        Assert.assertFalse(fromBcf.getGenotype("s1").hasAD());
+        Assert.assertEquals(fromBcf.getGenotype("s2").getAD(), new int[] {3, 4, 5});
+    }
+
+    @Test
+    public void aTrailingMissingValueFromBcftoolsIsKeptInFormatAndInfoVectors() throws IOException {
+        final VariantContext fromBcf =
+                readAll(bcftools(writeVcf(TRAILING_MISSING_VCF), "view", "-Ob")).get(0);
+        Assert.assertEquals(fromBcf.getGenotype("s1").getExtendedAttribute("XI"), Arrays.asList(10, 5, null));
+        Assert.assertEquals(fromBcf.getGenotype("s2").getExtendedAttribute("XI"), 3);
+        Assert.assertEquals(fromBcf.getAttribute("XI"), Arrays.asList(10, 5, null));
+        Assert.assertEquals(fromBcf.getAttribute("XF"), Arrays.asList(1.5, null));
+    }
+
+    @Test
+    public void aTrailingNullInAFormatVectorRoundTripsThrough22() throws IOException {
+        final VariantContext vc = trailingNullsWrittenAs22AndReadBack();
+        Assert.assertEquals(vc.getGenotype("s1").getExtendedAttribute("XI"), Arrays.asList(10, 5, null));
+        Assert.assertEquals(vc.getGenotype("s2").getExtendedAttribute("XI"), 7);
+    }
+
+    @Test
+    public void aTrailingNullInAnInfoVectorRoundTripsThrough22() throws IOException {
+        Assert.assertEquals(trailingNullsWrittenAs22AndReadBack().getAttribute("XI"), Arrays.asList(10, 5, null));
+    }
+
+    /** A record holding 10,5,. in INFO XI and in s1's FORMAT XI (s2's is 7), written as BCF 2.2 and read back. */
+    private VariantContext trailingNullsWrittenAs22AndReadBack() throws IOException {
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
+        lines.add(new VCFInfoHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "xi"));
+        lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
+        lines.add(new VCFFormatHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "xi"));
+        final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
+        header.setSequenceDictionary(createArtificialSequenceDictionary());
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("C");
+        final VariantContext vc = new VariantContextBuilder("t", "1", 100, 100, List.of(ref, alt))
+                .attribute("XI", Arrays.asList(10, 5, null))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(ref, alt))
+                                .attribute("XI", Arrays.asList(10, 5, null))
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(alt, alt))
+                                .attribute("XI", 7)
+                                .make())
+                .make();
+        return readAll(writeBcf22(header, List.of(vc))).get(0);
+    }
+
     @Test
     public void anInfoFlagFromBcftoolsIsTrue() throws IOException {
         final VariantContext first =
@@ -611,6 +716,30 @@ public class BCFCodecTest extends VariantBaseTest {
             record.toString()
         };
     }
+
+    /** s1 has 10,5,. in AD and XI, the record 10,5,. in INFO XI and 1.5,. in XF; s2 has no missing values. */
+    private static final String[] TRAILING_MISSING_VCF = {
+        "##fileformat=VCFv4.2",
+        "##INFO=<ID=XI,Number=.,Type=Integer,Description=\"xi\">",
+        "##INFO=<ID=XF,Number=.,Type=Float,Description=\"xf\">",
+        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"gt\">",
+        "##FORMAT=<ID=AD,Number=R,Type=Integer,Description=\"ad\">",
+        "##FORMAT=<ID=XI,Number=.,Type=Integer,Description=\"xi\">",
+        "##contig=<ID=chr1,length=1000>",
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1\ts2",
+        "chr1\t100\t.\tA\tC,G\t.\t.\tXI=10,5,.;XF=1.5,.\tGT:AD:XI\t0/1:10,5,.:10,5,.\t1/2:3,4,5:3"
+    };
+
+    /** A one-sample header whose ID dictionary is PASS, XI, AD: XI is an INFO and a FORMAT field under one index. */
+    private static final String VECTORS_HEADER = "##fileformat=VCFv4.2\n"
+            + "##contig=<ID=chr1,length=1000>\n"
+            + "##INFO=<ID=XI,Number=.,Type=Integer,Description=\"xi\">\n"
+            + "##FORMAT=<ID=AD,Number=.,Type=Integer,Description=\"ad\">\n"
+            + "##FORMAT=<ID=XI,Number=.,Type=Integer,Description=\"xi\">\n"
+            + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1\n";
+
+    private static final int XI_KEY = 1;
+    private static final int AD_KEY = 2;
 
     private static final String ONE_SAMPLE_HEADER = "##fileformat=VCFv4.2\n"
             + "##contig=<ID=chr1,length=1000>\n"

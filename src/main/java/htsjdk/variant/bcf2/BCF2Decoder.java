@@ -34,26 +34,44 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * Decodes the typed values of one BCF record block. A decoder holds the bytes of the block it is reading and nothing
- * else, so each record (and each lazy genotype decode) gets its own. Reading uses a position counter into the byte
- * array directly, avoiding the {@code synchronized} overhead of {@code ByteArrayInputStream} that the JIT cannot
- * always coarsen. A truncated or corrupt record whose fields overrun the block throws
- * {@code ArrayIndexOutOfBoundsException}; callers translate this to {@link TribbleException} at the decode boundary.
+ * Decodes the typed values of one BCF record block. A decoder holds the bytes of the block it is reading and the BCF
+ * version they were written in, nothing else, so each record (and each lazy genotype decode) gets its own. Reading
+ * uses a position counter into the byte array directly, avoiding the {@code synchronized} overhead of
+ * {@code ByteArrayInputStream} that the JIT cannot always coarsen. A truncated or corrupt record whose fields overrun
+ * the block throws {@code ArrayIndexOutOfBoundsException}; callers translate this to {@link TribbleException} at the
+ * decode boundary.
+ *
+ * <p>The version decides what MISSING values at the end of a vector are. BCF 2.1 as htsjdk writes it pads a shorter
+ * vector with MISSING, so there they are padding; from BCF 2.2 padding is END_OF_VECTOR, so there they are missing
+ * values, as {@code .} at the end of a VCF value is.
  */
 public final class BCF2Decoder {
     byte[] recordBytes = null;
     int pos = 0;
+    private final boolean trailingMissingIsPadding;
 
+    /** A decoder for BCF 2.1. */
     public BCF2Decoder() {
-        // nothing to do
+        this(BCFVersion.BCF_2_1);
+    }
+
+    /** A decoder for the given BCF version. */
+    BCF2Decoder(final BCFVersion bcfVersion) {
+        this.trailingMissingIsPadding = !bcfVersion.padsWithEndOfVector();
     }
 
     /**
-     * Create a new decoder ready to read BCF2 data from the byte[] recordBytes
+     * Create a new BCF 2.1 decoder ready to read BCF2 data from the byte[] recordBytes
      *
      * @param recordBytes
      */
     protected BCF2Decoder(final byte[] recordBytes) {
+        this(recordBytes, BCFVersion.BCF_2_1);
+    }
+
+    /** A decoder for the given BCF version, ready to read from {@code recordBytes}. */
+    BCF2Decoder(final byte[] recordBytes, final BCFVersion bcfVersion) {
+        this(bcfVersion);
         setRecordBytes(recordBytes);
     }
 
@@ -149,8 +167,8 @@ public final class BCF2Decoder {
     /**
      * Decodes a typed value: null for size 0, a String (or a List of Strings for an htsjdk-style collapsed list)
      * for CHAR, a single Integer or Double for size 1, and otherwise a List of Integers or Doubles. In a list a
-     * MISSING value is a null element and END_OF_VECTOR ends the list; nulls at the end of the list are dropped, and
-     * a list left empty is returned as null.
+     * MISSING value is a null element and END_OF_VECTOR ends the list; in BCF 2.1 nulls at the end of the list are
+     * padding and dropped. A list of nothing but nulls is returned as null.
      */
     public final Object decodeTypedValue(final byte typeDescriptor, final int size) throws IOException {
         if (size == 0) {
@@ -184,7 +202,9 @@ public final class BCF2Decoder {
             }
         }
         if (lastValue == 0) return null;
-        if (lastValue < values.size()) values.subList(lastValue, values.size()).clear();
+        if (trailingMissingIsPadding && lastValue < values.size()) {
+            values.subList(lastValue, values.size()).clear();
+        }
         return values;
     }
 
@@ -317,7 +337,7 @@ public final class BCF2Decoder {
      * If size &gt; 0 =&gt; result depends on the actual values in the stream
      *      -- If the first element read is MISSING or END_OF_VECTOR, result is null
      *      -- An END_OF_VECTOR ends the values: htslib pads a vector shorter than the declared count with it
-     *      -- A MISSING followed only by MISSING ends the values: htsjdk pads a shorter vector with it
+     *      -- In BCF 2.1, a MISSING followed only by MISSING ends the values: htsjdk pads a shorter vector with it
      *      -- Any other MISSING is an explicit missing value among the values, which an int[] cannot hold, so the
      *         result is null, as it is when the VCF text reader meets {@code 10,.,5}
      *
@@ -348,6 +368,10 @@ public final class BCF2Decoder {
             final int v = decodeInt(type);
             if (v <= endOfVector) {
                 if (v == missing) {
+                    if (!trailingMissingIsPadding) {
+                        skipInts(type, size - i - 1);
+                        return null;
+                    }
                     // padding if nothing but MISSING follows, otherwise a missing value among the values
                     for (int j = i + 1; j < size; j++) {
                         if (decodeInt(type) != missing) {

@@ -155,7 +155,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     public VariantContext decode(final PositionalBufferedStream inputStream) {
         final VariantContextBuilder builder = new VariantContextBuilder();
         try {
-            final BCF2Decoder decoder = new BCF2Decoder();
+            final BCF2Decoder decoder = new BCF2Decoder(bcfVersion);
             final int sitesBlockSize = decoder.readBlockSize(inputStream);
             final int genotypeBlockSize = decoder.readBlockSize(inputStream);
 
