@@ -1288,4 +1288,33 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertTrue(s.contains("XX:i:42"), "Expected XX:i:42 in: " + s);
         Assert.assertTrue(s.contains("YY:Z:hello"), "Expected YY:Z:hello in: " + s);
     }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void isUnsignedArrayAttributeOnARecordWithoutTagsSaysTheTagIsMissing() {
+        new SAMRecord(new SAMFileHeader()).isUnsignedArrayAttribute("XU");
+    }
+
+    @Test
+    public void isUnsignedArrayAttributeDecodesTheTagsOfARecordReadLazily() throws IOException {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName("r1");
+        record.setReadUnmappedFlag(true);
+        record.setReadString("ACGT");
+        record.setBaseQualityString("IIII");
+        record.setUnsignedArrayAttribute("XU", new byte[] {1, 2});
+        final Path bam = Files.createTempFile("unsignedArray.", FileExtensions.BAM);
+        try {
+            try (SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, bam)) {
+                writer.addAlignment(record);
+            }
+            try (SamReader reader = SamReaderFactory.makeDefault()
+                    .validationStringency(ValidationStringency.SILENT)
+                    .open(bam)) {
+                Assert.assertTrue(reader.iterator().next().isUnsignedArrayAttribute("XU"));
+            }
+        } finally {
+            Files.deleteIfExists(bam);
+        }
+    }
 }
