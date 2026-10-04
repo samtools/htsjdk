@@ -40,6 +40,24 @@ public class ReferenceSourceTest extends HtsjdkTest {
         Assert.assertEquals(refBasesFromSource, SequenceUtil.upperCase(originalRefBases));
     }
 
+    @Test
+    public void contigsAtTheSameIndexInDifferentDictionariesGetTheirOwnBases() {
+        final InMemoryReferenceSequenceFile reference = new InMemoryReferenceSequenceFile();
+        reference.add("chrA", "AAAA".getBytes());
+        reference.add("chrB", "CCCC".getBytes());
+        final ReferenceSource source = new ReferenceSource(reference);
+
+        // two CRAMs sharing one source, whose dictionaries list chrA and chrB in opposite orders
+        final SAMSequenceRecord chrAFirst = new SAMSequenceRecord("chrA", 4);
+        chrAFirst.setSequenceIndex(0);
+        final SAMSequenceRecord chrBFirst = new SAMSequenceRecord("chrB", 4);
+        chrBFirst.setSequenceIndex(0);
+
+        Assert.assertEquals(source.getReferenceBasesByRegion(chrAFirst, 0, 4), "AAAA".getBytes());
+        Assert.assertEquals(source.getReferenceBasesByRegion(chrBFirst, 0, 4), "CCCC".getBytes());
+        Assert.assertEquals(source.getReferenceBasesByRegion(chrAFirst, 1, 2), "AA".getBytes());
+    }
+
     private static Path writeFasta(final Path dir) throws IOException {
         final Path fasta = dir.resolve("ref.fa");
         Files.writeString(fasta, ">chr1\nacgtacgt\n>chr2\ngggg\n");
