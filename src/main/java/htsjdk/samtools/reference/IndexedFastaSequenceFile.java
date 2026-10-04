@@ -182,9 +182,15 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     private void sanityCheckFastaAgainstIndex(final Path fastaFile, final FastaSequenceIndex fastaSequenceIndex)
             throws IOException {
 
-        final FastaSequenceIndexEntry lastSequence = fastaSequenceIndex.getLastIndexEntry();
-        // 0-based byte offset of the last base of the last contig; that base occupies exactly this one byte.
-        final long lastBaseOffset = lastSequence.getLocation() + lastSequence.getOffset(lastSequence.getSize());
+        // 0-based byte offset of the last base of the last contig; that base occupies exactly this one byte. An empty
+        // index has no bases, so the whole fasta must be whitespace.
+        final long lastBaseOffset;
+        if (fastaSequenceIndex.size() == 0) {
+            lastBaseOffset = -1;
+        } else {
+            final FastaSequenceIndexEntry lastSequence = fastaSequenceIndex.getLastIndexEntry();
+            lastBaseOffset = lastSequence.getLocation() + lastSequence.getOffset(lastSequence.getSize());
+        }
         final long fastaLength = Files.size(fastaFile);
 
         // The file must actually contain the last base byte, i.e. be strictly longer than its offset.
@@ -210,8 +216,8 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
                 if (!Character.isWhitespace((char) b)) {
                     throw new IllegalArgumentException(
                             ("The fasta file (%s) is longer than its index accounts for: found a non-whitespace "
-                                            + "character (%c) at byte %d, past the last base at byte %d. Please reindex the fasta.")
-                                    .formatted(fastaFile.toUri(), (char) b, position + i, lastBaseOffset));
+                                            + "character (%c) at byte %d, past the %d bytes its sequences span. Please reindex the fasta.")
+                                    .formatted(fastaFile.toUri(), (char) b, position + i, lastBaseOffset + 1));
                 }
             }
             position += bytesRead;
