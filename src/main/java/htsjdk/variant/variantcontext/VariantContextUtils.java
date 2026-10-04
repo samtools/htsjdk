@@ -189,6 +189,13 @@ public class VariantContextUtils {
                 calculateChromosomeCounts(vc, new HashMap<>(vc.getAttributes()), removeStaleValues, founderIds));
     }
 
+    /**
+     * The header line for {@code field}: its FORMAT line, or failing that an INFO line with the same ID.
+     *
+     * @deprecated an INFO and a FORMAT field may share an ID, so this types an INFO field by the FORMAT line of that ID;
+     *     use {@link VCFHeader#getInfoHeaderLine} or {@link VCFHeader#getFormatHeaderLine} for the kind of field you have
+     */
+    @Deprecated
     public static final VCFCompoundHeaderLine getMetaDataForField(final VCFHeader header, final String field) {
         VCFCompoundHeaderLine metaData = header.getFormatHeaderLine(field);
         if (metaData == null) metaData = header.getInfoHeaderLine(field);

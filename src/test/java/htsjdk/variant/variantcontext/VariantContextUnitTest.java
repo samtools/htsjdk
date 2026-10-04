@@ -38,7 +38,9 @@ import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.io.ByteArrayInputStream;
@@ -1948,6 +1950,28 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .attribute("XX", "1,2,3")
                 .make();
         Assert.assertEquals(vc.fullyDecode(header, false).getAttribute("XX"), Arrays.asList(1, 2, 3));
+    }
+
+    @Test
+    public void strictDecodingTypesAnInfoFieldByItsInfoLineWhenAFormatFieldSharesItsId() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFInfoHeaderLine("X", 2, VCFHeaderLineType.Integer, "info x"));
+        header.addMetaDataLine(new VCFFormatHeaderLine("X", 1, VCFHeaderLineType.Float, "format x"));
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "1", 100, 100, Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .attribute("X", "1,2")
+                .make();
+        Assert.assertEquals(vc.fullyDecode(header, false).getAttribute("X"), Arrays.asList(1, 2));
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void anInfoFieldDeclaredOnlyAsAFormatFieldCannotBeFullyDecoded() {
+        final VCFHeader header = new VCFHeader();
+        header.addMetaDataLine(new VCFFormatHeaderLine("X", 1, VCFHeaderLineType.Integer, "format x"));
+        new VariantContextBuilder("test", "1", 100, 100, Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .attribute("X", "1")
+                .make()
+                .fullyDecode(header, true);
     }
 
     // INFO END against getEnd(): only an END past the end is malformed
