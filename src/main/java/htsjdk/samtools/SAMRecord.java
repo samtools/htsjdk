@@ -1493,7 +1493,9 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
      * @throws SAMException if the tag is not present.
      */
     public boolean isUnsignedArrayAttribute(final String tag) {
-        final SAMBinaryTagAndValue tmp = this.mAttributes.find(SAMTag.makeBinaryTag(tag));
+        // through getBinaryAttributes, which decodes a lazily read record's tags and is null for a record without any
+        final SAMBinaryTagAndValue attributes = getBinaryAttributes();
+        final SAMBinaryTagAndValue tmp = attributes == null ? null : attributes.find(SAMTag.makeBinaryTag(tag));
         if (tmp != null) return tmp.isUnsignedArray();
         throw new SAMException("Tag " + tag + " is not present in this SAMRecord");
     }
