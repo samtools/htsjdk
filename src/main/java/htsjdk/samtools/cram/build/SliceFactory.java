@@ -33,6 +33,7 @@ import htsjdk.samtools.cram.structure.CRAMCompressionRecord;
 import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.util.Log;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,8 @@ import java.util.stream.Collectors;
  * the provided {@link CRAMEncodingStrategy} object.
  */
 public final class SliceFactory {
+    private static final Log log = Log.getInstance(SliceFactory.class);
+
     private final CRAMEncodingStrategy encodingStrategy;
 
     private final List<SliceStagingEntry> cramRecordSliceEntries;
@@ -54,6 +57,8 @@ public final class SliceFactory {
     private final boolean coordinateSorted;
 
     private final Map<String, Integer> readGroupNameToID = new HashMap<>();
+    // RG values with no @RG line already warned about, so each is reported once rather than for every record
+    private final Set<String> readGroupsWarnedMissing = new HashSet<>();
 
     /**
      * @param cramEncodingStrategy {@link CRAMEncodingStrategy} to use for {@link Slice}s that are created
@@ -166,6 +171,11 @@ public final class SliceFactory {
                     referenceBases,
                     recordIndex++,
                     readGroupNameToID);
+            if (cramCompressionRecord.getReadGroupID() == CRAMCompressionRecord.NO_READGROUP_ID
+                    && samRecord.getAttribute(SAMTag.RG) instanceof String readGroup
+                    && readGroupsWarnedMissing.add(readGroup)) {
+                log.warn("Missing @RG header line for RG \"", readGroup, "\"; its RG tags are stored as ordinary tags");
+            }
             cramCompressionRecords.add(cramCompressionRecord);
         }
         return cramCompressionRecords;
