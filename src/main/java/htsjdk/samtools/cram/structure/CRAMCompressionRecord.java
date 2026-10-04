@@ -129,17 +129,15 @@ public class CRAMCompressionRecord {
         // all records are written as detached state
         setToDetachedState();
 
-        // flags:
-        // Although the CRAM spec allows some of these flags (it doesn't explicitly state which ones) to be
-        // omitted from the actual bam flags data series ("Note however some of these flags can be derived during
-        // decode, so may be omitted in the CRAM file and the bits computed based on both reads of a pair-end library
-        // residing within the same slice."), this implementation preserves them all on write since we emit
-        // all pairs as detached, even when in the same slice.
+        // BF holds every flag bit, as htslib writes it. That includes an unpaired read's 0x2, 0x40 and 0x80: the SAM
+        // spec says nothing can be assumed about them, not that they are dropped. SAMRecord's getters for them throw
+        // on an unpaired read, hence the raw flags.
+        final int samFlags = samRecord.getFlags();
         setMultiFragment(samRecord.getReadPairedFlag());
-        setProperPair(samRecord.getReadPairedFlag() && samRecord.getProperPairFlag());
+        setProperPair(SAMFlag.PROPER_PAIR.isSet(samFlags));
         setSegmentUnmapped(samRecord.getReadUnmappedFlag());
-        setFirstSegment(samRecord.getReadPairedFlag() && samRecord.getFirstOfPairFlag());
-        setLastSegment(samRecord.getReadPairedFlag() && samRecord.getSecondOfPairFlag());
+        setFirstSegment(SAMFlag.FIRST_OF_PAIR.isSet(samFlags));
+        setLastSegment(SAMFlag.SECOND_OF_PAIR.isSet(samFlags));
         setNegativeStrand(samRecord.getReadNegativeStrandFlag());
         setSecondaryAlignment(samRecord.isSecondaryAlignment());
         setSupplementary(samRecord.getSupplementaryAlignmentFlag());
@@ -181,6 +179,10 @@ public class CRAMCompressionRecord {
         if (samRecord.getReadPairedFlag()) {
             setMateUnmapped(samRecord.getMateUnmappedFlag());
             setMateNegativeStrand(samRecord.getMateNegativeStrandFlag());
+        } else {
+            // An unpaired read's mate bits go in BF but not MF: htslib's decoder takes MF's mate-reverse bit to mean
+            // the read is paired.
+            bamFlags |= samFlags & (SAMFlag.MATE_UNMAPPED.intValue() | SAMFlag.MATE_REVERSE_STRAND.intValue());
         }
 
         if (cramVersion.compatibleWith(CramVersions.CRAM_v3)) {
@@ -373,6 +375,10 @@ public class CRAMCompressionRecord {
         if (samRecord.getReadPairedFlag()) {
             samRecord.setMateNegativeStrandFlag(isMateNegativeStrand());
             samRecord.setMateUnmappedFlag(isMateUnmapped());
+        } else {
+            // An unpaired read's mate bits are only in BF.
+            samRecord.setMateNegativeStrandFlag((bamFlags & SAMFlag.MATE_REVERSE_STRAND.intValue()) != 0);
+            samRecord.setMateUnmappedFlag((bamFlags & SAMFlag.MATE_UNMAPPED.intValue()) != 0);
         }
 
         samRecord.setInferredInsertSize(templateSize);
