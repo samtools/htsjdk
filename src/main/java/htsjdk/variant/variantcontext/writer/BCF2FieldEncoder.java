@@ -282,12 +282,12 @@ public abstract class BCF2FieldEncoder {
             final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues) throws IOException;
 
     /**
-     * Pad from {@code count} to {@code minValues} with either all MISSING (2.1) or one MISSING then
-     * END_OF_VECTOR (2.2), matching htslib's padding rule.
+     * Pad from {@code count} to {@code minValues}: with MISSING in 2.1; with END_OF_VECTOR in 2.2, after a
+     * single MISSING when there are no values at all, matching htslib's padding rule.
      */
     final void pad(final BCF2Encoder encoder, int count, final int minValues, final BCF2Type type) throws IOException {
         if (useEndOfVector) {
-            if (count < minValues) {
+            if (count == 0 && minValues > 0) {
                 encoder.encodeRawMissingValue(type);
                 count++;
             }
