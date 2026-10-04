@@ -1403,6 +1403,135 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         Assert.assertTrue(record.endsWith("\t0/1:1,2,3,4,5,6\t2:7,8,9"), record);
     }
 
+    // FORMAT vector sizes
+
+    /** A GT header for samples s1 and s2 declaring {@code lines} as well. */
+    private static VCFHeader formatHeader(final VCFFormatHeaderLine... lines) {
+        final VCFHeader header = gtHeader(VCFHeaderVersion.VCF4_2, 2);
+        for (final VCFFormatHeaderLine line : lines) header.addMetaDataLine(line);
+        return header;
+    }
+
+    /** A biallelic site whose two samples have {@code field} set to {@code s1Value} and {@code s2Value}. */
+    private static VariantContext twoSamples(final String field, final Object s1Value, final Object s2Value) {
+        return new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .attribute(field, s1Value)
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, REF_A))
+                                .attribute(field, s2Value)
+                                .make())
+                .make();
+    }
+
+    @Test
+    public void aFormatVectorLongerThanItsNumberGKeepsEachSamplesValues() throws IOException {
+        final VCFHeader header =
+                formatHeader(new VCFFormatHeaderLine("GP", VCFHeaderLineCount.G, VCFHeaderLineType.Float, "gp"));
+        final VariantContext vc = readOne(
+                writeBcf(header, twoSamples("GP", List.of(1.0, 2.0, 3.0, 4.0, 5.0, 6.0), List.of(1.0, 2.0, 3.0))));
+        Assert.assertEquals(vc.getGenotype("s1").getExtendedAttribute("GP"), List.of(1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
+        Assert.assertEquals(vc.getGenotype("s2").getExtendedAttribute("GP"), List.of(1.0, 2.0, 3.0));
+    }
+
+    @Test
+    public void aFormatVectorLongerThanItsFixedNumberKeepsEachSamplesValues() throws IOException {
+        final VCFHeader header = formatHeader(new VCFFormatHeaderLine("SB", 4, VCFHeaderLineType.Integer, "sb"));
+        final VariantContext vc =
+                readOne(writeBcf(header, twoSamples("SB", List.of(1, 2, 3, 4, 5), List.of(6, 7, 8, 9))));
+        Assert.assertEquals(vc.getGenotype("s1").getExtendedAttribute("SB"), List.of(1, 2, 3, 4, 5));
+        Assert.assertEquals(vc.getGenotype("s2").getExtendedAttribute("SB"), List.of(6, 7, 8, 9));
+    }
+
+    @Test
+    public void aFormatVectorLongerThanItsNumberGKeepsEachSamplesValuesIn21() throws IOException {
+        final VCFHeader header =
+                formatHeader(new VCFFormatHeaderLine("GP", VCFHeaderLineCount.G, VCFHeaderLineType.Float, "gp"));
+        final VariantContext vc = readOne(
+                writeBcf21(header, twoSamples("GP", List.of(1.0, 2.0, 3.0, 4.0, 5.0, 6.0), List.of(1.0, 2.0, 3.0))));
+        Assert.assertEquals(vc.getGenotype("s1").getExtendedAttribute("GP"), List.of(1.0, 2.0, 3.0, 4.0, 5.0, 6.0));
+        Assert.assertEquals(vc.getGenotype("s2").getExtendedAttribute("GP"), List.of(1.0, 2.0, 3.0));
+    }
+
+    @Test
+    public void arrayValuedFormatAttributesAreSizedByTheirLength() throws IOException {
+        final VCFHeader header = formatHeader(
+                new VCFFormatHeaderLine("SB", 4, VCFHeaderLineType.Integer, "sb"),
+                new VCFFormatHeaderLine("XF", 2, VCFHeaderLineType.Float, "xf"));
+        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .attribute("SB", new int[] {1, 2, 3, 4})
+                                .attribute("XF", new Double[] {0.5, 0.25})
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(REF_A, REF_A))
+                                .attribute("SB", new int[] {5, 6, 7, 8})
+                                .attribute("XF", new Double[] {0.75, 1.0})
+                                .make())
+                .make();
+        final VariantContext read = readOne(writeBcf(header, vc));
+        Assert.assertEquals(read.getGenotype("s1").getExtendedAttribute("SB"), List.of(1, 2, 3, 4));
+        Assert.assertEquals(read.getGenotype("s2").getExtendedAttribute("SB"), List.of(5, 6, 7, 8));
+        Assert.assertEquals(read.getGenotype("s1").getExtendedAttribute("XF"), List.of(0.5, 0.25));
+        Assert.assertEquals(read.getGenotype("s2").getExtendedAttribute("XF"), List.of(0.75, 1.0));
+    }
+
+    @Test
+    public void aSingleValueFloatFormatFieldWithSeveralValuesIsWritten() throws IOException {
+        final VCFHeader header = formatHeader(new VCFFormatHeaderLine("XF", 1, VCFHeaderLineType.Float, "xf"));
+        final VariantContext vc = readOne(writeBcf(header, twoSamples("XF", List.of(0.5, 0.25), 0.75)));
+        Assert.assertEquals(vc.getGenotype("s1").getExtendedAttribute("XF"), List.of(0.5, 0.25));
+        Assert.assertEquals(vc.getGenotype("s2").getExtendedAttribute("XF"), 0.75);
+    }
+
+    @Test
+    public void aSingleValueIntegerFormatFieldWithSeveralValuesIsWritten() throws IOException {
+        final VCFHeader header = formatHeader(new VCFFormatHeaderLine("XN", 1, VCFHeaderLineType.Integer, "xn"));
+        final VariantContext vc = readOne(writeBcf(header, twoSamples("XN", List.of(300, 1), 2)));
+        Assert.assertEquals(vc.getGenotype("s1").getExtendedAttribute("XN"), List.of(300, 1));
+        Assert.assertEquals(vc.getGenotype("s2").getExtendedAttribute("XN"), 2);
+    }
+
+    @Test
+    public void formatVectorsAreSizedFromTheirValuesAsBcftoolsSizesThem() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        // GP overruns its Number=G, SB falls short of its Number=4 in every sample, and XF has two values
+        // against its Number=1; bcftools sizes each vector from the most values any sample has. The header
+        // lines are in the order htsjdk indexes them, so the two dictionaries agree.
+        final Path vcf = Files.createTempFile(tempDir, "sizes.", ".vcf");
+        vcf.toFile().deleteOnExit();
+        Files.write(
+                vcf,
+                List.of(
+                        "##fileformat=VCFv4.2",
+                        "##FORMAT=<ID=GP,Number=G,Type=Float,Description=\"gp\">",
+                        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"gt\">",
+                        "##FORMAT=<ID=SB,Number=4,Type=Integer,Description=\"sb\">",
+                        "##FORMAT=<ID=XF,Number=1,Type=Float,Description=\"xf\">",
+                        "##contig=<ID=chr1,length=1000>",
+                        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1\ts2",
+                        "chr1\t100\t.\tA\tC\t.\t.\t.\tGT:GP:SB:XF\t0/1:1,2,3,4,5,6:1,2:0.5,0.25\t0/0:1,2:.:."),
+                StandardCharsets.UTF_8);
+        final Path byBcftools = Files.createTempFile(tempDir, "sizes.bcftools.", ".bcf");
+        byBcftools.toFile().deleteOnExit();
+        BcftoolsTestUtils.executeBcftoolsForStdout(
+                "view", "--no-version", "-Ou", "-o", byBcftools.toString(), vcf.toString());
+
+        final Path byHtsjdk = Files.createTempFile(tempDir, "sizes.htsjdk.", ".bcf");
+        byHtsjdk.toFile().deleteOnExit();
+        try (final VCFFileReader reader = new VCFFileReader(vcf, false);
+                final VariantContextWriter writer = new VariantContextWriterBuilder()
+                        .clearOptions()
+                        .setOutputPath(byHtsjdk)
+                        .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                        .build()) {
+            writer.writeHeader(reader.getFileHeader());
+            for (final VariantContext vc : reader) writer.add(vc);
+        }
+        Assert.assertEquals(genotypeBlockOf(byHtsjdk), genotypeBlockOf(byBcftools));
+    }
+
     // String list form
 
     @Test

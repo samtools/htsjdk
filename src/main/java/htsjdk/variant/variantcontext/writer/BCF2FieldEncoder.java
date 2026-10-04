@@ -32,6 +32,7 @@ import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFPercentEncodedTextTransformer;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -197,9 +198,8 @@ public abstract class BCF2FieldEncoder {
     }
 
     /**
-     * Given a value, return the number of elements we will encode for it.
-     *
-     * Assumes the value is encoded as a List
+     * Given a value, return the number of elements we will encode for it: the size of a List or the length of an
+     * array, as {@link BCF2Utils#toList} expands them, and otherwise one.
      *
      * @param value
      * @return the number of elements we will encode for {@param value}.
@@ -207,6 +207,7 @@ public abstract class BCF2FieldEncoder {
     protected int numElementsFromValue(final Object value) {
         if (value == null) return 0;
         else if (value instanceof List) return ((List) value).size();
+        else if (value.getClass().isArray()) return Array.getLength(value);
         else return 1;
     }
 
@@ -459,8 +460,6 @@ public abstract class BCF2FieldEncoder {
     // ----------------------------------------------------------------------
 
     public static class Float extends BCF2FieldEncoder {
-        final boolean isAtomic;
-
         public Float(
                 final VCFCompoundHeaderLine headerLine,
                 final Map<String, Integer> dict,
@@ -468,20 +467,16 @@ public abstract class BCF2FieldEncoder {
                 final boolean percentEncode,
                 final boolean htslibStringLists) {
             super(headerLine, dict, BCF2Type.FLOAT, useEndOfVector, percentEncode, htslibStringLists);
-            isAtomic = hasConstantNumElements() && numElements() == 1;
         }
 
         @Override
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues)
                 throws IOException {
             int count = 0;
-            // TODO -- can be restructured to avoid toList operation
-            if (isAtomic) {
-                // fast path for fields with 1 fixed float value
-                if (value != null) {
-                    encoder.encodeRawFloat((Double) value);
-                    count++;
-                }
+            if (value instanceof Double) {
+                // fast path for a single value
+                encoder.encodeRawFloat((Double) value);
+                count++;
             } else {
                 // handle generic case
                 final List<Double> doubles = BCF2Utils.toList(Double.class, value);
@@ -545,32 +540,35 @@ public abstract class BCF2FieldEncoder {
     // ----------------------------------------------------------------------
 
     /**
-     * Specialized int encoder for atomic (non-list) integers
+     * Int encoder for fields declared with one value, with a fast path for a single integer; a sample that has
+     * a list of values anyway is encoded as {@link GenericInts} encodes it.
      */
-    public static class AtomicInt extends BCF2FieldEncoder {
+    public static class AtomicInt extends GenericInts {
         public AtomicInt(
                 final VCFCompoundHeaderLine headerLine,
                 final Map<String, Integer> dict,
                 final boolean useEndOfVector,
                 final boolean percentEncode,
                 final boolean htslibStringLists) {
-            super(headerLine, dict, null, useEndOfVector, percentEncode, htslibStringLists);
+            super(headerLine, dict, useEndOfVector, percentEncode, htslibStringLists);
         }
 
         @Override
         public BCF2Type getDynamicType(final Object value) {
-            return value == null ? BCF2Type.INT8 : BCF2Utils.determineIntegerType((Integer) value);
+            return value instanceof Integer
+                    ? BCF2Utils.determineIntegerType((Integer) value)
+                    : super.getDynamicType(value);
         }
 
         @Override
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues)
                 throws IOException {
-            int count = 0;
-            if (value != null) {
+            if (value instanceof Integer) {
                 encoder.encodeRawInt((Integer) value, type);
-                count++;
+                pad(encoder, 1, minValues, type);
+            } else {
+                super.encodeValue(encoder, value, type, minValues);
             }
-            pad(encoder, count, minValues, type);
         }
     }
 
