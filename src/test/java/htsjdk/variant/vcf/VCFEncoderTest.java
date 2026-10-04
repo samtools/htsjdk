@@ -1,7 +1,9 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.utils.BcftoolsTestUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -9,6 +11,8 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +25,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -297,6 +302,34 @@ public class VCFEncoderTest extends HtsjdkTest {
                 .phased(true)
                 .make();
         Assert.assertEquals(sampleColumns(Collections.singletonList("s1"), separatelyCreated), Arrays.asList("0|1|."));
+    }
+
+    @Test
+    public void encodeWritesASampleWithEveryValueMissingAndNoGenotypeKeyAsMissing() {
+        final Genotype noValues = new GenotypeBuilder("s1").make();
+        final Genotype withValues = new GenotypeBuilder("s2")
+                .attribute("AA", "a")
+                .attribute("BB", 2)
+                .make();
+        Assert.assertEquals(sampleColumns(Arrays.asList("s1", "s2"), noValues, withValues), Arrays.asList(".", "a:2"));
+    }
+
+    @Test
+    public void encodeWritesASampleWithoutAGenotypeAsMissingWhenThereIsNoGenotypeKey() {
+        final Genotype withValues = new GenotypeBuilder("s2").attribute("BB", 2).make();
+        Assert.assertEquals(sampleColumns(Arrays.asList("s1", "s2"), withValues), Arrays.asList(".", "2"));
+    }
+
+    @Test
+    public void encodeDropsTrailingMissingValuesAfterAPresentOneWithoutAGenotypeKey() {
+        final Genotype firstValueOnly =
+                new GenotypeBuilder("s1").attribute("AA", "a").make();
+        final Genotype withValues = new GenotypeBuilder("s2")
+                .attribute("AA", "a")
+                .attribute("BB", 2)
+                .make();
+        Assert.assertEquals(
+                sampleColumns(Arrays.asList("s1", "s2"), firstValueOnly, withValues), Arrays.asList("a", "a:2"));
     }
 
     @Test
@@ -713,11 +746,15 @@ public class VCFEncoderTest extends HtsjdkTest {
     // Lazy genotype text: written as read only when the source and output versions allow it
 
     private static VCFHeader lazyTestHeader() {
+        return lazyTestHeader(Collections.singletonList("s1"));
+    }
+
+    private static VCFHeader lazyTestHeader(final List<String> samples) {
         final Set<VCFHeaderLine> lines = new TreeSet<>();
         lines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "chr1"), 0));
         lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
         lines.add(new VCFFormatHeaderLine("XF", 1, VCFHeaderLineType.String, "str field"));
-        return new VCFHeader(lines, Collections.singletonList("s1"));
+        return new VCFHeader(lines, samples);
     }
 
     /** Decodes a one-sample record as a reader of a file of the given version does: with its genotypes left as text. */
@@ -777,6 +814,88 @@ public class VCFEncoderTest extends HtsjdkTest {
         final VariantContext vc = lazyRecord(VCFHeaderVersion.VCF4_4, "0|1:x");
         Assert.assertEquals(sampleColumnWrittenAt(VCFHeaderVersion.VCF4_2, vc), "0|1:x");
         Assert.assertFalse(stillLazy(vc), "the genotypes were written as read");
+    }
+
+    private static final List<String> TWO_LAZY_SAMPLES = Arrays.asList("s1", "s2");
+
+    /** Decodes a record whose FORMAT is XF alone, with no GT, as a reader of a file of the given version does. */
+    private static VariantContext lazyRecordWithoutGt(
+            final VCFHeaderVersion sourceVersion, final String s1Column, final String s2Column) {
+        final VCFCodec codec = new VCFCodec();
+        codec.setVCFHeader(lazyTestHeader(TWO_LAZY_SAMPLES), sourceVersion);
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t.\t.\t.\tXF\t" + s1Column + "\t" + s2Column);
+        Assert.assertTrue(stillLazy(vc), "decoded on read");
+        return vc;
+    }
+
+    private static List<String> sampleColumnsWrittenAt(final VCFHeaderVersion outputVersion, final VariantContext vc) {
+        final String encoded = new VCFEncoder(lazyTestHeader(TWO_LAZY_SAMPLES), false, false, outputVersion).encode(vc);
+        final String[] columns = encoded.split("\t", -1);
+        return Arrays.asList(columns).subList(9, columns.length);
+    }
+
+    @Test
+    public void lazyGenotypesWithAMissingSampleAndNoGtAreWrittenAsReadAtTheSameVersion() {
+        final VariantContext vc = lazyRecordWithoutGt(VCFHeaderVersion.VCF4_3, ".", "x");
+        Assert.assertEquals(sampleColumnsWrittenAt(VCFHeaderVersion.VCF4_3, vc), Arrays.asList(".", "x"));
+        Assert.assertTrue(stillLazy(vc), "the genotypes were decoded");
+    }
+
+    @Test
+    public void lazyGenotypesWithAMissingSampleAndNoGtAreDecodedAndWrittenAsMissingAt43() {
+        final VariantContext vc = lazyRecordWithoutGt(VCFHeaderVersion.VCF4_2, ".", "x");
+        Assert.assertEquals(sampleColumnsWrittenAt(VCFHeaderVersion.VCF4_3, vc), Arrays.asList(".", "x"));
+        Assert.assertFalse(stillLazy(vc), "the genotypes were written as read");
+    }
+
+    // A sample with no GT and every value missing, through bcftools
+
+    private static final String DP_GQ_HEADER = String.join(
+            "\n",
+            "##fileformat=VCFv4.2",
+            "##contig=<ID=1,length=1000>",
+            "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"depth\">",
+            "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"genotype quality\">",
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\ts1\ts2");
+
+    private static Path tempFile(final String suffix) throws IOException {
+        final Path path = Files.createTempFile("VCFEncoderTest.", suffix);
+        IOUtil.deleteOnExit(path);
+        return path;
+    }
+
+    /**
+     * Has bcftools write a BCF of a record whose s1 is missing ({@code .}) under FORMAT DP:GQ, reads it with htsjdk,
+     * which decodes a BCF's genotypes, and returns the line VCFEncoder writes for it.
+     */
+    private static String encodeBcftoolsBcfWithAMissingSample() throws IOException {
+        final Path vcf = tempFile(".vcf");
+        final Path bcf = tempFile(".bcf");
+        Files.writeString(vcf, DP_GQ_HEADER + "\n1\t10\t.\tA\tC\t.\t.\t.\tDP:GQ\t.\t3:4\n");
+        BcftoolsTestUtils.executeBcftools("view", "--no-version", "-Ob", "-o", bcf.toString(), vcf.toString());
+        try (final VCFFileReader reader = new VCFFileReader(bcf, false)) {
+            return new VCFEncoder(reader.getFileHeader(), false, false)
+                    .encode(reader.iterator().next());
+        }
+    }
+
+    @Test
+    public void aSampleBcftoolsWritesToBcfAsMissingIsWrittenAsMissing() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final String encoded = encodeBcftoolsBcfWithAMissingSample();
+        Assert.assertTrue(encoded.endsWith("\tDP:GQ\t.\t3:4"), encoded);
+    }
+
+    @Test
+    public void bcftoolsReadsAWrittenMissingSampleWithoutAWarning() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final Path vcf = tempFile(".vcf");
+        Files.writeString(vcf, DP_GQ_HEADER + "\n" + encodeBcftoolsBcfWithAMissingSample() + "\n");
+        final List<String> stdout = BcftoolsTestUtils.viewAsVcf(vcf);
+        final List<String> stdoutAndStderr =
+                BcftoolsTestUtils.executeBcftools("view", "--no-version", "-Ov", vcf.toString());
+        Assert.assertEquals(stdoutAndStderr, stdout, "bcftools warned about the output");
+        Assert.assertTrue(stdout.get(stdout.size() - 1).endsWith("\tDP:GQ\t.:.\t3:4"), stdout.toString());
     }
 
     // LAA ordering tests
