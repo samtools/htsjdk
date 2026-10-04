@@ -136,24 +136,13 @@ public abstract class BCF2FieldWriter {
 
         protected GenotypesWriter(final VCFHeader header, final BCF2FieldEncoder fieldEncoder) {
             super(header, fieldEncoder);
-
-            if (fieldEncoder.hasConstantNumElements()) {
-                nValuesPerGenotype = getFieldEncoder().numElements();
-            }
         }
 
         @Override
         public void start(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
             // writes the key information
             super.start(encoder, vc);
-
-            // only update if we need to
-            if (!getFieldEncoder().hasConstantNumElements()) {
-                // Size vectors from the actual values, not the header Number, matching htslib.
-                // Constant-count fields keep their fast path above.
-                nValuesPerGenotype = computeMaxSizeOfGenotypeFieldFromValues(vc);
-            }
-
+            nValuesPerGenotype = valuesPerGenotype(vc);
             encoder.encodeType(nValuesPerGenotype, encodingType);
         }
 
@@ -163,17 +152,20 @@ public abstract class BCF2FieldWriter {
             getFieldEncoder().encodeValue(encoder, fieldValue, encodingType, nValuesPerGenotype);
         }
 
+        /** The number of values sample {@code g} has for this field. */
         protected int numElements(final VariantContext vc, final Genotype g) {
-            return getFieldEncoder().numElements(vc, g.getExtendedAttribute(getField()));
+            return getFieldEncoder().numElements(g.getExtendedAttribute(getField()));
         }
 
-        private final int computeMaxSizeOfGenotypeFieldFromValues(final VariantContext vc) {
-            int size = -1;
-
+        /**
+         * The size of each sample's vector for this field at {@code vc}: the most values any sample has, and at
+         * least one, as htslib sizes it. The header's Number is not a bound, since a sample may have more values.
+         */
+        protected int valuesPerGenotype(final VariantContext vc) {
+            int size = 1;
             for (final Genotype g : vc.getGenotypes()) {
                 size = Math.max(size, numElements(vc, g));
             }
-
             return size;
         }
     }
@@ -285,7 +277,6 @@ public abstract class BCF2FieldWriter {
         @Override
         public void start(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
             buildAlleleMap(vc);
-            nValuesPerGenotype = vc.getMaxPloidy(2);
 
             // Choose GT width from the max encoded value across all genotypes at this site
             final int maxAlleleIndex = vc.getNAlleles() - 1; // 0-based maximum allele index
@@ -293,6 +284,11 @@ public abstract class BCF2FieldWriter {
             encodingType = BCF2Utils.determineIntegerType(maxEncoded);
 
             super.start(encoder, vc);
+        }
+
+        @Override
+        protected int valuesPerGenotype(final VariantContext vc) {
+            return vc.getMaxPloidy(2);
         }
 
         @Override
