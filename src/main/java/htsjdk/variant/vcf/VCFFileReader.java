@@ -56,7 +56,9 @@ public class VCFFileReader implements VCFReader {
      * Returns true if the given path appears to be a BCF file.
      */
     public static boolean isBCF(final Path path) {
-        return path.toUri().getRawPath().endsWith(FileExtensions.BCF);
+        // the file name rather than the URI's path, which an opaque URI (a zip or jar file system's, say) lacks
+        final Path fileName = path.getFileName();
+        return fileName != null && fileName.toString().endsWith(FileExtensions.BCF);
     }
 
     /**
