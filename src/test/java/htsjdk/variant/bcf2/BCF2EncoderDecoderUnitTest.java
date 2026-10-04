@@ -572,14 +572,19 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     private static final int MISSING8 = 0x80;
     private static final int EOV8 = 0x81;
 
-    /** A decoder over a typed INT8 vector of the given values followed by a typed INT8 scalar of 42. */
+    /** A BCF 2.1 decoder over a typed INT8 vector of the given values followed by a typed INT8 scalar of 42. */
     private static BCF2Decoder int8VectorThen42(final int... values) {
+        return int8VectorThen42(BCFVersion.BCF_2_1, values);
+    }
+
+    /** A decoder over a typed INT8 vector of the given values followed by a typed INT8 scalar of 42. */
+    private static BCF2Decoder int8VectorThen42(final BCFVersion version, final int... values) {
         final byte[] bytes = new byte[values.length + 3];
         bytes[0] = BCF2Utils.encodeTypeDescriptor(values.length, BCF2Type.INT8);
         for (int i = 0; i < values.length; i++) bytes[i + 1] = (byte) values[i];
         bytes[values.length + 1] = BCF2Utils.encodeTypeDescriptor(1, BCF2Type.INT8);
         bytes[values.length + 2] = 42;
-        return new BCF2Decoder(bytes);
+        return new BCF2Decoder(bytes, version);
     }
 
     /** The whole vector must be consumed whatever it holds: what follows it must still decode. */
@@ -603,15 +608,44 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void trailingMissingValuesAreDroppedFromAnIntVector() throws IOException {
-        final BCF2Decoder decoder = int8VectorThen42(10, MISSING8, EOV8);
+    public void trailingMissingValuesAreDroppedFromABcf21IntVector() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(BCFVersion.BCF_2_1, 10, MISSING8, EOV8);
         Assert.assertEquals(decoder.decodeTypedValue(), Arrays.asList(10));
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void trailingMissingValuesAreKeptInABcf22IntVector() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(BCFVersion.BCF_2_2, 10, 5, MISSING8);
+        Assert.assertEquals(decoder.decodeTypedValue(), Arrays.asList(10, 5, null));
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void aMissingValueBeforeEndOfVectorIsKeptInABcf22IntVector() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(BCFVersion.BCF_2_2, 10, MISSING8, EOV8);
+        Assert.assertEquals(decoder.decodeTypedValue(), Arrays.asList(10, null));
         assertNextIs42(decoder);
     }
 
     @Test
     public void anAllMissingIntVectorIsNull() throws IOException {
         final BCF2Decoder decoder = int8VectorThen42(MISSING8, MISSING8);
+        Assert.assertNull(decoder.decodeTypedValue());
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void anAllMissingBcf22IntVectorIsNull() throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(BCFVersion.BCF_2_2, MISSING8, MISSING8);
+        Assert.assertNull(decoder.decodeTypedValue());
+        assertNextIs42(decoder);
+    }
+
+    @Test
+    public void aBcf22IntVectorOfOneMissingThenEndOfVectorIsNull() throws IOException {
+        // a sample with no values, as htslib and htsjdk write it
+        final BCF2Decoder decoder = int8VectorThen42(BCFVersion.BCF_2_2, MISSING8, EOV8, EOV8);
         Assert.assertNull(decoder.decodeTypedValue());
         assertNextIs42(decoder);
     }
@@ -666,6 +700,30 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
                 new BCF2Decoder(encoder.getRecordBytes()).decodeTypedValue(), Arrays.asList(1.5, null, 2.5));
     }
 
+    /** A typed FLOAT vector of 1.5, 2.5 and MISSING. */
+    private static byte[] floatVectorEndingInMissing() throws IOException {
+        final BCF2Encoder encoder = new BCF2Encoder();
+        encoder.encodeType(3, BCF2Type.FLOAT);
+        encoder.encodeRawFloat(1.5);
+        encoder.encodeRawFloat(2.5);
+        encoder.encodeRawMissingValue(BCF2Type.FLOAT);
+        return encoder.getRecordBytes();
+    }
+
+    @Test
+    public void trailingMissingValuesAreDroppedFromABcf21FloatVector() throws IOException {
+        Assert.assertEquals(
+                new BCF2Decoder(floatVectorEndingInMissing(), BCFVersion.BCF_2_1).decodeTypedValue(),
+                Arrays.asList(1.5, 2.5));
+    }
+
+    @Test
+    public void trailingMissingValuesAreKeptInABcf22FloatVector() throws IOException {
+        Assert.assertEquals(
+                new BCF2Decoder(floatVectorEndingInMissing(), BCFVersion.BCF_2_2).decodeTypedValue(),
+                Arrays.asList(1.5, 2.5, null));
+    }
+
     @Test
     public void infinityAndNaNAreValuesNotSentinels() throws IOException {
         final BCF2Encoder encoder = new BCF2Encoder();
@@ -680,7 +738,11 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     // -- decodeIntArray --
 
     private static int[] intArray(final int... values) throws IOException {
-        final BCF2Decoder decoder = int8VectorThen42(values);
+        return intArray(BCFVersion.BCF_2_1, values);
+    }
+
+    private static int[] intArray(final BCFVersion version, final int... values) throws IOException {
+        final BCF2Decoder decoder = int8VectorThen42(version, values);
         final byte typeDescriptor = decoder.readTypeDescriptor();
         final int[] decoded = decoder.decodeIntArray(typeDescriptor, values.length);
         assertNextIs42(decoder);
@@ -694,9 +756,25 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void anIntArrayPaddedWithMissingIsTruncated() throws IOException {
-        Assert.assertEquals(intArray(10, MISSING8), new int[] {10});
-        Assert.assertEquals(intArray(10, MISSING8, MISSING8), new int[] {10});
+    public void aBcf21IntArrayPaddedWithMissingIsTruncated() throws IOException {
+        Assert.assertEquals(intArray(BCFVersion.BCF_2_1, 10, MISSING8), new int[] {10});
+        Assert.assertEquals(intArray(BCFVersion.BCF_2_1, 10, MISSING8, MISSING8), new int[] {10});
+    }
+
+    @Test
+    public void aBcf22IntArrayWithATrailingMissingValueIsNull() throws IOException {
+        Assert.assertNull(intArray(BCFVersion.BCF_2_2, 10, 5, MISSING8));
+        Assert.assertNull(intArray(BCFVersion.BCF_2_2, 10, MISSING8, MISSING8));
+    }
+
+    @Test
+    public void aBcf22IntArrayEndsAtEndOfVector() throws IOException {
+        Assert.assertEquals(intArray(BCFVersion.BCF_2_2, 3, 4, EOV8), new int[] {3, 4});
+    }
+
+    @Test
+    public void aBcf22IntArrayOfOneMissingThenEndOfVectorIsNull() throws IOException {
+        Assert.assertNull(intArray(BCFVersion.BCF_2_2, MISSING8, EOV8, EOV8));
     }
 
     @Test

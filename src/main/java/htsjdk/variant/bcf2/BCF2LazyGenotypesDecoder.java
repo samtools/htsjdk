@@ -73,7 +73,9 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
         }
 
         try {
-            final BCF2Decoder decoder = new BCF2Decoder(lazyData.bytes);
+            final BCF2Decoder decoder = lazyData.bcfVersion == null
+                    ? new BCF2Decoder(lazyData.bytes)
+                    : new BCF2Decoder(lazyData.bytes, lazyData.bcfVersion);
             for (int i = 0; i < lazyData.nGenotypeFields; i++) {
                 final int offset = (Integer) decoder.decodeTypedValue();
                 final String field = dictionary.getString(offset);
