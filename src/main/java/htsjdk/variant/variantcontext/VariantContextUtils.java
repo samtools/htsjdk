@@ -43,20 +43,28 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 
 public class VariantContextUtils {
     private static Set<String> MISSING_KEYS_WARNED_ABOUT = new HashSet<String>();
 
-    /** Use a {@link Lazy} {@link JexlEngine} instance to avoid class-loading issues. (Applications that access this class are otherwise
-     * forced to build a {@link JexlEngine} instance, which depends on some apache logging libraries that mightn't be packaged.) */
-    public static final Lazy<JexlEngine> engine = new Lazy<>(() -> {
-        final JexlEngine jexl = new JexlEngine();
-        jexl.setSilent(false); // will throw errors now for selects that don't evaluate properly
-        jexl.setLenient(false);
-        jexl.setDebug(false);
-        return jexl;
+    /**
+     * A {@link Lazy} {@link JexlEngine}, so that applications using this class without JEXL expressions, as VCF and BCF
+     * decoding does, need neither JEXL nor the logging libraries it depends on. The initializer is an anonymous class
+     * rather than a lambda because a lambda's bootstrap loads {@link JexlEngine} when this class is initialised.
+     */
+    @SuppressWarnings("Convert2Lambda")
+    public static final Lazy<JexlEngine> engine = new Lazy<>(new Supplier<>() {
+        @Override
+        public JexlEngine get() {
+            final JexlEngine jexl = new JexlEngine();
+            jexl.setSilent(false); // will throw errors now for selects that don't evaluate properly
+            jexl.setLenient(false);
+            jexl.setDebug(false);
+            return jexl;
+        }
     });
 
     private static final boolean ASSUME_MISSING_FIELDS_ARE_STRINGS = false;
