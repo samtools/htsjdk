@@ -1310,52 +1310,97 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
 
     // Vector padding
 
-    @Test
-    public void vectorPaddingUsesOneMissingThenEndOfVectorIn22() throws IOException {
+    /** A header declaring GT and an unbounded Integer FORMAT field XI for samples s1 and s2. */
+    private static VCFHeader xiHeader() {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "gt"));
         lines.add(new VCFFormatHeaderLine("XI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         final VCFHeader header = new VCFHeader(lines, List.of("s1", "s2"));
         header.setSequenceDictionary(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
-        // s1 has 3 values, s2 has 1: s2 is padded from 1 to 3
-        final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+        return header;
+    }
+
+    /** s1 has XI {@code 10,20,30}; s2 has the given XI values, or none if {@code s2Values} is null. */
+    private static VariantContext xiSites(final List<Integer> s2Values) {
+        final GenotypeBuilder s2 = new GenotypeBuilder("s2", List.of(REF_A, ALT_C));
+        if (s2Values != null) s2.attribute("XI", s2Values);
+        return new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
                 .genotypes(
                         new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
                                 .attribute("XI", List.of(10, 20, 30))
                                 .make(),
-                        new GenotypeBuilder("s2", List.of(REF_A, ALT_C))
-                                .attribute("XI", List.of(5))
+                        s2.make())
+                .make();
+    }
+
+    /** The last {@code n} bytes of a raw BCF 2.1 file holding one record: the end of its genotype block. */
+    private static byte[] lastBytes(final Path bcf21, final int n) throws IOException {
+        final byte[] raw = Files.readAllBytes(bcf21);
+        return Arrays.copyOfRange(raw, raw.length - n, raw.length);
+    }
+
+    @Test
+    public void aShorterVectorIsPaddedWithEndOfVectorIn22() throws IOException {
+        // XI is the last FORMAT field, so s2's three INT8 slots end the genotype block
+        final byte[] block = genotypeBlockOf(writeBcf(xiHeader(), xiSites(List.of(5))));
+        Assert.assertEquals(
+                Arrays.copyOfRange(block, block.length - 3, block.length), new byte[] {5, (byte) 0x81, (byte) 0x81});
+    }
+
+    @Test
+    public void anEmptyVectorIsPaddedWithOneMissingThenEndOfVectorIn22() throws IOException {
+        final byte[] block = genotypeBlockOf(writeBcf(xiHeader(), xiSites(null)));
+        Assert.assertEquals(
+                Arrays.copyOfRange(block, block.length - 3, block.length),
+                new byte[] {(byte) 0x80, (byte) 0x81, (byte) 0x81});
+    }
+
+    @Test
+    public void aShorterVectorIsPaddedWithMissingIn21() throws IOException {
+        Assert.assertEquals(
+                lastBytes(writeBcf21(xiHeader(), xiSites(List.of(5))), 3), new byte[] {5, (byte) 0x80, (byte) 0x80});
+    }
+
+    @Test
+    public void anEmptyVectorIsPaddedWithMissingIn21() throws IOException {
+        Assert.assertEquals(
+                lastBytes(writeBcf21(xiHeader(), xiSites(null)), 3),
+                new byte[] {(byte) 0x80, (byte) 0x80, (byte) 0x80});
+    }
+
+    /** A triallelic site with a diploid sample s1 (6 PLs) and a haploid sample s2 (3 PLs). */
+    private static VariantContext mixedPloidyPls() {
+        final Allele altG = Allele.create("G");
+        return new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C, altG))
+                .genotypes(
+                        new GenotypeBuilder("s1", List.of(REF_A, ALT_C))
+                                .PL(new int[] {1, 2, 3, 4, 5, 6})
+                                .make(),
+                        new GenotypeBuilder("s2", List.of(altG))
+                                .PL(new int[] {7, 8, 9})
                                 .make())
                 .make();
-        // BCF 2.2: s2's XI padded from 1 to 3: [5, MISSING(0x80), END_OF_VECTOR(0x81)]
-        final Path bcf22 = writeBcf(header, vc);
-        try (final VCFFileReader reader = new VCFFileReader(bcf22, false)) {
-            final LazyGenotypesContext lgc =
-                    (LazyGenotypesContext) reader.iterator().next().getGenotypes();
-            final byte[] gt = ((BCF2Codec.LazyData) lgc.getUnparsedGenotypeData()).bytes;
-            // Search for the pattern [5, 0x80, 0x81] in the genotype block
-            boolean found22 = false;
-            for (int i = 0; i < gt.length - 2; i++) {
-                if (gt[i] == 5 && gt[i + 1] == (byte) 0x80 && gt[i + 2] == (byte) 0x81) {
-                    found22 = true;
-                    break;
-                }
-            }
-            Assert.assertTrue(found22, "BCF 2.2 should pad with [value, MISSING, END_OF_VECTOR]");
-        }
+    }
 
-        // BCF 2.1: s2's XI padded from 1 to 3: [5, MISSING(0x80), MISSING(0x80)]
-        final Path bcf21 = writeBcf21(header, vc);
-        final byte[] raw21 = Files.readAllBytes(bcf21);
-        // Search for the pattern [5, 0x80, 0x80] in the raw file bytes
-        boolean found21 = false;
-        for (int i = 0; i < raw21.length - 2; i++) {
-            if (raw21[i] == 5 && raw21[i + 1] == (byte) 0x80 && raw21[i + 2] == (byte) 0x80) {
-                found21 = true;
-                break;
-            }
-        }
-        Assert.assertTrue(found21, "BCF 2.1 should pad with [value, MISSING, MISSING]");
+    private static VCFHeader plHeader() {
+        final VCFHeader header = gtHeader(VCFHeaderVersion.VCF4_4, 2);
+        header.addMetaDataLine(VCFStandardHeaderLines.getFormatLine(VCFConstants.GENOTYPE_PL_KEY));
+        return header;
+    }
+
+    @Test
+    public void aShorterPlReadsBackFromBcf22() throws IOException {
+        final VariantContext vc = readOne(writeBcf(plHeader(), mixedPloidyPls()));
+        Assert.assertEquals(vc.getGenotype("s1").getPL(), new int[] {1, 2, 3, 4, 5, 6});
+        Assert.assertEquals(vc.getGenotype("s2").getPL(), new int[] {7, 8, 9});
+    }
+
+    @Test
+    public void bcftoolsReadsAShorterPlWithoutAnAddedMissingValue() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        final List<String> lines = BcftoolsTestUtils.viewAsVcf(writeBcf(plHeader(), mixedPloidyPls()));
+        final String record = lines.get(lines.size() - 1);
+        Assert.assertTrue(record.endsWith("\t0/1:1,2,3,4,5,6\t2:7,8,9"), record);
     }
 
     // String list form
