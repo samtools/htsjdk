@@ -832,7 +832,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     // ---------------------------------------------------------------------------------------------------------
 
     public boolean hasID() {
-        return getID() != VCFConstants.EMPTY_ID_FIELD;
+        return !VCFConstants.EMPTY_ID_FIELD.equals(getID());
     }
 
     public boolean emptyID() {

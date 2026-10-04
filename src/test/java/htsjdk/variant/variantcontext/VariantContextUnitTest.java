@@ -44,6 +44,9 @@ import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
@@ -1972,6 +1975,23 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 .attribute("X", "1")
                 .make()
                 .fullyDecode(header, true);
+    }
+
+    @Test
+    public void aDeserializedVariantWithoutAnIdHasNoId() throws Exception {
+        final VariantContext vc = new VariantContextBuilder(
+                        "test", "1", 100, 100, Arrays.asList(Allele.create("A", true), Allele.create("C")))
+                .make();
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
+            out.writeObject(vc);
+        }
+        // deserialization gives the missing ID its own String instance
+        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
+            final VariantContext deserialized = (VariantContext) in.readObject();
+            Assert.assertFalse(deserialized.hasID());
+            Assert.assertTrue(deserialized.emptyID());
+        }
     }
 
     // INFO END against getEnd(): only an END past the end is malformed
