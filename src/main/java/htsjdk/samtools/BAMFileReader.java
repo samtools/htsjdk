@@ -146,7 +146,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.eagerDecode = eagerDecode;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = samRecordFactory;
-        this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, null);
+        this.mFileHeader = readHeaderOrClose(null);
     }
 
     /**
@@ -392,7 +392,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.eagerDecode = eagerDecode;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = samRecordFactory;
-        this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
+        this.mFileHeader = readHeaderOrClose(source);
         mFirstRecordPointer = mCompressedInputStream.getFilePointer();
     }
 
@@ -423,8 +423,25 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         this.eagerDecode = eagerDecode;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = samRecordFactory;
-        this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
+        this.mFileHeader = readHeaderOrClose(source);
         mFirstRecordPointer = mCompressedInputStream.getFilePointer();
+    }
+
+    /**
+     * Reads the header from {@link #mStream}. If that fails the streams this reader was given are closed, as there
+     * will be no reader for the caller to close.
+     *
+     * @param source names the file in error messages; may be null
+     * @return the header
+     */
+    private SAMFileHeader readHeaderOrClose(final String source) throws IOException {
+        try {
+            return readHeader(mStream, mValidationStringency, source);
+        } catch (final IOException | RuntimeException e) {
+            CloserUtil.close(mCompressedInputStream);
+            CloserUtil.close(mIndexStream);
+            throw e;
+        }
     }
 
     /** Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file. */

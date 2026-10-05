@@ -37,6 +37,7 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.testutil.LogCapture;
+import htsjdk.testutil.streams.RecordingChannelWrapper;
 import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
@@ -50,6 +51,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -923,6 +925,38 @@ public class SAMTextReaderTest extends HtsjdkTest {
         Assert.assertThrows(RuntimeException.class, () -> SamReaderFactory.makeDefault()
                 .open(SamInputResource.of(badHeader).index(index)));
         Assert.assertEquals(closes[0], 1);
+    }
+
+    @Test
+    public void testStreamOfUncompressedTextIsClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final Path badHeader = Files.createTempFile("badHeader.", ".sam");
+        IOUtil.deleteOnExit(badHeader);
+        Files.writeString(badHeader, "@HD\tVN:1.6\n@SQ\tSN:chr1\n");
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final InputStream sam = new SeekablePathStream(badHeader, channels);
+
+        Assert.assertThrows(
+                SAMFormatException.class,
+                () -> new SAMTextReader(sam, ValidationStringency.STRICT, new DefaultSAMRecordFactory()));
+        Assert.assertEquals(channels.openedCount(), 1);
+        Assert.assertEquals(channels.stillOpenCount(), 0);
+    }
+
+    @Test
+    public void testAFailureToCloseDoesNotHideWhyTheHeaderCouldNotBeRead() {
+        final InputStream failsToClose =
+                new ByteArrayInputStream("@HD\tVN:1.6\n@SQ\tSN:chr1\n".getBytes(StandardCharsets.UTF_8)) {
+                    @Override
+                    public void close() throws IOException {
+                        throw new IOException("injected failure");
+                    }
+                };
+
+        final SAMFormatException thrown = Assert.expectThrows(
+                SAMFormatException.class,
+                () -> new SAMTextReader(failsToClose, ValidationStringency.STRICT, new DefaultSAMRecordFactory()));
+        Assert.assertEquals(thrown.getSuppressed().length, 1);
+        Assert.assertTrue(thrown.getSuppressed()[0] instanceof RuntimeIOException);
     }
 
     // Block-compressed SAM indexed the way tabix indexes it: references numbered as the file meets them, and named.

@@ -28,6 +28,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.tribble.util.ParsingUtils;
@@ -51,8 +52,15 @@ public class SAMSequenceDictionaryExtractor {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path reference) {
-                final SAMSequenceDictionary dict = ReferenceSequenceFileFactory.getReferenceSequenceFile(reference)
-                        .getSequenceDictionary();
+                final ReferenceSequenceFile referenceFile =
+                        ReferenceSequenceFileFactory.getReferenceSequenceFile(reference);
+                final SAMSequenceDictionary dict;
+                try {
+                    dict = referenceFile.getSequenceDictionary();
+                } finally {
+                    // Only the dictionary was wanted, so failing to close the file read for it is not worth reporting
+                    CloserUtil.close(referenceFile);
+                }
                 if (dict == null)
                     throw new SAMException("Could not find dictionary next to reference file "
                             + reference.toUri().toString());

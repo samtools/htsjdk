@@ -23,9 +23,15 @@
  */
 package htsjdk.variant.utils;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.SequenceUtil;
+import java.io.IOException;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.testng.Assert;
@@ -63,5 +69,24 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
 
         Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1, dict2));
         Assert.assertTrue(dict1.md5().equals(dict2.md5()));
+    }
+
+    @Test
+    public void testExtractingTheDictionaryOfAFastaLeavesTheFastaClosed() throws IOException {
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path fasta = fs.getPath("/ref.fasta");
+            Files.writeString(fasta, ">chr1\nACGTACGT\n");
+            Files.writeString(fs.getPath("/ref.fasta.fai"), "chr1\t8\t6\t8\t9\n");
+            Files.writeString(fs.getPath("/ref.dict"), "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:8\n");
+            final FileStore store = Files.getFileStore(fasta);
+            final long unallocatedWithTheFasta = store.getUnallocatedSpace();
+
+            final SAMSequenceDictionary dict = SAMSequenceDictionaryExtractor.extractDictionary(fasta);
+            Assert.assertEquals(dict.getSequence("chr1").getSequenceLength(), 8);
+
+            // Jimfs, as a Unix file system does, keeps the storage of a deleted file until it is no longer open
+            Files.delete(fasta);
+            Assert.assertTrue(store.getUnallocatedSpace() > unallocatedWithTheFasta);
+        }
     }
 }

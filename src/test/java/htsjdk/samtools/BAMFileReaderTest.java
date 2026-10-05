@@ -2,14 +2,19 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.index.FileBackedBinningIndex;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.testutil.LogCapture;
+import htsjdk.testutil.streams.RecordingChannelWrapper;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -407,5 +412,70 @@ public class BAMFileReaderTest extends HtsjdkTest {
     @Test
     public void testAnIndexOlderThanItsBamIsNotLoggedAtLevelError() throws Exception {
         Assert.assertEquals(linesLoggedOpeningABamWithAStaleIndex(Log.LogLevel.ERROR), List.of());
+    }
+
+    /** Writes a BAM whose header says it has 1000 bytes of text, but which ends three bytes into it. */
+    private static Path writeBamWithTruncatedHeader() throws IOException {
+        final Path bam = Files.createTempFile("truncatedHeader.", ".bam");
+        IOUtil.deleteOnExit(bam);
+        try (BlockCompressedOutputStream out = new BlockCompressedOutputStream(bam)) {
+            out.write(BAMFileConstants.BAM_MAGIC);
+            out.write(ByteBuffer.allocate(4)
+                    .order(ByteOrder.LITTLE_ENDIAN)
+                    .putInt(1000)
+                    .array());
+            out.write("@HD".getBytes(StandardCharsets.US_ASCII));
+        }
+        return bam;
+    }
+
+    @Test
+    public void testStreamAndIndexStreamAreClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final SeekableStream bam = new SeekablePathStream(writeBamWithTruncatedHeader(), channels);
+        final SeekableStream index = new SeekablePathStream(baiFileIndex, channels);
+
+        Assert.assertThrows(
+                SAMException.class,
+                () -> new BAMFileReader(
+                        bam, index, false, false, ValidationStringency.STRICT, DefaultSAMRecordFactory.getInstance()));
+        Assert.assertEquals(channels.openedCount(), 2);
+        Assert.assertEquals(channels.stillOpenCount(), 0);
+    }
+
+    @Test
+    public void testSeekableStreamWithAnIndexPathIsClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final SeekableStream bam = new SeekablePathStream(writeBamWithTruncatedHeader(), channels);
+
+        Assert.assertThrows(
+                SAMException.class,
+                () -> new BAMFileReader(
+                        bam,
+                        baiFileIndex,
+                        false,
+                        false,
+                        ValidationStringency.STRICT,
+                        DefaultSAMRecordFactory.getInstance()));
+        Assert.assertEquals(channels.openedCount(), 1);
+        Assert.assertEquals(channels.stillOpenCount(), 0);
+    }
+
+    @Test
+    public void testUnseekableStreamIsClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final InputStream bam = new SeekablePathStream(writeBamWithTruncatedHeader(), channels);
+
+        Assert.assertThrows(
+                SAMException.class,
+                () -> new BAMFileReader(
+                        bam,
+                        baiFileIndex,
+                        false,
+                        false,
+                        ValidationStringency.STRICT,
+                        DefaultSAMRecordFactory.getInstance()));
+        Assert.assertEquals(channels.openedCount(), 1);
+        Assert.assertEquals(channels.stillOpenCount(), 0);
     }
 }

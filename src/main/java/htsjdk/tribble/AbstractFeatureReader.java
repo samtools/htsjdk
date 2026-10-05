@@ -23,11 +23,13 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -233,6 +235,27 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     @Override
     public Object getHeader() {
         return header.getHeaderValue();
+    }
+
+    /**
+     * Closes each of {@code closeables} that is not null, every one of them even if some fail to close. The first
+     * failure is then thrown, with any later ones suppressed into it.
+     */
+    static void closeAll(final List<? extends Closeable> closeables) throws IOException {
+        Exception failure = null;
+        for (final Closeable closeable : closeables) {
+            try {
+                if (closeable != null) closeable.close();
+            } catch (final IOException | RuntimeException e) {
+                if (failure == null) {
+                    failure = e;
+                } else if (failure != e) {
+                    failure.addSuppressed(e);
+                }
+            }
+        }
+        if (failure instanceof IOException) throw (IOException) failure;
+        if (failure != null) throw (RuntimeException) failure;
     }
 
     static class EmptyIterator<T extends Feature> implements CloseableTribbleIterator<T> {

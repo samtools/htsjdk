@@ -361,7 +361,14 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (inputStream instanceof SeekableStream) {
             inputStreamStart = ((SeekableStream) inputStream).position();
         }
-        iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
+        try {
+            iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
+        } catch (final RuntimeException e) {
+            // There will be no reader for the caller to close, so what it was given is closed here
+            CloserUtil.close(inputStream);
+            CloserUtil.close(indexInputStream);
+            throw e;
+        }
     }
 
     private Path findIndexForPath(Path indexPath, final Path cramPath) {
@@ -541,20 +548,30 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      */
     @Override
     public SAMRecordIterator getIterator() {
+        if (iterator != null && cramPath == null && !(inputStream instanceof SeekableStream)) {
+            return iterator;
+        }
+        final InputStream source;
         try {
             if (cramPath != null) {
-                iterator = new CRAMIterator(
-                        new BufferedInputStream(Files.newInputStream(cramPath)), referenceSource, validationStringency);
+                source = new BufferedInputStream(Files.newInputStream(cramPath));
             } else if (inputStream instanceof SeekableStream) {
-                iterator =
-                        new CRAMIterator(new IteratorStream(inputStreamStart), referenceSource, validationStringency);
-            } else if (iterator == null) {
-                iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
+                source = new IteratorStream(inputStreamStart);
+            } else {
+                source = inputStream;
             }
-            return iterator;
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
+        try {
+            iterator = new CRAMIterator(source, referenceSource, validationStringency);
+        } catch (final RuntimeException e) {
+            // Nothing else will close a stream opened here, or a given one that can't be seeked in, which is read
+            // here only while the reader is being constructed; closing an IteratorStream leaves the shared stream open
+            CloserUtil.close(source);
+            throw e;
+        }
+        return iterator;
     }
 
     /**

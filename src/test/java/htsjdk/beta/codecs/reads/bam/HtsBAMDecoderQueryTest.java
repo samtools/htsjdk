@@ -16,8 +16,19 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamFiles;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.testutil.streams.RecordingChannelWrapper;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
@@ -145,6 +156,65 @@ public class HtsBAMDecoderQueryTest extends HtsjdkTest {
                         HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle, new ReadsDecoderOptions());
                 final CloseableIterator<SAMRecord> it = bamDecoder.query("chr1", 202661637, 202661812, queryRule)) {
             Assert.assertEquals(countElements(it), expected);
+        }
+    }
+
+    @Test
+    public void testQueriesGoThroughTheIndexTheBundleNamesWhereverItIs() throws IOException {
+        // the copy has no index beside it, so only the one named in the bundle can answer the query
+        final Path bamWithoutIndexBeside = Files.createTempFile("indexElsewhere.", ".bam");
+        IOUtil.deleteOnExit(bamWithoutIndexBeside);
+        Files.copy(TEST_BAM.toPath(), bamWithoutIndexBeside, StandardCopyOption.REPLACE_EXISTING);
+        final ReadsBundle<IOPath> readsBundle =
+                new ReadsBundle<>(new HtsPath(bamWithoutIndexBeside.toUri().toString()), TEST_BAI);
+
+        try (final ReadsDecoder bamDecoder =
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle, new ReadsDecoderOptions());
+                final CloseableIterator<SAMRecord> it =
+                        bamDecoder.query("chr1", 202661637, 202661812, HtsQueryRule.OVERLAPPING)) {
+            Assert.assertEquals(countElements(it), 2);
+        }
+    }
+
+    @Test
+    public void testClosingTheDecoderLeavesNoStreamOpenOnTheIndex() {
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final Bundle readsBundle = new BundleBuilder()
+                .addPrimary(new IOPathResource(TEST_BAM, BundleResourceType.CT_ALIGNED_READS))
+                .addSecondary(new IndexResourceOpenedThrough(TEST_BAI, channels))
+                .build();
+
+        try (final ReadsDecoder bamDecoder =
+                        HtsDefaultRegistry.getReadsResolver().getReadsDecoder(readsBundle, new ReadsDecoderOptions());
+                final CloseableIterator<SAMRecord> it =
+                        bamDecoder.query("chr1", 202661637, 202661812, HtsQueryRule.OVERLAPPING)) {
+            Assert.assertEquals(countElements(it), 2);
+        }
+        Assert.assertEquals(channels.stillOpenCount(), 0);
+    }
+
+    /** An index resource whose streams are opened through a wrapper that records them. */
+    private static final class IndexResourceOpenedThrough extends IOPathResource {
+        private static final long serialVersionUID = 1L;
+        private final transient RecordingChannelWrapper channels;
+
+        IndexResourceOpenedThrough(final IOPath index, final RecordingChannelWrapper channels) {
+            super(index, BundleResourceType.CT_READS_INDEX);
+            this.channels = channels;
+        }
+
+        @Override
+        public Optional<SeekableStream> getSeekableStream() {
+            try {
+                return Optional.of(new SeekablePathStream(getIOPath().get().toPath(), channels));
+            } catch (final IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        @Override
+        public Optional<InputStream> getInputStream() {
+            return Optional.of(getSeekableStream().get());
         }
     }
 

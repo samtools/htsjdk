@@ -35,12 +35,15 @@ import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -72,6 +75,12 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * Don't want to keep checking if that's the case
      */
     private boolean needCheckForIndex = true;
+
+    /**
+     * Iterators handed out that are neither closed nor read to their end, which the reader closes when it is closed,
+     * as some read a stream of their own. An iterator may be closed on another thread than the one that asked for it.
+     */
+    private final Set<CloseableTribbleIterator<T>> openIterators = ConcurrentHashMap.newKeySet();
 
     /**
      * @param featurePath  - path to the feature file, can be a local file path, http url, or ftp url
@@ -224,8 +233,23 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
     @Override
     public void close() throws IOException {
-        // close the seekable stream if that's necessary
-        if (seekableStream != null) seekableStream.close();
+        final List<Closeable> toClose = new ArrayList<>(openIterators);
+        // the stream reused across queries, if there is one
+        toClose.add(seekableStream);
+        closeAll(toClose);
+    }
+
+    /**
+     * Remembers {@code iterator}, so that closing the reader closes it, unless it found nothing to read and so has
+     * closed itself already.
+     *
+     * @return {@code iterator}
+     */
+    private <I extends CloseableTribbleIterator<T>> I track(final I iterator) {
+        if (iterator.hasNext()) {
+            openIterators.add(iterator);
+        }
+        return iterator;
     }
 
     /**
@@ -332,7 +356,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             return new EmptyIterator<>();
         }
         final List<Block> blocks = index.getBlocks(chr, start - 1, end);
-        return new QueryIterator(chr, start, end, blocks);
+        return track(new QueryIterator(chr, start, end, blocks));
     }
 
     /**
@@ -341,7 +365,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      */
     @Override
     public CloseableTribbleIterator<T> iterator() throws IOException {
-        return new WFIterator();
+        return track(new WFIterator());
     }
 
     /**
@@ -350,6 +374,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     class WFIterator implements CloseableTribbleIterator<T> {
         private T currentRecord;
         private final SOURCE source;
+        private boolean closed = false;
 
         /**
          * Constructor for iterating over the entire file (seekableStream).
@@ -402,7 +427,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             final T previousRecord = currentRecord;
             currentRecord = null;
 
-            while (!codec.isDone(source)) {
+            while (!closed && !codec.isDone(source)) {
                 final T f;
                 try {
                     f = codec.decode(source);
@@ -433,6 +458,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                     throw new TribbleException.MalformedFeatureFile(error, path, e);
                 }
             }
+            // An iterator read to its end holds nothing open, whether or not it is ever closed
+            close();
         }
 
         @Override
@@ -442,7 +469,11 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
         @Override
         public void close() {
-            codec.close(source);
+            if (!closed) {
+                closed = true;
+                openIterators.remove(this);
+                codec.close(source);
+            }
         }
 
         @Override
@@ -464,6 +495,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         private SOURCE source;
         private SeekableStream mySeekableStream;
         private Iterator<Block> blockIterator;
+        private boolean closed = false;
 
         public QueryIterator(final String chr, final int start, final int end, final List<Block> blocks)
                 throws IOException {
@@ -481,6 +513,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             // The feature chromosome might not be the query chromosome, due to alias definitions.  We assume
             // the chromosome of the first record is correct and record it here.  This is not pretty.
             chrAlias = (currentRecord == null ? chr : currentRecord.getContig());
+            closeIfExhausted();
         }
 
         @Override
@@ -499,7 +532,15 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                                 + ret.getStart() + "-" + ret.getEnd(),
                         e);
             }
+            closeIfExhausted();
             return ret;
+        }
+
+        /** An iterator read to its end holds nothing open, whether or not it is ever closed. */
+        private void closeIfExhausted() {
+            if (currentRecord == null) {
+                close();
+            }
         }
 
         private void advanceBlock() throws IOException {
@@ -595,14 +636,25 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
         @Override
         public void close() {
-            // Note that this depends on BlockStreamWrapper not actually closing the underlying stream
-            codec.close(source);
-            if (!reuseStreamInQuery()) {
-                // if we are going to reuse the underlying stream we don't close the underlying stream.
-                try {
-                    mySeekableStream.close();
-                } catch (IOException e) {
-                    throw new TribbleException("Couldn't close seekable stream", e);
+            if (closed) {
+                return;
+            }
+            closed = true;
+            openIterators.remove(this);
+            try {
+                // Note that this depends on BlockStreamWrapper not actually closing the underlying stream
+                if (source != null) {
+                    codec.close(source);
+                }
+            } finally {
+                source = null;
+                if (!reuseStreamInQuery()) {
+                    // if we are going to reuse the underlying stream we don't close the underlying stream.
+                    try {
+                        mySeekableStream.close();
+                    } catch (IOException e) {
+                        throw new TribbleException("Couldn't close seekable stream", e);
+                    }
                 }
             }
         }

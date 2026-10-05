@@ -34,6 +34,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.testutil.streams.RecordingChannelWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -526,5 +527,40 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         final CRAMFileReader reader = new CRAMFileReader((Path) null, Files.newInputStream(CRAM_WITH_CRAI), REFERENCE);
         Assert.assertEquals(reader.getValidationStringency(), ValidationStringency.SILENT);
         reader.close();
+    }
+
+    /** Writes a file that starts as a CRAM 3.0 file does, and then has no more than 40 bytes of nonsense. */
+    private static Path writeCramWithGarbageHeader() throws IOException {
+        final Path cram = Files.createTempFile("garbageHeader.", ".cram");
+        IOUtil.deleteOnExit(cram);
+        final byte[] bytes = new byte[46];
+        System.arraycopy(new byte[] {'C', 'R', 'A', 'M', 3, 0}, 0, bytes, 0, 6);
+        for (int i = 6; i < bytes.length; i++) {
+            bytes[i] = (byte) i;
+        }
+        Files.write(cram, bytes);
+        return cram;
+    }
+
+    @Test
+    public void testStreamAndIndexStreamAreClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final SeekableStream cram = new SeekablePathStream(writeCramWithGarbageHeader(), channels);
+        final SeekableStream index = new SeekablePathStream(INDEX_FILE, channels);
+
+        Assert.assertThrows(
+                RuntimeException.class, () -> new CRAMFileReader(cram, index, REFERENCE, ValidationStringency.STRICT));
+        Assert.assertEquals(channels.openedCount(), 2);
+        Assert.assertEquals(channels.stillOpenCount(), 0);
+    }
+
+    @Test
+    public void testStreamGivenWithoutAPathIsClosedWhenTheHeaderCannotBeRead() throws IOException {
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        final InputStream cram = new SeekablePathStream(writeCramWithGarbageHeader(), channels);
+
+        Assert.assertThrows(RuntimeException.class, () -> new CRAMFileReader((Path) null, cram, REFERENCE));
+        Assert.assertEquals(channels.openedCount(), 1);
+        Assert.assertEquals(channels.stillOpenCount(), 0);
     }
 }
