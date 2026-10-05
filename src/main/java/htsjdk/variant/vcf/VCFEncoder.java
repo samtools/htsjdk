@@ -600,12 +600,12 @@ public class VCFEncoder {
             for (int k = 0; k < nKeys; k++) {
                 final String field = keys[k];
                 if (isGenotypeKey[k]) {
-                    if (!g.isAvailable()) {
-                        throw new IllegalStateException(
-                                "GTs cannot be missing for some samples if they are available for others in the record");
+                    if (g.isAvailable()) {
+                        writeGtField(knownAlleles, knownCodes, alleleMap, vcfoutput, g, leadingPhaseAllowed);
+                    } else {
+                        // no GT: a missing one, as htslib writes it
+                        vcfoutput.append(VCFConstants.MISSING_VALUE_v4);
                     }
-
-                    writeGtField(knownAlleles, knownCodes, alleleMap, vcfoutput, g, leadingPhaseAllowed);
                     continue;
 
                 } else {

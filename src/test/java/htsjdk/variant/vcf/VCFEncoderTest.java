@@ -278,6 +278,31 @@ public class VCFEncoderTest extends HtsjdkTest {
     }
 
     @Test
+    public void encodeWritesAGenotypeWithoutAGtAsMissingWhenAnotherHasOne() {
+        final Genotype called =
+                new GenotypeBuilder("s1", REF_AND_ALT).attribute("BB", 5).make();
+        final Genotype uncalled = new GenotypeBuilder("s2").attribute("BB", 7).make();
+        Assert.assertEquals(sampleColumns(Arrays.asList("s1", "s2"), called, uncalled), Arrays.asList("0/1:5", ".:7"));
+    }
+
+    @Test
+    public void encodeWritesAGenotypeWithoutAGtOrValuesAsMissingWhenAnotherHasAGt() {
+        final Genotype empty = new GenotypeBuilder("s2").make();
+        Assert.assertEquals(
+                sampleColumns(Arrays.asList("s1", "s2"), genotype("s1", 0, 1), empty), Arrays.asList("0/1", "."));
+    }
+
+    @Test
+    public void encodeWritesGenotypesWithoutAGtOrValuesAsMissingGts() {
+        final VCFEncoder encoder = new VCFEncoder(createSyntheticHeader(Arrays.asList("s1", "s2")), false, false);
+        final VariantContext vc = new VariantContextBuilder("test", "1", 10, 10, REF_AND_ALT)
+                .genotypes(new GenotypeBuilder("s1").make(), new GenotypeBuilder("s2").make())
+                .make();
+        final String[] columns = encoder.encode(vc).split("\t");
+        Assert.assertEquals(Arrays.asList(columns).subList(8, columns.length), Arrays.asList("GT", ".", "."));
+    }
+
+    @Test
     public void encodeWritesTheLastGenotypeOfASampleWithTwo() {
         Assert.assertEquals(
                 sampleColumns(Arrays.asList("s1", "s2"), genotype("s1", 0, 0), genotype("s1", 1, 1)),
