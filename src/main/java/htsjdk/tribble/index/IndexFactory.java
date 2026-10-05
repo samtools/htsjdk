@@ -590,6 +590,12 @@ public class IndexFactory {
             } catch (final IOException e) {
                 throw new TribbleException.MalformedFeatureFile(
                         "Unable to read a line from the file", inputPath.toString(), e);
+            } catch (final TribbleException e) {
+                e.setSource(inputPath.toString());
+                throw e;
+            } catch (final NumberFormatException e) {
+                throw new TribbleException.MalformedFeatureFile(
+                        "Unable to parse a feature (" + e.getMessage() + ")", inputPath.toString(), e);
             }
         }
     }

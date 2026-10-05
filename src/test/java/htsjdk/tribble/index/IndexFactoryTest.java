@@ -31,11 +31,14 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.AsciiFeatureCodec;
+import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.VCFRedirectCodec;
 import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.gff.Gff3Codec;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.readers.LineIterator;
@@ -273,5 +276,89 @@ public class IndexFactoryTest extends HtsjdkTest {
         } finally {
             IOUtil.recursiveDelete(dir);
         }
+    }
+
+    // A malformed line stops indexing with a MalformedFeatureFile naming the file
+
+    /** Writes {@code text} to a new temporary file with the given extension. */
+    private static Path writeTempFile(final String extension, final String text) throws IOException {
+        final Path path = Files.createTempFile("IndexFactoryTest.", extension);
+        IOUtil.deleteOnExit(path);
+        Files.writeString(path, text);
+        return path;
+    }
+
+    private static final String MALFORMED_BED_LINE = "chr1\tabc\t200";
+
+    private static final String BED_WITH_MALFORMED_LINE = "chr1\t10\t100\n" + MALFORMED_BED_LINE + "\n";
+
+    private static void assertMessageContains(final Exception e, final String... expectedParts) {
+        for (final String expected : expectedParts) {
+            Assert.assertTrue(e.getMessage().contains(expected), e.getMessage());
+        }
+    }
+
+    @Test
+    public void aMalformedBedLineFailsALinearIndexNamingTheFileColumnAndLine() throws IOException {
+        final Path bed = writeTempFile(".bed", BED_WITH_MALFORMED_LINE);
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.MalformedFeatureFile.class, () -> IndexFactory.createLinearIndex(bed, new BEDCodec()));
+        assertMessageContains(e, bed.toString(), "chromStart 'abc'", MALFORMED_BED_LINE);
+    }
+
+    @Test
+    public void aMalformedBedLineFailsAnIntervalIndexNamingTheFileColumnAndLine() throws IOException {
+        final Path bed = writeTempFile(".bed", BED_WITH_MALFORMED_LINE);
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.MalformedFeatureFile.class,
+                () -> IndexFactory.createIntervalIndex(bed, new BEDCodec()));
+        assertMessageContains(e, bed.toString(), "chromStart 'abc'", MALFORMED_BED_LINE);
+    }
+
+    @Test
+    public void aMalformedBedLineFailsATabixIndexNamingTheFileColumnAndLine() throws IOException {
+        final Path bed = writeTempFile(".bed", BED_WITH_MALFORMED_LINE);
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.MalformedFeatureFile.class,
+                () -> IndexFactory.createTabixIndex(bed, new BEDCodec(), (SAMSequenceDictionary) null));
+        assertMessageContains(e, bed.toString(), "chromStart 'abc'", MALFORMED_BED_LINE);
+    }
+
+    @Test
+    public void aMalformedGff3LineFailsIndexingNamingTheFileAndColumn() throws IOException {
+        final Path gff3 =
+                writeTempFile(".gff3", "##gff-version 3\n" + "chr1\tsrc\tgene\t10\t100\thigh\t+\t.\tID=gene1\n");
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.MalformedFeatureFile.class,
+                () -> IndexFactory.createIndex(gff3, new Gff3Codec(), IndexFactory.IndexType.LINEAR));
+        assertMessageContains(e, gff3.toString(), "score 'high'");
+    }
+
+    @Test
+    public void aNumberFormatExceptionFromACodecFailsIndexingNamingTheFile() throws IOException {
+        // a codec that leaves an unparseable position to Integer.parseInt
+        final AsciiFeatureCodec<SimpleFeature> codec = new AsciiFeatureCodec<>(SimpleFeature.class) {
+            @Override
+            public SimpleFeature decode(final String line) {
+                final String[] columns = line.split("\t");
+                final int position = Integer.parseInt(columns[1]);
+                return new SimpleFeature(columns[0], position, position);
+            }
+
+            @Override
+            public Object readActualHeader(final LineIterator reader) {
+                return null;
+            }
+
+            @Override
+            public boolean canDecode(final String path) {
+                return true;
+            }
+        };
+        final Path input = writeTempFile(".txt", "chr1\t10\nchr1\tabc\n");
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.MalformedFeatureFile.class,
+                () -> IndexFactory.createIndex(input, codec, IndexFactory.IndexType.LINEAR));
+        assertMessageContains(e, input.toString(), "abc");
     }
 }

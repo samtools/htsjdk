@@ -2,12 +2,16 @@ package htsjdk.tribble.gff;
 
 import com.google.common.collect.ImmutableMap;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.readers.LineIterator;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -1097,6 +1101,120 @@ public class Gff3CodecTest extends HtsjdkTest {
         } else {
             final String singleAttribute = Gff3Codec.extractSingleAttribute(attributes);
             Assert.assertEquals(singleAttribute, expectedSingleAttribute);
+        }
+    }
+
+    // Malformed lines are reported naming the column and its value and showing the line
+
+    private static final String[] VALID_COLUMNS = {"chr1", "src", "gene", "10", "100", ".", "+", ".", "ID=gene1"};
+
+    /** A feature line with column {@code index} set to {@code value}. */
+    private static String featureLineWithColumn(final int index, final String value) {
+        final String[] columns = VALID_COLUMNS.clone();
+        columns[index] = value;
+        return String.join("\t", columns);
+    }
+
+    /** A GFF3 file whose third line is {@code line}. */
+    private static String gff3EndingWith(final String line) {
+        return "##gff-version 3\n" + "chr1\tsrc\tgene\t1\t5\t.\t+\t.\tID=gene0\n" + line + "\n";
+    }
+
+    /** Decodes all of {@code gff3} with a new codec and returns the MalformedFeatureFile it throws. */
+    private static TribbleException.MalformedFeatureFile decodeFailure(final String gff3) {
+        final Gff3Codec codec = new Gff3Codec();
+        final LineIterator lines =
+                codec.makeSourceFromStream(new ByteArrayInputStream(gff3.getBytes(StandardCharsets.UTF_8)));
+        return Assert.expectThrows(TribbleException.MalformedFeatureFile.class, () -> {
+            while (!codec.isDone(lines)) {
+                codec.decode(lines);
+            }
+        });
+    }
+
+    /**
+     * Decodes a GFF3 file with a feature line whose column {@code index} is {@code value}, and asserts that the
+     * exception thrown names the column and its value and shows the line.
+     */
+    private static void assertColumnRejected(final int index, final String columnName, final String value) {
+        final String line = featureLineWithColumn(index, value);
+        assertMessageContains(decodeFailure(gff3EndingWith(line)), columnName + " '" + value + "'", line);
+    }
+
+    private static void assertMessageContains(final Exception e, final String... expectedParts) {
+        for (final String expected : expectedParts) {
+            Assert.assertTrue(e.getMessage().contains(expected), e.getMessage());
+        }
+    }
+
+    @Test
+    public void aSeqidWithAnInvalidEscapeIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(0, "seqid", "chr%zz");
+    }
+
+    @Test
+    public void aSourceWithAnInvalidEscapeIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(1, "source", "src%");
+    }
+
+    @Test
+    public void aTypeWithAnInvalidEscapeIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(2, "type", "gene%G1");
+    }
+
+    @Test
+    public void aNonIntegerStartIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(3, "start", "abc");
+    }
+
+    @Test
+    public void aNonIntegerEndIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(4, "end", "xyz");
+    }
+
+    @Test
+    public void aNonNumericScoreIsReportedAsTheScoreColumn() {
+        assertColumnRejected(5, "score", "high");
+    }
+
+    @Test
+    public void aNonIntegerPhaseIsReportedAsThePhaseColumn() {
+        assertColumnRejected(7, "phase", "x");
+    }
+
+    @Test
+    public void anAttributeNameWithAnInvalidEscapeIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(8, "attributes", "ID%zz=gene1");
+    }
+
+    @Test
+    public void anAttributeValueWithAnInvalidEscapeIsReportedWithItsColumnAndLine() {
+        assertColumnRejected(8, "attributes", "ID=gene%zz");
+    }
+
+    @Test
+    public void aSequenceRegionEndTooLargeForAnIntIsReportedWithTheDirective() {
+        final String gff3 = "##gff-version 3\n" + "##sequence-region chr1 1 99999999999\n"
+                + String.join("\t", VALID_COLUMNS) + "\n";
+        assertMessageContains(decodeFailure(gff3), "##sequence-region chr1 1 99999999999");
+    }
+
+    @Test
+    public void aMalformedLineReadThroughAFeatureReaderIsReportedWithTheFileColumnAndLine() throws IOException {
+        final Path gff3 = Files.createTempFile("Gff3CodecTest.", ".gff3");
+        IOUtil.deleteOnExit(gff3);
+        final String line = featureLineWithColumn(5, "high");
+        Files.writeString(gff3, gff3EndingWith(line));
+
+        try (AbstractFeatureReader<Gff3Feature, LineIterator> reader =
+                AbstractFeatureReader.getFeatureReader(gff3.toString(), null, new Gff3Codec(), false)) {
+            final TribbleException.MalformedFeatureFile e =
+                    Assert.expectThrows(TribbleException.MalformedFeatureFile.class, () -> {
+                        for (final Gff3Feature ignored : reader.iterator()) {
+                            // read every line
+                        }
+                    });
+            assertMessageContains(e, gff3.toString(), "score 'high'", line);
         }
     }
 }
