@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.Log;
 import java.util.List;
 
 /**
@@ -30,6 +31,7 @@ import java.util.List;
  * so that they will be included in sam.jar, and therefore can be used by tests outside of htsjdk.samtools.
  */
 public class SAMTestUtil {
+    private static final Log log = Log.getInstance(SAMTestUtil.class);
 
     /**
      * Indicates that a required sanity-check condition was not met.
@@ -56,7 +58,7 @@ public class SAMTestUtil {
     }
 
     /**
-     * Basic sanity check for a SAMRecord. Print errors to screen.
+     * Basic sanity check for a SAMRecord. Logs each validation error.
      * @param read SAM record
      * @throws IllegalArgumentException if read is null
      * @throws SanityCheckFailedException if errors
@@ -68,7 +70,7 @@ public class SAMTestUtil {
 
         final List<SAMValidationError> errors = read.isValid(false);
         if (errors != null) {
-            errors.forEach(v -> System.out.println(v.toString()));
+            errors.forEach(v -> log.error(v));
         }
         assertTrue(errors.isEmpty());
     }

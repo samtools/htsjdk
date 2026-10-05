@@ -107,39 +107,39 @@ public abstract class AbstractIndex implements MutableIndex {
     public boolean equalsIgnoreProperties(final Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof AbstractIndex)) {
-            System.err.printf("equals: %s not instance of AbstractIndex", obj);
+            logger.debug("equals: ", obj, " not instance of AbstractIndex");
             return false;
         }
 
         final AbstractIndex other = (AbstractIndex) obj;
 
         if (version != other.version) {
-            System.err.printf("equals version: this %d != other %d%n", version, other.version);
+            logger.debug("equals version: this ", version, " != other ", other.version);
             return false;
         }
 
         if (indexedPath != other.indexedPath && (indexedPath == null || !indexedPath.equals(other.indexedPath))) {
-            System.err.printf("equals indexedPath: this %s != other %s%n", indexedPath, other.indexedPath);
+            logger.debug("equals indexedPath: this ", indexedPath, " != other ", other.indexedPath);
             return false;
         }
 
         if (indexedFileSize != other.indexedFileSize) {
-            System.err.printf("equals indexedFileSize: this %d != other %d%n", indexedFileSize, other.indexedFileSize);
+            logger.debug("equals indexedFileSize: this ", indexedFileSize, " != other ", other.indexedFileSize);
             return false;
         }
 
         if (!indexedFileMD5.equals(other.indexedFileMD5)) {
-            System.err.printf("equals indexedFileMD5: this %s != other %s%n", indexedFileMD5, other.indexedFileMD5);
+            logger.debug("equals indexedFileMD5: this ", indexedFileMD5, " != other ", other.indexedFileMD5);
             return false;
         }
 
         if (flags != other.flags) {
-            System.err.printf("equals flags: this %d != other %d%n", flags, other.flags);
+            logger.debug("equals flags: this ", flags, " != other ", other.flags);
             return false;
         }
 
         if (!chrIndices.equals(other.chrIndices)) {
-            System.err.printf("equals chrIndices: this %s != other %s%n", chrIndices, other.chrIndices);
+            logger.debug("equals chrIndices: this ", chrIndices, " != other ", other.chrIndices);
             return false;
         }
 

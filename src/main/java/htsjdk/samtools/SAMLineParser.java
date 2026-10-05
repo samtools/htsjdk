@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringUtil;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -40,6 +41,7 @@ import java.util.List;
  * be used from multiple threads concurrently.</p>
  */
 public class SAMLineParser {
+    private static final Log log = Log.getInstance(SAMLineParser.class);
 
     // From SAM specification
     private static final int QNAME_COL = 0;
@@ -699,8 +701,7 @@ public class SAMLineParser {
         if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException(errorMessage);
         } else if (validationStringency == ValidationStringency.LENIENT) {
-            System.err.println("Ignoring SAM validation error due to lenient parsing:");
-            System.err.println(errorMessage);
+            log.warn("Ignoring SAM validation error due to lenient parsing: ", errorMessage);
         }
     }
 
@@ -709,8 +710,7 @@ public class SAMLineParser {
         if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException(errorMessage, e);
         } else if (validationStringency == ValidationStringency.LENIENT) {
-            System.err.println("Ignoring SAM validation error due to lenient parsing:");
-            System.err.println(errorMessage);
+            log.warn("Ignoring SAM validation error due to lenient parsing: ", errorMessage);
         }
     }
 

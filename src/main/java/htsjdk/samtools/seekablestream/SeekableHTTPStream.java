@@ -24,6 +24,7 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.samtools.util.HttpUtils;
+import htsjdk.samtools.util.Log;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +36,7 @@ import java.net.URL;
  * @author jrobinso
  */
 public class SeekableHTTPStream extends SeekableStream {
+    private static final Log log = Log.getInstance(SeekableHTTPStream.class);
 
     private long position = 0;
     private long contentLength = -1;
@@ -57,7 +59,7 @@ public class SeekableHTTPStream extends SeekableStream {
             try {
                 contentLength = Long.parseLong(contentLengthString);
             } catch (NumberFormatException ignored) {
-                System.err.println("WARNING: Invalid content length (" + contentLengthString + "  for: " + url);
+                log.warn("Invalid content length (", contentLengthString, ") for: ", url);
                 contentLength = -1;
             }
         }

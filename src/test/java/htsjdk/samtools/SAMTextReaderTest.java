@@ -34,7 +34,9 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.testutil.LogCapture;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexType;
@@ -52,6 +54,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.testng.Assert;
@@ -267,6 +270,36 @@ public class SAMTextReaderTest extends HtsjdkTest {
     public void testUracilInSeqIsReadAsThymineWhenSilent() {
         final SAMRecord record = parseUnmappedRecordWithSeq(ValidationStringency.SILENT, "ACGUuACGT");
         Assert.assertEquals(record.getReadString(), "ACGTTACGT");
+    }
+
+    /** Parses, at LENIENT stringency, a record on {@code reference}, which the header's dictionary lacks. */
+    private static void parseLenientlyOnAReferenceNotInTheHeader(final String reference) {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", 1000));
+        final SAMLineParser parser =
+                new SAMLineParser(new DefaultSAMRecordFactory(), ValidationStringency.LENIENT, header, null, null);
+        parser.parseLine("Read\t0\t" + reference + "\t1\t0\t4M\t*\t0\t0\tACGT\t*");
+    }
+
+    @Test
+    public void testALenientParseErrorIsLoggedAsAWarning() throws Exception {
+        final String reference = "chr" + UUID.randomUUID();
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                reference, Log.LogLevel.INFO, () -> parseLenientlyOnAReferenceNotInTheHeader(reference));
+        Assert.assertTrue(
+                lines.stream()
+                        .anyMatch(line -> line.startsWith(Log.LogLevel.WARNING.name())
+                                && line.contains("Ignoring SAM validation error due to lenient parsing: ")
+                                && line.contains("RNAME '" + reference + "' not found in any SQ record")),
+                lines.toString());
+    }
+
+    @Test
+    public void testALenientParseErrorIsNotLoggedAtLevelError() throws Exception {
+        final String reference = "chr" + UUID.randomUUID();
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                reference, Log.LogLevel.ERROR, () -> parseLenientlyOnAReferenceNotInTheHeader(reference));
+        Assert.assertEquals(lines, List.of());
     }
 
     // Block-compressed SAM: where in the file each record lies, and reading the file from such a place.

@@ -11,6 +11,7 @@ import java.net.URLConnection;
  * Date: Sep 23, 2009
  */
 public class HttpUtils {
+    private static final Log log = Log.getInstance(HttpUtils.class);
 
     public static String getETag(final URL url) {
         return getHeaderField(url, "ETag");
@@ -37,7 +38,7 @@ public class HttpUtils {
             return conn.getHeaderField(name);
 
         } catch (final IOException e) {
-            e.printStackTrace();
+            log.warn(e, "Could not read header field ", name, " from ", url);
             return null;
         } finally {
             if (conn != null && conn instanceof HttpURLConnection) {
