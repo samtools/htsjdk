@@ -1,11 +1,11 @@
 package htsjdk.tribble.util;
 
 import htsjdk.samtools.util.ftp.FTPClient;
+import htsjdk.samtools.util.ftp.FTPReply;
 import htsjdk.samtools.util.ftp.FTPStream;
 import htsjdk.samtools.util.ftp.FTPUtils;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -36,15 +36,22 @@ public class FTPHelper implements URLHelper {
 
     @Override
     public InputStream openInputStream() throws IOException {
-        String file = null;
+        String file = FTPUtils.getDecodedPath(url);
+        FTPClient ftp = FTPUtils.connect(url, null);
         try {
-            file = url.toURI().getPath();
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
+            FTPReply reply = ftp.pasv();
+            if (reply.isPositiveCompletion()) {
+                // a 550 for a missing file may leave the data connection open, so reading it would hang
+                reply = ftp.retr(file);
+            }
+            if (!reply.isPositivePreliminary()) {
+                throw new IOException("Could not read " + file + " from " + url.getHost() + ": " + reply.getCode() + " "
+                        + reply.getReplyString());
+            }
+        } catch (final IOException e) {
+            ftp.disconnect();
+            throw e;
         }
-        FTPClient ftp = FTPUtils.connect(url.getHost(), url.getUserInfo(), null);
-        ftp.pasv();
-        ftp.retr(file);
         return new FTPStream(ftp);
     }
 

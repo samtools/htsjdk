@@ -11,6 +11,7 @@ import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
+import htsjdk.testutil.ftp.LocalFtpServer;
 import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -541,6 +542,24 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                 },
                 true,
                 3);
+    }
+
+    @Test
+    public void aCramAndItsIndexOverFtpOpenAsCram() throws IOException {
+        try (LocalFtpServer server = new LocalFtpServer()
+                .addFile("/data/reads.cram", Files.readAllBytes(TEST_DATA_DIR.resolve("cram_with_bai_index.cram")))
+                .addFile(
+                        "/data/reads.cram.bai",
+                        Files.readAllBytes(TEST_DATA_DIR.resolve("cram_with_bai_index.cram.bai")))) {
+            final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                    .referenceSource(new ReferenceSource(TEST_DATA_DIR.resolve("hg19mini.fasta")))
+                    .validationStringency(ValidationStringency.SILENT);
+            try (SamReader reader = factory.open(
+                    SamInputResource.of(server.url("/data/reads.cram")).index(server.url("/data/reads.cram.bai")))) {
+                Assert.assertEquals(reader.type(), SamReader.Type.CRAM_TYPE);
+                Assert.assertEquals(countRecordsInQueryInterval(reader, new QueryInterval(1, 10, 1000)), 3);
+            }
+        }
     }
 
     @Test

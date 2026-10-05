@@ -28,6 +28,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.testutil.ftp.LocalFtpServer;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -114,10 +115,6 @@ public class SamStreamsTest extends HtsjdkTest {
     @DataProvider(name = "sourceLikeBamRemote")
     public Object[][] sourceLikeBamDataRemote() {
         return new Object[][] {
-            // fails due to a combination of https://github.com/samtools/htsjdk/issues/619 and
-            // https://github.com/samtools/htsjdk/issues/618
-            // {"ftp://ftp.broadinstitute.org/dummy.cram", false, false},{"ftp://ftp.broadinstitute.org/dummy.bam",
-            // false, true},
             {"http://www.broadinstitute.org/dummy.bam", false, true},
             {"https://www.broadinstitute.org/dummy.bam", false, true},
             {"http://www.broadinstitute.org/dummy.bam?alt=media", false, true},
@@ -127,10 +124,28 @@ public class SamStreamsTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "sourceLikeBamRemote", groups = "ftp")
+    @Test(dataProvider = "sourceLikeBamRemote", groups = "http")
     public void sourceLikeBamRemote(final String resourceName, final boolean isFile, final boolean expected)
             throws IOException {
         sourceLikeBamImpl(resourceName, isFile, expected);
+    }
+
+    @Test
+    public void aBamOverFtpIsSourceLikeBam() throws IOException {
+        try (LocalFtpServer server = new LocalFtpServer();
+                SeekableStream stream = SeekableStreamFactory.getInstance().getStreamFor(server.url("/x.bam"))) {
+            Assert.assertTrue(SamStreams.sourceLikeBam(stream));
+            Assert.assertFalse(SamStreams.sourceLikeCram(stream));
+        }
+    }
+
+    @Test
+    public void aCramOverFtpIsSourceLikeCram() throws IOException {
+        try (LocalFtpServer server = new LocalFtpServer();
+                SeekableStream stream = SeekableStreamFactory.getInstance().getStreamFor(server.url("/x.cram"))) {
+            Assert.assertFalse(SamStreams.sourceLikeBam(stream));
+            Assert.assertTrue(SamStreams.sourceLikeCram(stream));
+        }
     }
 
     public void sourceLikeBamImpl(final String resourceName, final boolean isFile, final boolean expected)
