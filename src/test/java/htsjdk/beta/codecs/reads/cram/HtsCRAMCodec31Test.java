@@ -3,7 +3,9 @@ package htsjdk.beta.codecs.reads.cram;
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.cram.cramV3_1.CRAMCodecV3_1;
 import htsjdk.beta.plugin.IOUtils;
+import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
+import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
 import htsjdk.beta.plugin.registry.HtsDefaultRegistry;
@@ -11,12 +13,15 @@ import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.cram31.CRAM31FidelityTestBase;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.SamtoolsTestUtils;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -108,6 +113,35 @@ public class HtsCRAMCodec31Test extends HtsjdkTest {
                 recs31.add(sam31Rec);
                 Assert.assertEquals(sam30Rec, sam31Rec);
             }
+        }
+    }
+
+    @Test
+    public void theV3_1EncoderWritesCRAM31() throws IOException {
+        final Path tempDir = IOUtil.createTempDir("HtsCRAMCodec31Test");
+        try {
+            final SAMRecordSetBuilder readsBuilder =
+                    new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, 10_000);
+            readsBuilder.addPair("pair1", 0, 100, 300);
+            readsBuilder.addFrag("frag1", 1, 500, true);
+            final Path referencePath = tempDir.resolve("reference.fasta");
+            readsBuilder.writeRandomReference(referencePath);
+
+            final IOPath cramPath = IOUtils.toHtsPath(tempDir.resolve("reads.cram"));
+            final ReadsEncoderOptions readsEncoderOptions = new ReadsEncoderOptions()
+                    .setCRAMEncoderOptions(new CRAMEncoderOptions().setReferencePath(IOUtils.toHtsPath(referencePath)));
+            try (final ReadsEncoder cramEncoder = HtsDefaultRegistry.getReadsResolver()
+                    .getReadsEncoder(
+                            new ReadsBundle<>(cramPath),
+                            readsEncoderOptions,
+                            ReadsFormats.CRAM,
+                            CRAMCodecV3_1.VERSION_3_1)) {
+                cramEncoder.setHeader(readsBuilder.getHeader());
+                readsBuilder.getRecords().forEach(cramEncoder::write);
+            }
+            Assert.assertEquals(CRAM31FidelityTestBase.getCRAMVersion(cramPath), CramVersions.CRAM_v3_1);
+        } finally {
+            IOUtil.recursiveDelete(tempDir);
         }
     }
 }

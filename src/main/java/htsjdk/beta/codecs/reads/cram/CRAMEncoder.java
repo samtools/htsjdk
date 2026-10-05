@@ -5,6 +5,7 @@ import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.io.bundle.Bundle;
 import htsjdk.beta.io.bundle.BundleResource;
 import htsjdk.beta.io.bundle.BundleResourceType;
+import htsjdk.beta.plugin.HtsVersion;
 import htsjdk.beta.plugin.reads.ReadsEncoder;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
@@ -12,8 +13,12 @@ import htsjdk.samtools.CRAMFileWriter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.common.CRAMVersion;
+import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMCompressionProfile;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.utils.ValidationUtils;
 import java.util.Optional;
 
@@ -129,22 +134,47 @@ public abstract class CRAMEncoder implements ReadsEncoder {
         return ReferenceSource.getDefaultCRAMReferenceSource();
     }
 
+    /**
+     * Get the encoding strategy that writes this encoder's CRAM version: htsjdk's default profile for that version.
+     *
+     * @return a new {@link CRAMEncodingStrategy} for {@link #getVersion()}
+     * @throws HtsjdkUnsupportedOperationException if htsjdk can't write this encoder's CRAM version
+     */
+    private CRAMEncodingStrategy getCRAMEncodingStrategy() {
+        final HtsVersion version = getVersion();
+        final CRAMVersion cramVersion = new CRAMVersion(version.getMajorVersion(), version.getMinorVersion());
+        if (cramVersion.equals(CramVersions.CRAM_v3_1)) {
+            return CRAMCompressionProfile.NORMAL.toStrategy();
+        } else if (cramVersion.equals(CramVersions.CRAM_v3)) {
+            return CRAMCompressionProfile.NORMAL_3_0.toStrategy();
+        }
+        throw new HtsjdkUnsupportedOperationException(
+                String.format("Writing CRAM %s is not supported; htsjdk writes CRAM 3.0 and 3.1", cramVersion));
+    }
+
     private CRAMFileWriter getCRAMWriter(
             final SAMFileHeader samFileHeader, final ReadsEncoderOptions readsEncoderOptions) {
+        final CRAMEncodingStrategy encodingStrategy = getCRAMEncodingStrategy();
         // the CRAMFileWriter constructors assume presorted; so if we're presorted, use the CRAMFileWriters
         // directly so we can support writing to a stream
         if (readsEncoderOptions.isPreSorted()) {
             final BundleResource outputResource = outputBundle.getOrThrow(BundleResourceType.CT_ALIGNED_READS);
             if (outputResource.getIOPath().isPresent()) {
                 cramFileWriter = new CRAMFileWriter(
+                        encodingStrategy,
                         outputResource.getIOPath().get().getOutputStream(),
+                        null, // no index
+                        true, // presorted
                         getCRAMReferenceSource(readsEncoderOptions.getCRAMEncoderOptions()),
                         samFileHeader,
                         outputResource.getIOPath().get().toString());
                 return cramFileWriter;
             } else {
                 cramFileWriter = new CRAMFileWriter(
+                        encodingStrategy,
                         outputResource.getOutputStream().get(),
+                        null, // no index
+                        true, // presorted
                         getCRAMReferenceSource(readsEncoderOptions.getCRAMEncoderOptions()),
                         samFileHeader,
                         outputResource.getDisplayName());
@@ -152,7 +182,8 @@ public abstract class CRAMEncoder implements ReadsEncoder {
             }
         } else {
             // this path uses SAMFileWriterFactory to ensure presorted==false is handled correctly
-            final SAMFileWriterFactory samFileWriterFactory = new SAMFileWriterFactory();
+            final SAMFileWriterFactory samFileWriterFactory =
+                    new SAMFileWriterFactory().setCRAMEncodingStrategy(encodingStrategy);
             final boolean preSorted = readsEncoderOptions.isPreSorted();
 
             final BundleResource readsResource = getOutputBundle().getOrThrow(BundleResourceType.CT_ALIGNED_READS);
