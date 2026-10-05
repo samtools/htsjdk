@@ -1,14 +1,18 @@
 package htsjdk.tribble;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.tribble.IntervalList.IntervalListCodec;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -95,5 +99,44 @@ public class TribbleIndexedFeatureReaderTest extends HtsjdkTest {
             }
             Assert.assertEquals(numberOfRecords, 4);
         }
+    }
+
+    /** A BED of one feature covering 1-based chr1:50-149, with a linear Tribble index beside it. */
+    private static Path indexedBedWithOneFeature() throws IOException {
+        final Path bed = Files.createTempFile("TribbleIndexedFeatureReaderTest", ".bed");
+        IOUtil.deleteOnExit(bed);
+        Files.write(bed, "chr1\t49\t149\tf1\n".getBytes(StandardCharsets.US_ASCII));
+        final Path idx = Tribble.indexPath(bed);
+        IOUtil.deleteOnExit(idx);
+        IndexFactory.createLinearIndex(bed, new BEDCodec()).write(idx);
+        return bed;
+    }
+
+    private static int countQueried(final Path bed, final int start, final int end) throws IOException {
+        try (TribbleIndexedFeatureReader<BEDFeature, LineIterator> reader =
+                        new TribbleIndexedFeatureReader<>(bed.toString(), new BEDCodec(), true);
+                CloseableTribbleIterator<BEDFeature> features = reader.query("chr1", start, end)) {
+            int count = 0;
+            while (features.hasNext()) {
+                features.next();
+                count++;
+            }
+            return count;
+        }
+    }
+
+    @Test
+    public void aQueryOfOneBaseInsideAFeatureReturnsIt() throws IOException {
+        Assert.assertEquals(countQueried(indexedBedWithOneFeature(), 100, 100), 1);
+    }
+
+    @Test
+    public void anEmptyQueryReturnsNothing() throws IOException {
+        Assert.assertEquals(countQueried(indexedBedWithOneFeature(), 100, 99), 0);
+    }
+
+    @Test
+    public void anInvertedQueryReturnsNothing() throws IOException {
+        Assert.assertEquals(countQueried(indexedBedWithOneFeature(), 100, 98), 0);
     }
 }
