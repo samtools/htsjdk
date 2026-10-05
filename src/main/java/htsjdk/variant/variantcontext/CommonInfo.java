@@ -316,7 +316,7 @@ public final class CommonInfo implements Serializable {
 
     public double getAttributeAsDouble(String key, double defaultValue) {
         Object x = getAttribute(key);
-        if (x == null) return defaultValue;
+        if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) return defaultValue;
         if (x instanceof Double) return (Double) x;
         if (x instanceof Integer) return (Integer) x;
         return VCFUtils.parseVcfDouble((String) x); // throws an exception if this isn't a string
@@ -324,7 +324,7 @@ public final class CommonInfo implements Serializable {
 
     public boolean getAttributeAsBoolean(String key, boolean defaultValue) {
         Object x = getAttribute(key);
-        if (x == null) return defaultValue;
+        if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) return defaultValue;
         if (x instanceof Boolean) return (Boolean) x;
         return Boolean.valueOf((String) x); // throws an exception if this isn't a string
     }

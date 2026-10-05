@@ -633,7 +633,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     @Deprecated
     public double getAttributeAsDouble(String key, double defaultValue) {
         Object x = getExtendedAttribute(key);
-        if (x == null) return defaultValue;
+        if (x == null || VCFConstants.MISSING_VALUE_v4.equals(x)) return defaultValue;
         if (x instanceof Double) return (Double) x;
         return VCFUtils.parseVcfDouble((String) x); // throws an exception if this isn't a string
     }

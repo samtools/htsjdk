@@ -2275,6 +2275,16 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(recordWithMissingInfoValues().getAttributeAsInt("Z", -1), -1);
     }
 
+    @Test
+    public void getAttributeAsDoubleReturnsTheDefaultForAMissingValue() {
+        Assert.assertEquals(recordWithMissingInfoValues().getAttributeAsDouble("Z", -1.0), -1.0);
+    }
+
+    @Test
+    public void getAttributeAsBooleanReturnsTheDefaultForAMissingValue() {
+        Assert.assertTrue(recordWithMissingInfoValues().getAttributeAsBoolean("Z", true));
+    }
+
     private static final String TWO_SAMPLE_HEADER = "##fileformat=VCFv4.2\n"
             + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
             + "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Depth\">\n"
