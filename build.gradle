@@ -178,7 +178,10 @@ jar {
     manifest {
         attributes 'Implementation-Title': 'HTSJDK',
                 'Implementation-Vendor': 'Samtools Organization',
-                'Implementation-Version': archiveVersion
+                'Implementation-Version': archiveVersion,
+                // the name the module system derives from the jar's file name today, so `requires htsjdk;` keeps
+                // working however the jar is named
+                'Automatic-Module-Name': 'htsjdk'
     }
 }
 
