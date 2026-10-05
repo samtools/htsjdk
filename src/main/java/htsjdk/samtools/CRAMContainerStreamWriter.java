@@ -11,6 +11,8 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -119,6 +121,31 @@ public class CRAMContainerStreamWriter {
     }
 
     /**
+     * The last segment of an output identifier such as a {@code file:} URI or a path, so the CRAM file id (and the
+     * file's MD5) doesn't depend on the directory the file was written to; htslib writes the name it's given, which
+     * is usually a bare file name. A URI ({@code scheme://...}) is decoded; anything else is taken as it is, split on
+     * {@code /} or {@code \}, so a path keeps any {@code #}, {@code ?} or {@code %} in its name. An identifier with
+     * neither separator, such as a label, is returned as it is.
+     */
+    static String fileNameOf(final String outputIdentifier) {
+        if (outputIdentifier == null) {
+            return null;
+        }
+        String path = outputIdentifier;
+        if (outputIdentifier.contains("://")) {
+            try {
+                final String uriPath = new URI(outputIdentifier).getPath();
+                if (uriPath != null) {
+                    path = uriPath;
+                }
+            } catch (final URISyntaxException e) {
+                // not a valid URI after all, so use it as it is
+            }
+        }
+        return path.substring(Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\')) + 1);
+    }
+
+    /**
      * Write a CRAM file header and the provided SAM header to the stream.
      * Retained for backward compatibility with external projects (disq, GATK).
      *
@@ -126,7 +153,7 @@ public class CRAMContainerStreamWriter {
      * reference's sequence dictionary or computed from the reference bases. The header passed in is not modified.
      */
     public void writeHeader(final SAMFileHeader requestedSAMFileHeader) {
-        final CramHeader cramHeader = new CramHeader(cramVersion, outputStreamIdentifier);
+        final CramHeader cramHeader = new CramHeader(cramVersion, fileNameOf(outputStreamIdentifier));
         streamOffset = CramIO.writeCramHeader(cramHeader, outputStream);
         streamOffset += Container.writeSAMFileHeaderContainer(
                 cramHeader.getCRAMVersion(), withReferenceMD5s(requestedSAMFileHeader), outputStream);
