@@ -25,13 +25,24 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.structure.CRAMEncodingStrategy;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableMemoryStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -244,5 +255,255 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         final SAMRecordIterator iterator = reader.getIterator();
         Assert.assertNotNull(iterator.next());
         Assert.assertThrows(NoSuchElementException.class, iterator::next);
+    }
+
+    private static final int MAPPED_READS = 1000;
+    private static final int UNMAPPED_READS = 50;
+    private static final int READS_PER_CONTAINER = 100;
+    private static final int CHR1_LENGTH = 100_000;
+    private static final ReferenceSource CHR1_REFERENCE = createChr1Reference();
+
+    private static ReferenceSource createChr1Reference() {
+        final byte[] bases = new byte[CHR1_LENGTH];
+        Arrays.fill(bases, (byte) 'A');
+        final InMemoryReferenceSequenceFile referenceFile = new InMemoryReferenceSequenceFile();
+        referenceFile.add("chr1", bases);
+        return new ReferenceSource(referenceFile);
+    }
+
+    /**
+     * Writes a coordinate-sorted CRAM and its CRAI to temporary files: {@link #MAPPED_READS} reads ten bases apart on
+     * chr1, then {@link #UNMAPPED_READS} unmapped reads, {@link #READS_PER_CONTAINER} reads to a container.
+     *
+     * @return the path of the CRAM; its CRAI is beside it
+     */
+    private static Path writeMultiContainerCramWithCrai() throws IOException {
+        final SAMRecordSetBuilder records =
+                new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, true, CHR1_LENGTH);
+        for (int i = 0; i < MAPPED_READS; i++) {
+            records.addFrag("mapped" + i, 0, 1 + i * 10, false);
+        }
+        for (int i = 0; i < UNMAPPED_READS; i++) {
+            records.addUnmappedFragment("unmapped" + i);
+        }
+        final CRAMEncodingStrategy smallContainers = new CRAMEncodingStrategy()
+                .setMinimumSingleReferenceSliceSize(READS_PER_CONTAINER)
+                .setReadsPerSlice(READS_PER_CONTAINER);
+
+        final Path cram = Files.createTempFile("multiContainer.", FileExtensions.CRAM);
+        final Path crai = cram.resolveSibling(cram.getFileName() + FileExtensions.CRAM_INDEX);
+        IOUtil.deleteOnExit(cram);
+        IOUtil.deleteOnExit(crai);
+        try (OutputStream cramOut = Files.newOutputStream(cram);
+                OutputStream craiOut = Files.newOutputStream(crai);
+                CRAMFileWriter writer = new CRAMFileWriter(
+                        smallContainers,
+                        cramOut,
+                        craiOut,
+                        true,
+                        CHR1_REFERENCE,
+                        records.getHeader(),
+                        cram.toString())) {
+            records.forEach(writer::addAlignment);
+        }
+        return cram;
+    }
+
+    private static SamReader openByPath(final Path cram) {
+        return SamReaderFactory.makeDefault().referenceSource(CHR1_REFERENCE).open(cram);
+    }
+
+    /** Opens the CRAM and its CRAI as seekable streams, as a reader of a URL does. */
+    private static SamReader openBySeekableStreams(final Path cram) throws IOException {
+        final Path crai = cram.resolveSibling(cram.getFileName() + FileExtensions.CRAM_INDEX);
+        return SamReaderFactory.makeDefault()
+                .referenceSource(CHR1_REFERENCE)
+                .open(SamInputResource.of(new SeekablePathStream(cram)).index(new SeekablePathStream(crai)));
+    }
+
+    private static List<String> drain(final Iterator<SAMRecord> iterator) {
+        final List<String> records = new ArrayList<>();
+        iterator.forEachRemaining(record -> records.add(record.getSAMString()));
+        return records;
+    }
+
+    /** Reads one record at a time from each iterator in turn until both are exhausted. */
+    private static void readInTurn(
+            final Iterator<SAMRecord> first,
+            final List<String> firstRecords,
+            final Iterator<SAMRecord> second,
+            final List<String> secondRecords) {
+        while (first.hasNext() || second.hasNext()) {
+            if (first.hasNext()) {
+                firstRecords.add(first.next().getSAMString());
+            }
+            if (second.hasNext()) {
+                secondRecords.add(second.next().getSAMString());
+            }
+        }
+    }
+
+    @Test
+    public void anIteratorAndAQueryReadInTurnFromSeekableStreamsEachReturnAllTheirRecords() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expectedAll;
+        final List<String> expectedQuery;
+        try (SamReader byPath = openByPath(cram)) {
+            expectedAll = drain(byPath.iterator());
+            expectedQuery = drain(byPath.queryOverlapping("chr1", 4000, 6000));
+        }
+        Assert.assertEquals(expectedAll.size(), MAPPED_READS + UNMAPPED_READS);
+
+        final List<String> all = new ArrayList<>();
+        final List<String> query = new ArrayList<>();
+        try (SamReader byStreams = openBySeekableStreams(cram);
+                SAMRecordIterator iterator = byStreams.iterator()) {
+            all.add(iterator.next().getSAMString());
+            try (SAMRecordIterator queryIterator = byStreams.queryOverlapping("chr1", 4000, 6000)) {
+                readInTurn(iterator, all, queryIterator, query);
+            }
+        }
+        Assert.assertEquals(all, expectedAll);
+        Assert.assertEquals(query, expectedQuery);
+    }
+
+    @Test
+    public void overlappingQueriesReadInTurnFromSeekableStreamsEachReturnAllTheirRecords() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expectedWide;
+        final List<String> expectedNarrow;
+        try (SamReader byPath = openByPath(cram)) {
+            expectedWide = drain(byPath.queryOverlapping("chr1", 1000, 8000));
+            expectedNarrow = drain(byPath.queryOverlapping("chr1", 3000, 5000));
+        }
+
+        final List<String> wide = new ArrayList<>();
+        final List<String> narrow = new ArrayList<>();
+        try (SamReader byStreams = openBySeekableStreams(cram);
+                SAMRecordIterator wideIterator = byStreams.queryOverlapping("chr1", 1000, 8000)) {
+            wide.add(wideIterator.next().getSAMString());
+            try (SAMRecordIterator narrowIterator = byStreams.queryOverlapping("chr1", 3000, 5000)) {
+                readInTurn(wideIterator, wide, narrowIterator, narrow);
+            }
+        }
+        Assert.assertEquals(wide, expectedWide);
+        Assert.assertEquals(narrow, expectedNarrow);
+    }
+
+    @Test
+    public void anIteratorOpenedAfterClosingAnotherOverSeekableStreamsStartsAtTheFirstRecord() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expected;
+        try (SamReader byPath = openByPath(cram)) {
+            expected = drain(byPath.iterator());
+        }
+
+        try (SamReader byStreams = openBySeekableStreams(cram)) {
+            try (SAMRecordIterator first = byStreams.iterator()) {
+                for (int i = 0; i < 5; i++) {
+                    first.next();
+                }
+            }
+            try (SAMRecordIterator second = byStreams.iterator()) {
+                Assert.assertEquals(drain(second), expected);
+            }
+        }
+    }
+
+    @Test
+    public void anIteratorOpenedAfterQueryUnmappedOverSeekableStreamsStartsAtTheFirstRecord() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expectedAll;
+        final List<String> expectedUnmapped;
+        try (SamReader byPath = openByPath(cram)) {
+            expectedAll = drain(byPath.iterator());
+            expectedUnmapped = drain(byPath.queryUnmapped());
+        }
+        Assert.assertEquals(expectedUnmapped.size(), UNMAPPED_READS);
+
+        try (SamReader byStreams = openBySeekableStreams(cram)) {
+            try (SAMRecordIterator unmapped = byStreams.queryUnmapped()) {
+                Assert.assertEquals(drain(unmapped), expectedUnmapped);
+            }
+            try (SAMRecordIterator all = byStreams.iterator()) {
+                Assert.assertEquals(drain(all), expectedAll);
+            }
+        }
+    }
+
+    @Test
+    public void twoIteratorsReadInTurnFromSeekableStreamsEachReturnEveryRecord() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expected;
+        try (SamReader byPath = openByPath(cram)) {
+            expected = drain(byPath.iterator());
+        }
+
+        final List<String> first = new ArrayList<>();
+        final List<String> second = new ArrayList<>();
+        try (SamReader byStreams = openBySeekableStreams(cram);
+                SAMRecordIterator firstIterator = byStreams.iterator()) {
+            for (int i = 0; i < 2 * READS_PER_CONTAINER + 5; i++) {
+                first.add(firstIterator.next().getSAMString());
+            }
+            try (SAMRecordIterator secondIterator = byStreams.iterator()) {
+                readInTurn(firstIterator, first, secondIterator, second);
+            }
+        }
+        Assert.assertEquals(first, expected);
+        Assert.assertEquals(second, expected);
+    }
+
+    @Test
+    public void aQueryAfterClosingAnIteratorOverSeekableStreamsStillReadsTheStream() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expected;
+        try (SamReader byPath = openByPath(cram)) {
+            expected = drain(byPath.queryOverlapping("chr1", 4000, 6000));
+        }
+
+        // Unbuffered streams, so that reads after the close reach the stream itself rather than a buffer of it.
+        final Path crai = cram.resolveSibling(cram.getFileName() + FileExtensions.CRAM_INDEX);
+        try (CRAMFileReader reader = new CRAMFileReader(
+                new SeekablePathStream(cram),
+                new SeekablePathStream(crai),
+                CHR1_REFERENCE,
+                ValidationStringency.SILENT)) {
+            try (SAMRecordIterator iterator = reader.getIterator()) {
+                for (int i = 0; i < 5; i++) {
+                    iterator.next();
+                }
+            }
+            try (CloseableIterator<SAMRecord> query =
+                    reader.query(new QueryInterval[] {new QueryInterval(0, 4000, 6000)}, false)) {
+                Assert.assertEquals(drain(query), expected);
+            }
+        }
+    }
+
+    @Test
+    public void aCramStartingPartwayIntoASeekableStreamIteratesAllItsRecordsEachTime() throws IOException {
+        final Path cram = writeMultiContainerCramWithCrai();
+        final List<String> expected;
+        try (SamReader byPath = openByPath(cram)) {
+            expected = drain(byPath.iterator());
+        }
+        final byte[] cramBytes = Files.readAllBytes(cram);
+        final int prefixLength = 1000;
+        final byte[] prefixedCram = new byte[prefixLength + cramBytes.length];
+        Arrays.fill(prefixedCram, 0, prefixLength, (byte) 'x');
+        System.arraycopy(cramBytes, 0, prefixedCram, prefixLength, cramBytes.length);
+
+        final SeekableMemoryStream stream = new SeekableMemoryStream(prefixedCram, "prefixed.cram");
+        stream.seek(prefixLength);
+        try (CRAMFileReader reader =
+                new CRAMFileReader(stream, (SeekableStream) null, CHR1_REFERENCE, ValidationStringency.SILENT)) {
+            try (SAMRecordIterator first = reader.getIterator()) {
+                Assert.assertEquals(drain(first), expected);
+            }
+            try (SAMRecordIterator second = reader.getIterator()) {
+                Assert.assertEquals(drain(second), expected);
+            }
+        }
     }
 }
