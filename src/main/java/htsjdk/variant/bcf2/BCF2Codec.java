@@ -102,6 +102,11 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /** The first byte of a gzip member, so of a BGZF stream; a BCF stream starts with 'B'. */
     private static final int GZIP_ID1 = 0x1f;
 
+    private static final String CANNOT_INDEX_COMPRESSED_BCF = "A gzip/BGZF-compressed BCF cannot be indexed through "
+            + "BCF2Codec, whose positions are offsets into the decompressed data rather than into the file. Index a "
+            + "BGZF-compressed BCF with CSI instead: VariantContextWriterBuilder writes one as it writes the BCF "
+            + "(Options.INDEX_ON_THE_FLY), and bcftools index makes one for an existing file";
+
     private static final int MAX_HEADER_SIZE = 128 * 1024 * 1024; // 128 MiB
 
     private BCFVersion bcfVersion = null;
@@ -133,12 +138,20 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     //
     // ----------------------------------------------------------------------
 
-    /** @throws TribbleException if the stream is gzip/BGZF-compressed */
+    /**
+     * @throws TribbleException if the stream is gzip/BGZF-compressed or is a {@link BlockCompressedInputStream}: the
+     *     codec reads decompressed bytes, so an index built from its positions would not address the file
+     */
     @Override
     public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
+        if (bufferedInputStream instanceof BlockCompressedInputStream) {
+            throw new TribbleException(CANNOT_INDEX_COMPRESSED_BCF);
+        }
         final PositionalBufferedStream stream = makeSourceFromStream(bufferedInputStream);
         try {
-            refuseCompressedStream(stream);
+            if (stream.peek() == GZIP_ID1) {
+                throw new TribbleException(CANNOT_INDEX_COMPRESSED_BCF);
+            }
         } catch (final IOException e) {
             throw new TribbleException("I/O error while reading BCF2 file", e);
         }

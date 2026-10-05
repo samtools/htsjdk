@@ -1,8 +1,10 @@
 package htsjdk.tribble;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.example.ExampleBinaryCodec;
+import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.LineIterator;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,5 +66,18 @@ public class BinaryFeaturesTest extends HtsjdkTest {
     @Test(expectedExceptions = TribbleException.class)
     public void testGetTabixFormatThrowsException() {
         new ExampleBinaryCodec().getTabixFormat();
+    }
+
+    @Test
+    public void aBgzfBinaryFeatureFileCannotBeIndexed() throws IOException {
+        final Path bgzf = Files.createTempFile("aBgzfBinaryFeatureFileCannotBeIndexed", ".binary.bed.gz");
+        bgzf.toFile().deleteOnExit();
+        ExampleBinaryCodec.convertToBinaryTest(
+                AbstractFeatureReader.getFeatureReader(TestUtils.DATA_DIR + "test.bed", new BEDCodec(), false),
+                new BlockCompressedOutputStream(bgzf));
+
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class, () -> IndexFactory.createLinearIndex(bgzf, new ExampleBinaryCodec()));
+        Assert.assertTrue(e.getMessage().contains("BGZF-compressed"), e.getMessage());
     }
 }

@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -20,9 +21,19 @@ public abstract class BinaryFeatureCodec<T extends Feature> implements FeatureCo
         else return new PositionalBufferedStream(bufferedInputStream);
     }
 
-    /** {@link PositionalBufferedStream} is already {@link LocationAware}. */
+    /**
+     * {@link PositionalBufferedStream} is already {@link LocationAware}, but its position counts the bytes read through
+     * it, which over a {@link BlockCompressedInputStream} are offsets into the decompressed data that no index can use.
+     *
+     * @throws TribbleException if the stream is a {@link BlockCompressedInputStream}
+     */
     @Override
     public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
+        if (bufferedInputStream instanceof BlockCompressedInputStream) {
+            throw new TribbleException("A BGZF-compressed file cannot be indexed through "
+                    + getClass().getSimpleName()
+                    + ", whose positions are offsets into the decompressed data rather than into the file");
+        }
         return makeSourceFromStream(bufferedInputStream);
     }
 
