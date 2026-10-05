@@ -37,6 +37,7 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.testutil.LogCapture;
+import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexType;
@@ -47,6 +48,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -1242,6 +1245,204 @@ public class SAMTextReaderTest extends HtsjdkTest {
                 Assert.assertThrows(IllegalStateException.class, sam::iterator);
                 Assert.assertTrue(second.hasNext());
             }
+        }
+    }
+
+    // Uncompressed and plain-gzip SAM: reading the file through again.
+
+    private static final String THREE_RECORDS = "@HD\tVN:1.6\tSO:coordinate\n"
+            + "@SQ\tSN:chr1\tLN:1000\n"
+            + "r1\t0\tchr1\t10\t60\t4M\t*\t0\t0\tACGT\tIIII\n"
+            + "r2\t0\tchr1\t20\t60\t4M\t*\t0\t0\tACGT\tIIII\n"
+            + "r3\t0\tchr1\t30\t60\t4M\t*\t0\t0\tACGT\tIIII\n";
+
+    private static Path writeTempFile(final String suffix, final byte[] content) throws IOException {
+        final Path path = Files.createTempFile("iterateAgain.", suffix);
+        IOUtil.deleteOnExit(path);
+        Files.write(path, content);
+        return path;
+    }
+
+    private static Path writePlainSam(final String text) throws IOException {
+        return writeTempFile(".sam", text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    private static List<String> readNames(final SAMRecordIterator records) {
+        return records.stream().map(SAMRecord::getReadName).collect(Collectors.toList());
+    }
+
+    @Test
+    public void testPlainSamFileCanBeReadThroughMoreThanOnce() throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(THREE_RECORDS))) {
+            final List<SAMRecord> first;
+            try (SAMRecordIterator records = reader.iterator()) {
+                first = records.toList();
+            }
+            try (SAMRecordIterator records = reader.iterator()) {
+                Assert.assertEquals(records.toList(), first);
+            }
+            Assert.assertEquals(first.size(), 3);
+        }
+    }
+
+    @Test
+    public void testPlainSamFileReadPartwayStartsAgainFromTheFirstRecord() throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(THREE_RECORDS))) {
+            try (SAMRecordIterator records = reader.iterator()) {
+                Assert.assertEquals(records.next().getReadName(), "r1");
+                Assert.assertEquals(records.next().getReadName(), "r2");
+            }
+            try (SAMRecordIterator records = reader.iterator()) {
+                Assert.assertEquals(readNames(records), List.of("r1", "r2", "r3"));
+            }
+        }
+    }
+
+    @Test
+    public void testPlainSamFileWithNoRecordsCanBeReadThroughMoreThanOnce() throws IOException {
+        final String headerOnly = "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:1000\n";
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(headerOnly))) {
+            for (int pass = 0; pass < 2; pass++) {
+                try (SAMRecordIterator records = reader.iterator()) {
+                    Assert.assertFalse(records.hasNext());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPlainSamFileCanBeReadThroughThreeTimes() throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(THREE_RECORDS))) {
+            for (int pass = 0; pass < 3; pass++) {
+                try (SAMRecordIterator records = reader.iterator()) {
+                    Assert.assertEquals(readNames(records), List.of("r1", "r2", "r3"), "pass " + pass);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPlainSamFileWhoseLastRecordHasNoLineEndCanBeReadThroughMoreThanOnce() throws IOException {
+        final String noFinalLineEnd = THREE_RECORDS.substring(0, THREE_RECORDS.length() - 1);
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(noFinalLineEnd))) {
+            for (int pass = 0; pass < 2; pass++) {
+                try (SAMRecordIterator records = reader.iterator()) {
+                    Assert.assertEquals(readNames(records), List.of("r1", "r2", "r3"), "pass " + pass);
+                }
+            }
+        }
+    }
+
+    /** The first record starts past the line reader's 64 KiB buffer, and the records fill several more. */
+    @Test
+    public void testCrlfSamFileLongerThanTheReadBufferCanBeReadThroughMoreThanOnce() throws IOException {
+        final StringBuilder text = new StringBuilder("@HD\tVN:1.6\r\n@SQ\tSN:chr1\tLN:100000\r\n");
+        for (int i = 0; i < 1_000; i++) {
+            text.append("@CO\t").append("x".repeat(100)).append("\r\n");
+        }
+        final List<String> names = new ArrayList<>();
+        for (int i = 0; i < 5_000; i++) {
+            names.add("read" + i);
+            text.append("read")
+                    .append(i)
+                    .append("\t0\tchr1\t")
+                    .append(1 + i)
+                    .append("\t60\t4M\t*\t0\t0\tACGT\tIIII\r\n");
+        }
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(text.toString()))) {
+            for (int pass = 0; pass < 2; pass++) {
+                try (SAMRecordIterator records = reader.iterator()) {
+                    Assert.assertEquals(readNames(records), names, "pass " + pass);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testASecondIteratorWhileTheFirstIsOpenIsRefused() throws IOException {
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writePlainSam(THREE_RECORDS));
+                SAMRecordIterator records = reader.iterator()) {
+            Assert.assertEquals(records.next().getReadName(), "r1");
+            final IllegalStateException e = Assert.expectThrows(IllegalStateException.class, reader::iterator);
+            Assert.assertEquals(e.getMessage(), "Iteration in progress");
+            Assert.assertEquals(records.next().getReadName(), "r2");
+        }
+    }
+
+    @Test
+    public void testPlainSamFileReadThroughAChannelWrapperCanBeReadThroughMoreThanOnce() throws IOException {
+        // The file holds the records alone, and the wrapper puts the header in front, so reading the file again
+        // without the wrapper would start at the wrong place.
+        final int recordsStart = THREE_RECORDS.indexOf("r1\t");
+        final byte[] header =
+                THREE_RECORDS.substring(0, recordsStart).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final Path recordsOnly = writePlainSam(THREE_RECORDS.substring(recordsStart));
+        final java.util.function.Function<SeekableByteChannel, SeekableByteChannel> prependHeader = channel -> {
+            try (channel) {
+                final ByteBuffer whole = ByteBuffer.allocate(header.length + (int) channel.size());
+                whole.put(header);
+                while (channel.read(whole) > 0) {
+                    // read to the end
+                }
+                whole.flip();
+                return new SeekableByteChannelFromBuffer(whole);
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        };
+        try (SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(recordsOnly, prependHeader))) {
+            for (int pass = 0; pass < 2; pass++) {
+                try (SAMRecordIterator records = reader.iterator()) {
+                    Assert.assertEquals(readNames(records), List.of("r1", "r2", "r3"), "pass " + pass);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPlainSamFileReadAgainReportsAMalformedRecordWithItsLineNumber() throws IOException {
+        final String text = "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:1000\n"
+                + "r1\t0\tchr1\t10\t60\t4M\t*\t0\t0\tACGT\tIIII\n"
+                + "too\tfew\tfields\n";
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.STRICT)
+                .open(writePlainSam(text))) {
+            try (SAMRecordIterator records = reader.iterator()) {
+                records.next();
+            }
+            try (SAMRecordIterator records = reader.iterator()) {
+                Assert.assertEquals(records.next().getReadName(), "r1");
+                final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, records::next);
+                Assert.assertTrue(e.getMessage().contains("Line 4"), e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testSamFromAStreamCanBeIteratedOverOnlyOnce() throws IOException {
+        final InputStream stream =
+                new ByteArrayInputStream(THREE_RECORDS.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        try (SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(stream))) {
+            try (SAMRecordIterator records = reader.iterator()) {
+                Assert.assertEquals(records.next().getReadName(), "r1");
+            }
+            final IllegalStateException e = Assert.expectThrows(IllegalStateException.class, reader::iterator);
+            Assert.assertTrue(e.getMessage().contains("can be iterated over only once"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void testPlainGzipSamFileCanBeIteratedOverOnlyOnce() throws IOException {
+        final ByteArrayOutputStream gzipped = new ByteArrayOutputStream();
+        try (java.util.zip.GZIPOutputStream out = new java.util.zip.GZIPOutputStream(gzipped)) {
+            out.write(THREE_RECORDS.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        try (SamReader reader = SamReaderFactory.makeDefault().open(writeTempFile(".sam.gz", gzipped.toByteArray()))) {
+            try (SAMRecordIterator records = reader.iterator()) {
+                Assert.assertEquals(readNames(records), List.of("r1", "r2", "r3"));
+            }
+            final IllegalStateException e = Assert.expectThrows(IllegalStateException.class, reader::iterator);
+            Assert.assertTrue(e.getMessage().contains("can be iterated over only once"), e.getMessage());
         }
     }
 }

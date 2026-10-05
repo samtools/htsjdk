@@ -54,11 +54,16 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     private SAMFileHeader mFileHeader = null;
     private boolean mHasCurrentLine = false;
     private RecordIterator mIterator = null;
+    // Whether an iterator over the whole file has been started; text that cannot be seeked in can give only one.
+    private boolean mIteratedOver = false;
     private Path mPath = null;
 
     // For block-compressed text only; null otherwise.
     private BlockAtATimeInputStream mBlockStream;
     private boolean mIsSeekable;
+    // For uncompressed text that can be seeked in; null otherwise.
+    private SeekableStream mSeekableText;
+    // Where the first record starts: a virtual offset in block-compressed text, a byte offset in uncompressed text.
     private long mFirstRecordPointer;
     // Virtual offsets of the line in hand and of the byte after its terminator. As in an index made by htslib, a
     // line starts where the one before it ended.
@@ -109,6 +114,32 @@ class SAMTextReader extends SamReader.ReaderImplementation {
             final SAMRecordFactory factory) {
         this(stream, validationStringency, factory);
         mPath = path;
+    }
+
+    /**
+     * Prepare to read uncompressed SAM text that can be seeked in, and so iterated over more than once.
+     *
+     * @param stream positioned at the start of the file; need not be buffered, as this class provides buffered
+     *               reading
+     * @param path   the file being read, for error reporting; may be null
+     */
+    SAMTextReader(
+            final SeekableStream stream,
+            final Path path,
+            final ValidationStringency validationStringency,
+            final SAMRecordFactory factory) {
+        mSeekableText = stream;
+        mReader = new SamLineReader(stream);
+        mPath = path;
+        this.validationStringency = validationStringency;
+        this.samRecordFactory = factory;
+        try {
+            readHeader();
+        } catch (final RuntimeException e) {
+            // There will be no reader for the caller to close, so what it was given is closed here
+            close();
+            throw e;
+        }
     }
 
     /**
@@ -360,13 +391,21 @@ class SAMTextReader extends SamReader.ReaderImplementation {
 
     /**
      * There can only be one extant iterator on a SAMTextReader at a time.  The previous one must
-     * be closed before calling getIterator().  Unless the input is block-compressed and seekable, closing an
-     * iterator closes the reader, since the rest of the input cannot be reached again.
+     * be closed before calling getIterator().  Text that can be seeked in, a file whether uncompressed or
+     * block-compressed, is then read again from its first record.  Text that cannot, because it is read from a stream
+     * or compressed with plain gzip, can be iterated over only once, and closing its iterator closes the reader,
+     * since the rest of the input cannot be reached again.
      *
      * @return Iterator of SAMRecords in file order.
+     * @throws IllegalStateException if the reader is closed, if an iterator is open, or if the text cannot be seeked
+     *     in and has been iterated over already
      */
     @Override
     public CloseableIterator<SAMRecord> getIterator() {
+        if (mIteratedOver && !canIterateAgain()) {
+            throw new IllegalStateException(
+                    "SAM text read from a stream, or compressed with plain gzip, can be iterated over only once");
+        }
         if (mReader == null) {
             throw new IllegalStateException("File reader is closed");
         }
@@ -376,8 +415,18 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         if (mIsSeekable) {
             return getIterator(getFilePointerSpanningReads());
         }
+        if (mIteratedOver) {
+            seek(mFirstRecordPointer);
+            advanceLine();
+        }
+        mIteratedOver = true;
         mIterator = new RecordIterator();
         return mIterator;
+    }
+
+    /** @return whether the text can be seeked in, and so read again from its first record */
+    private boolean canIterateAgain() {
+        return mIsSeekable || mSeekableText != null;
     }
 
     /**
@@ -472,6 +521,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         if (mBlockStream != null) {
             mFirstRecordPointer = mBlockStream.filePointerAt(mReader.getBytesConsumed());
             mLineEndPointer = mFirstRecordPointer;
+        } else {
+            mFirstRecordPointer = mReader.getBytesConsumed();
         }
         advanceLine();
     }
@@ -484,10 +535,17 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         }
     }
 
-    /** Moves to a virtual offset at which a line starts; the next line read is that one. */
+    /**
+     * Moves to where a line starts, a virtual offset in block-compressed text or a byte offset in uncompressed text;
+     * the next line read is that one.
+     */
     private void seek(final long filePointer) {
         try {
-            mBlockStream.seek(filePointer);
+            if (mBlockStream != null) {
+                mBlockStream.seek(filePointer);
+            } else {
+                mSeekableText.seek(filePointer);
+            }
         } catch (final IOException e) {
             throw new RuntimeIOException("Error seeking in " + (mPath != null ? mPath : "SAM text"), e);
         }
@@ -517,7 +575,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
 
         @Override
         public void close() {
-            if (!mIsSeekable) {
+            if (!canIterateAgain()) {
                 SAMTextReader.this.close();
             } else if (mIterator == this) {
                 // Only the iterator in progress makes way for another: one closed a second time, after another has

@@ -218,12 +218,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public Indexing indexing();
 
     /**
-     * Iterate through file in order.  For a SamReader constructed from an InputStream, and for any SAM file,
-     * a 2nd iteration starts where the 1st one left off.  For a BAM constructed from a SeekableStream or File, each new iteration
-     * starts at the first record.
+     * Iterate through file in order.
      * <p/>
      * Only a single open iterator on a SAM or BAM file may be extant at any one time.  If you want to start
-     * a second iteration, the first one must be closed first.
+     * a second iteration, the first one must be closed first.  The second iteration starts again at the first record
+     * if the input can be read again.  Input that cannot, such as input read from a stream that cannot be seeked in, or
+     * compressed with plain gzip, may be readable only once: a second iteration may then carry on where the first left
+     * off, or be refused with an {@link IllegalStateException}.
      */
     @Override
     public SAMRecordIterator iterator();

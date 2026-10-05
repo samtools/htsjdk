@@ -536,8 +536,20 @@ public abstract class SamReaderFactory {
                             bufferedStream.close();
                             throw new RuntimeException("Cannot use index file with textual SAM file");
                         }
-                        primitiveSamReader = new SAMTextReader(
-                                bufferedStream, sourcePath, validationStringency, this.samRecordFactory);
+                        final SeekableStream sourceSeekable = sourcePath != null && Files.isRegularFile(sourcePath)
+                                ? data.asUnbufferedSeekableStream()
+                                : null;
+                        if (sourceSeekable != null) {
+                            // A file can be seeked in, which a reader needs in order to read it through again.
+                            // Do not close bufferedStream: it reads from this same stream, which it has read a
+                            // little of, so the stream is taken back to its start.
+                            sourceSeekable.seek(0);
+                            primitiveSamReader = new SAMTextReader(
+                                    sourceSeekable, sourcePath, validationStringency, this.samRecordFactory);
+                        } else {
+                            primitiveSamReader = new SAMTextReader(
+                                    bufferedStream, sourcePath, validationStringency, this.samRecordFactory);
+                        }
                     }
                 }
 
