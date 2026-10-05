@@ -3,6 +3,7 @@ package htsjdk.tribble.util;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.testutil.ftp.LocalFtpServer;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -17,9 +18,6 @@ import org.testng.annotations.Test;
  * Parsing utils tests
  */
 public class ParsingUtilsTest extends HtsjdkTest {
-
-    static final String AVAILABLE_FTP_URL = "ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt";
-    static final String UNAVAILABLE_FTP_URL = "ftp://www.example.com/file.txt";
 
     static final String AVAILABLE_HTTP_URL = "https://www.google.com";
     static final String UNAVAILABLE_HTTP_URL = "http://www.unknownhostwhichshouldntexist.com";
@@ -153,14 +151,20 @@ public class ParsingUtilsTest extends HtsjdkTest {
         }
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testFTPDoesExist() throws IOException {
-        testExists(AVAILABLE_FTP_URL, true);
+        try (LocalFtpServer server =
+                new LocalFtpServer().addFile("/pub/test.txt", "hello".getBytes(StandardCharsets.UTF_8))) {
+            testExists(server.url("/pub/test.txt").toString(), true);
+        }
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testFTPNotExist() throws IOException {
-        testExists(UNAVAILABLE_FTP_URL, false);
+        try (LocalFtpServer server =
+                new LocalFtpServer().addFile("/pub/test.txt", "hello".getBytes(StandardCharsets.UTF_8))) {
+            testExists(server.url("/pub/missing.txt").toString(), false);
+        }
     }
 
     @Test
@@ -197,9 +201,22 @@ public class ParsingUtilsTest extends HtsjdkTest {
         }
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testFTPOpenInputStream() throws IOException {
-        testStream(AVAILABLE_FTP_URL);
+        try (LocalFtpServer server =
+                new LocalFtpServer().addFile("/pub/test.txt", "hello".getBytes(StandardCharsets.UTF_8))) {
+            testStream(server.url("/pub/test.txt").toString());
+        }
+    }
+
+    @Test
+    public void openingAMissingFileOverFtpFails() throws IOException {
+        try (LocalFtpServer server = new LocalFtpServer()) {
+            Assert.expectThrows(
+                    IOException.class,
+                    () -> ParsingUtils.openInputStream(
+                            server.url("/pub/missing.txt").toString()));
+        }
     }
 
     @Test

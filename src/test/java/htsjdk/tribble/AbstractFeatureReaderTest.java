@@ -8,6 +8,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.IOUtilTest;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.ftp.LocalFtpServer;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.readers.LineIterator;
@@ -20,7 +21,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -67,14 +71,21 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         assertFalse(localIterator.hasNext());
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testLoadBEDFTP() throws Exception {
-        final String path = "ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands%20with%20spaces.hg18.bed";
-        final BEDCodec codec = new BEDCodec();
-        final AbstractFeatureReader<BEDFeature, LineIterator> bfs =
-                AbstractFeatureReader.getFeatureReader(path, codec, false);
-        for (final Feature feat : bfs.iterator()) {
-            assertNotNull(feat);
+        final String bed = "chr1\t100\t200\tcpg1\nchr1\t300\t450\tcpg2\nchr2\t50\t60\tcpg3\n";
+        try (LocalFtpServer server = new LocalFtpServer()
+                .addFile("/igv/cpgIslands with spaces.hg18.bed", bed.getBytes(StandardCharsets.US_ASCII))) {
+            final String path =
+                    server.url("/igv/cpgIslands with spaces.hg18.bed").toString();
+            try (AbstractFeatureReader<BEDFeature, LineIterator> bfs =
+                    AbstractFeatureReader.getFeatureReader(path, new BEDCodec(), false)) {
+                final List<String> names = new ArrayList<>();
+                for (final BEDFeature feat : bfs.iterator()) {
+                    names.add(feat.getContig() + ":" + feat.getStart() + "-" + feat.getEnd() + " " + feat.getName());
+                }
+                assertEquals(names, List.of("chr1:101-200 cpg1", "chr1:301-450 cpg2", "chr2:51-60 cpg3"));
+            }
         }
     }
 

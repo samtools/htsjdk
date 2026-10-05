@@ -39,6 +39,8 @@ public class FTPClient {
 
     public static final int READ_TIMEOUT = 5 * 60 * 1000;
 
+    public static final int DEFAULT_PORT = 21;
+
     /**
      * Stream to write commands.
      * NOTE -- a PrintStream is used no purpose (as opposed to PrintWriter).  PrintWriter will not work!
@@ -56,8 +58,15 @@ public class FTPClient {
      * Connects to the given FTP host on the default port.
      */
     public FTPReply connect(String host) throws IOException {
+        return connect(host, DEFAULT_PORT);
+    }
+
+    /**
+     * Connects to the given FTP host on the given port.
+     */
+    public FTPReply connect(String host, int port) throws IOException {
         this.host = host;
-        commandSocket = new Socket(host, 21);
+        commandSocket = new Socket(host, port);
         commandSocket.setSoTimeout(READ_TIMEOUT);
         commandStream = new PrintStream(commandSocket.getOutputStream());
         responseReader = new BufferedReader(new InputStreamReader(commandSocket.getInputStream()));
@@ -77,7 +86,10 @@ public class FTPClient {
      * commands that do not require an additional data port.
      */
     public FTPReply executeCommand(String command) throws IOException {
-        commandStream.println(command);
+        // RFC 959 ends every command with CRLF; println would end it with the platform's line separator, and strict
+        // servers never answer a command that ends with a bare LF
+        commandStream.print(command + "\r\n");
+        commandStream.flush();
         return new FTPReply(responseReader);
     }
 

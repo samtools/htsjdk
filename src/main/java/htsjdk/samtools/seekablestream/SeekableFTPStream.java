@@ -31,6 +31,7 @@ import java.net.URL;
 public class SeekableFTPStream extends SeekableStream {
 
     SeekableFTPStreamHelper helper;
+    private final String source;
 
     public SeekableFTPStream(URL url) throws IOException {
         this(url, null);
@@ -38,6 +39,9 @@ public class SeekableFTPStream extends SeekableStream {
 
     public SeekableFTPStream(URL url, UserPasswordInput userPasswordInput) throws IOException {
         helper = new SeekableFTPStreamHelper(url, userPasswordInput);
+        // without the user-info, which can hold a password
+        source = url.getProtocol() + "://" + url.getHost() + (url.getPort() == -1 ? "" : ":" + url.getPort())
+                + url.getFile();
     }
 
     @Override
@@ -55,9 +59,10 @@ public class SeekableFTPStream extends SeekableStream {
         return helper.eof();
     }
 
+    /** The URL without its user-info, so a reader can tell the format from the file name. */
     @Override
     public String getSource() {
-        return null; // TODO
+        return source;
     }
 
     @Override

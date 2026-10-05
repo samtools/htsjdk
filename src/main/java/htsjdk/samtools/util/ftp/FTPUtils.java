@@ -23,6 +23,7 @@ import htsjdk.samtools.seekablestream.UserPasswordInput;
 import htsjdk.samtools.util.RuntimeIOException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -63,8 +64,9 @@ public class FTPUtils {
     public static long getContentLength(URL url) throws IOException {
         FTPClient ftp = null;
         try {
-            ftp = FTPUtils.connect(url.getHost(), url.getUserInfo(), null);
-            String sizeString = ftp.executeCommand("size " + url.getPath()).getReplyString();
+            ftp = FTPUtils.connect(url, null);
+            String sizeString =
+                    ftp.executeCommand("size " + getDecodedPath(url)).getReplyString();
             return Integer.parseInt(sizeString);
         } catch (Exception e) {
             return -1;
@@ -76,6 +78,29 @@ public class FTPUtils {
     }
 
     /**
+     * The path of a URL as the server names the file: percent-decoded, or as it is if the URL is not a valid URI
+     * (such as one with an unencoded space).
+     */
+    public static String getDecodedPath(URL url) {
+        try {
+            return url.toURI().getPath();
+        } catch (final URISyntaxException e) {
+            return url.getPath();
+        }
+    }
+
+    /**
+     * Connect to the FTP server a URL names, on the URL's port or the default port, logging in with the URL's
+     * user-info if it has any.
+     *
+     * @param userPasswordInput Dialog with which a user can enter credentials, if login fails
+     */
+    public static FTPClient connect(URL url, UserPasswordInput userPasswordInput) throws IOException {
+        final int port = url.getPort() == -1 ? FTPClient.DEFAULT_PORT : url.getPort();
+        return connect(url.getHost(), port, url.getUserInfo(), userPasswordInput);
+    }
+
+    /**
      * Connect to an FTP server
      *
      * @param host
@@ -84,11 +109,16 @@ public class FTPUtils {
      * @return
      * @throws IOException
      */
-    public static synchronized FTPClient connect(String host, String userInfo, UserPasswordInput userPasswordInput)
+    public static FTPClient connect(String host, String userInfo, UserPasswordInput userPasswordInput)
             throws IOException {
+        return connect(host, FTPClient.DEFAULT_PORT, userInfo, userPasswordInput);
+    }
+
+    private static synchronized FTPClient connect(
+            String host, int port, String userInfo, UserPasswordInput userPasswordInput) throws IOException {
 
         FTPClient ftp = new FTPClient();
-        FTPReply reply = ftp.connect(host);
+        FTPReply reply = ftp.connect(host, port);
         if (!reply.isSuccess()) {
             throw new RuntimeIOException("Could not connect to " + host);
         }
@@ -96,8 +126,10 @@ public class FTPUtils {
         String user = "anonymous";
         String password = "igv@broadinstitute.org";
 
+        // credentials a user entered in the dialog, for this server
+        final String server = host + ":" + port;
         if (userInfo == null) {
-            userInfo = userCredentials.get(host);
+            userInfo = userCredentials.get(server);
         }
         if (userInfo != null) {
             String[] tmp = userInfo.split(":");
@@ -127,7 +159,7 @@ public class FTPUtils {
                 }
                 if (success) {
                     userInfo = user + ":" + password;
-                    userCredentials.put(host, userInfo);
+                    userCredentials.put(server, userInfo);
                 } else {
                     throw new RuntimeIOException("Login failure for host: " + host);
                 }

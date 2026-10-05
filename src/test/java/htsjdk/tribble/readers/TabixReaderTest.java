@@ -8,6 +8,7 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.ftp.LocalFtpServer;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.index.IndexFactory;
@@ -20,6 +21,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -191,6 +193,29 @@ public class TabixReaderTest extends HtsjdkTest {
             }
             Assert.assertTrue(nRecords > 0);
         }
+    }
+
+    @Test
+    public void aQueryOverFtpReturnsWhatTheSameQueryOnTheLocalFileReturns() throws IOException {
+        try (LocalFtpServer server = new LocalFtpServer()
+                        .addFile("/igv/trioDup.vcf.gz", Files.readAllBytes(Paths.get(tabixFile)))
+                        .addFile("/igv/trioDup.vcf.gz.tbi", Files.readAllBytes(Paths.get(tabixFile + ".tbi")));
+                TabixReader ftpReader =
+                        new TabixReader(server.url("/igv/trioDup.vcf.gz").toString())) {
+            Assert.assertEquals(linesIn(ftpReader, "4", 320, 330), linesIn(tabixReader, "4", 320, 330));
+            Assert.assertFalse(linesIn(ftpReader, "4", 320, 330).isEmpty());
+        }
+    }
+
+    private static List<String> linesIn(final TabixReader reader, final String contig, final int start, final int end)
+            throws IOException {
+        final TabixReader.Iterator iterator = reader.query(reader.chr2tid(contig), start, end);
+        final List<String> lines = new ArrayList<>();
+        String line;
+        while ((line = iterator.next()) != null) {
+            lines.add(line);
+        }
+        return lines;
     }
 
     /**

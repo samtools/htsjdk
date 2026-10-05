@@ -34,18 +34,16 @@ public class SeekableFTPStreamHelper {
 
     private long position = 0;
     private long contentLength = -1;
-    private String host;
-    private String path;
-    private String userInfo;
+    private final URL url;
+    private final String path;
     FTPClient ftp = null;
     private UserPasswordInput userPasswordInput;
 
     SeekableFTPStreamHelper(URL url, UserPasswordInput userPasswordInput) throws IOException {
-        this.userInfo = url.getUserInfo();
-        this.host = url.getHost();
-        this.path = url.getPath();
+        this.url = url;
+        this.path = FTPUtils.getDecodedPath(url);
         this.userPasswordInput = userPasswordInput;
-        ftp = FTPUtils.connect(host, userInfo, userPasswordInput);
+        ftp = FTPUtils.connect(url, userPasswordInput);
 
         ftp.binary();
         FTPReply reply = ftp.size(path);
@@ -82,7 +80,7 @@ public class SeekableFTPStreamHelper {
     public int read(byte[] buffer, int offset, int len) throws IOException {
 
         if (ftp == null) {
-            ftp = FTPUtils.connect(host, userInfo, userPasswordInput);
+            ftp = FTPUtils.connect(url, userPasswordInput);
         }
 
         if (offset < 0 || len < 0 || (offset + len) > buffer.length) {
@@ -97,6 +95,9 @@ public class SeekableFTPStreamHelper {
         try {
 
             FTPReply reply = ftp.pasv();
+            if (!reply.isPositiveCompletion()) {
+                throw new IOException(failure("PASV", reply));
+            }
 
             // If we are positioned at or beyond the EOF return -1
             if (contentLength >= 0 && position >= contentLength) {
@@ -105,7 +106,12 @@ public class SeekableFTPStreamHelper {
 
             if (position > 0) ftp.setRestPosition(position);
 
+            // a server that can't send the file (550 for a missing one) replies to REST or RETR with an error and may
+            // leave the data connection open, so reading it would hang or look like an empty file
             reply = ftp.retr(path);
+            if (!reply.isPositivePreliminary()) {
+                throw new IOException(failure("RETR", reply));
+            }
 
             InputStream is = ftp.getDataStream();
 
@@ -143,7 +149,12 @@ public class SeekableFTPStreamHelper {
         if (ftp != null) {
             ftp.disconnect();
         }
-        ftp = FTPUtils.connect(host, userInfo, userPasswordInput);
+        ftp = FTPUtils.connect(url, userPasswordInput);
+    }
+
+    private String failure(final String command, final FTPReply reply) throws IOException {
+        return command + " of " + path + " on " + url.getHost() + " failed: " + reply.getCode() + " "
+                + reply.getReplyString();
     }
 
     public void close() throws IOException {

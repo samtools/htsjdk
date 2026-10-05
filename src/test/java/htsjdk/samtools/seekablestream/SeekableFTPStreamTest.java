@@ -24,8 +24,11 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.testutil.ftp.LocalFtpServer;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -35,62 +38,87 @@ import org.testng.annotations.Test;
  * @author Jim Robinson
  * @since 10/3/11
  */
-@Test(groups = "ftp")
 public class SeekableFTPStreamTest extends HtsjdkTest {
+    private static final String FILE = "/pub/test.txt";
+    private static final byte[] CONTENTS = "abcdefghijklmnopqrstuvwxyz\n".getBytes(StandardCharsets.US_ASCII);
 
-    static String urlString = "ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt";
-    static long fileSize = 27;
-    static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
-    SeekableFTPStream stream;
+    private LocalFtpServer server;
 
-    @BeforeMethod()
+    @BeforeMethod
     public void setUp() throws IOException {
-        stream = new SeekableFTPStream(new URL(urlString));
+        server = new LocalFtpServer().addFile(FILE, CONTENTS);
     }
 
-    @AfterMethod()
-    public void tearDown() throws IOException {
-        stream.close();
+    @AfterMethod
+    public void tearDown() {
+        server.close();
     }
 
     @Test
     public void testLength() throws Exception {
-        long length = stream.length();
-        Assert.assertEquals(fileSize, length);
+        try (final SeekableFTPStream stream = new SeekableFTPStream(server.url(FILE))) {
+            Assert.assertEquals(stream.length(), CONTENTS.length);
+        }
     }
 
-    /**
-     * Test a buffered read.  The buffer is much large than the file size,  assert that the desired # of bytes are read
-     *
-     * @throws Exception
-     */
+    /** A buffer much larger than the file reads the whole file. */
     @Test
     public void testBufferedRead() throws Exception {
-
-        byte[] buffer = new byte[64000];
-        int nRead = stream.read(buffer);
-        Assert.assertEquals(fileSize, nRead);
+        try (final SeekableFTPStream stream = new SeekableFTPStream(server.url(FILE))) {
+            final byte[] buffer = new byte[64000];
+            final int nRead = stream.read(buffer);
+            Assert.assertEquals(nRead, CONTENTS.length);
+            Assert.assertEquals(Arrays.copyOf(buffer, nRead), CONTENTS);
+        }
     }
 
-    /**
-     * Test requesting a range that extends beyond the end of the file
-     */
+    /** A range that extends beyond the end of the file reads to the end. */
     @Test
     public void testRange() throws Exception {
-        stream.seek(20);
-        byte[] buffer = new byte[64000];
-        int nRead = stream.read(buffer);
-        Assert.assertEquals(fileSize - 20, nRead);
+        try (final SeekableFTPStream stream = new SeekableFTPStream(server.url(FILE))) {
+            stream.seek(20);
+            final byte[] buffer = new byte[64000];
+            final int nRead = stream.read(buffer);
+            Assert.assertEquals(nRead, CONTENTS.length - 20);
+            Assert.assertEquals(Arrays.copyOf(buffer, nRead), Arrays.copyOfRange(CONTENTS, 20, CONTENTS.length));
+        }
     }
 
-    /**
-     * Test requesting a range that begins beyond the end of the file
-     */
+    /** A range that begins beyond the end of the file reads nothing. */
     @Test
     public void testBadRange() throws Exception {
-        stream.seek(30);
-        byte[] buffer = new byte[64000];
-        int nRead = stream.read(buffer);
-        Assert.assertEquals(-1, nRead);
+        try (final SeekableFTPStream stream = new SeekableFTPStream(server.url(FILE))) {
+            stream.seek(30);
+            Assert.assertEquals(stream.read(new byte[64000]), -1);
+        }
+    }
+
+    @Test
+    public void readingAMissingFileFailsInsteadOfReadingNothing() throws Exception {
+        try (final SeekableFTPStream stream = new SeekableFTPStream(server.url("/pub/missing.txt"))) {
+            final IOException e = Assert.expectThrows(IOException.class, () -> stream.read(new byte[100]));
+            Assert.assertTrue(e.getMessage().contains("550"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void aPercentEncodedNameIsSentToTheServerDecoded() throws Exception {
+        // the server knows the file only by its decoded name
+        server.addFile("/pub/reads #1.txt", CONTENTS);
+        try (final SeekableFTPStream stream = new SeekableFTPStream(server.url("/pub/reads #1.txt"))) {
+            Assert.assertEquals(stream.length(), CONTENTS.length);
+            final byte[] buffer = new byte[CONTENTS.length];
+            Assert.assertEquals(stream.read(buffer), CONTENTS.length);
+            Assert.assertEquals(buffer, CONTENTS);
+        }
+    }
+
+    @Test
+    public void theSourceIsTheUrlWithoutItsUserInfo() throws Exception {
+        final URL withPassword = new URL("ftp://" + LocalFtpServer.USER + ":" + LocalFtpServer.PASSWORD + "@127.0.0.1:"
+                + server.getPort() + "/pub/reads.bam");
+        try (final SeekableFTPStream stream = new SeekableFTPStream(withPassword)) {
+            Assert.assertEquals(stream.getSource(), "ftp://127.0.0.1:" + server.getPort() + "/pub/reads.bam");
+        }
     }
 }

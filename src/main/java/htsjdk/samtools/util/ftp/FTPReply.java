@@ -68,6 +68,16 @@ public class FTPReply {
         return reply;
     }
 
+    /**
+     * Determine if a reply code is a positive preliminary response.  All codes beginning with a 1 are positive
+     * preliminary responses, such as the 150 a server sends before transferring a file in reply to RETR.
+     *
+     * @return True if a reply code is a positive preliminary response, false if not.
+     */
+    public boolean isPositivePreliminary() {
+        return (code >= 100 && code < 200);
+    }
+
     public boolean isSuccess() {
         return isPositiveCompletion() || isPositiveIntermediate();
     }
