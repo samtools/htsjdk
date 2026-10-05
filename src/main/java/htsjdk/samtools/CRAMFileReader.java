@@ -66,7 +66,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     private boolean craiQueryIndexResolved;
 
-    private ValidationStringency validationStringency;
+    // constructors that take no stringency don't validate, as they did when this was left null
+    private ValidationStringency validationStringency = ValidationStringency.SILENT;
 
     private static final Log log = Log.getInstance(CRAMFileReader.class);
 
