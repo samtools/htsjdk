@@ -823,6 +823,28 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         assertPhasing(vc.getGenotype("s6"), ".", false, false);
     }
 
+    /** {@code 0/1} for s1 and no GT for s2. */
+    private static VariantContext secondSampleWithoutAGt() {
+        return new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))
+                .genotypes(new GenotypeBuilder("s1", List.of(REF_A, ALT_C)).make(), new GenotypeBuilder("s2").make())
+                .make();
+    }
+
+    @Test
+    public void aSampleWithoutAGtReadsBackWithoutAGt() throws IOException {
+        final VariantContext vc = readOne(writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 2), secondSampleWithoutAGt()));
+        Assert.assertEquals(vc.getGenotype("s1").getGenotypeString(), "A/C");
+        Assert.assertFalse(vc.getGenotype("s2").isAvailable());
+    }
+
+    @Test
+    public void bcftoolsReadsASampleWithoutAGtAsADot() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) throw new SkipException("bcftools not available");
+        Assert.assertEquals(
+                gtColumnsByBcftools(writeBcf(gtHeader(VCFHeaderVersion.VCF4_4, 2), secondSampleWithoutAGt())),
+                "0/1\t.");
+    }
+
     @Test
     public void aGenotypeWithALeadingIndicatorIsRefusedBelow44() {
         final VariantContext vc = new VariantContextBuilder("t", "chr1", 100, 100, List.of(REF_A, ALT_C))

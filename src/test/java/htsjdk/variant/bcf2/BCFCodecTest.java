@@ -570,12 +570,12 @@ public class BCFCodecTest extends VariantBaseTest {
     }
 
     @Test
-    public void endOfVectorInTheFirstAlleleOfAGtIsAnError() {
-        // GT for the one sample is [END_OF_VECTOR, 2], which no writer produces
+    public void aGtStartingWithEndOfVectorIsASampleWithoutAGtWhateverFollows() {
+        // GT for the one sample is [END_OF_VECTOR, 2], which no writer produces; htslib ends a GT at its first
+        // END_OF_VECTOR and prints "."
         final byte[] genotypes = bytes(0x11, 0x02, 0x21, 0x81, 0x02);
         final byte[] bcf = rawBcf(2, 2, ONE_SAMPLE_HEADER, record(sites(0, 99, 1, 0, 1, 1), genotypes));
-        final TribbleException e = Assert.expectThrows(TribbleException.class, () -> readAll(bcf));
-        Assert.assertTrue(e.getMessage().contains("END_OF_VECTOR"), e.getMessage());
+        Assert.assertFalse(readAll(bcf).get(0).getGenotype("s1").isAvailable());
     }
 
     @Test

@@ -25,7 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import htsjdk.tribble.TribbleException;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.vcf.VCFConstants;
@@ -172,7 +171,6 @@ public class BCF2GenotypeFieldDecoders {
                 final GenotypeBuilder[] gbs)
                 throws IOException {
             final BCF2Type type = BCF2Utils.decodeType(typeDescriptor);
-            final int missing = type.getMissingBytes();
             final int endOfVector = type.getVectorEndBytes();
 
             final int nPossibleGenotypes = 3 * 3;
@@ -183,14 +181,11 @@ public class BCF2GenotypeFieldDecoders {
                 final int a2 = decoder.decodeInt(type);
 
                 if (a1 <= endOfVector) {
-                    if (a1 != missing) {
-                        throw new TribbleException("END_OF_VECTOR in the first allele of a GT field");
-                    }
-                    // ploidy 0: no GT for this sample
+                    // ploidy 0: a sample with no GT is all padding, END_OF_VECTOR (BCF 2.2) or MISSING (2.1)
                     gb.alleles(null);
                     gb.phased(false);
                 } else if (a2 <= endOfVector) {
-                    // haploid: the second slot is padding (MISSING from htsjdk, END_OF_VECTOR from htslib)
+                    // haploid: the second slot is padding, MISSING (BCF 2.1) or END_OF_VECTOR (2.2)
                     gb.alleles(Arrays.asList(getAlleleFromEncoded(siteAlleles, a1)));
                     setHaploidPhasing(gb);
                 } else {
@@ -225,22 +220,18 @@ public class BCF2GenotypeFieldDecoders {
                 final GenotypeBuilder[] gbs)
                 throws IOException {
             final BCF2Type type = BCF2Utils.decodeType(typeDescriptor);
-            final int missing = type.getMissingBytes();
             final int endOfVector = type.getVectorEndBytes();
 
             // a single cache for the encoded genotypes, since we don't actually need this vector
             final int[] tmp = new int[ploidy];
 
             for (final GenotypeBuilder gb : gbs) {
-                // a sentinel ends the sample's alleles: a shorter genotype is padded with MISSING (htsjdk) or
-                // END_OF_VECTOR (htslib) up to the site's ploidy
+                // a sentinel ends the sample's alleles: a shorter genotype is padded with MISSING (BCF 2.1) or
+                // END_OF_VECTOR (2.2) up to the site's ploidy, and a sample with no GT is all padding
                 int actualPloidy = 0;
                 for (int i = 0; i < ploidy; i++) {
                     final int v = decoder.decodeInt(type);
                     if (v <= endOfVector) {
-                        if (i == 0 && v != missing) {
-                            throw new TribbleException("END_OF_VECTOR in the first allele of a GT field");
-                        }
                         for (int j = i + 1; j < ploidy; j++) decoder.decodeInt(type);
                         break;
                     }
