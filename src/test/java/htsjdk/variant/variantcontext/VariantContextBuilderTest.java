@@ -366,4 +366,45 @@ public class VariantContextBuilderTest extends VariantBaseTest {
         builder.filters((Set<String>) null);
         builder.make();
     }
+
+    private static VariantContextBuilder snpBuilder() {
+        return new VariantContextBuilder("source", "contig", 1, 1, Arrays.asList(Tref, C));
+    }
+
+    @Test
+    public void aLog10PErrorIsKeptExactly() {
+        // -1.9877 * -10 / -10.0 is -1.9876999999999998, so it must not be recomputed from the phred-scaled QUAL
+        final VariantContext vc = snpBuilder().log10PError(-1.9877).make();
+        Assert.assertEquals(vc.getLog10PError(), -1.9877, 0.0);
+        Assert.assertEquals(vc.getPhredScaledQual(), -1.9877 * -10, 0.0);
+    }
+
+    @Test
+    public void aPhredScaledQualIsKeptExactly() {
+        // 198.77 / -10.0 * -10 is 198.77000000000004, so it must not be recomputed from the log10PError
+        final VariantContext vc = snpBuilder().phredScaledQual(198.77).make();
+        Assert.assertEquals(vc.getPhredScaledQual(), 198.77, 0.0);
+        Assert.assertEquals(vc.getLog10PError(), 198.77 / -10.0, 0.0);
+        Assert.assertTrue(vc.hasLog10PError());
+    }
+
+    @Test
+    public void aPhredScaledQualIsKeptByBothCopyConstructors() {
+        final VariantContextBuilder builder = snpBuilder().phredScaledQual(198.77);
+        Assert.assertEquals(builder.copy().make().getPhredScaledQual(), 198.77, 0.0);
+        Assert.assertEquals(new VariantContextBuilder(builder.make()).make().getPhredScaledQual(), 198.77, 0.0);
+    }
+
+    @Test
+    public void theLastQualSetWins() {
+        Assert.assertEquals(
+                snpBuilder().phredScaledQual(198.77).log10PError(-3).make().getPhredScaledQual(), 30.0, 0.0);
+        Assert.assertEquals(
+                snpBuilder().log10PError(-3).phredScaledQual(198.77).make().getLog10PError(), 198.77 / -10.0, 0.0);
+    }
+
+    @Test
+    public void aPhredScaledQualOfMinusTenIsNoQual() {
+        Assert.assertFalse(snpBuilder().phredScaledQual(-10).make().hasLog10PError());
+    }
 }

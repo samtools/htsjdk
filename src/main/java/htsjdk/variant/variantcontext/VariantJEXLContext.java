@@ -60,7 +60,7 @@ class VariantJEXLContext implements JexlContext {
         attributes.put("CHROM", VariantContext::getContig);
         attributes.put("POS", VariantContext::getStart);
         attributes.put("TYPE", (VariantContext vc) -> vc.getType().toString());
-        attributes.put("QUAL", (VariantContext vc) -> -10 * vc.getLog10PError());
+        attributes.put("QUAL", VariantContext::getPhredScaledQual);
         attributes.put("ALLELES", VariantContext::getAlleles);
         attributes.put("N_ALLELES", VariantContext::getNAlleles);
         attributes.put("FILTER", (VariantContext vc) -> vc.isFiltered() ? true_string : false_string);

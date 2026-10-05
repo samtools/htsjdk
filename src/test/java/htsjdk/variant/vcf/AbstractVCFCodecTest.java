@@ -895,4 +895,60 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertTrue(vc.getFilters().isEmpty());
         Assert.assertFalse(vc.isFiltered());
     }
+
+    // QUAL: kept as parsed rather than recomputed from its log10 error probability
+
+    private static VariantContext decodeQual(final String qual) {
+        return decodeUnderOneSampleHeader("chr1\t100\t.\tA\tC\t" + qual + "\tPASS\t.\tGT\t0/1");
+    }
+
+    @Test
+    public void aQualIsReadBackExactlyAsParsed() {
+        // each of these comes back 1 ulp high when recomputed as its log10 error probability times -10
+        for (final String qual : List.of("198.77", "61.73", "12.345", "1e-5")) {
+            Assert.assertEquals(decodeQual(qual).getPhredScaledQual(), Double.parseDouble(qual), 0.0, qual);
+        }
+    }
+
+    @Test
+    public void aQualsLog10PErrorIsTheQualDividedByMinusTen() {
+        Assert.assertEquals(decodeQual("198.77").getLog10PError(), 198.77 / -10.0, 0.0);
+    }
+
+    @Test
+    public void aMissingQualHasNoLog10PError() {
+        for (final String qual : List.of(".", "-1")) {
+            final VariantContext vc = decodeQual(qual);
+            Assert.assertFalse(vc.hasLog10PError(), qual);
+            Assert.assertEquals(vc.getLog10PError(), VariantContext.NO_LOG10_PERROR, 0.0, qual);
+            Assert.assertEquals(vc.getPhredScaledQual(), -10.0, 0.0, qual);
+        }
+    }
+
+    @Test
+    public void aQualOfMinusZeroIsReadAsZero() {
+        for (final String qual : List.of("-0", "-0.0")) {
+            final VariantContext vc = decodeQual(qual);
+            Assert.assertTrue(vc.hasLog10PError(), qual);
+            // Double.compare tells 0.0 from -0.0
+            Assert.assertEquals(Double.compare(vc.getPhredScaledQual(), 0.0), 0, qual);
+        }
+    }
+
+    @Test
+    public void aQualOfInfOrNanIsRead() {
+        Assert.assertEquals(decodeQual("inf").getPhredScaledQual(), Double.POSITIVE_INFINITY);
+        Assert.assertTrue(Double.isNaN(decodeQual("nan").getPhredScaledQual()));
+    }
+
+    @Test
+    public void aQualIsWrittenRoundedFromTheValueAsParsed() {
+        final VCFCodec codec = new VCFCodec();
+        final VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
+                new ByteArrayInputStream(ONE_SAMPLE_HEADER.getBytes(StandardCharsets.UTF_8)))));
+        final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t0.055\tPASS\t.\tGT\t0/1");
+        // 0.055 / -10.0 * -10 is 0.05499999999999999, which rounds down
+        final String written = new VCFEncoder(header, true, false).encode(vc);
+        Assert.assertEquals(written.split("\t")[5], "0.06");
+    }
 }

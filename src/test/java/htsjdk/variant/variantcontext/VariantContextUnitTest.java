@@ -2303,4 +2303,59 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertFalse(vc.getGenotypes().isLazyWithData(), "not decoded");
         Assert.assertTrue(text.contains("GT=[" + vc.getGenotype("s1") + "," + vc.getGenotype("s2") + "]"), text);
     }
+
+    // QUAL
+
+    @Test
+    public void setLog10PErrorRejectsAPositiveValueNamingIt() {
+        final CommonInfo info = snpBuilder.make().getCommonInfo();
+        final IllegalArgumentException e =
+                Assert.expectThrows(IllegalArgumentException.class, () -> info.setLog10PError(1.5));
+        Assert.assertTrue(e.getMessage().contains(": 1.5"), e.getMessage());
+    }
+
+    @Test
+    public void setLog10PErrorChecksItsArgumentNotTheValueItReplaces() {
+        final VariantContext vc =
+                snpBuilder.log10PError(Double.NEGATIVE_INFINITY).make();
+        vc.getCommonInfo().setLog10PError(-3);
+        Assert.assertEquals(vc.getPhredScaledQual(), 30.0, 0.0);
+    }
+
+    @Test
+    public void aLog10PErrorOfNanOrMinusInfinityIsAccepted() {
+        Assert.assertTrue(Double.isNaN(snpBuilder.log10PError(Double.NaN).make().getPhredScaledQual()));
+        Assert.assertEquals(
+                snpBuilder.log10PError(Double.NEGATIVE_INFINITY).make().getPhredScaledQual(), Double.POSITIVE_INFINITY);
+    }
+
+    @Test
+    public void setPhredScaledQualKeepsTheValueExactly() {
+        final VariantContext vc = snpBuilder.make();
+        vc.getCommonInfo().setPhredScaledQual(198.77);
+        Assert.assertEquals(vc.getPhredScaledQual(), 198.77, 0.0);
+        Assert.assertEquals(vc.getLog10PError(), 198.77 / -10.0, 0.0);
+    }
+
+    @Test
+    public void aQualOfZeroIsNeverNegativeZero() {
+        Assert.assertEquals(Double.compare(snpBuilder.log10PError(0.0).make().getPhredScaledQual(), 0.0), 0);
+        Assert.assertEquals(
+                Double.compare(snpBuilder.phredScaledQual(-0.0).make().getPhredScaledQual(), 0.0), 0);
+    }
+
+    @Test
+    public void theCopyConstructorKeepsThePhredScaledQualExactly() {
+        final VariantContext copy =
+                new VariantContext(snpBuilder.phredScaledQual(198.77).make());
+        Assert.assertEquals(copy.getPhredScaledQual(), 198.77, 0.0);
+    }
+
+    @Test
+    public void aDeserializedVariantKeepsItsQualExactly() throws Exception {
+        final VariantContext deserialized = TestUtil.serializeAndDeserialize(
+                snpBuilder.phredScaledQual(198.77).make());
+        Assert.assertEquals(deserialized.getPhredScaledQual(), 198.77, 0.0);
+        Assert.assertEquals(deserialized.getLog10PError(), 198.77 / -10.0, 0.0);
+    }
 }

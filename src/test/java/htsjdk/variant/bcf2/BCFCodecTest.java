@@ -681,6 +681,30 @@ public class BCFCodecTest extends VariantBaseTest {
         assertSameRecords(readAll(writeBcf(header, written)), written);
     }
 
+    @Test
+    public void aQualIsReadBackExactlyAsTheFloatWritten() throws IOException {
+        final VCFHeader header = headerWithGtAndAd();
+        final float qual = 198.77f;
+        final VariantContext written = new VariantContextBuilder(
+                        twoRecords(header).get(0))
+                .phredScaledQual(qual)
+                .make();
+        final VariantContext read = readAll(writeBcf(header, List.of(written))).get(0);
+        Assert.assertEquals(read.getPhredScaledQual(), (double) qual, 0.0);
+        Assert.assertEquals(read.getLog10PError(), qual / -10.0, 0.0);
+    }
+
+    @Test
+    public void aMissingQualIsReadBackAsMissing() throws IOException {
+        final VCFHeader header = headerWithGtAndAd();
+        final VariantContext written = twoRecords(header).get(0);
+        Assert.assertFalse(written.hasLog10PError());
+        final VariantContext read = readAll(writeBcf(header, List.of(written))).get(0);
+        Assert.assertFalse(read.hasLog10PError());
+        Assert.assertEquals(read.getLog10PError(), VariantContext.NO_LOG10_PERROR, 0.0);
+        Assert.assertEquals(read.getPhredScaledQual(), -10.0, 0.0);
+    }
+
     // -- Fixtures --
 
     private static final String[] A42_VCF = {

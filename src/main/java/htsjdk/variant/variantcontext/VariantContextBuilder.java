@@ -75,6 +75,7 @@ public class VariantContextBuilder {
     private String ID = VCFConstants.EMPTY_ID_FIELD;
     private GenotypesContext genotypes = GenotypesContext.NO_GENOTYPES;
     private double log10PError = VariantContext.NO_LOG10_PERROR;
+    private double phredScaledQual = CommonInfo.toPhredScaledQual(VariantContext.NO_LOG10_PERROR);
     private Set<String> filters = null;
     private Map<String, Object> attributes = null;
     private boolean attributesCanBeModified = false;
@@ -182,6 +183,7 @@ public class VariantContextBuilder {
         this.genotypes = parent.getGenotypes();
         this.ID = parent.getID();
         this.log10PError = parent.getLog10PError();
+        this.phredScaledQual = parent.getPhredScaledQual();
         this.source = parent.getSource();
         this.start = parent.getStart();
         this.stop = parent.getEnd();
@@ -208,6 +210,7 @@ public class VariantContextBuilder {
         this.genotypes = parent.genotypes;
         this.ID = parent.ID;
         this.log10PError = parent.log10PError;
+        this.phredScaledQual = parent.phredScaledQual;
         this.source = parent.source;
         this.start = parent.start;
         this.stop = parent.stop;
@@ -516,12 +519,27 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Tells us that the resulting VariantContext should have log10PError
+     * Tells us that the resulting VariantContext should have log10PError, and a phred-scaled QUAL of {@code -10}
+     * times it
      * @param log10PError value of QUAL field for this builder
      * @return this builder
      */
     public VariantContextBuilder log10PError(final double log10PError) {
         this.log10PError = log10PError;
+        this.phredScaledQual = CommonInfo.toPhredScaledQual(log10PError);
+        return this;
+    }
+
+    /**
+     * Tells us that the resulting VariantContext should have this phred-scaled QUAL, which its
+     * {@link VariantContext#getPhredScaledQual} then returns exactly, and a log10PError of it divided by {@code -10}
+     * @param phredScaledQual value of QUAL field for this builder, as written in a VCF: at least 0, or {@code -10}
+     *                        for no QUAL
+     * @return this builder
+     */
+    public VariantContextBuilder phredScaledQual(final double phredScaledQual) {
+        this.phredScaledQual = phredScaledQual;
+        this.log10PError = CommonInfo.toLog10PError(phredScaledQual);
         return this;
     }
 
@@ -657,6 +675,7 @@ public class VariantContextBuilder {
                 alleles,
                 genotypes,
                 log10PError,
+                phredScaledQual,
                 filters,
                 attributes,
                 fullyDecoded,

@@ -27,6 +27,8 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFUtils;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,13 +55,29 @@ public final class CommonInfo implements Serializable {
     private static Map<String, Object> NO_ATTRIBUTES = Collections.unmodifiableMap(new HashMap<String, Object>());
 
     private double log10PError = NO_LOG10_PERROR;
+    // Kept alongside log10PError rather than derived from it, so a QUAL read from a file comes back as parsed
+    private double phredScaledQual = toPhredScaledQual(NO_LOG10_PERROR);
     private String name = null;
     private Set<String> filters = null;
     private Map<String, Object> attributes = NO_ATTRIBUTES;
 
     public CommonInfo(String name, double log10PError, Set<String> filters, Map<String, Object> attributes) {
+        this(name, log10PError, toPhredScaledQual(log10PError), filters, attributes);
+    }
+
+    /**
+     * Creates a CommonInfo given its QUAL in both forms, so that neither is recomputed from the other.
+     *
+     * @param phredScaledQual the phred-scaled form of {@code log10PError}, which is not checked against it
+     */
+    CommonInfo(
+            String name,
+            double log10PError,
+            double phredScaledQual,
+            Set<String> filters,
+            Map<String, Object> attributes) {
         this.name = name;
-        setLog10PError(log10PError);
+        setQual(log10PError, phredScaledQual);
         this.filters = filters;
         if (attributes != null && !attributes.isEmpty()) {
             this.attributes = attributes;
@@ -142,25 +160,60 @@ public final class CommonInfo implements Serializable {
     }
 
     /**
-     * Floating-point arithmetic allows signed zeros such as +0.0 and -0.0.
-     * Adding the constant 0.0 to the result ensures that the returned value is never -0.0
-     * since (-0.0) + 0.0 = 0.0.
-     *
-     * When this is set to '0.0', the resulting VCF would be 0 instead of -0.
+     * The phred-scaled quality: exactly the value given to {@link #setPhredScaledQual}, or {@code -10} times the
+     * value given to {@link #setLog10PError}. It is never -0.0, so a VCF gets QUAL 0 rather than -0.
      *
      * @return double - Phred scaled quality score
      */
     public double getPhredScaledQual() {
-        return (getLog10PError() * -10) + 0.0;
+        return phredScaledQual;
     }
 
+    /**
+     * Sets the log10 error probability, and the phred-scaled quality to {@code -10} times it.
+     *
+     * @param log10PError at most 0, or {@link #NO_LOG10_PERROR} for no QUAL
+     * @throws IllegalArgumentException if {@code log10PError} is greater than 0 and not {@link #NO_LOG10_PERROR}
+     */
     public void setLog10PError(double log10PError) {
+        setQual(log10PError, toPhredScaledQual(log10PError));
+    }
+
+    /**
+     * Sets the phred-scaled quality, which {@link #getPhredScaledQual} then returns exactly, and the log10 error
+     * probability to it divided by {@code -10}.
+     *
+     * @param phredScaledQual at least 0, or {@code -10} for no QUAL
+     * @throws IllegalArgumentException if the log10 error probability it gives is greater than 0 and not
+     *     {@link #NO_LOG10_PERROR}
+     */
+    public void setPhredScaledQual(double phredScaledQual) {
+        setQual(toLog10PError(phredScaledQual), phredScaledQual);
+    }
+
+    private void setQual(final double log10PError, final double phredScaledQual) {
+        // NaN and -Infinity pass, as QUAL nan and inf do in htslib
         if (log10PError > 0 && log10PError != NO_LOG10_PERROR)
-            throw new IllegalArgumentException("BUG: log10PError cannot be > 0 : " + this.log10PError);
-        if (Double.isInfinite(this.log10PError))
-            throw new IllegalArgumentException("BUG: log10PError should not be Infinity");
-        if (Double.isNaN(this.log10PError)) throw new IllegalArgumentException("BUG: log10PError should not be NaN");
+            throw new IllegalArgumentException("BUG: log10PError cannot be > 0 : " + log10PError);
         this.log10PError = log10PError;
+        // (-0.0) + 0.0 = 0.0
+        this.phredScaledQual = phredScaledQual + 0.0;
+    }
+
+    /** The phred-scaled form of a log10 error probability. */
+    static double toPhredScaledQual(final double log10PError) {
+        return log10PError * -10;
+    }
+
+    /** The log10 error probability of a phred-scaled quality. */
+    static double toLog10PError(final double phredScaledQual) {
+        return phredScaledQual / -10.0;
+    }
+
+    private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        // A stream from an htsjdk without this field leaves it 0.0; recomputing it changes nothing when 0.0 is real
+        if (phredScaledQual == 0.0) setLog10PError(log10PError);
     }
 
     // ---------------------------------------------------------------------------------------------------------

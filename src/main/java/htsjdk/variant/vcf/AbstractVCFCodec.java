@@ -58,6 +58,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     protected static final int NUM_STANDARD_FIELDS = 8; // INFO is the 8th
 
+    // The phred-scaled form of VariantContext.NO_LOG10_PERROR, which a builder maps back to it exactly
+    private static final double MISSING_PHRED_SCALED_QUAL = VariantContext.NO_LOG10_PERROR * -10;
+
     // Set once, when the header is read or set, and only read while decoding.
     protected VCFHeader header = null;
     protected VCFHeaderVersion version = null;
@@ -430,7 +433,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         final String ref = parts[3].toUpperCase();
         final String alts = parts[4];
-        builder.log10PError(parseQual(parts[5]));
+        builder.phredScaledQual(parsePhredScaledQual(parts[5]));
 
         final List<String> filters = parseFilters(getCachedString(parts[6]), lineNo);
         if (filters != null) {
@@ -729,18 +732,27 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return return a double
      */
     protected static Double parseQual(String qualString) {
-        // if we're the VCF 4 missing char, return immediately
-        if (qualString.equals(VCFConstants.MISSING_VALUE_v4)) return VariantContext.NO_LOG10_PERROR;
+        return parsePhredScaledQual(qualString) / -10.0;
+    }
 
-        Double val = VCFUtils.parseVcfDouble(qualString);
+    /**
+     * Parses a QUAL column as the phred-scaled quality it holds, with no scaling, so the value is exactly as written.
+     *
+     * @param qualString the QUAL column
+     * @return the QUAL, or {@link #MISSING_PHRED_SCALED_QUAL} if it is missing
+     */
+    private static double parsePhredScaledQual(final String qualString) {
+        // if we're the VCF 4 missing char, return immediately
+        if (qualString.equals(VCFConstants.MISSING_VALUE_v4)) return MISSING_PHRED_SCALED_QUAL;
+
+        final double val = VCFUtils.parseVcfDouble(qualString);
 
         // check to see if they encoded the missing qual score in VCF 3 style, with either the -1 or -1.0.  check for
         // val < 0 to save some CPU cycles
         if ((val < 0) && (Math.abs(val - VCFConstants.MISSING_QUALITY_v3_DOUBLE) < VCFConstants.VCF_ENCODING_EPSILON))
-            return VariantContext.NO_LOG10_PERROR;
+            return MISSING_PHRED_SCALED_QUAL;
 
-        // scale and return the value
-        return val / -10.0;
+        return val;
     }
 
     /**

@@ -400,7 +400,7 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             throws IOException {
         final Object qual = decoder.decodeSingleValue(BCF2Type.FLOAT);
         if (qual != null) {
-            builder.log10PError(((Double) qual) / -10.0);
+            builder.phredScaledQual((Double) qual);
         }
 
         final int nAlleleInfo = decoder.decodeInt(BCF2Type.INT32);

@@ -441,6 +441,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
                 other.getAlleles(),
                 other.getGenotypes(),
                 other.getLog10PError(),
+                other.getPhredScaledQual(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
                 other.fullyDecoded,
@@ -474,6 +475,43 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             final Map<String, Object> attributes,
             final boolean fullyDecoded,
             final EnumSet<Validation> validationToPerform) {
+        this(
+                source,
+                ID,
+                contig,
+                start,
+                stop,
+                alleles,
+                genotypes,
+                log10PError,
+                CommonInfo.toPhredScaledQual(log10PError),
+                filters,
+                attributes,
+                fullyDecoded,
+                validationToPerform);
+    }
+
+    /**
+     * Like the constructor taking only {@code log10PError}, but with the QUAL given in both forms, so that
+     * {@link #getLog10PError} and {@link #getPhredScaledQual} each return their own value exactly.
+     *
+     * @param log10PError     qual as a log10 error probability
+     * @param phredScaledQual qual as a phred-scaled quality; it is not checked against {@code log10PError}
+     */
+    protected VariantContext(
+            final String source,
+            final String ID,
+            final String contig,
+            final long start,
+            final long stop,
+            final Collection<Allele> alleles,
+            final GenotypesContext genotypes,
+            final double log10PError,
+            final double phredScaledQual,
+            final Set<String> filters,
+            final Map<String, Object> attributes,
+            final boolean fullyDecoded,
+            final EnumSet<Validation> validationToPerform) {
         if (contig == null) {
             throw new IllegalArgumentException("Contig cannot be null");
         }
@@ -486,7 +524,7 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
             throw new IllegalArgumentException("ID field cannot be the null or the empty string");
         this.ID = ID.equals(VCFConstants.EMPTY_ID_FIELD) ? VCFConstants.EMPTY_ID_FIELD : ID;
 
-        this.commonInfo = new CommonInfo(source, log10PError, filters, attributes);
+        this.commonInfo = new CommonInfo(source, log10PError, phredScaledQual, filters, attributes);
 
         if (alleles == null) {
             throw new IllegalArgumentException("Alleles cannot be null");

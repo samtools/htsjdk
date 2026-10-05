@@ -317,6 +317,14 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
         getJEXLContext().set("noMatterWhat", "willBlowup");
     }
 
+    @Test
+    public void qualIsThePhredScaledQualExactly() {
+        // 198.77 / -10.0 * -10 is 198.77000000000004, so QUAL > 198.77 would match
+        final VariantContext qualVc =
+                new VariantContextBuilder(vc).phredScaledQual(198.77).make();
+        Assert.assertEquals(new VariantJEXLContext(qualVc).get("QUAL"), 198.77);
+    }
+
     /**
      * @return a GenotypeJEXLContext for use by actual tests
      */
