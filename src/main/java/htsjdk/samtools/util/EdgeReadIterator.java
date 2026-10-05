@@ -144,7 +144,7 @@ public class EdgeReadIterator
             //
             // Example: Read (or more accurately, AlignmentBlock) from position 101 to 108
             //
-            // accumulator (ArrayList<LocusInfo>)     30  31  32  33  34  35  36  37  38 (has one LocusInfo at each
+            // accumulator (List<LocusInfo>)          30  31  32  33  34  35  36  37  38 (has one LocusInfo at each
             // position, corresponding to the genomic position)
             // LocusInfo objects (with genomic pos.) 100 101 102 103 104 105 106 107 108 (the LocusInfo objects can
             // contain EdgingRecordAndOffset objects, if a record starts or ends there)
