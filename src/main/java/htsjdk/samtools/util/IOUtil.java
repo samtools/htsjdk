@@ -48,6 +48,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
@@ -58,6 +59,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -497,14 +499,59 @@ public class IOUtil {
             } else if (!Files.isDirectory(parent)) {
                 throw new SAMException("Cannot write file: " + path.toAbsolutePath() + ". "
                         + "File does not exist and parent is not a directory.");
-            } else if (!Files.isWritable(parent)) {
+            } else if (!isWritableDirectory(parent)) {
                 throw new SAMException("Cannot write file: " + path.toAbsolutePath() + ". "
                         + "File does not exist and parent directory is not writable.");
             }
         } else if (Files.isDirectory(path)) {
             throw new SAMException("Cannot write file because it is a directory: " + path.toAbsolutePath());
-        } else if (!Files.isWritable(path)) {
+        } else if (!isWritableFile(path)) {
             throw new SAMException("File exists but is not writable: " + path.toAbsolutePath());
+        }
+    }
+
+    /**
+     * Whether files can be created in a directory. On the default file system a negative {@link Files#isWritable}
+     * is confirmed by creating and deleting a file there, because some NFS servers answer access checks differently
+     * from how they enforce their ACLs.
+     */
+    private static boolean isWritableDirectory(final Path dir) {
+        if (Files.isWritable(dir)) {
+            return true;
+        }
+        if (dir.getFileSystem() != FileSystems.getDefault()) {
+            return false;
+        }
+        final Path probe;
+        try {
+            probe = Files.createTempFile(dir, ".htsjdk-write-check", null);
+        } catch (final IOException e) {
+            return false;
+        }
+        try {
+            Files.deleteIfExists(probe);
+        } catch (final IOException e) {
+            // the file was created, so the directory is writable whether or not it can be removed
+        }
+        return true;
+    }
+
+    /**
+     * Whether an existing file can be written. On the default file system a negative {@link Files#isWritable} is
+     * confirmed by opening the file for writing, without truncating it, for the same reason as
+     * {@link #isWritableDirectory}.
+     */
+    private static boolean isWritableFile(final Path file) {
+        if (Files.isWritable(file)) {
+            return true;
+        }
+        if (file.getFileSystem() != FileSystems.getDefault()) {
+            return false;
+        }
+        try (FileChannel ignored = FileChannel.open(file, StandardOpenOption.WRITE)) {
+            return true;
+        } catch (final IOException e) {
+            return false;
         }
     }
 
@@ -522,7 +569,7 @@ public class IOUtil {
         } else if (!Files.isDirectory(dir)) {
             throw new SAMException("Cannot write to directory because it is not a directory: "
                     + dir.toUri().toString());
-        } else if (!Files.isWritable(dir)) {
+        } else if (!isWritableDirectory(dir)) {
             throw new SAMException(
                     "Directory exists but is not writable: " + dir.toUri().toString());
         }
