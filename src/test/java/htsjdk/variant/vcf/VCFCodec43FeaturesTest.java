@@ -49,7 +49,9 @@ public class VCFCodec43FeaturesTest extends VariantBaseTest {
     public void testReadAllVCF43Features(final Path testFile) {
         final Tuple<VCFHeader, List<VariantContext>> entireVCF = readEntireVCFIntoMemory(testFile);
 
-        Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), 70);
+        // each file has 70 header lines, but the uncompressed ones define INFO DP twice and the second is dropped
+        final int expectedLines = testFile.toString().endsWith(".gz") ? 70 : 69;
+        Assert.assertEquals(entireVCF.a.getMetaDataInInputOrder().size(), expectedLines);
         Assert.assertEquals(entireVCF.b.size(), 25);
     }
 
