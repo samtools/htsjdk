@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.CRAMLazyReferenceSource;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -398,6 +399,65 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
         for (final SAMSequenceRecord sequence : written.getSequenceDictionary().getSequences()) {
             Assert.assertNull(sequence.getMd5());
         }
+    }
+
+    /** The bytes of a CRAM holding one unmapped read, written with the given output identifier. */
+    private static byte[] writeOneUnmappedRead(final String outputIdentifier) {
+        final SAMFileHeader header = headerWithoutM5s();
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final CRAMContainerStreamWriter writer =
+                new CRAMContainerStreamWriter(out, null, new CRAMLazyReferenceSource(), header, outputIdentifier);
+        writer.writeHeader();
+        final SAMRecord read = new SAMRecord(header);
+        read.setReadName("unmapped");
+        read.setReadUnmappedFlag(true);
+        read.setReadString("ACGT");
+        read.setBaseQualityString("????");
+        writer.writeAlignment(read);
+        writer.finish(true);
+        return out.toByteArray();
+    }
+
+    @Test
+    public void theFileIdOfAFileUriIsItsFileName() {
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("file:///data/run1/sample.cram"), "sample.cram");
+    }
+
+    @Test
+    public void theFileIdOfAPercentEncodedFileUriIsItsDecodedFileName() {
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("file:///data/my%20sample.cram"), "my sample.cram");
+    }
+
+    @Test
+    public void theFileIdOfAPlainPathIsItsFileName() {
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("/data/run 1/sample.cram"), "sample.cram");
+    }
+
+    @Test
+    public void aPlainPathKeepsAHashQuestionMarkOrPercentInItsFileName() {
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("/data/run#1/s#2.cram"), "s#2.cram");
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("/data/what?.cram"), "what?.cram");
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("/data/my%20s.cram"), "my%20s.cram");
+    }
+
+    @Test
+    public void theFileIdOfAWindowsPathIsItsFileName() {
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("C:\\data\\run1\\sample.cram"), "sample.cram");
+    }
+
+    @Test
+    public void anIdentifierWithoutASlashIsTheFileIdAsItIs() {
+        Assert.assertEquals(CRAMContainerStreamWriter.fileNameOf("test"), "test");
+        Assert.assertNull(CRAMContainerStreamWriter.fileNameOf(null));
+    }
+
+    @Test
+    public void theSameRecordsWrittenToDifferentDirectoriesGiveIdenticalFiles() {
+        final byte[] first = writeOneUnmappedRead("file:///data/run1/sample.cram");
+        final byte[] second = writeOneUnmappedRead("file:///scratch/work/a1b2c3/sample.cram");
+        Assert.assertEquals(first, second);
+        final byte[] id = CramIO.readCramHeader(new ByteArrayInputStream(first)).getId();
+        Assert.assertEquals(new String(id, StandardCharsets.UTF_8).replace("\0", ""), "sample.cram");
     }
 
     @Test

@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.common.CRAMVersion;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -46,9 +47,9 @@ public final class CramHeader {
     public CramHeader(final CRAMVersion cramVersion, final String id) {
         this.cramVersion = cramVersion;
         this.id = new byte[CRAM_ID_LENGTH];
-        Arrays.fill(this.id, (byte) 0);
         if (id != null) {
-            System.arraycopy(id.getBytes(), 0, this.id, 0, Math.min(id.length(), this.id.length));
+            final byte[] idBytes = id.getBytes(StandardCharsets.UTF_8);
+            System.arraycopy(idBytes, 0, this.id, 0, Math.min(idBytes.length, this.id.length));
         }
     }
 
