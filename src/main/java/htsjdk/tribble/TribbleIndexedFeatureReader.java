@@ -327,12 +327,12 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             throw new TribbleException("Index not found for: " + path);
         }
 
-        if (index.containsChromosome(chr)) {
-            final List<Block> blocks = index.getBlocks(chr, start - 1, end);
-            return new QueryIterator(chr, start, end, blocks);
-        } else {
+        // an empty or inverted interval overlaps nothing, as with tabix and htslib
+        if (start > end || !index.containsChromosome(chr)) {
             return new EmptyIterator<>();
         }
+        final List<Block> blocks = index.getBlocks(chr, start - 1, end);
+        return new QueryIterator(chr, start, end, blocks);
     }
 
     /**
