@@ -42,6 +42,8 @@ import java.util.NoSuchElementException;
  * Class for reading and querying BAM files.
  */
 public class BAMFileReader extends SamReader.ReaderImplementation {
+    private static final Log log = Log.getInstance(BAMFileReader.class);
+
     // True if reading from a File rather than an InputStream
     private boolean mIsSeekable = false;
 
@@ -212,8 +214,11 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             try {
                 if (Files.getLastModifiedTime(mIndexPath).toMillis()
                         < Files.getLastModifiedTime(path).toMillis() - 5000) {
-                    System.err.println("WARNING: BAM index file " + mIndexPath.toAbsolutePath() + " is older than BAM "
-                            + path.toAbsolutePath());
+                    log.warn(
+                            "BAM index file ",
+                            mIndexPath.toAbsolutePath(),
+                            " is older than BAM ",
+                            path.toAbsolutePath());
                 }
             } catch (final IOException | UnsupportedOperationException e) {
                 // The warning is advisory, and some filesystems (http-nio, for one) have no modification times

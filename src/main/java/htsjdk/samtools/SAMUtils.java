@@ -29,6 +29,7 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.annotation.Strand;
@@ -52,6 +53,8 @@ import java.util.regex.Pattern;
  * Utilty methods.
  */
 public final class SAMUtils {
+    private static final Log log = Log.getInstance(SAMUtils.class);
+
     /**
      * regex for semicolon, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)}
      */
@@ -360,8 +363,8 @@ public final class SAMUtils {
      * @param validationErrors     List of errors to report, or null if there are no errors.
      * @param samRecordIndex       Record number of the SAMRecord corresponding to the validation errors, or -1 if
      *                             the record number is not known.
-     * @param validationStringency If STRICT, throw a SAMFormatException.  If LENIENT, print the validation
-     *                             errors to stderr.  If SILENT, do nothing.
+     * @param validationStringency If STRICT, throw a SAMFormatException.  If LENIENT, log each validation
+     *                             error as a warning.  If SILENT, do nothing.
      */
     public static void processValidationErrors(
             final List<SAMValidationError> validationErrors,
@@ -375,7 +378,7 @@ public final class SAMUtils {
                 throw new SAMFormatException("SAM validation error: " + validationErrors.get(0));
             } else if (validationStringency == ValidationStringency.LENIENT) {
                 for (final SAMValidationError error : validationErrors) {
-                    System.err.println("Ignoring SAM validation error: " + error);
+                    log.warn("Ignoring SAM validation error: ", error);
                 }
             }
         }
@@ -386,7 +389,7 @@ public final class SAMUtils {
         if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException("SAM validation error: " + validationError);
         } else if (validationStringency == ValidationStringency.LENIENT) {
-            System.err.println("Ignoring SAM validation error: " + validationError);
+            log.warn("Ignoring SAM validation error: ", validationError);
         }
     }
 

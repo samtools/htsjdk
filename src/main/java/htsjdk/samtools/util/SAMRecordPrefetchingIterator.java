@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * access an instance concurrently, it must be synchronized externally.
  */
 public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord> {
+    private static final Log log = Log.getInstance(SAMRecordPrefetchingIterator.class);
+
     private final PeekableIterator<SAMRecord> inner;
     private final BlockingQueue<Either> queue;
     private final int basePrefetchLimit;
@@ -68,10 +70,10 @@ public class SAMRecordPrefetchingIterator implements CloseableIterator<SAMRecord
             } catch (final Throwable t) {
                 // All other exceptions are placed onto the queue so they can be reported when accessed by the main
                 // thread
-                // Errors are immediately printed so their information is propagated to the user and not lost
+                // Errors are immediately logged so their information is propagated to the user and not lost
                 // in the case that the JVM dies before the Error is passed up through the queue
                 if (t instanceof Error) {
-                    t.printStackTrace();
+                    log.error(t, "Error while prefetching records");
                 }
                 this.queue.add(new Either(t));
             }

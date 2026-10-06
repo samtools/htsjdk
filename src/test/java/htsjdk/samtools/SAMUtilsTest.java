@@ -24,10 +24,13 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.Log;
+import htsjdk.testutil.LogCapture;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -393,5 +396,45 @@ public class SAMUtilsTest extends HtsjdkTest {
         final byte[] r = SAMUtils.fastqToPhred(src, 0, src.length);
         Assert.assertEquals(r[0], (byte) 0);
         Assert.assertEquals(r[1], (byte) SAMUtils.MAX_PHRED_SCORE);
+    }
+
+    /** A validation error whose message no other test logs. */
+    private static SAMValidationError uniqueValidationError() {
+        return new SAMValidationError(
+                SAMValidationError.Type.INVALID_FLAG_PROPER_PAIR, "unique error " + UUID.randomUUID(), "read");
+    }
+
+    @Test
+    public void testLenientValidationErrorsAreLoggedAsWarnings() throws Exception {
+        final SAMValidationError error = uniqueValidationError();
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                error.getMessage(),
+                Log.LogLevel.INFO,
+                () -> SAMUtils.processValidationErrors(List.of(error), 1, ValidationStringency.LENIENT));
+        Assert.assertEquals(lines.size(), 1);
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains("Ignoring SAM validation error: "), lines.get(0));
+    }
+
+    @Test
+    public void testLenientValidationErrorsAreNotLoggedAtLevelError() throws Exception {
+        final SAMValidationError error = uniqueValidationError();
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                error.getMessage(),
+                Log.LogLevel.ERROR,
+                () -> SAMUtils.processValidationErrors(List.of(error), 1, ValidationStringency.LENIENT));
+        Assert.assertEquals(lines, List.of());
+    }
+
+    @Test
+    public void testOneLenientValidationErrorIsLoggedAsAWarning() throws Exception {
+        final SAMValidationError error = uniqueValidationError();
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                error.getMessage(),
+                Log.LogLevel.INFO,
+                () -> SAMUtils.processValidationError(error, ValidationStringency.LENIENT));
+        Assert.assertEquals(lines.size(), 1);
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains("Ignoring SAM validation error: "), lines.get(0));
     }
 }

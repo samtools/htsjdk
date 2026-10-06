@@ -193,8 +193,7 @@ public class BamFileIoUtils {
                         Files.setLastModifiedTime(indexFile, FileTime.fromMillis(System.currentTimeMillis()));
                     }
                 } catch (final IOException e) {
-                    System.err.print(String.format(
-                            "Index file is older than BAM file for %s and unable to resolve this", output.toUri()));
+                    LOG.warn("Index file is older than BAM file for ", output.toUri(), " and unable to resolve this");
                 }
             }
         } catch (final IOException ioe) {

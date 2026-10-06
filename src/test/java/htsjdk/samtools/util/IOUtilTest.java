@@ -30,6 +30,7 @@ import htsjdk.beta.exception.HtsjdkException;
 import htsjdk.samtools.BamFileIoUtils;
 import htsjdk.samtools.HtsjdkTestUtils;
 import htsjdk.samtools.SAMException;
+import htsjdk.testutil.LogCapture;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
@@ -335,6 +337,28 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertTrue(Files.exists(toDelete));
         IOUtil.deletePath(toDelete);
         Assert.assertFalse(Files.exists(toDelete));
+    }
+
+    @Test
+    public void testAPathThatCannotBeDeletedIsLoggedAsAWarning() throws Exception {
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path missing = jimfs.getPath("/missing-" + UUID.randomUUID());
+            final List<String> lines = LogCapture.linesLoggedContaining(
+                    missing.toString(), Log.LogLevel.INFO, () -> IOUtil.deletePath(missing));
+            Assert.assertEquals(lines.size(), 1);
+            Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+            Assert.assertTrue(lines.get(0).contains("Could not delete file " + missing), lines.get(0));
+        }
+    }
+
+    @Test
+    public void testAPathThatCannotBeDeletedIsNotLoggedAtLevelError() throws Exception {
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path missing = jimfs.getPath("/missing-" + UUID.randomUUID());
+            final List<String> lines = LogCapture.linesLoggedContaining(
+                    missing.toString(), Log.LogLevel.ERROR, () -> IOUtil.deletePath(missing));
+            Assert.assertEquals(lines, List.of());
+        }
     }
 
     @Test

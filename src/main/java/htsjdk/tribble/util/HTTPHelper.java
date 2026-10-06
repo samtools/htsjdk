@@ -18,6 +18,7 @@
 
 package htsjdk.tribble.util;
 
+import htsjdk.samtools.util.Log;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +35,8 @@ import java.net.URLConnection;
  * @date Jun 28, 2011
  */
 public class HTTPHelper implements URLHelper {
+    private static final Log log = Log.getInstance(HTTPHelper.class);
+
     /**
      * Global proxy setting -- shared by all instances
      */
@@ -49,7 +52,7 @@ public class HTTPHelper implements URLHelper {
             URLConnection conn = openConnection();
             conn.setDefaultUseCaches(false);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn(e, "Could not open a connection to ", url);
         }
     }
 
@@ -74,7 +77,7 @@ public class HTTPHelper implements URLHelper {
             con = openConnection();
             con.setRequestMethod("HEAD");
             if ((con.getResponseCode() != HttpURLConnection.HTTP_OK)) {
-                System.out.println("Error (" + con.getResponseMessage() + " ) fetching content length: " + url);
+                log.warn("Error (", con.getResponseMessage(), " ) fetching content length: ", url);
                 return -1;
             } else {
                 String contentLength = con.getHeaderField("Content-Length");

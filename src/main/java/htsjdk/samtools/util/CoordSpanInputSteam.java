@@ -13,6 +13,8 @@ import java.util.List;
  * Created by vadim on 25/03/2015.
  */
 public class CoordSpanInputSteam extends InputStream {
+    private static final Log log = Log.getInstance(CoordSpanInputSteam.class);
+
     private SeekableStream delegate;
     private Iterator<Chunk> it;
     private Chunk current;
@@ -32,7 +34,7 @@ public class CoordSpanInputSteam extends InputStream {
             if (coords[i] > delegate.length()) throw new RuntimeException("Chunk start is passed EOF: " + coords[i]);
             Chunk chunk = new Chunk(coords[i], coords[i + 1] > delegate.length() ? delegate.length() : coords[i + 1]);
             chunks.add(chunk);
-            System.err.printf("Adding chunk: %d - %d\n", chunk.getChunkStart(), chunk.getChunkEnd());
+            log.debug("Adding chunk: ", chunk.getChunkStart(), " - ", chunk.getChunkEnd());
         }
         it = chunks.iterator();
         nextChunk();

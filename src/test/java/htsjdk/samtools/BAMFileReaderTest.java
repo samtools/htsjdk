@@ -5,13 +5,18 @@ import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.testutil.LogCapture;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -369,5 +374,38 @@ public class BAMFileReaderTest extends HtsjdkTest {
     public void testHeaderLineThatIsNotUtf8IsReadAsLatin1() throws IOException {
         final byte[] text = "@HD\tVN:1.6\n@CO\tcafé\n".getBytes(StandardCharsets.ISO_8859_1);
         Assert.assertEquals(readHeaderWithText(text).getComments(), List.of("@CO\tcafé"));
+    }
+
+    /**
+     * Copies the test BAM and its BAI into a new directory, makes the BAI a minute older than the BAM, opens the
+     * copy at Log level {@code level}, and returns the lines logged that name the copied BAI.
+     */
+    private static List<String> linesLoggedOpeningABamWithAStaleIndex(final Log.LogLevel level) throws Exception {
+        final Path dir = Files.createTempDirectory("BAMFileReaderTest");
+        try {
+            final Path bam = Files.copy(bamFile, dir.resolve("index_test.bam"));
+            final Path bai = Files.copy(baiFileIndex, dir.resolve("index_test.bam.bai"));
+            Files.setLastModifiedTime(
+                    bai, FileTime.fromMillis(Files.getLastModifiedTime(bam).toMillis() - 60_000));
+            final LogCapture.Action openTheCopy = () -> new BAMFileReader(
+                            bam, bai, false, false, ValidationStringency.SILENT, DefaultSAMRecordFactory.getInstance())
+                    .close();
+            return LogCapture.linesLoggedContaining(bai.toAbsolutePath().toString(), level, openTheCopy);
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void testAnIndexOlderThanItsBamIsLoggedAsAWarning() throws Exception {
+        final List<String> lines = linesLoggedOpeningABamWithAStaleIndex(Log.LogLevel.INFO);
+        Assert.assertEquals(lines.size(), 1);
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains(" is older than BAM "), lines.get(0));
+    }
+
+    @Test
+    public void testAnIndexOlderThanItsBamIsNotLoggedAtLevelError() throws Exception {
+        Assert.assertEquals(linesLoggedOpeningABamWithAStaleIndex(Log.LogLevel.ERROR), List.of());
     }
 }

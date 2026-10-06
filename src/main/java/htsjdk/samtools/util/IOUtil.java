@@ -81,6 +81,8 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
  *  Also used for utility methods that wrap or aggregate functionality in Java IO.
  */
 public class IOUtil {
+    private static final Log log = Log.getInstance(IOUtil.class);
+
     /**
      * @deprecated Use {@link Defaults#NON_ZERO_BUFFER_SIZE} instead.
      */
@@ -291,13 +293,13 @@ public class IOUtil {
     }
 
     /**
-     * Attempt to delete a single path and log an error if it is not deleted.
+     * Attempt to delete a single path and log a warning if it is not deleted.
      */
     public static void deletePath(Path path) {
         try {
             Files.delete(path);
         } catch (IOException e) {
-            System.err.println("Could not delete file " + path);
+            log.warn("Could not delete file ", path);
         }
     }
 

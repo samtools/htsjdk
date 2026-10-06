@@ -31,7 +31,9 @@ import java.util.Date;
 import java.util.function.Supplier;
 
 /**
- * <p>A <em>wafer thin</em> wrapper around System.err that uses var-args to make it
+ * <p>A <em>wafer thin</em> logger that writes each message as a line to a {@link PrintStream}
+ * ({@code System.err} unless changed with {@link #setGlobalPrintStream(PrintStream)}), and drops
+ * messages below the level set with {@link #setGlobalLogLevel(LogLevel)}.  It uses var-args to make it
  * much more efficient to call the logging methods in without having to
  * surround every call site with calls to Log.isXXXEnabled().  All the methods on this
  * class take a variable length list of arguments and, only if logging is enabled for
@@ -66,8 +68,8 @@ public final class Log {
     }
 
     /**
-     * Get a Log instance to perform logging within the Class specified.  Returns an instance
-     * of this class which wraps an instance of the commons logging Log class.
+     * Get a Log instance to perform logging within the Class specified.  Each message it logs
+     * is prefixed with its level, a timestamp and the simple name of the class.
      *
      * @param clazz the Class which is going to be doing the logging
      * @return a Log instance with which to log
