@@ -506,4 +506,25 @@ public class CRAMFileReaderTest extends HtsjdkTest {
             }
         }
     }
+
+    @Test
+    public void aReaderMadeWithoutAStringencyFromAPathIsSilent() {
+        final CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, REFERENCE);
+        Assert.assertEquals(reader.getValidationStringency(), ValidationStringency.SILENT);
+        reader.close();
+    }
+
+    @Test
+    public void aReaderMadeWithoutAStringencyFromAPathAndIndexIsSilent() {
+        final CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, INDEX_FILE, REFERENCE);
+        Assert.assertEquals(reader.getValidationStringency(), ValidationStringency.SILENT);
+        reader.close();
+    }
+
+    @Test
+    public void aReaderMadeWithoutAStringencyFromAStreamIsSilent() throws IOException {
+        final CRAMFileReader reader = new CRAMFileReader((Path) null, Files.newInputStream(CRAM_WITH_CRAI), REFERENCE);
+        Assert.assertEquals(reader.getValidationStringency(), ValidationStringency.SILENT);
+        reader.close();
+    }
 }
