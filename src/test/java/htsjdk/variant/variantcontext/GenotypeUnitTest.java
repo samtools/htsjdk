@@ -278,4 +278,12 @@ public class GenotypeUnitTest extends VariantBaseTest {
                 new GenotypeBuilder("s").attribute("X", new String(".")).make();
         Assert.assertEquals(g.getAttributeAsInt("X", -1), -1);
     }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void getAttributeAsDoubleReturnsTheDefaultForAMissingValue() {
+        final Genotype g =
+                new GenotypeBuilder("s").attribute("X", new String(".")).make();
+        Assert.assertEquals(g.getAttributeAsDouble("X", -1.0), -1.0);
+    }
 }
