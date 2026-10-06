@@ -119,8 +119,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     /**
      * Prepare to read uncompressed SAM text that can be seeked in, and so iterated over more than once.
      *
-     * @param stream positioned at the start of the file; need not be buffered, as this class provides buffered
-     *               reading
+     * @param stream positioned at the start of the file; buffered by the caller, since this class reads it only
+     *               {@code 64 KB} at a time
      * @param path   the file being read, for error reporting; may be null
      */
     SAMTextReader(

@@ -536,14 +536,16 @@ public abstract class SamReaderFactory {
                             bufferedStream.close();
                             throw new RuntimeException("Cannot use index file with textual SAM file");
                         }
-                        final SeekableStream sourceSeekable = sourcePath != null && Files.isRegularFile(sourcePath)
+                        final SeekableStream unbufferedSource = sourcePath != null && Files.isRegularFile(sourcePath)
                                 ? data.asUnbufferedSeekableStream()
                                 : null;
-                        if (sourceSeekable != null) {
+                        if (unbufferedSource != null) {
                             // A file can be seeked in, which a reader needs in order to read it through again.
                             // Do not close bufferedStream: it reads from this same stream, which it has read a
-                            // little of, so the stream is taken back to its start.
-                            sourceSeekable.seek(0);
+                            // little of, so the stream is taken back to its start. That is done before buffering it,
+                            // as a SeekableBufferedStream takes the stream's position to be 0 and ignores seek(0).
+                            unbufferedSource.seek(0);
+                            final SeekableStream sourceSeekable = IOUtil.maybeBufferedSeekableStream(unbufferedSource);
                             primitiveSamReader = new SAMTextReader(
                                     sourceSeekable, sourcePath, validationStringency, this.samRecordFactory);
                         } else {
