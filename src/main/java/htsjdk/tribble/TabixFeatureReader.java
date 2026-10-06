@@ -27,12 +27,15 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -43,6 +46,13 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
 
     TabixReader tabixReader;
     List<String> sequenceNames;
+
+    /**
+     * Iterators handed out that are neither closed nor read to their end, which the reader closes when it is closed,
+     * as a whole-file iterator reads a stream of its own. An iterator may be closed on another thread than the one
+     * that asked for it.
+     */
+    private final Set<FeatureIterator<?>> openIterators = ConcurrentHashMap.newKeySet();
 
     /**
      * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
@@ -138,7 +148,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         }
         final TabixIteratorLineReader lineReader =
                 new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid(chr), start - 1, end));
-        return new FeatureIterator<T>(lineReader, start - 1, end);
+        return track(new FeatureIterator<T>(lineReader, start - 1, end));
     }
 
     @Override
@@ -147,12 +157,35 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                 SeekableStreamFactory.getInstance().getStreamFor(path, wrapper));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
         final LineReader reader = new SynchronousLineReader(stream);
-        return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
+        final FeatureIterator<T> iterator;
+        try {
+            iterator = new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
+        } catch (final IOException | RuntimeException e) {
+            // the caller gets no iterator to close
+            reader.close();
+            throw e;
+        }
+        return track(iterator);
     }
 
     @Override
     public void close() throws IOException {
-        tabixReader.close();
+        final List<Closeable> toClose = new ArrayList<>(openIterators);
+        toClose.add(tabixReader::close);
+        closeAll(toClose);
+    }
+
+    /**
+     * Remembers {@code iterator}, so that closing the reader closes it, unless it found nothing to read and so has
+     * closed itself already.
+     *
+     * @return {@code iterator}
+     */
+    private <I extends FeatureIterator<?>> I track(final I iterator) {
+        if (iterator.hasNext()) {
+            openIterators.add(iterator);
+        }
+        return iterator;
     }
 
     class FeatureIterator<T extends Feature> implements CloseableTribbleIterator<T> {
@@ -160,6 +193,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         private LineReader lineReader;
         private int start;
         private int end;
+        private boolean closed = false;
 
         public FeatureIterator(final LineReader lineReader, final int start, final int end) throws IOException {
             this.lineReader = lineReader;
@@ -176,7 +210,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         protected void readNextRecord() throws IOException {
             currentRecord = null;
             String nextLine;
-            while (currentRecord == null && (nextLine = lineReader.readLine()) != null) {
+            while (currentRecord == null && !closed && (nextLine = lineReader.readLine()) != null) {
                 final Feature f;
                 try {
                     f = ((AsciiFeatureCodec) codec).decode(nextLine);
@@ -184,7 +218,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                         continue; // Skip
                     }
                     if (f.getStart() > end) {
-                        return; // Done
+                        break; // Done
                     }
                     if (f.getEnd() <= start) {
                         continue; // Skip
@@ -199,6 +233,10 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                     String error = "Error parsing line: " + nextLine;
                     throw new TribbleException.MalformedFeatureFile(error, path, e);
                 }
+            }
+            if (currentRecord == null) {
+                // An iterator read to its end holds nothing open, whether or not it is ever closed
+                close();
             }
         }
 
@@ -228,7 +266,11 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
 
         @Override
         public void close() {
-            lineReader.close();
+            if (!closed) {
+                closed = true;
+                openIterators.remove(this);
+                lineReader.close();
+            }
         }
 
         @Override

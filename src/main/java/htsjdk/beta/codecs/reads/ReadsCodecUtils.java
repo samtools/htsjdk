@@ -9,6 +9,7 @@ import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -154,18 +155,15 @@ public final class ReadsCodecUtils {
         if (indexInput.isPresent()) {
             final BundleResource indexResource = indexInput.get();
             if (indexResource.getIOPath().isPresent()) {
-                if (indexResource.getIOPath().isPresent()) {
-                    if (readsDecoderOptions.getIndexChannelTransformer().isPresent()) {
-                        // TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
-                        SamInputResource.of(
-                                indexResource.getIOPath().get().toPath(),
-                                readsDecoderOptions.getIndexChannelTransformer().get());
-                        samInputResource.index(indexResource.getIOPath().get().toPath());
-                    } else if (indexResource.getSeekableStream().isPresent()) {
-                        samInputResource.index(indexResource.getSeekableStream().get());
-                    } else if (indexResource.getInputStream().isPresent()) {
-                        samInputResource.index(indexResource.getInputStream().get());
-                    }
+                // An index given by path is opened by the reader when it is needed, and closed with the reader
+                final Path indexPath = indexResource.getIOPath().get().toPath();
+                if (readsDecoderOptions.getIndexChannelTransformer().isPresent()) {
+                    // TODO: use a local cloud channel wrapper instead of requiring the user to pass a lambda
+                    samInputResource.index(
+                            indexPath,
+                            readsDecoderOptions.getIndexChannelTransformer().get());
+                } else {
+                    samInputResource.index(indexPath);
                 }
             }
         }

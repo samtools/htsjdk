@@ -98,7 +98,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         mReader = new SamLineReader(stream);
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
-        readHeader();
+        readHeaderOrClose();
     }
 
     /**
@@ -133,13 +133,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         mPath = path;
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
-        try {
-            readHeader();
-        } catch (final RuntimeException e) {
-            // There will be no reader for the caller to close, so what it was given is closed here
-            close();
-            throw e;
-        }
+        readHeaderOrClose();
     }
 
     /**
@@ -173,11 +167,19 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         }
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
+        readHeaderOrClose();
+    }
+
+    /** Reads the header, closing what this reader was given if that fails, as there is then no reader to close. */
+    private void readHeaderOrClose() {
         try {
             readHeader();
         } catch (final RuntimeException e) {
-            // There will be no reader for the caller to close, so what it was given is closed here
-            close();
+            try {
+                close();
+            } catch (final RuntimeException closeFailure) {
+                e.addSuppressed(closeFailure);
+            }
             throw e;
         }
     }
