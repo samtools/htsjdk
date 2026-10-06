@@ -3,7 +3,9 @@ package htsjdk.beta.codecs.reads.cram;
 import htsjdk.HtsjdkTest;
 import htsjdk.beta.codecs.reads.cram.cramV2_1.CRAMCodecV2_1;
 import htsjdk.beta.exception.HtsjdkIOException;
+import htsjdk.beta.exception.HtsjdkUnsupportedOperationException;
 import htsjdk.beta.plugin.IOUtils;
+import htsjdk.beta.plugin.reads.ReadsBundle;
 import htsjdk.beta.plugin.reads.ReadsDecoderOptions;
 import htsjdk.beta.plugin.reads.ReadsEncoderOptions;
 import htsjdk.beta.plugin.reads.ReadsFormats;
@@ -105,5 +107,19 @@ public class HtsCRAMCodec21Test extends HtsjdkTest {
 
             Assert.assertEquals(samFileHeader.getSortOrder(), SAMFileHeader.SortOrder.unsorted);
         }
+    }
+
+    @Test
+    public void theV2_1EncoderRefusesToWriteCRAM21() {
+        final IOPath cramOutputPath = IOUtils.createTempPath("pluginTestOutput", ".cram");
+
+        final HtsjdkUnsupportedOperationException e = Assert.expectThrows(
+                HtsjdkUnsupportedOperationException.class, () -> HtsDefaultRegistry.getReadsResolver()
+                        .getReadsEncoder(
+                                new ReadsBundle<>(cramOutputPath),
+                                new ReadsEncoderOptions(),
+                                ReadsFormats.CRAM,
+                                CRAMCodecV2_1.VERSION_2_1));
+        Assert.assertTrue(e.getMessage().contains("CRAM 2.1"), e.getMessage());
     }
 }
