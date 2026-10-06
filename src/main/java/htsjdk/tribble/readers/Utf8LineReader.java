@@ -54,10 +54,6 @@ public class Utf8LineReader implements LineReader, LocationAware {
     protected Utf8LineReader() {}
 
     /**
-     * Note: This class implements LocationAware, which requires preservation of virtual file pointers on BGZF inputs.
-     * However, if the inputStream wrapped by this class is a BlockCompressedInputStream, it violates that contract by
-     * wrapping the stream and returning positional file offsets instead.
-     *
      * @deprecated use {@link #from}
      */
     @Deprecated

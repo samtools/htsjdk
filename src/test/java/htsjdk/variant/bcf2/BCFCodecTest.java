@@ -2,12 +2,14 @@ package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.PositionalBufferedStream;
@@ -224,7 +226,7 @@ public class BCFCodecTest extends VariantBaseTest {
         try (final InputStream in = Files.newInputStream(bgzf)) {
             final TribbleException e = Assert.expectThrows(
                     TribbleException.class, () -> new BCF2Codec().makeIndexableSourceFromStream(in));
-            Assert.assertTrue(e.getMessage().contains("must be decompressed"), e.getMessage());
+            Assert.assertTrue(e.getMessage().contains("CSI"), e.getMessage());
         }
     }
 
@@ -234,8 +236,62 @@ public class BCFCodecTest extends VariantBaseTest {
         final Path bgzf = bgzfCopyOf(raw);
         final TribbleException e = Assert.expectThrows(
                 TribbleException.class, () -> IndexFactory.createLinearIndex(bgzf, new BCF2Codec()));
-        Assert.assertTrue(e.getMessage().contains("must be decompressed"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("CSI"), e.getMessage());
         Assert.assertNotNull(IndexFactory.createLinearIndex(raw, new BCF2Codec()));
+    }
+
+    @Test
+    public void aBgzfBcfNamedGzCannotBeIndexedWithALinearIndex() throws IOException {
+        final Path bcfGz = writeBcf22NamedGz(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class, () -> IndexFactory.createLinearIndex(bcfGz, new BCF2Codec()));
+        Assert.assertTrue(e.getMessage().contains("CSI"), e.getMessage());
+    }
+
+    @Test
+    public void aBgzfBcfNamedGzCannotBeIndexedWithAnIntervalIndex() throws IOException {
+        final Path bcfGz = writeBcf22NamedGz(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class, () -> IndexFactory.createIntervalIndex(bcfGz, new BCF2Codec()));
+        Assert.assertTrue(e.getMessage().contains("CSI"), e.getMessage());
+    }
+
+    @Test
+    public void aBlockCompressedStreamIsRefusedForIndexing() throws IOException {
+        final Path bcfGz = writeBcf22NamedGz(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        try (final InputStream in = new BlockCompressedInputStream(bcfGz)) {
+            final TribbleException e = Assert.expectThrows(
+                    TribbleException.class, () -> new BCF2Codec().makeIndexableSourceFromStream(in));
+            Assert.assertTrue(e.getMessage().contains("CSI"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void anIntervalIndexOverARawBcfFindsItsRecords() throws IOException {
+        final List<VariantContext> records = twoRecords(headerWithGtAndAd());
+        final Path raw = writeBcf(headerWithGtAndAd(), records);
+        IndexFactory.createIntervalIndex(raw, new BCF2Codec()).write(Tribble.indexPath(raw));
+        try (final AbstractFeatureReader<VariantContext, ?> reader =
+                        AbstractFeatureReader.getFeatureReader(raw.toUri().toString(), new BCF2Codec(), true);
+                final CloseableIterator<VariantContext> secondContig = reader.query("2", 1, 1000)) {
+            final List<VariantContext> found = new ArrayList<>();
+            secondContig.forEachRemaining(vc -> found.add(decodeGenotypes(vc)));
+            assertSameRecords(found, List.of(decodeGenotypes(records.get(1))));
+        }
+    }
+
+    @Test
+    public void aBgzfBcfNamedGzReadsThroughAbstractFeatureReader() throws IOException {
+        final Path raw = writeBcf(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        final Path bcfGz = writeBcf22NamedGz(headerWithGtAndAd(), twoRecords(headerWithGtAndAd()));
+        final List<VariantContext> records = new ArrayList<>();
+        try (final AbstractFeatureReader<VariantContext, ?> reader =
+                AbstractFeatureReader.getFeatureReader(bcfGz.toUri().toString(), new BCF2Codec(), false)) {
+            for (final VariantContext vc : reader.iterator()) {
+                records.add(decodeGenotypes(vc));
+            }
+        }
+        assertSameRecords(records, readAll(raw));
     }
 
     @Test
@@ -1056,6 +1112,21 @@ public class BCFCodecTest extends VariantBaseTest {
                 .clearOptions()
                 .setOutputPath(bcf)
                 .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .build()) {
+            writer.writeHeader(header);
+            records.forEach(writer::add);
+        }
+        return bcf;
+    }
+
+    /** A BGZF-compressed BCF 2.2, as htsjdk writes it, at a path whose name ends in {@code .bcf.gz}. */
+    private Path writeBcf22NamedGz(final VCFHeader header, final List<VariantContext> records) throws IOException {
+        final Path bcf = Files.createTempFile(tempDir, "out22", ".bcf.gz");
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(bcf)
+                .setOutputFileType(VariantContextWriterBuilder.OutputType.BCF)
+                .setBCFVersion(BCFVersion.BCF_2_2)
                 .build()) {
             writer.writeHeader(header);
             records.forEach(writer::add);
