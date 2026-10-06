@@ -46,7 +46,11 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     private Path cramPath;
     private final CRAMReferenceSource referenceSource;
     private InputStream inputStream;
-    private DeferredCloseSeekableStream deferredCloseSeekableStream;
+    /** The view a seekable {@link #inputStream} is positioned for, or null if none is; see {@link IteratorStream}. */
+    private IteratorStream inputStreamPositionedFor;
+    /** Where the CRAM starts in a seekable {@link #inputStream}: the stream's position when the reader was built. */
+    private long inputStreamStart;
+
     private CRAMIterator iterator;
     private BAMIndex mIndex;
     private Path mIndexPath;
@@ -353,6 +357,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         this.inputStream = inputStream;
         this.validationStringency = validationStringency;
         this.indexStream = indexInputStream;
+        if (inputStream instanceof SeekableStream) {
+            inputStreamStart = ((SeekableStream) inputStream).position();
+        }
         iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
     }
 
@@ -526,16 +533,21 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return iterator.getSAMFileHeader();
     }
 
+    /**
+     * Returns an iterator over every record from the first container on, independent of any other open
+     * iterator. A reader built from a stream that isn't seekable can be read only once, so it returns the same
+     * iterator each time.
+     */
     @Override
     public SAMRecordIterator getIterator() {
-        if (iterator != null && cramPath == null) {
-            return iterator;
-        }
         try {
             if (cramPath != null) {
                 iterator = new CRAMIterator(
                         new BufferedInputStream(Files.newInputStream(cramPath)), referenceSource, validationStringency);
-            } else {
+            } else if (inputStream instanceof SeekableStream) {
+                iterator =
+                        new CRAMIterator(new IteratorStream(inputStreamStart), referenceSource, validationStringency);
+            } else if (iterator == null) {
                 iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
             }
             return iterator;
@@ -612,20 +624,20 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
         try {
             seekableStream.seek(0);
-            iterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
+            final CRAMIterator unmappedIterator =
+                    new CRAMIterator(seekableStream, referenceSource, validationStringency);
             if (startOffset.isPresent()) {
                 seekableStream.seek(startOffset.getAsLong());
             }
             boolean atAlignments;
             do {
-                atAlignments = iterator.advanceToAlignmentInContainer(
+                atAlignments = unmappedIterator.advanceToAlignmentInContainer(
                         SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
-            } while (!atAlignments && iterator.hasNext());
+            } while (!atAlignments && unmappedIterator.hasNext());
+            return unmappedIterator;
         } catch (final IOException e) {
             throw new RuntimeEOFException(e);
         }
-
-        return iterator;
     }
 
     private SeekableStream getSeekableStreamOrFailWithRTE() {
@@ -641,16 +653,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
-        } else if (inputStream != null && inputStream instanceof SeekableStream) {
-            // For SeekableStreams that were provided to the reader constructor instead of a Path, we
-            // need to prevent CloseableIterators from closing the underlying stream since we can't
-            // reconstitute a SeekableStream from an InputStream. So wrap the underlying SeekableStream
-            // in a DeferredCloseSeekableStream with a no-op close implementation, and defer closing it
-            // until enclosing reader is closed.
-            if (deferredCloseSeekableStream == null) {
-                deferredCloseSeekableStream = new DeferredCloseSeekableStream((SeekableStream) inputStream);
-            }
-            seekableStream = deferredCloseSeekableStream;
+        } else if (inputStream instanceof SeekableStream) {
+            // callers seek it to index offsets, which count from the start of the stream
+            seekableStream = new IteratorStream(0);
         }
 
         if (seekableStream == null) {
@@ -666,22 +671,91 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return seekableStream;
     }
 
-    // In order to reuse a SeekableStream multiple times with CloseableIterators (which close the
-    // underlying stream when they're done), we need to wrap the SeekableStream in an object that
-    // has a no-op close implementation so the actual close can be deferred  until the enclosing
-    // reader is closed.
+    /**
+     * One iterator's view of a seekable {@link #inputStream}, which all the reader's iterators share. Each view
+     * keeps its own position, and moves the shared stream back to it only when another view has read from the
+     * stream since, so iterators that are open at the same time each return what they would alone, and an
+     * iterator that no other interrupts never seeks. Iterators read whole containers at a time, so the shared
+     * stream changes hands only between containers. Closing a view leaves the shared stream open for
+     * {@link #close()} to close.
+     */
+    private final class IteratorStream extends SeekableStream {
+        private final SeekableStream sharedStream = (SeekableStream) inputStream;
+        private long position;
+
+        /** @param position where in the shared stream this view starts reading */
+        IteratorStream(final long position) {
+            this.position = position;
+        }
+
+        /** Moves the shared stream to this view's position if another view has moved it, and returns it. */
+        private SeekableStream positionedSharedStream() throws IOException {
+            if (inputStreamPositionedFor != this) {
+                sharedStream.seek(position);
+                inputStreamPositionedFor = this;
+            }
+            return sharedStream;
+        }
+
+        @Override
+        public long length() {
+            return sharedStream.length();
+        }
+
+        @Override
+        public long position() {
+            return position;
+        }
+
+        @Override
+        public void seek(final long position) throws IOException {
+            sharedStream.seek(position);
+            this.position = position;
+            inputStreamPositionedFor = this;
+        }
+
+        @Override
+        public int read() throws IOException {
+            final int b = positionedSharedStream().read();
+            if (b != -1) {
+                position++;
+            }
+            return b;
+        }
+
+        @Override
+        public int read(final byte[] buffer, final int offset, final int length) throws IOException {
+            final int bytesRead = positionedSharedStream().read(buffer, offset, length);
+            if (bytesRead > 0) {
+                position += bytesRead;
+            }
+            return bytesRead;
+        }
+
+        @Override
+        public void close() {}
+
+        @Override
+        public boolean eof() throws IOException {
+            return positionedSharedStream().eof();
+        }
+
+        @Override
+        public String getSource() {
+            return sharedStream.getSource();
+        }
+    }
+
+    // Wraps the index stream supplied to the reader so code that closes the streams it is given can
+    // read it, deferring the real close until the enclosing reader is closed.
     private static class DeferredCloseSeekableStream extends SeekableStream {
         private final SeekableStream delegateStream;
 
         public DeferredCloseSeekableStream(final SeekableStream delegateStream) {
             this.delegateStream = delegateStream;
             if (delegateStream instanceof DeferredCloseSeekableStream) {
-                throw new IllegalArgumentException("ReuseableSeekableStream objects cannot be nested");
+                throw new IllegalArgumentException("DeferredCloseSeekableStream objects cannot be nested");
             }
-        }
-
-        public SeekableStream getDelegate() {
-            return delegateStream;
         }
 
         @Override
@@ -711,8 +785,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         @Override
         public void close() throws IOException {
-            // defer close, and let the caller close the delegate when its ready to by calling
-            // getDelegate().close()
+            // the reader closes the delegate
         }
 
         @Override
@@ -728,10 +801,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     public void close() {
-        // if at any point we created a deferredCloseSeekableStream, close the underlying delegate now
-        if (deferredCloseSeekableStream != null) {
-            CloserUtil.close(deferredCloseSeekableStream.getDelegate());
-        }
         CloserUtil.close(iterator);
         CloserUtil.close(inputStream);
         CloserUtil.close(mIndex);
