@@ -423,8 +423,10 @@ public final class Histogram<K extends Comparable> implements Serializable {
 
     /** Returns id of the Bin that's the mode of the distribution (i.e. the largest bin).
      * @throws UnsupportedOperationException if this histogram does not store instances of Number
+     * @throws IllegalStateException if this histogram is empty
      */
     public double getMode() {
+        assertNotEmpty("mode");
         return getModeBin().getIdValue();
     }
 
@@ -442,19 +444,29 @@ public final class Histogram<K extends Comparable> implements Serializable {
     }
 
     /**
-     * Returns the key with the lowest count.
+     * Returns the lowest bin id.
      * @throws UnsupportedOperationException if this histogram does not store instances of Number
+     * @throws IllegalStateException if this histogram is empty
      */
     public double getMin() {
+        assertNotEmpty("min");
         return map.firstEntry().getValue().getIdValue();
     }
 
     /**
-     * Returns the key with the highest count.
+     * Returns the highest bin id.
      * @throws UnsupportedOperationException if this histogram does not store instances of Number
+     * @throws IllegalStateException if this histogram is empty
      */
     public double getMax() {
+        assertNotEmpty("max");
         return map.lastEntry().getValue().getIdValue();
+    }
+
+    private void assertNotEmpty(final String statistic) {
+        if (map.isEmpty()) {
+            throw new IllegalStateException("Cannot compute the " + statistic + " of an empty histogram.");
+        }
     }
 
     public double getCount() {

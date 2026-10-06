@@ -328,6 +328,31 @@ public class HistogramTest extends HtsjdkTest {
     }
 
     @Test
+    public void theModeOfAnEmptyHistogramIsAnIllegalState() {
+        Assert.expectThrows(IllegalStateException.class, () -> new Histogram<Integer>().getMode());
+    }
+
+    @Test
+    public void theMinOfAnEmptyHistogramIsAnIllegalState() {
+        Assert.expectThrows(IllegalStateException.class, () -> new Histogram<Integer>().getMin());
+    }
+
+    @Test
+    public void theMaxOfAnEmptyHistogramIsAnIllegalState() {
+        Assert.expectThrows(IllegalStateException.class, () -> new Histogram<Integer>().getMax());
+    }
+
+    @Test
+    public void minAndMaxAreTheLowestAndHighestBinIdsWhateverTheirCounts() {
+        final Histogram<Integer> histo = new Histogram<>();
+        histo.increment(1, 100);
+        histo.increment(2, 1);
+        histo.increment(3, 50);
+        Assert.assertEquals(histo.getMin(), 1.0);
+        Assert.assertEquals(histo.getMax(), 3.0);
+    }
+
+    @Test
     public void testComparator() {
         final int[] is = {4, 4, 5, 5, 5};
         final Histogram<Integer> histo1 = new Histogram<>();
