@@ -26,6 +26,7 @@ package htsjdk.tribble.bed;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIterator;
@@ -122,6 +123,14 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
                 || candidateLine.startsWith("browser");
     }
 
+    /**
+     * Decodes the columns of one BED line.
+     *
+     * @param tokens the line's columns
+     * @return the feature, or null if there are fewer than two columns
+     * @throws TribbleException.MalformedFeatureFile if a column it reads is malformed; the message names the column
+     *     and its value and shows the line
+     */
     public BEDFeature decode(String[] tokens) {
         int tokenCount = tokens.length;
 
@@ -135,11 +144,11 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         String chr = tokens[0];
 
         // The BED format uses a first-base-is-zero convention,  Tribble features use 1 => add 1.
-        int start = Integer.parseInt(tokens[1]) + startOffsetValue;
+        int start = parseInteger(tokens, 1, "chromStart") + startOffsetValue;
 
         int end = start;
         if (tokenCount > 2) {
-            end = Integer.parseInt(tokens[2]);
+            end = parseInteger(tokens, 2, "chromEnd");
         }
 
         FullBEDFeature feature = new FullBEDFeature(chr, start, end);
@@ -184,7 +193,11 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         // Color
         if (tokenCount > 8) {
             String colorString = tokens[8];
-            feature.setColor(ParsingUtils.parseColor(colorString));
+            try {
+                feature.setColor(ParsingUtils.parseColor(colorString));
+            } catch (final IllegalArgumentException | ArrayIndexOutOfBoundsException e) {
+                throw malformedLine(tokens, "itemRgb '" + colorString + "' is not a colour", e);
+            }
         }
 
         // Coding information is optional
@@ -200,13 +213,15 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         return false;
     }
 
-    private void createExons(int start, String[] tokens, FullBEDFeature gene, Strand strand)
-            throws NumberFormatException {
+    private void createExons(int start, String[] tokens, FullBEDFeature gene, Strand strand) {
 
-        int cdStart = Integer.parseInt(tokens[6]) + startOffsetValue;
-        int cdEnd = Integer.parseInt(tokens[7]);
+        int cdStart = parseInteger(tokens, 6, "thickStart") + startOffsetValue;
+        int cdEnd = parseInteger(tokens, 7, "thickEnd");
 
-        int exonCount = Integer.parseInt(tokens[9]);
+        int exonCount = parseInteger(tokens, 9, "blockCount");
+        if (exonCount < 1) {
+            throw malformedLine(tokens, "blockCount " + exonCount + " is not a positive integer", null);
+        }
         String[] exonSizes = new String[exonCount];
         String[] startsBuffer = new String[exonCount];
         ParsingUtils.split(tokens[10], exonSizes, ',');
@@ -216,8 +231,8 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
 
         if (startsBuffer.length == exonSizes.length) {
             for (int i = 0; i < startsBuffer.length; i++) {
-                int exonStart = start + Integer.parseInt(startsBuffer[i]);
-                int exonEnd = exonStart + Integer.parseInt(exonSizes[i]) - 1;
+                int exonStart = start + parseBlockListEntry(tokens, 11, "blockStarts", startsBuffer[i], exonCount);
+                int exonEnd = exonStart + parseBlockListEntry(tokens, 10, "blockSizes", exonSizes[i], exonCount) - 1;
                 gene.addExon(exonStart, exonEnd, cdStart, cdEnd, exonNumber);
 
                 if (strand == Strand.NEGATIVE) {
@@ -227,6 +242,39 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
                 }
             }
         }
+    }
+
+    /** Parses the integer in column {@code index}, naming the column and showing the line if it is not one. */
+    private int parseInteger(final String[] tokens, final int index, final String column) {
+        try {
+            return Integer.parseInt(tokens[index]);
+        } catch (final NumberFormatException e) {
+            throw malformedLine(tokens, column + " '" + tokens[index] + "' is not an integer", e);
+        }
+    }
+
+    /**
+     * Parses one entry of the comma-separated list in column {@code index}, naming the column and showing the line if
+     * the entry is missing or not an integer.
+     */
+    private int parseBlockListEntry(
+            final String[] tokens, final int index, final String column, final String entry, final int blockCount) {
+        try {
+            return Integer.parseInt(entry);
+        } catch (final NumberFormatException e) {
+            throw malformedLine(
+                    tokens, column + " '" + tokens[index] + "' is not a list of " + blockCount + " integers", e);
+        }
+    }
+
+    /**
+     * Builds the exception for a line that cannot be decoded. Its source is unset, for the reader that knows the file
+     * name to fill in.
+     */
+    private TribbleException.MalformedFeatureFile malformedLine(
+            final String[] tokens, final String problem, final Exception cause) {
+        return new TribbleException.MalformedFeatureFile(
+                "Malformed BED line: " + problem + ".  Line is: " + String.join("\t", tokens), null, cause);
     }
 
     @Override

@@ -28,9 +28,11 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -39,6 +41,7 @@ import htsjdk.tribble.util.ParsingUtils;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.testng.Assert;
@@ -248,6 +251,105 @@ public class BEDCodecTest extends HtsjdkTest {
             Assert.assertTrue(codec.canDecode(String.format(pattern, "bed", bcExt)));
             Assert.assertFalse(codec.canDecode(String.format(pattern, "vcf", bcExt)));
             Assert.assertFalse(codec.canDecode(String.format(pattern, "bed.gzip", bcExt)));
+        }
+    }
+
+    // Malformed lines are reported as MalformedFeatureFile naming the column and its value and showing the line
+
+    /**
+     * Decodes {@code columns}, joined by tabs, and asserts that the MalformedFeatureFile thrown contains
+     * {@code expectedProblem} and the line.
+     */
+    private static void assertDecodeFails(final String expectedProblem, final String... columns) {
+        final String line = String.join("\t", columns);
+        final TribbleException.MalformedFeatureFile e =
+                Assert.expectThrows(TribbleException.MalformedFeatureFile.class, () -> new BEDCodec().decode(line));
+        assertMessageContains(e, expectedProblem, line);
+    }
+
+    private static void assertMessageContains(final Exception e, final String... expectedParts) {
+        for (final String expected : expectedParts) {
+            Assert.assertTrue(e.getMessage().contains(expected), e.getMessage());
+        }
+    }
+
+    @Test
+    public void aNonIntegerChromStartIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("chromStart 'abc'", "chr1", "abc", "100");
+    }
+
+    @Test
+    public void aChromStartTooLargeForAnIntIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("chromStart '99999999999'", "chr1", "99999999999", "100");
+    }
+
+    @Test
+    public void aNonIntegerChromEndIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("chromEnd 'xyz'", "chr1", "10", "xyz");
+    }
+
+    @Test
+    public void aNonIntegerThickStartIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("thickStart 'x'", "chr1", "10", "100", "n", "0", "+", "x", "100", "0", "1", "90,", "0,");
+    }
+
+    @Test
+    public void aNonIntegerThickEndIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("thickEnd 'x'", "chr1", "10", "100", "n", "0", "+", "10", "x", "0", "1", "90,", "0,");
+    }
+
+    @Test
+    public void aNonIntegerBlockCountIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("blockCount 'x'", "chr1", "10", "100", "n", "0", "+", "10", "100", "0", "x", "90,", "0,");
+    }
+
+    @Test
+    public void aNegativeBlockCountIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("blockCount -1", "chr1", "10", "100", "n", "0", "+", "10", "100", "0", "-1", "90,", "0,");
+    }
+
+    @Test
+    public void aZeroBlockCountIsReportedWithItsColumnAndLine() {
+        // the BED specification requires blockCount to be greater than 0
+        assertDecodeFails("blockCount 0", "chr1", "0", "10", "n", "0", "+", "0", "10", "0,0,0", "0", "0", "0");
+    }
+
+    @Test
+    public void aNonIntegerBlockSizeIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("blockSizes 'x,'", "chr1", "10", "100", "n", "0", "+", "10", "100", "0", "1", "x,", "0,");
+    }
+
+    @Test
+    public void fewerBlockStartsThanTheBlockCountAreReportedWithTheColumnAndLine() {
+        assertDecodeFails(
+                "blockStarts '0,40,'", "chr1", "10", "100", "n", "0", "+", "10", "100", "0", "3", "20,20,20,", "0,40,");
+    }
+
+    @Test
+    public void anItemRgbWithTwoComponentsIsReportedWithItsColumnAndLine() {
+        assertDecodeFails("itemRgb '255,0'", "chr1", "10", "100", "n", "0", "+", "10", "100", "255,0");
+    }
+
+    @Test
+    public void anItemRgbComponentAbove255IsReportedWithItsColumnAndLine() {
+        assertDecodeFails("itemRgb '300,0,0'", "chr1", "10", "100", "n", "0", "+", "10", "100", "300,0,0");
+    }
+
+    @Test
+    public void aMalformedLineReadThroughAFeatureReaderIsReportedWithTheFileColumnAndLine() throws IOException {
+        final Path bed = Files.createTempFile("BEDCodecTest.", ".bed");
+        IOUtil.deleteOnExit(bed);
+        Files.writeString(bed, "track name=test\nchr1\t10\t100\nchr1\tabc\t200\n");
+
+        try (AbstractFeatureReader<BEDFeature, ?> reader =
+                AbstractFeatureReader.getFeatureReader(bed.toString(), new BEDCodec(), false)) {
+            final TribbleException.MalformedFeatureFile e =
+                    Assert.expectThrows(TribbleException.MalformedFeatureFile.class, () -> {
+                        for (final BEDFeature ignored : reader.iterator()) {
+                            // read every line
+                        }
+                    });
+            assertMessageContains(e, bed.toString(), "chromStart 'abc'", "chr1\tabc\t200");
         }
     }
 }

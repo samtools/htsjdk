@@ -44,6 +44,11 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private static final int GENOMIC_PHASE_INDEX = 7;
     private static final int EXTRA_FIELDS_INDEX = 8;
 
+    /** The columns' names in the GFF3 specification, by index, for error messages. */
+    private static final String[] COLUMN_NAMES = {
+        "seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"
+    };
+
     private static final String IS_CIRCULAR_ATTRIBUTE_KEY = "Is_circular";
 
     private static final String ARTEMIS_FASTA_MARKER = ">";
@@ -223,30 +228,80 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
         }
 
         try {
-            final String contig = URLDecoder.decode(splitLine.get(CHROMOSOME_NAME_INDEX), "UTF-8");
-            final String source = URLDecoder.decode(splitLine.get(ANNOTATION_SOURCE_INDEX), "UTF-8");
-            final String type = URLDecoder.decode(splitLine.get(FEATURE_TYPE_INDEX), "UTF-8");
-            final int start = Integer.parseInt(splitLine.get(START_LOCATION_INDEX));
-            final int end = Integer.parseInt(splitLine.get(END_LOCATION_INDEX));
+            final String contig = decodeColumn(splitLine, CHROMOSOME_NAME_INDEX, line);
+            final String source = decodeColumn(splitLine, ANNOTATION_SOURCE_INDEX, line);
+            final String type = decodeColumn(splitLine, FEATURE_TYPE_INDEX, line);
+            final int start = parseIntegerColumn(splitLine, START_LOCATION_INDEX, line);
+            final int end = parseIntegerColumn(splitLine, END_LOCATION_INDEX, line);
             final double score = splitLine.get(SCORE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE)
                     ? -1
-                    : Double.parseDouble(splitLine.get(SCORE_INDEX));
+                    : parseDoubleColumn(splitLine, SCORE_INDEX, line);
             final int phase = splitLine.get(GENOMIC_PHASE_INDEX).equals(Gff3Constants.UNDEFINED_FIELD_VALUE)
                     ? -1
-                    : Integer.parseInt(splitLine.get(GENOMIC_PHASE_INDEX));
+                    : parseIntegerColumn(splitLine, GENOMIC_PHASE_INDEX, line);
             final Strand strand = Strand.decode(splitLine.get(GENOMIC_STRAND_INDEX));
-            final Map<String, List<String>> attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            final Map<String, List<String>> attributes;
+            try {
+                attributes = parseAttributes(splitLine.get(EXTRA_FIELDS_INDEX));
+            } catch (final IllegalArgumentException ex) {
+                throw invalidColumn(splitLine, EXTRA_FIELDS_INDEX, line, notUrlEncoded(ex), ex);
+            }
             /* remove attibutes matching 'filterOutAttribute' */
             attributes.keySet().removeIf(filterOutAttribute);
             return new Gff3BaseData(contig, source, type, start, end, score, strand, phase, attributes);
-        } catch (final NumberFormatException ex) {
-            throw new TribbleException(
-                    "Cannot read integer value for start/end position from line " + currentLine + ".  Line is: " + line,
-                    ex);
         } catch (final IOException ex) {
             throw new TribbleException(
                     "Cannot decode feature info from line " + currentLine + ".  Line is: " + line, ex);
         }
+    }
+
+    /** URL-decodes the column at {@code index}, naming the column and showing the line if it holds an invalid escape. */
+    private static String decodeColumn(final List<String> columns, final int index, final String line)
+            throws UnsupportedEncodingException {
+        try {
+            return URLDecoder.decode(columns.get(index), "UTF-8");
+        } catch (final IllegalArgumentException ex) {
+            throw invalidColumn(columns, index, line, notUrlEncoded(ex), ex);
+        }
+    }
+
+    /** Parses the integer in the column at {@code index}, naming the column and showing the line if it is not one. */
+    private static int parseIntegerColumn(final List<String> columns, final int index, final String line) {
+        try {
+            return Integer.parseInt(columns.get(index));
+        } catch (final NumberFormatException ex) {
+            throw invalidColumn(columns, index, line, "is not an integer", ex);
+        }
+    }
+
+    /** Parses the number in the column at {@code index}, naming the column and showing the line if it is not one. */
+    private static double parseDoubleColumn(final List<String> columns, final int index, final String line) {
+        try {
+            return Double.parseDouble(columns.get(index));
+        } catch (final NumberFormatException ex) {
+            throw invalidColumn(columns, index, line, "is not a number", ex);
+        }
+    }
+
+    /**
+     * Builds the exception for a column that cannot be parsed. Its source is unset, for the reader that knows the file
+     * name to fill in.
+     */
+    private static TribbleException.MalformedFeatureFile invalidColumn(
+            final List<String> columns,
+            final int index,
+            final String line,
+            final String problem,
+            final Exception cause) {
+        return new TribbleException.MalformedFeatureFile(
+                "Malformed GFF3 line: " + COLUMN_NAMES[index] + " '" + columns.get(index) + "' " + problem
+                        + ".  Line is: " + line,
+                null,
+                cause);
+    }
+
+    private static String notUrlEncoded(final IllegalArgumentException ex) {
+        return "is not validly URL-encoded (" + ex.getMessage() + ")";
     }
 
     /**
@@ -417,7 +472,14 @@ public class Gff3Codec extends AbstractFeatureCodec<Gff3Feature, LineIterator> {
     private void parseDirective(final String directiveLine) throws IOException {
         final Gff3Directive directive = Gff3Directive.toDirective(directiveLine);
         if (directive != null) {
-            processDirective(directive, directive.decode(directiveLine));
+            final Object decodedDirective;
+            try {
+                decodedDirective = directive.decode(directiveLine);
+            } catch (final IllegalArgumentException ex) {
+                throw new TribbleException.MalformedFeatureFile(
+                        "Malformed GFF3 directive '" + directiveLine + "' (" + ex.getMessage() + ")", null, ex);
+            }
+            processDirective(directive, decodedDirective);
 
         } else {
             logger.warn("ignoring directive " + directiveLine);
