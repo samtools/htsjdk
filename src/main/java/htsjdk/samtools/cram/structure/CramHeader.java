@@ -47,7 +47,6 @@ public final class CramHeader {
     public CramHeader(final CRAMVersion cramVersion, final String id) {
         this.cramVersion = cramVersion;
         this.id = new byte[CRAM_ID_LENGTH];
-        Arrays.fill(this.id, (byte) 0);
         if (id != null) {
             final byte[] idBytes = id.getBytes(StandardCharsets.UTF_8);
             System.arraycopy(idBytes, 0, this.id, 0, Math.min(idBytes.length, this.id.length));

@@ -125,7 +125,8 @@ public class CRAMContainerStreamWriter {
      * file's MD5) doesn't depend on the directory the file was written to; htslib writes the name it's given, which
      * is usually a bare file name. A URI ({@code scheme://...}) is decoded; anything else is taken as it is, split on
      * {@code /} or {@code \}, so a path keeps any {@code #}, {@code ?} or {@code %} in its name. An identifier with
-     * neither separator, such as a label, is returned as it is.
+     * neither separator, such as a label, is returned as it is. A {@link java.nio.file.Path} isn't used because its
+     * parsing differs between operating systems and can throw, and the file id must be the same everywhere.
      */
     static String fileNameOf(final String outputIdentifier) {
         if (outputIdentifier == null) {
