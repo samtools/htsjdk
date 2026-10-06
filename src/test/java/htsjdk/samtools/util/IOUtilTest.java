@@ -32,10 +32,12 @@ import htsjdk.samtools.HtsjdkTestUtils;
 import htsjdk.samtools.SAMException;
 import java.io.*;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,8 +45,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -463,6 +467,59 @@ public class IOUtilTest extends HtsjdkTest {
                 Assert.fail(e.getMessage());
             }
         }
+    }
+
+    /** A new temporary directory with the given POSIX permissions; skips the test where they can't be enforced. */
+    private static Path directoryWithPermissions(final String permissions) throws IOException {
+        final Path dir = Files.createTempDirectory("IOUtilTest");
+        IOUtil.deleteOnExit(dir);
+        try {
+            Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString(permissions));
+        } catch (final UnsupportedOperationException e) {
+            throw new SkipException("POSIX permissions not supported");
+        }
+        if (Files.isWritable(dir) && !permissions.contains("w")) {
+            throw new SkipException("running with privileges that ignore permissions");
+        }
+        return dir;
+    }
+
+    @Test
+    public void aDirectoryThatCantBeWrittenIsRejectedWithoutLeavingAFileInIt() throws IOException {
+        final Path dir = directoryWithPermissions("r-xr-xr-x");
+        try {
+            Assert.expectThrows(SAMException.class, () -> IOUtil.assertDirectoryIsWritable(dir));
+            Assert.expectThrows(SAMException.class, () -> IOUtil.assertFileIsWritable(dir.resolve("out.bam")));
+            try (Stream<Path> files = Files.list(dir)) {
+                Assert.assertEquals(files.count(), 0L);
+            }
+        } finally {
+            Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString("rwx------"));
+        }
+    }
+
+    @Test
+    public void aFileThatCantBeWrittenIsRejectedAndLeftUnchanged() throws IOException {
+        final Path dir = directoryWithPermissions("rwx------");
+        final Path file = Files.write(dir.resolve("existing.txt"), "contents".getBytes(StandardCharsets.UTF_8));
+        IOUtil.deleteOnExit(file);
+        Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("r--r--r--"));
+        if (Files.isWritable(file)) {
+            throw new SkipException("running with privileges that ignore permissions");
+        }
+        Assert.expectThrows(SAMException.class, () -> IOUtil.assertFileIsWritable(file));
+        Assert.assertEquals(Files.readString(file), "contents");
+    }
+
+    @Test
+    public void aWritableDirectoryAndFileAreAccepted() throws IOException {
+        final Path dir = directoryWithPermissions("rwx------");
+        IOUtil.assertDirectoryIsWritable(dir);
+        IOUtil.assertFileIsWritable(dir.resolve("out.bam"));
+        final Path file = Files.write(dir.resolve("existing.txt"), "contents".getBytes(StandardCharsets.UTF_8));
+        IOUtil.deleteOnExit(file);
+        IOUtil.assertFileIsWritable(file);
+        Assert.assertEquals(Files.readString(file), "contents");
     }
 
     static final String level1 = "Level1.fofn";
