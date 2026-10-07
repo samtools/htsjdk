@@ -28,6 +28,7 @@ package htsjdk.variant.vcf;
 import htsjdk.beta.plugin.HtsHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
@@ -38,12 +39,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -55,7 +58,7 @@ import java.util.TreeSet;
  * be cleaned up at some point in the future (jgentry - 5/2013)
  */
 public class VCFHeader implements HtsHeader, Serializable {
-    public static final long serialVersionUID = 1L;
+    public static final long serialVersionUID = 2L;
 
     // the mandatory header fields
     public enum HEADER_FIELDS {
@@ -80,14 +83,27 @@ public class VCFHeader implements HtsHeader, Serializable {
     private final Map<String, VCFInfoHeaderLine> mInfoMetaData = new LinkedHashMap<String, VCFInfoHeaderLine>();
     private final Map<String, VCFFormatHeaderLine> mFormatMetaData = new LinkedHashMap<String, VCFFormatHeaderLine>();
     private final Map<String, VCFFilterHeaderLine> mFilterMetaData = new LinkedHashMap<String, VCFFilterHeaderLine>();
-    // the lines that are not INFO, FORMAT, FILTER or contig, in the order added, and the IDs taken by the structured
-    // ones under each key
+    // the lines that are not INFO, FORMAT, FILTER or contig, in the order added, and the structured ones under each
+    // key by ID
     private final Set<VCFHeaderLine> mOtherMetaData = new LinkedHashSet<>();
-    private final Map<String, Set<String>> otherLineIDsByKey = new HashMap<>();
-    private final Map<String, VCFContigHeaderLine> contigMetaData = new LinkedHashMap<>();
+    private final Map<String, Map<String, VCFHeaderLine>> otherLinesByKeyAndID = new HashMap<>();
+    // the contig lines by ID, and in index order: the line at position i has index i. Both hold the header's own
+    // copies of the lines it was given, numbered by the header, and so does mMetaData.
+    private final Map<String, VCFContigHeaderLine> contigMetaData = new HashMap<>();
+    private final List<VCFContigHeaderLine> contigLines = new ArrayList<>();
 
     // the list of auxillary tags
     private final List<String> mGenotypeSampleNames = new ArrayList<String>();
+
+    // Read-only views of the collections above, each made on first use and kept, as some are read for every record.
+    // They are not serialized, as a view of a map's values cannot be, and so are made again after deserialization by
+    // any serializer. Threads that race to make one get equivalent views.
+    private transient List<VCFContigHeaderLine> contigLinesView;
+    private transient Collection<VCFInfoHeaderLine> infoHeaderLinesView;
+    private transient Collection<VCFFormatHeaderLine> formatHeaderLinesView;
+    private transient List<String> genotypeSampleNamesView;
+
+    private static final Log log = Log.getInstance(VCFHeader.class);
 
     // the character string that indicates meta data
     public static final String METADATA_INDICATOR = "##";
@@ -107,9 +123,9 @@ public class VCFHeader implements HtsHeader, Serializable {
     // were the input samples sorted originally (or are we sorting them)?
     private boolean samplesWereAlreadySorted = true;
 
-    // cache for efficient conversion of VCF -> VariantContext
-    private ArrayList<String> sampleNamesInOrder = null;
-    private HashMap<String, Integer> sampleNameToOffset = null;
+    // cache for efficient conversion of VCF -> VariantContext, unmodifiable
+    private List<String> sampleNamesInOrder = null;
+    private Map<String, Integer> sampleNameToOffset = null;
 
     private boolean writeEngineHeaders = true;
     private boolean writeCommandLine = true;
@@ -124,12 +140,25 @@ public class VCFHeader implements HtsHeader, Serializable {
     /**
      * create a VCF header, given a list of meta data and auxiliary tags
      *
+     * Of several INFO, FORMAT, FILTER or other structured lines with the same key and ID, the first is kept, as by
+     * {@link #addMetaDataLine}. The contig lines are numbered 0 to n-1 in the order of the indices they carry, ties in
+     * the order given, and lines with the same ID are merged as by {@link #addMetaDataLine}.
+     *
      * @param metaData     the meta data associated with this header
+     * @throws TribbleException.InvalidHeader if two contig lines with the same ID give an attribute different values
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData) {
-        mMetaData.addAll(metaData);
-        takeVersionFromVersionLines(mMetaData);
-        createLookupEntriesForAllHeaderLines();
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>(metaData);
+        takeVersionFromVersionLines(lines);
+        addContigLinesInIndexOrder(lines);
+        for (final VCFHeaderLine line : lines) {
+            if (line instanceof VCFContigHeaderLine) {
+                // each contig once, where its first line is, as the header holds it
+                mMetaData.add(contigMetaData.get(((VCFContigHeaderLine) line).getID()));
+            } else if (addMetadataLineLookupEntry(line)) {
+                mMetaData.add(line);
+            }
+        }
         checkForDeprecatedGenotypeLikelihoodsKey();
     }
 
@@ -206,23 +235,32 @@ public class VCFHeader implements HtsHeader, Serializable {
      * @param genotypeSampleNamesInAppearenceOrder genotype sample names, must iterator in order of appearance
      */
     private void buildVCFReaderMaps(final Collection<String> genotypeSampleNamesInAppearenceOrder) {
-        sampleNamesInOrder = new ArrayList<String>(genotypeSampleNamesInAppearenceOrder.size());
-        sampleNameToOffset = new HashMap<String, Integer>(genotypeSampleNamesInAppearenceOrder.size());
+        final List<String> sortedNames = new ArrayList<String>(genotypeSampleNamesInAppearenceOrder.size());
+        final Map<String, Integer> offsets = new HashMap<String, Integer>(genotypeSampleNamesInAppearenceOrder.size());
 
         int i = 0;
         for (final String name : genotypeSampleNamesInAppearenceOrder) {
-            sampleNamesInOrder.add(name);
-            sampleNameToOffset.put(name, i++);
+            sortedNames.add(name);
+            offsets.put(name, i++);
         }
-        Collections.sort(sampleNamesInOrder);
+        Collections.sort(sortedNames);
+        sampleNamesInOrder = Collections.unmodifiableList(sortedNames);
+        sampleNameToOffset = Collections.unmodifiableMap(offsets);
     }
 
     /**
      * Adds a new line to the VCFHeader. A line whose ID is already taken by a line of the same kind (INFO, FORMAT,
-     * FILTER, contig, or another structured line with the same key) is not added, and the existing line is
-     * preserved. An unstructured line is added unless an identical line is already present.
+     * FILTER, or another structured line with the same key) is not added, and the existing line is preserved; a
+     * warning is logged if the two differ. An unstructured line is added unless an identical line is already present.
+     *
+     * A contig line with a new ID is added at the end, numbered with the next index whatever index it carries. One
+     * with an ID already present is merged into the existing line, which keeps its place and index: an identical line
+     * changes nothing, and one whose attributes agree with the existing line's on every attribute both have adds the
+     * attributes it alone has.
      *
      * @param headerLine header line to attempt to add
+     * @throws TribbleException.InvalidHeader if a contig line gives an attribute a different value from the existing
+     *     line with its ID
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
         // a fileformat line sets the version rather than being kept as a line
@@ -231,20 +269,26 @@ public class VCFHeader implements HtsHeader, Serializable {
             setVCFHeaderVersion(declared);
             return;
         }
-        // Try to create a lookup entry for the new line. If this succeeds, add the line to our
-        // master list of header lines in mMetaData.
-        if (addMetadataLineLookupEntry(headerLine)) {
+        if (headerLine instanceof VCFContigHeaderLine) {
+            // adds a line only for a new contig: a merged line has already taken the place of the one it merged into
+            mMetaData.add(addContigLine((VCFContigHeaderLine) headerLine));
+        } else if (addMetadataLineLookupEntry(headerLine)) {
+            // the lookup entry was created, so add the line to our master list of header lines in mMetaData
             mMetaData.add(headerLine);
             checkForDeprecatedGenotypeLikelihoodsKey();
         }
     }
 
     /**
-     * @return all of the VCF header lines of the ##contig form in order, or an empty list if none were present
+     * @return the VCF header lines of the ##contig form in index order, the line at position i having index i, or an
+     *     empty list if none were present. The list is an unmodifiable view, which reflects later changes to the
+     *     header.
      */
     public List<VCFContigHeaderLine> getContigLines() {
-        // this must preserve input order
-        return Collections.unmodifiableList(new ArrayList<>(contigMetaData.values()));
+        if (contigLinesView == null) {
+            contigLinesView = Collections.unmodifiableList(contigLines);
+        }
+        return contigLinesView;
     }
 
     /**
@@ -271,6 +315,7 @@ public class VCFHeader implements HtsHeader, Serializable {
      */
     public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
         this.contigMetaData.clear();
+        this.contigLines.clear();
 
         // Also need to remove contig record lines from mMetaData
         final List<VCFHeaderLine> toRemove = new ArrayList<VCFHeaderLine>();
@@ -351,22 +396,74 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Creates lookup table entries for all header lines in mMetaData.
+     * Adds the contig lines among the given lines in the order of the indices they carry, lines with the same index in
+     * the order given, so that the header's numbering does not depend on the order a hash-based set iterates in.
      */
-    private void createLookupEntriesForAllHeaderLines() {
-        for (final VCFHeaderLine line : mMetaData) {
-            addMetadataLineLookupEntry(line);
+    private void addContigLinesInIndexOrder(final Collection<VCFHeaderLine> lines) {
+        final List<VCFContigHeaderLine> contigs = new ArrayList<>();
+        for (final VCFHeaderLine line : lines) {
+            if (line instanceof VCFContigHeaderLine) {
+                contigs.add((VCFContigHeaderLine) line);
+            }
+        }
+        // a stable sort
+        contigs.sort(Comparator.comparing(VCFContigHeaderLine::getContigIndex));
+        for (final VCFContigHeaderLine contig : contigs) {
+            addContigLine(contig);
         }
     }
 
     /**
-     * Add a single header line to the appropriate type-specific lookup table (but NOT to the master
-     * list of lines in mMetaData -- this must be done separately if desired).
+     * Adds a contig line to the contig lines (contigMetaData and contigLines) as {@link #addMetaDataLine} describes:
+     * a copy numbered with the next index for a new ID, else merged into the line held for its ID. A merged line
+     * replaces the line held in mMetaData too, in its place, but a new line is not added there.
      *
-     * A line whose ID is already taken by a line of the same kind (INFO, FORMAT, FILTER, contig, or another
-     * structured line with the same key) will not be added. A warning will be shown if this occurs when
-     * GeneralUtils.DEBUG_MODE_ENABLED is true, otherwise this will occur silently. An unstructured line will
-     * not be added only if an identical line is already present.
+     * @param line contig header line to add
+     * @return the line the header holds for the line's ID
+     * @throws TribbleException.InvalidHeader if the line gives an attribute a different value from the line held
+     */
+    private VCFContigHeaderLine addContigLine(final VCFContigHeaderLine line) {
+        final VCFContigHeaderLine kept = contigMetaData.get(line.getID());
+        if (kept == null) {
+            final VCFContigHeaderLine copy = new VCFContigHeaderLine(line.getGenericFields(), contigLines.size());
+            contigLines.add(copy);
+            contigMetaData.put(copy.getID(), copy);
+            return copy;
+        }
+        final Map<String, String> attributes = new LinkedHashMap<>(kept.getGenericFields());
+        for (final Map.Entry<String, String> attribute : line.getGenericFields().entrySet()) {
+            final String name = attribute.getKey();
+            if (!attributes.containsKey(name)) {
+                attributes.put(name, attribute.getValue());
+            } else if (!Objects.equals(attributes.get(name), attribute.getValue())) {
+                throw new TribbleException.InvalidHeader(String.format(
+                        "contig %s is defined twice with different values of %s: %s and %s",
+                        kept.getID(), name, attributes.get(name), attribute.getValue()));
+            }
+        }
+        if (attributes.size() == kept.getGenericFields().size()) {
+            return kept;
+        }
+        final VCFContigHeaderLine merged = new VCFContigHeaderLine(attributes, kept.getContigIndex());
+        contigLines.set(merged.getContigIndex(), merged);
+        contigMetaData.put(merged.getID(), merged);
+        if (mMetaData.contains(kept)) {
+            // a LinkedHashSet cannot replace an element in place, so the lines are re-added in order
+            final List<VCFHeaderLine> lines = new ArrayList<>(mMetaData);
+            lines.set(lines.indexOf(kept), merged);
+            mMetaData.clear();
+            mMetaData.addAll(lines);
+        }
+        return merged;
+    }
+
+    /**
+     * Add a single header line that is not a contig line to the appropriate type-specific lookup table (but NOT to
+     * the master list of lines in mMetaData -- this must be done separately if desired).
+     *
+     * A line whose ID is already taken by a line of the same kind (INFO, FORMAT, FILTER, or another structured line
+     * with the same key) will not be added, and a warning is logged if the two lines differ. An unstructured line
+     * will not be added only if an identical line is already present.
      *
      * @param line header line to attempt to add to its type-specific lookup table
      * @return true if the line was added to the appropriate lookup table, false if it was not added
@@ -381,8 +478,6 @@ public class VCFHeader implements HtsHeader, Serializable {
         } else if (line instanceof VCFFilterHeaderLine) {
             final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine) line;
             return addMetaDataLineMapLookupEntry(mFilterMetaData, filterLine.getID(), filterLine);
-        } else if (line instanceof VCFContigHeaderLine) {
-            return addContigMetaDataLineLookupEntry((VCFContigHeaderLine) line);
         } else {
             return addOtherMetaDataLineLookupEntry(line);
         }
@@ -402,12 +497,11 @@ public class VCFHeader implements HtsHeader, Serializable {
     private boolean addOtherMetaDataLineLookupEntry(final VCFHeaderLine line) {
         if (line instanceof VCFIDHeaderLine) {
             final String id = ((VCFIDHeaderLine) line).getID();
-            final Set<String> idsTaken = otherLineIDsByKey.computeIfAbsent(line.getKey(), key -> new HashSet<>());
-            if (!idsTaken.add(id)) {
-                if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                    System.err.println("Found duplicate VCF " + line.getKey() + " header lines for " + id
-                            + "; keeping the first only");
-                }
+            final VCFHeaderLine kept = otherLinesByKeyAndID
+                    .computeIfAbsent(line.getKey(), key -> new HashMap<>())
+                    .putIfAbsent(id, line);
+            if (kept != null) {
+                warnOfDroppedLine(kept, line, id);
                 return false;
             }
         }
@@ -415,33 +509,8 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Add a contig header line to the lookup list for contig lines (contigMetaData). If there's
-     * already a contig line with the same ID, does not add the line.
-     *
-     * Note: does not add the contig line to the master list of header lines in mMetaData --
-     *       this must be done separately if desired.
-     *
-     * @param line contig header line to add
-     * @return true if line was added to the list of contig lines, otherwise false
-     */
-    private boolean addContigMetaDataLineLookupEntry(final VCFContigHeaderLine line) {
-        // if we are trying to add a contig for the same ID
-        if (contigMetaData.containsKey(line.getID())) {
-            if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                System.err.println(
-                        "Found duplicate VCF contig header lines for " + line.getID() + "; keeping the first only");
-            }
-            // do not add this contig if it exists
-            return false;
-        }
-        contigMetaData.put(line.getID(), line);
-        return true;
-    }
-
-    /**
-     * Add a header line to the provided map at a given key.  If the key already exists, it will not be replaced.
-     * If it does already exist and GeneralUtils.DEBUG_MODE_ENABLED is true, it will issue warnings about duplicates,
-     * otherwise it will silently leave the existing key/line pair as is.
+     * Add a header line to the provided map at a given key.  If the key already exists, it will not be replaced,
+     * and a warning is logged if the two lines differ.
      *
      * Note: does not add the header line to the master list of header lines in mMetaData --
      *       this must be done separately if desired.
@@ -454,15 +523,29 @@ public class VCFHeader implements HtsHeader, Serializable {
      */
     private <T extends VCFHeaderLine> boolean addMetaDataLineMapLookupEntry(
             final Map<String, T> map, final String key, final T line) {
-        if (map.containsKey(key)) {
-            if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                System.err.println("Found duplicate VCF header lines for " + key + "; keeping the first only");
-            }
+        final T kept = map.get(key);
+        if (kept != null) {
+            warnOfDroppedLine(kept, line, key);
             return false;
         }
 
         map.put(key, line);
         return true;
+    }
+
+    /** Logs a warning that a line was dropped for a line with the same key and ID, unless the two are the same. */
+    private static void warnOfDroppedLine(final VCFHeaderLine kept, final VCFHeaderLine dropped, final String id) {
+        if (!kept.equals(dropped)) {
+            log.warn(
+                    "Dropping a VCF ",
+                    kept.getKey(),
+                    " header line for ID ",
+                    id,
+                    " that is already defined: keeping ",
+                    kept,
+                    " and dropping ",
+                    dropped);
+        }
     }
 
     /**
@@ -539,10 +622,14 @@ public class VCFHeader implements HtsHeader, Serializable {
     /**
      * get the genotyping sample names
      *
-     * @return a list of the genotype column names, which may be empty if hasGenotypingData() returns false
+     * @return an unmodifiable list of the genotype column names, which may be empty if hasGenotypingData() returns
+     *     false
      */
     public List<String> getGenotypeSamples() {
-        return mGenotypeSampleNames;
+        if (genotypeSampleNamesView == null) {
+            genotypeSampleNamesView = Collections.unmodifiableList(mGenotypeSampleNames);
+        }
+        return genotypeSampleNamesView;
     }
 
     public int getNGenotypeSamples() {
@@ -573,17 +660,25 @@ public class VCFHeader implements HtsHeader, Serializable {
     }
 
     /**
-     * Returns the INFO HeaderLines in their original ordering
+     * Returns the INFO HeaderLines in their original ordering, as an unmodifiable view, which reflects later changes
+     * to the header
      */
     public Collection<VCFInfoHeaderLine> getInfoHeaderLines() {
-        return mInfoMetaData.values();
+        if (infoHeaderLinesView == null) {
+            infoHeaderLinesView = Collections.unmodifiableCollection(mInfoMetaData.values());
+        }
+        return infoHeaderLinesView;
     }
 
     /**
-     * Returns the FORMAT HeaderLines in their original ordering
+     * Returns the FORMAT HeaderLines in their original ordering, as an unmodifiable view, which reflects later changes
+     * to the header
      */
     public Collection<VCFFormatHeaderLine> getFormatHeaderLines() {
-        return mFormatMetaData.values();
+        if (formatHeaderLinesView == null) {
+            formatHeaderLinesView = Collections.unmodifiableCollection(mFormatMetaData.values());
+        }
+        return formatHeaderLinesView;
     }
 
     /**
@@ -689,13 +784,18 @@ public class VCFHeader implements HtsHeader, Serializable {
 
     /**
      * Get the genotype sample names, sorted in ascending order. Note: this will not necessarily match the order in the VCF.
-     * @return The sorted genotype samples. May be empty if hasGenotypingData() returns false.
+     * @return The sorted genotype samples, unmodifiable. May be empty if hasGenotypingData() returns false, and is
+     *     null for a header made by {@link #VCFHeader(Set)}, which takes no samples.
      */
-    public ArrayList<String> getSampleNamesInOrder() {
+    public List<String> getSampleNamesInOrder() {
         return sampleNamesInOrder;
     }
 
-    public HashMap<String, Integer> getSampleNameToOffset() {
+    /**
+     * @return an unmodifiable map from each genotype sample name to its offset among the genotype columns, or null
+     *     for a header made by {@link #VCFHeader(Set)}, which takes no samples
+     */
+    public Map<String, Integer> getSampleNameToOffset() {
         return sampleNameToOffset;
     }
 

@@ -2,6 +2,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceRecord;
+import java.util.Map;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -46,5 +47,23 @@ public class VCFContigHeaderLineUnitTest extends HtsjdkTest {
         Assert.assertEquals(record.getMd5(), "f126cdf8a6e0c7f379d618ff66beb2da");
         Assert.assertEquals(record.getAttribute(SAMSequenceRecord.URI_TAG), "ftp://x/y.fa");
         Assert.assertEquals(record.getSpecies(), "Homo sapiens");
+    }
+
+    @Test
+    public void contigLinesAtTheSameIndexWithDifferentIDsCompareByID() {
+        final VCFContigHeaderLine x = new VCFContigHeaderLine(Map.of("ID", "x"), 5);
+        final VCFContigHeaderLine y = new VCFContigHeaderLine(Map.of("ID", "y"), 5);
+
+        Assert.assertTrue(x.compareTo(y) < 0);
+        Assert.assertTrue(y.compareTo(x) > 0);
+    }
+
+    @Test
+    public void contigLinesCompareByIndexBeforeID() {
+        final VCFContigHeaderLine b = new VCFContigHeaderLine(Map.of("ID", "b"), 0);
+        final VCFContigHeaderLine a = new VCFContigHeaderLine(Map.of("ID", "a"), 1);
+
+        Assert.assertTrue(b.compareTo(a) < 0);
+        Assert.assertTrue(a.compareTo(b) > 0);
     }
 }

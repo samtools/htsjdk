@@ -134,13 +134,17 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
     }
 
     /**
-     * IT IS CRITICAL THAT THIS BE OVERRIDDEN SO WE SORT THE CONTIGS IN THE CORRECT ORDER
+     * Orders contig lines by index, so that the contigs sort in the correct order, and lines with the same index by
+     * ID, so that a sorted set never drops a line for a different contig. Any other line is compared as
+     * {@link VCFHeaderLine#compareTo} does.
      */
     @Override
     public int compareTo(final Object other) {
-        if (other instanceof VCFContigHeaderLine)
-            return contigIndex.compareTo(((VCFContigHeaderLine) other).contigIndex);
-        else {
+        if (other instanceof VCFContigHeaderLine) {
+            final VCFContigHeaderLine that = (VCFContigHeaderLine) other;
+            final int byIndex = contigIndex.compareTo(that.contigIndex);
+            return byIndex != 0 ? byIndex : getID().compareTo(that.getID());
+        } else {
             return super.compareTo(other);
         }
     }

@@ -30,14 +30,18 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.LogCapture;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.tribble.readers.Utf8LineReader;
 import htsjdk.tribble.readers.Utf8LineReaderIterator;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -344,10 +348,15 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             orderedList.addAll(originalHeaderList.subList(splitInTheMiddle, originalHeaderList.size()));
             Assert.assertEquals(originalHeaderList.size() + 1, orderedList.size());
 
-            // crete a new header from the ordered list, and test that getContigLines honors the input order
+            // crete a new header from the ordered list, and test that getContigLines honors the input order, the
+            // header numbering the lines by position
             final VCFHeader orderedHeader = new VCFHeader();
             orderedList.forEach(hl -> orderedHeader.addMetaDataLine(hl));
-            Assert.assertEquals(orderedList, orderedHeader.getContigLines());
+            final List<VCFContigHeaderLine> contigLines = orderedHeader.getContigLines();
+            Assert.assertEquals(contigIDs(contigLines), contigIDs(orderedList));
+            for (int i = 0; i < contigLines.size(); i++) {
+                Assert.assertEquals(contigLines.get(i).getContigIndex().intValue(), i);
+            }
         }
     }
 
@@ -427,6 +436,182 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void twoContigLinesGivenTheSameIndexAreBothKeptAndNumberedInTheOrderGiven() {
+        final VCFHeader header = headerOf(contigLine("ID=chrB,length=200", 0), contigLine("ID=chrA,length=100", 0));
+
+        Assert.assertEquals(contigIDs(header.getContigLines()), List.of("chrB", "chrA"));
+        Assert.assertEquals(contigIndices(header.getContigLines()), List.of(0, 1));
+        Assert.assertEquals(contigIDs(contigLinesAmong(header.getMetaDataInSortedOrder())), List.of("chrB", "chrA"));
+    }
+
+    @Test
+    public void twoContigLinesGivenTheSameIndexAreBothWritten() throws IOException {
+        final VCFHeader header = headerOf(contigLine("ID=chrB,length=200", 0), contigLine("ID=chrA,length=100", 0));
+
+        Assert.assertEquals(
+                writtenMetaDataLines(header, "##contig"),
+                List.of("##contig=<ID=chrB,length=200>", "##contig=<ID=chrA,length=100>"));
+    }
+
+    @Test
+    public void twoContigLinesGivenTheSameIndexSurviveABcfRoundTrip() throws IOException {
+        final VCFHeader header = headerOf(contigLine("ID=chrA,length=1000", 0), contigLine("ID=chrB,length=1000", 0));
+        final VariantContext onChrB = new VariantContextBuilder(
+                        "test", "chrB", 10, 10, List.of(Allele.create("A", true), Allele.create("C")))
+                .make();
+        final Path dir = Files.createTempDirectory("VCFHeaderUnitTest.");
+        try {
+            final Path bcf = dir.resolve("contigs.bcf");
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .setOutputPath(bcf)
+                    .unsetOption(Options.INDEX_ON_THE_FLY)
+                    .build()) {
+                writer.writeHeader(header);
+                writer.add(onChrB);
+            }
+            try (final VCFFileReader reader = new VCFFileReader(bcf, false);
+                    final CloseableIterator<VariantContext> records = reader.iterator()) {
+                Assert.assertEquals(contigIDs(reader.getFileHeader().getContigLines()), List.of("chrA", "chrB"));
+                Assert.assertEquals(records.next().getContig(), "chrB");
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void contigIndicesWithGapsAreNumberedFromZero() {
+        final VCFHeader header = headerOf(
+                contigLine("ID=chr1,length=100", 5),
+                contigLine("ID=chr2,length=200", 10),
+                contigLine("ID=chr3,length=300", 7));
+
+        Assert.assertEquals(contigIDs(header.getContigLines()), List.of("chr1", "chr3", "chr2"));
+        Assert.assertEquals(contigIndices(header.getContigLines()), List.of(0, 1, 2));
+    }
+
+    @Test
+    public void contigLinesInAHashSetAreTakenInTheOrderOfTheirIndices() {
+        final List<String> ids = new ArrayList<>();
+        final Set<VCFHeaderLine> lines = new HashSet<>();
+        for (int i = 0; i < 50; i++) {
+            ids.add("contig" + i);
+            lines.add(contigLine("ID=contig" + i + ",length=1000", i));
+        }
+
+        Assert.assertEquals(contigIDs(new VCFHeader(lines).getContigLines()), ids);
+    }
+
+    @Test
+    public void getContigLinesTheSequenceDictionaryAndTheWrittenHeaderAgree() throws IOException {
+        final VCFHeader header = headerOf(
+                contigLine("ID=chr2,length=200", 1),
+                contigLine("ID=chr1,length=100", 0),
+                contigLine("ID=chr3,length=300", 1));
+        final List<String> expected = List.of("chr1", "chr2", "chr3");
+
+        Assert.assertEquals(contigIDs(header.getContigLines()), expected);
+        Assert.assertEquals(
+                header.getSequenceDictionary().getSequences().stream()
+                        .map(SAMSequenceRecord::getSequenceName)
+                        .collect(Collectors.toList()),
+                expected);
+        Assert.assertEquals(
+                header.getSequenceDictionary().getSequences().stream()
+                        .map(SAMSequenceRecord::getSequenceIndex)
+                        .collect(Collectors.toList()),
+                contigIndices(header.getContigLines()));
+        Assert.assertEquals(contigIDs(contigLinesAmong(header.getMetaDataInSortedOrder())), expected);
+        Assert.assertEquals(contigIDs(writeAndReadBack(header).getContigLines()), expected);
+    }
+
+    @Test
+    public void addMetaDataLineAppendsANewContigAtTheNextIndex() {
+        final VCFHeader header = headerOf(contigLine("ID=chr1,length=100", 0), contigLine("ID=chr2,length=200", 1));
+
+        header.addMetaDataLine(contigLine("ID=chrX,length=300", 0));
+
+        Assert.assertEquals(contigIDs(header.getContigLines()), List.of("chr1", "chr2", "chrX"));
+        Assert.assertEquals(contigIndices(header.getContigLines()), List.of(0, 1, 2));
+    }
+
+    @Test
+    public void anIdenticalDuplicateContigLineIsCollapsed() {
+        final VCFHeader header = headerOf(contigLine("ID=chr1,length=100", 0), contigLine("ID=chr1,length=100", 1));
+        header.addMetaDataLine(contigLine("ID=chr1,length=100", 2));
+
+        Assert.assertEquals(header.getContigLines(), List.of(contigLine("ID=chr1,length=100", 0)));
+        Assert.assertEquals(contigLinesAmong(header.getMetaDataInInputOrder()), header.getContigLines());
+    }
+
+    @Test
+    public void aDuplicateContigLineWithMoreAttributesAddsThemToTheFirst() {
+        final VCFHeader header = headerOf(contigLine("ID=1", 0), contigLine("ID=1,length=123456", 1));
+
+        Assert.assertEquals(header.getContigLines(), List.of(contigLine("ID=1,length=123456", 0)));
+    }
+
+    @Test
+    public void aDuplicateContigLineWithOtherAttributesGivesTheUnionInTheOrderSeen() {
+        final VCFHeader header = headerOf(
+                contigLine("ID=chr1,length=100,assembly=b37", 0), contigLine("ID=chr1,species=human,md5=abc", 1));
+
+        Assert.assertEquals(header.getContigLines().size(), 1);
+        Assert.assertEquals(
+                header.getContigLines().get(0).toString(),
+                "contig=<ID=chr1,length=100,assembly=b37,species=human,md5=abc>");
+    }
+
+    @Test
+    public void aCompatibleDuplicateContigAddedLaterReplacesTheLineInItsPlace() {
+        final VCFInfoHeaderLine before = new VCFInfoHeaderLine("A", 1, VCFHeaderLineType.Integer, "before");
+        final VCFInfoHeaderLine after = new VCFInfoHeaderLine("B", 1, VCFHeaderLineType.Integer, "after");
+        final VCFHeader header = headerOf(before, contigLine("ID=chr1", 0), after, contigLine("ID=chr2", 1));
+
+        header.addMetaDataLine(contigLine("ID=chr1,length=100", 5));
+
+        final VCFContigHeaderLine merged = contigLine("ID=chr1,length=100", 0);
+        Assert.assertEquals(header.getContigLines(), List.of(merged, contigLine("ID=chr2", 1)));
+        Assert.assertEquals(
+                new ArrayList<>(header.getMetaDataInInputOrder()),
+                List.of(before, merged, after, contigLine("ID=chr2", 1)));
+    }
+
+    @Test
+    public void aDuplicateContigLineWithADifferentLengthIsRejectedByTheConstructor() {
+        final TribbleException.InvalidHeader e = Assert.expectThrows(
+                TribbleException.InvalidHeader.class,
+                () -> headerOf(contigLine("ID=chr1,length=100", 0), contigLine("ID=chr1,length=200", 1)));
+
+        Assert.assertTrue(e.getMessage().contains("chr1"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("length"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("100"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("200"), e.getMessage());
+    }
+
+    @Test
+    public void aDuplicateContigLineWithADifferentLengthIsRejectedByAddMetaDataLine() {
+        final VCFHeader header = headerOf(contigLine("ID=chr1,length=100", 0));
+
+        Assert.assertThrows(
+                TribbleException.InvalidHeader.class,
+                () -> header.addMetaDataLine(contigLine("ID=chr1,length=200", 1)));
+        Assert.assertEquals(header.getContigLines(), List.of(contigLine("ID=chr1,length=100", 0)));
+    }
+
+    @Test
+    public void theVcf42SpecFileThatDeclaresContig1TwiceReadsAsOneContigWithItsLength() {
+        final Path vcf = Path.of("src/test/resources/htsjdk/hts-specs/test/vcf/4.2/passed/passed_meta_contig.vcf");
+        try (final VCFFileReader reader = new VCFFileReader(vcf, false)) {
+            final List<VCFContigHeaderLine> contigs = reader.getFileHeader().getContigLines();
+
+            Assert.assertEquals(
+                    contigIDs(contigs), List.of("1", "1AC", "1.*", "ABcd123", "contig_url", "contig_accession"));
+            Assert.assertEquals(contigs.get(0).getGenericFieldValue("length"), "123456");
+        }
+    }
+
+    @Test
     public void testVCFHeaderAddDuplicateHeaderLine() {
         Path input = Path.of("src/test/resources/htsjdk/variant/ex2.vcf");
 
@@ -475,6 +660,126 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void theConstructorKeepsTheFirstOfTwoInfoLinesWithTheSameID() throws IOException {
+        final VCFInfoHeaderLine first = new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "first");
+        final VCFInfoHeaderLine second = new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "second");
+        final VCFHeader header = headerOf(first, second);
+
+        Assert.assertSame(header.getInfoHeaderLine("DP"), first);
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(first));
+        Assert.assertEquals(writtenMetaDataLines(header, "##INFO"), List.of("##" + first));
+    }
+
+    @Test
+    public void theConstructorKeepsTheFirstOfTwoFormatLinesWithTheSameID() throws IOException {
+        final VCFFormatHeaderLine first = new VCFFormatHeaderLine("AD", 1, VCFHeaderLineType.Integer, "first");
+        final VCFFormatHeaderLine second = new VCFFormatHeaderLine("AD", 1, VCFHeaderLineType.Integer, "second");
+        final VCFHeader header = headerOf(first, second);
+
+        Assert.assertSame(header.getFormatHeaderLine("AD"), first);
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(first));
+        Assert.assertEquals(writtenMetaDataLines(header, "##FORMAT"), List.of("##" + first));
+    }
+
+    @Test
+    public void theConstructorKeepsTheFirstOfTwoFilterLinesWithTheSameID() throws IOException {
+        final VCFFilterHeaderLine first = new VCFFilterHeaderLine("LowQual", "first");
+        final VCFFilterHeaderLine second = new VCFFilterHeaderLine("LowQual", "second");
+        final VCFHeader header = headerOf(first, second);
+
+        Assert.assertSame(header.getFilterHeaderLine("LowQual"), first);
+        Assert.assertEquals(header.getFilterLines(), List.of(first));
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(first));
+        Assert.assertEquals(writtenMetaDataLines(header, "##FILTER"), List.of("##" + first));
+    }
+
+    @Test
+    public void theConstructorKeepsTheFirstOfTwoAltLinesWithTheSameID() {
+        final VCFAltHeaderLine first =
+                new VCFAltHeaderLine("<ID=DEL,Description=\"Deletion\">", VCFHeaderVersion.VCF4_2);
+        final VCFAltHeaderLine second = new VCFAltHeaderLine(
+                "<ID=DEL,Description=\"Deletion relative to the reference\">", VCFHeaderVersion.VCF4_2);
+        final VCFHeader header = headerOf(first, second);
+
+        Assert.assertEquals(header.getOtherHeaderLines("ALT"), List.of(first));
+        Assert.assertEquals(new ArrayList<>(header.getMetaDataInInputOrder()), List.of(first));
+    }
+
+    @Test
+    public void aParsedHeaderKeepsTheFirstOfTwoInfoLinesWithTheSameID() throws IOException {
+        final String text = "##fileformat=VCFv4.2\n"
+                + "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"first\">\n"
+                + "##INFO=<ID=DP,Number=A,Type=Float,Description=\"second\">\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+        final VCFHeader header = (VCFHeader) new VCFCodec()
+                .readActualHeader(new LineIteratorImpl(new SynchronousLineReader(new StringReader(text))));
+
+        Assert.assertEquals(header.getInfoHeaderLine("DP").getDescription(), "first");
+        Assert.assertEquals(
+                header.getMetaDataInInputOrder().stream()
+                        .filter(line -> line instanceof VCFInfoHeaderLine)
+                        .count(),
+                1);
+        Assert.assertEquals(
+                writtenMetaDataLines(header, "##INFO"),
+                List.of("##INFO=<ID=DP,Number=1,Type=Integer,Description=\"first\">"));
+    }
+
+    @Test
+    public void aParsedHeaderWithTwoConflictingContigLinesIsRejected() {
+        final String text = "##fileformat=VCFv4.2\n"
+                + "##contig=<ID=chr1,length=100>\n"
+                + "##contig=<ID=chr1,length=200>\n"
+                + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+
+        final TribbleException.InvalidHeader thrown =
+                Assert.expectThrows(TribbleException.InvalidHeader.class, () -> new VCFCodec()
+                        .readActualHeader(new LineIteratorImpl(new SynchronousLineReader(new StringReader(text)))));
+        Assert.assertTrue(thrown.getMessage().contains("chr1"), thrown.getMessage());
+    }
+
+    @Test
+    public void droppingADuplicateLineThatDiffersLogsAWarningNamingBothLines() throws Exception {
+        final VCFInfoHeaderLine first = new VCFInfoHeaderLine("DupWarnDP", 1, VCFHeaderLineType.Integer, "first");
+        final VCFInfoHeaderLine second = new VCFInfoHeaderLine("DupWarnDP", 1, VCFHeaderLineType.Integer, "second");
+
+        final List<String> warnings =
+                LogCapture.linesLoggedContaining("DupWarnDP", Log.LogLevel.WARNING, () -> headerOf(first, second));
+
+        Assert.assertEquals(warnings.size(), 1, warnings.toString());
+        Assert.assertTrue(warnings.get(0).contains("INFO"), warnings.get(0));
+        Assert.assertTrue(warnings.get(0).contains(first.toString()), warnings.get(0));
+        Assert.assertTrue(warnings.get(0).contains(second.toString()), warnings.get(0));
+    }
+
+    @Test
+    public void addingADuplicateLineThatDiffersLogsAWarning() throws Exception {
+        final VCFAltHeaderLine first =
+                new VCFAltHeaderLine("<ID=DupWarnDEL,Description=\"Deletion\">", VCFHeaderVersion.VCF4_2);
+        final VCFAltHeaderLine second =
+                new VCFAltHeaderLine("<ID=DupWarnDEL,Description=\"Another deletion\">", VCFHeaderVersion.VCF4_2);
+        final VCFHeader header = headerOf(first);
+
+        final List<String> warnings = LogCapture.linesLoggedContaining(
+                "DupWarnDEL", Log.LogLevel.WARNING, () -> header.addMetaDataLine(second));
+
+        Assert.assertEquals(warnings.size(), 1, warnings.toString());
+    }
+
+    @Test
+    public void addingAnIdenticalDuplicateLineLogsNothing() throws Exception {
+        final VCFHeader header = headerOf(new VCFInfoHeaderLine("DupSilentDP", 1, VCFHeaderLineType.Integer, "depth"));
+
+        final List<String> warnings = LogCapture.linesLoggedContaining(
+                "DupSilentDP",
+                Log.LogLevel.WARNING,
+                () -> header.addMetaDataLine(
+                        new VCFInfoHeaderLine("DupSilentDP", 1, VCFHeaderLineType.Integer, "depth")));
+
+        Assert.assertEquals(warnings, List.of());
+    }
+
+    @Test
     public void addMetaDataLineKeepsRepeatedUnstructuredKeys() {
         final VCFHeaderLine a = new VCFHeaderLine("source", "a");
         final VCFHeaderLine b = new VCFHeaderLine("source", "b");
@@ -517,6 +822,64 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         final Collection<VCFHeaderLine> otherLines = header.getOtherHeaderLines();
         Assert.assertThrows(UnsupportedOperationException.class, () -> otherLines.remove(line));
+    }
+
+    @Test
+    public void getGenotypeSamplesIsUnmodifiable() {
+        final List<String> samples = new VCFHeader(Collections.emptySet(), List.of("S1", "S2")).getGenotypeSamples();
+
+        Assert.assertThrows(UnsupportedOperationException.class, () -> samples.add("S3"));
+    }
+
+    @Test
+    public void getSampleNamesInOrderIsUnmodifiable() {
+        final List<String> samples = new VCFHeader(Collections.emptySet(), List.of("S2", "S1")).getSampleNamesInOrder();
+
+        Assert.assertEquals(samples, List.of("S1", "S2"));
+        Assert.assertThrows(UnsupportedOperationException.class, () -> samples.add("S3"));
+    }
+
+    @Test
+    public void getSampleNameToOffsetIsUnmodifiable() {
+        final Map<String, Integer> offsets =
+                new VCFHeader(Collections.emptySet(), List.of("S2", "S1")).getSampleNameToOffset();
+
+        Assert.assertEquals(offsets, Map.of("S2", 0, "S1", 1));
+        Assert.assertThrows(UnsupportedOperationException.class, () -> offsets.put("S3", 2));
+    }
+
+    @Test
+    public void getInfoHeaderLinesIsUnmodifiableAndReflectsALaterAddedLine() {
+        final VCFInfoHeaderLine depth = new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth");
+        final VCFInfoHeaderLine frequency = new VCFInfoHeaderLine("AF", 1, VCFHeaderLineType.Float, "frequency");
+        final VCFHeader header = headerOf(depth);
+        final Collection<VCFInfoHeaderLine> infoLines = header.getInfoHeaderLines();
+
+        Assert.assertThrows(UnsupportedOperationException.class, () -> infoLines.remove(depth));
+        header.addMetaDataLine(frequency);
+        Assert.assertEquals(new ArrayList<>(infoLines), List.of(depth, frequency));
+    }
+
+    @Test
+    public void getFormatHeaderLinesIsUnmodifiableAndReflectsALaterAddedLine() {
+        final VCFFormatHeaderLine depth = new VCFFormatHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth");
+        final VCFFormatHeaderLine quality = new VCFFormatHeaderLine("GQ", 1, VCFHeaderLineType.Integer, "quality");
+        final VCFHeader header = headerOf(depth);
+        final Collection<VCFFormatHeaderLine> formatLines = header.getFormatHeaderLines();
+
+        Assert.assertThrows(UnsupportedOperationException.class, () -> formatLines.remove(depth));
+        header.addMetaDataLine(quality);
+        Assert.assertEquals(new ArrayList<>(formatLines), List.of(depth, quality));
+    }
+
+    @Test
+    public void getContigLinesIsUnmodifiableAndReflectsALaterAddedLine() {
+        final VCFHeader header = headerOf(contigLine("ID=chr1,length=100", 0));
+        final List<VCFContigHeaderLine> contigs = header.getContigLines();
+
+        Assert.assertThrows(UnsupportedOperationException.class, () -> contigs.remove(0));
+        header.addMetaDataLine(contigLine("ID=chr2,length=200", 1));
+        Assert.assertEquals(contigIDs(contigs), List.of("chr1", "chr2"));
     }
 
     @Test
@@ -569,6 +932,51 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         } finally {
             IOUtil.recursiveDelete(dir);
         }
+    }
+
+    /** Writes a VCF of the header alone and returns the lines written that start with the given prefix. */
+    private static List<String> writtenMetaDataLines(final VCFHeader header, final String prefix) throws IOException {
+        final Path dir = Files.createTempDirectory("VCFHeaderUnitTest.");
+        try {
+            final Path vcf = dir.resolve("header.vcf");
+            try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                    .setOutputPath(vcf)
+                    .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER))
+                    .build()) {
+                writer.writeHeader(header);
+            }
+            return Files.readAllLines(vcf).stream()
+                    .filter(line -> line.startsWith(prefix))
+                    .collect(Collectors.toList());
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    /** A header of the given lines, in the order given. */
+    private static VCFHeader headerOf(final VCFHeaderLine... lines) {
+        return new VCFHeader(new LinkedHashSet<>(Arrays.asList(lines)));
+    }
+
+    /** A contig line of the attributes written between its angle brackets, carrying the given index. */
+    private static VCFContigHeaderLine contigLine(final String attributes, final int index) {
+        return new VCFContigHeaderLine("<" + attributes + ">", VCFHeaderVersion.VCF4_2, VCFHeader.CONTIG_KEY, index);
+    }
+
+    private static List<String> contigIDs(final List<VCFContigHeaderLine> contigs) {
+        return contigs.stream().map(VCFContigHeaderLine::getID).collect(Collectors.toList());
+    }
+
+    private static List<Integer> contigIndices(final List<VCFContigHeaderLine> contigs) {
+        return contigs.stream().map(VCFContigHeaderLine::getContigIndex).collect(Collectors.toList());
+    }
+
+    /** The contig lines among the given lines, in their order. */
+    private static List<VCFContigHeaderLine> contigLinesAmong(final Collection<VCFHeaderLine> lines) {
+        return lines.stream()
+                .filter(line -> line instanceof VCFContigHeaderLine)
+                .map(line -> (VCFContigHeaderLine) line)
+                .collect(Collectors.toList());
     }
 
     @Test
@@ -744,6 +1152,29 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                 deserializedHeader.toString(),
                 originalHeader.toString(),
                 "String representation of header not the same before/after serialization");
+    }
+
+    @Test
+    public void aDeserializedHeadersViewsReflectItsOwnLines() throws Exception {
+        final VCFHeader original = new VCFHeader(
+                new LinkedHashSet<>(List.of(
+                        new VCFInfoHeaderLine("DP", 1, VCFHeaderLineType.Integer, "depth"),
+                        new VCFFormatHeaderLine("GQ", 1, VCFHeaderLineType.Integer, "quality"),
+                        contigLine("ID=chr1,length=100", 0))),
+                List.of("S1"));
+        final VCFHeader deserialized = TestUtil.serializeAndDeserialize(original);
+
+        deserialized.addMetaDataLine(new VCFInfoHeaderLine("AF", 1, VCFHeaderLineType.Float, "frequency"));
+        deserialized.addMetaDataLine(new VCFFormatHeaderLine("AD", 1, VCFHeaderLineType.Integer, "depths"));
+        deserialized.addMetaDataLine(contigLine("ID=chr2,length=200", 1));
+
+        Assert.assertEquals(deserialized.getInfoHeaderLines().size(), 2);
+        Assert.assertEquals(deserialized.getFormatHeaderLines().size(), 2);
+        Assert.assertEquals(contigIDs(deserialized.getContigLines()), List.of("chr1", "chr2"));
+        Assert.assertEquals(deserialized.getGenotypeSamples(), List.of("S1"));
+        Assert.assertEquals(original.getInfoHeaderLines().size(), 1);
+        Assert.assertEquals(original.getFormatHeaderLines().size(), 1);
+        Assert.assertEquals(contigIDs(original.getContigLines()), List.of("chr1"));
     }
 
     @Test
