@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Iso8601Date;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -156,6 +157,42 @@ public class SAMReadGroupRecordTest extends HtsjdkTest {
         rg.setRunDate(date);
         // and assert that it is correctly wrapped
         Assert.assertEquals(rg.getRunDate(), new Iso8601Date(date));
+    }
+
+    private static SAMReadGroupRecord readGroupWithRunDate(final String runDate) {
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("rg1");
+        readGroup.setAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG, runDate);
+        return readGroup;
+    }
+
+    @Test
+    public void getRunDateParsesAnIsoDateAsMidnightUtc() {
+        Assert.assertEquals(
+                readGroupWithRunDate("2016-01-01").getRunDate(), Date.from(Instant.parse("2016-01-01T00:00:00Z")));
+    }
+
+    @Test
+    public void getRunDateParsesAnIsoDateTimeWithAnOffset() {
+        Assert.assertEquals(
+                readGroupWithRunDate("2016-01-01T12:34:56+05:30").getRunDate(),
+                Date.from(Instant.parse("2016-01-01T07:04:56Z")));
+    }
+
+    @Test
+    public void getRunDateParsesADateTimeWithASpaceBeforeTheTime() {
+        Assert.assertEquals(
+                readGroupWithRunDate("2000-01-01 12:00:00").getRunDate(),
+                Date.from(Instant.parse("2000-01-01T12:00:00Z")));
+    }
+
+    @Test
+    public void getRunDateIsNullWhenTheRunDateIsAbsent() {
+        Assert.assertNull(new SAMReadGroupRecord("rg1").getRunDate());
+    }
+
+    @Test
+    public void getRunDateIsNullWhenTheRunDateIsNotADate() {
+        Assert.assertNull(readGroupWithRunDate("not a date").getRunDate());
     }
 
     @DataProvider

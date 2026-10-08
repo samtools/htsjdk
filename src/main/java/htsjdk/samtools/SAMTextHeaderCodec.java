@@ -54,6 +54,8 @@ public class SAMTextHeaderCodec {
     private String mSource;
     private List<SAMSequenceRecord> sequences;
     private List<SAMReadGroupRecord> readGroups;
+    // Added to the header only after the stringency check in decode(), so that they never fail a read
+    private List<SAMValidationError> unparseableRunDateErrors;
 
     // For error reporting when parsing
     private ValidationStringency validationStringency = ValidationStringency.SILENT;
@@ -90,6 +92,7 @@ public class SAMTextHeaderCodec {
         mSource = source;
         sequences = new ArrayList<>();
         readGroups = new ArrayList<>();
+        unparseableRunDateErrors = new ArrayList<>();
 
         while (advanceLine() != null) {
             final ParsedHeaderLine parsedHeaderLine = new ParsedHeaderLine(mCurrentLine);
@@ -121,6 +124,7 @@ public class SAMTextHeaderCodec {
         mFileHeader.setReadGroups(readGroups);
 
         SAMUtils.processValidationErrors(mFileHeader.getValidationErrors(), -1, validationStringency);
+        unparseableRunDateErrors.forEach(mFileHeader::addValidationError);
         return mFileHeader;
     }
 
@@ -184,26 +188,36 @@ public class SAMTextHeaderCodec {
             }
         }
 
-        final String dateRunProduced =
-                (String) samReadGroupRecord.getAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG);
+        // DT is kept as written; it is parsed only to report a value that is not a date.
+        final String dateRunProduced = samReadGroupRecord.getAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG);
         if (dateRunProduced != null) {
-            Object date;
             try {
-                date = mTagCodec.decodeDate(dateRunProduced);
-            } catch (DateParser.InvalidDateException e) {
-                // Can't convert date string into Date object.  Treat it as a string if validation
-                //  stringency allows it.
-                date = dateRunProduced;
-                reportErrorParsingLine(
-                        SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG + " tag value '" + dateRunProduced
-                                + "' is not parseable as a date",
-                        SAMValidationError.Type.INVALID_DATE_STRING,
-                        e);
+                TextTagCodec.decodeDate(dateRunProduced);
+            } catch (final DateParser.InvalidDateException e) {
+                reportUnparseableRunDate(samReadGroupRecord.getReadGroupId(), dateRunProduced);
             }
-            samReadGroupRecord.setAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG, date.toString());
         }
 
         readGroups.add(samReadGroupRecord);
+    }
+
+    /**
+     * Reports a read group whose DT value is not parseable as a date.  Unlike {@link #reportErrorParsingLine}
+     * this never throws, whatever the stringency: it logs a warning unless the stringency is SILENT, and records an
+     * {@link SAMValidationError.Type#INVALID_DATE_STRING} error that {@link #decode} adds to the header.
+     */
+    private void reportUnparseableRunDate(final String readGroupId, final String dateRunProduced) {
+        final String reason = SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG + " tag value '" + dateRunProduced
+                + "' of read group " + readGroupId + " is not parseable as a date";
+        if (validationStringency != ValidationStringency.SILENT) {
+            log.warn(reason, mSource == null ? "" : " in " + mSource, "; keeping it as written");
+        }
+        final SAMValidationError error = new SAMValidationError(
+                SAMValidationError.Type.INVALID_DATE_STRING,
+                "Error parsing SAM header. " + reason + ". Line:\n" + mCurrentLine,
+                null);
+        error.setSource(mSource);
+        unparseableRunDateErrors.add(error);
     }
 
     private void parseSQLine(final ParsedHeaderLine parsedHeaderLine) {
