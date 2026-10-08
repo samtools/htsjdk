@@ -7,16 +7,19 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.IOUtilTest;
-import htsjdk.samtools.util.TestUtil;
 import htsjdk.testutil.ftp.LocalFtpServer;
+import htsjdk.testutil.http.LocalHttpServer;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -36,7 +39,6 @@ import org.testng.annotations.Test;
  */
 public class AbstractFeatureReaderTest extends HtsjdkTest {
 
-    static final String HTTP_INDEXED_VCF_PATH = TestUtil.BASE_URL_FOR_HTTP_TESTS + "ex2.vcf";
     static final String LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH = VariantBaseTest.variantTestDataRoot + "ex2.vcf";
 
     // the "mangled" versions of the files have an extra byte added to the front of the file that makes them invalid
@@ -60,15 +62,25 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     @Test
     public void testVcfOverHTTP() throws IOException {
         final VCFCodec codec = new VCFCodec();
-        final AbstractFeatureReader<VariantContext, LineIterator> featureReaderHttp =
-                AbstractFeatureReader.getFeatureReader(HTTP_INDEXED_VCF_PATH, codec, true); // Require an index to
-        final AbstractFeatureReader<VariantContext, LineIterator> featureReaderLocal =
-                AbstractFeatureReader.getFeatureReader(LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH, codec, false);
-        final CloseableTribbleIterator<VariantContext> localIterator = featureReaderLocal.iterator();
-        for (final Feature feat : featureReaderHttp.iterator()) {
-            assertEquals(feat.toString(), localIterator.next().toString());
+        final Path localVcf = Path.of(LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH);
+        final ByteArrayOutputStream index = new ByteArrayOutputStream();
+        try (LittleEndianOutputStream out = new LittleEndianOutputStream(index)) {
+            IndexFactory.createDynamicIndex(localVcf, codec).write(out);
         }
-        assertFalse(localIterator.hasNext());
+        try (LocalHttpServer server = new LocalHttpServer()
+                        .addFile("/picard/testdata/ex2.vcf", localVcf)
+                        .addFile("/picard/testdata/ex2.vcf.idx", index.toByteArray());
+                AbstractFeatureReader<VariantContext, LineIterator> featureReaderHttp =
+                        AbstractFeatureReader.getFeatureReader(
+                                server.url("/picard/testdata/ex2.vcf").toString(), codec, true); // Require an index to
+                AbstractFeatureReader<VariantContext, LineIterator> featureReaderLocal =
+                        AbstractFeatureReader.getFeatureReader(LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH, codec, false)) {
+            final CloseableTribbleIterator<VariantContext> localIterator = featureReaderLocal.iterator();
+            for (final Feature feat : featureReaderHttp.iterator()) {
+                assertEquals(feat.toString(), localIterator.next().toString());
+            }
+            assertFalse(localIterator.hasNext());
+        }
     }
 
     @Test

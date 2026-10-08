@@ -29,6 +29,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.testutil.ftp.LocalFtpServer;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,12 +38,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SamStreamsTest extends HtsjdkTest {
 
     private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools");
+
+    private LocalHttpServer server;
+
+    // before the data providers run, since they make URLs on the server
+    @BeforeClass
+    public void startServer() throws IOException {
+        server = new LocalHttpServer();
+    }
+
+    @AfterClass
+    public void stopServer() {
+        server.close();
+    }
 
     @Test(dataProvider = "makeData")
     @SuppressWarnings("deprecated") // we're testing a deprecated method here deliberately
@@ -79,12 +95,11 @@ public class SamStreamsTest extends HtsjdkTest {
             {"unsorted.sam", true, false},
             // fails due to https://github.com/samtools/htsjdk/issues/618
             // {"ftp://ftp.broadinstitute.org/dummy.cram", false, true}
-            {"http://www.broadinstitute.org/dummy.cram", false, true},
-            {"https://www.broadinstitute.org/dummy.cram", false, true},
-            {"http://www.broadinstitute.org/dummy.cram?alt=media", false, true},
-            {"http://www.broadinstitute.org/test?file=my.cram", false, true},
-            {"http://www.broadinstitute.org/test?foo=bar,file=my.cram", false, true},
-            {"http://www.broadinstitute.org/test?file=my.bam", false, false}
+            {server.url("/dummy.cram").toString(), false, true},
+            {server.url("/dummy.cram?alt=media").toString(), false, true},
+            {server.url("/test?file=my.cram").toString(), false, true},
+            {server.url("/test?foo=bar,file=my.cram").toString(), false, true},
+            {server.url("/test?file=my.bam").toString(), false, false}
         };
     }
 
@@ -115,16 +130,15 @@ public class SamStreamsTest extends HtsjdkTest {
     @DataProvider(name = "sourceLikeBamRemote")
     public Object[][] sourceLikeBamDataRemote() {
         return new Object[][] {
-            {"http://www.broadinstitute.org/dummy.bam", false, true},
-            {"https://www.broadinstitute.org/dummy.bam", false, true},
-            {"http://www.broadinstitute.org/dummy.bam?alt=media", false, true},
-            {"http://www.broadinstitute.org/test?file=my.bam", false, true},
-            {"http://www.broadinstitute.org/test?foo=bar,file=my.bam", false, true},
-            {"http://www.broadinstitute.org/test?file=my.cram", false, false}
+            {server.url("/dummy.bam").toString(), false, true},
+            {server.url("/dummy.bam?alt=media").toString(), false, true},
+            {server.url("/test?file=my.bam").toString(), false, true},
+            {server.url("/test?foo=bar,file=my.bam").toString(), false, true},
+            {server.url("/test?file=my.cram").toString(), false, false}
         };
     }
 
-    @Test(dataProvider = "sourceLikeBamRemote", groups = "http")
+    @Test(dataProvider = "sourceLikeBamRemote")
     public void sourceLikeBamRemote(final String resourceName, final boolean isFile, final boolean expected)
             throws IOException {
         sourceLikeBamImpl(resourceName, isFile, expected);

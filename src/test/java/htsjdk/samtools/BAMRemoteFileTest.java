@@ -28,6 +28,7 @@ import static org.testng.Assert.*;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -35,6 +36,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
@@ -44,13 +47,20 @@ public class BAMRemoteFileTest extends HtsjdkTest {
     private final Path BAM_INDEX_FILE =
             Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final Path BAM_FILE = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final String BAM_URL_STRING = TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam";
-    private final URL bamURL;
+    private LocalHttpServer server;
+    private URL bamURL;
 
     private final boolean mVerbose = false;
 
-    public BAMRemoteFileTest() throws Exception {
-        bamURL = new URL(BAM_URL_STRING);
+    @BeforeClass
+    public void startServer() throws IOException {
+        server = new LocalHttpServer().addFile("/picard/testdata/index_test.bam", BAM_FILE);
+        bamURL = server.url("/picard/testdata/index_test.bam");
+    }
+
+    @AfterClass
+    public void stopServer() {
+        server.close();
     }
 
     @Test

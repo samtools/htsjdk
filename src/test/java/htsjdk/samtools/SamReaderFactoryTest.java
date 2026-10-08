@@ -12,6 +12,7 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import htsjdk.testutil.ftp.LocalFtpServer;
+import htsjdk.testutil.http.LocalHttpServer;
 import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -30,6 +31,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.zip.Inflater;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -273,15 +276,22 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     final Path localBamIndex = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
 
-    final URL bamUrl, bamIndexUrl;
+    private LocalHttpServer server;
+    private URL bamUrl, bamIndexUrl;
 
-    {
-        try {
-            bamUrl = new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam");
-            bamIndexUrl = new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai");
-        } catch (final MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+    // before the data providers run, since composing a SeekableHTTPStream sends a HEAD to the server
+    @BeforeClass
+    public void startServer() throws IOException {
+        server = new LocalHttpServer()
+                .addFile("/picard/testdata/index_test.bam", localBam)
+                .addFile("/picard/testdata/index_test.bam.bai", localBamIndex);
+        bamUrl = server.url("/picard/testdata/index_test.bam");
+        bamIndexUrl = server.url("/picard/testdata/index_test.bam.bai");
+    }
+
+    @AfterClass
+    public void stopServer() {
+        server.close();
     }
 
     @DataProvider

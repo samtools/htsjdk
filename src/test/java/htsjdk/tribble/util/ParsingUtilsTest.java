@@ -4,6 +4,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.testutil.ftp.LocalFtpServer;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -18,9 +19,6 @@ import org.testng.annotations.Test;
  * Parsing utils tests
  */
 public class ParsingUtilsTest extends HtsjdkTest {
-
-    static final String AVAILABLE_HTTP_URL = "https://www.google.com";
-    static final String UNAVAILABLE_HTTP_URL = "http://www.unknownhostwhichshouldntexist.com";
 
     @Test
     public void testSplit1() {
@@ -169,12 +167,18 @@ public class ParsingUtilsTest extends HtsjdkTest {
 
     @Test
     public void testHTTPDoesExist() throws IOException {
-        testExists(AVAILABLE_HTTP_URL, true);
+        try (LocalHttpServer server =
+                new LocalHttpServer().addFile("/pub/test.txt", "hello".getBytes(StandardCharsets.UTF_8))) {
+            testExists(server.url("/pub/test.txt").toString(), true);
+        }
     }
 
     @Test
     public void testHTTPNotExist() throws IOException {
-        testExists(UNAVAILABLE_HTTP_URL, false);
+        try (LocalHttpServer server =
+                new LocalHttpServer().addFile("/pub/test.txt", "hello".getBytes(StandardCharsets.UTF_8))) {
+            testExists(server.url("/pub/missing.txt").toString(), false);
+        }
     }
 
     private static void testExists(String path, boolean expectExists) throws IOException {
@@ -221,7 +225,10 @@ public class ParsingUtilsTest extends HtsjdkTest {
 
     @Test
     public void testHTTPOpenInputStream() throws IOException {
-        testStream(AVAILABLE_HTTP_URL);
+        try (LocalHttpServer server =
+                new LocalHttpServer().addFile("/pub/test.txt", "hello".getBytes(StandardCharsets.UTF_8))) {
+            testStream(server.url("/pub/test.txt").toString());
+        }
     }
 
     private static void testStream(String path) throws IOException {
