@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.SamConstants;
 import java.util.Arrays;
@@ -198,12 +199,22 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord {
         }
     }
 
+    /**
+     * Parses the {@code DT} attribute, whose text is kept exactly as read or set.  Accepts ISO 8601 dates and
+     * date-times (with 'T', 't' or a space between date and time, and 'Z' or 'z' for UTC), falling back to the default
+     * locale's date-time format and then to {@link Date#Date(String)}.
+     *
+     * @return the run date truncated to whole seconds, or null if {@code DT} is absent or cannot be parsed as a date
+     */
     public Date getRunDate() {
         final String dt = getAttribute(DATE_RUN_PRODUCED_TAG);
         if (dt == null) {
             return null;
-        } else {
-            return new Iso8601Date(dt);
+        }
+        try {
+            return TextTagCodec.decodeDate(dt);
+        } catch (final DateParser.InvalidDateException e) {
+            return null;
         }
     }
 

@@ -78,6 +78,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 /**
  * NOTE: This code has been taken from w3.org, and modified slightly to handle timezones of the form [-+]DDDD,
@@ -90,6 +91,24 @@ import java.util.TimeZone;
  */
 public class DateParser {
 
+    /** A space or lower-case 't' between date and time, which RFC 3339 allows in place of 'T'. */
+    private static final Pattern DATE_TIME_SEPARATOR = Pattern.compile("^(\\d+-\\d+-\\d+)[ t]");
+
+    /** A lower-case 'z' for UTC ending the string, which RFC 3339 allows in place of 'Z'. */
+    private static final Pattern TRAILING_LOWER_CASE_UTC = Pattern.compile("(\\d)z$");
+
+    /**
+     * Rewrites the RFC 3339 spellings matched by {@link #DATE_TIME_SEPARATOR} and {@link #TRAILING_LOWER_CASE_UTC}
+     * to 'T' and 'Z'. The tokenizer must not split on these characters instead: the fractional-seconds step keeps
+     * three digits and drops the rest of its token, so splitting there would change the result for strings that
+     * parse today.
+     */
+    private static String withUpperCaseDesignators(final String isodate) {
+        final String withDateTimeSeparator =
+                DATE_TIME_SEPARATOR.matcher(isodate).replaceFirst("$1T");
+        return TRAILING_LOWER_CASE_UTC.matcher(withDateTimeSeparator).replaceFirst("$1Z");
+    }
+
     private static boolean check(StringTokenizer st, String token) throws InvalidDateException {
         if (!st.hasMoreElements()) return false;
         if (st.nextToken().equals(token)) {
@@ -101,7 +120,7 @@ public class DateParser {
 
     private static Calendar getCalendar(String isodate) throws InvalidDateException {
         // YYYY-MM-DDThh:mm:ss.sTZD
-        StringTokenizer st = new StringTokenizer(isodate, "-T:.+Z", true);
+        StringTokenizer st = new StringTokenizer(withUpperCaseDesignators(isodate), "-T:.+Z", true);
 
         Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         calendar.clear();
@@ -168,6 +187,9 @@ public class DateParser {
                     // frac sec
                     tok = st.nextToken();
                     if (tok.equals(".")) {
+                        if (!st.hasMoreTokens()) {
+                            throw new InvalidDateException("No fractional seconds specified");
+                        }
                         // bug fixed, thx to Martin Bottcher
                         String nt = st.nextToken();
                         while (nt.length() < 3) {
@@ -228,7 +250,8 @@ public class DateParser {
     }
 
     /**
-     * Parse the given string in ISO 8601 format and build a Date object.
+     * Parse the given string in ISO 8601 format and build a Date object.  As RFC 3339 allows, a space or a
+     * lower-case 't' may separate the date from the time, and a lower-case 'z' may mark UTC.
      * @param isodate the date in ISO 8601 format
      * @return a Date instance
      * @exception InvalidDateException if the date is not valid
