@@ -27,6 +27,7 @@ package htsjdk.samtools.seekablestream;
 import static org.testng.Assert.assertEquals;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
@@ -34,14 +35,28 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 public class SeekableBufferedStreamTest extends HtsjdkTest {
 
     //    private final Path BAM_INDEX_FILE = Paths.get("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final Path BAM_FILE = Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final String BAM_URL_STRING = "http://broadinstitute.github.io/picard/testdata/index_test.bam";
     private static Path TestFile = Paths.get("src/test/resources/htsjdk/samtools/seekablestream/megabyteZeros.dat");
+    private LocalHttpServer server;
+    private URL bamUrl;
+
+    @BeforeClass
+    public void startServer() throws IOException {
+        server = new LocalHttpServer().addFile("/picard/testdata/index_test.bam", BAM_FILE);
+        bamUrl = server.url("/picard/testdata/index_test.bam");
+    }
+
+    @AfterClass
+    public void stopServer() {
+        server.close();
+    }
 
     /**
      * Test reading across a buffer boundary (buffer size is 512000).   The test first reads a range of
@@ -62,7 +77,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
         assertEquals(length, bytesRead);
 
         byte[] buffer2 = new byte[length];
-        SeekableStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(new URL(BAM_URL_STRING)));
+        SeekableStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(bamUrl));
         bufferedStream.seek(startPosition);
         bytesRead = bufferedStream.read(buffer2, 0, length);
         assertEquals(length, bytesRead);
@@ -72,7 +87,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
     @Test
     public void testReadExactlyOneByteAtEndOfFile() throws IOException {
-        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))) {
+        try (final SeekableStream stream = new SeekableHTTPStream(bamUrl)) {
             byte[] buff = new byte[1];
             long length = stream.length();
             stream.seek(length - 1);
@@ -98,7 +113,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
         int length = 1000;
 
         byte[] buffer = new byte[length];
-        SeekableStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(new URL(BAM_URL_STRING)));
+        SeekableStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(bamUrl));
         bufferedStream.seek(startPosition);
         int bytesRead = bufferedStream.read(buffer, 0, length);
         assertEquals(remainder, bytesRead);

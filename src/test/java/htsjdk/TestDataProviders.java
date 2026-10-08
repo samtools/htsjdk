@@ -38,7 +38,7 @@ public class TestDataProviders extends HtsjdkTest {
     }
 
     /** Groups that require external infrastructure and are excluded from the default test run. */
-    private static final Set<String> EXCLUDED_GROUPS = Set.of("htsget", "http", "ena");
+    private static final Set<String> EXCLUDED_GROUPS = Set.of("htsget");
 
     @DataProvider(name = "DataprovidersThatDontTestThemselves")
     private Iterator<Object[]> testAllDataProvidersData() throws Exception {
@@ -47,7 +47,8 @@ public class TestDataProviders extends HtsjdkTest {
     }
 
     // runs all the @DataProviders it gets from DataprovidersThatDontTestThemselves.
-    // runs the BeforeSuite and BeforeClass methods of the same class before it runs the provider itself.
+    // runs the BeforeSuite and BeforeClass methods of the same class before it runs the provider itself, and the
+    // AfterClass methods after it, so resources the class sets up (such as a local server) are released.
 
     // @NoInjection annotations required according to this test:
     // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
@@ -107,15 +108,39 @@ public class TestDataProviders extends HtsjdkTest {
             }
         }
 
+        // the AfterClass methods run even if the provider fails; a failure of theirs is added to the provider's
+        IllegalStateException failure = null;
         try {
             method.setAccessible(true);
             method.invoke(instance);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new IllegalStateException(
+            failure = new IllegalStateException(
                     String.format(
                             "@DataProvider threw an exception (%s::%s). Dependent tests will be skipped. Please fix.",
                             clazz.getName(), method.getName()),
                     e);
+        }
+        for (final Method otherMethod : methodSet) {
+            if (otherMethod.isAnnotationPresent(AfterClass.class)) {
+                try {
+                    otherMethod.setAccessible(true);
+                    otherMethod.invoke(instance);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    final IllegalStateException afterClassFailure = new IllegalStateException(
+                            String.format(
+                                    "@AfterClass threw an exception (%s::%s). Please fix.",
+                                    clazz.getName(), otherMethod.getName()),
+                            e);
+                    if (failure == null) {
+                        failure = afterClassFailure;
+                    } else {
+                        failure.addSuppressed(afterClassFailure);
+                    }
+                }
+            }
+        }
+        if (failure != null) {
+            throw failure;
         }
     }
 }

@@ -7,8 +7,8 @@ import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.TestUtil;
 import htsjdk.testutil.ftp.LocalFtpServer;
+import htsjdk.testutil.http.LocalHttpServer;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.index.IndexFactory;
@@ -172,26 +172,15 @@ public class TabixReaderTest extends HtsjdkTest {
         Assert.assertTrue(nRecords > 0);
     }
 
-    /**
-     * Test reading a tabix file over http
-     *
-     * @throws java.io.IOException
-     */
     @Test
-    public void testRemoteQuery() throws IOException {
-        String tabixFile = TestUtil.BASE_URL_FOR_HTTP_TESTS + "igvdata/tabix/trioDup.vcf.gz";
-
-        try (TabixReader tabixReader = new TabixReader(tabixFile)) {
-            TabixIteratorLineReader lineReader =
-                    new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
-
-            int nRecords = 0;
-            String nextLine;
-            while ((nextLine = lineReader.readLine()) != null) {
-                Assert.assertTrue(nextLine.startsWith("4"));
-                nRecords++;
-            }
-            Assert.assertTrue(nRecords > 0);
+    public void aQueryOverHttpReturnsWhatTheSameQueryOnTheLocalFileReturns() throws IOException {
+        try (LocalHttpServer server = new LocalHttpServer()
+                        .addFile("/igvdata/tabix/trioDup.vcf.gz", Paths.get(tabixFile))
+                        .addFile("/igvdata/tabix/trioDup.vcf.gz.tbi", Paths.get(tabixFile + ".tbi"));
+                TabixReader httpReader = new TabixReader(
+                        server.url("/igvdata/tabix/trioDup.vcf.gz").toString())) {
+            Assert.assertEquals(linesIn(httpReader, "4", 320, 330), linesIn(tabixReader, "4", 320, 330));
+            Assert.assertFalse(linesIn(httpReader, "4", 320, 330).isEmpty());
         }
     }
 

@@ -4,7 +4,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -14,11 +14,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SeekableStreamFactoryTest extends HtsjdkTest {
     private static final Path TEST_DATA_DIR = Paths.get("src/test/resources/htsjdk/samtools");
+
+    private LocalHttpServer server;
+
+    // before the data providers run, since an HTTP stream sends a HEAD to the server
+    @BeforeClass
+    public void startServer() throws IOException {
+        server = new LocalHttpServer()
+                .addFile("/picard/testdata/index_test.bam", TEST_DATA_DIR.resolve("BAMFileIndexTest/index_test.bam"))
+                .addFile(
+                        "/picard/testdata/index_test.bam.bai",
+                        TEST_DATA_DIR.resolve("BAMFileIndexTest/index_test.bam.bai"));
+    }
+
+    @AfterClass
+    public void stopServer() {
+        server.close();
+    }
 
     @DataProvider
     public Object[][] getSpecialCasePaths() {
@@ -85,12 +104,12 @@ public class SeekableStreamFactoryTest extends HtsjdkTest {
                         .toString()
             },
             {
-                new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm(),
-                new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm()
+                server.url("/picard/testdata/index_test.bam").toExternalForm(),
+                server.url("/picard/testdata/index_test.bam").toExternalForm()
             },
             {
-                new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm(),
-                new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm()
+                server.url("/picard/testdata/index_test.bam.bai").toExternalForm(),
+                server.url("/picard/testdata/index_test.bam.bai").toExternalForm()
             },
         };
     }

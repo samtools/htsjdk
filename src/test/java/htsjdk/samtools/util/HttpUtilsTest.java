@@ -1,33 +1,29 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.IOException;
-import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-@Test(groups = "http")
 public class HttpUtilsTest extends HtsjdkTest {
-    @DataProvider(name = "existing_urls")
-    public Object[][] testExistingURLsData() {
-        return new Object[][] {
-            {"http://broadinstitute.github.io/picard/testdata/index_test.bam"},
-            {"http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/README_using_1000genomes_cram.md"}
-        };
+    private static final Path BAM = Path.of("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+
+    @Test
+    public void getHeaderFieldReturnsTheContentLengthOfAServedFile() throws IOException {
+        try (LocalHttpServer server = new LocalHttpServer().addFile("/data/index_test.bam", BAM)) {
+            Assert.assertEquals(
+                    HttpUtils.getHeaderField(server.url("/data/index_test.bam"), "Content-Length"),
+                    Long.toString(Files.size(BAM)));
+        }
     }
 
-    @Test(dataProvider = "existing_urls")
-    public void testGetHeaderField(final String url) throws IOException {
-        final String field = HttpUtils.getHeaderField(new URL(url), "Content-Length");
-        Assert.assertNotNull(field);
-        final long length = Long.parseLong(field);
-        Assert.assertTrue(length > 0L);
-    }
-
-    @Test(dataProvider = "existing_urls")
-    public void testGetETag(final String url) throws IOException {
-        final String field = HttpUtils.getETag(new URL(url));
-        Assert.assertNotNull(field);
+    @Test
+    public void getETagReturnsTheETagOfAServedFile() throws IOException {
+        try (LocalHttpServer server = new LocalHttpServer().addFile("/data/index_test.bam", BAM)) {
+            Assert.assertNotNull(HttpUtils.getETag(server.url("/data/index_test.bam")));
+        }
     }
 }

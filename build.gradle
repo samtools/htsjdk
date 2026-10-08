@@ -76,6 +76,9 @@ dependencies {
     testImplementation "com.google.guava:guava:33.6.0-jre"
     testImplementation 'org.apache.commons:commons-lang3:3.20.0'
     testImplementation 'org.apache.ftpserver:ftpserver-core:1.2.1'
+    testImplementation 'org.eclipse.jetty:jetty-server:12.1.14'
+    // Jetty logs through slf4j; without a provider slf4j warns on every test run
+    testRuntimeOnly 'org.slf4j:slf4j-nop:2.0.17'
 }
 
 java {
@@ -235,30 +238,18 @@ tasks.register('testWithDefaultReference', Test) {
 }
 
 test {
-    description = "Runs the unit tests other than external-API tests"
+    description = "Runs the unit tests"
 
    useTestNG {
        if (OperatingSystem.current().isUnix()) {
-           excludeGroups "slow", "broken", "defaultReference", "http", "ena", "htsget"
+           excludeGroups "slow", "broken", "defaultReference", "htsget"
        } else {
-           excludeGroups "slow", "broken", "defaultReference", "http", "ena", "htsget", "unix"
+           excludeGroups "slow", "broken", "defaultReference", "htsget", "unix"
        }
        parallel = "classes"
        threadCount = Runtime.runtime.availableProcessors()
    }
 } dependsOn testWithDefaultReference
-
-
-tasks.register('testExternalApis', Test) {
-    description = "Run the ENA and HTTP tests (tests that interact with external APIs)"
-    testClassesDirs = sourceSets.test.output.classesDirs
-    classpath = sourceSets.test.runtimeClasspath
-
-    useTestNG {
-        includeGroups "http", "ena"
-        excludeGroups "slow", "broken"
-    }
-}
 
 if(project == rootProject) {
     wrapper {

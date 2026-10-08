@@ -38,11 +38,6 @@ public class TestUtil {
     public static final int RANDOM_SEED = 42;
 
     /**
-     * Base url where all test files for http tests are found
-     */
-    public static final String BASE_URL_FOR_HTTP_TESTS = "https://personal.broadinstitute.org/picard/testdata/";
-
-    /**
      * Creates a new temporary directory that will be deleted on JVM exit.
      *
      * @param prefix the prefix for the temporary directory name

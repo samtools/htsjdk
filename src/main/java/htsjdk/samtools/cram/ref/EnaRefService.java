@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.ref;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.util.Log;
 import java.io.IOException;
@@ -7,6 +8,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Locale;
 
 public class EnaRefService {
     private static final Log log = Log.getInstance(EnaRefService.class);
@@ -17,6 +19,20 @@ public class EnaRefService {
     // this is a non-standard code and I'm not sure why it's here
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
     private static final int HTTP_MOVED_PERMANENTLY = HttpURLConnection.HTTP_MOVED_PERM;
+
+    private final String urlMask;
+
+    /** Downloads sequences from the ENA CRAM reference registry, {@link Defaults#EBI_REFERENCE_SERVICE_URL_MASK}. */
+    public EnaRefService() {
+        this(Defaults.EBI_REFERENCE_SERVICE_URL_MASK);
+    }
+
+    /**
+     * Downloads sequences from the service at {@code urlMask}, a URL with one {@code %s} where a sequence's MD5 goes.
+     */
+    EnaRefService(final String urlMask) {
+        this.urlMask = urlMask;
+    }
 
     byte[] getSequence(final String md5) {
         final int restBetweenTries_ms = 0;
@@ -41,9 +57,7 @@ public class EnaRefService {
         if (md5 == null) throw new NullPointerException("Expecting sequence md5 but got null.");
         if (!md5.matches("[a-z0-9]{32}")) throw new RuntimeException("Does not look like an md5 checksum: " + md5);
 
-        // from https://www.ebi.ac.uk/ena/software/cram-reference-registry
-        final String httpEbiString = "https://www.ebi.ac.uk/ena/cram/md5/%s";
-        final String urlString = String.format(httpEbiString, md5);
+        final String urlString = String.format(Locale.US, urlMask, md5);
         final URL url;
         try {
             url = new URL(urlString);

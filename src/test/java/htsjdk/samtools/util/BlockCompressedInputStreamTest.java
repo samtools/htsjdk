@@ -14,13 +14,13 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
+import htsjdk.testutil.http.LocalHttpServer;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -32,10 +32,27 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.Inflater;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class BlockCompressedInputStreamTest extends HtsjdkTest {
+    private LocalHttpServer server;
+
+    @BeforeClass
+    public void startServer() throws IOException {
+        server = new LocalHttpServer()
+                .addFile(
+                        "/picard/testdata/index_test.bam",
+                        Paths.get("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam"));
+    }
+
+    @AfterClass
+    public void stopServer() {
+        server.close();
+    }
+
     // random data pulled from /dev/random then compressed using bgzip from tabix
     private static final Path BLOCK_UNCOMPRESSED = Paths.get("src/test/resources/htsjdk/samtools/util/random.bin");
     private static final Path BLOCK_COMPRESSED = Paths.get("src/test/resources/htsjdk/samtools/util/random.bin.gz");
@@ -211,8 +228,7 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
             },
             {
                 (CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(
-                        new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam"),
-                        countingInflaterFactory),
+                        server.url("/picard/testdata/index_test.bam"), countingInflaterFactory),
                 null,
                 21
             },
