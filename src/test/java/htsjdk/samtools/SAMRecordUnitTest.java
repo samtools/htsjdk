@@ -1324,4 +1324,149 @@ public class SAMRecordUnitTest extends HtsjdkTest {
             Files.deleteIfExists(bam);
         }
     }
+
+    /** An unmapped fragment with no reference, position 0 and MAPQ 0, which {@code isValid} accepts. */
+    private static SAMRecord createUnmappedTestRecord() {
+        return new SAMRecordSetBuilder().addFrag("test", -1, -1, false, true, null, null, 2);
+    }
+
+    /** A mapped read whose mate is mapped too, which {@code isValid} accepts. */
+    private static SAMRecord createPairedTestRecord() {
+        return new SAMRecordSetBuilder()
+                .addPair("test", 0, 1, 100, false, false, "36M", "36M", false, true, 2)
+                .get(0);
+    }
+
+    /** Asserts that {@code record.isValid()} reports exactly one problem, of the given type and severity. */
+    private static void assertOnlyValidationError(
+            final SAMRecord record, final SAMValidationError.Type type, final SAMValidationError.Severity severity) {
+        final List<SAMValidationError> errors = record.isValid();
+        Assert.assertNotNull(errors);
+        Assert.assertEquals(errors.size(), 1, errors.toString());
+        Assert.assertEquals(errors.get(0).getType(), type);
+        Assert.assertEquals(errors.get(0).getType().severity, severity);
+    }
+
+    @Test
+    public void anUnmappedReadWithMapqZeroIsValid() {
+        Assert.assertNull(createUnmappedTestRecord().isValid());
+    }
+
+    @Test
+    public void anUnmappedReadWithMapq255IsValid() {
+        final SAMRecord record = createUnmappedTestRecord();
+        record.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
+        Assert.assertNull(record.isValid());
+    }
+
+    @Test
+    public void anUnmappedReadWithAnyOtherMapqIsAWarning() {
+        final SAMRecord record = createUnmappedTestRecord();
+        record.setMappingQuality(60);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_UNMAPPED_MAPPING_QUALITY, SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void aMappedReadWithMapq256IsAnError() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setMappingQuality(256);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_MAPPING_QUALITY, SAMValidationError.Severity.ERROR);
+    }
+
+    @Test
+    public void anUnmappedReadMarkedSecondaryIsAWarning() {
+        final SAMRecord record = createUnmappedTestRecord();
+        record.setSecondaryAlignment(true);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_FLAG_NOT_PRIM_ALIGNMENT, SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnmappedReadMarkedSupplementaryIsAWarning() {
+        final SAMRecord record = createUnmappedTestRecord();
+        record.setSupplementaryAlignmentFlag(true);
+        assertOnlyValidationError(
+                record,
+                SAMValidationError.Type.INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT,
+                SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnpairedReadMarkedProperPairIsAWarning() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setProperPairFlag(true);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_FLAG_PROPER_PAIR, SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnpairedReadMarkedMateUnmappedIsAWarning() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setMateUnmappedFlag(true);
+        assertOnlyValidationError(
+                record,
+                SAMValidationError.Type.INVALID_UNPAIRED_FLAG_MATE_UNMAPPED,
+                SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnpairedReadMarkedMateNegativeStrandIsAWarning() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setMateNegativeStrandFlag(true);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_FLAG_MATE_NEG_STRAND, SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnpairedReadMarkedFirstOfPairIsAWarning() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setFirstOfPairFlag(true);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_FLAG_FIRST_OF_PAIR, SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnpairedReadMarkedSecondOfPairIsAWarning() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setSecondOfPairFlag(true);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR, SAMValidationError.Severity.WARNING);
+    }
+
+    @Test
+    public void anUnpairedReadWithAMateReferenceGivesOnlyWarnings() {
+        final SAMRecord record = createTestRecordHelper();
+        record.setMateReferenceIndex(1);
+        record.setMateAlignmentStart(1);
+        final List<SAMValidationError> errors = record.isValid();
+        Assert.assertNotNull(errors);
+        Assert.assertEquals(
+                errors.stream().map(SAMValidationError::getType).toList(),
+                List.of(
+                        SAMValidationError.Type.INVALID_MATE_REF_INDEX,
+                        SAMValidationError.Type.INVALID_UNPAIRED_MATE_REFERENCE));
+        for (final SAMValidationError error : errors) {
+            Assert.assertEquals(error.getType().severity, SAMValidationError.Severity.WARNING, error.toString());
+        }
+    }
+
+    @Test
+    public void aPairedReadWithAMappedMateButNoMateReferenceIsAnError() {
+        final SAMRecord record = createPairedTestRecord();
+        Assert.assertNull(record.isValid());
+        record.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        record.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED, SAMValidationError.Severity.ERROR);
+    }
+
+    @Test
+    public void aReadWithNoReferenceButANonZeroStartIsAnError() {
+        final SAMRecord record = createUnmappedTestRecord();
+        record.setAlignmentStart(100);
+        assertOnlyValidationError(
+                record, SAMValidationError.Type.INVALID_ALIGNMENT_START, SAMValidationError.Severity.ERROR);
+    }
 }
