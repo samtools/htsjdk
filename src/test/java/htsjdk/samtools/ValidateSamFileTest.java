@@ -139,8 +139,8 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
         final int lineCount = results.toString().split("\n").length;
         Assert.assertEquals(lineCount, 11); // 1 extra message added to indicate maximum number of errors
-        Assert.assertEquals(validator.getNumErrors(), 6);
-        Assert.assertEquals(validator.getNumWarnings(), 4);
+        Assert.assertEquals(validator.getNumErrors(), 1);
+        Assert.assertEquals(validator.getNumWarnings(), 9);
     }
 
     @Test
@@ -166,7 +166,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
                         .getValue(),
                 1.0);
         Assert.assertEquals(
-                results.get(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED.getHistogramString())
+                results.get(SAMValidationError.Type.INVALID_UNPAIRED_FLAG_MATE_UNMAPPED.getHistogramString())
                         .getValue(),
                 1.0);
         Assert.assertEquals(
@@ -310,9 +310,41 @@ public class ValidateSamFileTest extends HtsjdkTest {
                         .getValue(),
                 1.0);
         Assert.assertEquals(
-                results.get(SAMValidationError.Type.INVALID_MAPPING_QUALITY.getHistogramString())
+                results.get(SAMValidationError.Type.INVALID_UNMAPPED_MAPPING_QUALITY.getHistogramString())
                         .getValue(),
                 1.0);
+    }
+
+    /** An unmapped read flagged secondary and an unpaired read flagged proper-pair, both of which the spec allows. */
+    private static SamReader unmappedSecondaryAndUnpairedProperPairReads() {
+        final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
+        samBuilder.setUseNmFlag(true);
+        samBuilder.addFrag("unpaired", 0, 1, false).setProperPairFlag(true);
+        samBuilder.addFrag("unmapped", -1, -1, false, true, null, null, -1, true);
+        return samBuilder.getSamReader();
+    }
+
+    @Test
+    public void testFlagsTheSpecAllowsOnUnmappedAndUnpairedReadsAreWarnings() throws IOException {
+        final StringWriter summary = new StringWriter();
+        final SamFileValidator validator = new SamFileValidator(new PrintWriter(summary), 8000);
+        validator.validateSamFileSummary(unmappedSecondaryAndUnpairedProperPairReads(), null);
+
+        Assert.assertEquals(validator.getNumErrors(), 0, summary.toString());
+        Assert.assertEquals(validator.getNumWarnings(), 2, summary.toString());
+        Assert.assertTrue(summary.toString().contains("WARNING:INVALID_FLAG_PROPER_PAIR"), summary.toString());
+        Assert.assertTrue(summary.toString().contains("WARNING:INVALID_FLAG_NOT_PRIM_ALIGNMENT"), summary.toString());
+    }
+
+    @Test
+    public void testFlagsTheSpecAllowsOnUnmappedAndUnpairedReadsAreNotReportedWhenIgnoringWarnings()
+            throws IOException {
+        final SamFileValidator validator = new SamFileValidator(new PrintWriter(new StringWriter()), 8000);
+        validator.setIgnoreWarnings(true);
+
+        Assert.assertTrue(validator.validateSamFileSummary(unmappedSecondaryAndUnpairedProperPairReads(), null));
+        Assert.assertEquals(validator.getNumErrors(), 0);
+        Assert.assertEquals(validator.getNumWarnings(), 0);
     }
 
     @Test
