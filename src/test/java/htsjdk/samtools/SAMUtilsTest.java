@@ -24,8 +24,11 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.testutil.LogCapture;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -436,5 +439,26 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(lines.size(), 1);
         Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
         Assert.assertTrue(lines.get(0).contains("Ignoring SAM validation error: "), lines.get(0));
+    }
+
+    /** Writes a SAM file holding only a header with one read group whose DT is {@code runDate}. */
+    private static Path samWithRunDate(final String runDate) throws Exception {
+        final SAMReadGroupRecord readGroup = new SAMReadGroupRecord("rg1");
+        readGroup.setSample("sample1");
+        readGroup.setAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG, runDate);
+        final Path sam = Files.createTempFile("readGroupChecksum.", ".sam");
+        IOUtil.deleteOnExit(sam);
+        Files.writeString(sam, "@HD\tVN:1.6\n" + readGroup.getSAMString() + "\n");
+        return sam;
+    }
+
+    @Test
+    public void readGroupChecksumsDifferForTheSameRunDateWrittenDifferently() throws Exception {
+        final String dateOnly = SAMUtils.calculateReadGroupRecordChecksum(samWithRunDate("2016-01-01"), null);
+        final String dateTime =
+                SAMUtils.calculateReadGroupRecordChecksum(samWithRunDate("2016-01-01T00:00:00+0000"), null);
+
+        Assert.assertNotEquals(dateOnly, dateTime);
+        Assert.assertEquals(SAMUtils.calculateReadGroupRecordChecksum(samWithRunDate("2016-01-01"), null), dateOnly);
     }
 }

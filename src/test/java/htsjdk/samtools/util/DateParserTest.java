@@ -73,6 +73,7 @@ webmaster
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.time.Instant;
 import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -134,6 +135,60 @@ public class DateParserTest extends HtsjdkTest {
     @Test
     public static void testDate() {
         test(new Date());
+    }
+
+    private static void assertParsesTo(final String isodate, final String expectedUtcInstant) {
+        Assert.assertEquals(DateParser.parse(isodate), Date.from(Instant.parse(expectedUtcInstant)), isodate);
+    }
+
+    @Test
+    public void aSpaceMaySeparateTheDateFromTheTime() {
+        assertParsesTo("2000-01-01 12:00:00Z", "2000-01-01T12:00:00Z");
+    }
+
+    @Test
+    public void aSpaceMaySeparateTheDateFromATimeWithFractionalSecondsAndAnOffset() {
+        assertParsesTo("2000-01-01 12:00:00.250+05:30", "2000-01-01T06:30:00.250Z");
+    }
+
+    @Test
+    public void aLowerCaseTMaySeparateTheDateFromTheTime() {
+        assertParsesTo("2000-01-01t12:00:00Z", "2000-01-01T12:00:00Z");
+    }
+
+    @Test
+    public void aLowerCaseZMarksUtc() {
+        assertParsesTo("2000-01-01T12:00:00z", "2000-01-01T12:00:00Z");
+    }
+
+    @Test
+    public void aLowerCaseZMarksUtcAfterMinutes() {
+        assertParsesTo("2000-01-01 12:00z", "2000-01-01T12:00:00Z");
+    }
+
+    @Test
+    public void aDateParsesAsMidnightUtc() {
+        assertParsesTo("1997-07-16", "1997-07-16T00:00:00Z");
+    }
+
+    @Test
+    public void aDateTimeWithFractionalSecondsAndAnOffsetParsesToItsInstant() {
+        assertParsesTo("1997-07-16T19:20:30.45-02:00", "1997-07-16T21:20:30.450Z");
+    }
+
+    @Test
+    public void anOffsetWithoutAColonParses() {
+        assertParsesTo("1997-07-16T19:20:30+0100", "1997-07-16T18:20:30Z");
+    }
+
+    @Test
+    public void textAfterThreeFractionalDigitsIsIgnoredUpToTheOffset() {
+        assertParsesTo("2000-01-01T12:00:00.1234 +05:00", "2000-01-01T07:00:00.123Z");
+    }
+
+    @Test(expectedExceptions = DateParser.InvalidDateException.class)
+    public void aDecimalPointWithoutFractionalSecondsIsAnInvalidDate() {
+        DateParser.parse("2000-01-01T12:00:00.");
     }
 
     public static void assertDatesAreClose(final Date lhs, final Date rhs) {

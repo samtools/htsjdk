@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.time.Instant;
 import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -53,5 +54,22 @@ public class Iso8601DateTest extends HtsjdkTest {
         Iso8601Date isoDate = new Iso8601Date(now);
         Assert.assertEquals(isoDate.getTime() % 1000, 0);
         Assert.assertEquals(isoDate.getTime() / 1000, now.getTime() / 1000);
+    }
+
+    @Test
+    public void aSpaceMaySeparateTheDateFromTheTime() {
+        Assert.assertEquals(new Iso8601Date("2000-01-01 12:00:00Z"), new Iso8601Date("2000-01-01T12:00:00Z"));
+    }
+
+    @Test
+    public void lowerCaseTAndZAreAccepted() {
+        Assert.assertEquals(new Iso8601Date("2000-01-01t12:00:00z"), new Iso8601Date("2000-01-01T12:00:00Z"));
+    }
+
+    @Test
+    public void aDateTimeWithAnOffsetParsesToItsInstantInWholeSeconds() {
+        Assert.assertEquals(
+                new Iso8601Date("2016-01-01T12:34:56.789+05:30").getTime(),
+                Instant.parse("2016-01-01T07:04:56Z").toEpochMilli());
     }
 }

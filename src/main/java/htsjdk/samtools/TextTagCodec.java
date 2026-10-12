@@ -396,7 +396,15 @@ public class TextTagCodec {
         }
     }
 
-    Iso8601Date decodeDate(final String dateStr) {
+    /**
+     * Parses a date leniently: as ISO 8601 first, then in the default locale's date-time format, then as
+     * {@link Date#Date(String)} does.
+     *
+     * @param dateStr the text to parse
+     * @return the parsed date, truncated to whole seconds
+     * @throws DateParser.InvalidDateException if no format parses {@code dateStr}
+     */
+    static Iso8601Date decodeDate(final String dateStr) {
         try {
             return new Iso8601Date(dateStr);
         } catch (DateParser.InvalidDateException ex) {
