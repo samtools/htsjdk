@@ -277,6 +277,45 @@ public class SAMTextReaderTest extends HtsjdkTest {
         Assert.assertEquals(record.getReadString(), "ACGTTACGT");
     }
 
+    /** Parses {@code line} at STRICT stringency against a header with no sequences. */
+    private static SAMRecord parseStrictly(final String line) {
+        final SAMLineParser parser = new SAMLineParser(
+                new DefaultSAMRecordFactory(), ValidationStringency.STRICT, new SAMFileHeader(), null, null);
+        return parser.parseLine(line);
+    }
+
+    @Test
+    public void testUnmappedRecordWithMapq255IsReadWhenStrict() {
+        final SAMRecord record = parseStrictly("Read\t4\t*\t0\t255\t*\t*\t0\t0\tACGTACGTAC\t*");
+        Assert.assertTrue(record.getReadUnmappedFlag());
+        Assert.assertEquals(record.getMappingQuality(), SAMRecord.UNKNOWN_MAPPING_QUALITY);
+    }
+
+    @Test
+    public void testUnmappedRecordWithACigarButNoReferenceIsReadWhenStrict() {
+        final SAMRecord record = parseStrictly("Read\t4\t*\t0\t0\t10M\t*\t0\t0\tACGTACGTAC\t*");
+        Assert.assertTrue(record.getReadUnmappedFlag());
+        Assert.assertEquals(record.getCigarString(), "10M");
+    }
+
+    @Test
+    public void testUnmappedRecordWithOnlyAWarningIsRejectedWhenStrictAndReadWhenLenient() {
+        final String line = "Read\t4\t*\t0\t60\t*\t*\t0\t0\tACGTACGTAC\t*";
+        final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, () -> parseStrictly(line));
+        Assert.assertTrue(e.getMessage().contains("MAPQ should be 0 or 255 for unmapped read"), e.getMessage());
+
+        final SAMLineParser lenientParser = new SAMLineParser(
+                new DefaultSAMRecordFactory(), ValidationStringency.LENIENT, new SAMFileHeader(), null, null);
+        Assert.assertEquals(lenientParser.parseLine(line).getMappingQuality(), 60);
+    }
+
+    @Test
+    public void testRecordWithNoReferenceButANonZeroPositionIsRejectedWhenStrict() {
+        final SAMFormatException e = Assert.expectThrows(
+                SAMFormatException.class, () -> parseStrictly("Read\t4\t*\t100\t0\t*\t*\t0\t0\tACGTACGTAC\t*"));
+        Assert.assertTrue(e.getMessage().contains("POS must be zero if RNAME is not specified"), e.getMessage());
+    }
+
     /** Parses, at LENIENT stringency, a record on {@code reference}, which the header's dictionary lacks. */
     private static void parseLenientlyOnAReferenceNotInTheHeader(final String reference) {
         final SAMFileHeader header = new SAMFileHeader();

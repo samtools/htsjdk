@@ -1985,7 +1985,7 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
             if (getMateUnmappedFlagUnchecked()) {
                 if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(
-                        SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED,
+                        SAMValidationError.Type.INVALID_UNPAIRED_FLAG_MATE_UNMAPPED,
                         "Mate unmapped flag should not be set for unpaired read.",
                         getReadName()));
                 if (firstOnly) return ret;
@@ -2088,11 +2088,11 @@ public class SAMRecord implements HtsRecord, Cloneable, Locatable, Serializable 
                         getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getMappingQuality() != 0) {
+            if (getMappingQuality() != NO_MAPPING_QUALITY && getMappingQuality() != UNKNOWN_MAPPING_QUALITY) {
                 if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(
-                        SAMValidationError.Type.INVALID_MAPPING_QUALITY,
-                        "MAPQ should be 0 for unmapped read.",
+                        SAMValidationError.Type.INVALID_UNMAPPED_MAPPING_QUALITY,
+                        "MAPQ should be 0 or 255 for unmapped read.",
                         getReadName()));
                 if (firstOnly) return ret;
             }

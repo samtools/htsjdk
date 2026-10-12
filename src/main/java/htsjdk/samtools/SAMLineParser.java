@@ -328,12 +328,6 @@ public class SAMLineParser {
             if (pos != 0) {
                 reportErrorParsingLine("POS must be zero if RNAME is not specified");
             }
-            if (mapq != 0) {
-                reportErrorParsingLine("MAPQ must be zero if RNAME is not specified");
-            }
-            if (!cigarIsAsterisk) {
-                reportErrorParsingLine("CIGAR must be '*' if RNAME is not specified");
-            }
         }
         samRecord.setAlignmentStart(pos);
         samRecord.setMappingQuality(mapq);

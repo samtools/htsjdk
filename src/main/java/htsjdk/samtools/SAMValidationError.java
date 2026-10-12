@@ -44,34 +44,37 @@ public class SAMValidationError implements Serializable {
         INVALID_QUALITY_FORMAT(Severity.WARNING),
 
         /** proper pair flag set for unpaired read */
-        INVALID_FLAG_PROPER_PAIR,
+        INVALID_FLAG_PROPER_PAIR(Severity.WARNING),
 
-        /** mate unmapped flag set when mate is mapped or not set when mate is not mapped */
+        /** mate unmapped flag not set for a paired read that has no mate reference name */
         INVALID_FLAG_MATE_UNMAPPED,
+
+        /** mate unmapped flag set for unpaired read */
+        INVALID_UNPAIRED_FLAG_MATE_UNMAPPED(Severity.WARNING),
 
         /** mate unmapped flag does not match read unmapped flag of mate */
         MISMATCH_FLAG_MATE_UNMAPPED,
 
         /** mate negative strand flag set for unpaired read */
-        INVALID_FLAG_MATE_NEG_STRAND,
+        INVALID_FLAG_MATE_NEG_STRAND(Severity.WARNING),
 
         /** mate negative strand flag does not match read negative strand flag of mate */
         MISMATCH_FLAG_MATE_NEG_STRAND,
 
         /** first of pair flag set for unpaired read */
-        INVALID_FLAG_FIRST_OF_PAIR,
+        INVALID_FLAG_FIRST_OF_PAIR(Severity.WARNING),
 
         /** second of pair flag set for unpaired read */
-        INVALID_FLAG_SECOND_OF_PAIR,
+        INVALID_FLAG_SECOND_OF_PAIR(Severity.WARNING),
 
         /** pair flag set but not marked as first or second of pair */
         PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND(Severity.WARNING),
 
         /** not primary alignment flag set for unmapped read */
-        INVALID_FLAG_NOT_PRIM_ALIGNMENT,
+        INVALID_FLAG_NOT_PRIM_ALIGNMENT(Severity.WARNING),
 
         /** supplementary alignment flag set for unmapped read */
-        INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT,
+        INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT(Severity.WARNING),
 
         /** mapped read flag not set for mapped read */
         INVALID_FLAG_READ_UNMAPPED,
@@ -82,17 +85,20 @@ public class SAMValidationError implements Serializable {
          */
         INVALID_INSERT_SIZE,
 
-        /** mapping quality set for unmapped read or is >= 256 */
+        /** mapping quality is >= 256 for mapped read */
         INVALID_MAPPING_QUALITY,
 
-        /** CIGAR string is empty for mapped read or not empty of unmapped read, or other CIGAR badness. */
+        /** mapping quality of unmapped read is neither 0 nor 255 (not available) */
+        INVALID_UNMAPPED_MAPPING_QUALITY(Severity.WARNING),
+
+        /** CIGAR string is empty for mapped read, or other CIGAR badness. */
         INVALID_CIGAR,
 
         /** CIGAR string contains I followed by D, or vice versa */
         ADJACENT_INDEL_IN_CIGAR(Severity.WARNING),
 
         /** mate reference index (MRNM) set for unpaired read */
-        INVALID_MATE_REF_INDEX,
+        INVALID_MATE_REF_INDEX(Severity.WARNING),
 
         /** mate reference index (MRNM) does not match reference index of mate */
         MISMATCH_MATE_REF_INDEX,
@@ -212,7 +218,7 @@ public class SAMValidationError implements Serializable {
         MATE_CIGAR_STRING_INVALID_PRESENCE,
 
         /** The mate reference of the unpaired read should be "*" */
-        INVALID_UNPAIRED_MATE_REFERENCE,
+        INVALID_UNPAIRED_MATE_REFERENCE(Severity.WARNING),
 
         /** The unaligned mate read start position should be 0 */
         INVALID_UNALIGNED_MATE_START,
