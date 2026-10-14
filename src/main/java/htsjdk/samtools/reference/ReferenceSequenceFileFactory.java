@@ -34,21 +34,25 @@ import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.utils.ValidationUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Factory class for creating ReferenceSequenceFile instances for reading reference
@@ -57,6 +61,7 @@ import java.util.function.Function;
  * @author Tim Fennell
  */
 public class ReferenceSequenceFileFactory {
+    private static final Log log = Log.getInstance(ReferenceSequenceFileFactory.class);
 
     /**
      * @deprecated since June 2019 Use {@link FileExtensions#FASTA} instead.
@@ -342,17 +347,45 @@ public class ReferenceSequenceFileFactory {
     }
 
     /**
-     * Loads the sequence dictionary from a FASTA file input stream.
+     * Loads the sequence dictionary from a sequence dictionary (.dict) input stream; same as
+     * {@link #loadDictionary(InputStream, String)} with no source.
      *
-     * @param in the FASTA file input stream.
+     * @param in the sequence dictionary input stream.
      * @return the sequence dictionary, or <code>null</code> if the header has no dictionary or it was empty.
      */
     public static SAMSequenceDictionary loadDictionary(final InputStream in) {
+        return loadDictionary(in, null);
+    }
+
+    /**
+     * Loads the sequence dictionary from a sequence dictionary (.dict) input stream. Sequence names that don't match
+     * the SAM spec's RNAME pattern (see {@link SAMSequenceRecord#isValidSequenceName}) are loaded as written, with
+     * one warning for the whole dictionary: a dictionary file has no validation stringency, and a transcriptome's can
+     * have thousands of such names.
+     *
+     * @param in the sequence dictionary input stream.
+     * @param source the file the stream reads, for messages; may be null.
+     * @return the sequence dictionary, or <code>null</code> if the header has no dictionary or it was empty.
+     */
+    public static SAMSequenceDictionary loadDictionary(final InputStream in, final String source) {
         final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
         final BufferedLineReader reader = new BufferedLineReader(in);
-        final SAMFileHeader header = codec.decode(reader, null);
+        final SAMFileHeader header = codec.decode(reader, source);
         if (header.getSequenceDictionary().isEmpty()) {
             return null;
+        }
+        final List<String> invalidNames = header.getSequenceDictionary().getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .filter(name -> !SAMSequenceRecord.isValidSequenceName(name))
+                .collect(Collectors.toList());
+        if (!invalidNames.isEmpty()) {
+            log.warn(
+                    invalidNames.size(),
+                    " sequence name(s) in the sequence dictionary",
+                    source == null ? "" : " " + source,
+                    " don't match the SAM spec's RNAME pattern, the first being '",
+                    invalidNames.get(0),
+                    "'; loading them as written");
         }
         return header.getSequenceDictionary();
     }

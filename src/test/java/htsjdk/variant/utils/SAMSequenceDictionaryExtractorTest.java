@@ -27,13 +27,20 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.testutil.LogCapture;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -87,6 +94,65 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
             // Jimfs, as a Unix file system does, keeps the storage of a deleted file until it is no longer open
             Files.delete(fasta);
             Assert.assertTrue(store.getUnallocatedSpace() > unallocatedWithTheFasta);
+        }
+    }
+
+    /** Writes {@code ref.dict} into {@code dir}, with one sequence of length 100 for each of {@code sequenceNames}. */
+    private static Path writeDict(final Path dir, final String... sequenceNames) throws IOException {
+        final StringBuilder text = new StringBuilder("@HD\tVN:1.6\n");
+        for (final String sequenceName : sequenceNames) {
+            text.append("@SQ\tSN:").append(sequenceName).append("\tLN:100\n");
+        }
+        return Files.writeString(dir.resolve("ref.dict"), text);
+    }
+
+    private static List<String> namesOf(final SAMSequenceDictionary dictionary) {
+        return dictionary.getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .collect(Collectors.toList());
+    }
+
+    @Test
+    public void aDictWithNamesOutsideTheRnamePatternIsExtractedWithOneWarning() throws Exception {
+        final String tag = UUID.randomUUID().toString();
+        final String parenthesised = "Gt(ROSA)26Sor-" + tag;
+        final String bracketed = "a[1]-" + tag;
+        final Path dir = Files.createTempDirectory("SAMSequenceDictionaryExtractorTest");
+        try {
+            final Path dict = writeDict(dir, parenthesised, "chr1", bracketed);
+            final SAMSequenceDictionary[] dictionary = new SAMSequenceDictionary[1];
+            final List<String> lines = LogCapture.linesLoggedContaining(
+                    tag,
+                    Log.LogLevel.INFO,
+                    () -> dictionary[0] = SAMSequenceDictionaryExtractor.extractDictionary(dict));
+            Assert.assertEquals(namesOf(dictionary[0]), List.of(parenthesised, "chr1", bracketed));
+            Assert.assertEquals(lines.size(), 1, lines.toString());
+            Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+            Assert.assertTrue(lines.get(0).contains("2 sequence name(s)"), lines.get(0));
+            Assert.assertTrue(lines.get(0).contains(dict.toString()), lines.get(0));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aDictOfNamesMatchingTheRnamePatternIsExtractedWithoutAWarning() throws Exception {
+        final Path dir = Files.createTempDirectory("SAMSequenceDictionaryExtractorTest");
+        try {
+            // Other test classes log to the captured stream too, so look only for this dictionary's names and path
+            final String tag = UUID.randomUUID().toString();
+            final String chr1 = "chr1-" + tag;
+            final String hla = "HLA-A*01:01-" + tag;
+            final Path dict = writeDict(dir, chr1, hla);
+            final SAMSequenceDictionary[] dictionary = new SAMSequenceDictionary[1];
+            final List<String> lines = LogCapture.linesLoggedContaining(
+                    tag,
+                    Log.LogLevel.INFO,
+                    () -> dictionary[0] = SAMSequenceDictionaryExtractor.extractDictionary(dict));
+            Assert.assertEquals(namesOf(dictionary[0]), List.of(chr1, hla));
+            Assert.assertEquals(lines, List.of());
+        } finally {
+            IOUtil.recursiveDelete(dir);
         }
     }
 }

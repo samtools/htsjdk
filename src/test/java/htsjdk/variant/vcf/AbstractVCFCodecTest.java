@@ -1,7 +1,11 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.GzipTestStreams;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.testutil.LogCapture;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIteratorImpl;
@@ -19,10 +23,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -894,5 +900,53 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         final VariantContext vc = codec.decode("chr1\t100\t.\tA\tC\t50\tPASS\t.");
         Assert.assertTrue(vc.getFilters().isEmpty());
         Assert.assertFalse(vc.isFiltered());
+    }
+
+    // contig IDs outside the SAM spec's RNAME pattern are read with one warning
+
+    /** Reads a VCF header with a contig line of length 100 for each of {@code contigIds}. */
+    private static VCFHeader readHeaderWithContigs(final String... contigIds) {
+        final StringBuilder vcf = new StringBuilder("##fileformat=VCFv4.2\n");
+        for (final String contigId : contigIds) {
+            vcf.append("##contig=<ID=").append(contigId).append(",length=100>\n");
+        }
+        vcf.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
+        return (VCFHeader) new VCFCodec()
+                .readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
+                        new ByteArrayInputStream(vcf.toString().getBytes(StandardCharsets.UTF_8)))));
+    }
+
+    private static List<String> namesOf(final SAMSequenceDictionary dictionary) {
+        return dictionary.getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .collect(Collectors.toList());
+    }
+
+    @Test
+    public void contigIdsOutsideTheRnamePatternAreReadWithOneWarning() throws Exception {
+        final String tag = UUID.randomUUID().toString();
+        final String parenthesised = "Gt(ROSA)26Sor-" + tag;
+        final String bracketed = "a[1]-" + tag;
+        final VCFHeader[] header = new VCFHeader[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                tag, Log.LogLevel.INFO, () -> header[0] = readHeaderWithContigs(parenthesised, "chr1", bracketed));
+        Assert.assertEquals(lines.size(), 1, lines.toString());
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains("2 contig ID(s)"), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains(parenthesised), lines.get(0));
+        Assert.assertEquals(namesOf(header[0].getSequenceDictionary()), List.of(parenthesised, "chr1", bracketed));
+    }
+
+    @Test
+    public void contigIdsMatchingTheRnamePatternAreReadWithoutAWarning() throws Exception {
+        // Other test classes log to the captured stream too, so look only for this header's contig IDs
+        final String tag = UUID.randomUUID().toString();
+        final String chr1 = "chr1-" + tag;
+        final String hla = "HLA-A*01:01-" + tag;
+        final VCFHeader[] header = new VCFHeader[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                tag, Log.LogLevel.INFO, () -> header[0] = readHeaderWithContigs(chr1, hla));
+        Assert.assertEquals(lines, List.of());
+        Assert.assertEquals(namesOf(header[0].getSequenceDictionary()), List.of(chr1, hla));
     }
 }

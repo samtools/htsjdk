@@ -99,9 +99,21 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         this(name, UNKNOWN_SEQUENCE_LENGTH);
     }
 
+    /**
+     * @param name the sequence name, or null. A name that the SAM spec's RNAME pattern disallows (see
+     *     {@link #isValidSequenceName}) is accepted, as samtools accepts it, so that files using such names can be
+     *     read; readers report it as {@link SAMValidationError.Type#INVALID_SEQUENCE_NAME}.
+     * @param sequenceLength the sequence length
+     * @throws SAMException if the name is empty, contains a space or control character, or is {@code *} or
+     *     {@code =}, none of which SAM text can carry as a reference name
+     */
     public SAMSequenceRecord(final String name, final int sequenceLength) {
         if (name != null) {
-            validateSequenceName(name);
+            if (!isRepresentableSequenceName(name)) {
+                throw new SAMException(String.format(
+                        "Sequence name '%s' must not be empty, contain a space or control character, or be '%s' or '%s'",
+                        name, SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, RESERVED_RNEXT_SEQUENCE_NAME));
+            }
             mSequenceName = name.intern();
         } else {
             mSequenceName = null;
@@ -208,9 +220,14 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     }
 
     private static void validateAltRegExp(final String name) {
-        if (!LEGAL_RNAME_PATTERN.matcher(name).matches()) {
+        if (!isRepresentableSequenceName(name) || name.contains(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR)) {
             throw new IllegalArgumentException(String.format(
-                    "Invalid alternative sequence name '%s': do not match the pattern %s", name, LEGAL_RNAME_PATTERN));
+                    "Alternative sequence name '%s' must not be empty, contain a space, control character or '%s', "
+                            + "or be '%s' or '%s'",
+                    name,
+                    ALTERNATIVE_SEQUENCE_NAME_SEPARATOR,
+                    SAMRecord.NO_ALIGNMENT_REFERENCE_NAME,
+                    RESERVED_RNEXT_SEQUENCE_NAME));
         }
     }
 
@@ -348,12 +365,52 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     /**
      * Throw an exception if the sequence name is not valid.
+     *
+     * @throws SAMException if {@link #isValidSequenceName} is false for {@code name}
      */
     public static void validateSequenceName(final String name) {
-        if (!LEGAL_RNAME_PATTERN.matcher(name).useAnchoringBounds(true).matches()) {
+        if (!isValidSequenceName(name)) {
             throw new SAMException(
                     String.format("Sequence name '%s' doesn't match regex: '%s' ", name, LEGAL_RNAME_PATTERN));
         }
+    }
+
+    /**
+     * Returns whether a sequence name matches the SAM spec's RNAME pattern,
+     * {@code [0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*}, which the VCF spec also applies to contig
+     * IDs. The {@link #SAMSequenceRecord(String, int) constructor} accepts some names that don't match it, such as
+     * ones with brackets or parentheses.
+     *
+     * @param name the sequence name; must not be null
+     * @return true if {@code name} matches the pattern
+     */
+    public static boolean isValidSequenceName(final String name) {
+        return LEGAL_RNAME_PATTERN.matcher(name).matches();
+    }
+
+    /** The reason readers give for a sequence name that {@link #isValidSequenceName} rejects. */
+    static String invalidSequenceNameReason(final String name) {
+        return "Sequence name '" + name + "' doesn't match the SAM spec's RNAME pattern " + LEGAL_RNAME_PATTERN;
+    }
+
+    /**
+     * Returns whether SAM text can carry {@code name} as a reference name: it is not empty, has no space or control
+     * character (either would split the field or the line), and is not {@code *} or {@code =}, which mean no
+     * reference and the same reference in the RNAME and RNEXT fields.
+     */
+    private static boolean isRepresentableSequenceName(final String name) {
+        if (name.isEmpty()
+                || name.equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME)
+                || name.equals(RESERVED_RNEXT_SEQUENCE_NAME)) {
+            return false;
+        }
+        for (int i = 0; i < name.length(); i++) {
+            final char c = name.charAt(i);
+            if (c == ' ' || Character.isISOControl(c)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

@@ -49,19 +49,18 @@ public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
 
     @DataProvider(name = "badSequenceNames")
     public Object[][] badSequenceNames() {
-        return new Object[][] {
-            {" "},
-            {"\t"},
-            {"\n"},
-            {"="},
-            {"Hi: Mom!"},
-            {"=Hi:Mom!"},
-            {"Hi:'Mom!"},
-            {"Hi:\"Mom!"},
-            {"Hi:)Mom!"},
-            {"Hi:(Mom!"},
-            {"Hi,@Mom!"}
-        };
+        return new Object[][] {{" "}, {"\t"}, {"\n"}, {"="}, {"Hi: Mom!"}};
+    }
+
+    @Test(dataProvider = "sequenceNamesOutsideTheRnamePattern")
+    public void testSequenceRecordAcceptsNamesOutsideTheRnamePattern(final String sequenceName) {
+        Assert.assertEquals(new SAMSequenceRecord(sequenceName, 123).getSequenceName(), sequenceName);
+        Assert.assertFalse(SAMSequenceRecord.isValidSequenceName(sequenceName));
+    }
+
+    @DataProvider(name = "sequenceNamesOutsideTheRnamePattern")
+    public Object[][] sequenceNamesOutsideTheRnamePattern() {
+        return new Object[][] {{"=Hi:Mom!"}, {"Hi:'Mom!"}, {"Hi:\"Mom!"}, {"Hi:)Mom!"}, {"Hi:(Mom!"}, {"Hi,@Mom!"}};
     }
 
     @Test(dataProvider = "goodSequenceNames")

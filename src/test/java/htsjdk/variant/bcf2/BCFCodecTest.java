@@ -6,7 +6,9 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.LogCapture;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.Tribble;
@@ -47,6 +49,8 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
@@ -304,6 +308,31 @@ public class BCFCodecTest extends VariantBaseTest {
     public void anUncompressedBcfFromBcftoolsReadsThroughVCFFileReader() throws IOException {
         final Path vcf = writeVcf(A42_VCF);
         assertSameRecords(readAll(bcftools(vcf, "view", "-Ou")), readAll(vcf));
+    }
+
+    @Test
+    public void aBcfWithContigIdsOutsideTheRnamePatternIsReadWithOneWarning() throws Exception {
+        final String tag = UUID.randomUUID().toString();
+        final String parenthesised = "Gt(ROSA)26Sor-" + tag;
+        final String bracketed = "a[1]-" + tag;
+        final VCFHeader written = new VCFHeader(new LinkedHashSet<>(), List.of());
+        written.setSequenceDictionary(new SAMSequenceDictionary(List.of(
+                new SAMSequenceRecord(parenthesised, 100),
+                new SAMSequenceRecord("chr1", 100),
+                new SAMSequenceRecord(bracketed, 100))));
+        final Path bcf = writeBcf(written, List.of());
+
+        final VCFHeader[] header = new VCFHeader[1];
+        final List<String> lines =
+                LogCapture.linesLoggedContaining(tag, Log.LogLevel.INFO, () -> header[0] = headerOf(bcf));
+
+        Assert.assertEquals(lines.size(), 1, lines.toString());
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertEquals(
+                header[0].getSequenceDictionary().getSequences().stream()
+                        .map(SAMSequenceRecord::getSequenceName)
+                        .collect(Collectors.toList()),
+                List.of(parenthesised, "chr1", bracketed));
     }
 
     // -- IDX --

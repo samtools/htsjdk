@@ -25,7 +25,9 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -44,6 +46,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Base class for the VCF text codecs.
@@ -57,6 +60,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     public static final int MAX_ALLELE_SIZE_BEFORE_WARNING = (int) Math.pow(2, 20);
 
     protected static final int NUM_STANDARD_FIELDS = 8; // INFO is the 8th
+
+    private static final Log log = Log.getInstance(AbstractVCFCodec.class);
 
     // Set once, when the header is read or set, and only read while decoding.
     protected VCFHeader header = null;
@@ -253,7 +258,27 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
 
         setVCFHeader(new VCFHeader(version, metaData, sampleNames), version);
+        warnOfInvalidContigIds(this.header);
         return this.header;
+    }
+
+    /**
+     * Logs one warning if any contig IDs in a header read from a file don't match the VCF spec's contig ID pattern,
+     * which is the SAM spec's RNAME pattern, giving how many there are and the first. bcftools warns about such IDs
+     * and reads on, as this does; a single warning keeps a header with thousands of them readable.
+     */
+    private static void warnOfInvalidContigIds(final VCFHeader header) {
+        final List<String> invalidIds = header.getContigLines().stream()
+                .map(VCFContigHeaderLine::getID)
+                .filter(id -> !SAMSequenceRecord.isValidSequenceName(id))
+                .collect(Collectors.toList());
+        if (!invalidIds.isEmpty()) {
+            log.warn(
+                    invalidIds.size(),
+                    " contig ID(s) in the VCF header don't match the VCF spec's contig ID pattern, the first being '",
+                    invalidIds.get(0),
+                    "'; reading them as written");
+        }
     }
 
     /**
