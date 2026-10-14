@@ -203,7 +203,25 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         Assert.assertEquals(contig.getAlternativeSequenceNames(), Collections.singleton(altName));
     }
 
-    @Test(dataProvider = "illegalSequenceNames")
+    @Test
+    public void anAlternativeNameWithParenthesesIsAccepted() {
+        final SAMSequenceRecord contig = new SAMSequenceRecord("contig", 100);
+        contig.addAlternativeSequenceName("a(b)");
+        Assert.assertEquals(contig.getAlternativeSequenceNames(), Collections.singleton("a(b)"));
+        contig.setAlternativeSequenceName(Collections.singleton("c(d)"));
+        Assert.assertEquals(contig.getAlternativeSequenceNames(), Collections.singleton("c(d)"));
+    }
+
+    /** Names the alternative name setters reject: those the constructor rejects, and any containing a comma. */
+    @DataProvider
+    public Object[][] illegalAlternativeSequenceNames() {
+        return Stream.concat(
+                        Arrays.stream(illegalSequenceNames()),
+                        Stream.of(new Object[] {",chr1"}, new Object[] {"chr1,alt"}, new Object[] {"comma,"}))
+                .toArray(Object[][]::new);
+    }
+
+    @Test(dataProvider = "illegalAlternativeSequenceNames")
     public void testInvalidAlternativeSequences(final String altName) {
         final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
         Assert.assertThrows(IllegalArgumentException.class, () -> chr1.addAlternativeSequenceName(altName));
@@ -220,29 +238,97 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
         Assert.assertEquals(record.getDescription(), description);
     }
 
+    /** Names SAM text cannot carry as a reference name, which the constructor rejects. */
     @DataProvider
     public Object[][] illegalSequenceNames() {
-        return new Object[][] {
-            {",chr1"},
-            // comma-separated
-            {"chr1,alt"},
-            {"space "},
-            {"comma,"},
-            {"lbrace["},
-            {"rbrace]"},
-            {"slash\\"},
-            {"smaller<"},
-            {"bigger<"},
-            {"lparen("},
-            {"rparen)"},
-            {"lbracket{"},
-            {"rbracket}"},
-            {""}
-        };
+        return new Object[][] {{"space "}, {"a b"}, {"a\tb"}, {"a\u0001b"}, {"a\u007Fb"}, {"*"}, {"="}, {""}};
     }
 
     @Test(dataProvider = "illegalSequenceNames", expectedExceptions = SAMException.class)
     public void testIllegalSequenceNames(final String sequenceName) {
         new SAMSequenceRecord(sequenceName, 100);
+    }
+
+    /** Names the SAM spec's RNAME pattern disallows but SAM text can carry. */
+    @DataProvider
+    public Object[][] sequenceNamesOutsideTheRnamePattern() {
+        return new Object[][] {
+            {"lbrace["},
+            {"rbrace]"},
+            {"slash\\"},
+            {"smaller<"},
+            {"bigger>"},
+            {"lparen("},
+            {"rparen)"},
+            {"lbracket{"},
+            {"rbracket}"}
+        };
+    }
+
+    @Test(dataProvider = "sequenceNamesOutsideTheRnamePattern")
+    public void theConstructorAcceptsNamesOutsideTheRnamePattern(final String sequenceName) {
+        Assert.assertEquals(new SAMSequenceRecord(sequenceName, 100).getSequenceName(), sequenceName);
+        Assert.assertFalse(SAMSequenceRecord.isValidSequenceName(sequenceName));
+    }
+
+    @Test
+    public void theConstructorAcceptsANameWithParentheses() {
+        Assert.assertEquals(new SAMSequenceRecord("Gt(ROSA)26Sor", 100).getSequenceName(), "Gt(ROSA)26Sor");
+    }
+
+    @Test
+    public void theConstructorAcceptsANameWithAComma() {
+        Assert.assertEquals(new SAMSequenceRecord("a,b", 100).getSequenceName(), "a,b");
+    }
+
+    @Test
+    public void theConstructorAcceptsANameStartingWithAnAsterisk() {
+        Assert.assertEquals(new SAMSequenceRecord("*a", 100).getSequenceName(), "*a");
+    }
+
+    @Test
+    public void theConstructorAcceptsANameStartingWithAnEqualsSign() {
+        Assert.assertEquals(new SAMSequenceRecord("=a", 100).getSequenceName(), "=a");
+    }
+
+    @Test
+    public void theConstructorAcceptsANonAsciiName() {
+        Assert.assertEquals(new SAMSequenceRecord("contig_é", 100).getSequenceName(), "contig_é");
+    }
+
+    @Test
+    public void theConstructorAcceptsANullName() {
+        Assert.assertNull(new SAMSequenceRecord(null, 100).getSequenceName());
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void validateSequenceNameRejectsANameWithParentheses() {
+        SAMSequenceRecord.validateSequenceName("Gt(ROSA)26Sor");
+    }
+
+    @Test
+    public void validateSequenceNameAcceptsANameMatchingTheRnamePattern() {
+        SAMSequenceRecord.validateSequenceName("HLA-A*01:01:01:01");
+    }
+
+    @Test
+    public void isValidSequenceNameIsTrueForANameMatchingTheRnamePattern() {
+        Assert.assertTrue(SAMSequenceRecord.isValidSequenceName("chr1"));
+        Assert.assertTrue(SAMSequenceRecord.isValidSequenceName("HLA-A*01:01:01:01"));
+    }
+
+    @Test
+    public void isValidSequenceNameIsFalseForANameWithParentheses() {
+        Assert.assertFalse(SAMSequenceRecord.isValidSequenceName("Gt(ROSA)26Sor"));
+    }
+
+    @Test
+    public void isValidSequenceNameIsFalseForANameStartingWithAnAsterisk() {
+        Assert.assertFalse(SAMSequenceRecord.isValidSequenceName("*a"));
+    }
+
+    @Test
+    public void isValidSequenceNameIsFalseForANonAsciiName() {
+        Assert.assertFalse(SAMSequenceRecord.isValidSequenceName("contig_é"));
     }
 }

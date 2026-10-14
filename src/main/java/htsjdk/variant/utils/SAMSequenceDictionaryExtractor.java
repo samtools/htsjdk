@@ -71,11 +71,11 @@ public class SAMSequenceDictionaryExtractor {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path dictionary) {
-                try (BufferedLineReader bufferedLineReader = new BufferedLineReader(
-                        ParsingUtils.openInputStream(dictionary.toUri().toString()))) {
-                    final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                    final SAMFileHeader header = codec.decode(bufferedLineReader, dictionary.toString());
-                    return header.getSequenceDictionary();
+                try (final InputStream in =
+                        ParsingUtils.openInputStream(dictionary.toUri().toString())) {
+                    final SAMSequenceDictionary dict =
+                            ReferenceSequenceFileFactory.loadDictionary(in, dictionary.toString());
+                    return dict == null ? new SAMSequenceDictionary() : dict;
                 } catch (final IOException e) {
                     throw new SAMException("Could not open sequence dictionary file: " + dictionary, e);
                 }

@@ -858,11 +858,24 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 }
             }
         } else {
-            // If only binary sequences are present, copy them into samFileHeader
+            // If only binary sequences are present, copy them into samFileHeader, checking the names that the text
+            // header codec would otherwise have checked
             final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>(sequenceCount);
+            final List<SAMValidationError> invalidNameErrors = new ArrayList<>();
             for (int i = 0; i < sequenceCount; i++) {
-                sequences.add(readSequenceRecord(stream, source));
+                final SAMSequenceRecord sequence = readSequenceRecord(stream, source);
+                if (!SAMSequenceRecord.isValidSequenceName(sequence.getSequenceName())) {
+                    final SAMValidationError error = new SAMValidationError(
+                            SAMValidationError.Type.INVALID_SEQUENCE_NAME,
+                            SAMSequenceRecord.invalidSequenceNameReason(sequence.getSequenceName()),
+                            null);
+                    error.setSource(source);
+                    invalidNameErrors.add(error);
+                }
+                sequences.add(sequence);
             }
+            SAMUtils.processValidationErrors(invalidNameErrors, -1, validationStringency);
+            invalidNameErrors.forEach(samFileHeader::addValidationError);
             samFileHeader.setSequenceDictionary(new SAMSequenceDictionary(sequences));
         }
 

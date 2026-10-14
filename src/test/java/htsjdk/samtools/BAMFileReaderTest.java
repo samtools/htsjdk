@@ -22,7 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -379,6 +381,98 @@ public class BAMFileReaderTest extends HtsjdkTest {
     public void testHeaderLineThatIsNotUtf8IsReadAsLatin1() throws IOException {
         final byte[] text = "@HD\tVN:1.6\n@CO\tcafé\n".getBytes(StandardCharsets.ISO_8859_1);
         Assert.assertEquals(readHeaderWithText(text).getComments(), List.of("@CO\tcafé"));
+    }
+
+    /** Reads a BAM header with no text and one binary reference sequence, {@code sequenceName}, of length 100. */
+    private static SAMFileHeader readHeaderWithOnlyABinaryReference(
+            final String sequenceName, final ValidationStringency stringency) throws IOException {
+        final byte[] name = sequenceName.getBytes(StandardCharsets.US_ASCII);
+        final ByteBuffer bam =
+                ByteBuffer.allocate(4 + 4 + 4 + 4 + name.length + 1 + 4).order(ByteOrder.LITTLE_ENDIAN);
+        bam.put(BAMFileConstants.BAM_MAGIC)
+                .putInt(0)
+                .putInt(1)
+                .putInt(name.length + 1)
+                .put(name)
+                .put((byte) 0)
+                .putInt(100);
+        return BAMFileReader.readHeader(new BinaryCodec(new ByteArrayInputStream(bam.array())), stringency, "test");
+    }
+
+    @Test
+    public void aBinaryOnlyReferenceNameOutsideTheRnamePatternUnderStrictValidationFails() {
+        Assert.assertThrows(
+                SAMFormatException.class,
+                () -> readHeaderWithOnlyABinaryReference("Gt(ROSA)26Sor", ValidationStringency.STRICT));
+    }
+
+    @Test
+    public void aBinaryOnlyReferenceNameOutsideTheRnamePatternUnderLenientValidationIsKept() throws Exception {
+        final String sequenceName = "Gt(ROSA)26Sor-" + UUID.randomUUID();
+        final SAMFileHeader[] header = new SAMFileHeader[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                sequenceName,
+                Log.LogLevel.INFO,
+                () -> header[0] = readHeaderWithOnlyABinaryReference(sequenceName, ValidationStringency.LENIENT));
+        Assert.assertEquals(lines.size(), 1, lines.toString());
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertEquals(header[0].getSequenceDictionary().size(), 1);
+        Assert.assertEquals(header[0].getSequence(0).getSequenceName(), sequenceName);
+        Assert.assertEquals(header[0].getValidationErrors().size(), 1);
+        final SAMValidationError error = header[0].getValidationErrors().get(0);
+        Assert.assertEquals(error.getType(), SAMValidationError.Type.INVALID_SEQUENCE_NAME);
+        Assert.assertEquals(error.getSource(), "test");
+        Assert.assertTrue(error.getMessage().contains(sequenceName), error.getMessage());
+    }
+
+    @Test
+    public void aBinaryOnlyReferenceNameMatchingTheRnamePatternIsNotAValidationError() throws IOException {
+        final SAMFileHeader header = readHeaderWithOnlyABinaryReference("chr1", ValidationStringency.STRICT);
+        Assert.assertEquals(header.getSequence(0).getSequenceName(), "chr1");
+        Assert.assertEquals(header.getValidationErrors(), List.of());
+    }
+
+    /** Writes a BAM with one sequence, {@code sequenceName}, and one read aligned to it. */
+    private static Path writeBamWithOneReadOn(final String sequenceName) throws IOException {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord(sequenceName, 100));
+        final SAMRecord read = new SAMRecord(header);
+        read.setReadName("read1");
+        read.setReferenceName(sequenceName);
+        read.setAlignmentStart(1);
+        read.setCigarString("4M");
+        read.setReadString("ACGT");
+        read.setBaseQualityString("IIII");
+        final Path bam = Files.createTempFile("sequenceName.", ".bam");
+        IOUtil.deleteOnExit(bam);
+        try (SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, bam)) {
+            writer.addAlignment(read);
+        }
+        return bam;
+    }
+
+    @Test
+    public void aBamWithASequenceNameOutsideTheRnamePatternFailsToOpenUnderStrictValidation() throws IOException {
+        final Path bam = writeBamWithOneReadOn("Gt(ROSA)26Sor");
+        Assert.assertThrows(SAMFormatException.class, () -> SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.STRICT)
+                .open(bam));
+    }
+
+    @Test
+    public void aBamWithASequenceNameOutsideTheRnamePatternIsReadUnderLenientValidation() throws Exception {
+        final String sequenceName = "Gt(ROSA)26Sor-" + UUID.randomUUID();
+        final Path bam = writeBamWithOneReadOn(sequenceName);
+        final List<String> referenceNames = new ArrayList<>();
+        // Captured only to keep the expected warning out of the test output
+        LogCapture.linesLoggedContaining(sequenceName, Log.LogLevel.INFO, () -> {
+            try (SamReader reader = SamReaderFactory.makeDefault()
+                    .validationStringency(ValidationStringency.LENIENT)
+                    .open(bam)) {
+                reader.forEach(read -> referenceNames.add(read.getReferenceName()));
+            }
+        });
+        Assert.assertEquals(referenceNames, List.of(sequenceName));
     }
 
     /**

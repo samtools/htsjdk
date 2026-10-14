@@ -7,6 +7,7 @@ import htsjdk.testutil.LogCapture;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -194,6 +195,7 @@ public class SAMTextHeaderCodecTest extends HtsjdkTest {
         Assert.assertEquals(header[0].getValidationErrors().size(), 1);
         Assert.assertEquals(
                 header[0].getValidationErrors().get(0).getType(), SAMValidationError.Type.INVALID_DATE_STRING);
+        Assert.assertEquals(header[0].getValidationErrors().get(0).getRecordNumber(), 2);
     }
 
     @Test
@@ -215,5 +217,81 @@ public class SAMTextHeaderCodecTest extends HtsjdkTest {
         Assert.assertEquals(header[0].getValidationErrors().size(), 1);
         Assert.assertEquals(
                 header[0].getValidationErrors().get(0).getType(), SAMValidationError.Type.INVALID_DATE_STRING);
+    }
+
+    private static String sequenceLine(final String sequenceName) {
+        return "@SQ\tSN:" + sequenceName + "\tLN:100";
+    }
+
+    /** Decodes a header whose one sequence, on line 2, is {@code sequenceName}. */
+    private static SAMFileHeader decodeWithSequenceName(
+            final String sequenceName, final ValidationStringency stringency) {
+        final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+        codec.setValidationStringency(stringency);
+        final String headerText = "@HD\tVN:1.6\n" + sequenceLine(sequenceName) + "\n";
+        return codec.decode(BufferedLineReader.fromString(headerText), null);
+    }
+
+    /** A sequence name outside the SAM spec's RNAME pattern, and that no other test logs. */
+    private static String uniqueSequenceNameOutsideTheRnamePattern() {
+        return "Gt(ROSA)26Sor-" + UUID.randomUUID();
+    }
+
+    /**
+     * Asserts that {@code header} has the one sequence {@code sequenceName}, and one validation error, an
+     * INVALID_SEQUENCE_NAME naming the sequence line.
+     */
+    private static void assertSequenceIsKeptWithAnError(final SAMFileHeader header, final String sequenceName) {
+        Assert.assertEquals(header.getSequenceDictionary().size(), 1);
+        Assert.assertEquals(header.getSequence(0).getSequenceName(), sequenceName);
+        Assert.assertEquals(header.getSequence(0).getSequenceLength(), 100);
+        Assert.assertEquals(header.getValidationErrors().size(), 1);
+        final SAMValidationError error = header.getValidationErrors().get(0);
+        Assert.assertEquals(error.getType(), SAMValidationError.Type.INVALID_SEQUENCE_NAME);
+        Assert.assertTrue(error.getMessage().contains(sequenceLine(sequenceName)), error.getMessage());
+    }
+
+    @Test
+    public void aSequenceNameOutsideTheRnamePatternUnderStrictValidationFailsNamingTheLine() {
+        final String sequenceName = uniqueSequenceNameOutsideTheRnamePattern();
+        final SAMFormatException e = Assert.expectThrows(
+                SAMFormatException.class, () -> decodeWithSequenceName(sequenceName, ValidationStringency.STRICT));
+        Assert.assertTrue(e.getMessage().contains(sequenceName), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("Line number 2"), e.getMessage());
+    }
+
+    @Test
+    public void aSequenceNameOutsideTheRnamePatternUnderLenientValidationIsKeptAndLoggedOnce() throws Exception {
+        final String sequenceName = uniqueSequenceNameOutsideTheRnamePattern();
+        final SAMFileHeader[] header = new SAMFileHeader[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                sequenceName,
+                Log.LogLevel.INFO,
+                () -> header[0] = decodeWithSequenceName(sequenceName, ValidationStringency.LENIENT));
+        // The warning quotes the header line on a line of its own, so count only the lines that start a message
+        final List<String> warnings = lines.stream()
+                .filter(line -> line.startsWith(Log.LogLevel.WARNING.name()))
+                .collect(Collectors.toList());
+        Assert.assertEquals(warnings.size(), 1, lines.toString());
+        assertSequenceIsKeptWithAnError(header[0], sequenceName);
+    }
+
+    @Test
+    public void aSequenceNameOutsideTheRnamePatternUnderSilentValidationIsKeptButNotLogged() throws Exception {
+        final String sequenceName = uniqueSequenceNameOutsideTheRnamePattern();
+        final SAMFileHeader[] header = new SAMFileHeader[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                sequenceName,
+                Log.LogLevel.INFO,
+                () -> header[0] = decodeWithSequenceName(sequenceName, ValidationStringency.SILENT));
+        Assert.assertEquals(lines, List.of());
+        assertSequenceIsKeptWithAnError(header[0], sequenceName);
+    }
+
+    @Test
+    public void aSequenceNameMatchingTheRnamePatternIsNotAValidationError() {
+        final SAMFileHeader header = decodeWithSequenceName("HLA-A*01:01:01:01", ValidationStringency.STRICT);
+        Assert.assertEquals(header.getSequence(0).getSequenceName(), "HLA-A*01:01:01:01");
+        Assert.assertEquals(header.getValidationErrors(), List.of());
     }
 }

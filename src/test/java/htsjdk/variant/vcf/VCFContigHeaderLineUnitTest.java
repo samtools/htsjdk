@@ -50,6 +50,17 @@ public class VCFContigHeaderLineUnitTest extends HtsjdkTest {
     }
 
     @Test
+    public void getSAMSequenceRecordAcceptsAnIdOutsideTheRnamePattern() {
+        final VCFContigHeaderLine line = new VCFContigHeaderLine(
+                "<ID=Gt(ROSA)26Sor,length=100>", VCFHeaderVersion.VCF4_2, VCFHeader.CONTIG_KEY, 0);
+
+        final SAMSequenceRecord record = line.getSAMSequenceRecord();
+
+        Assert.assertEquals(record.getSequenceName(), "Gt(ROSA)26Sor");
+        Assert.assertEquals(record.getSequenceLength(), 100);
+    }
+
+    @Test
     public void contigLinesAtTheSameIndexWithDifferentIDsCompareByID() {
         final VCFContigHeaderLine x = new VCFContigHeaderLine(Map.of("ID", "x"), 5);
         final VCFContigHeaderLine y = new VCFContigHeaderLine(Map.of("ID", "y"), 5);

@@ -215,7 +215,8 @@ public class SAMTextHeaderCodec {
         final SAMValidationError error = new SAMValidationError(
                 SAMValidationError.Type.INVALID_DATE_STRING,
                 "Error parsing SAM header. " + reason + ". Line:\n" + mCurrentLine,
-                null);
+                null,
+                mReader.getLineNumber());
         error.setSource(mSource);
         unparseableRunDateErrors.add(error);
     }
@@ -228,6 +229,13 @@ public class SAMTextHeaderCodec {
         }
         String sequenceName = parsedHeaderLine.removeValue(SAMSequenceRecord.SEQUENCE_NAME_TAG);
         sequenceName = SAMSequenceRecord.truncateSequenceName(sequenceName);
+        if (!SAMSequenceRecord.isValidSequenceName(sequenceName)) {
+            // Unless this throws, the sequence is still added: dropping it would orphan every record on it
+            reportErrorParsingLine(
+                    SAMSequenceRecord.invalidSequenceNameReason(sequenceName),
+                    SAMValidationError.Type.INVALID_SEQUENCE_NAME,
+                    null);
+        }
         final SAMSequenceRecord samSequenceRecord = new SAMSequenceRecord(
                 sequenceName, Integer.parseInt(parsedHeaderLine.removeValue(SAMSequenceRecord.SEQUENCE_LENGTH_TAG)));
         transferAttributes(samSequenceRecord, parsedHeaderLine.mKeyValuePairs);

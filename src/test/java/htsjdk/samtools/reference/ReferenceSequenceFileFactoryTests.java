@@ -10,13 +10,20 @@ import htsjdk.beta.io.bundle.IOPathResource;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.testutil.LogCapture;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -370,5 +377,52 @@ public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
             final String seq = rsf.getSubsequenceAt("chrM", 4, 10).getBaseString();
             Assert.assertEquals(seq, "CACAGGT");
         }
+    }
+
+    private static SAMSequenceDictionary loadDictionaryOf(final String source, final String... sequenceNames) {
+        final StringBuilder dict = new StringBuilder("@HD\tVN:1.6\n");
+        for (final String sequenceName : sequenceNames) {
+            dict.append("@SQ\tSN:").append(sequenceName).append("\tLN:100\n");
+        }
+        return ReferenceSequenceFileFactory.loadDictionary(
+                new ByteArrayInputStream(dict.toString().getBytes(StandardCharsets.UTF_8)), source);
+    }
+
+    private static List<String> namesOf(final SAMSequenceDictionary dictionary) {
+        return dictionary.getSequences().stream()
+                .map(SAMSequenceRecord::getSequenceName)
+                .collect(Collectors.toList());
+    }
+
+    @Test
+    public void loadDictionaryLoadsNamesOutsideTheRnamePatternWithOneWarning() throws Exception {
+        final String tag = UUID.randomUUID().toString();
+        final String parenthesised = "Gt(ROSA)26Sor-" + tag;
+        final String bracketed = "a[1]-" + tag;
+        final String source = "ref-" + tag + ".dict";
+        final SAMSequenceDictionary[] dictionary = new SAMSequenceDictionary[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                tag,
+                Log.LogLevel.INFO,
+                () -> dictionary[0] = loadDictionaryOf(source, parenthesised, "chr1", bracketed));
+        Assert.assertEquals(namesOf(dictionary[0]), List.of(parenthesised, "chr1", bracketed));
+        Assert.assertEquals(lines.size(), 1, lines.toString());
+        Assert.assertTrue(lines.get(0).startsWith(Log.LogLevel.WARNING.name()), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains("2 sequence name(s)"), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains(parenthesised), lines.get(0));
+        Assert.assertTrue(lines.get(0).contains(source), lines.get(0));
+    }
+
+    @Test
+    public void loadDictionaryOfNamesMatchingTheRnamePatternLogsNothing() throws Exception {
+        // Other test classes log to the captured stream too, so look only for this dictionary's names and source
+        final String tag = UUID.randomUUID().toString();
+        final String chr1 = "chr1-" + tag;
+        final String hla = "HLA-A*01:01-" + tag;
+        final SAMSequenceDictionary[] dictionary = new SAMSequenceDictionary[1];
+        final List<String> lines = LogCapture.linesLoggedContaining(
+                tag, Log.LogLevel.INFO, () -> dictionary[0] = loadDictionaryOf("ref-" + tag + ".dict", chr1, hla));
+        Assert.assertEquals(namesOf(dictionary[0]), List.of(chr1, hla));
+        Assert.assertEquals(lines, List.of());
     }
 }

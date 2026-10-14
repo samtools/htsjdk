@@ -92,7 +92,8 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         }
         IOUtil.assertFileIsReadable(dictPath.toPath());
         try (final InputStream dictionaryStream = IOUtil.openFileForReading(dictPath.toPath())) {
-            return ReferenceSequenceFileFactory.loadDictionary(dictionaryStream);
+            return ReferenceSequenceFileFactory.loadDictionary(
+                    dictionaryStream, dictPath.toPath().toString());
         } catch (final IOException e) {
             throw new SAMException("Could not open sequence dictionary file: " + dictPath, e);
         }

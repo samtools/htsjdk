@@ -181,6 +181,9 @@ public class SAMValidationError implements Serializable {
         /** Header tag contains illegal value */
         HEADER_TAG_NON_CONFORMING_VALUE,
 
+        /** A sequence name doesn't match the SAM spec's RNAME pattern */
+        INVALID_SEQUENCE_NAME,
+
         /** Date string is not ISO-8601 */
         INVALID_DATE_STRING(Severity.WARNING),
 
