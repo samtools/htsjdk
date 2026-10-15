@@ -139,6 +139,41 @@ public class FastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test
+    public void commentLinesBeforeTheFirstSequenceAreSkipped() throws Exception {
+        final String text = ";comment\n;~key: value\n\n;\n>chr1 first\nACGT\nAC\n>chr2\nGGCC\n";
+        final Path dir = IOUtil.createTempDir("FastaSequenceFileTest");
+        try {
+            final Path fasta = Files.writeString(dir.resolve("comments.fasta"), text, StandardCharsets.US_ASCII);
+            try (FastaSequenceFile reader = new FastaSequenceFile(fasta, true)) {
+                Assert.assertEquals(reader.nextSequence().getBaseString(), "ACGTAC");
+                final ReferenceSequence second = reader.nextSequence();
+                Assert.assertEquals(second.getName(), "chr2");
+                Assert.assertEquals(second.getBaseString(), "GGCC");
+                Assert.assertNull(reader.nextSequence());
+                reader.reset();
+                Assert.assertEquals(reader.nextSequence().getName(), "chr1");
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aCommentLineAfterTheFirstSequenceIsNotSkipped() throws Exception {
+        final String text = ">chr1\nACGT\n;comment\n>chr2\nGGCC\n";
+        final Path dir = IOUtil.createTempDir("FastaSequenceFileTest");
+        try {
+            final Path fasta = Files.writeString(dir.resolve("late-comment.fasta"), text, StandardCharsets.US_ASCII);
+            try (FastaSequenceFile reader = new FastaSequenceFile(fasta, true)) {
+                Assert.assertEquals(reader.nextSequence().getBaseString(), "ACGT;comment");
+                Assert.assertEquals(reader.nextSequence().getName(), "chr2");
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
     public void sequencesLongerThanTheInitialBufferAreReadWithoutADictionary() throws Exception {
         // One sequence exactly fills the initial buffer and the next needs it grown twice
         final Random random = new Random(42);

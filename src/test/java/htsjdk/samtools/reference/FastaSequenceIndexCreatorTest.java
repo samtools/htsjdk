@@ -231,6 +231,37 @@ public class FastaSequenceIndexCreatorTest extends HtsjdkTest {
     }
 
     @Test
+    public void commentLinesBeforeTheFirstHeaderAreSkipped() throws IOException {
+        final String chr1 = "ACGTACGTACGT";
+        final String chr2 = "GGCCTTA";
+        final String text = ";comment\n;~key: value\n\n;\n" + fastaRecord("chr1", chr1, 5, "\n")
+                + fastaRecord("chr2", chr2, 4, "\n");
+        final Path dir = IOUtil.createTempDir("FastaSequenceIndexCreatorTest");
+        try {
+            final Path fasta = writeFasta(dir, text);
+            final FastaSequenceIndex index = FastaSequenceIndexCreator.buildFromFasta(fasta);
+            Assert.assertEquals(index.size(), 2);
+            assertEntry(index.getIndexEntry("chr1"), "chr1", chr1.length(), locationAfter(text, ">chr1\n"), 5, 6);
+            assertEntry(index.getIndexEntry("chr2"), "chr2", chr2.length(), locationAfter(text, ">chr2\n"), 4, 5);
+            assertIndexedBases(fasta, index, "chr1", chr1);
+            assertIndexedBases(fasta, index, "chr2", chr2);
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aCommentLineAfterTheFirstHeaderIsNotSkipped() throws IOException {
+        assertIndexingFails(
+                ">chr1\nACGT\n\n;comment\n>chr2\nGGCC\n", "A sequence line follows a blank line in sequence 'chr1'");
+    }
+
+    @Test
+    public void aFileOfOnlyCommentLinesIsAnEmptyFileError() throws IOException {
+        assertIndexingFails(";comment\n;another\n", "Cannot index empty file");
+    }
+
+    @Test
     public void blankLinesWithCrlfTerminatorsAreIgnored() throws IOException {
         final String chr1 = "ACGTACGTACGT";
         final String chr2 = "GGCCTTA";
