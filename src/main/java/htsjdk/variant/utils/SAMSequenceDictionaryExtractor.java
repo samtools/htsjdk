@@ -33,6 +33,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -106,13 +107,24 @@ public class SAMSequenceDictionaryExtractor {
                 return SamReaderFactory.makeDefault().getFileHeader(sam).getSequenceDictionary();
             }
         },
-        VCF(FileExtensions.VCF_LIST.toArray(new String[0])) {
+        VCF() {
 
             @Override
             SAMSequenceDictionary extractDictionary(final Path vcf) {
                 try (VCFFileReader vcfPathReader = new VCFFileReader(vcf, false)) {
                     return vcfPathReader.getFileHeader().getSequenceDictionary();
                 }
+            }
+
+            @Override
+            boolean matches(final Path path) {
+                return VariantFileType.fromFileName(path).isPresent();
+            }
+
+            @Override
+            public String toString() {
+                return name() + ": [.vcf, .gvcf, .bcf, and .vcf or .gvcf followed by .gz, .gzip, .bgz or .bgzf, in any"
+                        + " case]";
             }
         },
         INTERVAL_LIST(FileExtensions.INTERVAL_LIST, FileExtensions.COMPRESSED_INTERVAL_LIST) {
@@ -135,12 +147,16 @@ public class SAMSequenceDictionaryExtractor {
 
         abstract SAMSequenceDictionary extractDictionary(final Path file);
 
+        /** Whether the file's name says it is of this type. */
+        boolean matches(final Path path) {
+            final String uri = path.toUri().toString();
+            return applicableExtensions.stream().anyMatch(uri::endsWith);
+        }
+
         static TYPE forFile(final Path dictionaryExtractable) {
             for (final TYPE type : TYPE.values()) {
-                for (final String s : type.applicableExtensions) {
-                    if (dictionaryExtractable.toUri().toString().endsWith(s)) {
-                        return type;
-                    }
+                if (type.matches(dictionaryExtractable)) {
+                    return type;
                 }
             }
             throw new SAMException("Cannot figure out type of file "

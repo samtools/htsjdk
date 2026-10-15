@@ -28,6 +28,7 @@ package htsjdk.variant.bcf2;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
@@ -55,6 +56,7 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import htsjdk.variant.vcf.VCFPassThruTextTransformer;
 import htsjdk.variant.vcf.VCFPercentEncodedTextTransformer;
 import htsjdk.variant.vcf.VCFTextTransformer;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -67,6 +69,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -287,19 +290,21 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         return new FeatureCodecHeader(header, inputStream.getPosition());
     }
 
+    /**
+     * @return true if the file is BCF, as {@link VariantFileType#fromContents(InputStream)} sees it, of a version
+     *     this codec reads
+     */
     @Override
     public boolean canDecode(final String path) {
-        try (InputStream rawStream = Files.newInputStream(IOUtil.getPath(path))) {
-            final BufferedInputStream bis = new BufferedInputStream(rawStream);
-            // Try BGZF first
-            if (BlockCompressedInputStream.isValidFile(bis)) {
-                try (final BlockCompressedInputStream bcis = new BlockCompressedInputStream(bis)) {
-                    return isSupported(BCFVersion.readBCFVersion(bcis));
-                }
+        try (InputStream in =
+                new BufferedInputStream(Files.newInputStream(IOUtil.getPath(path)), VariantFileType.PROBE_LENGTH)) {
+            if (!VariantFileType.fromContents(in).equals(Optional.of(VariantFileType.BCF))) {
+                return false;
             }
-            // Try raw BCF
-            return isSupported(BCFVersion.readBCFVersion(bis));
-        } catch (final IOException e) {
+            // the stream was reset to the start, so the version is read from it, whole BGZF block and all
+            final InputStream bcf = IOUtil.isGZIPInputStream(in) ? IOUtil.openGzipOrBgzfStream(in) : in;
+            return isSupported(BCFVersion.readBCFVersion(bcf));
+        } catch (final IOException | RuntimeIOException e) {
             return false;
         }
     }
@@ -678,7 +683,10 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @param uncompressedBufferedInput the uncompressed input stream
      * @return the BCFVersion if it can be decoded, or null if not found.
      * @throws IOException
+     * @deprecated since 6.0.0: use {@link VariantFileType#fromContents(InputStream)} to recognise BCF, and
+     *     {@link BCFVersion#readBCFVersion(InputStream)} to read its version
      */
+    @Deprecated
     public static BCFVersion tryReadBCFVersion(final BufferedInputStream uncompressedBufferedInput) throws IOException {
         uncompressedBufferedInput.mark(SIZEOF_BCF_HEADER);
         final BCFVersion bcfVersion = BCFVersion.readBCFVersion(uncompressedBufferedInput);

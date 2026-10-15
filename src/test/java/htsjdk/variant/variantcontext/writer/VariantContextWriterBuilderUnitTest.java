@@ -32,6 +32,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.index.DynamicIndexCreator;
 import htsjdk.tribble.index.IndexCreator;
@@ -49,6 +50,7 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -138,7 +140,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 "testSetOutputFile VCF Path was compressed");
 
         for (final String extension : FileExtensions.BLOCK_COMPRESSED) {
-            final Path file = Files.createTempFile(TEST_BASENAME + ".setoutput", extension);
+            final Path file = Files.createTempFile(TEST_BASENAME + ".setoutput", FileExtensions.VCF + extension);
             file.toFile().deleteOnExit();
             final String filename = file.toAbsolutePath().toString();
 
@@ -791,5 +793,190 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 .build());
         Assert.assertEquals(
                 Files.size(existing), sizeBefore, "VCF file should not be truncated after a validation failure");
+    }
+
+    // ============================================================
+    // The output format inferred from the file name
+    // ============================================================
+
+    /** A path, in a new temporary directory, to a file that does not exist yet. */
+    private static Path newPathNamed(final String fileName) throws IOException {
+        final Path dir = Files.createTempDirectory("VariantContextWriterBuilderUnitTest");
+        dir.toFile().deleteOnExit();
+        final Path path = dir.resolve(fileName);
+        path.toFile().deleteOnExit();
+        return path;
+    }
+
+    private static OutputType outputTypeOfName(final String fileName) throws IOException {
+        return VariantContextWriterBuilder.determineOutputTypeFromFile(newPathNamed(fileName));
+    }
+
+    @Test
+    public void anUpperCaseVcfNameIsVcfOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.VCF"), OutputType.VCF);
+    }
+
+    @Test
+    public void anUpperCaseBcfNameIsBcfOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.BCF"), OutputType.BCF);
+    }
+
+    @Test
+    public void aGvcfNameIsVcfOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.gvcf"), OutputType.VCF);
+    }
+
+    @Test
+    public void aGvcfGzNameIsBlockCompressedVcfOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.gvcf.gz"), OutputType.BLOCK_COMPRESSED_VCF);
+    }
+
+    @Test
+    public void aMixedCaseVcfGzNameIsBlockCompressedVcfOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.Vcf.Gz"), OutputType.BLOCK_COMPRESSED_VCF);
+    }
+
+    @Test
+    public void anUpperCaseGvcfBgzfNameIsBlockCompressedVcfOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.GVCF.BGZF"), OutputType.BLOCK_COMPRESSED_VCF);
+    }
+
+    @Test
+    public void aTxtNameIsUnspecifiedOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.txt"), OutputType.UNSPECIFIED);
+    }
+
+    @Test
+    public void aNameWithoutAnExtensionIsUnspecifiedOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x"), OutputType.UNSPECIFIED);
+    }
+
+    @Test
+    public void aBareGzNameIsUnspecifiedOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.gz"), OutputType.UNSPECIFIED);
+    }
+
+    @Test
+    public void aTxtGzNameIsUnspecifiedOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.txt.gz"), OutputType.UNSPECIFIED);
+    }
+
+    @Test
+    public void aBcfGzNameIsUnspecifiedOutput() throws IOException {
+        Assert.assertEquals(outputTypeOfName("x.bcf.gz"), OutputType.UNSPECIFIED);
+    }
+
+    /** Asserts that building a writer to a file of this name fails, says how to proceed, and leaves no file. */
+    private static void assertBuildRefusesTheName(final String fileName) throws IOException {
+        final Path path = newPathNamed(fileName);
+        final VariantContextWriterBuilder builder =
+                new VariantContextWriterBuilder().clearOptions().setOutputPath(path);
+        final IllegalArgumentException e = Assert.expectThrows(IllegalArgumentException.class, builder::build);
+        Assert.assertTrue(e.getMessage().contains(path.toString()), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("setOutputFileType"), e.getMessage());
+        Assert.assertFalse(Files.exists(path), "the failed build created " + path);
+    }
+
+    @Test
+    public void buildRefusesATxtName() throws IOException {
+        assertBuildRefusesTheName("x.txt");
+    }
+
+    @Test
+    public void buildRefusesANameWithoutAnExtension() throws IOException {
+        assertBuildRefusesTheName("x");
+    }
+
+    @Test
+    public void buildRefusesABareGzName() throws IOException {
+        assertBuildRefusesTheName("x.gz");
+    }
+
+    @Test
+    public void buildRefusesABcfGzName() throws IOException {
+        assertBuildRefusesTheName("x.bcf.gz");
+    }
+
+    @Test
+    public void buildWithoutAnOutputSaysSo() {
+        final IllegalArgumentException e = Assert.expectThrows(
+                IllegalArgumentException.class,
+                () -> new VariantContextWriterBuilder().clearOptions().build());
+        Assert.assertTrue(e.getMessage().contains("No output"), e.getMessage());
+    }
+
+    /** Writes just a header through the builder. */
+    private void writeHeaderOnly(final VariantContextWriterBuilder builder) {
+        final VCFHeader header = new VCFHeader();
+        header.setSequenceDictionary(dictionary);
+        try (VariantContextWriter writer = builder.build()) {
+            writer.writeHeader(header);
+        }
+    }
+
+    /** The first bytes of a file, decompressed if it is gzip or BGZF-compressed. */
+    private static String decompressedStartOf(final Path path, final int length) throws IOException {
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(path))) {
+            final InputStream data = IOUtil.isGZIPInputStream(in) ? IOUtil.openGzipOrBgzfStream(in) : in;
+            return new String(data.readNBytes(length), StandardCharsets.ISO_8859_1);
+        }
+    }
+
+    private static boolean isGzip(final Path path) throws IOException {
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(path))) {
+            return IOUtil.isGZIPInputStream(in);
+        }
+    }
+
+    private static final String VCF_MAGIC = "##fileformat=VCFv4";
+    private static final String BCF_MAGIC = "BCF";
+
+    @Test
+    public void anUpperCaseVcfNameIsWrittenAsVcfText() throws IOException {
+        final Path path = newPathNamed("x.VCF");
+        writeHeaderOnly(new VariantContextWriterBuilder().clearOptions().setOutputPath(path));
+        Assert.assertFalse(isGzip(path));
+        Assert.assertEquals(decompressedStartOf(path, VCF_MAGIC.length()), VCF_MAGIC);
+    }
+
+    @Test
+    public void anUpperCaseBcfNameIsWrittenAsBcf() throws IOException {
+        final Path path = newPathNamed("x.BCF");
+        writeHeaderOnly(new VariantContextWriterBuilder().clearOptions().setOutputPath(path));
+        Assert.assertEquals(decompressedStartOf(path, BCF_MAGIC.length()), BCF_MAGIC);
+    }
+
+    @Test
+    public void aTxtNameWithTheTypeSetToBcfIsWrittenAsBcf() throws IOException {
+        final Path path = newPathNamed("x.txt");
+        writeHeaderOnly(new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(path)
+                .setOutputFileType(OutputType.BCF));
+        Assert.assertEquals(decompressedStartOf(path, BCF_MAGIC.length()), BCF_MAGIC);
+    }
+
+    @Test
+    public void aTxtNameWithTheTypeSetToBlockCompressedVcfIsWrittenAsBgzf() throws IOException {
+        final Path path = newPathNamed("x.txt");
+        writeHeaderOnly(new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(path)
+                .setOutputFileType(OutputType.BLOCK_COMPRESSED_VCF));
+        Assert.assertTrue(IOUtil.isBlockCompressed(path));
+        Assert.assertEquals(decompressedStartOf(path, VCF_MAGIC.length()), VCF_MAGIC);
+    }
+
+    @Test
+    public void aTypeSetForAnEarlierPathIsReplacedByTheNextPathsName() throws IOException {
+        final Path path = newPathNamed("x.vcf");
+        writeHeaderOnly(new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(newPathNamed("earlier.txt"))
+                .setOutputFileType(OutputType.BCF)
+                .setOutputPath(path));
+        Assert.assertFalse(isGzip(path));
+        Assert.assertEquals(decompressedStartOf(path, VCF_MAGIC.length()), VCF_MAGIC);
     }
 }

@@ -55,12 +55,19 @@ public final class FileExtensions {
     /** extensions for VCF files and related formats. */
     public static final String VCF = ".vcf";
 
+    /** The extension of a genomic VCF (gVCF), which is VCF text. */
+    public static final String GVCF = ".gvcf";
+
     public static final String VCF_INDEX = TRIBBLE_INDEX;
     public static final String BCF = ".bcf";
     public static final String COMPRESSED_VCF_BGZ =
             ".vcf.bgz"; // suffix used by gnomad see https://gnomad.broadinstitute.org/data#v4
     public static final String COMPRESSED_VCF = ".vcf.gz";
     public static final String COMPRESSED_VCF_INDEX = ".tbi";
+    /**
+     * The common endings of VCF and BCF file names. htsjdk recognises more than these, in any case, by the rule in
+     * {@link htsjdk.variant.vcf.VariantFileType#fromFileName(String)}.
+     */
     public static final List<String> VCF_LIST =
             Collections.unmodifiableList(Arrays.asList(VCF, COMPRESSED_VCF, COMPRESSED_VCF_BGZ, BCF));
 

@@ -30,6 +30,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -43,6 +44,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -53,23 +55,35 @@ public class VCFFileReader implements VCFReader {
     private final FeatureReader<VariantContext> reader;
 
     /**
-     * Returns true if the given path appears to be a BCF file.
+     * Returns true if the given path's file name says it is a BCF file.
+     *
+     * @deprecated since 6.0.0: use {@link VariantFileType#fromFileName(Path)}, or
+     *     {@link VariantFileType#fromContents(Path)} for an existing file
      */
+    @Deprecated
     public static boolean isBCF(final Path path) {
-        // the file name rather than the URI's path, which an opaque URI (a zip or jar file system's, say) lacks
-        final Path fileName = path.getFileName();
-        return fileName != null && fileName.toString().endsWith(FileExtensions.BCF);
+        return VariantFileType.fromFileName(path).equals(Optional.of(VariantFileType.BCF));
     }
 
     /**
-     * returns Correct Feature codec for Path depending whether
-     * the name seems to indicate that it's a BCF.
-     *
-     * @param path to vcf/bcf
-     * @return FeatureCodec for input Path
+     * Whether to read a file as BCF: as its contents say if it is a regular file whose contents say, or else as its
+     * name says, so that a pipe or device is not read before the reader opens it.
      */
-    private static FeatureCodec<VariantContext, ?> getCodecForPath(Path path) {
-        return isBCF(path) ? new BCF2Codec() : new VCFCodec();
+    private static boolean readAsBcf(final Path path) {
+        Optional<VariantFileType> type = Optional.empty();
+        if (Files.isRegularFile(path)) {
+            try {
+                type = VariantFileType.fromContents(path);
+            } catch (final RuntimeIOException e) {
+                // left to the name, so that opening the file reports the failure as it would for any other file
+            }
+        }
+        return type.or(() -> VariantFileType.fromFileName(path)).equals(Optional.of(VariantFileType.BCF));
+    }
+
+    /** @return the codec for BCF if {@code isBcf}, or for VCF */
+    private static FeatureCodec<VariantContext, ?> getCodec(final boolean isBcf) {
+        return isBcf ? new BCF2Codec() : new VCFCodec();
     }
 
     /**
@@ -157,22 +171,23 @@ public class VCFFileReader implements VCFReader {
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
      */
     public VCFFileReader(final Path path, final boolean requireIndex) {
-        if (isBCF(path)) {
+        final boolean isBcf = readAsBcf(path);
+        if (isBcf) {
             final FeatureReader<VariantContext> bcfReader = openBcf(path, null, requireIndex);
             if (bcfReader != null) {
                 this.reader = bcfReader;
                 return;
             }
         }
-        this.reader =
-                AbstractFeatureReader.getFeatureReader(path.toUri().toString(), getCodecForPath(path), requireIndex);
+        this.reader = AbstractFeatureReader.getFeatureReader(path.toUri().toString(), getCodec(isBcf), requireIndex);
     }
 
     /**
      * Allows construction of a VCFFileReader with a specified index path.
      */
     public VCFFileReader(final Path path, final Path indexPath, final boolean requireIndex) {
-        if (isBCF(path)) {
+        final boolean isBcf = readAsBcf(path);
+        if (isBcf) {
             final FeatureReader<VariantContext> bcfReader = openBcf(path, indexPath, requireIndex);
             if (bcfReader != null) {
                 this.reader = bcfReader;
@@ -180,7 +195,7 @@ public class VCFFileReader implements VCFReader {
             }
         }
         this.reader = AbstractFeatureReader.getFeatureReader(
-                path.toUri().toString(), indexPath.toUri().toString(), getCodecForPath(path), requireIndex);
+                path.toUri().toString(), indexPath.toUri().toString(), getCodec(isBcf), requireIndex);
     }
 
     /**

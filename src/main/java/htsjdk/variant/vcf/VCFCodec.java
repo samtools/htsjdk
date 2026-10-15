@@ -28,14 +28,12 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A feature codec for the VCF specification, handling versions 3.2 through 4.5.
@@ -158,24 +156,12 @@ public class VCFCodec extends AbstractVCFCodec {
         return cachedFilters(filterString);
     }
 
+    /** @return true if the file is VCF, compressed or not, as {@link VariantFileType#fromContents(Path)} sees it */
     @Override
     public boolean canDecode(final String potentialInput) {
         try {
-            final Path path = IOUtil.getPath(potentialInput);
-            try (final InputStream rawIn = new BufferedInputStream(Files.newInputStream(path))) {
-                final InputStream in = IOUtil.isGZIPInputStream(rawIn) ? IOUtil.openGzipOrBgzfStream(rawIn) : rawIn;
-                try {
-                    final byte[] buff = new byte[VCF4_MAGIC_HEADER.length()];
-                    final int nread = in.readNBytes(buff, 0, buff.length);
-                    if (nread <= 0) return false;
-                    final String head = new String(buff, 0, nread);
-                    return head.startsWith(VCF4_MAGIC_HEADER)
-                            || head.startsWith(VCF3_MAGIC_HEADER)
-                            || head.startsWith(VCF3_2_MAGIC_HEADER);
-                } finally {
-                    in.close();
-                }
-            }
+            final Optional<VariantFileType> type = VariantFileType.fromContents(IOUtil.getPath(potentialInput));
+            return type.isPresent() && type.get() != VariantFileType.BCF;
         } catch (final IOException | RuntimeException e) {
             return false;
         }

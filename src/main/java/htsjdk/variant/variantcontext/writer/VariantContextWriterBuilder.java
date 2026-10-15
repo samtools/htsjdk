@@ -39,6 +39,7 @@ import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.tribble.index.tabix.TabixIndexType;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Optional;
 
 /*
  * Created with IntelliJ IDEA.
@@ -197,7 +199,9 @@ public class VariantContextWriterBuilder {
 
     /**
      * Set the output file for the next <code>VariantContextWriter</code> created by this builder.
-     * Determines file type implicitly from the filename.
+     * Determines the file type from the file name, as {@link VariantFileType#fromFileName(Path)} recognises it,
+     * replacing any type set earlier. To write a format the name does not indicate, call
+     * {@link #setOutputFileType(OutputType)} after this method.
      *
      * @param outPath the file the <code>VariantContextWriter</code> will write to
      * @return this <code>VariantContextWriterBuilder</code>
@@ -211,7 +215,9 @@ public class VariantContextWriterBuilder {
 
     /**
      * Set the output for the next <code>VariantContextWriter</code> created by this builder from a URI.
-     * Determines file type implicitly from the filename.
+     * Determines the file type from the file name, as {@link #setOutputPath(Path)} does, replacing any type set
+     * earlier; call {@link #setOutputFileType(OutputType)} after this method to write a format the name does not
+     * indicate.
      * <p>
      * This is a convenience method that delegates to {@link #setOutputPath(Path)} after converting the URI to a
      * {@link Path} via {@link IOUtil#getPath(java.net.URI)}. The URI's scheme must be supported by an available NIO filesystem
@@ -232,7 +238,9 @@ public class VariantContextWriterBuilder {
 
     /**
      * Set the output for the next <code>VariantContextWriter</code> created by this builder.
-     * Determines file type implicitly from the filename.
+     * Determines the file type from the file name, as {@link #setOutputPath(Path)} does, replacing any type set
+     * earlier; call {@link #setOutputFileType(OutputType)} after this method to write a format the name does not
+     * indicate.
      * <p>
      * The string is converted to a {@link Path} via {@link IOUtil#getPath(String)}, which is scheme-aware: a value
      * with no scheme is treated as a local file, while a value with a scheme (e.g. {@code gs://}) is resolved using
@@ -252,10 +260,14 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output file type for the next <code>VariantContextWriter</code> created by this builder.
+     * Set the output file type for the next <code>VariantContextWriter</code> created by this builder, overriding
+     * the type inferred from the output file's name. Call it after {@link #setOutputPath(Path)} (or
+     * {@link #setOutputFile(String)} or {@link #setOutputURI(java.net.URI)}), which replace the type with the one
+     * the name indicates.
      *
      * @param outType the type of file the <code>VariantContextWriter</code> will write to
      * @return this <code>VariantContextWriterBuilder</code>
+     * @throws IllegalArgumentException if the type is not a file type, or no output file has been set
      */
     public VariantContextWriterBuilder setOutputFileType(final OutputType outType) {
         if (!FILE_TYPES.contains(outType))
@@ -492,6 +504,8 @@ public class VariantContextWriterBuilder {
      * @return the <code>VariantContextWriter</code> as specified by previous method calls.
      * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
      * @throws IllegalArgumentException if no output file or stream is specified.
+     * @throws IllegalArgumentException if the output file's type was neither set with {@link #setOutputFileType}
+     *     nor inferred from its name, as {@link VariantFileType#fromFileName(Path)} infers it.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and a stream output is specified.
      */
@@ -508,6 +522,8 @@ public class VariantContextWriterBuilder {
      *         optionally applying the specified OpenOptions.
      * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
      * @throws IllegalArgumentException if no output file or stream is specified.
+     * @throws IllegalArgumentException if the output file's type was neither set with {@link #setOutputFileType}
+     *     nor inferred from its name, as {@link VariantFileType#fromFileName(Path)} infers it.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and a stream output is specified.
      */
@@ -563,11 +579,13 @@ public class VariantContextWriterBuilder {
 
         switch (typeToBuild) {
             case UNSPECIFIED:
-                throw new IllegalArgumentException(
-                        "Output format type is not set, or could not be inferred from the output path. "
-                                + "If a path was used, does it have a valid VCF extension ("
-                                + String.join(", ", FileExtensions.VCF_LIST)
-                                + ")?");
+                if (outPath == null) {
+                    throw new IllegalArgumentException("No output file or stream has been set.");
+                }
+                throw new IllegalArgumentException("Could not infer the output format from the name of " + outPath
+                        + ": the recognised endings are .vcf, .gvcf and .bcf, and .vcf or .gvcf followed by .gz,"
+                        + " .bgz, .bgzf or .gzip, in any case. To write another name, call setOutputFileType after"
+                        + " setting the output path.");
             case VCF:
                 writer = createVCFWriter(outPath, outStreamFromFile, idxCreator);
                 break;
@@ -603,20 +621,23 @@ public class VariantContextWriterBuilder {
 
     /**
      * Attempts to determine the type of file/data to write based on the File path being
-     * written to. Will attempt to determine using the logical filename; if that fails it will
+     * written to. Will attempt to determine using the logical filename, by the rule in
+     * {@link VariantFileType#fromFileName(Path)}; if that fails it will
      * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
      * but is neither a file or directory then VCF_STREAM is returned.
      *
      * @param path A file whose {@link OutputType} we want to infer
-     * @return The file's {@link OutputType}. Never {@code null}.
+     * @return The file's {@link OutputType}, {@link OutputType#UNSPECIFIED} if it cannot be inferred. Never
+     *     {@code null}.
      */
     public static OutputType determineOutputTypeFromFile(final Path path) {
-        if (isBCF(path)) {
-            return OutputType.BCF;
-        } else if (isCompressedVCF(path)) {
-            return OutputType.BLOCK_COMPRESSED_VCF;
-        } else if (isVCF(path)) {
-            return OutputType.VCF;
+        final Optional<VariantFileType> typeFromName = VariantFileType.fromFileName(path);
+        if (typeFromName.isPresent()) {
+            return switch (typeFromName.get()) {
+                case VCF -> OutputType.VCF;
+                case BLOCK_COMPRESSED_VCF -> OutputType.BLOCK_COMPRESSED_VCF;
+                case BCF -> OutputType.BCF;
+            };
         } else {
             // See if we have a special file (device, named pipe, etc.)
             try {
@@ -636,20 +657,6 @@ public class VariantContextWriterBuilder {
                 return OutputType.UNSPECIFIED;
             }
         }
-    }
-
-    private static boolean isVCF(final Path outPath) {
-        return outPath != null && outPath.getFileName().toString().endsWith(FileExtensions.VCF);
-    }
-
-    private static boolean isBCF(final Path outPath) {
-        return outPath != null && outPath.getFileName().toString().endsWith(FileExtensions.BCF);
-    }
-
-    private static boolean isCompressedVCF(final Path outPath) {
-        if (outPath == null) return false;
-
-        return IOUtil.hasBlockCompressedExtension(outPath);
     }
 
     private VariantContextWriter createVCFWriter(
