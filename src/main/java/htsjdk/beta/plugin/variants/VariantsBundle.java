@@ -8,8 +8,10 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Tuple;
 import htsjdk.utils.ValidationUtils;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.Serial;
 import java.io.Serializable;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Function;
@@ -201,16 +203,13 @@ public class VariantsBundle extends Bundle implements Serializable {
     // themselves). So for now its advisory, but maybe it should be abandoned altogether.
     private static <T extends IOPath> Optional<Tuple<String, String>> getInferredContentTypes(final T ioPath) {
         ValidationUtils.nonNull(ioPath, "ioPath");
-        final Optional<String> extension = ioPath.getExtension();
-        if (extension.isPresent()) {
-            final String ext = extension.get();
-            if (ext.equals(FileExtensions.VCF)) {
-                return Optional.of(
-                        new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
-            } else if (ext.equals(FileExtensions.COMPRESSED_VCF) || ext.equals(FileExtensions.COMPRESSED_VCF_BGZ)) {
-                return Optional.of(
-                        new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
-            }
+        // an opaque URI (a jar or zip file system's, say) has no path, but its scheme-specific part ends with the name
+        final URI uri = ioPath.getURI();
+        final String name = uri.getPath() != null ? uri.getPath() : uri.getSchemeSpecificPart();
+        final Optional<VariantFileType> type = VariantFileType.fromFileName(name);
+        if (type.isPresent() && type.get() != VariantFileType.BCF) {
+            return Optional.of(
+                    new Tuple<>(BundleResourceType.CT_VARIANT_CONTEXTS, BundleResourceType.FMT_VARIANTS_VCF));
         }
         return Optional.empty();
     }

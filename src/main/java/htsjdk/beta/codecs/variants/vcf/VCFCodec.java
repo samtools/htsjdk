@@ -8,14 +8,14 @@ import htsjdk.beta.plugin.variants.VariantsCodec;
 import htsjdk.beta.plugin.variants.VariantsFormats;
 import htsjdk.io.IOPath;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
-import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.utils.ValidationUtils;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Optional;
 
 /**
  * InternalAPI
@@ -24,27 +24,25 @@ import java.util.Set;
  */
 @InternalAPI
 public abstract class VCFCodec implements VariantsCodec {
-    // FileExtensions.VCF_LIST includes BCF, which we don't want included here
-    private static final Set<String> extensionMap = new HashSet<String>() {
-        private static final long serialVersionUID = 1L;
-
-        {
-            add(FileExtensions.VCF);
-            add(FileExtensions.COMPRESSED_VCF);
-            add(FileExtensions.COMPRESSED_VCF_BGZ);
-        }
-    };
-
     @Override
     public String getFileFormat() {
         return VariantsFormats.VCF;
     }
 
+    /**
+     * @return true if the URI's path (or, for an opaque URI, its scheme-specific part) names a VCF, compressed or
+     *     not, as
+     *     {@link VariantFileType#fromFileName(String)} recognises it; BCF is not this codec's
+     */
     @Override
     public boolean canDecodeURI(final IOPath ioPath) {
         ValidationUtils.nonNull(ioPath, "ioPath");
-
-        return extensionMap.stream().anyMatch(ext -> ioPath.hasExtension(ext));
+        // the URI rather than ioPath.toPath(), which an htsget or other remote URI may not resolve to; an opaque URI
+        // (a jar or zip file system's, say) has no path, but its scheme-specific part ends with the file name too
+        final URI uri = ioPath.getURI();
+        final String name = uri.getPath() != null ? uri.getPath() : uri.getSchemeSpecificPart();
+        final Optional<VariantFileType> type = VariantFileType.fromFileName(name);
+        return type.isPresent() && type.get() != VariantFileType.BCF;
     }
 
     @Override

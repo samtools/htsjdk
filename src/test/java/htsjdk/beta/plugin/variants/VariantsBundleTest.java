@@ -5,7 +5,11 @@ import htsjdk.beta.io.IOPathUtils;
 import htsjdk.beta.io.bundle.*;
 import htsjdk.io.HtsPath;
 import htsjdk.io.IOPath;
+import htsjdk.samtools.util.Log;
+import htsjdk.testutil.LogCapture;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -194,5 +198,25 @@ public class VariantsBundleTest extends HtsjdkTest {
         final Optional<IOPath> resolvedIndex = VariantsBundle.resolveIndex(new HtsPath(baseVCF));
         Assert.assertTrue(resolvedIndex.isPresent());
         Assert.assertEquals(resolvedIndex.get(), new HtsPath(expectedIndex));
+    }
+
+    /** @return the warnings logged while bundling a VCF with an "index" of the given name */
+    private static List<String> warningsForAnIndexNamed(final String indexName) throws Exception {
+        return LogCapture.linesLoggedContaining(
+                indexName,
+                Log.LogLevel.WARNING,
+                () -> new VariantsBundle(new HtsPath(VCF_FILE), new HtsPath(indexName)));
+    }
+
+    @Test
+    public void anUpperCaseBlockCompressedVcfGivenAsAnIndexIsWarnedAbout() throws Exception {
+        final List<String> warnings = warningsForAnIndexNamed("b-" + UUID.randomUUID() + ".VCF.GZ");
+        Assert.assertEquals(warnings.size(), 1, warnings.toString());
+    }
+
+    @Test
+    public void anIndexGivenAsAnIndexIsNotWarnedAbout() throws Exception {
+        final List<String> warnings = warningsForAnIndexNamed("b-" + UUID.randomUUID() + ".vcf.gz.tbi");
+        Assert.assertEquals(warnings, List.of());
     }
 }

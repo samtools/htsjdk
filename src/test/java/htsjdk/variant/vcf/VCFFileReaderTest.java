@@ -18,6 +18,7 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -30,6 +31,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.GZIPOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -306,6 +308,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void isBcfAcceptsAPathWithAnOpaqueUri() throws IOException {
         // a zip file system's paths have opaque jar: URIs
@@ -317,5 +320,96 @@ public class VCFFileReaderTest extends HtsjdkTest {
         } finally {
             Files.deleteIfExists(zip);
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void isBcfIsTrueForABcfName() {
+        Assert.assertTrue(VCFFileReader.isBCF(Path.of("x.bcf")));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void isBcfIsTrueForAnUpperCaseBcfName() {
+        Assert.assertTrue(VCFFileReader.isBCF(Path.of("x.BCF")));
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void isBcfIsFalseForAVcfName() {
+        Assert.assertFalse(VCFFileReader.isBCF(Path.of("x.vcf")));
+    }
+
+    // ============================================================
+    // VCF or BCF chosen by the file's contents
+    // ============================================================
+
+    /**
+     * Writes {@link #bcfRoutingHeader()} and one record, as the given type whatever the file is named.
+     *
+     * @param bcfVersion the BCF version to write, or null for the builder's default
+     */
+    private static Path writeOneRecordAs(
+            final String fileName, final VariantContextWriterBuilder.OutputType type, final BCFVersion bcfVersion)
+            throws IOException {
+        final Path dir = Files.createTempDirectory("VCFFileReaderTest");
+        dir.toFile().deleteOnExit();
+        final Path path = dir.resolve(fileName);
+        path.toFile().deleteOnExit();
+        final VCFHeader header = bcfRoutingHeader();
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .clearOptions()
+                .setOutputPath(path)
+                .setOutputFileType(type)
+                .setBCFVersion(bcfVersion)
+                .build()) {
+            w.writeHeader(header);
+            w.add(new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                    .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                    .attribute("DP", 30)
+                    .make());
+        }
+        return path;
+    }
+
+    private static int countRecords(final Path path) {
+        try (VCFFileReader reader = new VCFFileReader(path, false)) {
+            return reader.iterator().toList().size();
+        }
+    }
+
+    @Test
+    public void aBgzfBcfNamedTxtIsRead() throws IOException {
+        final Path bcf = writeOneRecordAs("x.txt", VariantContextWriterBuilder.OutputType.BCF, BCFVersion.BCF_2_2);
+        Assert.assertEquals(countRecords(bcf), 1);
+    }
+
+    @Test
+    public void aRawBcfNamedTxtIsRead() throws IOException {
+        final Path bcf = writeOneRecordAs("x.txt", VariantContextWriterBuilder.OutputType.BCF, BCFVersion.BCF_2_1);
+        Assert.assertEquals(countRecords(bcf), 1);
+    }
+
+    @Test
+    public void aBcfNamedInUpperCaseIsRead() throws IOException {
+        final Path bcf = writeOneRecordAs("x.BCF", VariantContextWriterBuilder.OutputType.BCF, null);
+        Assert.assertEquals(countRecords(bcf), 1);
+    }
+
+    @Test
+    public void aBcfCompressedWithPlainGzipIsRead() throws IOException {
+        final Path raw = writeOneRecordAs("raw.bcf", VariantContextWriterBuilder.OutputType.BCF, BCFVersion.BCF_2_1);
+        final Path gzipped = raw.resolveSibling("gzipped.bcf");
+        gzipped.toFile().deleteOnExit();
+        try (OutputStream out = new GZIPOutputStream(Files.newOutputStream(gzipped))) {
+            Files.copy(raw, out);
+        }
+        Assert.assertEquals(countRecords(gzipped), 1);
+    }
+
+    @Test
+    public void aVcfNamedBcfIsRead() throws IOException {
+        final Path vcf = writeOneRecordAs("x.bcf", VariantContextWriterBuilder.OutputType.VCF, null);
+        Assert.assertEquals(countRecords(vcf), 1);
     }
 }

@@ -256,10 +256,11 @@ public class VCFUtils {
     public static Path createTemporaryIndexedVcfPath(final String prefix, final String suffix) throws IOException {
         final Path out = Files.createTempFile(prefix, suffix);
         IOUtil.deleteOnExit(out);
+        final Optional<VariantFileType> type = VariantFileType.fromFileName(out);
         String indexFileExtension = null;
-        if (suffix.endsWith(FileExtensions.COMPRESSED_VCF)) {
+        if (type.equals(Optional.of(VariantFileType.BLOCK_COMPRESSED_VCF))) {
             indexFileExtension = FileExtensions.COMPRESSED_VCF_INDEX;
-        } else if (suffix.endsWith(FileExtensions.VCF)) {
+        } else if (type.equals(Optional.of(VariantFileType.VCF))) {
             indexFileExtension = FileExtensions.VCF_INDEX;
         }
         if (indexFileExtension != null) {
@@ -279,14 +280,15 @@ public class VCFUtils {
      */
     public static Path createTemporaryIndexedVcfFromInput(final Path vcfPath, final String tempFilePrefix)
             throws IOException {
+        final Optional<VariantFileType> type = VariantFileType.fromFileName(vcfPath);
         final String extension;
 
-        if (vcfPath.toAbsolutePath().toString().endsWith(FileExtensions.VCF)) extension = FileExtensions.VCF;
-        else if (vcfPath.toAbsolutePath().toString().endsWith(FileExtensions.COMPRESSED_VCF))
+        if (type.equals(Optional.of(VariantFileType.VCF))) extension = FileExtensions.VCF;
+        else if (type.equals(Optional.of(VariantFileType.BLOCK_COMPRESSED_VCF)))
             extension = FileExtensions.COMPRESSED_VCF;
         else
-            throw new IllegalArgumentException("couldn't find a " + FileExtensions.VCF + " or "
-                    + FileExtensions.COMPRESSED_VCF + " ending for input file " + vcfPath.toAbsolutePath());
+            throw new IllegalArgumentException("couldn't find a VCF ending (such as " + FileExtensions.VCF + " or "
+                    + FileExtensions.COMPRESSED_VCF + ") for input file " + vcfPath.toAbsolutePath());
 
         Path output = createTemporaryIndexedVcfPath(tempFilePrefix, extension);
 

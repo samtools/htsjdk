@@ -26,13 +26,16 @@ package htsjdk.variant.utils;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.testutil.LogCapture;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -154,5 +157,45 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
         } finally {
             IOUtil.recursiveDelete(dir);
         }
+    }
+
+    /** Asserts that the dictionary extracted from {@code vcf} is that of {@code test1.vcf}, which it holds. */
+    private void assertHasTheDictionaryOfTest1(final Path vcf) {
+        final SAMSequenceDictionary expected =
+                SAMSequenceDictionaryExtractor.extractDictionary(Paths.get(path, "test1.dict"));
+        final SAMSequenceDictionary actual = SAMSequenceDictionaryExtractor.extractDictionary(vcf);
+        Assert.assertEquals(actual.md5(), expected.md5());
+    }
+
+    @Test
+    public void aDictionaryIsExtractedFromAVcfNamedInUpperCase() throws IOException {
+        final Path dir = Files.createTempDirectory("SAMSequenceDictionaryExtractorTest");
+        try {
+            final Path vcf = Files.copy(Paths.get(path, "test1.vcf"), dir.resolve("test1.VCF"));
+            assertHasTheDictionaryOfTest1(vcf);
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void aDictionaryIsExtractedFromABlockCompressedGvcf() throws IOException {
+        final Path dir = Files.createTempDirectory("SAMSequenceDictionaryExtractorTest");
+        try {
+            final Path gvcf = dir.resolve("test1.gvcf.gz");
+            try (OutputStream out = new BlockCompressedOutputStream(gvcf)) {
+                Files.copy(Paths.get(path, "test1.vcf"), out);
+            }
+            assertHasTheDictionaryOfTest1(gvcf);
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void anUnrecognisedNameListsTheVcfEndings() {
+        final SAMException e = Assert.expectThrows(
+                SAMException.class, () -> SAMSequenceDictionaryExtractor.extractDictionary(Paths.get("x.unknown")));
+        Assert.assertTrue(e.getMessage().contains(".gvcf"), e.getMessage());
     }
 }

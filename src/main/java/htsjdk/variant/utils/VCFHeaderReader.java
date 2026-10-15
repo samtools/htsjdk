@@ -1,6 +1,5 @@
 package htsjdk.variant.utils;
 
-import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Feature;
@@ -8,13 +7,13 @@ import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
-import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Utility class to read a VCF header without being told beforehand whether the input is VCF or BCF.
@@ -32,18 +31,16 @@ public final class VCFHeaderReader {
      * @return the VCF header read from the stream
      * @throws TribbleException.InvalidHeader if the header in the file is invalid
      * @throws IOException if an IOException occurs while reading the header
+     * @throws htsjdk.samtools.util.RuntimeIOException if the start of the stream cannot be read to tell VCF from BCF
      */
     public static VCFHeader readHeaderFrom(final SeekableStream in) throws IOException {
-        final long initialPos = in.position();
-        byte[] magicBytes =
-                InputStreamUtils.readFully(bufferAndDecompressIfNecessary(in), BCFVersion.MAGIC_HEADER_START.length);
-        in.seek(initialPos);
-        if (magicBytes[0] == '#') { // VCF
-            return readHeaderFrom(in, new VCFCodec());
-        } else if (Arrays.equals(magicBytes, BCFVersion.MAGIC_HEADER_START)) {
-            return readHeaderFrom(in, new BCF2Codec());
+        final Optional<VariantFileType> type = VariantFileType.fromContents(in);
+        if (type.isEmpty()) {
+            throw new TribbleException.InvalidHeader("No VCF header found in " + in.getSource());
         }
-        throw new TribbleException.InvalidHeader("No VCF header found in " + in.getSource());
+        return type.get() == VariantFileType.BCF
+                ? readHeaderFrom(in, new BCF2Codec())
+                : readHeaderFrom(in, new VCFCodec());
     }
 
     private static InputStream bufferAndDecompressIfNecessary(final InputStream in) throws IOException {

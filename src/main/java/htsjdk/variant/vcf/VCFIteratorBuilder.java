@@ -31,13 +31,13 @@ import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.bcf2.BCF2Codec;
-import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.VariantContext;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -72,28 +72,14 @@ public class VCFIteratorBuilder {
         if (in == null) {
             throw new IllegalArgumentException("input stream is null");
         }
-        // wrap the input stream into a BufferedInputStream to reset/read a BCFHeader or a GZIP
-        // buffer must be large enough to contain the BCF header and/or GZIP signature
-        BufferedInputStream bufferedinput =
-                new BufferedInputStream(in, Math.max(BCF2Codec.SIZEOF_BCF_HEADER, IOUtil.GZIP_HEADER_READ_LENGTH));
-        // test for gzipped inputstream
-        if (IOUtil.isGZIPInputStream(bufferedinput)) {
-            // this is a gzipped or bgzipped input stream, wrap it in a decompressing stream
-            // and re-wrap it into BufferedInputStream so we can test for the BCF header
-            bufferedinput =
-                    new BufferedInputStream(IOUtil.openGzipOrBgzfStream(bufferedinput), BCF2Codec.SIZEOF_BCF_HEADER);
-        }
-
-        // try to read a BCF header
-        final BCFVersion bcfVersion = BCF2Codec.tryReadBCFVersion(bufferedinput);
-
-        if (bcfVersion != null) {
-            // this is BCF
-            return new BCFInputStreamIterator(bufferedinput);
-        } else {
-            // this is VCF
-            return new VCFReaderIterator(bufferedinput);
-        }
+        // buffered so that the start of the stream can be examined and then read again
+        final BufferedInputStream bufferedinput = new BufferedInputStream(in, VariantFileType.PROBE_LENGTH);
+        final boolean isBcf = VariantFileType.fromContents(bufferedinput).equals(Optional.of(VariantFileType.BCF));
+        // the type does not say whether a BCF is compressed, so look for the gzip magic, which BGZF has too
+        final InputStream decompressed =
+                IOUtil.isGZIPInputStream(bufferedinput) ? IOUtil.openGzipOrBgzfStream(bufferedinput) : bufferedinput;
+        // anything that is not BCF is read as VCF, which reports what it finds wrong with the header
+        return isBcf ? new BCFInputStreamIterator(decompressed) : new VCFReaderIterator(decompressed);
     }
 
     /**

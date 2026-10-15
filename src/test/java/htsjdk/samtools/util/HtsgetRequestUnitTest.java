@@ -87,6 +87,26 @@ public class HtsgetRequestUnitTest extends HtsjdkTest {
     }
 
     @Test
+    public void anUpperCaseVcfIdWithAReadsFormatIsRejected() {
+        final HtsgetRequest req = new HtsgetRequest(URI.create(endpoint + "example.VCF")).withFormat(HtsgetFormat.BAM);
+        Assert.expectThrows(IllegalArgumentException.class, req::validateRequest);
+    }
+
+    @Test
+    public void aBlockCompressedGvcfIdWithAReadsFormatIsRejected() {
+        final HtsgetRequest req =
+                new HtsgetRequest(URI.create(endpoint + "example.gvcf.gz")).withFormat(HtsgetFormat.CRAM);
+        Assert.expectThrows(IllegalArgumentException.class, req::validateRequest);
+    }
+
+    @Test
+    public void aVcfIdWithAVariantFormatIsAccepted() {
+        new HtsgetRequest(URI.create(endpoint + "example.vcf.gz"))
+                .withFormat(HtsgetFormat.VCF)
+                .validateRequest();
+    }
+
+    @Test
     public void testPOSTjsonBody() {
         final HtsgetPOSTRequest req = new HtsgetPOSTRequest(testRead)
                 .withFormat(HtsgetFormat.BAM)

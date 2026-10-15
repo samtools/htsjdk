@@ -3,6 +3,7 @@ package htsjdk.samtools.util.htsget;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.*;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -179,7 +180,7 @@ public class HtsgetRequest {
                 throw new IllegalArgumentException(
                         "Specified reads format: " + this.format + " is incompatible with id's file extension " + path);
             }
-            if (FileExtensions.VCF_LIST.stream().anyMatch(path::endsWith)
+            if (VariantFileType.fromFileName(path).isPresent()
                     && (this.format != HtsgetFormat.VCF && this.format != HtsgetFormat.BCF)) {
                 throw new IllegalArgumentException("Specified variant format: " + this.format
                         + " is incompatible with id's file extension " + path);
