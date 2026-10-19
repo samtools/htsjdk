@@ -308,6 +308,40 @@ public class VCFFileReaderTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void anExplicitTribbleIndexForABgzfBcfIsRefused() throws IOException {
+        final VCFHeader header = bcfRoutingHeader();
+        final Path dir = Files.createTempDirectory("VCFFileReaderTest");
+        dir.toFile().deleteOnExit();
+        final Path raw = dir.resolve("raw.bcf");
+        final Path rawIndex = dir.resolve("raw.bcf" + FileExtensions.TRIBBLE_INDEX);
+        final Path bgzf = dir.resolve("bgzf.bcf");
+        for (final Path path : List.of(raw, rawIndex, bgzf)) {
+            path.toFile().deleteOnExit();
+        }
+        for (final Path path : List.of(raw, bgzf)) {
+            try (VariantContextWriter w = new VariantContextWriterBuilder()
+                    .setOutputPath(path)
+                    .setReferenceDictionary(header.getSequenceDictionary())
+                    .setOption(Options.INDEX_ON_THE_FLY)
+                    .setBCFVersion(path.equals(raw) ? BCFVersion.BCF_2_1 : BCFVersion.BCF_2_2)
+                    .build()) {
+                w.writeHeader(header);
+                w.add(new VariantContextBuilder("test", "chr1", 100, 100, Arrays.asList(Allele.REF_A, Allele.ALT_C))
+                        .genotypes(new GenotypeBuilder("sample1", Arrays.asList(Allele.REF_A, Allele.ALT_C)).make())
+                        .attribute("DP", 30)
+                        .make());
+            }
+        }
+        dir.resolve("bgzf.bcf" + FileExtensions.CSI).toFile().deleteOnExit();
+
+        // the BGZF BCF's own CSI is beside it, but the index named is the raw BCF's Tribble index
+        final TribbleException e =
+                Assert.expectThrows(TribbleException.class, () -> new VCFFileReader(bgzf, rawIndex, true));
+        Assert.assertTrue(e.getMessage().contains(rawIndex.getFileName().toString()), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("Tribble"), e.getMessage());
+    }
+
     @SuppressWarnings("deprecation")
     @Test
     public void isBcfAcceptsAPathWithAnOpaqueUri() throws IOException {

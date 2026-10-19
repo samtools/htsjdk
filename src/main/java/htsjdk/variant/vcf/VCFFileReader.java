@@ -25,9 +25,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -36,11 +34,8 @@ import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
-import htsjdk.variant.bcf2.BCFFileReader;
 import htsjdk.variant.variantcontext.VariantContext;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -87,64 +82,6 @@ public class VCFFileReader implements VCFReader {
     }
 
     /**
-     * Tries to open a BCF file through {@link BCFFileReader}, which handles BGZF BCF with or without a CSI index.
-     * Returns null if the file is not BGZF-compressed (raw BCF stays on the Tribble path).  A BGZF BCF with a CSI
-     * is queryable; one without a CSI iterates sequentially and {@code isQueryable()} returns false.
-     */
-    private static FeatureReader<VariantContext> openBcf(
-            final Path path, final Path explicitIndex, final boolean requireIndex) {
-        // Check whether the file is BGZF by reading its first bytes
-        final boolean isBgzf;
-        try (InputStream raw = new BufferedInputStream(Files.newInputStream(path))) {
-            isBgzf = BlockCompressedInputStream.isValidFile(raw);
-        } catch (final IOException e) {
-            return null;
-        }
-        if (!isBgzf) {
-            return null;
-        }
-
-        // Look for a CSI index
-        final Path csiPath;
-        if (explicitIndex != null) {
-            csiPath = explicitIndex;
-        } else {
-            csiPath = findCsiIndex(path);
-        }
-
-        if (csiPath == null && requireIndex) {
-            throw new TribbleException(
-                    "A BGZF-compressed BCF requires a CSI index for region queries but none was found."
-                            + " Expected " + path.getFileName() + FileExtensions.CSI + " or "
-                            + stripExtension(path.getFileName().toString()) + FileExtensions.CSI
-                            + " beside " + path);
-        }
-
-        // Open with BCFFileReader for either indexed or sequential access
-        return new BCFFileReader(path, csiPath);
-    }
-
-    /** Finds a CSI index beside a BCF file: tries x.bcf.csi first, then x.csi. */
-    private static Path findCsiIndex(final Path bcfPath) {
-        final Path primary = bcfPath.resolveSibling(bcfPath.getFileName() + FileExtensions.CSI);
-        if (Files.exists(primary)) {
-            return primary;
-        }
-        final String name = bcfPath.getFileName().toString();
-        final String base = stripExtension(name);
-        final Path secondary = bcfPath.resolveSibling(base + FileExtensions.CSI);
-        if (Files.exists(secondary)) {
-            return secondary;
-        }
-        return null;
-    }
-
-    private static String stripExtension(final String name) {
-        final int dot = name.lastIndexOf('.');
-        return dot > 0 ? name.substring(0, dot) : name;
-    }
-
-    /**
      * Returns the SAMSequenceDictionary from the provided VCF path.
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path path) {
@@ -171,31 +108,20 @@ public class VCFFileReader implements VCFReader {
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
      */
     public VCFFileReader(final Path path, final boolean requireIndex) {
-        final boolean isBcf = readAsBcf(path);
-        if (isBcf) {
-            final FeatureReader<VariantContext> bcfReader = openBcf(path, null, requireIndex);
-            if (bcfReader != null) {
-                this.reader = bcfReader;
-                return;
-            }
-        }
-        this.reader = AbstractFeatureReader.getFeatureReader(path.toUri().toString(), getCodec(isBcf), requireIndex);
+        this.reader = AbstractFeatureReader.getFeatureReader(
+                path.toUri().toString(), getCodec(readAsBcf(path)), requireIndex);
     }
 
     /**
      * Allows construction of a VCFFileReader with a specified index path.
+     *
+     * @throws TribbleException if the index is of a kind that can't address the file, such as a Tribble index for a
+     *     BGZF-compressed BCF; see {@link AbstractFeatureReader#getFeatureReader(String, String, FeatureCodec,
+     *     boolean, java.util.function.Function, java.util.function.Function)}
      */
     public VCFFileReader(final Path path, final Path indexPath, final boolean requireIndex) {
-        final boolean isBcf = readAsBcf(path);
-        if (isBcf) {
-            final FeatureReader<VariantContext> bcfReader = openBcf(path, indexPath, requireIndex);
-            if (bcfReader != null) {
-                this.reader = bcfReader;
-                return;
-            }
-        }
         this.reader = AbstractFeatureReader.getFeatureReader(
-                path.toUri().toString(), indexPath.toUri().toString(), getCodec(isBcf), requireIndex);
+                path.toUri().toString(), indexPath.toUri().toString(), getCodec(readAsBcf(path)), requireIndex);
     }
 
     /**
