@@ -439,6 +439,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
     }
 
     private void writeIndexEntry() throws IOException {
+        // The .fai line width is that of the first line, so a sequence shorter than one line gives its own length,
+        // as samtools faidx records it.
+        final int firstLineBases = (int) Math.min(currentBasesCount, currentBasesPerLine);
         faiIndexWriter
                 .append(currentSequenceName)
                 .append(INDEX_FIELD_SEPARATOR_CHR)
@@ -446,9 +449,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
                 .append(INDEX_FIELD_SEPARATOR_CHR)
                 .append(String.valueOf(currentSequenceOffset))
                 .append(INDEX_FIELD_SEPARATOR_CHR)
-                .append(String.valueOf(currentBasesPerLine))
+                .append(String.valueOf(firstLineBases))
                 .append(INDEX_FIELD_SEPARATOR_CHR)
-                .append(String.valueOf(currentBasesPerLine + LINE_SEPARATOR.length))
+                .append(String.valueOf(firstLineBases + LINE_SEPARATOR.length))
                 .append(LINE_SEPARATOR_CHR);
     }
 

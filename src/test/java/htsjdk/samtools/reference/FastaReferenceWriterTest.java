@@ -901,4 +901,49 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             IOUtil.recursiveDelete(dir);
         }
     }
+
+    @Test
+    public void faiGivesASequenceShorterThanOneLineItsOwnLengthAsLineWidth() throws IOException {
+        final Path dir = Files.createTempDirectory("fwr-fai");
+        try {
+            final Path fasta = dir.resolve("short.fasta");
+            try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                    .setFastaFile(fasta)
+                    .setBasesPerLine(60)
+                    .setMakeDictOutput(false)
+                    .build()) {
+                writer.appendSequence("short", null, "ACGTACGTAC".getBytes());
+            }
+            Assert.assertEquals(
+                    Files.readAllLines(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta)),
+                    List.of("short\t10\t7\t10\t11"));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void faiMatchesTheIndexBuiltFromTheWrittenFasta() throws IOException {
+        final Path dir = Files.createTempDirectory("fwr-fai");
+        try {
+            final Path fasta = dir.resolve("mixed.fasta");
+            final Random random = new Random(7);
+            try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                    .setFastaFile(fasta)
+                    .setBasesPerLine(60)
+                    .setMakeDictOutput(false)
+                    .build()) {
+                for (final int length : new int[] {1, 10, 59, 60, 61, 130}) {
+                    writer.appendSequence("len" + length, null, SequenceUtil.getRandomBases(random, length));
+                }
+            }
+            final Path rebuiltIndex = dir.resolve("rebuilt.fai");
+            FastaSequenceIndexCreator.buildFromFasta(fasta).write(rebuiltIndex);
+            Assert.assertEquals(
+                    Files.readAllLines(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta)),
+                    Files.readAllLines(rebuiltIndex));
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
 }
