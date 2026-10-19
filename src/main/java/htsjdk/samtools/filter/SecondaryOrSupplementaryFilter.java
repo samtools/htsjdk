@@ -3,10 +3,7 @@ package htsjdk.samtools.filter;
 import htsjdk.samtools.SAMRecord;
 
 /**
- * Filter out SAMRecords with Secondary or Supplementary flag set
- * This class should be viewed as a replacement for {@link htsjdk.samtools.NotPrimarySkippingIterator},
- * in that we did not want to change the functionality of NPSI to no longer match its name
- * $Id$
+ * Filter out SAMRecords with the secondary or supplementary flag set.
  */
 public class SecondaryOrSupplementaryFilter implements SamRecordFilter {
     /**

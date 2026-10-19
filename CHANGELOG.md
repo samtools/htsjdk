@@ -79,6 +79,8 @@ Consumers should review these before upgrading.
 
 - **Writing records out of order with on-the-fly indexing now throws** (issue #787).  `INDEX_ON_THE_FLY` is a default option, so this applies to any VCF or BCF writer given a reference dictionary, whichever indexer it uses (including a custom `IndexCreator`): a record that starts before the previous one on its contig, or a contig that comes back after another, is refused with an `IllegalArgumentException` and not written.  Such input used to run out of memory or silently produce an index that misses records.  Sort the records, or build the writer without `Options.INDEX_ON_THE_FLY`.
 
+- **`NotPrimarySkippingIterator` is removed.**  It has been deprecated since 2.13.0 as an empty subclass of `SecondaryAlignmentSkippingIterator`, which replaces it unchanged.
+
 ### CRAM indexing
 
 - **CRAM region queries are answered from the CRAI directly** by the new `CRAIQueryIndex`, instead of rebuilding the whole CRAI as an in-memory BAI on every reader open (issue #851).  The index is not read until a query needs it, so opening a reader for sequential reading no longer touches it.  Measured on a 102 MB GRCh38 CRAM (2,395 CRAI entries, 3,366 sequences):
