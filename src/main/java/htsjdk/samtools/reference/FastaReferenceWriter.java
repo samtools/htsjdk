@@ -628,18 +628,19 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * <p>
      * Further calls to {@link #appendBases} or {@link #startSequence} will result in an exception.
      * </p>
+     * <p>
+     * A writer closed before any sequence was started writes an empty FASTA, an empty index and a dictionary
+     * with no sequences.
+     * </p>
      *
      * @throws IOException if such exception is thrown when closing output writers and output streams.
-     * @throws IllegalStateException if closing without writing any sequences or closing when writing a sequence is in progress
+     * @throws IllegalStateException if the sequence being written has no bases
      */
     @Override
     public void close() throws IOException {
         if (!closed) {
             try {
                 closeSequence();
-                if (sequenceNames.isEmpty()) {
-                    throw new IllegalStateException("no sequences were added to the reference");
-                }
             } finally {
                 closed = true;
                 fastaStream.close();

@@ -42,21 +42,52 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         }
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void testEmptyReference() throws IOException {
-        final Path testOutput = Files.createTempFile("fwr-test", ".fasta");
-        Files.delete(testOutput);
-        IOUtil.deleteOnExit(testOutput);
-
+    @Test
+    public void anEmptyReferenceWritesAnEmptyFastaIndexAndDictionary() throws IOException {
+        final Path dir = Files.createTempDirectory("fwr-empty");
         try {
-            new FastaReferenceWriterBuilder()
-                    .setFastaFile(testOutput)
-                    .setMakeFaiOutput(false)
-                    .setMakeDictOutput(false)
-                    .build()
-                    .close();
+            final Path fasta = dir.resolve("empty.fasta");
+            new FastaReferenceWriterBuilder().setFastaFile(fasta).build().close();
+
+            Assert.assertEquals(Files.size(fasta), 0);
+            Assert.assertEquals(Files.size(ReferenceSequenceFileFactory.getFastaIndexFileName(fasta)), 0);
+            Assert.assertTrue(SAMSequenceDictionaryExtractor.extractDictionary(
+                            ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(fasta))
+                    .isEmpty());
         } finally {
-            Assert.assertTrue(Files.deleteIfExists(testOutput));
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void anEmptyReferenceCanBeOpenedAndHasNoSequences() throws IOException {
+        final Path dir = Files.createTempDirectory("fwr-empty");
+        try {
+            final Path fasta = dir.resolve("empty.fasta");
+            new FastaReferenceWriterBuilder().setFastaFile(fasta).build().close();
+
+            try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fasta)) {
+                Assert.assertTrue(reference.isIndexed());
+                Assert.assertNull(reference.nextSequence());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
+        }
+    }
+
+    @Test
+    public void anEmptyBlockCompressedReferenceCanBeOpenedAndHasNoSequences() throws IOException {
+        final Path dir = Files.createTempDirectory("fwr-empty");
+        try {
+            final Path fasta = dir.resolve("empty.fasta.gz");
+            new FastaReferenceWriterBuilder().setFastaFile(fasta).build().close();
+
+            try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fasta)) {
+                Assert.assertTrue(reference instanceof BlockCompressedIndexedFastaSequenceFile);
+                Assert.assertNull(reference.nextSequence());
+            }
+        } finally {
+            IOUtil.recursiveDelete(dir);
         }
     }
 
