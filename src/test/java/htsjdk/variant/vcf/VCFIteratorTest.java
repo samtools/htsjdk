@@ -27,11 +27,15 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
@@ -134,5 +138,20 @@ public class VCFIteratorTest extends VariantBaseTest {
         final Path a_path = Path.of(path);
         final VCFIterator r = new VCFIteratorBuilder().open(a_path);
         assertExpectedNumberOfVariants(r, nVariants);
+    }
+
+    @Test
+    public void aBgzfBcfStreamIsIteratedAsBcf() throws IOException {
+        final ByteArrayOutputStream bgzf = new ByteArrayOutputStream();
+        try (OutputStream out = new BlockCompressedOutputStream(bgzf, (Path) null)) {
+            out.write(Files.readAllBytes(Path.of("src/test/resources/htsjdk/variant/serialization_test.bcf")));
+        }
+        assertExpectedNumberOfVariants(new VCFIteratorBuilder().open(new ByteArrayInputStream(bgzf.toByteArray())), 12);
+    }
+
+    @Test
+    public void anUnrecognisedStreamIsRejectedAsAnInvalidVcf() {
+        final InputStream notVcf = new ByteArrayInputStream("this is not a VCF\n".getBytes(StandardCharsets.UTF_8));
+        Assert.expectThrows(TribbleException.class, () -> new VCFIteratorBuilder().open(notVcf));
     }
 }

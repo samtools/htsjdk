@@ -70,11 +70,13 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         };
     }
 
+    @SuppressWarnings("deprecation")
     @Test(dataProvider = "thingsToTryToDecode")
     public void testCanDecodeFile(String potentialInput, boolean canDecode) {
         Assert.assertEquals(AbstractVCFCodec.canDecodeFile(potentialInput, VCFCodec.VCF4_MAGIC_HEADER), canDecode);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canDecodeFileAcceptsPlainGzippedVcf() throws IOException {
         final Path vcf = Files.createTempFile("AbstractVCFCodecTest.", ".vcf.gz");
@@ -83,6 +85,7 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertTrue(AbstractVCFCodec.canDecodeFile(vcf.toString(), VCFCodec.VCF4_MAGIC_HEADER));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void canDecodeFileRejectsGzippedNonVcf() throws IOException {
         final Path notVcf = Files.createTempFile("AbstractVCFCodecTest.", ".txt.gz");
@@ -852,6 +855,38 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     public void canDecodeRecognisesAVcf33Header() throws IOException {
         final Path vcf = writeTempVcf("##fileformat=VCFv3.3\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n");
         Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+    }
+
+    @Test
+    public void canDecodeRecognisesAPlainGzipVcf() throws IOException {
+        final Path vcf = Files.createTempFile("AbstractVCFCodecTest.", ".vcf.gz");
+        IOUtil.deleteOnExit(vcf);
+        Files.write(
+                vcf,
+                GzipTestStreams.multiMemberGzip(
+                        "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"));
+        Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+    }
+
+    @Test
+    public void canDecodeRecognisesABgzfVcfWhateverItsName() throws IOException {
+        final Path vcf = Files.createTempFile("AbstractVCFCodecTest.", ".txt");
+        IOUtil.deleteOnExit(vcf);
+        Files.write(
+                vcf,
+                GzipTestStreams.multiBlockBgzf(
+                        "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"));
+        Assert.assertTrue(new VCFCodec().canDecode(vcf.toString()));
+    }
+
+    @Test
+    public void canDecodeRejectsABcf() {
+        Assert.assertFalse(new VCFCodec().canDecode("src/test/resources/htsjdk/variant/VcfThatLacksAnIndex.bcf"));
+    }
+
+    @Test
+    public void canDecodeRejectsAMissingFile() {
+        Assert.assertFalse(new VCFCodec().canDecode("src/test/resources/htsjdk/variant/no-such-file.vcf"));
     }
 
     @SuppressWarnings("deprecation")

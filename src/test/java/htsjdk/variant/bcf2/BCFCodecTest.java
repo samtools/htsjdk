@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -122,8 +123,32 @@ public class BCFCodecTest extends VariantBaseTest {
     }
 
     @Test
+    public void canDecodeReturnsTrueForBgzfBcfThatStartsWithAnEmptyBlock() throws IOException {
+        final Path bgzf = bgzfCopyOf(BCF22_FIXTURE);
+        final Path withEmptyFirstBlock = Files.createTempFile(tempDir, "emptyFirstBlock", ".bcf");
+        try (OutputStream out = Files.newOutputStream(withEmptyFirstBlock)) {
+            out.write(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
+            out.write(Files.readAllBytes(bgzf));
+        }
+        Assert.assertTrue(new BCF2Codec().canDecode(withEmptyFirstBlock.toString()));
+    }
+
+    @Test
     public void canDecodeReturnsFalseForVcf() {
         Assert.assertFalse(new BCF2Codec().canDecode(TEST_DATA_DIR + "VCF4HeaderTest.vcf"));
+    }
+
+    @Test
+    public void canDecodeReturnsFalseForABcfVersionItDoesNotRead() throws IOException {
+        final Path bcf23 = Files.createTempFile(tempDir, "bcf23", ".bcf");
+        Files.write(bcf23, bcfWithVersion(2, 3));
+        Assert.assertFalse(new BCF2Codec().canDecode(bcf23.toString()));
+    }
+
+    @Test
+    public void canDecodeReturnsFalseForAMissingFile() {
+        Assert.assertFalse(
+                new BCF2Codec().canDecode(tempDir.resolve("no-such-file.bcf").toString()));
     }
 
     // -- BGZF-compressed BCF is read by content, whatever the path --

@@ -311,4 +311,39 @@ public class HtsVCFCodecTest extends HtsjdkTest {
             variantsEncoder.write(vc);
         }
     }
+
+    @Test
+    public void canDecodeURIRecognisesAnUpperCaseVcfGzName() {
+        Assert.assertTrue(new VCFCodecV4_2().canDecodeURI(new HtsPath("x.VCF.GZ")));
+    }
+
+    @Test
+    public void canDecodeURIRecognisesABlockCompressedGvcfName() {
+        Assert.assertTrue(new VCFCodecV4_2().canDecodeURI(new HtsPath("x.gvcf.gz")));
+    }
+
+    @Test
+    public void canDecodeURIRecognisesAVcfBgzfName() {
+        Assert.assertTrue(new VCFCodecV4_2().canDecodeURI(new HtsPath("x.vcf.bgzf")));
+    }
+
+    @Test
+    public void canDecodeURIRecognisesARemoteVcfByItsPath() {
+        Assert.assertTrue(new VCFCodecV4_2().canDecodeURI(new HtsPath("https://example.com/data/x.vcf?token=abc")));
+    }
+
+    @Test
+    public void canDecodeURIRecognisesAVcfInAZipFileSystem() {
+        Assert.assertTrue(new VCFCodecV4_2().canDecodeURI(new HtsPath("jar:file:/data/archive.zip!/x.vcf")));
+    }
+
+    @Test
+    public void canDecodeURIRejectsABcfName() {
+        Assert.assertFalse(new VCFCodecV4_2().canDecodeURI(new HtsPath("x.bcf")));
+    }
+
+    @Test
+    public void canDecodeURIRejectsABareGzName() {
+        Assert.assertFalse(new VCFCodecV4_2().canDecodeURI(new HtsPath("x.gz")));
+    }
 }

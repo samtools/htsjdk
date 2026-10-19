@@ -37,11 +37,8 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.*;
-import java.io.BufferedInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -853,35 +850,22 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if (!allele.isNoCall()) alleles.add(allele);
     }
 
+    /**
+     * Whether a file, after gzip or BGZF decompression if it is compressed, starts with the given line.
+     *
+     * @param potentialInput the file's path or URI
+     * @param MAGIC_HEADER_LINE the start of the first line, such as {@link VCFCodec#VCF4_MAGIC_HEADER}
+     * @return true if the file starts with that line; false if it does not or cannot be read
+     * @deprecated since 6.0.0: use {@link VariantFileType#fromContents(Path)} to recognise a VCF or BCF file
+     */
+    @Deprecated
     public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
+        final byte[] magic = MAGIC_HEADER_LINE.getBytes(StandardCharsets.UTF_8);
         try {
-            Path path = IOUtil.getPath(potentialInput);
-            try (InputStream in = new BufferedInputStream(Files.newInputStream(path))) {
-                return isVCFStream(
-                        IOUtil.isGZIPInputStream(in) ? IOUtil.openGzipOrBgzfStream(in) : in, MAGIC_HEADER_LINE);
-            }
-        } catch (FileNotFoundException e) {
+            final byte[] prefix = VariantFileType.readPrefix(IOUtil.getPath(potentialInput), magic.length);
+            return Arrays.equals(VariantFileType.decompressedStart(prefix, magic.length), magic);
+        } catch (final IOException e) {
             return false;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
-        try {
-            byte[] buff = new byte[MAGIC_HEADER_LINE.length()];
-            int nread = stream.read(buff, 0, MAGIC_HEADER_LINE.length());
-            boolean eq = Arrays.equals(buff, MAGIC_HEADER_LINE.getBytes());
-            return eq;
-        } catch (IOException e) {
-            return false;
-        } catch (RuntimeException e) {
-            return false;
-        } finally {
-            try {
-                stream.close();
-            } catch (IOException e) {
-            }
         }
     }
 
