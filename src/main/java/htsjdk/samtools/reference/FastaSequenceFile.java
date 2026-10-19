@@ -138,6 +138,9 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
 
     private String readSequenceName() {
         in.skipNewlines();
+        if (this.sequenceIndex == 0) {
+            skipLeadingComments();
+        }
         if (in.eof()) {
             return null;
         }
@@ -165,6 +168,20 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
             name = SAMSequenceRecord.truncateSequenceName(name);
         }
         return name;
+    }
+
+    /**
+     * Skip comment lines starting with ';' before the first sequence header (the original FASTA comment convention)
+     * and any blank lines between them.
+     */
+    private void skipLeadingComments() {
+        final byte[] commentBuffer = new byte[4096];
+        while (!in.eof() && in.peekByte() == ';') {
+            do {
+                in.readToEndOfOutputBufferOrEoln(commentBuffer, 0);
+            } while (!in.eof() && !in.atEoln());
+            in.skipNewlines();
+        }
     }
 
     /**

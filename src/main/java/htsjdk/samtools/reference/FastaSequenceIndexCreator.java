@@ -72,7 +72,8 @@ public final class FastaSequenceIndexCreator {
      * .gzi index required for use it with samtools. To generate that index, use
      * {@link GZIIndex#buildIndex(Path)}.
      *
-     * <p>Blank lines may come before the first header, between sequences and at the end of the file. A
+     * <p>Blank lines and comment lines starting with ';' may come before the first header. Blank lines may also
+     * come between sequences and at the end of the file. A
      * sequence with no bases, or a sequence line after a blank line, is an error.
      *
      * @param fastaFile the FASTA file.
@@ -89,9 +90,10 @@ public final class FastaSequenceIndexCreator {
         try (final Utf8LineReader in =
                 Utf8LineReader.from(new PositionalBufferedStream(IOUtil.openFileForReading(fastaFile)))) {
 
-            // Blank lines before the first header are skipped, as samtools skips them
+            // Blank lines and comment lines starting with ';' (the original FASTA comment convention) before the
+            // first header are skipped
             String line = in.readLine();
-            while (line != null && line.isEmpty()) {
+            while (line != null && (line.isEmpty() || line.charAt(0) == ';')) {
                 line = in.readLine();
             }
             if (line == null) {
