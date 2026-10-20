@@ -206,6 +206,51 @@ public class SAMTextReaderTest extends HtsjdkTest {
     }
 
     @Test
+    public void unplacedRecordParsedFromTextEqualsTheSameRecordBuiltWithSetters() {
+        final SAMFileHeader header =
+                new SAMFileHeader(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final SAMLineParser parser = new SAMLineParser(
+                new DefaultSAMRecordFactory(), ValidationStringency.STRICT, header, null, (Path) null);
+
+        final SAMRecord parsed = parser.parseLine("read\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII");
+
+        final SAMRecord built = new SAMRecord(header);
+        built.setReadName("read");
+        built.setFlags(4);
+        built.setReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        built.setCigarString("*");
+        built.setMateReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        built.setReadString("ACGT");
+        built.setBaseQualityString("IIII");
+        Assert.assertEquals(parsed, built);
+        Assert.assertEquals(parsed.hashCode(), built.hashCode());
+    }
+
+    @Test
+    public void recordWithAnUnplacedMateParsedFromTextEqualsTheSameRecordBuiltWithSetters() {
+        final SAMFileHeader header =
+                new SAMFileHeader(new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 1000))));
+        final SAMLineParser parser = new SAMLineParser(
+                new DefaultSAMRecordFactory(), ValidationStringency.STRICT, header, null, (Path) null);
+
+        // Paired, mate unmapped, first of pair.
+        final SAMRecord parsed = parser.parseLine("read\t73\tchr1\t100\t30\t4M\t*\t0\t0\tACGT\tIIII");
+
+        final SAMRecord built = new SAMRecord(header);
+        built.setReadName("read");
+        built.setFlags(73);
+        built.setReferenceName("chr1");
+        built.setAlignmentStart(100);
+        built.setMappingQuality(30);
+        built.setCigarString("4M");
+        built.setMateReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        built.setReadString("ACGT");
+        built.setBaseQualityString("IIII");
+        Assert.assertEquals(parsed, built);
+        Assert.assertEquals(parsed.hashCode(), built.hashCode());
+    }
+
+    @Test
     public void testMrnmEqualsWithRnameNotInDictionaryDoesNotNpe() {
         // Regression: when RNAME is specified but the name is not present in the sequence
         // dictionary, parsing a record with MRNM='=' must not pass a null mate reference name

@@ -307,8 +307,12 @@ public class SAMLineParser {
                 }
                 samRecord.setReferenceName(rname);
             }
-        } else if (!samRecord.getReadUnmappedFlag()) {
-            reportErrorParsingLine("RNAME is not specified but flags indicate mapped");
+        } else {
+            samRecord.setReferenceNameAndIndex(
+                    SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+            if (!samRecord.getReadUnmappedFlag()) {
+                reportErrorParsingLine("RNAME is not specified but flags indicate mapped");
+            }
         }
 
         final int pos = parseIntFromBytes(buf, mFieldOffsets[POS_COL], mFieldLengths[POS_COL], "POS");
@@ -335,6 +339,8 @@ public class SAMLineParser {
         final int mrnmOff = mFieldOffsets[MRNM_COL];
         final int mrnmLen = mFieldLengths[MRNM_COL];
         if (isAsterisk(buf, mrnmOff, mrnmLen)) {
+            samRecord.setMateReferenceNameAndIndex(
+                    SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
             if (samRecord.getReadPairedFlag() && !samRecord.getMateUnmappedFlag()) {
                 reportErrorParsingLine("MRNM not specified but flags indicate mate mapped");
             }
