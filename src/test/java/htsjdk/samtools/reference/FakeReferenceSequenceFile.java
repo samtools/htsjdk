@@ -2,7 +2,6 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ public class FakeReferenceSequenceFile implements ReferenceSequenceFile {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         map.clear();
         index.clear();
         current = 0;

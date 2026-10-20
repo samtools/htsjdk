@@ -28,7 +28,6 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -106,7 +105,7 @@ public class ReferenceSequenceFileWalker implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         referenceSequenceFile.close();
     }
 }

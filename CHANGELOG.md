@@ -97,6 +97,8 @@ Consumers should review these before upgrading.
 
 - **`NotPrimarySkippingIterator` is removed.**  It has been deprecated since 2.13.0 as an empty subclass of `SecondaryAlignmentSkippingIterator`, which replaces it unchanged.
 
+- **`ReferenceSequenceFile.close()` no longer declares `IOException`** (issue #1179).  A failure to close is thrown as the unchecked `RuntimeIOException`, a `SAMException` like the interface's other I/O failures.  Only source code is affected; code compiled against 5.x runs unchanged.  Where a `try` or try-with-resources catches `IOException` that only closing the reference could throw, delete the catch; and drop `throws IOException` from a `close()` that implements `ReferenceSequenceFile` or overrides it in `IndexedFastaSequenceFile`, `BlockCompressedIndexedFastaSequenceFile` or `ReferenceSequenceFileWalker`.
+
 ### CRAM indexing
 
 - **CRAM region queries are answered from the CRAI directly** by the new `CRAIQueryIndex`, instead of rebuilding the whole CRAI as an in-memory BAI on every reader open (issue #851).  The index is not read until a query needs it, so opening a reader for sequential reading no longer touches it.  Measured on a 102 MB GRCh38 CRAM (2,395 CRAI entries, 3,366 sequences):

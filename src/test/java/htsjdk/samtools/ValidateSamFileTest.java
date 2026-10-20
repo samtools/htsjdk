@@ -435,7 +435,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
                     }
 
                     @Override
-                    public void close() throws IOException {
+                    public void close() {
                         // no-op
                     }
                 },
