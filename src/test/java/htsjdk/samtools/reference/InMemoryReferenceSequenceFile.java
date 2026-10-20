@@ -1,7 +1,6 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +52,7 @@ public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         map.clear();
         index.clear();
         current = 0;

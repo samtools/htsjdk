@@ -14,7 +14,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.IOException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 /**
  * The v1.0 FASTA decoder.
@@ -85,7 +85,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
             public void close() {
                 try {
                     referenceSequenceFile.close();
-                } catch (final IOException e) {
+                } catch (final RuntimeIOException e) {
                     throw new HtsjdkIOException(e);
                 }
             }
@@ -117,7 +117,7 @@ public class FASTADecoderV1_0 implements HaploidReferenceDecoder {
         if (referenceSequenceFile != null) {
             try {
                 referenceSequenceFile.close();
-            } catch (IOException e) {
+            } catch (final RuntimeIOException e) {
                 throw new HtsjdkIOException(e);
             }
         }

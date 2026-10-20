@@ -32,6 +32,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -154,7 +155,11 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     }
 
     @Override
-    public void close() throws IOException {
-        stream.close();
+    public void close() {
+        try {
+            stream.close();
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Error closing " + getSource(), e);
+        }
     }
 }

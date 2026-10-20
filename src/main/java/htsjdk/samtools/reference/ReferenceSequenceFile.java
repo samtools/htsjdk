@@ -27,7 +27,6 @@ package htsjdk.samtools.reference;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Locatable;
 import java.io.Closeable;
-import java.io.IOException;
 
 /**
  * An interface for working with files of reference sequences regardless of the file format
@@ -95,6 +94,11 @@ public interface ReferenceSequenceFile extends Closeable {
      */
     public String toString();
 
+    /**
+     * Releases the underlying file or stream.
+     *
+     * @throws htsjdk.samtools.util.RuntimeIOException if closing fails
+     */
     @Override
-    public void close() throws IOException;
+    public void close();
 }

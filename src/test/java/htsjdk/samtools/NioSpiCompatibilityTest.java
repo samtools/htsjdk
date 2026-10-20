@@ -93,8 +93,6 @@ public class NioSpiCompatibilityTest extends HtsjdkTest {
         final SAMSequenceDictionary dict;
         try (final ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(jimfsFasta)) {
             dict = ref.getSequenceDictionary();
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
         }
         final SAMFileHeader header = new SAMFileHeader(dict);
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
