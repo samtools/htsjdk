@@ -1,11 +1,14 @@
 package htsjdk.variant.bcf2;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.testutil.streams.RecordingChannelWrapper;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.utils.BcftoolsTestUtils;
@@ -25,6 +28,7 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -420,6 +424,234 @@ public class BCFFileReaderTest extends VariantBaseTest {
         reader.close();
         // After close, the BGZF stream should be closed; iterating should throw
         Assert.expectThrows(Exception.class, reader::iterator);
+    }
+
+    @Test
+    public void aQueryWhileAnIteratorIsOpenLeavesTheIteratorsRecordsIntact() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        try (BCFFileReader reader =
+                new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI))) {
+            final CloseableIterator<VariantContext> iterator = reader.iterator();
+            Assert.assertEquals(iterator.next().getStart(), 100);
+            Assert.assertEquals(
+                    toList(reader.query("chr2", 100, 300)).stream()
+                            .map(VariantContext::getStart)
+                            .toList(),
+                    List.of(200));
+            Assert.assertEquals(
+                    toList(iterator).stream().map(VariantContext::getStart).toList(), List.of(500, 1000, 200));
+        }
+    }
+
+    @Test
+    public void anIteratorLeftOpenEndsWhenTheReaderIsClosed() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final BCFFileReader reader = new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI));
+        final CloseableIterator<VariantContext> iterator = reader.iterator();
+        final CloseableIterator<VariantContext> query = reader.query("chr1", 1, 1000);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertTrue(query.hasNext());
+        reader.close();
+        Assert.assertFalse(iterator.hasNext());
+        Assert.assertFalse(query.hasNext());
+    }
+
+    @Test
+    public void theReaderHoldsOneStreamWhateverItsIteratorsAndClosingItClosesIt() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsBcf = Files.copy(bcf, fs.getPath("/x.bcf"));
+            final Path jimfsCsi =
+                    Files.copy(bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI), fs.getPath("/x.bcf.csi"));
+            final BCFFileReader reader = new BCFFileReader(
+                    jimfsBcf.toUri().toString(), jimfsCsi.toUri().toString(), new BCF2Codec(), channels, null);
+            Assert.assertTrue(reader.iterator().hasNext());
+            Assert.assertTrue(reader.query("chr1", 1, 1000).hasNext());
+            Assert.assertEquals(channels.stillOpenCount(), 1);
+            reader.close();
+
+            // checked before the file system is closed, as that closes every channel open on it
+            Assert.assertEquals(channels.stillOpenCount(), 0);
+        }
+    }
+
+    @Test
+    public void aQueryWhoseStartIsAfterItsEndReturnsNothing() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        try (BCFFileReader reader =
+                new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI))) {
+            Assert.assertTrue(toList(reader.query("chr1", 600, 400)).isEmpty());
+            Assert.assertTrue(toList(reader.query("chr1", 101, 100)).isEmpty());
+        }
+    }
+
+    @Test
+    public void queriesOneAfterAnotherOpenTheBcfOnce() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsBcf = Files.copy(bcf, fs.getPath("/x.bcf"));
+            final Path jimfsCsi =
+                    Files.copy(bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI), fs.getPath("/x.bcf.csi"));
+            try (BCFFileReader reader = new BCFFileReader(
+                    jimfsBcf.toUri().toString(), jimfsCsi.toUri().toString(), new BCF2Codec(), channels, null)) {
+                Assert.assertEquals(toList(reader.query("chr1", 1, 1000)).size(), 3);
+                Assert.assertEquals(toList(reader.query("chr2", 100, 300)).size(), 1);
+                try (CloseableIterator<VariantContext> unfinished = reader.query("chr1", 1, 1000)) {
+                    Assert.assertTrue(unfinished.hasNext());
+                }
+                Assert.assertEquals(toList(reader.iterator()).size(), 4);
+                Assert.assertEquals(toList(reader.query("chr1", 400, 600)).size(), 1);
+                Assert.assertEquals(channels.openedCount(), 1);
+            }
+            // checked before the file system is closed, as that closes every channel open on it
+            Assert.assertEquals(channels.stillOpenCount(), 0);
+        }
+    }
+
+    @Test
+    public void anIteratorReadsOnAfterQueriesHaveMovedTheStream() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        try (BCFFileReader reader =
+                new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI))) {
+            final CloseableIterator<VariantContext> iterator = reader.iterator();
+            Assert.assertEquals(iterator.next().getStart(), 100);
+            // each query moves the stream the iterator reads through, and the iterator moves it back
+            Assert.assertEquals(toList(reader.query("chr2", 100, 300)).size(), 1);
+            Assert.assertEquals(toList(reader.query("chr1", 1, 1000)).size(), 3);
+            Assert.assertEquals(
+                    toList(iterator).stream().map(VariantContext::getStart).toList(), List.of(500, 1000, 200));
+        }
+    }
+
+    @Test
+    public void iteratorsLeftUnclosedHoldNothingOpen() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final RecordingChannelWrapper channels = new RecordingChannelWrapper();
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsBcf = Files.copy(bcf, fs.getPath("/x.bcf"));
+            final Path jimfsCsi =
+                    Files.copy(bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI), fs.getPath("/x.bcf.csi"));
+            try (BCFFileReader reader = new BCFFileReader(
+                    jimfsBcf.toUri().toString(), jimfsCsi.toUri().toString(), new BCF2Codec(), channels, null)) {
+                for (int i = 0; i < 100; i++) {
+                    Assert.assertTrue(reader.query("chr1", 1, 1000).hasNext());
+                    Assert.assertTrue(reader.iterator().hasNext());
+                }
+                Assert.assertEquals(channels.openedCount(), 1);
+                Assert.assertEquals(channels.stillOpenCount(), 1);
+            }
+            Assert.assertEquals(channels.stillOpenCount(), 0);
+        }
+    }
+
+    @Test
+    public void theCsiIsReadWholeAndNotHeldOpen() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final RecordingChannelWrapper indexChannels = new RecordingChannelWrapper();
+        try (FileSystem fs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsBcf = Files.copy(bcf, fs.getPath("/x.bcf"));
+            final Path jimfsCsi =
+                    Files.copy(bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI), fs.getPath("/x.bcf.csi"));
+            try (BCFFileReader reader = new BCFFileReader(
+                    jimfsBcf.toUri().toString(), jimfsCsi.toUri().toString(), new BCF2Codec(), null, indexChannels)) {
+                Assert.assertEquals(indexChannels.stillOpenCount(), 0);
+                Assert.assertEquals(toList(reader.query("chr1", 1, 1000)).size(), 3);
+                Assert.assertEquals(indexChannels.openedCount(), 1);
+            }
+        }
+    }
+
+    @Test
+    public void twoThreadsIteratingOneReaderEachReadEveryRecord() throws Exception {
+        final VCFHeader header = multiContigHeader();
+        final Path bcf = Files.createTempFile(tempDir, "many.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        final int records = 20_000;
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header);
+            for (int pos = 1; pos <= records; pos++) {
+                w.add(snp(header, "chr1", pos));
+            }
+        }
+        final List<Integer> expected = IntStream.rangeClosed(1, records).boxed().collect(Collectors.toList());
+        final java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
+            final List<java.util.concurrent.Future<List<Integer>>> starts = new ArrayList<>();
+            for (int t = 0; t < 2; t++) {
+                starts.add(pool.submit(() -> toList(reader.iterator()).stream()
+                        .map(VariantContext::getStart)
+                        .collect(Collectors.toList())));
+            }
+            for (final java.util.concurrent.Future<List<Integer>> threadStarts : starts) {
+                Assert.assertEquals(threadStarts.get(), expected);
+            }
+        } finally {
+            pool.shutdown();
+        }
+    }
+
+    @Test
+    public void aBgzfFileThatIsNotABcfIsRefusedAsNotABcf() throws IOException {
+        final Path notABcf = Files.createTempFile(tempDir, "text.", ".bcf");
+        notABcf.toFile().deleteOnExit();
+        try (htsjdk.samtools.util.BlockCompressedOutputStream out =
+                new htsjdk.samtools.util.BlockCompressedOutputStream(notABcf, 5)) {
+            out.write("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+                    .getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        }
+        final TribbleException e = Assert.expectThrows(TribbleException.class, () -> new BCFFileReader(notABcf, null));
+        Assert.assertTrue(e.getMessage().contains("BCF magic"), e.getMessage());
+    }
+
+    @Test
+    public void aBcfWhoseHeaderIsCutShortIsReportedSo() throws IOException {
+        final Path truncated = Files.createTempFile(tempDir, "truncated.", ".bcf");
+        truncated.toFile().deleteOnExit();
+        try (htsjdk.samtools.util.BlockCompressedOutputStream out =
+                new htsjdk.samtools.util.BlockCompressedOutputStream(truncated, 5)) {
+            // "BCF", version 2.2, a header text of 1000 bytes, then only 10 of them
+            out.write(new byte[] {'B', 'C', 'F', 2, 2, (byte) 0xe8, 0x03, 0, 0});
+            out.write(new byte[10]);
+        }
+        final TribbleException e =
+                Assert.expectThrows(TribbleException.class, () -> new BCFFileReader(truncated, null));
+        Assert.assertTrue(e.getMessage().contains("Unable to read the BCF header"), e.getMessage());
+        Assert.assertTrue(e.getMessage().contains("Unexpected end of BGZF stream"), e.getMessage());
+    }
+
+    @Test
+    public void theCallersCodecDecodesTheRecords() throws IOException {
+        final Path bcf = writeMultiContigBcf();
+        final CountingBCF2Codec codec = new CountingBCF2Codec();
+        try (BCFFileReader reader = new BCFFileReader(
+                bcf.toUri().toString(),
+                bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI)
+                        .toUri()
+                        .toString(),
+                codec,
+                null,
+                null)) {
+            Assert.assertEquals(toList(reader.iterator()).size(), 4);
+            Assert.assertEquals(codec.decoded, 4);
+            Assert.assertEquals(toList(reader.query("chr2", 100, 300)).size(), 1);
+            Assert.assertTrue(codec.decoded > 4, "decoded " + codec.decoded);
+        }
+    }
+
+    /** A BCF codec that counts the records it decodes. */
+    private static final class CountingBCF2Codec extends BCF2Codec {
+        private int decoded = 0;
+
+        @Override
+        public VariantContext decode(final PositionalBufferedStream inputStream) {
+            decoded++;
+            return super.decode(inputStream);
+        }
     }
 
     // ============================================================
