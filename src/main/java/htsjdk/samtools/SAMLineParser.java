@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.StringUtil;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
@@ -449,9 +448,10 @@ public class SAMLineParser {
 
     /**
      * Split a byte range by tab characters into a parallel pair of offset/length arrays. The
-     * last field is always recorded (mirroring {@link StringUtil#split}'s contract that the
-     * final segment is included even with no trailing delimiter), and parsing stops once the
-     * scratch arrays are full so the caller can detect "too many fields".
+     * last field is recorded whether or not a tab follows it; a single tab at the end of the
+     * line ends that field rather than starting an empty one, as htslib reads it (two tabs at
+     * the end still leave an empty field). Parsing stops once the scratch arrays are full so
+     * the caller can detect "too many fields".
      *
      * <p>Scans 8 bytes at a time using a SWAR ("SIMD within a register") trick: XOR with a
      * word of repeated tab bytes makes matching bytes zero, then {@code (x - 0x01..01) & ~x &
@@ -508,7 +508,7 @@ public class SAMLineParser {
                 fieldStart = i + 1;
             }
         }
-        if (count < maxFields) {
+        if (count < maxFields && (fieldStart < end || count == 0)) {
             offsets[count] = fieldStart;
             lengths[count] = end - fieldStart;
             count++;

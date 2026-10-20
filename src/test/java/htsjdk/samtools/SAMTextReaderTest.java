@@ -285,6 +285,27 @@ public class SAMTextReaderTest extends HtsjdkTest {
     }
 
     @Test
+    public void testRecordEndingInATabIsReadWhenStrict() {
+        final SAMRecord record = parseStrictly("Read\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII\t");
+        Assert.assertEquals(record.getReadString(), "ACGT");
+        Assert.assertTrue(record.getAttributes().isEmpty());
+    }
+
+    @Test
+    public void testRecordEndingInATabAfterATagKeepsTheTagWhenStrict() {
+        final SAMRecord record = parseStrictly("Read\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII\tXY:Z:abc\t");
+        Assert.assertEquals(record.getAttribute("XY"), "abc");
+        Assert.assertEquals(record.getAttributes().size(), 1);
+    }
+
+    @Test
+    public void testRecordEndingInTwoTabsIsRefusedWhenStrict() {
+        final SAMFormatException e = Assert.expectThrows(
+                SAMFormatException.class, () -> parseStrictly("Read\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\tIIII\t\t"));
+        Assert.assertTrue(e.getMessage().contains("Empty field at position 11"), e.getMessage());
+    }
+
+    @Test
     public void testUnmappedRecordWithMapq255IsReadWhenStrict() {
         final SAMRecord record = parseStrictly("Read\t4\t*\t0\t255\t*\t*\t0\t0\tACGTACGTAC\t*");
         Assert.assertTrue(record.getReadUnmappedFlag());
@@ -1488,6 +1509,34 @@ public class SAMTextReaderTest extends HtsjdkTest {
                 final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, records::next);
                 Assert.assertTrue(e.getMessage().contains("Line 4"), e.getMessage());
             }
+        }
+    }
+
+    @Test
+    public void testPlainSamFileReportsAMalformedRecordWithItsLineNumber() throws IOException {
+        final String text = "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:1000\n"
+                + "r1\t0\tchr1\t10\t60\t4M\t*\t0\t0\tACGT\tIIII\n"
+                + "too\tfew\tfields\n";
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                        .validationStringency(ValidationStringency.STRICT)
+                        .open(writePlainSam(text));
+                SAMRecordIterator records = reader.iterator()) {
+            Assert.assertEquals(records.next().getReadName(), "r1");
+            final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, records::next);
+            Assert.assertTrue(e.getMessage().contains("Line 4"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void testSamFromAStreamReportsAMalformedRecordWithItsLineNumber() throws IOException {
+        final String text = "@HD\tVN:1.6\n@SQ\tSN:chr1\tLN:1000\n@CO\tthird header line\n" + "too\tfew\tfields\n";
+        final InputStream stream = new ByteArrayInputStream(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        try (SamReader reader = SamReaderFactory.makeDefault()
+                        .validationStringency(ValidationStringency.STRICT)
+                        .open(SamInputResource.of(stream));
+                SAMRecordIterator records = reader.iterator()) {
+            final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, records::next);
+            Assert.assertTrue(e.getMessage().contains("Line 4"), e.getMessage());
         }
     }
 
