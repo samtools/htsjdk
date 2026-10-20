@@ -69,8 +69,10 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     // line starts where the one before it ended.
     private long mLineStartPointer;
     private long mLineEndPointer;
-    // Lines can be numbered only while reading on from the header.
+    // Lines can be numbered only while reading on from the header. The line reader counts the lines it has read since
+    // it was opened at the top of the file, or since it was last reset at the first record.
     private int mLinesBeforeFirstRecord;
+    private int mLinesBeforeLineReaderStart = 0;
     private boolean mLineNumbersKnown = true;
 
     // At most one of these is set, and only for text that can be seeked in.
@@ -554,11 +556,12 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         mReader.reset();
         mLineEndPointer = filePointer;
         mLineNumbersKnown = filePointer == mFirstRecordPointer;
+        mLinesBeforeLineReaderStart = mLinesBeforeFirstRecord;
     }
 
     /** @return the number of the line in hand, or -1 if reading did not run on from the top of the file */
     private int currentLineNumber() {
-        return mLineNumbersKnown ? mLinesBeforeFirstRecord + mReader.getLineNumber() : -1;
+        return mLineNumbersKnown ? mLinesBeforeLineReaderStart + mReader.getLineNumber() : -1;
     }
 
     /**
