@@ -141,7 +141,7 @@ public class BAMCsiIndexWritingTest extends HtsjdkTest {
         Assert.assertEquals(secondContig.mappedCount(), MAPPED_PER_CONTIG);
         Assert.assertEquals(secondContig.unmappedCount(), PLACED_UNMAPPED);
         Assert.assertEquals(index.getReference(0).getMetadata().orElseThrow().unmappedCount(), 0);
-        Assert.assertEquals(index.getNoCoordinateCount().orElseThrow(), NO_COORDINATE);
+        Assert.assertEquals(index.getUnplacedRecordCount().orElseThrow(), NO_COORDINATE);
     }
 
     @Test

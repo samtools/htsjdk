@@ -38,6 +38,7 @@ public class BAIEntry implements Comparable<BAIEntry> {
     final long containerStartByteOffset;
     final long sliceByteOffsetFromCompressionHeaderStart;
     final int landmarkIndex;
+    final boolean hasRecordCounts;
 
     public BAIEntry(
             final ReferenceContext referenceContext,
@@ -45,6 +46,22 @@ public class BAIEntry implements Comparable<BAIEntry> {
             final long containerStartByteOffset,
             final long sliceHeaderBlockByteOffset,
             final int landmarkIndex) {
+        this(
+                referenceContext,
+                alignmentSpan,
+                containerStartByteOffset,
+                sliceHeaderBlockByteOffset,
+                landmarkIndex,
+                true);
+    }
+
+    private BAIEntry(
+            final ReferenceContext referenceContext,
+            final AlignmentSpan alignmentSpan,
+            final long containerStartByteOffset,
+            final long sliceHeaderBlockByteOffset,
+            final int landmarkIndex,
+            final boolean hasRecordCounts) {
         // Note: a BAIEntry should never be made from a MULTI_REF reference context, because for a BAI index
         // MUTLI_REF slices need to be resolved down to constituent BAIEntry for each reference context, including
         // unmapped
@@ -65,12 +82,14 @@ public class BAIEntry implements Comparable<BAIEntry> {
         this.containerStartByteOffset = containerStartByteOffset;
         this.sliceByteOffsetFromCompressionHeaderStart = sliceHeaderBlockByteOffset;
         this.landmarkIndex = landmarkIndex;
+        this.hasRecordCounts = hasRecordCounts;
     }
 
     /**
-     * Create a BAIEntry from a CRAIEntry, for reading a .crai as a .bai. Record counts are zero
-     * because a CRAI has none (issue #531); the landmark index is zero because CRAM seeks by
-     * container. Used only by the deprecated {@code SamReader.Indexing.getIndex()}.
+     * Create a BAIEntry from a CRAIEntry, for reading a .crai as a .bai. A CRAI has no record counts
+     * (issue #531), so the entry {@link #hasRecordCounts() has none} and they read as zero; the landmark
+     * index is zero because CRAM seeks by container. Used only by the deprecated {@code
+     * SamReader.Indexing.getIndex()}.
      *
      * @param craiEntry the CRAI entry to convert
      */
@@ -80,7 +99,16 @@ public class BAIEntry implements Comparable<BAIEntry> {
                 new AlignmentSpan(craiEntry.getAlignmentStart(), craiEntry.getAlignmentSpan(), 0, 0, 0),
                 craiEntry.getContainerStartByteOffset(),
                 craiEntry.getSliceByteOffsetFromCompressionHeaderStart(),
-                0);
+                0,
+                false);
+    }
+
+    /**
+     * @return whether the entry's record counts are known; false for one made from a CRAI entry, whose counts read
+     *     as zero
+     */
+    public boolean hasRecordCounts() {
+        return hasRecordCounts;
     }
 
     /**

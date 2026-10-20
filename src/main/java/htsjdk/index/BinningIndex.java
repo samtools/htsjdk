@@ -179,12 +179,22 @@ public final class BinningIndex implements ReferenceBinsSource {
         return this;
     }
 
-    /**
-     * @return the number of records that have no position, if the index records it
-     */
     @Override
-    public OptionalLong getNoCoordinateCount() {
+    public OptionalLong getUnplacedRecordCount() {
         return noCoordinateCount < 0 ? OptionalLong.empty() : OptionalLong.of(noCoordinateCount);
+    }
+
+    /**
+     * @param unplacedRecordCount the number of records with no position, or empty if the index is not to record it
+     * @return this index with that count in place of its own
+     * @throws IllegalArgumentException if the count is negative
+     */
+    public BinningIndex withUnplacedRecordCount(final OptionalLong unplacedRecordCount) {
+        if (unplacedRecordCount.isPresent() && unplacedRecordCount.getAsLong() < 0) {
+            throw new IllegalArgumentException(
+                    "Record count must not be negative, but was " + unplacedRecordCount.getAsLong());
+        }
+        return new BinningIndex(minShift, depth, Arrays.asList(references), unplacedRecordCount.orElse(-1));
     }
 
     /**

@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalLong;
 
 /**
  * The index of a BAM, or the BAI of a CRAM, in the terms {@link BAMIndex} and {@link BrowseableBAMIndex} ask for,
@@ -59,11 +60,9 @@ final class BinningBAMIndex implements BrowseableBAMIndex {
         return source.getReferenceCount();
     }
 
-    /** @return the count of records without a position, or null if the index does not record it */
-    Long getNoCoordinateCount() {
-        return source.getNoCoordinateCount().isPresent()
-                ? source.getNoCoordinateCount().getAsLong()
-                : null;
+    @Override
+    public OptionalLong getUnplacedRecordCount() {
+        return source.getUnplacedRecordCount();
     }
 
     @Override

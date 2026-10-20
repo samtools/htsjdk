@@ -114,9 +114,9 @@ public class BinningIndexCsiLayoutTest extends HtsjdkTest {
     @Test
     public void testNoCoordinateCountIsAlwaysWritten() {
         final BinningIndex built = new IndexedRecords().add(0, 100, 100).index(14, 6, 1);
-        Assert.assertTrue(built.getNoCoordinateCount().isEmpty());
+        Assert.assertTrue(built.getUnplacedRecordCount().isEmpty());
         Assert.assertEquals(
-                read(write(built, AUX)).index().getNoCoordinateCount().getAsLong(), 0);
+                read(write(built, AUX)).index().getUnplacedRecordCount().getAsLong(), 0);
     }
 
     @Test

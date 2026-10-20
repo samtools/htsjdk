@@ -2,6 +2,7 @@ package htsjdk.index;
 
 import java.io.Closeable;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * An index that maps genomic regions to candidate byte ranges. Applicable to all index formats.
@@ -30,6 +31,15 @@ public interface HtsQueryIndex extends Closeable {
      */
     default Optional<HtsFileSpan> getSpanOfUnplaced() {
         return Optional.empty();
+    }
+
+    /**
+     * The number of records with no position (unmapped and unplaced), which {@link #getSpanOfUnplaced()} covers.
+     *
+     * @return the count; empty if the format or this index does not record it
+     */
+    default OptionalLong getUnplacedRecordCount() {
+        return OptionalLong.empty();
     }
 
     /** Closes the index. */

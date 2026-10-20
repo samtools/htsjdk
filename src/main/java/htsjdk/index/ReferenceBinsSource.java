@@ -24,8 +24,8 @@ public interface ReferenceBinsSource extends HtsQueryIndex {
      */
     ReferenceBins getReference(int referenceIndex);
 
-    /** @return the number of records that have no position, if the index records it */
-    OptionalLong getNoCoordinateCount();
+    @Override
+    OptionalLong getUnplacedRecordCount();
 
     /** @return the whole index in memory; this index itself if that is what it already is */
     BinningIndex loadAll();

@@ -339,7 +339,7 @@ public class TabixIndex implements Index {
         if (!keepsRecordCounts()) {
             return OptionalLong.empty();
         }
-        long total = binningIndex.getNoCoordinateCount().orElse(0);
+        long total = binningIndex.getUnplacedRecordCount().orElse(0);
         for (int i = 0; i < binningIndex.getReferenceCount(); i++) {
             total += recordCount(binningIndex.getReference(i));
         }

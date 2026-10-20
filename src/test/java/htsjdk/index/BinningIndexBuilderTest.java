@@ -169,7 +169,7 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
                 baiBuilder()
                         .reportingRecordCounts()
                         .build(1)
-                        .getNoCoordinateCount()
+                        .getUnplacedRecordCount()
                         .orElseThrow(),
                 0);
     }
@@ -179,7 +179,7 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
         final BinningIndex.Builder builder = baiBuilder().reportingRecordCounts();
         builder.addNoCoordinateRecords(2);
         builder.addNoCoordinateRecords(5);
-        Assert.assertEquals(builder.build(1).getNoCoordinateCount().orElseThrow(), 7);
+        Assert.assertEquals(builder.build(1).getUnplacedRecordCount().orElseThrow(), 7);
     }
 
     @Test
@@ -188,7 +188,7 @@ public class BinningIndexBuilderTest extends HtsjdkTest {
         builder.add(0, 100, 150, offset(10, 0), offset(10, 50));
         final BinningIndex index = builder.build(1);
         Assert.assertFalse(index.getReference(0).getMetadata().isPresent());
-        Assert.assertFalse(index.getNoCoordinateCount().isPresent());
+        Assert.assertFalse(index.getUnplacedRecordCount().isPresent());
     }
 
     @Test(expectedExceptions = IllegalStateException.class)

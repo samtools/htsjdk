@@ -36,7 +36,7 @@ public class BaiEqualityChecker {
         final BinningIndex bai2 = load(baiFile2);
 
         Assert.assertEquals(bai1.getReferenceCount(), bai2.getReferenceCount(), "Number of references");
-        Assert.assertEquals(bai1.getNoCoordinateCount(), bai2.getNoCoordinateCount(), "No coordinate index count");
+        Assert.assertEquals(bai1.getUnplacedRecordCount(), bai2.getUnplacedRecordCount(), "No coordinate index count");
         for (int i = 0; i < bai1.getReferenceCount(); i++) {
             Assert.assertEquals(bai1.getReference(i), bai2.getReference(i), "Reference " + i);
         }

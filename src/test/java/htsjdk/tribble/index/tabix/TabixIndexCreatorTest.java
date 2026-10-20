@@ -54,12 +54,12 @@ public class TabixIndexCreatorTest extends HtsjdkTest {
 
     @Test
     public void testATbiCountsNoRecordsWithoutAPosition() {
-        Assert.assertEquals(indexOfFiveFeatures(TabixIndexType.TBI).getNoCoordinateCount(), OptionalLong.of(0));
+        Assert.assertEquals(indexOfFiveFeatures(TabixIndexType.TBI).getUnplacedRecordCount(), OptionalLong.of(0));
     }
 
     @Test
     public void testACsiCountsNoRecordsWithoutAPosition() {
-        Assert.assertEquals(indexOfFiveFeatures(TabixIndexType.CSI).getNoCoordinateCount(), OptionalLong.of(0));
+        Assert.assertEquals(indexOfFiveFeatures(TabixIndexType.CSI).getUnplacedRecordCount(), OptionalLong.of(0));
     }
 
     @Test
@@ -77,6 +77,6 @@ public class TabixIndexCreatorTest extends HtsjdkTest {
         final TabixIndex read =
                 new TabixIndex(new BlockCompressedInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertCounts(read.getBinningIndex(), 0, 2);
-        Assert.assertEquals(read.getBinningIndex().getNoCoordinateCount(), OptionalLong.of(0));
+        Assert.assertEquals(read.getBinningIndex().getUnplacedRecordCount(), OptionalLong.of(0));
     }
 }

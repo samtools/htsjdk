@@ -280,9 +280,8 @@ public class BAMIndexMetaData {
         if (result[0] == null) {
             result[0] = new BAMIndexMetaData();
         }
-        final Long noCoordCount = index.getNoCoordinateCount();
-        if (noCoordCount != null) // null in old index files without metadata
-        result[0].setNoCoordinateRecordCount(noCoordCount);
+        // Absent from old index files without metadata.
+        index.getUnplacedRecordCount().ifPresent(result[0]::setNoCoordinateRecordCount);
 
         return result;
     }

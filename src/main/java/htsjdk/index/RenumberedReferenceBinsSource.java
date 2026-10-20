@@ -61,8 +61,8 @@ public final class RenumberedReferenceBinsSource implements ReferenceBinsSource 
     }
 
     @Override
-    public OptionalLong getNoCoordinateCount() {
-        return source.getNoCoordinateCount();
+    public OptionalLong getUnplacedRecordCount() {
+        return source.getUnplacedRecordCount();
     }
 
     @Override
@@ -72,7 +72,7 @@ public final class RenumberedReferenceBinsSource implements ReferenceBinsSource 
             references.add(getReference(i));
         }
         return new BinningIndex(
-                getMinShift(), getDepth(), references, getNoCoordinateCount().orElse(-1));
+                getMinShift(), getDepth(), references, getUnplacedRecordCount().orElse(-1));
     }
 
     @Override

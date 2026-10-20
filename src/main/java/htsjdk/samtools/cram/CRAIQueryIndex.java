@@ -102,6 +102,16 @@ public class CRAIQueryIndex implements HtsQueryIndex {
         return Optional.of(new BAMFileSpan(new Chunk(containerStart, Long.MAX_VALUE)));
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>A CRAI records no counts, so this is known only when there are no unplaced records.
+     */
+    @Override
+    public OptionalLong getUnplacedRecordCount() {
+        return firstUnplacedContainerOffset.isEmpty() ? OptionalLong.of(0) : OptionalLong.empty();
+    }
+
     /** No-op; the index is held in memory. */
     @Override
     public void close() {}
