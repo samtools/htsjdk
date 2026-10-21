@@ -230,7 +230,9 @@ public class TabixIndex implements Index {
     private static List<String> parseAux(final byte[] aux, final TabixFormat formatSpec) {
         if (aux.length < CSI_AUX_HEADER_BYTES) {
             throw new TribbleException(String.format(
-                    "CSI index has a %d-byte aux block, too short for a tabix header; it is not a tabix index",
+                    "CSI index has a %d-byte aux block, too short for a tabix header; it is not a tabix index. A "
+                            + "CSI without one, as bcftools writes for a BCF and samtools for a BAM, names no "
+                            + "sequences, so it is read with the file it indexes",
                     aux.length));
         }
         final BinaryCodec codec = new BinaryCodec(new ByteArrayInputStream(aux));

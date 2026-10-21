@@ -1,5 +1,6 @@
 package htsjdk.variant.bcf2;
 
+import htsjdk.index.BinningIndex;
 import htsjdk.index.FileBackedBinningIndex;
 import htsjdk.index.ReferenceBinsSource;
 import htsjdk.samtools.BAMFileSpan;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
@@ -195,6 +197,68 @@ public class BCFFileReader extends AbstractFeatureReader<VariantContext, Positio
             names.add(seq.getSequenceName());
         }
         return names;
+    }
+
+    /**
+     * Builds a CSI index of the BCF from its records: the index {@code bcftools index} builds, and the one
+     * {@link htsjdk.variant.variantcontext.writer.BCF2Writer} builds while writing, with the scheme
+     * {@link BCFCsiIndex#binningIndexBuilderFor} chooses. A record at POS 0, a telomere, is indexed at 1, as htslib
+     * indexes it.
+     *
+     * @return the index
+     * @throws TribbleException.MalformedFeatureFile if the records are not sorted by contig, in the order of the
+     *     header's contig lines, and then by position, or one lies beyond the reach of the index
+     * @throws IllegalStateException if the reader is closed, before or while the index is built
+     * @throws IOException if the BCF cannot be read
+     */
+    public BCFCsiIndex createCsiIndex() throws IOException {
+        checkOpen();
+        final BinningIndex.Builder builder = BCFCsiIndex.binningIndexBuilderFor(getHeader());
+        final RecordIterator cursor = new RecordIterator(firstRecordOffset) {
+            @Override
+            VariantContext readNext() {
+                throw new UnsupportedOperationException("the cursor only marks a place in the BCF");
+            }
+        };
+        int previousReference = -1;
+        int previousStart = 0;
+        while (true) {
+            final long recordStart = cursor.position;
+            final byte[] recordBytes = readRecordBytes(cursor);
+            if (recordBytes == null) {
+                break;
+            }
+            final VariantContext vc = decode(recordBytes);
+            final int reference = contigDictionary.getIndex(vc.getContig());
+            if (reference < previousReference || (reference == previousReference && vc.getStart() < previousStart)) {
+                throw new TribbleException.MalformedFeatureFile(
+                        "Records are not sorted by contig, in the order of the header's contig lines, and then by "
+                                + "position, as a CSI index needs: " + vc.getContig() + ":" + vc.getStart()
+                                + " follows a record at contig index " + previousReference + " position "
+                                + previousStart,
+                        dataPath.toString());
+            }
+            try {
+                // The position after a record that ends a BGZF block is the next block's start, so the last record's
+                // chunk ends where BCF2Writer and htslib end it.
+                builder.add(reference, Math.max(vc.getStart(), 1), vc.getEnd(), recordStart, cursor.position);
+            } catch (final IllegalArgumentException e) {
+                throw new TribbleException.MalformedFeatureFile(
+                        "Cannot index " + vc.getContig() + ":" + vc.getStart() + ": " + e.getMessage(),
+                        dataPath.toString(),
+                        e);
+            }
+            previousReference = reference;
+            previousStart = vc.getStart();
+        }
+        // A reader closed while the index was being built reads as the end of the records.
+        checkOpen();
+
+        final List<String> contigs = contigDictionary.asMap().entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .toList();
+        return new BCFCsiIndex(contigDictionary.asMap(), contigs, builder.build(contigDictionary.size()));
     }
 
     /** @return true if the reader was opened with a CSI index, and so can be queried */

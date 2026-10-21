@@ -23,6 +23,8 @@ import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCFCsiIndex;
+import htsjdk.variant.bcf2.BCFFileReader;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -504,6 +506,19 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         final TribbleException e = Assert.expectThrows(TribbleException.class, () -> openBcf(bcf, true));
         Assert.assertTrue(e.getMessage().contains("x.bcf.csi"), e.getMessage());
         Assert.assertTrue(e.getMessage().contains("bcftools index"), e.getMessage());
+    }
+
+    @Test
+    public void aBcfCsiIndexInMemoryIsRefused() throws IOException {
+        final Path bcf = writeBgzfBcf(newBcfTestDir().resolve("x.bcf"), false);
+        final BCFCsiIndex index;
+        try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
+            index = reader.createCsiIndex();
+        }
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class,
+                () -> AbstractFeatureReader.getFeatureReader(bcf.toString(), new BCF2Codec(), index));
+        Assert.assertTrue(e.getMessage().contains("not read from memory"), e.getMessage());
     }
 
     @Test

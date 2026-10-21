@@ -2,8 +2,11 @@ package htsjdk.variant.bcf2;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.index.BinningIndex;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
@@ -36,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,6 +114,91 @@ public class BCFFileReaderTest extends VariantBaseTest {
                 .attribute("DP", 30)
                 .attribute("END", end)
                 .make();
+    }
+
+    /**
+     * Writes a BCF of SNPs on chr1 and chr2 large enough to span many BGZF blocks, with or without its CSI written on
+     * the fly, and returns its path.
+     */
+    private Path writeManyRecordBcf(final boolean indexOnTheFly) throws IOException {
+        final VCFHeader header = multiContigHeader();
+        final Path bcf = Files.createTempFile(tempDir, "many.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        csiOf(bcf).toFile().deleteOnExit();
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(header.getSequenceDictionary());
+        if (indexOnTheFly) {
+            builder.setOption(Options.INDEX_ON_THE_FLY);
+        } else {
+            builder.unsetOption(Options.INDEX_ON_THE_FLY);
+        }
+        try (VariantContextWriter w = builder.build()) {
+            w.writeHeader(header);
+            for (int pos = 1; pos <= 80000; pos += 4) {
+                w.add(snp(header, "chr1", pos));
+            }
+            for (int pos = 1; pos <= 40000; pos += 4) {
+                w.add(snp(header, "chr2", pos));
+            }
+        }
+        return bcf;
+    }
+
+    private static Path csiOf(final Path bcf) {
+        return bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI);
+    }
+
+    /** Writes the index {@link BCFFileReader#createCsiIndex()} builds for the BCF and reads it back as a file. */
+    private Path writeCreatedCsiIndex(final Path bcf) throws IOException {
+        final Path csi = Files.createTempFile(tempDir, "created.", FileExtensions.CSI);
+        csi.toFile().deleteOnExit();
+        try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
+            reader.createCsiIndex().write(csi);
+        }
+        return csi;
+    }
+
+    private static BinningIndex readCsi(final Path csi) throws IOException {
+        try (BinaryCodec codec = new BinaryCodec(new BlockCompressedInputStream(Files.newInputStream(csi)))) {
+            return BinningIndex.readCsi(codec).index();
+        }
+    }
+
+    /** Writes the records to a BGZF BCF without an index and returns its path. */
+    private Path writeBcfWithoutIndex(final VCFHeader header, final List<VariantContext> records) throws IOException {
+        final Path bcf = Files.createTempFile(tempDir, "unindexed.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        csiOf(bcf).toFile().deleteOnExit();
+        try (VariantContextWriter w = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            w.writeHeader(header);
+            records.forEach(w::add);
+        }
+        return bcf;
+    }
+
+    /** {@link #multiContigHeader()}'s lines, with contig lines for chr1 and chr2 that give no length. */
+    private static VCFHeader headerWithContigsWithoutLengths() {
+        final Set<VCFHeaderLine> meta = new LinkedHashSet<>(multiContigHeader().getMetaDataInInputOrder());
+        meta.removeIf(line -> line instanceof VCFContigHeaderLine);
+        meta.add(new VCFContigHeaderLine(Map.of("ID", "chr1"), 0));
+        meta.add(new VCFContigHeaderLine(Map.of("ID", "chr2"), 1));
+        return new VCFHeader(meta, Collections.singletonList("sample1"));
+    }
+
+    /** @return the starts of the records the query finds through the CSI {@link BCFFileReader#createCsiIndex} builds */
+    private List<Integer> queryThroughCreatedIndex(final Path bcf, final String contig, final int start, final int end)
+            throws IOException {
+        try (BCFFileReader reader = new BCFFileReader(bcf, writeCreatedCsiIndex(bcf));
+                CloseableIterator<VariantContext> records = reader.query(contig, start, end)) {
+            final List<Integer> starts = new ArrayList<>();
+            records.forEachRemaining(vc -> starts.add(vc.getStart()));
+            return starts;
+        }
     }
 
     // ============================================================
@@ -848,5 +937,81 @@ public class BCFFileReaderTest extends VariantBaseTest {
         }
         iter.close();
         return result;
+    }
+
+    // ============================================================
+    // Building a CSI index
+    // ============================================================
+
+    @Test
+    public void createCsiIndexBuildsTheIndexTheWriterWritesOnTheFly() throws IOException {
+        final Path bcf = writeManyRecordBcf(true);
+        Assert.assertEquals(readCsi(writeCreatedCsiIndex(bcf)), readCsi(csiOf(bcf)));
+    }
+
+    @Test
+    public void createCsiIndexBuildsTheIndexBcftoolsBuilds() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) {
+            throw new SkipException("bcftools not available");
+        }
+        final Path bcf = writeManyRecordBcf(false);
+        BcftoolsTestUtils.executeBcftools("index", "--csi", bcf.toString());
+        Assert.assertEquals(readCsi(writeCreatedCsiIndex(bcf)), readCsi(csiOf(bcf)));
+    }
+
+    @Test
+    public void createCsiIndexRefusesRecordsOutOfOrder() throws IOException {
+        final VCFHeader header = multiContigHeader();
+        final Path bcf = writeBcfWithoutIndex(header, List.of(snp(header, "chr1", 500), snp(header, "chr1", 100)));
+        try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
+            final TribbleException e =
+                    Assert.expectThrows(TribbleException.MalformedFeatureFile.class, reader::createCsiIndex);
+            Assert.assertTrue(e.getMessage().contains("not sorted"), e.getMessage());
+        }
+    }
+
+    @Test
+    public void createCsiIndexReachesPastContigsWithoutLengths() throws IOException {
+        final VCFHeader header = headerWithContigsWithoutLengths();
+        final Path bcf = writeBcfWithoutIndex(header, List.of(snp(header, "chr1", 100), snp(header, "chr1", 151000)));
+        Assert.assertEquals(queryThroughCreatedIndex(bcf, "chr1", 150000, 152000), List.of(151000));
+    }
+
+    @Test
+    public void createCsiIndexOfContigsWithoutLengthsBuildsTheIndexBcftoolsBuilds() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) {
+            throw new SkipException("bcftools not available");
+        }
+        final VCFHeader header = headerWithContigsWithoutLengths();
+        final Path bcf = writeBcfWithoutIndex(header, List.of(snp(header, "chr1", 100), snp(header, "chr2", 151000)));
+        BcftoolsTestUtils.executeBcftools("index", "--csi", bcf.toString());
+        Assert.assertEquals(readCsi(writeCreatedCsiIndex(bcf)), readCsi(csiOf(bcf)));
+    }
+
+    @Test
+    public void createCsiIndexAcceptsARecordAtPositionZero() throws IOException {
+        final VCFHeader header = multiContigHeader();
+        final Path bcf = writeBcfWithoutIndex(header, List.of(snp(header, "chr1", 0), snp(header, "chr1", 100)));
+        Assert.assertEquals(queryThroughCreatedIndex(bcf, "chr1", 1, 200), List.of(100));
+    }
+
+    @Test
+    public void createCsiIndexOfARecordAtPositionZeroBuildsTheIndexBcftoolsBuilds() throws IOException {
+        if (!BcftoolsTestUtils.isBcftoolsAvailable()) {
+            throw new SkipException("bcftools not available");
+        }
+        final VCFHeader header = multiContigHeader();
+        final Path bcf = writeBcfWithoutIndex(header, List.of(snp(header, "chr1", 0), snp(header, "chr1", 100)));
+        BcftoolsTestUtils.executeBcftools("index", "--csi", bcf.toString());
+        Assert.assertEquals(readCsi(writeCreatedCsiIndex(bcf)), readCsi(csiOf(bcf)));
+    }
+
+    @Test
+    public void createCsiIndexOfAClosedReaderIsRefused() throws IOException {
+        final VCFHeader header = multiContigHeader();
+        final Path bcf = writeBcfWithoutIndex(header, List.of(snp(header, "chr1", 100)));
+        final BCFFileReader reader = new BCFFileReader(bcf, null);
+        reader.close();
+        Assert.assertThrows(IllegalStateException.class, reader::createCsiIndex);
     }
 }
