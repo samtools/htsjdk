@@ -26,6 +26,7 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -436,17 +437,19 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      *
      * @param featureResource the path to the source file containing the features
      * @param codec used to decode the features
-     * @param index index of featureResource; not a {@link BCFCsiIndex}, which is read from its file
+     * @param index a Tribble index of featureResource; not a TBI or CSI index ({@link TabixIndex} or
+     *     {@link BCFCsiIndex}), which is read from its file
      * @return a reader for this data
      * @throws TribbleException
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(
             final String featureResource, final FeatureCodec<FEATURE, SOURCE> codec, final Index index)
             throws TribbleException {
-        if (index instanceof BCFCsiIndex) {
-            throw new TribbleException("A BCF's CSI index is not read from memory: write it with "
-                    + "BCFCsiIndex.write or writeBasedOnFeaturePath, and open the BCF through getFeatureReader with "
-                    + "the index's path, or with none to find it beside the BCF: " + featureResource);
+        // Their blocks are BGZF virtual offsets, which TribbleIndexedFeatureReader would take for file offsets
+        if (index instanceof TabixIndex || index instanceof BCFCsiIndex) {
+            throw new TribbleException("A TBI or CSI index is not read from memory: write it to a file if it is not "
+                    + "in one, and open the file it indexes through getFeatureReader with the index's path, or with "
+                    + "none to find it beside the file: " + featureResource);
         }
         try {
             return new TribbleIndexedFeatureReader<>(featureResource, codec, index);

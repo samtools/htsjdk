@@ -18,6 +18,7 @@ import htsjdk.testutil.http.LocalHttpServer;
 import htsjdk.testutil.streams.RecordingChannelWrapper;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.LittleEndianOutputStream;
@@ -518,6 +519,16 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         final TribbleException e = Assert.expectThrows(
                 TribbleException.class,
                 () -> AbstractFeatureReader.getFeatureReader(bcf.toString(), new BCF2Codec(), index));
+        Assert.assertTrue(e.getMessage().contains("not read from memory"), e.getMessage());
+    }
+
+    @Test
+    public void aTbiIndexInMemoryIsRefused() throws IOException {
+        final Path tbi = writeTbi(newBcfTestDir());
+        final String vcf = tbi.toString().substring(0, tbi.toString().length() - FileExtensions.TABIX_INDEX.length());
+        final Index index = IndexFactory.loadIndex(tbi.toString());
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class, () -> AbstractFeatureReader.getFeatureReader(vcf, new VCFCodec(), index));
         Assert.assertTrue(e.getMessage().contains("not read from memory"), e.getMessage());
     }
 
