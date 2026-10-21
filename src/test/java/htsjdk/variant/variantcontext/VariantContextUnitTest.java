@@ -1257,6 +1257,21 @@ public class VariantContextUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testSampleNamesOfARecordBuiltInMemoryCannotBeModified() {
+        final Allele ref = Allele.create("A", true);
+        final Allele alt = Allele.create("T");
+        final VariantContext vc = new VariantContextBuilder("test", "chr1", 100, 100, List.of(ref, alt))
+                .genotypes(
+                        GenotypeBuilder.create("s1", List.of(ref, alt)),
+                        GenotypeBuilder.create("s2", List.of(ref, ref)))
+                .make();
+
+        Assert.assertThrows(
+                UnsupportedOperationException.class, () -> vc.getSampleNames().retainAll(Set.of("s1")));
+        Assert.assertEquals(vc.getSampleNames(), Set.of("s1", "s2"));
+    }
+
+    @Test
     public void testSetAttribute() {
         VariantContextBuilder builder = new VariantContextBuilder();
         builder.attribute("Test", "value");
