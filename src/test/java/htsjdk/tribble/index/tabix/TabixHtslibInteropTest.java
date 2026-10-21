@@ -264,7 +264,7 @@ public class TabixHtslibInteropTest extends HtsjdkTest {
                     theirs.getReference(i).getMetadata(),
                     "metadata pseudo-bin of sequence " + i);
         }
-        Assert.assertEquals(ours.getNoCoordinateCount(), theirs.getNoCoordinateCount());
+        Assert.assertEquals(ours.getUnplacedRecordCount(), theirs.getUnplacedRecordCount());
     }
 
     @Test

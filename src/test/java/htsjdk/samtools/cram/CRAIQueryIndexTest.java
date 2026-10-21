@@ -2,6 +2,7 @@ package htsjdk.samtools.cram;
 
 import htsjdk.HtsjdkTest;
 import java.util.List;
+import java.util.OptionalLong;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -171,5 +172,16 @@ public class CRAIQueryIndexTest extends HtsjdkTest {
         final CRAIQueryIndex shuffled =
                 new CRAIQueryIndex(List.of(entry(0, 401, 100, 3000), entry(0, 1, 100, 1000), entry(0, 201, 100, 2000)));
         Assert.assertEquals(shuffled.getContainerOffsets(0, 1, 500), new long[] {1000, 2000, 3000});
+    }
+
+    @Test
+    public void testCountsNoUnplacedRecordsWhenNoContainerHoldsAny() {
+        Assert.assertEquals(threeSlices().getUnplacedRecordCount(), OptionalLong.of(0));
+    }
+
+    @Test
+    public void testDoesNotKnowHowManyRecordsAreUnplacedWhenAContainerHoldsSome() {
+        final CRAIQueryIndex index = new CRAIQueryIndex(List.of(entry(0, 1, 100, 1000), entry(-1, 0, 0, 2000)));
+        Assert.assertEquals(index.getUnplacedRecordCount(), OptionalLong.empty());
     }
 }

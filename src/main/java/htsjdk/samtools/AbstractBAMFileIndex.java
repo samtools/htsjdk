@@ -27,6 +27,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.List;
+import java.util.OptionalLong;
 
 /**
  * The base of the BAM index readers that callers can construct for themselves, {@link DiskBasedBAMFileIndex} and
@@ -168,7 +169,13 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * or null if no meta data (old index format)
      */
     public Long getNoCoordinateCount() {
-        return delegate.getNoCoordinateCount();
+        final OptionalLong count = delegate.getUnplacedRecordCount();
+        return count.isPresent() ? count.getAsLong() : null;
+    }
+
+    @Override
+    public OptionalLong getUnplacedRecordCount() {
+        return delegate.getUnplacedRecordCount();
     }
 
     /**

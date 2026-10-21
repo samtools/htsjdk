@@ -168,7 +168,7 @@ public final class FileBackedBinningIndex implements ReferenceBinsSource {
                 for (int i = 0; i < referenceCount; i++) {
                     all.add(getReference(i));
                 }
-                getNoCoordinateCount();
+                getUnplacedRecordCount();
                 source.close();
                 source = null;
             }
@@ -268,7 +268,7 @@ public final class FileBackedBinningIndex implements ReferenceBinsSource {
     }
 
     @Override
-    public OptionalLong getNoCoordinateCount() {
+    public OptionalLong getUnplacedRecordCount() {
         if (!noCoordinateCountRead) {
             if (referenceCount > 0) {
                 locate(referenceCount - 1);
@@ -302,7 +302,7 @@ public final class FileBackedBinningIndex implements ReferenceBinsSource {
             references.add(getReference(i));
         }
         return new BinningIndex(
-                minShift, depth, references, getNoCoordinateCount().orElse(-1));
+                minShift, depth, references, getUnplacedRecordCount().orElse(-1));
     }
 
     /** Forgets every parsed reference, as the collector may at any time. */

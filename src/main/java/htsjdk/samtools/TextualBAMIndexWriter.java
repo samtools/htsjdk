@@ -50,8 +50,8 @@ final class TextualBAMIndexWriter {
             for (int reference = 0; reference < index.getReferenceCount(); reference++) {
                 writeReference(pw, reference, index.getReference(reference));
             }
-            final String noCoordinateCount = index.getNoCoordinateCount().isPresent()
-                    ? Long.toString(index.getNoCoordinateCount().getAsLong())
+            final String noCoordinateCount = index.getUnplacedRecordCount().isPresent()
+                    ? Long.toString(index.getUnplacedRecordCount().getAsLong())
                     : "null";
             pw.println("No Coordinate Count=" + noCoordinateCount);
             // A PrintWriter keeps quiet about a failed write unless asked.

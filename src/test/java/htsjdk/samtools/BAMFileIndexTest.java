@@ -26,6 +26,7 @@ package htsjdk.samtools;
 import static org.testng.Assert.*;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.index.HtsQueryIndex;
 import htsjdk.samtools.util.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -36,6 +37,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Random;
 import java.util.Set;
 import org.testng.Assert;
@@ -338,6 +341,51 @@ public class BAMFileIndexTest extends HtsjdkTest {
         Assert.assertEquals(countElements(bamReader.queryOverlapping("chr7", 100, 100)), 2);
         bamReader.close();
         textReader.close();
+    }
+
+    @Test
+    public void testIndexOfABamWithoutUnplacedReadsCountsNoneAndHasNoSpanForThem() throws IOException {
+        try (final SamReader reader = indexedBamWithUnplacedReads(0)) {
+            final HtsQueryIndex index = reader.indexing().getHtsIndex();
+            Assert.assertEquals(index.getUnplacedRecordCount(), OptionalLong.of(0));
+            Assert.assertEquals(index.getSpanOfUnplaced(), Optional.empty());
+        }
+    }
+
+    @Test
+    public void testIndexOfABamWithUnplacedReadsCountsThemAndSpansThem() throws IOException {
+        try (final SamReader reader = indexedBamWithUnplacedReads(3)) {
+            final HtsQueryIndex index = reader.indexing().getHtsIndex();
+            Assert.assertEquals(index.getUnplacedRecordCount(), OptionalLong.of(3));
+
+            int unplaced = 0;
+            try (final SAMRecordIterator records =
+                    reader.indexing().iterator(index.getSpanOfUnplaced().orElseThrow())) {
+                while (records.hasNext()) {
+                    if (records.next().getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) unplaced++;
+                }
+            }
+            Assert.assertEquals(unplaced, 3);
+        }
+    }
+
+    /** Writes and opens an indexed BAM of ten reads on the first reference followed by the given unplaced reads. */
+    private static SamReader indexedBamWithUnplacedReads(final int unplacedCount) throws IOException {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        for (int i = 0; i < 10; i++) {
+            builder.addFrag("mapped" + i, 0, 100 + 10 * i, false);
+        }
+        for (int i = 0; i < unplacedCount; i++) {
+            builder.addUnmappedFragment("unplaced" + i);
+        }
+        final Path bamFile = Files.createTempFile("BAMFileIndexTest.", FileExtensions.BAM);
+        bamFile.toFile().deleteOnExit();
+        try (final SAMFileWriter writer =
+                new SAMFileWriterFactory().setCreateIndex(true).makeBAMWriter(builder.getHeader(), true, bamFile)) {
+            builder.forEach(writer::addAlignment);
+        }
+        SamFiles.findIndex(bamFile).toFile().deleteOnExit();
+        return SamReaderFactory.makeDefault().open(bamFile);
     }
 
     private <E> void consumeAll(final Collection<E> collection, final CloseableIterator<E> iterator) {

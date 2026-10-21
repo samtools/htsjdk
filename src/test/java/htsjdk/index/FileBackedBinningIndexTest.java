@@ -96,7 +96,7 @@ public class FileBackedBinningIndexTest extends HtsjdkTest {
                                 .getChunks());
             }
         }
-        Assert.assertEquals(actual.getNoCoordinateCount(), expected.getNoCoordinateCount());
+        Assert.assertEquals(actual.getUnplacedRecordCount(), expected.getUnplacedRecordCount());
         Assert.assertEquals(actual.loadAll(), expected);
     }
 
@@ -284,7 +284,7 @@ public class FileBackedBinningIndexTest extends HtsjdkTest {
     public void testBaiWithoutTheTrailingCount() throws IOException {
         final byte[] bytes = baiBytes(build(14, 5, false, 12), false);
         try (FileBackedBinningIndex index = FileBackedBinningIndex.open(write(bytes, ".bai"), false)) {
-            Assert.assertFalse(index.getNoCoordinateCount().isPresent());
+            Assert.assertFalse(index.getUnplacedRecordCount().isPresent());
             Assert.assertEquals(index.getReference(3), wholeBai(bytes).getReference(3));
         }
     }
@@ -309,7 +309,7 @@ public class FileBackedBinningIndexTest extends HtsjdkTest {
         try (FileBackedBinningIndex index = FileBackedBinningIndex.open(stream, false)) {
             index.getReference(0);
             failing[0] = true;
-            index.getNoCoordinateCount();
+            index.getUnplacedRecordCount();
         }
     }
 
@@ -319,7 +319,7 @@ public class FileBackedBinningIndexTest extends HtsjdkTest {
                 baiBytes(new BinningIndex.Builder(14, 5).reportingRecordCounts().build(0), true);
         try (FileBackedBinningIndex index = FileBackedBinningIndex.open(write(bytes, ".bai"), false)) {
             Assert.assertEquals(index.getReferenceCount(), 0);
-            Assert.assertEquals(index.getNoCoordinateCount().orElseThrow(), 0);
+            Assert.assertEquals(index.getUnplacedRecordCount().orElseThrow(), 0);
             Assert.assertTrue(index.getSpanOverlapping(0, 1, 100).isEmpty());
         }
     }

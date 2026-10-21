@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.index.BinningIndex;
 import htsjdk.index.ReferenceBins;
 import htsjdk.samtools.cram.BAIEntry;
+import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.OptionalLong;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -60,7 +62,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         // mapped and unmapped reads are counted, no unmapped
         assertIndexMetadata(index, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, mappedCount, 0);
-        Assert.assertEquals(index.getNoCoordinateCount().longValue(), 0);
+        Assert.assertEquals(index.getUnplacedRecordCount().getAsLong(), 0);
     }
 
     // TODO: creating a multi-ref container (even with a single multi-ref slice) is disabled
@@ -94,7 +96,7 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final BinningBAMIndex index = openIndex(indexBytes);
         assertIndexMetadata(index, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, MAPPED_COUNT, 0);
-        Assert.assertEquals(index.getNoCoordinateCount().longValue(), 0);
+        Assert.assertEquals(index.getUnplacedRecordCount().getAsLong(), 0);
     }
 
     @Test
@@ -115,7 +117,28 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
 
         final BinningBAMIndex index = openIndex(indexBytes);
         assertIndexMetadata(index, CRAMStructureTestHelper.REFERENCE_SEQUENCE_ZERO, 0, 0);
-        Assert.assertEquals(index.getNoCoordinateCount().longValue(), UNMAPPED_COUNT);
+        Assert.assertEquals(index.getUnplacedRecordCount().getAsLong(), UNMAPPED_COUNT);
+    }
+
+    @Test
+    public void testIndexConvertedFromACraiWithUnplacedEntriesDoesNotRecordHowManyRecordsAreUnplaced() {
+        final byte[] indexBytes = indexOfCraiEntries(
+                new CRAIEntry(0, 1_000, 5_000, 4_096, 100, 500), new CRAIEntry(-1, 0, 0, 8_192, 100, 500));
+
+        final BinningBAMIndex index = openIndex(indexBytes);
+
+        Assert.assertEquals(index.getUnplacedRecordCount(), OptionalLong.empty());
+        Assert.assertTrue(index.getSpanOfUnplaced().isPresent());
+    }
+
+    @Test
+    public void testIndexConvertedFromACraiWithoutUnplacedEntriesCountsNone() {
+        final byte[] indexBytes = indexOfCraiEntries(new CRAIEntry(0, 1_000, 5_000, 4_096, 100, 500));
+
+        final BinningBAMIndex index = openIndex(indexBytes);
+
+        Assert.assertEquals(index.getUnplacedRecordCount(), OptionalLong.of(0));
+        Assert.assertTrue(index.getSpanOfUnplaced().isEmpty());
     }
 
     @Test(expectedExceptions = CRAMException.class)
@@ -207,6 +230,16 @@ public class CRAMBAIIndexerTest extends HtsjdkTest {
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
+    }
+
+    private static byte[] indexOfCraiEntries(final CRAIEntry... entries) {
+        final ByteArrayOutputStream bai = new ByteArrayOutputStream();
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(bai, headerWithOneSequence(1_000_000));
+        for (final CRAIEntry entry : entries) {
+            indexer.processBAIEntry(new BAIEntry(entry));
+        }
+        indexer.finish();
+        return bai.toByteArray();
     }
 
     private static SAMFileHeader headerWithOneSequence(final int length) {

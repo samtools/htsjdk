@@ -6,6 +6,7 @@ import htsjdk.samtools.BAMIndex;
 import htsjdk.samtools.BAMIndexMetaData;
 import htsjdk.samtools.SAMFileSpan;
 import java.util.Optional;
+import java.util.OptionalLong;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -15,9 +16,20 @@ public class HtsQueryIndexTest extends HtsjdkTest {
     /** A BAMIndex stub; exercises the inherited defaults. */
     private static class StubBAMIndex implements BAMIndex {
         private final long startOfLastLinearBin;
+        private final OptionalLong unplacedRecordCount;
 
         StubBAMIndex(final long startOfLastLinearBin) {
+            this(startOfLastLinearBin, OptionalLong.empty());
+        }
+
+        StubBAMIndex(final long startOfLastLinearBin, final OptionalLong unplacedRecordCount) {
             this.startOfLastLinearBin = startOfLastLinearBin;
+            this.unplacedRecordCount = unplacedRecordCount;
+        }
+
+        @Override
+        public OptionalLong getUnplacedRecordCount() {
+            return unplacedRecordCount;
         }
 
         @Override
@@ -80,6 +92,29 @@ public class HtsQueryIndexTest extends HtsjdkTest {
             Assert.assertTrue(span.isPresent());
             Assert.assertFalse(span.get().isEmpty());
             Assert.assertEquals(((BAMFileSpan) span.get()).toCoordinateArray(), new long[] {12345L, Long.MAX_VALUE});
+        }
+    }
+
+    @Test
+    public void testAnIndexThatRecordsNoCountReportsNone() {
+        try (final MinimalQueryIndex index = new MinimalQueryIndex()) {
+            Assert.assertEquals(index.getUnplacedRecordCount(), OptionalLong.empty());
+        }
+    }
+
+    @Test
+    public void testBamIndexReportsNoUnplacedSpanWhenItCountsNoUnplacedRecords() {
+        try (final BAMIndex index = new StubBAMIndex(12345L, OptionalLong.of(0))) {
+            Assert.assertEquals(index.getSpanOfUnplaced(), Optional.empty());
+        }
+    }
+
+    @Test
+    public void testBamIndexReportsAnUnplacedSpanWhenItCountsUnplacedRecords() {
+        try (final BAMIndex index = new StubBAMIndex(12345L, OptionalLong.of(3))) {
+            Assert.assertEquals(
+                    ((BAMFileSpan) index.getSpanOfUnplaced().orElseThrow()).toCoordinateArray(),
+                    new long[] {12345L, Long.MAX_VALUE});
         }
     }
 

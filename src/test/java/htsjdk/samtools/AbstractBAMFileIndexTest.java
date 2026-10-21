@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -43,5 +44,10 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
     @Test(expectedExceptions = SAMException.class)
     public static void testGetLevelSizeFail() {
         afi.getLevelSize(6);
+    }
+
+    @Test
+    public static void testUnplacedRecordCountIsTheNoCoordinateCount() {
+        Assert.assertEquals(afi.getUnplacedRecordCount(), OptionalLong.of(afi.getNoCoordinateCount()));
     }
 }

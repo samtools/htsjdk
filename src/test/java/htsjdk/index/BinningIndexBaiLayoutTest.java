@@ -6,6 +6,7 @@ import htsjdk.samtools.util.RuntimeEOFException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.OptionalLong;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -67,6 +68,23 @@ public class BinningIndexBaiLayoutTest extends HtsjdkTest {
     public void testIndexSurvivesARoundTrip() {
         final BinningIndex index = threeReferenceIndex();
         Assert.assertEquals(read(write(index), 3), index);
+    }
+
+    @Test
+    public void testIndexWithoutAnUnplacedRecordCountReadsBackWithoutOne() {
+        final BinningIndex index = threeReferenceIndex().withUnplacedRecordCount(OptionalLong.empty());
+        Assert.assertEquals(read(write(index), 3).getUnplacedRecordCount(), OptionalLong.empty());
+    }
+
+    @Test
+    public void testReplacedUnplacedRecordCountReadsBack() {
+        final BinningIndex index = threeReferenceIndex().withUnplacedRecordCount(OptionalLong.of(7));
+        Assert.assertEquals(read(write(index), 3).getUnplacedRecordCount(), OptionalLong.of(7));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNegativeUnplacedRecordCountIsRejected() {
+        threeReferenceIndex().withUnplacedRecordCount(OptionalLong.of(-1));
     }
 
     @Test

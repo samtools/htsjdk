@@ -27,6 +27,6 @@ public final class BinningIndexTestUtils {
                 index.getMinShift(),
                 index.getDepth(),
                 references,
-                index.getNoCoordinateCount().orElse(0));
+                index.getUnplacedRecordCount().orElse(0));
     }
 }

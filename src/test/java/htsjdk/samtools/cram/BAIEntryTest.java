@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceContext;
 import htsjdk.samtools.cram.structure.AlignmentContext;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -61,5 +62,17 @@ public class BAIEntryTest extends HtsjdkTest {
             final long sliceHeaderBlockByteOffset,
             final int landmarkIndex) {
         new BAIEntry(referenceContext, alignmentSpan, containerOffset, sliceHeaderBlockByteOffset, landmarkIndex);
+    }
+
+    @Test
+    public void testEntryMadeFromItsPartsHasRecordCounts() {
+        final BAIEntry entry = new BAIEntry(new ReferenceContext(0), new AlignmentSpan(1, 100, 5, 0, 0), 1000, 100, 0);
+        Assert.assertTrue(entry.hasRecordCounts());
+    }
+
+    @Test
+    public void testEntryMadeFromACraiEntryHasNoRecordCounts() {
+        final BAIEntry entry = new BAIEntry(new CRAIEntry(0, 1, 100, 1000, 100, 500));
+        Assert.assertFalse(entry.hasRecordCounts());
     }
 }

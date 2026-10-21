@@ -56,6 +56,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 
 /**
  * Class for both constructing BAM index content and writing it out.
@@ -87,6 +88,9 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             new BinningIndex.Builder(BinningIndex.BAI_MIN_SHIFT, BinningIndex.BAI_DEPTH).reportingRecordCounts();
 
     private final CompressorCache compressorCache = new CompressorCache();
+
+    // False once an unplaced entry without record counts arrives, as every entry converted from a CRAI is.
+    private boolean unplacedRecordCountKnown = true;
 
     /**
      * Create a CRAM indexer that writes BAI to a file.
@@ -143,7 +147,11 @@ public class CRAMBAIIndexer implements CRAMIndexer {
             throw new SAMException("Expecting a single reference or unmapped slice.");
         }
         if (!entryContext.isMappedSingleRef()) {
-            indexBuilder.addNoCoordinateRecords(baiEntry.getUnmappedUnplacedReadsCount());
+            if (baiEntry.hasRecordCounts()) {
+                indexBuilder.addNoCoordinateRecords(baiEntry.getUnmappedUnplacedReadsCount());
+            } else {
+                unplacedRecordCountKnown = false;
+            }
             return;
         }
 
@@ -188,7 +196,9 @@ public class CRAMBAIIndexer implements CRAMIndexer {
     public void finish() {
         // The codec owns the output, so that it is closed even when the index cannot be built or written.
         try (BinaryCodec codec = new BinaryCodec(output)) {
-            final BinningIndex index = indexBuilder.build(numReferences);
+            final BinningIndex built = indexBuilder.build(numReferences);
+            final BinningIndex index =
+                    unplacedRecordCountKnown ? built : built.withUnplacedRecordCount(OptionalLong.empty());
             codec.writeBytes(BAMFileConstants.BAM_INDEX_MAGIC);
             codec.writeInt(numReferences);
             index.writeBaiLayout(codec);

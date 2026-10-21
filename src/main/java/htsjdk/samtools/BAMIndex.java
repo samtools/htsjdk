@@ -27,6 +27,7 @@ import htsjdk.index.HtsFileSpan;
 import htsjdk.index.HtsQueryIndex;
 import htsjdk.samtools.util.FileExtensions;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 /**
  * A basic interface for querying BAM indices.
@@ -77,12 +78,16 @@ public interface BAMIndex extends HtsQueryIndex {
     /**
      * {@inheritDoc}
      *
-     * <p>Derived from the last linear bin: present from there to end of file, whether or not any
-     * record there is unplaced; empty when the file has no mapped reads, since a BAI cannot express
-     * the first record's position.
+     * <p>Derived from the last linear bin: present from there to end of file unless {@link
+     * #getUnplacedRecordCount()} says there are no unplaced records, so present when the index does not
+     * record the count; empty when the file has no mapped reads, since a BAI cannot express the first
+     * record's position.
      */
     @Override
     default Optional<HtsFileSpan> getSpanOfUnplaced() {
+        if (getUnplacedRecordCount().equals(OptionalLong.of(0))) {
+            return Optional.empty();
+        }
         final long startOfLastLinearBin = getStartOfLastLinearBin();
         return startOfLastLinearBin == -1
                 ? Optional.empty()
