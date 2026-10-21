@@ -37,7 +37,8 @@ import java.util.List;
  * Parameters that control the encoding strategy used when writing CRAM. Includes the CRAM version,
  * compression level, container/slice sizing, and per-{@link DataSeries} compressor assignments.
  *
- * <p>The default constructor applies the {@link CRAMCompressionProfile#NORMAL} profile. Use
+ * <p>The default constructor applies the {@link CRAMCompressionProfile#NORMAL} profile, or
+ * {@link CRAMCompressionProfile#NORMAL_3_0} once {@link #setCramVersion} asks for CRAM 3.0. Use
  * {@link CRAMCompressionProfile#toStrategy()} or {@link CRAMCompressionProfile#applyTo(CRAMEncodingStrategy)}
  * to configure a specific profile.
  *
@@ -64,6 +65,10 @@ public class CRAMEncodingStrategy {
     private int slicesPerContainer = 1;
 
     private EnumMap<DataSeries, CompressorDescriptor> compressorMap;
+
+    // The profile whose codecs the strategy holds, or null once the caller has set codecs itself. setCramVersion uses
+    // it to swap NORMAL's codecs for NORMAL_3_0's and back, so that a default strategy asked for CRAM 3.0 writes it.
+    private CRAMCompressionProfile codecProfile;
 
     // Optional: additional trial compression candidates per data series. When present for a data series,
     // the primary compressor from compressorMap plus these additional candidates are wrapped in a
@@ -106,10 +111,14 @@ public class CRAMEncodingStrategy {
     }
 
     /**
-     * Set the CRAM version to write. Every compressor the strategy uses must be available in that version (see
-     * {@link htsjdk.samtools.cram.structure.block.BlockCompressionMethod#getMinimumCramVersion()}), which the
-     * writer checks when it is created; the profiles for CRAM 3.0 are {@link CRAMCompressionProfile#NORMAL_3_0} and
-     * {@link CRAMCompressionProfile#FAST}.
+     * Set the CRAM version to write.
+     *
+     * <p>If the strategy's codecs are still those of {@link CRAMCompressionProfile#NORMAL} or
+     * {@link CRAMCompressionProfile#NORMAL_3_0}, as after the default constructor, they become those of whichever of
+     * the two writes this version, and other settings are kept. Otherwise every compressor the strategy uses must be
+     * available in the version, which the writer checks when it is created (see
+     * {@link htsjdk.samtools.cram.structure.block.BlockCompressionMethod#getMinimumCramVersion()}); the profiles for
+     * CRAM 3.0 are {@link CRAMCompressionProfile#NORMAL_3_0} and {@link CRAMCompressionProfile#FAST}.
      *
      * @param cramVersion {@link CramVersions#CRAM_v3} or {@link CramVersions#CRAM_v3_1}; htsjdk reads CRAM 2.1 but
      *     does not write it
@@ -121,7 +130,18 @@ public class CRAMEncodingStrategy {
                 cramVersion.equals(CramVersions.CRAM_v3) || cramVersion.equals(CramVersions.CRAM_v3_1),
                 "htsjdk writes CRAM 3.0 and 3.1, not " + cramVersion);
         this.cramVersion = cramVersion;
+        if (codecProfile != null) {
+            final CRAMCompressionProfile profileForVersion = codecProfile.forCramVersion(cramVersion);
+            if (profileForVersion != null && profileForVersion != codecProfile) {
+                profileForVersion.applyCodecsTo(this);
+            }
+        }
         return this;
+    }
+
+    /** Records which profile's codecs the strategy holds; see {@link CRAMCompressionProfile#applyCodecsTo}. */
+    void setCodecProfile(final CRAMCompressionProfile codecProfile) {
+        this.codecProfile = codecProfile;
     }
 
     /**
@@ -232,12 +252,13 @@ public class CRAMEncodingStrategy {
     public CRAMEncodingStrategy setCompressorMap(final EnumMap<DataSeries, CompressorDescriptor> compressorMap) {
         ValidationUtils.nonNull(compressorMap, "compressor map must not be null");
         this.compressorMap = new EnumMap<>(compressorMap);
+        this.codecProfile = null;
         return this;
     }
 
-    /** @return the per-DataSeries compressor map, or null if not set */
+    /** @return a copy of the per-DataSeries compressor map, or null if not set; change it with the setter */
     public EnumMap<DataSeries, CompressorDescriptor> getCompressorMap() {
-        return compressorMap;
+        return compressorMap == null ? null : new EnumMap<>(compressorMap);
     }
 
     /**
@@ -251,12 +272,16 @@ public class CRAMEncodingStrategy {
     public CRAMEncodingStrategy setTrialCandidatesMap(
             final EnumMap<DataSeries, java.util.List<CompressorDescriptor>> trialCandidatesMap) {
         this.trialCandidatesMap = trialCandidatesMap != null ? new EnumMap<>(trialCandidatesMap) : null;
+        this.codecProfile = null;
         return this;
     }
 
-    /** @return the trial candidates map, or null if trial compression is not configured */
+    /**
+     * @return a copy of the trial candidates map, or null if trial compression is not configured; change it with the
+     *     setter
+     */
     public EnumMap<DataSeries, java.util.List<CompressorDescriptor>> getTrialCandidatesMap() {
-        return trialCandidatesMap;
+        return trialCandidatesMap == null ? null : new EnumMap<>(trialCandidatesMap);
     }
 
     /**
@@ -279,6 +304,7 @@ public class CRAMEncodingStrategy {
                     () -> candidate.method() + " cannot compress tag values");
         }
         this.tagCompressorCandidates = List.copyOf(tagCompressorCandidates);
+        this.codecProfile = null;
         return this;
     }
 
@@ -297,6 +323,9 @@ public class CRAMEncodingStrategy {
      */
     public void setCustomCompressionHeaderEncodingMap(final CompressionHeaderEncodingMap encodingMap) {
         this.customCompressionHeaderEncodingMap = encodingMap;
+        if (encodingMap != null) {
+            this.codecProfile = null;
+        }
     }
 
     /** @return the custom encoding map, or null if the compressor map should be used */

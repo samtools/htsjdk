@@ -530,6 +530,25 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     }
 
     @Test
+    public void defaultStrategyAskedForCram30WritesOnlyCram30Codecs() throws IOException {
+        final List<SAMRecord> records = createRecordsWithTags(2000);
+        final ReferenceSource refSource = createReferenceSource();
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (CRAMFileWriter writer = new CRAMFileWriter(
+                new CRAMEncodingStrategy().setCramVersion(CramVersions.CRAM_v3),
+                os,
+                null,
+                true,
+                refSource,
+                createSAMHeader(SAMFileHeader.SortOrder.coordinate),
+                null)) {
+            writeRecordsToCRAM(writer, records);
+        }
+        assertOnlyCodecsOfVersion(os.toByteArray(), CramVersions.CRAM_v3);
+        validateRecords(records, new ByteArrayInputStream(os.toByteArray()), refSource);
+    }
+
+    @Test
     public void tagCompressorsChangedAfterTheWriterIsCreatedAreNotUsed() throws IOException {
         final List<SAMRecord> records = createRecordsWithTags(2000);
         final ReferenceSource refSource = createReferenceSource();
