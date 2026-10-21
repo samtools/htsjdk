@@ -113,12 +113,36 @@ public enum CRAMCompressionProfile {
      * @param strategy the strategy to modify
      */
     public void applyTo(final CRAMEncodingStrategy strategy) {
-        strategy.setCramVersion(cramVersion);
         strategy.setGZIPCompressionLevel(gzipLevel);
         strategy.setReadsPerSlice(readsPerSlice);
+        applyCodecsTo(strategy);
+        strategy.setCramVersion(cramVersion);
+    }
+
+    /** Sets this profile's codecs on the strategy and records that they are this profile's. */
+    void applyCodecsTo(final CRAMEncodingStrategy strategy) {
         strategy.setCompressorMap(buildCompressorMap());
         strategy.setTrialCandidatesMap(buildTrialCandidatesMap());
         strategy.setTagCompressorCandidates(buildTagCompressorCandidates());
+        strategy.setCodecProfile(this);
+    }
+
+    /**
+     * @param version the CRAM version to write
+     * @return the profile whose codecs suit that version in this profile's place: this profile if it writes the
+     *     version, {@link #NORMAL_3_0} for {@link #NORMAL} and the reverse, otherwise null
+     */
+    CRAMCompressionProfile forCramVersion(final CRAMVersion version) {
+        if (cramVersion.equals(version)) {
+            return this;
+        }
+        if (this == NORMAL) {
+            return NORMAL_3_0;
+        }
+        if (this == NORMAL_3_0) {
+            return NORMAL;
+        }
+        return null;
     }
 
     /**

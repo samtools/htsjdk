@@ -191,8 +191,9 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
 
     @Test
     public void cram30StrategyWithACram31CodecIsRejected() {
-        // the default (NORMAL) profile's compressors include rANS Nx16, FQZComp and the name tokeniser
-        final CRAMEncodingStrategy strategy = new CRAMEncodingStrategy().setCramVersion(CramVersions.CRAM_v3);
+        // ARCHIVE's compressors include rANS Nx16, FQZComp and the name tokeniser, and it has no CRAM 3.0 counterpart
+        final CRAMEncodingStrategy strategy =
+                CRAMCompressionProfile.ARCHIVE.toStrategy().setCramVersion(CramVersions.CRAM_v3);
         final IllegalArgumentException e =
                 Assert.expectThrows(IllegalArgumentException.class, () -> new CompressionHeaderFactory(strategy));
         Assert.assertTrue(e.getMessage().startsWith("CRAM 3.0 does not specify the "), e.getMessage());
