@@ -645,19 +645,20 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     /**
-     * @return The set of sample names for all genotypes in this context, in arbitrary order
+     * @return an unmodifiable view of the sample names of all genotypes in this context, in arbitrary order
      */
     public Set<String> getSampleNames() {
         ensureSampleNameMap();
-        return sampleNameToOffset.keySet();
+        return Collections.unmodifiableSet(sampleNameToOffset.keySet());
     }
 
     /**
-     * @return The set of sample names for all genotypes in this context, in their natural ordering (A, B, C)
+     * @return an unmodifiable view of the sample names of all genotypes in this context, in their natural ordering
+     *     (A, B, C)
      */
     public List<String> getSampleNamesOrderedByName() {
         ensureSampleOrdering();
-        return sampleNamesInOrder;
+        return Collections.unmodifiableList(sampleNamesInOrder);
     }
 
     public boolean containsSample(final String sample) {

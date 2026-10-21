@@ -1204,12 +1204,15 @@ public class VariantContext implements HtsRecord, Feature, Serializable {
     }
 
     /**
-     * @return the set of all sample names in this context, not ordered
+     * @return an unmodifiable view of all sample names in this context, not ordered
      */
     public Set<String> getSampleNames() {
         return getGenotypes().getSampleNames();
     }
 
+    /**
+     * @return an unmodifiable view of all sample names in this context, in their natural ordering
+     */
     public List<String> getSampleNamesOrderedByName() {
         return getGenotypes().getSampleNamesOrderedByName();
     }

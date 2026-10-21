@@ -208,6 +208,22 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         gc.add(MISSING);
     }
 
+    @Test
+    public void testSampleNamesCannotBeModified() {
+        final GenotypesContext gc = GenotypesContext.create(new ArrayList<>(Arrays.asList(AA, AT)));
+        Assert.assertThrows(
+                UnsupportedOperationException.class, () -> gc.getSampleNames().retainAll(Set.of("AA")));
+        Assert.assertTrue(gc.containsSample("AT"));
+    }
+
+    @Test
+    public void testSampleNamesOrderedByNameCannotBeModified() {
+        final GenotypesContext gc = GenotypesContext.create(new ArrayList<>(Arrays.asList(AT, AA)));
+        Assert.assertThrows(UnsupportedOperationException.class, () -> gc.getSampleNamesOrderedByName()
+                .remove("AA"));
+        Assert.assertEquals(gc.getSampleNamesOrderedByName(), Arrays.asList("AA", "AT"));
+    }
+
     @Test(enabled = true, dataProvider = "GenotypesContextProvider")
     public void testClear(GenotypesContextProvider cfg) {
         GenotypesContext gc = cfg.makeContext();
