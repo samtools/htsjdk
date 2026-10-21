@@ -2385,6 +2385,47 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         }
     }
 
+    /** Writes the records to a BGZF BCF with its CSI made on the fly, and returns the BCF's path. */
+    private Path writeWithOnTheFlyCsi(final VCFHeader header, final List<VariantContext> records) throws IOException {
+        final Path output = Files.createTempFile(tempDir, "onTheFlyCsi.", ".bcf");
+        output.toFile().deleteOnExit();
+        output.resolveSibling(output.getFileName() + FileExtensions.CSI)
+                .toFile()
+                .deleteOnExit();
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(output)
+                .setReferenceDictionary(header.getSequenceDictionary())
+                .setOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            records.forEach(writer::add);
+        }
+        return output;
+    }
+
+    /** @return the records the query finds in the BCF through the CSI beside it */
+    private static List<String> queryThroughCsi(final Path bcf, final String contig, final int start, final int end)
+            throws IOException {
+        try (final BCFFileReader reader =
+                        new BCFFileReader(bcf, bcf.resolveSibling(bcf.getFileName() + FileExtensions.CSI));
+                final CloseableIterator<VariantContext> records = reader.query(contig, start, end)) {
+            return contigsAndStarts(records);
+        }
+    }
+
+    @Test
+    public void onTheFlyCsiReachesPastContigsWithoutLengths() throws IOException {
+        final VCFHeader header = new VCFHeader(Set.of(new VCFContigHeaderLine(Map.of("ID", "chr1"), 0)), List.of());
+        final Path bcf = writeWithOnTheFlyCsi(header, List.of(siteAt("chr1", 100), siteAt("chr1", 151000)));
+        Assert.assertEquals(queryThroughCsi(bcf, "chr1", 150000, 152000), List.of("chr1:151000"));
+    }
+
+    @Test
+    public void onTheFlyCsiAcceptsARecordAtPositionZero() throws IOException {
+        final Path bcf = writeWithOnTheFlyCsi(twoContigSitesHeader(), List.of(siteAt("chr1", 0), siteAt("chr1", 10)));
+        Assert.assertEquals(queryThroughCsi(bcf, "chr1", 1, 100), List.of("chr1:10"));
+    }
+
     // ============================================================
     // Constructor guard: Tribble indexing over a BGZF stream is refused
     // ============================================================

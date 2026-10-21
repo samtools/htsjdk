@@ -26,9 +26,11 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCFCsiIndex;
 import htsjdk.variant.bcf2.BCFFileReader;
 import java.io.BufferedInputStream;
 import java.io.Closeable;
@@ -269,8 +271,9 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
             "it is a CSI index, whose offsets are BGZF virtual offsets, and the BCF is not BGZF-compressed";
     private static final String TRIBBLE_OVER_BGZF_BCF = "it is a Tribble index, whose offsets are into the "
             + "decompressed data, so a query through it would find nothing in a BGZF-compressed BCF";
-    private static final String FIX_FOR_BGZF_BCF = "Index the BCF with CSI, as bcftools index does, or as "
-            + "VariantContextWriterBuilder does with Options.INDEX_ON_THE_FLY when it writes the BCF";
+    private static final String FIX_FOR_BGZF_BCF = "Index the BCF with CSI, as bcftools index or "
+            + "IndexFactory.createIndex with IndexType.CSI does, or as VariantContextWriterBuilder does with "
+            + "Options.INDEX_ON_THE_FLY when it writes the BCF";
     private static final String FIX_FOR_RAW_BCF = "Index the BCF with a Tribble index "
             + "(IndexFactory.createDynamicIndex), or compress it to BGZF with bcftools view -Ob and index that with "
             + "bcftools index";
@@ -434,13 +437,20 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      *
      * @param featureResource the path to the source file containing the features
      * @param codec used to decode the features
-     * @param index index of featureResource
+     * @param index a Tribble index of featureResource; not a TBI or CSI index ({@link TabixIndex} or
+     *     {@link BCFCsiIndex}), which is read from its file
      * @return a reader for this data
      * @throws TribbleException
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(
             final String featureResource, final FeatureCodec<FEATURE, SOURCE> codec, final Index index)
             throws TribbleException {
+        // Their blocks are BGZF virtual offsets, which TribbleIndexedFeatureReader would take for file offsets
+        if (index instanceof TabixIndex || index instanceof BCFCsiIndex) {
+            throw new TribbleException("A TBI or CSI index is not read from memory: write it to a file if it is not "
+                    + "in one, and open the file it indexes through getFeatureReader with the index's path, or with "
+                    + "none to find it beside the file: " + featureResource);
+        }
         try {
             return new TribbleIndexedFeatureReader<>(featureResource, codec, index);
         } catch (final IOException e) {

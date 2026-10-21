@@ -43,9 +43,17 @@ import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCFFileReader;
+import htsjdk.variant.bcf2.BCFVersion;
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -53,6 +61,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -360,5 +369,64 @@ public class IndexFactoryTest extends HtsjdkTest {
                 TribbleException.MalformedFeatureFile.class,
                 () -> IndexFactory.createIndex(input, codec, IndexFactory.IndexType.LINEAR));
         assertMessageContains(e, input.toString(), "abc");
+    }
+
+    /** Writes a BCF of two SNPs on chr1, BGZF-compressed BCF 2.2 or raw BCF 2.1, without an index. */
+    private static Path writeBcf(final BCFVersion version) throws IOException {
+        final SAMSequenceDictionary dictionary =
+                new SAMSequenceDictionary(List.of(new SAMSequenceRecord("chr1", 10000)));
+        final VCFHeader header = new VCFHeader(Set.of(), List.of());
+        header.setSequenceDictionary(dictionary);
+        final Path bcf = Files.createTempFile("IndexFactoryTest.", ".bcf");
+        bcf.toFile().deleteOnExit();
+        try (VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputPath(bcf)
+                .setReferenceDictionary(dictionary)
+                .setBCFVersion(version)
+                .unsetOption(Options.INDEX_ON_THE_FLY)
+                .build()) {
+            writer.writeHeader(header);
+            for (final int position : new int[] {100, 300}) {
+                writer.add(new VariantContextBuilder(
+                                "test", "chr1", position, position, List.of(Allele.REF_A, Allele.ALT_C))
+                        .make());
+            }
+        }
+        return bcf;
+    }
+
+    @Test
+    public void csiIndexOfABgzfBcfIsTheIndexBcfFileReaderBuilds() throws IOException {
+        final Path bcf = writeBcf(BCFVersion.BCF_2_2);
+        final Index index = IndexFactory.createIndex(bcf, new BCF2Codec(), IndexFactory.IndexType.CSI, null);
+        try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
+            Assert.assertEquals(index, reader.createCsiIndex());
+        }
+    }
+
+    @Test
+    public void tabixIndexOfABcfIsRefused() throws IOException {
+        final Path bcf = writeBcf(BCFVersion.BCF_2_2);
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class,
+                () -> IndexFactory.createIndex(bcf, new BCF2Codec(), IndexFactory.IndexType.TABIX, null));
+        assertMessageContains(e, "TBI index cannot address a BCF", IndexFactory.IndexType.CSI.toString());
+    }
+
+    @Test
+    public void tabixIndexOfAMissingVcfFailsWithATribbleException() {
+        final Path missing = Path.of("does-not-exist.vcf.gz");
+        Assert.assertThrows(
+                TribbleException.class,
+                () -> IndexFactory.createIndex(missing, new VCFCodec(), IndexFactory.IndexType.TABIX, null));
+    }
+
+    @Test
+    public void csiIndexOfARawBcfIsRefused() throws IOException {
+        final Path bcf = writeBcf(BCFVersion.BCF_2_1);
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class,
+                () -> IndexFactory.createIndex(bcf, new BCF2Codec(), IndexFactory.IndexType.CSI, null));
+        assertMessageContains(e, "needs a BGZF-compressed BCF");
     }
 }

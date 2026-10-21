@@ -108,7 +108,8 @@ public class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     private static final String CANNOT_INDEX_COMPRESSED_BCF = "A gzip/BGZF-compressed BCF cannot be indexed through "
             + "BCF2Codec, whose positions are offsets into the decompressed data rather than into the file. Index a "
             + "BGZF-compressed BCF with CSI instead: VariantContextWriterBuilder writes one as it writes the BCF "
-            + "(Options.INDEX_ON_THE_FLY), and bcftools index makes one for an existing file";
+            + "(Options.INDEX_ON_THE_FLY), and IndexFactory.createIndex with IndexType.CSI, or bcftools index, makes "
+            + "one for an existing file";
 
     private static final int MAX_HEADER_SIZE = 128 * 1024 * 1024; // 128 MiB
 

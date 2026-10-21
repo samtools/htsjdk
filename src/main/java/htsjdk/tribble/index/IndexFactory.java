@@ -32,6 +32,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
@@ -48,6 +49,9 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.utils.ValidationUtils;
+import htsjdk.variant.bcf2.BCFCsiIndex;
+import htsjdk.variant.bcf2.BCFFileReader;
+import htsjdk.variant.vcf.VariantFileType;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
@@ -313,12 +317,18 @@ public class IndexFactory {
     }
 
     /**
-     * Create an index of the specified type with default binning parameters
+     * Create an index of the specified type with default binning parameters.
+     *
+     * <p>A BCF, recognised by its contents, takes {@link IndexType#CSI} if it is BGZF-compressed, which gives the bare
+     * CSI {@code bcftools index} writes (a {@link BCFCsiIndex}), and {@link IndexType#LINEAR} or
+     * {@link IndexType#INTERVAL_TREE} if it is uncompressed. Neither takes {@link IndexType#TABIX}, which htslib cannot
+     * build for a BCF either.
      *
      * @param inputPath the input path to load features from
-     * @param codec     the codec to use for decoding records
+     * @param codec     the codec to use for decoding records; unused for a BCF given {@link IndexType#CSI}
      * @param type      the type of index to create
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
+     * @throws TribbleException if the file cannot take an index of the type, or cannot be read or indexed
      */
     public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(
             final Path inputPath,
@@ -331,12 +341,54 @@ public class IndexFactory {
             case LINEAR:
                 return createLinearIndex(inputPath, codec);
             case TABIX:
+                if (isBcf(inputPath)) {
+                    throw new TribbleException("A TBI index cannot address a BCF, as htslib's cannot; use "
+                            + IndexType.CSI + " for a BGZF-compressed BCF: " + inputPath.toUri());
+                }
                 return createTabixIndex(inputPath, codec, sequenceDictionary);
             case CSI:
+                if (isBcf(inputPath)) {
+                    return createBcfCsiIndex(inputPath);
+                }
                 return createTabixIndex(
                         inputPath, codec, codec.getTabixFormat(), sequenceDictionary, TabixIndexType.CSI);
             default:
                 throw new IllegalArgumentException("Unrecognized IndexType " + type);
+        }
+    }
+
+    /**
+     * @return whether the file's contents are BCF's, compressed or not; false if the file cannot be read, so that
+     *     the indexer of other formats reports it
+     */
+    private static boolean isBcf(final Path inputPath) {
+        try {
+            return VariantFileType.fromContents(inputPath)
+                    .filter(t -> t == VariantFileType.BCF)
+                    .isPresent();
+        } catch (final RuntimeIOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Builds the CSI index of a BGZF-compressed BCF; see {@link BCFFileReader#createCsiIndex()}.
+     *
+     * @throws TribbleException if the BCF is not BGZF-compressed, which a CSI index cannot address, or cannot be
+     *     read or indexed
+     */
+    private static BCFCsiIndex createBcfCsiIndex(final Path bcfPath) {
+        try {
+            if (!IOUtil.isBlockCompressed(bcfPath)) {
+                throw new TribbleException("A CSI index needs a BGZF-compressed BCF, as bcftools writes: compress the "
+                        + "BCF with bcftools view -Ob, or index an uncompressed BCF with " + IndexType.LINEAR + " or "
+                        + IndexType.INTERVAL_TREE + ": " + bcfPath.toUri());
+            }
+            try (final BCFFileReader reader = new BCFFileReader(bcfPath, null)) {
+                return reader.createCsiIndex();
+            }
+        } catch (final IOException e) {
+            throw new TribbleException("Could not index " + bcfPath.toUri(), e);
         }
     }
 

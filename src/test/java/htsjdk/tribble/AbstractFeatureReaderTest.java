@@ -18,11 +18,14 @@ import htsjdk.testutil.http.LocalHttpServer;
 import htsjdk.testutil.streams.RecordingChannelWrapper;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCFCsiIndex;
+import htsjdk.variant.bcf2.BCFFileReader;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -504,6 +507,29 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         final TribbleException e = Assert.expectThrows(TribbleException.class, () -> openBcf(bcf, true));
         Assert.assertTrue(e.getMessage().contains("x.bcf.csi"), e.getMessage());
         Assert.assertTrue(e.getMessage().contains("bcftools index"), e.getMessage());
+    }
+
+    @Test
+    public void aBcfCsiIndexInMemoryIsRefused() throws IOException {
+        final Path bcf = writeBgzfBcf(newBcfTestDir().resolve("x.bcf"), false);
+        final BCFCsiIndex index;
+        try (BCFFileReader reader = new BCFFileReader(bcf, null)) {
+            index = reader.createCsiIndex();
+        }
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class,
+                () -> AbstractFeatureReader.getFeatureReader(bcf.toString(), new BCF2Codec(), index));
+        Assert.assertTrue(e.getMessage().contains("not read from memory"), e.getMessage());
+    }
+
+    @Test
+    public void aTbiIndexInMemoryIsRefused() throws IOException {
+        final Path tbi = writeTbi(newBcfTestDir());
+        final String vcf = tbi.toString().substring(0, tbi.toString().length() - FileExtensions.TABIX_INDEX.length());
+        final Index index = IndexFactory.loadIndex(tbi.toString());
+        final TribbleException e = Assert.expectThrows(
+                TribbleException.class, () -> AbstractFeatureReader.getFeatureReader(vcf, new VCFCodec(), index));
+        Assert.assertTrue(e.getMessage().contains("not read from memory"), e.getMessage());
     }
 
     @Test

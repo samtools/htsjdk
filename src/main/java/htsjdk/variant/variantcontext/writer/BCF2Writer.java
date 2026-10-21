@@ -27,7 +27,6 @@ package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.index.BinningIndex;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -35,6 +34,7 @@ import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
+import htsjdk.variant.bcf2.BCFCsiIndex;
 import htsjdk.variant.bcf2.BCFDictionary;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.utils.GeneralUtils;
@@ -355,7 +355,8 @@ public class BCF2Writer extends IndexingVariantContextWriter {
                 }
                 final long chunkEnd = bgzfStream.getFilePointer();
                 try {
-                    csiIndexBuilder.add(refIdx, vc.getStart(), vc.getEnd(), chunkStart, chunkEnd);
+                    // A record at POS 0, a telomere, is indexed at 1, as htslib indexes it
+                    csiIndexBuilder.add(refIdx, Math.max(vc.getStart(), 1), vc.getEnd(), chunkStart, chunkEnd);
                 } catch (final RuntimeException e) {
                     csiFailed = true;
                     throw e;
@@ -467,13 +468,7 @@ public class BCF2Writer extends IndexingVariantContextWriter {
         fieldManager.setup(this.header, encoder, stringDictionaryMap, bcfVersion, outputVersion);
 
         if (csiIndexPath != null) {
-            long longestContig = 0;
-            for (final SAMSequenceRecord seq :
-                    this.header.getSequenceDictionary().getSequences()) {
-                longestContig = Math.max(longestContig, seq.getSequenceLength());
-            }
-            final BinningIndex.Geometry geo = BinningIndex.shallowestCsiGeometry(14, longestContig);
-            csiIndexBuilder = new BinningIndex.Builder(geo.minShift(), geo.depth(), true);
+            csiIndexBuilder = BCFCsiIndex.binningIndexBuilderFor(this.header);
         }
     }
 
