@@ -12,16 +12,15 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ## 6.0.0
 
-Major release.  It includes every change in 5.0.2.  Before upgrading, read "Upgrading from 5.x"; to explain differences from output written by 5.x, see "Output that differs from 5.x".
+Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
 
 ### Headlines
 
-- **`java.nio.file.Path` throughout the public API.**  Every reader, writer, index and reference works with any NIO file system provider (S3, GCS, HDFS, jimfs), and `String` and `URI` arguments are resolved by their scheme.
-- **BCF 2.2, as bcftools writes it.**  htsjdk reads BCF 2.1 and 2.2, raw or BGZF-compressed, queries BGZF BCF through a CSI index, and writes BGZF BCF 2.2 with a CSI index by default.
-- **VCF 3.2 through 4.5 are read by default, and 4.0 through 4.5 written**, with VCF 4.4 and 4.5's new `Number` codes, per-allele phasing, structural-variant alleles and breakends, and record ends from `SVLEN` and `LEN`.
-- **CRAM is indexed with a `.crai` and queried from it directly**, so a CRAM on a reference longer than 512 Mbp is queryable.  The CRAM 3.1 profiles choose codecs as htslib does.
-- **CSI indexes for BAM and tabix-indexed files**, for references longer than 512 Mbp, and **bgzipped SAM** that is written, indexed and queried like BAM.
-- **Faster than 5.0.2**: converting BAM to CRAM takes 29% less time, reading VCF 9–11% less, and writing bgzipped VCF 12% less.
+- [**`java.nio.file.Path` throughout the public API.**](#paths-and-files)  Every reader, writer, index and reference works with any NIO file system provider (S3, GCS, HDFS, jimfs), and `String` and `URI` arguments are resolved by their scheme.
+- [**Current VCF and BCF.**](#vcf-and-bcf-versions)  VCF 3.2 to 4.5 are read and 4.0 to 4.5 written, with VCF 4.4 and 4.5's additions.  BCF 2.1 and 2.2 are read, raw or BGZF, and BCF is written as bcftools writes it, BGZF BCF 2.2 with a CSI index.
+- [**CSI indexes, and CRAM's own CRAI.**](#indexing)  BAM, bgzipped VCF and other tabix files, and BCF can be indexed with CSI, for references longer than 512 Mbp.  CRAM is indexed with a `.crai` and queried from it directly.
+- [**Bgzipped SAM is an indexed format**](#bgzipped-sam), written, indexed and queried like BAM.
+- [**Faster than 5.0.2.**](#performance)  Converting BAM to CRAM takes 29% less time, reading VCF 9–11% less, and writing bgzipped VCF 12% less.  The CRAM 3.1 profiles choose codecs as htslib does.
 
 ### Upgrading from 5.x
 
@@ -29,65 +28,62 @@ These changes can break code that compiles or runs against 5.x.
 
 #### Paths and files
 
-- **`java.io.File` APIs are replaced by `java.nio.file.Path`** (224 methods and constructors).  Pass a `Path`, or a `String` or `URI`, which `IOUtil.getPath` resolves by scheme, falling back to the local file system.  Bridge a `File` with `file.toPath()` or the null-safe `IOUtil.toPath(file)`.  HTTP(S) and FTP still go through htsjdk's `SeekableStream`s.
+- **`java.io.File` APIs are replaced by `java.nio.file.Path`** (224 methods and constructors).  Pass a `Path`, or a `String` or `URI`, which `IOUtil.getPath` resolves by scheme; bridge a `File` with `file.toPath()` or the null-safe `IOUtil.toPath(file)`.
 
   ```java
   SamReader r = SamReaderFactory.makeDefault().open(Path.of("/data/x.bam"));
   SAMFileWriter w = new SAMFileWriterFactory().makeBAMWriter(header, true, Path.of("/data/out.bam"));
-  ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(Path.of("/data/ref.fasta"));
   SamReader s3 = SamReaderFactory.makeDefault().open(URI.create("s3://bucket/x.bam")); // with an S3 provider on the class path
   ```
 
 - **A few `File` APIs remain**: temporary files (`IOUtil.newTempFile`, `getDefaultTmpDir`, `createTempDir`), the bridges `IOUtil.toPath` and `filesToPaths`, and sixteen deprecated overloads, each with a `Path` twin, in `CRAMFileReader`, `MetricsFile`, `BlockCompressedInputStream` and `CRAIIndex`.
-- `Defaults.REFERENCE_FASTA` is a `Path`; an unparseable `samjdk.reference_fasta` is logged and treated as unset.
-- **`ReferenceSequenceFile.close()` no longer declares `IOException`** ([#1179]); a failure to close throws `RuntimeIOException`.  Only source is affected: delete catch blocks that only closing a reference needed, and `throws IOException` from implementations of `close()`.
+- `Defaults.REFERENCE_FASTA` is a `Path`.
+- `ReferenceSequenceFile.close()` no longer declares `IOException` ([#1179]): delete catch blocks that only it needed, and `throws IOException` from implementations of `close()`.
 - Removed: `NotPrimarySkippingIterator`, deprecated since 2.13.0 (use `SecondaryAlignmentSkippingIterator`), and `TestUtil.BASE_URL_FOR_HTTP_TESTS`.
 
 #### SAM, BAM and CRAM
 
-- **An indexed CRAM is written with a `.crai`, not a `.cram.bai`.**  `SamFiles.findIndex` finds either, but code that names or globs for `.cram.bai` must change.  `SAMFileWriterFactory.setCreateBaiIndexForCram(true)` writes a BAI for one more release; it is deprecated and goes in 7.0.0.
-- **A reader's index is no longer a `DiskBasedBAMFileIndex`, `CSIIndex` or `AbstractBAMFileIndex`**, so casts to them fail.  Ask `SamReader.Indexing.getHtsIndex` for what you need: `getHtsIndex(BrowseableBAMIndex.class)` for bins, `getHtsIndex(BAMIndex.class)` for per-reference counts, `getHtsIndex(CRAIQueryIndex.class)` for CRAM container offsets.  `getIndex()` is deprecated; for a CRAI-indexed CRAM it returns a BAM index made from the CRAI, whose record counts are zero.  A CRAI keeps no counts, so `getUnplacedRecordCount()` is empty for a CRAM with unplaced reads; `CRAMBAIIndexer` builds an index that counts.
+- **A CRAM writer refuses codecs its CRAM version lacks**, where 5.x wrote a file labelled 3.0 full of 3.1 codecs.  A default strategy asked for CRAM 3.0 takes the new `NORMAL_3_0` profile's codecs; SMALL, ARCHIVE and codecs set by hand are refused for 3.0.  `setCramVersion` accepts only 3.0 and 3.1.
+- **`SAMFileWriterFactory` writes `x.sam.gz` as bgzipped SAM**, where it wrote BAM, and recognises names in any case: `x.SAM` and `x.CRAM` are SAM and CRAM, not BAM, and `x.BAM`'s index is `x.bai`.
+- **Text follows the SAM specification** ([#1108], [#1202]): header text is UTF-8, and read names and Z and A tags ISO-8859-1.  A header line that isn't valid UTF-8, as 5.x wrote non-ASCII ones, is read as ISO-8859-1, and a non-ASCII read name in a CRAM from 5.x reads back as its UTF-8 bytes.  Writing a tab, line break or NUL a field can't hold, or a char above 0xFF in a read name or tag, throws `IllegalArgumentException`.
+- **Records the specification allows on unmapped and unpaired reads are accepted** ([#1584]): RNAME `*` with a MAPQ or CIGAR, and MAPQ 255 on an unmapped read.  Pair and mate flags on an unpaired read, and other MAPQs on an unmapped read, are warnings, among them the new `INVALID_UNPAIRED_FLAG_MATE_UNMAPPED` and `INVALID_UNMAPPED_MAPPING_QUALITY`; STRICT still rejects them.
+- **`SAMSequenceRecord` accepts names outside the SAM RNAME pattern** ([#1295]), except an empty name, `*`, `=`, and names with spaces or control characters.  In a SAM or BAM header such a name is the new `INVALID_SEQUENCE_NAME` error.  Check names with `validateSequenceName` or `isValidSequenceName`.
+- **A read group's `DT` is kept as written** ([#561]), not rewritten in the JVM's time zone, which changes `SAMUtils.calculateReadGroupRecordChecksum` for such headers.  An unparseable `DT` is a warning, and `getRunDate()` returns null for it.
+
+#### VCF and BCF
+
+- **BCF is written as BGZF BCF 2.2 with a `.csi` index.**  `VariantContextWriterBuilder.setBCFVersion(BCFVersion.BCF_2_1)` writes raw BCF 2.1 with a Tribble `.idx`, as 5.x did; only raw BCF accepts a custom `IndexCreator`.
+- **Writing records out of order with on-the-fly indexing throws** ([#787]).  `INDEX_ON_THE_FLY` is a default option, so this applies to any VCF or BCF written to a file with a reference dictionary: sort the records, or unset the option.
+- **VCF and BCF are recognised by one rule** ([#664]): `.vcf`, `.gvcf` and `.bcf`, and `.vcf` or `.gvcf` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case.  `VariantContextWriterBuilder` throws for `x.gz`, `x.txt.gz` and `x.bcf.gz`, which 5.x wrote as BGZF VCF; call `setOutputFileType` after `setOutputPath` to write any format under any name.
+- **Header and sample collections are unmodifiable**: `VCFHeader`'s accessors, and `getSampleNames()` and `getSampleNamesOrderedByName()` on `VariantContext` and `GenotypesContext`; copy before changing.  `getSampleNamesInOrder()` and `getSampleNameToOffset()` return `List` and `Map`, not `ArrayList` and `HashMap`.
+- **A header keeps the first INFO, FORMAT, FILTER or structured line per ID** ([#250], [#929]), as bcftools does, and numbers its contig lines itself ([#1573]).
+- **A standard INFO or FORMAT line declared with another type is kept as declared** (`GQ` as `Float`, for example), so `VCFUtils.smartMergeHeaders` refuses a key declared with two types; fix such a header first, for example with `VCFStandardHeaderLines.getInfoLine("DB")`.  The standard `PQ` line is `Integer` ([#751]).
+- **A header keeps the version it declares** through copies and merges, and null if it declares none.  Writers write the version given to `setVCFVersion`, else the header's (at least 4.2), and refuse a header line that needs a later one.  `VCFHeader.validateVersionTransition` is gone.
+- **A record's end is worked out as htslib works it out**, from REF, `END`, `SVLEN` (for `<DEL>`, `<DUP>`, `<CNV>` and `<INV>`) and `LEN`, so `getEnd()` changes for symbolic alleles with an `SVLEN` and no `END`.
+- **A genotype keeps each allele's phase** (`0/1|2`, and VCF 4.4's leading `|0/1`).  Writing a phase the output version can't express throws; `VCFEncoder.writeGtField` has an overload that allows it.
+- **`BCF2Type`'s integer ranges leave the sentinel values unused**, as htslib does: −127..−121 are written as INT16, the seven values above `Integer.MIN_VALUE` are refused, and an INT8 −127, INT16 −32767 or INT32 −2147483647 in a BCF from an earlier htsjdk reads as the end of its vector.
+- **VCF, GFF3 and Tribble text are read and written as UTF-8**, not Latin-1 or the platform default: a byte in a Latin-1 file that isn't valid UTF-8 reads as U+FFFD and is lost on rewrite.
+- The `samjdk.optimistic_vcf_4_4` property and `Defaults.OPTIMISTIC_VCF_4_4` and `OPTIMISTIC_VCF_4_4_PROPERTY` are removed.  `VCF3Codec` no longer takes part in codec discovery.
+- `StructuralVariantType` gains `MIXED`, which `VariantContext.getStructuralVariantType()` returns when the alleles have more than one major type or disagree with `SVTYPE`.
+- `VCFCompoundHeaderLine.equals` compares `Source` and `Version`.  Header attribute values are escaped when written, so a caller that escaped quotes itself must stop.
+- For `AbstractVCFCodec` subclasses: `parseFilters` takes the line number, the scratch fields (`parts`, `genotypeParts`, `alleleMap`, `lineNo`, `filterHash`) are gone, and `stringCache` is private (use `getCachedString`).
+
+#### Indexes
+
+- **An indexed CRAM is written with a `.crai`, not a `.cram.bai`.**  `SamFiles.findIndex` finds either; `SAMFileWriterFactory.setCreateBaiIndexForCram(true)` writes a BAI for one more release.
+- **A reader's index is no longer a `DiskBasedBAMFileIndex`, `CSIIndex` or `AbstractBAMFileIndex`**, so casts to them fail.  Ask `SamReader.Indexing.getHtsIndex` instead: `getHtsIndex(BrowseableBAMIndex.class)` for bins, `getHtsIndex(BAMIndex.class)` for per-reference counts, `getHtsIndex(CRAIQueryIndex.class)` for CRAM containers.  `getIndex()` is deprecated.  A CRAI keeps no counts, so `getUnplacedRecordCount()` is empty for a CRAM with unplaced reads.
 
   ```java
   // 5.x: ((AbstractBAMFileIndex) reader.indexing().getIndex()).getNoCoordinateCount()
   OptionalLong unplaced = reader.indexing().getHtsIndex().getUnplacedRecordCount();
   ```
 
-- The deprecated BAM index classes still work when constructed directly, but a query that finds nothing returns an empty span rather than `null`, their memory-mapping arguments do nothing, and `AbstractBAMFileIndex`'s protected methods for reading the index file are gone.
-- `BAMIndexMerger` merges BAI parts only and rejects a CSI; `processIndex` reads the part's index at once, so the caller may close it.
-- **A CRAM writer refuses, when it is created, a codec that its CRAM version lacks**, where 5.x wrote a file labelled 3.0 full of 3.1 codecs.  A default strategy asked for CRAM 3.0 takes the new `NORMAL_3_0` profile's codecs, keeping its other settings; SMALL, ARCHIVE and codecs set by hand are kept, and refused with a message naming the profiles that write 3.0 (`FAST`, `NORMAL_3_0`).  `setCramVersion` accepts only 3.0 and 3.1; htsjdk still reads CRAM 2.1.
-- **`SAMFileWriterFactory` writes `x.sam.gz` as bgzipped SAM**, where it wrote BAM, and recognises names in any case: `x.SAM` and `x.CRAM`, which it wrote as BAM, are SAM and CRAM, and the index beside `x.BAM` is `x.bai`.
-- **Text is encoded as the SAM specification says, and a value that would corrupt the file is refused** ([#1108], [#1202]).  Header text is UTF-8 in SAM, BAM and CRAM, and a header line that isn't valid UTF-8, as 5.x wrote non-ASCII ones, is read as ISO-8859-1; read names and Z and A tags are ISO-8859-1, so bytes 0x80–0xFF pass through as in htslib.  Writing throws `IllegalArgumentException` for a tab, line break or NUL a field can't hold, and for a char above 0xFF in a read name or tag.  A non-ASCII read name in a CRAM from 5.x, which stored it as UTF-8, reads back as those bytes.
-- **Records the specification allows on unmapped and unpaired reads are accepted** ([#1584]): RNAME `*` with a MAPQ or CIGAR parses, and MAPQ 255 on an unmapped read is valid.  Pair and mate flags on an unpaired read, and an unmapped read's MAPQ other than 0 or 255, are now warnings rather than errors, among them the new `INVALID_UNPAIRED_FLAG_MATE_UNMAPPED` and `INVALID_UNMAPPED_MAPPING_QUALITY`: `SamFileValidator` reports them as `WARNING:`, and STRICT readers still reject them.
-- **`SAMSequenceRecord` accepts names outside the SAM RNAME pattern** ([#1295]), rejecting only an empty name, spaces, control characters, `*` and `=`.  Such a name in a SAM or BAM header is the new `INVALID_SEQUENCE_NAME` error, which STRICT reading rejects; `.dict` files and VCF headers load it with a warning.  Check names with `SAMSequenceRecord.validateSequenceName` or `isValidSequenceName`.
-- **A read group's `DT` is kept as written** ([#561]), where 5.x rewrote it in the JVM's time zone, so header text and `SAMUtils.calculateReadGroupRecordChecksum` change for headers 5.x rewrote.  An unparseable `DT` is the warning `INVALID_DATE_STRING`, and `getRunDate()` returns null for it.
-
-#### VCF and BCF
-
-- **BCF is written as BGZF BCF 2.2 with a `.csi` index**, as bcftools writes it.  `VariantContextWriterBuilder.setBCFVersion(BCFVersion.BCF_2_1)` writes raw BCF 2.1 with a Tribble `.idx`, as 5.x did; `build()` refuses a custom `IndexCreator` for BGZF BCF.
-- **Records out of order with on-the-fly indexing throw `IllegalArgumentException`** ([#787]) rather than running out of memory or writing an index that misses records.  `INDEX_ON_THE_FLY` is a default option, so this applies to any VCF or BCF written to a file with a reference dictionary: sort the records, or unset the option.
-- **VCF and BCF are recognised by one rule** ([#664]): `.vcf`, `.gvcf` and `.bcf`, and `.vcf` or `.gvcf` followed by `.gz`, `.gzip`, `.bgz` or `.bgzf`, in any case.  `VariantContextWriterBuilder` throws for `x.gz`, `x.txt.gz` and `x.bcf.gz`, which it wrote as BGZF VCF; call `setOutputFileType` after `setOutputPath` to write any format under any name.  Readers tell VCF from BCF by the file's contents.
-- **Sample and header-line collections are unmodifiable.**  `VCFHeader`'s sample and header-line accessors return unmodifiable views, `getSampleNamesInOrder()` and `getSampleNameToOffset()` return `List` and `Map` (they were `ArrayList` and `HashMap`), and changing the result of `getSampleNames()` or `getSampleNamesOrderedByName()` on a `VariantContext` or `GenotypesContext` throws; for a record read from VCF those were the header's own collections.  Copy before changing.
-- **A header keeps the first INFO, FORMAT, FILTER or structured line per ID** ([#250], [#929]), as bcftools does, and drops later ones, which lookups never saw.  It numbers its contig lines itself and keeps every distinct contig ([#1573]); a repeated contig ID whose attributes conflict throws.
-- **A standard INFO or FORMAT line declared with another type is kept as declared**, where 5.x replaced it with the standard line.  `FORMAT/GQ` declared as `Float` stays `Float`, and `VCFUtils.smartMergeHeaders` refuses headers that declare a key with different types (`INFO/DB` as `Integer` in one and `Flag` in another); fix such a header first, for example with `VCFStandardHeaderLines.getInfoLine("DB")`.  The standard `PQ` line is `Integer` ([#751]).
-- **A header keeps the version it declares** through copies and merges, and `smartMergeHeaders` takes the highest; `VCFHeader.validateVersionTransition` is gone.  A writer writes the version given to `setVCFVersion`, else the header's (at least 4.2), and refuses a header line that needs a later version than that.  A header that declares no version returns null from `getVCFHeaderVersion()`, and its lines no longer begin with a 4.2 `##fileformat` line.
-- **A record's end is worked out as htslib works it out**: the furthest of the REF allele, `END`, `POS + SVLEN` for `<DEL>`, `<DUP>`, `<CNV>` and `<INV>`, and `LEN` for a reference block without `END`.  An `END` of `.` or before `POS` is ignored.  `getEnd()`, indexing and BCF `rlen` change for symbolic alleles with an `SVLEN` but no `END`.
-- **A genotype keeps each allele's phase** where one flag is not enough (`0/1|2`, and VCF 4.4's leading `|0/1`).  Writing a first-allele phase the output version can't express throws; `VCFEncoder.writeGtField` has an overload that allows it.
-- **`BCF2Type`'s integer ranges leave the sentinel values unused**, as the specification and htslib do: INT8 is −120..127, INT16 −32760..32767 and INT32 −2147483640..2147483647.  So −127..−121 are written as INT16, the seven values above `Integer.MIN_VALUE` are refused with a `TribbleException`, and an INT8 −127, INT16 −32767 or INT32 −2147483647 in a BCF from an earlier htsjdk reads as the end of its vector.
-- **`BCF2Codec` reads decompressed bytes**, so it refuses a compressed stream, and a Tribble index can't be built over BGZF BCF ([#945]), where 5.x built one that found nothing; index it with CSI.
-- **The `samjdk.optimistic_vcf_4_4` property and `Defaults.OPTIMISTIC_VCF_4_4` and `OPTIMISTIC_VCF_4_4_PROPERTY` are removed**, since VCF 4.4 and 4.5 are read by default.  `VCF3Codec` no longer takes part in codec discovery.
-- **VCF, GFF3 and Tribble text are read and written as UTF-8**, where 5.x used Latin-1 or the platform default: in a Latin-1 file, a byte that is not valid UTF-8 reads as U+FFFD and is lost on rewrite.
-- `StructuralVariantType` gains `MIXED`, which `VariantContext.getStructuralVariantType()` returns when the alleles have more than one major type or disagree with `SVTYPE`.
-- `VCFCompoundHeaderLine.equals` compares `Source` and `Version`.  Header attribute values are taken as given and escaped when written, so a caller that escaped quotes itself must stop.
-- For `AbstractVCFCodec` subclasses: `parseFilters` takes the line number, the scratch fields (`parts`, `genotypeParts`, `alleleMap`, `lineNo`, `filterHash`) are gone, and `stringCache` is private (use `getCachedString`).
-
-#### Tabix and Tribble
-
-- **`TabixIndex` is built on the new `BinningIndex`**: `TabixIndex(TabixFormat, List<String>, BinningIndex)` and `getBinningIndex()` replace the `BinningIndexContent[]` constructor and `getIndices()`, and the internal index types of `TabixReader` and `TabixUtils` are gone.  A truncated `.tbi` throws `TribbleException`.
+- The deprecated BAM index classes still work when constructed directly, but a query that finds nothing returns an empty span, not `null`, their memory-mapping arguments do nothing, and `AbstractBAMFileIndex`'s protected methods for reading the file are gone.  `BAMIndexMerger` rejects a CSI.
+- **`TabixIndex` is built on the new `BinningIndex`**: `TabixIndex(TabixFormat, List<String>, BinningIndex)` and `getBinningIndex()` replace the `BinningIndexContent[]` constructor and `getIndices()`, and the internal index types of `TabixReader` and `TabixUtils` are gone.
 - **A `.csi` beside a tabix-indexed file is preferred to a `.tbi`**, as htslib prefers it.
-- **`AbstractFeatureReader.getFeatureReader(resource, codec, Index)` refuses a `TabixIndex` or `BCFCsiIndex`**, whose BGZF offsets it would misread; open the file with the index's path instead.
-- **Tribble iterators close when read to their end, and closing a reader closes any still open** ([#494]), which can then no longer be used.
-- A query whose start is after its end returns nothing from a Tribble `.idx` ([#204]), as from every other index.
+- **A Tribble index can't be built over BGZF BCF** ([#945]), where 5.x built one that found nothing; `BCF2Codec` refuses a compressed stream.  Index BGZF BCF with CSI.
+- `AbstractFeatureReader.getFeatureReader(resource, codec, Index)` refuses a `TabixIndex` or `BCFCsiIndex`, whose BGZF offsets it would misread; give it the index's path instead.
+- Tribble iterators close when read to their end, and closing a reader closes any still open ([#494]).  A query whose start is after its end returns nothing from a Tribble `.idx` ([#204]).
 
 #### Other
 
@@ -98,69 +94,73 @@ These changes can break code that compiles or runs against 5.x.
 
 ### Output that differs from 5.x
 
-What htsjdk writes, for anyone comparing output with files 5.x wrote (expected test outputs, for example).  Each is a fix or a documented change above.
+What htsjdk writes, for anyone comparing output with files 5.x wrote (expected test outputs, for example).  Each is a fix or a change described elsewhere in this section.
 
-- **VCF header**: only the first line per ID is kept; a standard line declared with another type stays as declared (`GQ` as `Float`, for example); `##contig` lines carry `md5`, `URL` and `species` from a sequence dictionary ([#730]); `##fileformat` is the header's version, at least 4.2, where a copy of a 4.3 or later header used to be written as 4.2; INFO and FORMAT lines keep every attribute, the standard ones first and the rest in their original order, and quoted values are escaped as the specification requires; repeated unstructured lines and structured lines with distinct IDs are kept ([#500], [#277]).
-- **VCF records**: negative doubles are written like positive ones (`-5.00`, not `-5.000e+00`); a missing GT is written as `.` where 5.x threw, and a sample with every value missing as `.` rather than an empty column; String values are percent-encoded from VCF 4.3; `0/1|2` is written as it is, not as `0|1|2`; `LAA` follows `GT`.
-- **BCF**: BGZF BCF 2.2 with a `.csi`; `IDX=` on every FILTER, INFO, FORMAT and contig line; flags as `BCF_BT_NULL`; vectors sized from their values and padded with END_OF_VECTOR; the GT width follows the allele count; the first allele's phase bit is set as htslib sets it; −127..−121 are stored as INT16; `rlen` comes from the record's end as htslib works it out.
-- **CRAM**: a `.crai` rather than a `.cram.bai`; `M5` added to `@SQ` lines that lack it ([#506]); the file id holds the file name, so the same records written to different places give identical files ([#1068]); empty blocks are written RAW ([#1633]); reads without bases, unsigned `B` arrays and pairs whose template lengths depend on each other are stored as htslib stores them; the profiles choose different codecs (see "Performance").
+- **VCF header**: only the first line per ID is kept; a standard line declared with another type stays as declared; `##contig` lines carry `md5`, `URL` and `species` from a sequence dictionary ([#730]); `##fileformat` is the header's version (at least 4.2), where a copy of a 4.3 header used to be written as 4.2; INFO and FORMAT lines keep every attribute, and quoted values are escaped as the specification requires; repeated unstructured lines, and structured lines with distinct IDs, are kept ([#500], [#277]).
+- **VCF records**: negative doubles are written like positive ones (`-5.00`, not `-5.000e+00`); a missing GT is written as `.`, where 5.x threw, and a sample with every value missing as `.`, not an empty column; String values are percent-encoded from VCF 4.3; `0/1|2` is written as it is, not as `0|1|2`.
+- **BCF**: BGZF BCF 2.2 with a `.csi`; `IDX=` on FILTER, INFO, FORMAT and contig lines; vectors sized from their values and padded with END_OF_VECTOR; flags, GT width, phase bits and `rlen` as htslib writes them.
+- **CRAM**: a `.crai`, not a `.cram.bai`; `M5` added to `@SQ` lines without one ([#506]); the file id is the file name, so the same records give identical files wherever they are written ([#1068]); empty blocks written RAW ([#1633]); reads without bases, unsigned `B` arrays and pairs with linked template lengths stored as htslib stores them; different codec choices (see [Performance](#performance)).
 - **SAM and BAM**: header text is UTF-8; `@RG DT` is as written; a CIGAR too long for BAM goes in `CG:B:I`, not `CG:B:i` ([#1560]); a U in SEQ is read and written as T ([#1728]); `x.sam.gz` is bgzipped SAM.
-- **Indexes**: BAI, TBI and CSI have htslib's content (small bins folded into their parents, empty linear-index windows given the next window's offset) and equal samtools' and tabix's once read, except that a CSI for bgzipped SAM also carries a tabix header naming every sequence; a TBI carries the record counts tabix writes ([#1586]); a CRAM's BAI has real offsets in its metadata ([#401]); the last chunk of an index written with a BAM ends where samtools ends it.
-- **Elsewhere**: `FastaReferenceWriter`'s `.fai` gives a sequence shorter than one line its own line widths, as samtools does; the `.md5` beside a gzipped file is of the compressed file ([#758]); `BasicFastqWriter` ends lines with `\n` on every platform ([#1105]); warnings go through `Log`, with its time and class prefix ([#1261]).
+- **Indexes**: BAI, TBI and CSI have htslib's content and equal samtools' and tabix's once read (a CSI for bgzipped SAM also carries a tabix header); a TBI carries record counts as tabix's does ([#1586]); a CRAM's BAI has real offsets in its metadata ([#401]).
+- **Elsewhere**: `FastaReferenceWriter`'s `.fai` gives a sequence shorter than one line its own line widths, as samtools does; the `.md5` beside a gzipped file is of the compressed file ([#758]); `BasicFastqWriter` ends lines with `\n` on every platform ([#1105]); warnings go through `Log` ([#1261]).
 
 ### New features
 
-#### Indexes
+#### VCF and BCF versions
 
-- **CRAM is queried from its CRAI** through the new `CRAIQueryIndex` ([#851]), so a CRAM on a reference longer than 512 Mbp is queryable ([#1747]) and opening one is about 70% faster.
-- **`SamReader.Indexing.getHtsIndex()`** returns a file's index in its own form, as the new format-neutral `htsjdk.index.HtsQueryIndex`, with `getSpanOfUnplaced()` and `getUnplacedRecordCount()`; `iterator(HtsFileSpan)` reads a span from it.
-- **`htsjdk.index.BinningIndex`**: one sparse implementation of the BAI, TBI and CSI binning index, with a `Builder`, `merge`, and readers and writers for each layout.  An index over 50,000 one-record contigs takes 10 MB rather than 951 MB.  `FileBackedBinningIndex` reads one from its file.
-- **BAI and CSI indexes are read a reference at a time, when a query needs them**, and held while memory allows: 1,000 queries on one chromosome of a whole-genome BAI take 2 ms rather than 64, and a CSI 11 ms rather than 932.  `SamReaderFactory.indexLoading(IndexLoading)` chooses `LAZY`, `EAGER` or `AUTO`, the default, which reads an index whole when it is given as a stream, is not on the default file system, or is under a megabyte, and lazily otherwise.  Every BAI and CSI is browseable, and `BamIndexValidator` checks any of them.
-- **CSI for BAM**: `SAMFileWriterFactory.setBamIndexType(BamIndexType)` writes a BAI (the default), a CSI (`x.bam.csi`), or `AUTO`, a CSI only when a sequence is too long for a BAI; `setCsiMinShift` sets the smallest bins.  `BAMIndexer.createIndex(reader, output, log, indexType)` indexes an existing BAM.
+| | Read | Written |
+|---|---|---|
+| VCF | 3.2 to 4.5, by default | 4.0 to 4.5: the version given to `setVCFVersion`, else the header's, at least 4.2 |
+| BCF | 2.1 and 2.2, raw or BGZF | BGZF BCF 2.2 by default; raw BCF 2.1 with `setBCFVersion(BCFVersion.BCF_2_1)` |
 
-  ```java
-  SAMFileWriter w = new SAMFileWriterFactory()
-          .setCreateIndex(true)
-          .setBamIndexType(BamIndexType.AUTO)
-          .makeBAMWriter(header, true, Path.of("out.bam"));
-  ```
+VCF 4.4 and 4.5 bring the `Number` codes `P`, `LA`, `LR`, `LG` and `M`; a phase for each allele, including a leading `|0/1` (`Genotype.isAllelePhased`); reserved keys, as constants in the new `VCFConstants.INFO` and `VCFConstants.FORMAT`, and as lines in `VCFStandardHeaderLines` where a key's definition doesn't vary by version; symbolic and breakend alleles, parsed into `StructuralVariantAllele` and `Breakend`; and record ends from `SVLEN` and `LEN`.  String values are percent-encoded from VCF 4.3, and text is UTF-8.
 
-- **CSI for tabix-indexed files** (VCF, BED, GFF): `TabixIndexType.CSI` for `TabixIndexCreator`, `TabixIndexMerger`, `IndexFactory` (`IndexType.CSI`) and `VariantContextWriterBuilder.setTabixIndexType`.  The binning scheme and record counts are tabix's.
-- **`TabixIndex.getRecordCount(String)` and `getRecordCount()`** give record counts from the index, as `bcftools index -s` and `-n` do ([#1586]).
-- **BGZF BCF is queried through a CSI** by the new `BCFFileReader`, which `VCFFileReader` and `getFeatureReader` use; `getFeatureReader` finds `x.bcf.csi` or `x.csi`, from htsjdk or bcftools.  `IndexFactory.createIndex(path, codec, IndexType.CSI, dictionary)` builds the CSI of an existing BGZF BCF whose contigs are in the header's order.
+BCF is read as htslib reads it, from its dictionaries (sparse `IDX` values included) to its end-of-vector markers, and decodes to the values the VCF reader gives ([#946]).  `BCF2Writer` is public.  The VCF and BCF codecs are thread-safe once their header is read ([#1026]).
 
-#### SAM, BAM and CRAM
+#### Indexing
 
-- **Bgzipped SAM** (`x.sam.gz`, also `.gzip`, `.bgz` and `.bgzf`) is written by `SAMFileWriterFactory`, indexed on the fly (CSI by default; `setSamIndexType`), queried through a samtools or tabix index like a BAM when opened from a `Path`, and indexed after the fact with `BAMIndexer.createIndex` from a reader opened with `INCLUDE_SOURCE_IN_RECORDS`.
-- **`SAMRecordQueryNameNaturalComparator`** sorts read names in samtools' natural order (`SS:queryname:natural`).
+| Format | Index written | Indexes read |
+|---|---|---|
+| BAM | BAI by default, or CSI | BAI, CSI |
+| CRAM | CRAI | CRAI, BAI |
+| Bgzipped SAM | CSI by default, or BAI | BAI and CSI from `samtools index`; TBI and CSI from `tabix` |
+| Bgzipped VCF, BED, GFF | TBI by default, or CSI | TBI, CSI |
+| BCF | CSI for BGZF BCF; Tribble `.idx` for raw BCF 2.1 | CSI, `.idx` |
+
+- **Choose the index** with `SAMFileWriterFactory.setBamIndexType` or `setSamIndexType` (`BAI`, `CSI`, or `AUTO`, a CSI only when a sequence is too long for a BAI) and `VariantContextWriterBuilder.setTabixIndexType` (`TBI` or `CSI`).
+- **Index an existing file** with `BAMIndexer.createIndex(reader, output, log, indexType)` for BAM and bgzipped SAM, and `IndexFactory.createIndex(path, codec, type, dictionary)` for bgzipped text (`IndexType.TABIX` or `CSI`) and BGZF BCF (`CSI`, for a BCF whose contigs are in the header's order).
+- **References longer than 512 Mbp** need CSI, or CRAI for CRAM.
+- **Indexes match htslib's**: equal to samtools' and tabix's once read, with the record counts `bcftools index -n` reads, which `TabixIndex.getRecordCount` gives too ([#1586]).
+
+Every index answers queries through one format-neutral interface, `htsjdk.index.HtsQueryIndex`, which `SamReader.Indexing.getHtsIndex()` returns; `getHtsIndex(Class)` reaches what one format alone has.  A CRAM is queried from its CRAI directly ([#851]), so a CRAM on a reference longer than 512 Mbp is queryable ([#1747]) and opening one is about 70% faster.  BGZF BCF is queried through its CSI by the new `BCFFileReader`, which `VCFFileReader` uses.
+
+BAI and CSI indexes are read a reference at a time when a query first needs them, and kept while memory allows: 1,000 queries on one chromosome of a whole-genome BAI take 2 ms rather than 64, and through a CSI 11 ms rather than 932.  `SamReaderFactory.indexLoading` chooses `LAZY`, `EAGER` or `AUTO`, the default, which reads an index whole when it is given as a stream, is on another file system, or is under a megabyte.  BAI, TBI and CSI share one sparse implementation, `htsjdk.index.BinningIndex`, so an index over 50,000 small contigs takes 10 MB rather than 951 MB, and queries through a tabix index are faster (`VCFFileReader.query` −20%).
+
+#### Bgzipped SAM
+
+`x.sam.gz` (or `.gzip`, `.bgz` or `.bgzf`) is now an indexed format, like BAM:
+
+- `SAMFileWriterFactory` writes it, and indexes it while writing: a CSI by default (`x.sam.gz.csi`, as samtools writes), or a BAI with `setSamIndexType`.
+- A file opened from a `Path` is queried like a BAM, through the BAI or CSI of `samtools index` or the TBI or CSI of `tabix -p sam`.
+- An existing file is indexed with `BAMIndexer.createIndex`, from a reader opened with `INCLUDE_SOURCE_IN_RECORDS`.
+
+#### Other new features
+
+- `SAMRecordQueryNameNaturalComparator` sorts read names in samtools' natural order (`SS:queryname:natural`).
+- The `NORMAL_3_0` CRAM profile writes CRAM 3.0 with rANS 4x8 and GZIP, which htsjdk before 4.3.0 and other readers without CRAM 3.1 support read.
 - `CRAMContainerStreamWriter.finish(writeEOFContainer, closeStream)` lets a caller keep its stream open ([#1092]).
-- **The `NORMAL_3_0` CRAM profile** writes CRAM 3.0 with rANS 4x8 and GZIP, which htsjdk before 4.3.0 and other readers without CRAM 3.1 support read.
-
-#### VCF and BCF
-
-- **BCF 2.1 and 2.2 are read, raw or BGZF-compressed** ([#946]), with htslib's dictionaries (sparse `IDX` values included) and values as the VCF reader holds them.  `BCF2Writer` is public, and `VariantContextWriterBuilder.setBCFVersion` chooses the version.
-- **VCF 3.2 through 4.5 are read by default; 4.0 through 4.5 are written**, chosen with `VariantContextWriterBuilder.setVCFVersion`.  `VCFHeaderVersion` gains `VCF4_5` and methods that say what a version implies.
-- **VCF 4.4 and 4.5 additions**: `Number=P`, `LA`, `LR`, `LG` and `M`; per-allele phase (`Genotype.isAllelePhased`, `hasPerAllelePhasing`, `GenotypeBuilder.allelePhasing`); every reserved INFO and FORMAT key as a constant in the new nested `VCFConstants.INFO` and `VCFConstants.FORMAT`, and in `VCFStandardHeaderLines` each one whose definition is the same in every version.
-- **Structural variants**: `StructuralVariantAllele` and `Breakend` parse symbolic and breakend alleles in every form the specification gives (`Allele.asStructuralVariant()`, `getBreakend()`); `StructuralVariantType.parse` and `VariantContext.getStructuralVariantType()` consult both `SVTYPE` and the alleles.
-- **INFO and FORMAT header lines keep every attribute, in any order**, reachable through `getGenericFieldValue` and `getGenericFields`.
-- **`VariantFileType`** tells VCF from BCF by name (`fromFileName`) or by content (`fromContents`); `FileExtensions.GVCF`.
-- **`smartMergeHeaders`** keeps the line with the later `Version` when two inputs define a field alike for the same `Source`, and reports the choice.
-- **The VCF and BCF codecs are thread-safe once their header is read** ([#1026]): records, and lazily decoded genotypes, may be decoded on several threads at once.
-- **VCF, GFF3 and every Tribble text format are read and written as UTF-8**, through `Utf8LineReader` (formerly `AsciiLineReader`).
-- `VariantContext.getIDs()`, and `VCFHeader.getOtherHeaderLines(String)` for every line with a key.
-
-#### Other
-
+- INFO and FORMAT header lines keep every attribute, in any order, through `getGenericFieldValue` and `getGenericFields`; `smartMergeHeaders` keeps the line with the later `Version` when two inputs define a field alike for the same `Source`.
+- `VariantFileType` tells VCF from BCF by name or by content; `VariantContext.getIDs()`; `VCFHeader.getOtherHeaderLines(String)`.
 - `IOUtil.openGzipOrBgzfStream` reads BGZF, and gzip of any number of members, from any stream.
 - `htsjdk.samtools.util.UnsynchronizedByteArrayOutputStream`, a `ByteArrayOutputStream` without locking.
-- The jar names its automatic module `htsjdk` ([#1724]), so a modular application can `requires htsjdk;`.  htsjdk is not yet an explicit module, so it can't be used with jlink.
+- The jar names its automatic module `htsjdk` ([#1724]), so a modular application can `requires htsjdk;`; it is not yet an explicit module, so jlink can't use it.
 
 ### Deprecations
 
-- **`VCFConstants`' top-level INFO and FORMAT key names** (`GENOTYPE_KEY`, `DEPTH_KEY` and the rest), in favour of `VCFConstants.INFO` and `VCFConstants.FORMAT`; each one's Javadoc names its replacement, and `OLD_DEPTH_KEY` has none.  They remain compile-time constants, so only builds that treat deprecation warnings as errors notice.
+- **`VCFConstants`' top-level INFO and FORMAT key names** (`GENOTYPE_KEY`, `DEPTH_KEY` and the rest), in favour of `VCFConstants.INFO` and `VCFConstants.FORMAT`; each one's Javadoc names its replacement.  They remain compile-time constants, so only builds that treat deprecation warnings as errors notice.
 - For removal in 7.0.0: `SamReader.Indexing.getIndex()`; `SAMFileWriterFactory.setCreateBaiIndexForCram`; `DiskBasedBAMFileIndex`, `CSIIndex`, `AbstractBAMFileIndex`, `BinningIndexBuilder`, `BinningIndexContent`, `LinearIndex`, `BinWithOffset`, and `BAMIndexMerger.mergeBins` and `mergeLinearIndexes`; and `SamIndexes.openIndexFileAsBaiOrNull`, `openIndexUrlAsBaiOrNull`, `asBaiStreamOrNull` and `asBaiSeekableStreamOrNull` ([#1425]).
 - `SamReaderFactory.Option.CACHE_FILE_BASED_INDEXES` and `DONT_MEMORY_MAP_INDEX`, which have no effect.
-- The sixteen `File` overloads that remain (see "Paths and files").
+- The sixteen `File` overloads that remain (see [Paths and files](#paths-and-files)).
 - `AsciiLineReader` and `AsciiLineReaderIterator`, in favour of `Utf8LineReader` and `Utf8LineReaderIterator`.
 - `VCF3Codec`; `VCFFileReader.isBCF`, `AbstractVCFCodec.canDecodeFile` and `BCF2Codec.tryReadBCFVersion`, in favour of `VariantFileType`; `BCF2Codec.ALLOWED_MINOR_VERSION`, `ALLOWED_BCF_VERSION`, `validateVersionCompatibility` and `error(String)`.
 - `VariantContextUtils.getMetaDataForField`, in favour of `VCFHeader.getInfoHeaderLine` and `getFormatHeaderLine`.
@@ -178,16 +178,14 @@ Against 5.0.2, each run in a fresh JVM, with BGZF level 1 and the NORMAL CRAM pr
 | VCF to BCF 2.1 | −17% |
 | Reading BAM, BAM to BAM, BCF to VCF | unchanged |
 
-- **The CRAM 3.1 profiles try the codecs htslib's do, and choose among them as htslib does.**  NORMAL's files are 0.7–1.1% larger than samtools'; SMALL's and ARCHIVE's are 2–9% smaller than before but take longer to write.  The rANS Nx16 and Range coders encode faster, and a CRAM 3.1 writer no longer holds 6 MB of rANS tables for every distinct tag.
-- **BCF**: writing takes genotypes by position and encodes without a lock per byte; decoding skips padding and missing vectors.
-- **SAM text** is parsed about 2.2 times as fast, with fewer allocations per record; writing it is about 4.5% slower for reads with long Z tags such as OQ, for the checks that keep its text valid.
-- **BAM**: bases are packed into BAM's 4-bit codes through a lookup table.
-- **Indexes**: queries through a tabix index are faster (`VCFFileReader.query` −20%); see also "Indexes" under "New features".
+- **The CRAM 3.1 profiles try the codecs htslib's do, and choose among them as htslib does.**  NORMAL's files are 0.7–1.1% larger than samtools'; SMALL's and ARCHIVE's are 2–9% smaller than before but take longer to write.  A CRAM 3.1 writer no longer holds 6 MB of rANS tables for every distinct tag.
+- **SAM text** is parsed about 2.2 times as fast; writing it is about 4.5% slower for reads with long Z tags such as OQ, for the checks that keep its text valid.
+- **BCF** writing takes genotypes by position and encodes without a lock per byte; decoding skips padding.  **BAM** bases are packed through a lookup table.  Index queries: see [Indexing](#indexing).
 - **`SamLocusIterator` and `EdgeReadIterator` no longer slow down as reads get longer** ([#1490]).
 
 ### Bug fixes
 
-Fixes that change output are listed under "Output that differs from 5.x".
+Fixes that change output are listed under [Output that differs from 5.x](#output-that-differs-from-5x).
 
 #### SAM, BAM and CRAM
 
