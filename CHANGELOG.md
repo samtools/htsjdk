@@ -45,7 +45,7 @@ These changes can break code that compiles or runs against 5.x.
 
 - **A CRAM writer refuses codecs its CRAM version lacks**, where 5.x wrote a file labelled 3.0 full of 3.1 codecs.  A default strategy asked for CRAM 3.0 takes the new `NORMAL_3_0` profile's codecs; SMALL, ARCHIVE and codecs set by hand are refused for 3.0.  `setCramVersion` accepts only 3.0 and 3.1.
 - **`SAMFileWriterFactory` writes `x.sam.gz` as bgzipped SAM**, where it wrote BAM, and recognises names in any case: `x.SAM` and `x.CRAM` are SAM and CRAM, not BAM, and `x.BAM`'s index is `x.bai`.
-- **Text follows the SAM specification** ([#1108], [#1202]): header text is UTF-8, and read names and Z and A tags ISO-8859-1.  A header line that isn't valid UTF-8, as 5.x wrote non-ASCII ones, is read as ISO-8859-1, and a non-ASCII read name in a CRAM from 5.x reads back as its UTF-8 bytes.  Writing a tab, line break or NUL a field can't hold, or a char above 0xFF in a read name or tag, throws `IllegalArgumentException`.
+- **Header text is UTF-8, and read names and tags pass through byte for byte**, in SAM, BAM and CRAM alike ([#1108], [#1202], [#1940]).  UTF-8 is what the SAM specification allows in `DS`, `CL` and `@CO` values; read names and `Z` and `A` tags are passed through unchanged, as htslib passes them, rather than checked against the specification's ASCII-only rule, which htsjdk doesn't enforce elsewhere in the header either.  Writing a tab, line break or NUL a field can't hold, or a char above 0xFF in a read name or tag, throws `IllegalArgumentException`.  A header line that isn't valid UTF-8, as 5.x could write, is read as Latin-1 and written back as UTF-8, and a non-ASCII read name in a CRAM from 5.x reads back as its UTF-8 bytes.
 - **Records the specification allows on unmapped and unpaired reads are accepted** ([#1584]): RNAME `*` with a MAPQ or CIGAR, and MAPQ 255 on an unmapped read.  Pair and mate flags on an unpaired read, and other MAPQs on an unmapped read, are warnings, among them the new `INVALID_UNPAIRED_FLAG_MATE_UNMAPPED` and `INVALID_UNMAPPED_MAPPING_QUALITY`; STRICT still rejects them.
 - **`SAMSequenceRecord` accepts names outside the SAM RNAME pattern** ([#1295]), except an empty name, `*`, `=`, and names with spaces or control characters.  In a SAM or BAM header such a name is the new `INVALID_SEQUENCE_NAME` error.  Check names with `validateSequenceName` or `isValidSequenceName`.
 - **A read group's `DT` is kept as written** ([#561]), not rewritten in the JVM's time zone, which changes `SAMUtils.calculateReadGroupRecordChecksum` for such headers.  An unparseable `DT` is a warning, and `getRunDate()` returns null for it.
@@ -359,6 +359,7 @@ Fixes that change output are listed under [Output that differs from 5.x](#output
 [#1748]: https://github.com/samtools/htsjdk/issues/1748
 [#1749]: https://github.com/samtools/htsjdk/issues/1749
 [#1756]: https://github.com/samtools/htsjdk/issues/1756
+[#1940]: https://github.com/samtools/htsjdk/issues/1940
 
 ---
 
