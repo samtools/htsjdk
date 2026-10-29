@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Performance
+
+- **Removing a tag that a record read from BAM doesn't have no longer makes it re-encode.**  `setAttribute(tag, null)` marked the record's stored bytes stale even when the tag was absent, so writing it back to BAM decoded and re-encoded every field; it now leaves the bytes to be copied as they are.  Tools that clear a tag on every read, as duplicate marking clears `DT`, re-encode 52% faster for 150 bp reads and 89% faster for 15 kb reads in `BamRecordCodecBenchmark`.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
