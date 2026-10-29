@@ -24,6 +24,11 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -129,5 +134,57 @@ public class AsyncBufferedIteratorTest extends HtsjdkTest {
             }
         }
         return null;
+    }
+
+    /**
+     * An endless iterator that, like a stream reading ahead on another thread, turns an interrupt during {@code next()}
+     * into an exception and clears it. Its first {@code next()} waits until interrupted; later ones return at once.
+     */
+    private static class InterruptSwallowingIterator implements CloseableIterator<Integer> {
+        private final CountDownLatch waitingInNext = new CountDownLatch(1);
+        private volatile boolean interrupted = false;
+
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public Integer next() {
+            if (!interrupted) {
+                try {
+                    waitingInNext.countDown();
+                    new CountDownLatch(1).await();
+                } catch (final InterruptedException e) {
+                    interrupted = true;
+                    throw new RuntimeException("Interrupted reading the next value", e);
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        public void close() {}
+    }
+
+    @Test
+    public void testCloseReturnsWhenTheUnderlyingIteratorSwallowsTheInterrupt() throws Exception {
+        final InterruptSwallowingIterator underlying = new InterruptSwallowingIterator();
+        final AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(underlying, 1, 1);
+        Assert.assertTrue(underlying.waitingInNext.await(30, TimeUnit.SECONDS));
+
+        // Run close() where it can be abandoned if it hangs, since the hung thread can't be rescued
+        final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
+            final Thread thread = new Thread(runnable);
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            executor.submit(abi::close).get(30, TimeUnit.SECONDS);
+        } catch (final TimeoutException e) {
+            Assert.fail("close() hung waiting for the background thread");
+        } finally {
+            executor.shutdown();
+        }
     }
 }

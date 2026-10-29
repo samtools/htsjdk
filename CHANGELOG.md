@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Bug fixes
+
+- **`AsyncBufferedIterator.close()` no longer hangs when the iterator it wraps swallows the interrupt** ([#1944](https://github.com/samtools/htsjdk/issues/1944)).  `close()` stopped the background thread only by interrupting it, and an iterator that caught the interrupt and threw something else, as asynchronous BGZF reading does, left the thread reading on until its queue was full and `close()` waiting for it forever.  `close()` now also sets a flag that the thread checks after each read.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
