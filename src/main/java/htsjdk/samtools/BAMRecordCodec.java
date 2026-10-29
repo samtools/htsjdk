@@ -280,6 +280,10 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final int referenceID = this.binaryCodec.readInt();
         final int coordinate = this.binaryCodec.readInt() + 1;
         final short readNameLength = this.binaryCodec.readUByte();
+        if (readNameLength == 0) {
+            // The length includes the NUL that ends the name, so even an empty name has a length of 1
+            throw new SAMFormatException("Invalid read name length: 0");
+        }
         final short mappingQuality = this.binaryCodec.readUByte();
         final int bin = this.binaryCodec.readUShort();
         final int cigarLen = this.binaryCodec.readUShort();

@@ -109,4 +109,15 @@ public class BAMRecordCodecTest extends HtsjdkTest {
         Assert.assertTrue(encoded.contains("CGBI"), "CG tag is not stored as B:I");
         Assert.assertFalse(encoded.contains("CGBi"), "CG tag is stored as B:i");
     }
+
+    @Test(expectedExceptions = SAMFormatException.class)
+    public void testZeroReadNameLengthIsRejectedAtDecode() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final byte[] bytes = encode(header, unmappedRecord(header, "r1")).getBytes(StandardCharsets.ISO_8859_1);
+        // l_read_name follows block_size, refID and pos; it counts the NUL that ends the name, so it can't be 0
+        bytes[12] = 0;
+        final BAMRecordCodec codec = new BAMRecordCodec(header);
+        codec.setInputStream(new ByteArrayInputStream(bytes));
+        codec.decode();
+    }
 }
