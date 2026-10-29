@@ -24,6 +24,10 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -78,5 +82,63 @@ public class AsyncWriterTest extends HtsjdkTest {
                 // Expected
             }
         }
+    }
+
+    /** A writer that keeps what it is given, and fails on one item if asked to. */
+    private static class CollectingAsyncWriter extends AbstractAsyncWriter<Integer> {
+        final List<Integer> written = new ArrayList<>();
+        final Integer failOn;
+
+        CollectingAsyncWriter(final Integer failOn) {
+            super(DEFAULT_QUEUE_SIZE);
+            this.failOn = failOn;
+        }
+
+        @Override
+        protected String getThreadNamePrefix() {
+            return "CollectingAsyncWriter";
+        }
+
+        @Override
+        protected void synchronouslyWrite(final Integer item) {
+            if (item.equals(failOn)) throw new MyException(item);
+            written.add(item);
+        }
+
+        @Override
+        protected void synchronouslyClose() {
+            // Nothing
+        }
+    }
+
+    @Test
+    public void testItemsAreWrittenInTheOrderGiven() {
+        final CollectingAsyncWriter writer = new CollectingAsyncWriter(null);
+        final List<Integer> items = IntStream.range(0, 100_000).boxed().collect(Collectors.toList());
+        items.forEach(writer::write);
+        writer.close();
+        Assert.assertEquals(writer.written, items);
+    }
+
+    @Test
+    public void testItemsThatDoNotFillABatchAreWrittenOnClose() {
+        final CollectingAsyncWriter writer = new CollectingAsyncWriter(null);
+        writer.write(1);
+        writer.write(2);
+        writer.write(3);
+        writer.close();
+        Assert.assertEquals(writer.written, List.of(1, 2, 3));
+    }
+
+    @Test
+    public void testAFailureInTheWritingThreadIsThrownByALaterWriteOrClose() {
+        final CollectingAsyncWriter writer = new CollectingAsyncWriter(5);
+        final MyException thrown = Assert.expectThrows(MyException.class, () -> {
+            for (int i = 0; i < 100_000; i++) {
+                writer.write(i);
+            }
+            writer.close();
+        });
+        Assert.assertEquals(thrown.item.intValue(), 5);
     }
 }

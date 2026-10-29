@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Performance
+
+- **Asynchronous writers hand items to their writing thread in batches.**  `AbstractAsyncWriter`, which backs `SAMFileWriterFactory.setUseAsyncIo(true)`, `AsyncVariantContextWriter` and `AsyncFastqWriter`, queued each item on its own, so the two threads met on a shared lock for every item.  Items now go over in batches of a quarter of the queue size, at most 1,024, which in `AsyncWriterBenchmark` makes an asynchronous BAM writer 12% faster and the hand-off itself 80% faster.  An item may now wait in the calling thread until its batch fills or the writer is closed, and a failure in the writing thread can be reported up to a batch later.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
