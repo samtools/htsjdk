@@ -23,6 +23,8 @@ public abstract class AbstractProgressLogger implements ProgressLoggerInterface 
     private String lastChrom = null;
     private int lastPos = 0;
     private String lastReadName = null;
+    // The last record, when it was recorded as a SAMRecord; its name is read only if a line prints it
+    private SAMRecord lastRecord = null;
     private long countNonIncreasing = 0;
     private static final long PRINT_READ_NAME_THRESHOLD = 1000;
 
@@ -65,8 +67,9 @@ public abstract class AbstractProgressLogger implements ProgressLoggerInterface 
 
         final String rnInfo;
 
-        if (lastReadName != null && countNonIncreasing > PRINT_READ_NAME_THRESHOLD) {
-            rnInfo = ".  Last read name: " + lastReadName;
+        final String readName = countNonIncreasing > PRINT_READ_NAME_THRESHOLD ? lastReadName() : null;
+        if (readName != null) {
+            rnInfo = ".  Last read name: " + readName;
         } else {
             rnInfo = "";
         }
@@ -101,7 +104,16 @@ public abstract class AbstractProgressLogger implements ProgressLoggerInterface 
         }
     }
 
+    private String lastReadName() {
+        return lastRecord != null ? lastRecord.getReadName() : lastReadName;
+    }
+
     protected synchronized boolean record(final String chrom, final int pos, final String rname) {
+        return record(chrom, pos, rname, null);
+    }
+
+    /** As {@link #record(String, int, String)}, but with the read name to be taken from {@code rec} if it is needed. */
+    private synchronized boolean record(final String chrom, final int pos, final String rname, final SAMRecord rec) {
         if (chrom != null && chrom.equals(lastChrom) && pos < lastPos) {
             countNonIncreasing++;
         } else {
@@ -109,6 +121,7 @@ public abstract class AbstractProgressLogger implements ProgressLoggerInterface 
         }
         lastPos = pos;
         lastReadName = rname;
+        lastRecord = rec;
         if (lastStartTime == -1) {
             lastStartTime = System.currentTimeMillis();
         }
@@ -132,9 +145,9 @@ public abstract class AbstractProgressLogger implements ProgressLoggerInterface 
     @Override
     public synchronized boolean record(final SAMRecord rec) {
         if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(rec.getReferenceName())) {
-            return record(null, 0, rec.getReadName());
+            return record(null, 0, null, rec);
         } else {
-            return record(rec.getReferenceName(), rec.getAlignmentStart(), rec.getReadName());
+            return record(rec.getReferenceName(), rec.getAlignmentStart(), null, rec);
         }
     }
 
@@ -167,6 +180,7 @@ public abstract class AbstractProgressLogger implements ProgressLoggerInterface 
         lastChrom = null;
         lastPos = 0;
         lastReadName = null;
+        lastRecord = null;
         countNonIncreasing = 0;
     }
 

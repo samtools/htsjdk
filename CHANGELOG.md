@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Performance
+
+- **`ProgressLogger.record(SAMRecord)` reads the record's name only for a line that prints it**, which is only once more than 1,000 records have gone backwards in position.  It used to read the name of every record, decoding it from the bytes of a record read from BAM, which then kept the decoded name.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
