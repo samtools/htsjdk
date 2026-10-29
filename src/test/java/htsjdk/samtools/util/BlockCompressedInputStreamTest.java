@@ -465,4 +465,29 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
             Assert.assertEquals(found, expected.iterator().toList());
         }
     }
+
+    // A seek reads the block it lands on, and a failure there must surface rather than send the stream on to the next
+    // block.
+
+    @Test(expectedExceptions = FileTruncatedException.class)
+    public void testSeekToATruncatedBlockThrows() throws IOException {
+        final int secondBlock = blockCompressed(FIRST_PART).length;
+        final byte[] file = Arrays.copyOf(
+                joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART)),
+                secondBlock + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH + 4);
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new SeekableMemoryStream(file, "test"))) {
+            in.seek(BlockCompressedFilePointerUtil.makeFilePointer(secondBlock));
+        }
+    }
+
+    @Test(expectedExceptions = RuntimeIOException.class)
+    public void testSeekToACorruptBlockThrows() throws IOException {
+        final int secondBlock = blockCompressed(FIRST_PART).length;
+        final byte[] file = joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART));
+        // Deflate block type 11 is reserved, so every inflater rejects the block
+        file[secondBlock + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH] = 0x07;
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new SeekableMemoryStream(file, "test"))) {
+            in.seek(BlockCompressedFilePointerUtil.makeFilePointer(secondBlock));
+        }
+    }
 }

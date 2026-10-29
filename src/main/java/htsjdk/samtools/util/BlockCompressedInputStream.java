@@ -404,6 +404,8 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             mStreamOffset = compressedOffset;
             mCurrentBlock = nextBlock(getBufferForReuse(mCurrentBlock));
             mCurrentOffset = 0;
+            // available() would move past a block that failed to read, as it does past an empty one
+            checkAndRethrowDecompressionException();
             available = available();
         }
         if (uncompressedOffset > available || (uncompressedOffset == available && !eof())) {
@@ -540,7 +542,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @param bufferAvailableForReuse buffer in which to place decompressed block. A null or
      *  incorrectly sized buffer will result in the buffer being ignored and
      *  a new buffer allocated for decompression.
-     * @return next block in input stream
+     * @return next block in input stream, or a block holding the exception if it could not be read or decompressed
      */
     protected DecompressedBlock processNextBlock(byte[] bufferAvailableForReuse) {
         if (mFileBuffer == null) {
@@ -575,7 +577,9 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             }
             final byte[] decompressed = inflateBlock(mFileBuffer, blockLength, bufferAvailableForReuse);
             return new DecompressedBlock(blockAddress, decompressed, blockLength);
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
+            // Corrupt blocks fail with unchecked exceptions. Returning them rather than throwing matters for the
+            // read-ahead thread, which would otherwise end without posting the block its reader is waiting for
             return new DecompressedBlock(blockAddress, 0, e);
         }
     }
