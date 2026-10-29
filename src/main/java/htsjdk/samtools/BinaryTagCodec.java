@@ -306,6 +306,8 @@ public class BinaryTagCodec {
                 tail = tmp;
             } else {
                 head = head.insert(tmp);
+                // A repeat of the last tag replaces it, so the replacement is the new tail
+                if (tmp.next == null) tail = tmp;
             }
         }
 
