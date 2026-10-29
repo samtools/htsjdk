@@ -172,8 +172,55 @@ public class AsyncBufferedIteratorTest extends HtsjdkTest {
         final InterruptSwallowingIterator underlying = new InterruptSwallowingIterator();
         final AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(underlying, 1, 1);
         Assert.assertTrue(underlying.waitingInNext.await(30, TimeUnit.SECONDS));
+        assertClosesWithin30Seconds(abi);
+    }
 
-        // Run close() where it can be abandoned if it hangs, since the hung thread can't be rescued
+    /**
+     * An iterator whose first {@code next()} waits until interrupted, clears the interrupt and returns a value, and
+     * whose {@code hasNext()} after that waits for ever, ignoring interrupts.
+     */
+    private static class BlocksAfterSwallowingInterruptIterator implements CloseableIterator<Integer> {
+        private final CountDownLatch waitingInNext = new CountDownLatch(1);
+        private volatile boolean returnedFromNext = false;
+
+        @Override
+        public boolean hasNext() {
+            while (returnedFromNext) {
+                try {
+                    new CountDownLatch(1).await();
+                } catch (final InterruptedException e) {
+                    // keep waiting
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public Integer next() {
+            try {
+                waitingInNext.countDown();
+                new CountDownLatch(1).await();
+            } catch (final InterruptedException e) {
+                // swallowed, as a read that completes despite an interrupt would
+            }
+            returnedFromNext = true;
+            return 1;
+        }
+
+        @Override
+        public void close() {}
+    }
+
+    @Test
+    public void testCloseDoesNotWaitOnHasNextAfterTheInterruptIsSwallowed() throws Exception {
+        final BlocksAfterSwallowingInterruptIterator underlying = new BlocksAfterSwallowingInterruptIterator();
+        final AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(underlying, 2, 1);
+        Assert.assertTrue(underlying.waitingInNext.await(30, TimeUnit.SECONDS));
+        assertClosesWithin30Seconds(abi);
+    }
+
+    /** Runs {@code close()} on a daemon thread, which can be abandoned if it hangs, as the hung thread can't be rescued. */
+    private static void assertClosesWithin30Seconds(final AsyncBufferedIterator<?> abi) throws Exception {
         final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
             final Thread thread = new Thread(runnable);
             thread.setDaemon(true);

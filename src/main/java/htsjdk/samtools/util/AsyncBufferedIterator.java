@@ -206,11 +206,12 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         try {
             if (!underlyingIterator.hasNext()) return new IteratorBuffer<>();
             readAhead = new ArrayList<>(bufferSize);
-            for (int i = 0; i < bufferSize && underlyingIterator.hasNext(); i++) {
+            for (int i = 0; i < bufferSize; i++) {
+                // eager abort if we've been told to stop, checked before hasNext() as that can block too
                 if (stopped || Thread.currentThread().isInterrupted()) {
-                    // eager abort if we've been told to stop
                     return new IteratorBuffer<>(readAhead, new InterruptedException());
                 }
+                if (!underlyingIterator.hasNext()) break;
                 readAhead.add(underlyingIterator.next());
             }
             return new IteratorBuffer<>(readAhead);
