@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.RuntimeEOFException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -108,5 +109,51 @@ public class BAMRecordCodecTest extends HtsjdkTest {
         final String encoded = encode(header, record);
         Assert.assertTrue(encoded.contains("CGBI"), "CG tag is not stored as B:I");
         Assert.assertFalse(encoded.contains("CGBi"), "CG tag is stored as B:i");
+    }
+
+    private static SAMRecord decode(final SAMFileHeader header, final byte[] bytes) {
+        final BAMRecordCodec codec = new BAMRecordCodec(header);
+        codec.setInputStream(new ByteArrayInputStream(bytes));
+        return codec.decode();
+    }
+
+    @Test
+    public void testFixedLengthFieldsRoundTripAtTheEndsOfTheirRanges() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", 1_000_000));
+        header.addSequence(new SAMSequenceRecord("chr2", 1_000_000));
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName("r1");
+        record.setReferenceIndex(1);
+        record.setAlignmentStart(999_000);
+        record.setMappingQuality(255);
+        record.setCigarString("4M");
+        // Every flag bit, so the unsigned 16-bit field is read as unsigned
+        record.setFlags(0xFFFF);
+        record.setReadString("ACGT");
+        record.setBaseQualityString("IIII");
+        record.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        record.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+        record.setInferredInsertSize(-123_456);
+
+        final SAMRecord decoded = decode(header, encode(header, record).getBytes(StandardCharsets.ISO_8859_1));
+        Assert.assertEquals(decoded.getReferenceIndex().intValue(), 1);
+        Assert.assertEquals(decoded.getAlignmentStart(), 999_000);
+        Assert.assertEquals(decoded.getMappingQuality(), 255);
+        Assert.assertEquals(decoded.getFlags(), 0xFFFF);
+        Assert.assertEquals(decoded.getReadLength(), 4);
+        Assert.assertEquals(decoded.getCigarString(), "4M");
+        Assert.assertEquals(decoded.getReadName(), "r1");
+        Assert.assertEquals(decoded.getMateReferenceIndex().intValue(), SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertEquals(decoded.getMateAlignmentStart(), SAMRecord.NO_ALIGNMENT_START);
+        Assert.assertEquals(decoded.getInferredInsertSize(), -123_456);
+    }
+
+    @Test(expectedExceptions = RuntimeEOFException.class)
+    public void testARecordCutShortInItsFixedLengthFieldsFailsWithEof() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final byte[] bytes = encode(header, unmappedRecord(header, "r1")).getBytes(StandardCharsets.ISO_8859_1);
+        // block_size, then 20 of the 32 bytes of fixed-length fields
+        decode(header, Arrays.copyOf(bytes, 4 + 20));
     }
 }
