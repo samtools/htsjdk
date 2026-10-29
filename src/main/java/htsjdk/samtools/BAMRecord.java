@@ -215,7 +215,11 @@ public class BAMRecord extends SAMRecord {
     @Override
     protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
         // populate all the attributes from the binary block before overwriting one
-        getBinaryAttributes();
+        final SAMBinaryTagAndValue attributes = getBinaryAttributes();
+        // Removing a tag the record doesn't have changes nothing, so the bytes it was read from can still be written
+        if (value == null && (attributes == null || attributes.find(tag) == null)) {
+            return;
+        }
         super.setAttribute(tag, value, isUnsignedArray);
         mBinaryDataStale = true;
     }
