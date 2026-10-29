@@ -30,6 +30,8 @@ import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.utils.TestNGUtils;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
@@ -1127,6 +1129,41 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         final SAMRecord sam = createTestRecordHelper();
         sam.setReadString("ACGUuACGT");
         Assert.assertEquals(sam.getReadString(), "ACGTTACGT");
+    }
+
+    /** A record decoded from BAM, with bases ACGT and no qualities, so that its variable-length data is still held. */
+    private static BAMRecord decodedBamRecordWithBasesOnly(final SAMFileHeader header) {
+        final SAMRecord rec = new SAMRecord(header);
+        rec.setReadName("r1");
+        rec.setReadUnmappedFlag(true);
+        rec.setReadString("ACGT");
+        rec.setBaseQualityString(SAMRecord.NULL_QUALS_STRING);
+        return encodeAndDecodeAsBam(header, rec);
+    }
+
+    private static BAMRecord encodeAndDecodeAsBam(final SAMFileHeader header, final SAMRecord rec) {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        final BAMRecordCodec encoder = new BAMRecordCodec(header);
+        encoder.setOutputStream(bytes);
+        encoder.encode(rec);
+        final BAMRecordCodec decoder = new BAMRecordCodec(header);
+        decoder.setInputStream(new ByteArrayInputStream(bytes.toByteArray()));
+        return (BAMRecord) decoder.decode();
+    }
+
+    @Test
+    public void testSetReadStringToNullSequenceClearsTheReadLengthOfABamRecord() {
+        final BAMRecord bam = decodedBamRecordWithBasesOnly(new SAMFileHeader());
+        bam.setReadString(SAMRecord.NULL_SEQUENCE_STRING);
+        Assert.assertEquals(bam.getReadLength(), 0);
+    }
+
+    @Test
+    public void testSetReadStringToNullSequenceIsWrittenToBam() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final BAMRecord bam = decodedBamRecordWithBasesOnly(header);
+        bam.setReadString(SAMRecord.NULL_SEQUENCE_STRING);
+        Assert.assertEquals(encodeAndDecodeAsBam(header, bam).getReadString(), SAMRecord.NULL_SEQUENCE_STRING);
     }
 
     @DataProvider(name = "attributeAccessTestData")
