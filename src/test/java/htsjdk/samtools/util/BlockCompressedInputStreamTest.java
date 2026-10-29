@@ -480,6 +480,19 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void testASecondSeekToATruncatedBlockThrowsToo() throws IOException {
+        final int secondBlock = blockCompressed(FIRST_PART).length;
+        final byte[] file = Arrays.copyOf(
+                joined(blockCompressed(FIRST_PART), blockCompressed(SECOND_PART)),
+                secondBlock + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH + 4);
+        try (BlockCompressedInputStream in = new BlockCompressedInputStream(new SeekableMemoryStream(file, "test"))) {
+            final long pointer = BlockCompressedFilePointerUtil.makeFilePointer(secondBlock);
+            Assert.assertThrows(FileTruncatedException.class, () -> in.seek(pointer));
+            Assert.assertThrows(FileTruncatedException.class, () -> in.seek(pointer));
+        }
+    }
+
     @Test(expectedExceptions = RuntimeIOException.class)
     public void testSeekToACorruptBlockThrows() throws IOException {
         final int secondBlock = blockCompressed(FIRST_PART).length;
