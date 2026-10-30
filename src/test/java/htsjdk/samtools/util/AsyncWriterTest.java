@@ -130,15 +130,58 @@ public class AsyncWriterTest extends HtsjdkTest {
         Assert.assertEquals(writer.written, List.of(1, 2, 3));
     }
 
+    /** A writer whose writing thread fails on the first item it is given, and so stops. */
+    private static class FailOnFirstItemAsyncWriter extends AbstractAsyncWriter<Integer> {
+        static final String THREAD_NAME_PREFIX = "FailOnFirstItemAsyncWriter";
+
+        FailOnFirstItemAsyncWriter() {
+            super(DEFAULT_QUEUE_SIZE);
+        }
+
+        @Override
+        protected String getThreadNamePrefix() {
+            return THREAD_NAME_PREFIX;
+        }
+
+        @Override
+        protected void synchronouslyWrite(final Integer item) {
+            throw new MyException(item);
+        }
+
+        @Override
+        protected void synchronouslyClose() {
+            // Nothing
+        }
+    }
+
     @Test
-    public void testAFailureInTheWritingThreadIsThrownByALaterWriteOrClose() {
-        final CollectingAsyncWriter writer = new CollectingAsyncWriter(5);
-        final MyException thrown = Assert.expectThrows(MyException.class, () -> {
-            for (int i = 0; i < 100_000; i++) {
+    public void testAFailureInTheWritingThreadIsThrownWithinOneBatchOfWrites() throws InterruptedException {
+        // Items go over in batches of a quarter of the queue size
+        final int batchSize = AbstractAsyncWriter.DEFAULT_QUEUE_SIZE / 4;
+        final FailOnFirstItemAsyncWriter writer = new FailOnFirstItemAsyncWriter();
+        final Thread writingThread = Thread.getAllStackTraces().keySet().stream()
+                .filter(t -> t.getName().startsWith(FailOnFirstItemAsyncWriter.THREAD_NAME_PREFIX))
+                .findFirst()
+                .orElseThrow();
+
+        // Hand over one batch. The writing thread fails on its first item and stops; the write that hands the batch
+        // over may already see that.
+        try {
+            for (int i = 0; i < batchSize; i++) {
                 writer.write(i);
             }
-            writer.close();
+        } catch (final MyException e) {
+            Assert.assertEquals(e.item.intValue(), 0);
+            return;
+        }
+        writingThread.join(30_000);
+        Assert.assertFalse(writingThread.isAlive(), "the writing thread did not stop after failing");
+
+        final MyException thrown = Assert.expectThrows(MyException.class, () -> {
+            for (int i = 0; i < batchSize; i++) {
+                writer.write(i);
+            }
         });
-        Assert.assertEquals(thrown.item.intValue(), 5);
+        Assert.assertEquals(thrown.item.intValue(), 0);
     }
 }
