@@ -35,7 +35,7 @@ import org.openjdk.jmh.annotations.Warmup;
  * <pre>
  * ./gradlew benchesJar
  * java -jar build/libs/htsjdk-*-benches.jar BamRecordCodec                    # everything
- * java -jar build/libs/htsjdk-*-benches.jar BamRecordCodec.decode -p shape=SHORT
+ * java -jar build/libs/htsjdk-*-benches.jar BamRecordCodecBenchmark.decode -p shape=SHORT
  * </pre>
  */
 @BenchmarkMode(Mode.AverageTime)
