@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Performance
+
+- **A BAM record's fixed-length fields are read in one go.**  `BAMRecordCodec.decode` read the 32 bytes with eleven separate calls; it now reads them at once and picks the fields out.  In `BamRecordCodecBenchmark`, reading 150 bp reads from bgzipped BAM bytes, inflation included, takes 9% less time; for 15 kb reads, where inflation dominates, the time is unchanged.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).

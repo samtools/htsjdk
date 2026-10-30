@@ -31,6 +31,8 @@ import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.SortingCollection;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -43,6 +45,9 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
     private final BinaryCodec binaryCodec = new BinaryCodec();
     private final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCodec);
     private final SAMRecordFactory samRecordFactory;
+    /** The fixed-length fields of the record being decoded, read in one go and then picked out by offset. */
+    private final ByteBuffer fixedFields =
+            ByteBuffer.allocate(BAMFileConstants.FIXED_BLOCK_SIZE).order(ByteOrder.LITTLE_ENDIAN);
 
     private boolean isReferenceSizeWarningShowed = false;
 
@@ -277,17 +282,18 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
             throw new SAMFormatException("Invalid record length: " + recordLength);
         }
 
-        final int referenceID = this.binaryCodec.readInt();
-        final int coordinate = this.binaryCodec.readInt() + 1;
-        final short readNameLength = this.binaryCodec.readUByte();
-        final short mappingQuality = this.binaryCodec.readUByte();
-        final int bin = this.binaryCodec.readUShort();
-        final int cigarLen = this.binaryCodec.readUShort();
-        final int flags = this.binaryCodec.readUShort();
-        final int readLen = this.binaryCodec.readInt();
-        final int mateReferenceID = this.binaryCodec.readInt();
-        final int mateCoordinate = this.binaryCodec.readInt() + 1;
-        final int insertSize = this.binaryCodec.readInt();
+        this.binaryCodec.readBytes(this.fixedFields.array());
+        final int referenceID = this.fixedFields.getInt(0);
+        final int coordinate = this.fixedFields.getInt(4) + 1;
+        final short readNameLength = (short) Byte.toUnsignedInt(this.fixedFields.get(8));
+        final short mappingQuality = (short) Byte.toUnsignedInt(this.fixedFields.get(9));
+        final int bin = Short.toUnsignedInt(this.fixedFields.getShort(10));
+        final int cigarLen = Short.toUnsignedInt(this.fixedFields.getShort(12));
+        final int flags = Short.toUnsignedInt(this.fixedFields.getShort(14));
+        final int readLen = this.fixedFields.getInt(16);
+        final int mateReferenceID = this.fixedFields.getInt(20);
+        final int mateCoordinate = this.fixedFields.getInt(24) + 1;
+        final int insertSize = this.fixedFields.getInt(28);
         final byte[] restOfRecord = new byte[recordLength - BAMFileConstants.FIXED_BLOCK_SIZE];
         this.binaryCodec.readBytes(restOfRecord);
         final BAMRecord ret = this.samRecordFactory.createBAMRecord(
