@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Bug fixes
+
+- **A BAM record with a repeated tag keeps its other tags** ([#1946](https://github.com/samtools/htsjdk/issues/1946)).  When a repeated tag sorted highest of the tags decoded so far, later tags could be silently dropped: `XA:A:a XA:A:b XB:A:c` decoded as `XA=b` alone.  The later value of the repeated tag is still the one kept, as in SAM text.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
