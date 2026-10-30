@@ -16,7 +16,7 @@ Patch release on the 6.0 line.
 
 ### Bug fixes
 
-- **A BAM record with a repeated tag keeps its other tags** ([#1946](https://github.com/samtools/htsjdk/issues/1946)).  When a repeated tag sorted highest of the tags decoded so far, as in `XA:A:a XA:A:b XB:A:c`, every later tag that sorted above it was silently dropped.  The later value of the repeated tag is still the one kept, as in SAM text.
+- **A BAM record with a repeated tag keeps its other tags** ([#1946](https://github.com/samtools/htsjdk/issues/1946)).  When a repeated tag sorted highest of the tags decoded so far, later tags could be silently dropped: `XA:A:a XA:A:b XB:A:c` decoded as `XA=b` alone.  The later value of the repeated tag is still the one kept, as in SAM text.
 
 ---
 
