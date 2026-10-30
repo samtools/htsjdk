@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Bug fixes
+
+- **A BAM record with a read-name length of 0 is rejected when it is decoded** ([#1948](https://github.com/samtools/htsjdk/issues/1948)).  The length counts the NUL that ends the name, so 0 is never valid.  Such a record used to decode, then fail on `getReadName()` with `StringIndexOutOfBoundsException` and decode its CIGAR, bases and qualities from the wrong bytes; it now fails at once with `SAMFormatException`, as htslib rejects it.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
