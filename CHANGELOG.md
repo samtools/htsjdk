@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Bug fixes
+
+- **`SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS` checks the blocks that hold a BAM's header** ([#1949](https://github.com/samtools/htsjdk/issues/1949)).  The option reached the reader only after it had read the header as it opened, so a header block with a wrong CRC, and any records sharing it, went unchecked.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
