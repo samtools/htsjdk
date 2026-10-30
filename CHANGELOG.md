@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Bug fixes
+
+- **`setReadString("*")` on a record read from BAM takes effect** ([#1947](https://github.com/samtools/htsjdk/issues/1947)).  It bypassed `BAMRecord`'s `setReadBases`, so the record went on reporting its old read length, and writing it to BAM wrote its original bases.  A record that still has qualities after its bases are cleared now fails on write with the read-length and qualities mismatch, as a record built in memory always has.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
