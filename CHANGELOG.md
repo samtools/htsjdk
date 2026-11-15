@@ -27,6 +27,7 @@ Patch release on the 6.0 line.
 
 - **Removing a tag that a record read from BAM doesn't have no longer makes it re-encode.**  `setAttribute(tag, null)` marked the record's stored bytes stale even when the tag was absent, so writing it back to BAM decoded and re-encoded every field; it now leaves the bytes to be copied as they are.  Tools that clear a tag on every read, as duplicate marking clears `DT`, re-encode 52% faster for 150 bp reads and 89% faster for 15 kb reads in `BamRecordCodecBenchmark`.
 - **Asynchronous writers hand items to their writing thread in batches.**  `AbstractAsyncWriter`, which backs `SAMFileWriterFactory.setUseAsyncIo(true)`, `AsyncVariantContextWriter` and `AsyncFastqWriter`, queued each item on its own, so the two threads met on a shared lock for every item.  Items now go over in batches of a quarter of the queue size, at most 1,024, which in `AsyncWriterBenchmark` makes an asynchronous BAM writer 12% faster and the hand-off itself 80% faster.  An item may now wait in the calling thread until its batch fills or the writer is closed, and a failure in the writing thread can be reported up to a batch later.
+- **A BAM record's fixed-length fields are read in one go.**  `BAMRecordCodec.decode` read the 32 bytes with eleven separate calls; it now reads them at once and picks the fields out.  In `BamRecordCodecBenchmark`, reading 150 bp reads from bgzipped BAM bytes, inflation included, takes 9% less time; for 15 kb reads, where inflation dominates, the time is unchanged.
 
 ---
 
