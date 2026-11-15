@@ -17,6 +17,7 @@ Patch release on the 6.0 line.
 ### Bug fixes
 
 - **Asynchronous BGZF reading no longer hangs on a corrupt block** ([#1942](https://github.com/samtools/htsjdk/issues/1942)).  With `samjdk.use_async_io_read_samtools=true`, a block that failed to decompress (corrupt deflate data, a negative ISIZE, or a CRC mismatch with CRC checking on) left `read()` and `close()` waiting forever; it now throws the exception the synchronous reader throws.  A `seek` to a truncated block now throws `FileTruncatedException`, where it used to succeed and leave the stream at the end of the file.
+- **`AsyncBufferedIterator.close()` no longer hangs when the iterator it wraps swallows the interrupt** ([#1944](https://github.com/samtools/htsjdk/issues/1944)).  `close()` stopped the background thread only by interrupting it, and an iterator that caught the interrupt and threw something else, as asynchronous BGZF reading does, left the thread reading on until its queue was full and `close()` waiting for it forever.  `close()` now also sets a flag that the thread checks after each read.
 
 ---
 

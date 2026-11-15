@@ -24,6 +24,11 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -129,5 +134,104 @@ public class AsyncBufferedIteratorTest extends HtsjdkTest {
             }
         }
         return null;
+    }
+
+    /**
+     * An endless iterator that, like a stream reading ahead on another thread, turns an interrupt during {@code next()}
+     * into an exception and clears it. Its first {@code next()} waits until interrupted; later ones return at once.
+     */
+    private static class InterruptSwallowingIterator implements CloseableIterator<Integer> {
+        private final CountDownLatch waitingInNext = new CountDownLatch(1);
+        private volatile boolean interrupted = false;
+
+        @Override
+        public boolean hasNext() {
+            return true;
+        }
+
+        @Override
+        public Integer next() {
+            if (!interrupted) {
+                try {
+                    waitingInNext.countDown();
+                    new CountDownLatch(1).await();
+                } catch (final InterruptedException e) {
+                    interrupted = true;
+                    throw new RuntimeException("Interrupted reading the next value", e);
+                }
+            }
+            return 1;
+        }
+
+        @Override
+        public void close() {}
+    }
+
+    @Test
+    public void testCloseReturnsWhenTheUnderlyingIteratorSwallowsTheInterrupt() throws Exception {
+        final InterruptSwallowingIterator underlying = new InterruptSwallowingIterator();
+        final AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(underlying, 1, 1);
+        Assert.assertTrue(underlying.waitingInNext.await(30, TimeUnit.SECONDS));
+        assertClosesWithin30Seconds(abi);
+    }
+
+    /**
+     * An iterator whose first {@code next()} waits until interrupted, clears the interrupt and returns a value, and
+     * whose {@code hasNext()} after that waits for ever, ignoring interrupts.
+     */
+    private static class BlocksAfterSwallowingInterruptIterator implements CloseableIterator<Integer> {
+        private final CountDownLatch waitingInNext = new CountDownLatch(1);
+        private volatile boolean returnedFromNext = false;
+
+        @Override
+        public boolean hasNext() {
+            while (returnedFromNext) {
+                try {
+                    new CountDownLatch(1).await();
+                } catch (final InterruptedException e) {
+                    // keep waiting
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public Integer next() {
+            try {
+                waitingInNext.countDown();
+                new CountDownLatch(1).await();
+            } catch (final InterruptedException e) {
+                // swallowed, as a read that completes despite an interrupt would
+            }
+            returnedFromNext = true;
+            return 1;
+        }
+
+        @Override
+        public void close() {}
+    }
+
+    @Test
+    public void testCloseDoesNotWaitOnHasNextAfterTheInterruptIsSwallowed() throws Exception {
+        final BlocksAfterSwallowingInterruptIterator underlying = new BlocksAfterSwallowingInterruptIterator();
+        final AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(underlying, 2, 1);
+        Assert.assertTrue(underlying.waitingInNext.await(30, TimeUnit.SECONDS));
+        assertClosesWithin30Seconds(abi);
+    }
+
+    /** Runs {@code close()} on a daemon thread, which can be abandoned if it hangs, as the hung thread can't be rescued. */
+    private static void assertClosesWithin30Seconds(final AsyncBufferedIterator<?> abi) throws Exception {
+        final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
+            final Thread thread = new Thread(runnable);
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            executor.submit(abi::close).get(30, TimeUnit.SECONDS);
+        } catch (final TimeoutException e) {
+            Assert.fail("close() hung waiting for the background thread");
+        } finally {
+            executor.shutdown();
+        }
     }
 }
