@@ -10,6 +10,16 @@ early infrastructure for a plugin-based codec framework and resource bundles.
 
 ---
 
+## 6.0.1
+
+Patch release on the 6.0 line.
+
+### Bug fixes
+
+- **Asynchronous BGZF reading no longer hangs on a corrupt block** ([#1942](https://github.com/samtools/htsjdk/issues/1942)).  With `samjdk.use_async_io_read_samtools=true`, a block that failed to decompress (corrupt deflate data, a negative ISIZE, or a CRC mismatch with CRC checking on) left `read()` and `close()` waiting forever; it now throws the exception the synchronous reader throws.  A `seek` to a truncated block now throws `FileTruncatedException`, where it used to succeed and leave the stream at the end of the file.
+
+---
+
 ## 6.0.0
 
 Major release.  It includes every change in 5.0.2.  Before upgrading, read [Upgrading from 5.x](#upgrading-from-5x); to explain differences from files 5.x wrote, see [Output that differs from 5.x](#output-that-differs-from-5x).
