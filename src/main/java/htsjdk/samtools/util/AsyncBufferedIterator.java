@@ -57,6 +57,11 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
     private final Iterator<T> underlyingIterator;
     private final BlockingQueue<IteratorBuffer<T>> buffers;
     private IteratorBuffer<T> currentBlock = new IteratorBuffer<>(Collections.emptyList());
+    /**
+     * Set by {@link #close()} to stop the background thread. The interrupt that close() also sends isn't enough on
+     * its own, since the underlying iterator may catch it, clear it and carry on reading.
+     */
+    private volatile boolean stopped = false;
 
     /**
      * Creates a new iterator that traverses the given iterator on a background
@@ -121,6 +126,8 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
     public void close() {
         if (backgroundThread != null) {
             try {
+                // Set before the interrupt, so that a background thread that sees the interrupt also sees the flag
+                stopped = true;
                 backgroundThread.interrupt();
                 buffers.clear();
                 backgroundThread.join();
@@ -199,11 +206,12 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         try {
             if (!underlyingIterator.hasNext()) return new IteratorBuffer<>();
             readAhead = new ArrayList<>(bufferSize);
-            for (int i = 0; i < bufferSize && underlyingIterator.hasNext(); i++) {
-                if (Thread.currentThread().isInterrupted()) {
-                    // eager abort if we've been told to stop
+            for (int i = 0; i < bufferSize; i++) {
+                // eager abort if we've been told to stop, checked before hasNext() as that can block too
+                if (stopped || Thread.currentThread().isInterrupted()) {
                     return new IteratorBuffer<>(readAhead, new InterruptedException());
                 }
+                if (!underlyingIterator.hasNext()) break;
                 readAhead.add(underlyingIterator.next());
             }
             return new IteratorBuffer<>(readAhead);
@@ -221,10 +229,11 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
             IteratorBuffer<T> block;
             do {
                 block = readAhead();
-                if (block.getException() instanceof InterruptedException) {
+                if (stopped || block.getException() instanceof InterruptedException) {
                     // stop thread immediately if we've been told to stop
                     return;
                 }
+                // If close() comes after the check above, its interrupt is still pending, so this put() can't block
                 buffers.put(block);
             } while (!block.isEndOfStream());
         } catch (InterruptedException e) {
