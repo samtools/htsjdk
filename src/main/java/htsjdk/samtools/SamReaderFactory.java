@@ -372,6 +372,9 @@ public abstract class SamReaderFactory {
                 final InputResource data = resource.data();
                 final InputResource indexMaybe = resource.indexMaybe();
                 final boolean indexDefined = indexMaybe != null;
+                // Given to a BAM reader as it is made, rather than applied with the other options below, because the
+                // reader reads the header as it is made
+                final boolean checkCrcs = enabledOptions.contains(Option.VALIDATE_CRC_CHECKSUMS);
 
                 final InputResource.Type type = data.type();
                 if (type == InputResource.Type.URL) {
@@ -406,7 +409,8 @@ public abstract class SamReaderFactory {
                                 asynchronousIO,
                                 validationStringency,
                                 this.samRecordFactory,
-                                this.inflaterFactory);
+                                this.inflaterFactory,
+                                checkCrcs);
                     } else if (SamStreams.sourceLikeCram(data.asUnbufferedSeekableStream())) {
                         if (referenceSource == null) {
                             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
@@ -452,7 +456,8 @@ public abstract class SamReaderFactory {
                                         asynchronousIO,
                                         validationStringency,
                                         this.samRecordFactory,
-                                        this.inflaterFactory);
+                                        this.inflaterFactory,
+                                        checkCrcs);
                             } else {
                                 // seekable.
                                 // need to return to the beginning because it's the same stream we used earlier
@@ -465,7 +470,8 @@ public abstract class SamReaderFactory {
                                         asynchronousIO,
                                         validationStringency,
                                         this.samRecordFactory,
-                                        this.inflaterFactory);
+                                        this.inflaterFactory,
+                                        checkCrcs);
                             }
                         } else {
                             bufferedStream.close();
@@ -476,7 +482,8 @@ public abstract class SamReaderFactory {
                                     asynchronousIO,
                                     validationStringency,
                                     this.samRecordFactory,
-                                    this.inflaterFactory);
+                                    this.inflaterFactory,
+                                    checkCrcs);
                         }
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                         // Pass the configured inflater factory through so that BGZF-compressed

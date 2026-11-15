@@ -14,6 +14,8 @@ import htsjdk.samtools.util.zip.InflaterFactory;
 import htsjdk.testutil.ftp.LocalFtpServer;
 import htsjdk.testutil.http.LocalHttpServer;
 import htsjdk.testutil.streams.SeekableByteChannelFromBuffer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -711,6 +713,45 @@ public class SamReaderFactoryTest extends HtsjdkTest {
             } finally {
                 if (executor != null) executor.shutdownNow();
             }
+        }
+    }
+
+    // VALIDATE_CRC_CHECKSUMS must cover the blocks that hold the header, which a BAM reader reads as it opens.
+
+    /** A small BAM with the CRC of its first block, which holds the header, made wrong. */
+    private static byte[] bamWithCorruptHeaderBlockCrc() {
+        final SAMRecordSetBuilder records = new SAMRecordSetBuilder();
+        records.addFrag("r1", 0, 100, false);
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(records.getHeader(), false, bytes)) {
+            records.forEach(writer::addAlignment);
+        }
+        final byte[] bam = bytes.toByteArray();
+        final int bsizeOffset = BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET;
+        final int firstBlockLength = ((bam[bsizeOffset] & 0xFF) | (bam[bsizeOffset + 1] & 0xFF) << 8) + 1;
+        bam[firstBlockLength - 8] ^= 0xFF;
+        return bam;
+    }
+
+    @Test
+    public void testCrcValidationCoversTheHeaderOfABamStream() {
+        final byte[] bam = bamWithCorruptHeaderBlockCrc();
+        final SamReaderFactory factory =
+                SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS);
+        Assert.assertThrows(
+                SAMFormatException.class, () -> factory.open(SamInputResource.of(new ByteArrayInputStream(bam))));
+    }
+
+    @Test
+    public void testCrcValidationCoversTheHeaderOfABamFile() throws IOException {
+        final Path bamPath = Files.createTempFile("corrupt_header_crc", ".bam");
+        try {
+            Files.write(bamPath, bamWithCorruptHeaderBlockCrc());
+            final SamReaderFactory factory =
+                    SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS);
+            Assert.assertThrows(SAMFormatException.class, () -> factory.open(bamPath));
+        } finally {
+            Files.deleteIfExists(bamPath);
         }
     }
 }

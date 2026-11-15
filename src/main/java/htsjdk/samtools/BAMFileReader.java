@@ -114,7 +114,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 useAsynchronousIO,
                 validationStringency,
                 samRecordFactory,
-                BlockGunzipper.getDefaultInflaterFactory());
+                BlockGunzipper.getDefaultInflaterFactory(),
+                false);
     }
 
     /**
@@ -126,6 +127,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param validationStringency Controls how to handle invalidate reads or header lines.
      * @param samRecordFactory SAM record factory
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
+     * @param checkCrcs if true, check the CRC32 of every block, including those of the header, which is read here
      * @throws IOException
      */
     BAMFileReader(
@@ -135,13 +137,15 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             final boolean useAsynchronousIO,
             final ValidationStringency validationStringency,
             final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
+            final InflaterFactory inflaterFactory,
+            final boolean checkCrcs)
             throws IOException {
         mIndexPath = indexPath;
         mIsSeekable = false;
         mCompressedInputStream = useAsynchronousIO
                 ? new AsyncBlockCompressedInputStream(stream, inflaterFactory)
                 : new BlockCompressedInputStream(stream, inflaterFactory);
+        mCompressedInputStream.setCheckCrcs(checkCrcs);
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
         this.mValidationStringency = validationStringency;
@@ -174,7 +178,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 useAsynchronousIO,
                 validationStringency,
                 samRecordFactory,
-                BlockGunzipper.getDefaultInflaterFactory());
+                BlockGunzipper.getDefaultInflaterFactory(),
+                false);
     }
 
     /**
@@ -186,6 +191,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param validationStringency Controls how to handle invalidate reads or header lines.
      * @param samRecordFactory SAM record factory
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
+     * @param checkCrcs if true, check the CRC32 of every block, including those of the header, which is read here
      * @throws IOException
      */
     BAMFileReader(
@@ -195,14 +201,12 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             final boolean useAsynchronousIO,
             final ValidationStringency validationStringency,
             final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
+            final InflaterFactory inflaterFactory,
+            final boolean checkCrcs)
             throws IOException {
         this(
-                useAsynchronousIO
-                        ? new AsyncBlockCompressedInputStream(
-                                new SeekablePathStream(checkPathExists(path)), inflaterFactory)
-                        : new BlockCompressedInputStream(
-                                new SeekablePathStream(checkPathExists(path)), inflaterFactory),
+                openBlockCompressed(
+                        new SeekablePathStream(checkPathExists(path)), useAsynchronousIO, inflaterFactory, checkCrcs),
                 indexPath != null ? indexPath : SamFiles.findIndex(path),
                 eagerDecode,
                 useAsynchronousIO,
@@ -245,6 +249,19 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         return path;
     }
 
+    /** Opens a block-compressed stream over {@code strm}, set to check CRCs before anything is read from it. */
+    private static BlockCompressedInputStream openBlockCompressed(
+            final SeekableStream strm,
+            final boolean useAsynchronousIO,
+            final InflaterFactory inflaterFactory,
+            final boolean checkCrcs) {
+        final BlockCompressedInputStream stream = useAsynchronousIO
+                ? new AsyncBlockCompressedInputStream(strm, inflaterFactory)
+                : new BlockCompressedInputStream(strm, inflaterFactory);
+        stream.setCheckCrcs(checkCrcs);
+        return stream;
+    }
+
     /**
      * Prepare to read BAM from a stream (seekable)
      * @param strm source of bytes
@@ -270,7 +287,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 useAsynchronousIO,
                 validationStringency,
                 samRecordFactory,
-                BlockGunzipper.getDefaultInflaterFactory());
+                BlockGunzipper.getDefaultInflaterFactory(),
+                false);
     }
 
     /**
@@ -282,6 +300,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param validationStringency Controls how to handle invalidate reads or header lines.
      * @param samRecordFactory SAM record factory
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
+     * @param checkCrcs if true, check the CRC32 of every block, including those of the header, which is read here
      * @throws IOException
      */
     BAMFileReader(
@@ -291,12 +310,11 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             final boolean useAsynchronousIO,
             final ValidationStringency validationStringency,
             final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
+            final InflaterFactory inflaterFactory,
+            final boolean checkCrcs)
             throws IOException {
         this(
-                useAsynchronousIO
-                        ? new AsyncBlockCompressedInputStream(strm, inflaterFactory)
-                        : new BlockCompressedInputStream(strm, inflaterFactory),
+                openBlockCompressed(strm, useAsynchronousIO, inflaterFactory, checkCrcs),
                 indexPath,
                 eagerDecode,
                 useAsynchronousIO,
@@ -330,7 +348,8 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 useAsynchronousIO,
                 validationStringency,
                 samRecordFactory,
-                BlockGunzipper.getDefaultInflaterFactory());
+                BlockGunzipper.getDefaultInflaterFactory(),
+                false);
     }
 
     /**
@@ -342,6 +361,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param validationStringency Controls how to handle invalidate reads or header lines.
      * @param samRecordFactory SAM record factory
      * @param inflaterFactory InflaterFactory used by BlockCompressedInputStream
+     * @param checkCrcs if true, check the CRC32 of every block, including those of the header, which is read here
      * @throws IOException
      */
     BAMFileReader(
@@ -351,12 +371,11 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             final boolean useAsynchronousIO,
             final ValidationStringency validationStringency,
             final SAMRecordFactory samRecordFactory,
-            final InflaterFactory inflaterFactory)
+            final InflaterFactory inflaterFactory,
+            final boolean checkCrcs)
             throws IOException {
         this(
-                useAsynchronousIO
-                        ? new AsyncBlockCompressedInputStream(strm, inflaterFactory)
-                        : new BlockCompressedInputStream(strm, inflaterFactory),
+                openBlockCompressed(strm, useAsynchronousIO, inflaterFactory, checkCrcs),
                 indexStream,
                 eagerDecode,
                 useAsynchronousIO,
