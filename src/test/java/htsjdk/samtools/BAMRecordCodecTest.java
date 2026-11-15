@@ -109,4 +109,39 @@ public class BAMRecordCodecTest extends HtsjdkTest {
         Assert.assertTrue(encoded.contains("CGBI"), "CG tag is not stored as B:I");
         Assert.assertFalse(encoded.contains("CGBi"), "CG tag is stored as B:i");
     }
+
+    /** The bytes of one record whose read-name length has been set to 0, which is never valid. */
+    private static byte[] recordWithZeroReadNameLength(final SAMFileHeader header, final SAMRecord record) {
+        final byte[] bytes = encode(header, record).getBytes(StandardCharsets.ISO_8859_1);
+        // l_read_name follows block_size, refID and pos
+        bytes[12] = 0;
+        return bytes;
+    }
+
+    @Test
+    public void testZeroReadNameLengthIsRejectedAtDecode() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final BAMRecordCodec codec = new BAMRecordCodec(header);
+        codec.setInputStream(
+                new ByteArrayInputStream(recordWithZeroReadNameLength(header, unmappedRecord(header, "r1"))));
+        final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, codec::decode);
+        Assert.assertTrue(e.getMessage().contains("must include at least the NUL terminator"), e.getMessage());
+    }
+
+    @Test
+    public void testZeroReadNameLengthErrorSaysWhereTheRecordIs() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("chr1", 1_000));
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName("r1");
+        record.setReferenceIndex(0);
+        record.setAlignmentStart(101);
+        record.setCigarString("4M");
+        record.setReadString("ACGT");
+        record.setBaseQualityString("IIII");
+        final BAMRecordCodec codec = new BAMRecordCodec(header);
+        codec.setInputStream(new ByteArrayInputStream(recordWithZeroReadNameLength(header, record)), "reads.bam");
+        final SAMFormatException e = Assert.expectThrows(SAMFormatException.class, codec::decode);
+        Assert.assertTrue(e.getMessage().endsWith("reference index 0, position 101, in reads.bam"), e.getMessage());
+    }
 }

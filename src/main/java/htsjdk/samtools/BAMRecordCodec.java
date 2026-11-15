@@ -280,6 +280,12 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final int referenceID = this.binaryCodec.readInt();
         final int coordinate = this.binaryCodec.readInt() + 1;
         final short readNameLength = this.binaryCodec.readUByte();
+        if (readNameLength == 0) {
+            final String source = this.binaryCodec.getInputFileName();
+            throw new SAMFormatException("Invalid read name length of 0; the length must include at least the NUL"
+                    + " terminator. Record at reference index " + referenceID + ", position " + coordinate
+                    + (source != null ? ", in " + source : ""));
+        }
         final short mappingQuality = this.binaryCodec.readUByte();
         final int bin = this.binaryCodec.readUShort();
         final int cigarLen = this.binaryCodec.readUShort();
