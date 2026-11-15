@@ -1,6 +1,8 @@
 package htsjdk.samtools.util;
 
 import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -15,17 +17,26 @@ import java.util.concurrent.atomic.AtomicReference;
  * In particular there must be only one thread that calls {@link #write} and {@link #close}.
  *
  * NOTE: Any exception thrown by the underlying Writer will be propagated back to the caller
- * during the next available call to {@link #write} or {@link #close}. After the exception
+ * during a later call to {@link #write} or {@link #close}. After the exception
  * has been thrown to the caller, it is not safe to attempt further operations on the instance.
+ *
+ * Items are handed to the writing thread in batches, so that the two threads meet once a batch rather than once an
+ * item, and an item may wait in the calling thread until its batch fills or the writer is closed.
  *
  * @author Tim Fennell
  */
 public abstract class AbstractAsyncWriter<T> implements Closeable {
     private static volatile int threadsCreated = 0; // Just used for thread naming.
     public static final int DEFAULT_QUEUE_SIZE = 2000;
+    /** The most items handed to the writing thread at once. */
+    private static final int MAX_BATCH_SIZE = 1024;
 
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
-    private final BlockingQueue<T> queue;
+    private final int batchSize;
+    private final BlockingQueue<List<T>> queue;
+    /** Items written but not yet handed to the writing thread. */
+    private List<T> batch;
+
     private final Thread writer;
     private final WriterRunnable writerRunnable;
     private final AtomicReference<Throwable> ex = new AtomicReference<Throwable>(null);
@@ -42,7 +53,11 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * internal queue and write records into the synchronous writer.
      */
     protected AbstractAsyncWriter(final int queueSize) {
-        this.queue = new ArrayBlockingQueue<T>(queueSize);
+        // About queueSize items wait in the queue, as when they were queued one at a time, in batches of a quarter of
+        // that; a queue size below 4 gives batches of one item
+        this.batchSize = Math.max(1, Math.min(MAX_BATCH_SIZE, queueSize / 4));
+        this.queue = new ArrayBlockingQueue<>(Math.max(1, queueSize / batchSize));
+        this.batch = new ArrayList<>(batchSize);
         this.writerRunnable = new WriterRunnable();
         this.writer = new Thread(writerRunnable, getThreadNamePrefix() + threadsCreated++);
         this.writer.setDaemon(true);
@@ -56,12 +71,19 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     public void write(final T item) {
         if (this.isClosed.get()) throw new RuntimeIOException("Attempt to add record to closed writer.");
 
+        this.batch.add(item);
+        if (this.batch.size() == this.batchSize) handOffBatch();
+    }
+
+    /** Queues the current batch for the writing thread and starts a new one. */
+    private void handOffBatch() {
         checkAndRethrow();
         try {
-            this.queue.put(item);
+            this.queue.put(this.batch);
         } catch (final InterruptedException ie) {
             throw new RuntimeException("Interrupted queueing item for writing.", ie);
         }
+        this.batch = new ArrayList<>(this.batchSize);
         checkAndRethrow();
     }
 
@@ -72,6 +94,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     @Override
     public void close() {
         checkAndRethrow();
+        if (!this.isClosed.get() && !this.batch.isEmpty()) handOffBatch();
 
         if (!this.isClosed.getAndSet(true)) {
             try {
@@ -85,8 +108,9 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
             // at this point the writer thread is definitely dead and noone is removing items from the queue.
             // The item pulled will never be null (same reasoning).
             while (!this.queue.isEmpty()) {
-                final T item = queue.poll();
-                synchronouslyWrite(item);
+                for (final T item : queue.poll()) {
+                    synchronouslyWrite(item);
+                }
             }
 
             synchronouslyClose();
@@ -99,6 +123,8 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * or RuntimeException as appropriate.
      */
     private final void checkAndRethrow() {
+        // A plain read first, as there is nearly never anything to rethrow
+        if (this.ex.get() == null) return;
         final Throwable t = this.ex.getAndSet(null);
         if (t != null) {
             this.isClosed.set(true); // Ensure no further attempts to write
@@ -123,8 +149,12 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
                 // the two operations are effectively atomic if isClosed returns true
                 while (!isClosed.get() || !queue.isEmpty()) {
                     try {
-                        final T item = queue.poll(50, TimeUnit.MILLISECONDS);
-                        if (item != null) synchronouslyWrite(item);
+                        final List<T> items = queue.poll(50, TimeUnit.MILLISECONDS);
+                        if (items != null) {
+                            for (final T item : items) {
+                                synchronouslyWrite(item);
+                            }
+                        }
                     } catch (final InterruptedException ie) {
                         /* Do Nothing */
                     }
